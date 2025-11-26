@@ -1,7 +1,7 @@
-import { Context, isString, isUndefined, isNil } from '@tsdi/ioc';
+import { isString, isUndefined, isNil } from '@tsdi/ioc';
 import {
     DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS,
-    HeadersLike, HeaderMappings, RequestParams, UrlRequest, appendUrlParams,
+    HeadersLike, HeaderMappings, RequestParams, UrlRequest, appendUrlParams, RequestContext,
 } from '@tsdi/common';
 import { HttpParams } from './params';
 
@@ -13,7 +13,7 @@ import { HttpParams } from './params';
  */
 export interface HttpRequestInit {
     headers?: HeadersLike;
-    context: Context;
+    context: RequestContext;
     reportProgress?: boolean;
     params?: HttpParams;
 
@@ -125,7 +125,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
      */
     readonly urlWithParams: string;
 
-    readonly context: Context;
+    readonly context: RequestContext;
 
     readonly timeout: number | undefined;
 
@@ -136,7 +136,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-        context: Context
+        context: RequestContext
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init: {
         headers?: HeadersLike,
@@ -145,7 +145,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-        context: Context
+        context: RequestContext
     });
     constructor(method: string, url: string, body: T | null, init: {
         headers?: HeadersLike,
@@ -154,7 +154,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
-        context: Context
+        context: RequestContext
     });
     constructor(
         method: string, readonly url: string, third?: T | {
@@ -165,7 +165,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
             timeout?: number,
-            context: Context
+            context: RequestContext
         } | null,
         fourth?: {
             headers?: HeadersLike,
@@ -175,7 +175,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
             timeout?: number,
-            context: Context
+            context: RequestContext
         }) {
         this.method = method.toUpperCase();
         // Next, need to figure out which argument holds the HttpRequestInit
@@ -315,7 +315,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
     clone(): HttpRequest<T>;
     clone<V>(update: {
         headers?: HeadersLike,
-        context?: Context,
+        context?: RequestContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -329,7 +329,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HeadersLike,
-        context?: Context,
+        context?: RequestContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -343,7 +343,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
     }): HttpRequest<T>;
     clone(update: {
         headers?: HeadersLike,
-        context?: Context,
+        context?: RequestContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -377,7 +377,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
     protected cloneOpts(update: {
         headers?: HeadersLike,
-        context?: Context,
+        context?: RequestContext,
         reportProgress?: boolean,
         params?: RequestParams | HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',

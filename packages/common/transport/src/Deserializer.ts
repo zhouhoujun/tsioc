@@ -49,7 +49,7 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
             backend: jsonDeserializeBackend,
             filtersToken: DESERIALIZER_FILTERS,
             interceptorsToken: DESERIALIZER_INTERCEPTORS,
-            filters:[
+            filters: [
                 ExceptionHandlerFilter
             ],
             enableTypeChain: true,

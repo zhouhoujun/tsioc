@@ -1,5 +1,5 @@
-import { HttpStatusCode, HeaderMappings, HeadersLike } from '@tsdi/common';
 import { hasOwn, isPlainObject } from '@tsdi/ioc';
+import { HttpStatusCode, HeaderMappings, HeadersLike } from '@tsdi/common';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.

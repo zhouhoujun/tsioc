@@ -2,10 +2,11 @@
 /* eslint-disable no-case-declarations */
 import { Injectable, lang } from '@tsdi/ioc';
 import { HeaderMappings, HttpStatusCode } from '@tsdi/common';
+import { Observable, Observer } from 'rxjs';
 import { HttpBackend } from './handler';
 import { HttpRequest } from './request';
 import { HttpDownloadProgressEvent, HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpResponse } from './response';
-import { Observable, Observer } from 'rxjs';
+
 
 
 

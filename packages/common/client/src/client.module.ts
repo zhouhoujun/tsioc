@@ -1,7 +1,4 @@
-import {
-    Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
-    Provider, isArray, lang, toProvider, tokenId
-} from '@tsdi/ioc';
+import { Arrayify, Injector, Module, ModuleRef, ModuleWithProviders, Provider, isArray, lang, toProvider, tokenId } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory } from '@tsdi/common';
 import { isMicroTransport, NotImplementedException, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
