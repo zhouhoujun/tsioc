@@ -5,7 +5,10 @@ import { RequestContext } from './context';
 
 
 
-
+/**
+ * Request interceptor.
+ * 请求拦截器。
+ */
 export interface RequestInterceptor<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends Interceptor<TInput, TOutput, TContext> {
 
     /**

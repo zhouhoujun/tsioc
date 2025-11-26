@@ -18,6 +18,11 @@ export interface RequestHandler<TInput = any, TOutput = any, TContext extends Re
      * @param tail next tail.
      */
     handle(input: TInput, context: TContext): Observable<TOutput>;
+
+    /**
+     * on destroy.
+     */
+    onDestroy?(): void;
 }
 
 /**

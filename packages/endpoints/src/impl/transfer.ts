@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
 import { AbstractTransferFactory, Incoming, TopicIncoming, TransferOpts, TransportContext, UrlIncoming } from '@tsdi/common/transport';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 import { ServerTransfer, ServerTransferFactory } from '../transfer';
 import { defer } from 'rxjs';
 import { ServerTransport } from '../transport';
@@ -40,7 +40,7 @@ const backenFn = (input: Incoming<any>, context: TransportContext) => {
 
 
 @Injectable()
-export class DefaultServerTransferFactory extends AbstractTransferFactory<Incoming, RequestContext, ServerTransfer> implements ServerTransferFactory {
+export class DefaultServerTransferFactory extends AbstractTransferFactory<Incoming, RespondContext, ServerTransfer> implements ServerTransferFactory {
 
     protected override vaildOptions(options?: TransferOpts): TransferOpts<Incoming> {
         return {

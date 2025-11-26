@@ -8,7 +8,7 @@ import {
     NotFoundException, UnauthorizedException, UnsupportedMediaTypeException, MessageException
 } from '@tsdi/common/transport';
 import { MissingModelFieldException } from '@tsdi/repository';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 
 
 
@@ -20,7 +20,7 @@ export class HttpExceptionHandlers {
 
 
     @ExceptionHandler(InvalidJsonException)
-    badJsonException(ctx: RequestContext, execption: InvalidJsonException) {
+    badJsonException(ctx: RespondContext, execption: InvalidJsonException) {
         let exp: MessageException;
         if (isNil(ctx.body)) {
             exp = new InternalServerException(execption.message, HttpStatusCode.InternalServerError);
@@ -31,121 +31,121 @@ export class HttpExceptionHandlers {
     }
 
     @ExceptionHandler(NotHandleException)
-    notHanldeException(ctx: RequestContext, err: NotHandleException) {
+    notHanldeException(ctx: RespondContext, err: NotHandleException) {
         const execption = new InternalServerException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
     
 
     @ExceptionHandler(BadRequestException)
-    badReqException(ctx: RequestContext, execption: BadRequestException) {
+    badReqException(ctx: RespondContext, execption: BadRequestException) {
         execption.status = HttpStatusCode.BadRequest;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(UnauthorizedException)
-    unauthorized(ctx: RequestContext, execption: UnauthorizedException) {
+    unauthorized(ctx: RespondContext, execption: UnauthorizedException) {
         execption.status = HttpStatusCode.Unauthorized;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(ForbiddenException)
-    forbiddenException(ctx: RequestContext, execption: ForbiddenException) {
+    forbiddenException(ctx: RespondContext, execption: ForbiddenException) {
         execption.status = HttpStatusCode.Forbidden;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(NotFoundException)
-    notFoundException(ctx: RequestContext, execption: NotFoundException) {
+    notFoundException(ctx: RespondContext, execption: NotFoundException) {
         execption.status = HttpStatusCode.NotFound;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(MethodNotAllowedException)
-    notAllowedException(ctx: RequestContext, execption: MethodNotAllowedException) {
+    notAllowedException(ctx: RespondContext, execption: MethodNotAllowedException) {
         execption.status = HttpStatusCode.MethodNotAllowed;
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(NotAcceptableException)
-    notAcceptableException(ctx: RequestContext, execption: NotAcceptableException) {
+    notAcceptableException(ctx: RespondContext, execption: NotAcceptableException) {
         execption.status = HttpStatusCode.NotAcceptable;
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(RequestTimeoutException)
-    timeoutExecpotion(ctx: RequestContext, execption: NotAcceptableException) {
+    timeoutExecpotion(ctx: RespondContext, execption: NotAcceptableException) {
         execption.status = HttpStatusCode.RequestTimeout;
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(UnsupportedMediaTypeException)
-    unsupported(ctx: RequestContext, execption: UnsupportedMediaTypeException) {
+    unsupported(ctx: RespondContext, execption: UnsupportedMediaTypeException) {
         execption.status = HttpStatusCode.UnsupportedMediaType;
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(InternalServerException)
-    internalServerError(ctx: RequestContext, execption: InternalServerException) {
+    internalServerError(ctx: RespondContext, execption: InternalServerException) {
         execption.status = HttpStatusCode.InternalServerError;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(NotImplementedException)
-    notImplementedError(ctx: RequestContext, execption: NotImplementedException) {
+    notImplementedError(ctx: RespondContext, execption: NotImplementedException) {
         execption.status = HttpStatusCode.NotImplemented;
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(BadGatewayException)
-    badGatewayError(ctx: RequestContext, execption: BadGatewayException) {
+    badGatewayError(ctx: RespondContext, execption: BadGatewayException) {
         execption.status = HttpStatusCode.BadGateway;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(ServiceUnavailableException)
-    ServiceUnavailableError(ctx: RequestContext, execption: ServiceUnavailableException) {
+    ServiceUnavailableError(ctx: RespondContext, execption: ServiceUnavailableException) {
         execption.status = HttpStatusCode.ServiceUnavailable;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(GatewayTimeoutException)
-    gatewayTimeoutError(ctx: RequestContext, execption: GatewayTimeoutException) {
+    gatewayTimeoutError(ctx: RespondContext, execption: GatewayTimeoutException) {
         execption.status = HttpStatusCode.GatewayTimeout;
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(NotSupportedException)
-    notSupportedError(ctx: RequestContext, execption: NotSupportedException) {
+    notSupportedError(ctx: RespondContext, execption: NotSupportedException) {
         execption.status = HttpStatusCode.BadGateway;
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(ArgumentException)
-    anguException(ctx: RequestContext, err: ArgumentException) {
+    anguException(ctx: RespondContext, err: ArgumentException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(MissingModelFieldException)
-    missFieldException(ctx: RequestContext, err: MissingModelFieldException) {
+    missFieldException(ctx: RespondContext, err: MissingModelFieldException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(MissingParameterException)
-    missException(ctx: RequestContext, err: MissingParameterException) {
+    missException(ctx: RespondContext, err: MissingParameterException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
         ctx.throwException(execption)
     }
 
-    protected detailError(ctx: RequestContext): boolean {
+    protected detailError(ctx: RespondContext): boolean {
         return ctx.serverOptions.detailError === true;
     }
 }

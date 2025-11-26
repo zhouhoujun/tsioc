@@ -59,11 +59,6 @@ export interface RequestOptions<T = any> extends PayloadOptions<T> {
      * parameter codec.
      */
     encoder?: ParameterCodec;
-
-    /**
-     * request context.
-     */
-    context?: RequestContext;
     /**
      * for restful
      */
@@ -105,7 +100,6 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
      */
     abstract get headers(): HeaderMappings;
     abstract get params(): RequestParams;
-    abstract get context(): RequestContext;
 
     /**
      * force parse response type as Json or not.
@@ -326,9 +320,8 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
         const timeout = update.timeout ?? this.timeout;
         const id = this.id;
-        const context = update.context ?? this.context;
         const observe = update.observe ?? this.observe;
-        return { id, headers, params, payload, withCredentials, context, timeout, responseType, observe } as RequestInitOpts<any, TOptions>;
+        return { id, headers, params, payload, withCredentials, timeout, responseType, observe } as RequestInitOpts<any, TOptions>;
     }
 
 }

@@ -1,9 +1,9 @@
 import { Arrayify, Injector, Module, ModuleRef, ModuleWithProviders, Provider, isArray, lang, toProvider, tokenId } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
-import { DefaultResponseFactory } from '@tsdi/common';
-import { isMicroTransport, NotImplementedException, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
+import { DefaultResponseFactory, NotImplementedException } from '@tsdi/common';
+import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { RequestBackend } from './backend';
-import { RequestTransportBackend, DefaultClientTransferFactory, UrlRedirector } from './transport';
+import { UrlRedirector } from './transport';
 import { ClientConfig } from './options';
 import { ClientOptions, ClientModuleOpts } from './client.options';
 
@@ -17,7 +17,7 @@ import { ClientOptions, ClientModuleOpts } from './client.options';
     ],
     providers: [
         DefaultResponseFactory,
-        DefaultClientTransferFactory,
+        // DefaultClientTransferFactory,
         UrlRedirector
     ]
 })
@@ -137,9 +137,9 @@ function clientProviders(options: ClientOptions, idx?: number) {
                 }
 
 
-                if (!opts.backend) {
-                    clientOpts.providers.push({ provide: RequestBackend, useClass: RequestTransportBackend });
-                }
+                // if (!opts.backend) {
+                //     clientOpts.providers.push({ provide: RequestBackend, useClass: RequestTransportBackend });
+                // }
 
                 if (!clientOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
                 // if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);

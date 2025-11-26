@@ -1,7 +1,7 @@
 import { ModuleType, ProvdierOf, Provider, AbstractType } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { CommonProtocols, Protocols } from '@tsdi/common';
-import { TransportConfigure } from '@tsdi/common/transport';
+// import { TransportConfigure } from '@tsdi/common/transport';
 import { Http1ServConfig, Http2SecureServConfig, Http2ServConfig, HttpsServConfig, ServiceConfig } from './server.options';
 import { Server } from './Server';
 
@@ -76,7 +76,7 @@ export interface WsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'ws' | 'wss';
     config?: ServiceConfig<TSerOpts> & HeybirdOpts & {
         enableStream?: boolean;
-        streamTransport?: TransportConfigure;
+        // streamTransport?: TransportConfigure;
     }
 }
 

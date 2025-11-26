@@ -1,100 +1,100 @@
-import { Injector } from '@tsdi/ioc';
-import { AbstractRequest, createRequestContext, HeaderAdapter, RequestContext, ResponseFactory } from '@tsdi/common';
-import {
-    ClientIncomingFactory, Deserializer, ev, IDuplex, Packet, Redirector, Serializer,
-    StatusAdapter, StreamAdapter, Transport, writePacket
-} from '@tsdi/common/transport';
-import { fromEvent, Observable } from 'rxjs';
-import { ClientTransfer, ClientTransport } from '../transport';
-import { ClientConfig } from '../options';
+// import { Injector } from '@tsdi/ioc';
+// import { AbstractRequest, createRequestContext, HeaderAdapter, RequestContext, ResponseFactory } from '@tsdi/common';
+// import {
+//     ClientIncomingFactory, Deserializer, ev, IDuplex, Packet, Redirector, Serializer,
+//     StatusAdapter, StreamAdapter, Transport, writePacket
+// } from '@tsdi/common/transport';
+// import { fromEvent, Observable } from 'rxjs';
+// import { ClientTransfer, ClientTransport } from '../transport';
+// import { ClientConfig } from '../options';
 
 
 
-export class DefaultClientTransport<
-    TSocket = any,
-    TRequest extends AbstractRequest<any> = AbstractRequest<any>,
-    TMsg = any,
-    TOptions extends ClientConfig = ClientConfig> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
+// export class DefaultClientTransport<
+//     TSocket = any,
+//     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
+//     TMsg = any,
+//     TOptions extends ClientConfig = ClientConfig> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
 
-    constructor(
-        readonly injector: Injector,
-        readonly socket: TSocket,
-        readonly serializer: Serializer,
-        readonly deserializer: Deserializer,
-        readonly statusAdapter: StatusAdapter | null,
-        readonly headerAdapter: HeaderAdapter,
-        readonly streamAdapter: StreamAdapter,
-        readonly incomingFactory: ClientIncomingFactory,
-        readonly transfer: ClientTransfer,
-        readonly responseFactory: ResponseFactory,
-        readonly redirector: Redirector | null,
-        readonly clientOptions: TOptions,
-        private _read: (socket: TSocket, factory: () => RequestContext, instance?: RequestContext) => Observable<RequestContext | any>,
-        private _write: (socket: TSocket, msg: TMsg, req: TRequest, context: RequestContext) => Promise<any>,
-        private _close?: (socket: TSocket) => Promise<any>
+//     constructor(
+//         readonly injector: Injector,
+//         readonly socket: TSocket,
+//         readonly serializer: Serializer,
+//         readonly deserializer: Deserializer,
+//         readonly statusAdapter: StatusAdapter | null,
+//         readonly headerAdapter: HeaderAdapter,
+//         readonly streamAdapter: StreamAdapter,
+//         readonly incomingFactory: ClientIncomingFactory,
+//         readonly transfer: ClientTransfer,
+//         readonly responseFactory: ResponseFactory,
+//         readonly redirector: Redirector | null,
+//         readonly clientOptions: TOptions,
+//         private _read: (socket: TSocket, factory: () => RequestContext, instance?: RequestContext) => Observable<RequestContext | any>,
+//         private _write: (socket: TSocket, msg: TMsg, req: TRequest, context: RequestContext) => Promise<any>,
+//         private _close?: (socket: TSocket) => Promise<any>
 
-    ) {
-        super()
-    }
-
-
-    protected override read(context?: RequestContext): Observable<any> {
-        return this._read(this.socket, () => createRequestContext(context, [[Transport, this]]));
-
-    }
-
-    protected override write(msg: TMsg, req: TRequest, context: RequestContext): Promise<any> {
-        return this._write(this.socket, msg, req, context)
-    }
-
-    override async close() {
-        if (this._close) {
-            await this._close(this.socket)
-        }
-    }
-
-}
+//     ) {
+//         super()
+//     }
 
 
-export class SocketClientTransport<
-    TSocket extends IDuplex = IDuplex,
-    TRequest extends AbstractRequest<any> = AbstractRequest<any>,
-    TMsg extends Packet = Packet,
-    TOptions extends ClientConfig = ClientConfig> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
+//     protected override read(context?: RequestContext): Observable<any> {
+//         return this._read(this.socket, () => createRequestContext(context, [[Transport, this]]));
 
-    constructor(
-        readonly injector: Injector,
-        readonly socket: TSocket,
-        readonly serializer: Serializer,
-        readonly deserializer: Deserializer,
-        readonly statusAdapter: StatusAdapter | null,
-        readonly headerAdapter: HeaderAdapter,
-        readonly streamAdapter: StreamAdapter,
-        readonly incomingFactory: ClientIncomingFactory,
-        readonly transfer: ClientTransfer,
-        readonly responseFactory: ResponseFactory,
-        readonly redirector: Redirector | null,
-        readonly clientOptions: TOptions,
-        readonly eventName: string = ev.DATA,
-        private _close?: (socket: TSocket) => Promise<any>
+//     }
 
-    ) {
-        super()
-    }
+//     protected override write(msg: TMsg, req: TRequest, context: RequestContext): Promise<any> {
+//         return this._write(this.socket, msg, req, context)
+//     }
+
+//     override async close() {
+//         if (this._close) {
+//             await this._close(this.socket)
+//         }
+//     }
+
+// }
 
 
-    protected override read(context?: RequestContext): Observable<any> {
-        return fromEvent(this.socket, this.eventName)
-    }
+// export class SocketClientTransport<
+//     TSocket extends IDuplex = IDuplex,
+//     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
+//     TMsg extends Packet = Packet,
+//     TOptions extends ClientConfig = ClientConfig> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
 
-    protected override write(msg: TMsg, req: TRequest, context: RequestContext): Promise<any> {
-        return writePacket(this.socket, msg, this.streamAdapter)
-    }
+//     constructor(
+//         readonly injector: Injector,
+//         readonly socket: TSocket,
+//         readonly serializer: Serializer,
+//         readonly deserializer: Deserializer,
+//         readonly statusAdapter: StatusAdapter | null,
+//         readonly headerAdapter: HeaderAdapter,
+//         readonly streamAdapter: StreamAdapter,
+//         readonly incomingFactory: ClientIncomingFactory,
+//         readonly transfer: ClientTransfer,
+//         readonly responseFactory: ResponseFactory,
+//         readonly redirector: Redirector | null,
+//         readonly clientOptions: TOptions,
+//         readonly eventName: string = ev.DATA,
+//         private _close?: (socket: TSocket) => Promise<any>
 
-    override async close() {
-        if (this._close) {
-            await this._close(this.socket)
-        }
-    }
+//     ) {
+//         super()
+//     }
 
-}
+
+//     protected override read(context?: RequestContext): Observable<any> {
+//         return fromEvent(this.socket, this.eventName)
+//     }
+
+//     protected override write(msg: TMsg, req: TRequest, context: RequestContext): Promise<any> {
+//         return writePacket(this.socket, msg, this.streamAdapter)
+//     }
+
+//     override async close() {
+//         if (this._close) {
+//             await this._close(this.socket)
+//         }
+//     }
+
+// }

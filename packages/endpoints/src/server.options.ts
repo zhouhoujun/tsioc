@@ -1,10 +1,10 @@
 import { ProvdierOf, AbstractType } from '@tsdi/ioc';
 import { RequestHandler, RequestMethod } from '@tsdi/common';
-import { MimeSource, TransportConfigure } from '@tsdi/common/transport';
+import { MimeSource } from '@tsdi/common/transport';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
-import { ServerTransportFactory } from './transport';
+// import { ServerTransportFactory } from './transport';
 // import { RequestHandler } from './RequestHandler';
 import { RestfulRequestContext } from './RestfulRequestContext';
 import { ServerOptions as Http1ServerOptions } from 'http';
@@ -21,7 +21,7 @@ export interface ProxyOpts {
 /**
  * service config.
  */
-export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any>, TransportConfigure {
+export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any> {
     /**
      * request timeout.
      */
@@ -43,10 +43,10 @@ export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any
      */
     handlerType?: AbstractType<RequestHandler>;
 
-    /**
-     * service transport factory.
-     */
-    transportFactory?: ProvdierOf<ServerTransportFactory>;
+    // /**
+    //  * service transport factory.
+    //  */
+    // transportFactory?: ProvdierOf<ServerTransportFactory>;
 
     server?: any;
     /**

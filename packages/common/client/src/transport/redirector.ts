@@ -1,25 +1,25 @@
 /* eslint-disable no-case-declarations */
 import { ContextToken, ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
-import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader } from '@tsdi/common';
-import { BadRequestException, Redirector } from '@tsdi/common/transport';
+import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader, BadRequestException, RequestContext, HeaderAdapter } from '@tsdi/common';
+import { Redirector, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { ClientTransport } from './transport';
 import { AbstractClient } from '../AbstractClient';
 
 
 @Injectable()
 export class UrlRedirector implements Redirector {
 
-    redirect<T>(req: UrlRequest<any>, status: any, headers: HeadersLike, protocol: string): Observable<T> {
+    redirect<T>(req: UrlRequest<any>, context: RequestContext, status: any, headers: HeadersLike, protocol: string): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if (!req.url) return observer.error(new BadRequestException());
 
-
-            const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransport)!;
+            const statusAdapter = context.get(StatusAdapter);
+            const streamAdapter = context.get(StreamAdapter);
+            const headerAdapter = context.get(HeaderAdapter);
 
             if (!headerAdapter) return observer.error(new ArgumentException('header adapter missing'));
 
-            const rdstatus = req.context.get(REDIRECT_STATE);
+            const rdstatus = context.get(REDIRECT_STATE);
             // HTTP fetch step 5.2
             const location = getHeader(headers, 'location') as string;
 
@@ -101,11 +101,11 @@ export class UrlRedirector implements Redirector {
                         reqhdrs = reqhdrs.set('referrer-policy', responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = req.context.get(AbstractClient)!.send(locationURL, {
+                    sub = context.get(AbstractClient)!.send(locationURL, {
                         method,
                         headers: reqhdrs,
                         body,
-                        context: req.context,
+                        context,
                         observe: 'response'
                     }).subscribe(observer as any);
 

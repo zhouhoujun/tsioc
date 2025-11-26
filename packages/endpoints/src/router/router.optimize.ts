@@ -6,7 +6,7 @@ import { Handler } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
 import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 import { AssetRoute, Route, ROUTES, Routes } from './route';
 import { MappingDef, RouteHanlder, RouteMappingMetadata, RoutePatterns, Router } from './router';
 import { TrieOptions, TrieRoute, TrieRouter, Wlidcard } from './trie';
@@ -170,7 +170,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         };
     }
 
-    handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
+    handle(ctx: RespondContext, noFound?: () => Observable<any>): Observable<any> {
         if (ctx.headersSent || (ctx.status && ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status))) return of(ctx);
 
         return defer(async () => {
@@ -192,7 +192,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         )
     }
 
-    intercept(ctx: RequestContext, next: Handler<RequestContext>): Observable<any> {
+    intercept(ctx: RespondContext, next: Handler<RespondContext>): Observable<any> {
         return this.handle(ctx, () => next.handle(ctx))
     }
 
@@ -287,7 +287,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         }
     }
 
-    async getRoute(ctx: RequestContext): Promise<Route | undefined> {
+    async getRoute(ctx: RespondContext): Promise<Route | undefined> {
         const url = ctx.url;
         if (this.assets.length && this.assets.some(r => (r.path && url.startsWith(r.path)) || (isRegExp(r.pattern) && r.pattern.test(url)))) {
             return;
@@ -340,7 +340,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                     parts = this.options.toParts(url);
                 }
                 const handles = routes.map(route => {
-                    return (input: RequestContext, context?: any) => {
+                    return (input: RespondContext, context?: any) => {
                         this.initPaths(input, route, url, parts, ctx.method);
                         if (!route.handle) {
                             route.handle = this.parse(route)!;
@@ -361,7 +361,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
 
-    private initPaths(ctx: RequestContext, route: Route, url: string, parts?: string[], method?: string) {
+    private initPaths(ctx: RespondContext, route: Route, url: string, parts?: string[], method?: string) {
         const params = method ? this.params.get(url)?.get(method) : undefined;
 
         if (params) {
@@ -397,7 +397,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
 
-    protected async redirect(ctx: RequestContext, url: string, alt?: string): Promise<any> {
+    protected async redirect(ctx: RespondContext, url: string, alt?: string): Promise<any> {
         if (!isFunction((ctx as RestfulRequestContext).redirect)) {
             throw new BadRequestException();
         }

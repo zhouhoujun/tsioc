@@ -2,8 +2,9 @@ import { ArgumentException, Injectable, MissingParameterException, isNil } from 
 import { ExceptionHandler, InvalidJsonException, NotHandleException } from '@tsdi/core';
 import {
     BadRequestException, InternalServerException, MessageException
-} from '@tsdi/common/transport';
+} from '@tsdi/common';
 import { MissingModelFieldException } from '@tsdi/repository';
+import { RespondContext } from './context';
 
 
 
@@ -18,7 +19,7 @@ export class DefaultExceptionHandlers {
 
 
     @ExceptionHandler(InvalidJsonException)
-    badJsonException(ctx: RequestContext, execption: InvalidJsonException) {
+    badJsonException(ctx: RespondContext, execption: InvalidJsonException) {
         let exp: MessageException;
         if (isNil(ctx.body)) {
             exp = new InternalServerException(execption.message);
@@ -29,31 +30,31 @@ export class DefaultExceptionHandlers {
     }
 
     @ExceptionHandler(NotHandleException)
-    notHanldeException(ctx: RequestContext, err: NotHandleException) {
+    notHanldeException(ctx: RespondContext, err: NotHandleException) {
         const execption = new InternalServerException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(ArgumentException)
-    anguException(ctx: RequestContext, err: ArgumentException) {
+    anguException(ctx: RespondContext, err: ArgumentException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(MissingModelFieldException)
-    missFieldException(ctx: RequestContext, err: MissingModelFieldException) {
+    missFieldException(ctx: RespondContext, err: MissingModelFieldException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(MissingParameterException)
-    missException(ctx: RequestContext, err: MissingParameterException) {
+    missException(ctx: RespondContext, err: MissingParameterException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
-    protected detailError(ctx: RequestContext): boolean {
+    protected detailError(ctx: RespondContext): boolean {
         return ctx.serverOptions.detailError == true;
     }
 }

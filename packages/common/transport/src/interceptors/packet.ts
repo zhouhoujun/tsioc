@@ -1,16 +1,17 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AbstractRequest, RequestContext, RequestHandlerFn, RequestInterceptor, RequestInterceptorFn } from '@tsdi/common';
+import { AbstractRequest, HeaderAdapter, RequestContext, RequestHandlerFn, RequestInterceptor, RequestInterceptorFn } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../exceptions';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplex, IReadable } from '../stream';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
-import { AbstractTransport } from '../transports';
+// import { Transport } from '../Transport';
+// import { AbstractTransport } from '../transports';
 import { Packet } from '../socket';
 import { TransportHandler } from '../handler';
-import { Transport } from '../Transport';
+import { StreamAdapter } from '../StreamAdapter';
 
 
 
@@ -24,12 +25,12 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
     }
 
     intercept(input: string | Buffer | IReadable, next: TransportHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
-        const transport = context.get(Transport);
-        if (!input || transport.streamAdapter.isReadable(input)) return next.handle(input, context);
+        const streamAdapter = context.get(StreamAdapter);
+        if (!input || streamAdapter.isReadable(input)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
 
-            const channel = transport.protocol;
+            const channel = context.getProtocol();
 
             let cache = this.channels.get(channel);
             const packet = input as Buffer;
@@ -51,14 +52,15 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
 
     protected handleData(channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, context: RequestContext): void {
 
-        const transport = context.get(Transport) as AbstractTransport;
+        // const transport = context.get(Transport) as AbstractTransport;
+        const streamAdapter = context.get(StreamAdapter);
         const options = transport.options;
 
         if (!isNumber(cache.length)) {
             cache.length = 0;
         }
         if (!cache.payload) {
-            cache.payload = transport.streamAdapter.createPassThrough();
+            cache.payload = streamAdapter.createPassThrough();
         }
 
         if (cache.contentLength == null) {
@@ -85,7 +87,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
                     cache.length = 0;
                     cache.payload.end();
                     cache.payload = null;
-                    const btpipe = transport.injector.get<PipeTransform>('bytes-format');
+                    const btpipe = context.getInjector().get<PipeTransform>('bytes-format');
                     if (rawContentLength) {
                         throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
                     } else {
@@ -150,23 +152,24 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
 
     intercept(input: Packet<IDuplex>, next: TransportHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
         if (!input.payload) return next.handle(input, context);
-
-        const transport = context.get(Transport) as AbstractTransport;
+        const streamAdapter = context.get(StreamAdapter);
+        const headerAdapter = context.get(HeaderAdapter);
+        // const transport = context.get(Transport) as AbstractTransport;
         const idLen = transport.options.idLen ?? 2;
         let id: string | number;
         const payload = input.payload;
 
-        if (transport.streamAdapter.isReadable(payload)) {
+        if (streamAdapter.isReadable(payload)) {
             const chunk = payload.read(idLen);
             id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
             if (this.msgs.has(id)) {
                 const msg = this.msgs.get(id)!;
                 if (!msg.body) {
-                    msg.body = transport.streamAdapter.createPassThrough();
+                    msg.body = streamAdapter.createPassThrough();
                 }
                 return defer(async () => {
-                    transport.streamAdapter.pipeTo(payload, msg.body!);
-                    const contentLength = transport.headerAdapter.getContentLength(msg) || 0;
+                    streamAdapter.pipeTo(payload, msg.body!);
+                    const contentLength = headerAdapter.getContentLength(msg) || 0;
                     msg.contentLength += input.contentLength || 0;
                     if ((contentLength + idLen) === msg.contentLength) {
                         this.msgs.delete(id);
@@ -188,7 +191,7 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
             .pipe(
                 filter(msg => {
                     const incoming = msg as IncomingMessage<IDuplex> & { contentLength: number };
-                    const contentLength = transport.headerAdapter.getContentLength(incoming);
+                    const contentLength = headerAdapter.getContentLength(incoming);
                     if (contentLength && incoming.id && !incoming.body) {
                         incoming.contentLength = 0;
                         this.msgs.set(incoming.id, incoming);
@@ -205,8 +208,8 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
  * for client only.
  */
 export const deatchPacketIdInterceptor: RequestInterceptorFn<any, IncomingMessage> = (input: any, next: RequestHandlerFn<any, IncomingMessage>, context: RequestContext) => {
-    const transport = context.get(Transport) as AbstractTransport;
-    if (!transport.client) return next(input, context);
+    // const transport = context.get(Transport) as AbstractTransport;
+    if (!context.has(AbstractRequest)) return next(input, context);
 
     return next(input, context)
         .pipe(
@@ -228,15 +231,17 @@ export const deatchPacketIdInterceptor: RequestInterceptorFn<any, IncomingMessag
  * @returns 
  */
 export const messageVaildateInterceptor: RequestInterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: RequestHandlerFn<OutgoingMessage, Packet>, context: RequestContext) => {
-    const transport = context.get(Transport) as AbstractTransport;
-    const length = transport.headerAdapter.getContentLength(input);
+    // const transport = context.get(Transport) as AbstractTransport;
+    const headerAdapter = context.get(HeaderAdapter);
+    const length = headerAdapter.getContentLength(input);
+    const injector = context.getInjector();
     const sizeLimit = transport.options.maxSize ?? transport.options.limit;
     if (length && sizeLimit && length > sizeLimit) {
-        const btpipe = transport.injector.get<PipeTransform>('bytes-format');
+        const btpipe = injector.get<PipeTransform>('bytes-format');
         return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
     }
-    if (!input.id && transport.client) {
-        input.id = transport.injector.get(PacketIdGenerator).getPacketId();
+    if (!input.id && context.has(AbstractRequest)) {
+        input.id = injector.get(PacketIdGenerator).getPacketId();
     }
     return next(input, context);
 }
@@ -252,13 +257,14 @@ export const messageSerializeInterceptor: RequestInterceptorFn<OutgoingMessage, 
 
     return next(input, context)
         .pipe(map(msg => {
-            const transport = context.get(Transport) as AbstractTransport;
+            // const transport = context.get(Transport) as AbstractTransport;
+            const streamAdapter = context.get(StreamAdapter);
             const countLen = 4;
             let buffLen: Buffer;
             const delimiter = transport.options.delimiter ?? Buffer.from('#');
             const delimiterLen = Buffer.byteLength(delimiter);
             let data = msg.payload;
-            if (transport.streamAdapter.isReadable(data)) {
+            if (streamAdapter.isReadable(data)) {
                 buffLen = Buffer.alloc(countLen);
                 buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
                 const total = countLen + delimiterLen;

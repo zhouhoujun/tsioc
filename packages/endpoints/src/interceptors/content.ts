@@ -1,9 +1,8 @@
 import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { GET, HEAD } from '@tsdi/common';
-import { NotFoundException } from '@tsdi/common/transport';
+import { GET, HEAD, NotFoundException } from '@tsdi/common';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 
 
 
@@ -11,22 +10,22 @@ import { RequestContext } from '../RequestContext';
  * static content resources.
  */
 @Injectable()
-export class ContentInterceptor implements Interceptor<RequestContext> {
+export class ContentInterceptor implements Interceptor<RespondContext> {
 
     options?: ContentOptions;
 
     constructor() { }
 
 
-    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
+    intercept(input: RespondContext, next: Handler<RespondContext, any>, context: RespondContext): Observable<any> {
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
             || !input.originalUrl) {
-            return next.handle(input);
+            return next.handle(input, context);
         }
 
         const options = this.options ?? { ...defOpts, ...input.serverOptions.content };
         if (options.defer) {
-            return next.handle(input)
+            return next.handle(input, context)
                 .pipe(
                     mergeMap(async res => {
                         const file = await this.send(input, options)
@@ -39,14 +38,14 @@ export class ContentInterceptor implements Interceptor<RequestContext> {
             return from(this.send(input, options))
                 .pipe(
                     mergeMap(file => {
-                        if (!file) return next.handle(input)
+                        if (!file) return next.handle(input, context)
                         return of(file);
                     })
                 )
         }
     }
 
-    protected async send(ctx: RequestContext, options: ContentOptions) {
+    protected async send(ctx: RespondContext, options: ContentOptions) {
         let file = '';
         if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return file;
 
@@ -77,7 +76,7 @@ export interface SendOptions<TStats = any> {
     extensions?: string[] | false;
     brotli?: boolean;
     gzip?: boolean;
-    setHeaders?: (ctx: RequestContext, path: string, stats: TStats) => void;
+    setHeaders?: (ctx: RespondContext, path: string, stats: TStats) => void;
 }
 
 
@@ -101,7 +100,7 @@ export abstract class ContentSendAdapter {
      * @param path file path
      * @param options send options
      */
-    abstract send(ctx: RequestContext, path: string, options: SendOptions): Promise<string>;
+    abstract send(ctx: RespondContext, path: string, options: SendOptions): Promise<string>;
 }
 
 

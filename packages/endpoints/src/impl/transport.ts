@@ -6,12 +6,12 @@ import { ServerTransfer } from '../transfer';
 import { ServiceConfig } from '../server.options';
 import { fromEvent, Observable } from 'rxjs';
 import { AcceptsPriority } from '../accepts';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 
 
 export class DefaultServerTransport<
     TSocket = any,
-    TContext extends RequestContext = RequestContext,
+    TContext extends RespondContext = RespondContext,
     TMsg = any,
     TOptions extends ServiceConfig = ServiceConfig> extends ServerTransport<TSocket, TContext, TMsg, TOptions> {
 
@@ -58,7 +58,7 @@ export class DefaultServerTransport<
 
 export class SocketServerTransport<
     TSocket extends IDuplex = IDuplex,
-    TContext extends RequestContext = RequestContext,
+    TContext extends RespondContext = RespondContext,
     TMsg extends Packet = any,
     TOptions extends ServiceConfig = ServiceConfig> extends ServerTransport<TSocket, TContext, TMsg, TOptions> {
 

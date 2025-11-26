@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 
 /**
  * Session 配置选项接口
@@ -118,10 +118,10 @@ export abstract class SessionManager {
      * session login.
      * @param user 
      */
-    abstract login(ctx: RequestContext, user: any): Promise<void>;
+    abstract login(ctx: RespondContext, user: any): Promise<void>;
     
     /**
      * session logout. 
      */
-    abstract logout(ctx: RequestContext): Promise<void>;
+    abstract logout(ctx: RespondContext): Promise<void>;
 }

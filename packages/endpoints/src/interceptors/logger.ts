@@ -2,7 +2,7 @@ import { Abstract, Inject, InjectFlags, Injectable, Nullable, isNumber } from '@
 import { Interceptor, Handler, Filter, BytesFormatPipe, HrtimeFormatter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 
 
 /**
@@ -23,7 +23,7 @@ export abstract class ResponseStatusFormater {
 
     }
 
-    abstract format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[];
+    abstract format(logger: Logger, ctx: RespondContext, hrtime?: [number, number]): string[];
 
     protected formatSize(size?: number | null, precise = 2) {
         if (!isNumber(size)) return ''
@@ -64,7 +64,7 @@ export class LoggerInterceptor implements Interceptor, Filter {
         return this.intercept(input, next, context);
     }
 
-    intercept(ctx: RequestContext, next: Handler, context?: any): Observable<any> {
+    intercept(ctx: RespondContext, next: Handler, context?: any): Observable<any> {
         const logger = ctx.get(Logger, this.logger, InjectFlags.Self);
 
         const level = this.options.level;

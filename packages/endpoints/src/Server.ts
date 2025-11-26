@@ -1,18 +1,18 @@
-import { Abstract, isArray, ProvdierOf, StaticProvider, toMutilProvdierOf } from '@tsdi/ioc';
-import { ApplicationEvent, CanHandle, Filter, HandlerAppendService, PipeTransform, Runner, Shutdown, InterceptorLike, RequestInterceptorLike, HandlerOptions, isHandlerOptions } from '@tsdi/core';
-import { CommonProtocols } from '@tsdi/common';
-import { RequestContext } from './RequestContext';
+import { Abstract, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
+import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, HandlerOptions, isHandlerOptions } from '@tsdi/core';
+import { CommonProtocols, RequestHandler, RequestInterceptorLike } from '@tsdi/common';
+import { RespondContext } from './context';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
-import { RequestHandler } from './RequestHandler';
+// import { RequestHandler } from './RequestHandler';
 import { ServiceConfig } from './server.options';
-import { TOutgoing } from '@tsdi/common/transport';
+// import { TOutgoing } from '@tsdi/common/transport';
 
 
 /**
  * microservice.
  */
 @Abstract()
-export abstract class MicroService<TRequest extends RequestContext = RequestContext> {
+export abstract class MicroService<TRequest extends RespondContext = RespondContext> {
 
     /**
      * micro service handler
@@ -21,7 +21,7 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
 
     @Runner()
     async start() {
-        if (this.handler.ready) await this.handler.ready;
+        // if (this.handler.ready) await this.handler.ready;
         return await this.onStart()
     }
 
@@ -44,7 +44,7 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerAppendService<TRequest> {
+export abstract class Server<TRequest extends RespondContext = RespondContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerAppendService<TRequest> {
 
     /**
      * service request handler.

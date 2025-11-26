@@ -1,298 +1,298 @@
-import { ContextToken, Injectable, isNil, isString, lang } from '@tsdi/ioc';
-import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest,  RequestHandler, RequestInterceptorFn, RequestHandlerFn, RequestContext } from '@tsdi/common';
-import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransferOpts, AbstractTransferFactory, TEXT_DECODER, Transport } from '@tsdi/common/transport';
-import { defer, mergeMap, of, throwError } from 'rxjs';
-import { ClientTransport } from './transport';
-import { ClientTransfer, ClientTransferFactory } from './transfer';
+// import { ContextToken, Injectable, isNil, isString, lang } from '@tsdi/ioc';
+// import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest,  RequestHandler, RequestInterceptorFn, RequestHandlerFn, RequestContext } from '@tsdi/common';
+// import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransferOpts, AbstractTransferFactory, TEXT_DECODER } from '@tsdi/common/transport';
+// import { defer, mergeMap, of, throwError } from 'rxjs';
+// // import { ClientTransport } from './transport';
+// import { ClientTransfer, ClientTransferFactory } from './transfer';
 
 
 
 
-export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
-    const transport = context.get(ClientTransport);
-    if (!(input.ok || (transport.statusAdapter ? transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
+// export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
+//     const transport = context.get(ClientTransport);
+//     if (!(input.ok || (transport.statusAdapter ? transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
         
-        input.ok = false;
-        return defer(async () => {
-            let body = input.body;
-            if (transport.streamAdapter.isReadable(body)) {
-                body = await toBuffer(body);
-            }
-            if(isBuffer(body)) {                
-                body = context.get(TEXT_DECODER).decode(body);
-            }
-            input.body = body;
-            if(!input.statusText && !input.statusMessage) input.statusText = body;
-            return input;
-        }).pipe(
-            mergeMap(input => throwError(() => transport.responseFactory.create(input)))
-        );
-    }
-    return next(input, context);
-}
+//         input.ok = false;
+//         return defer(async () => {
+//             let body = input.body;
+//             if (transport.streamAdapter.isReadable(body)) {
+//                 body = await toBuffer(body);
+//             }
+//             if(isBuffer(body)) {                
+//                 body = context.get(TEXT_DECODER).decode(body);
+//             }
+//             input.body = body;
+//             if(!input.statusText && !input.statusMessage) input.statusText = body;
+//             return input;
+//         }).pipe(
+//             mergeMap(input => throwError(() => transport.responseFactory.create(input)))
+//         );
+//     }
+//     return next(input, context);
+// }
 
 
-export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
-    const transport = context.get(ClientTransport);
-    const len = transport.headerAdapter.getContentLength(input);
-    if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
-        input.body = null;
-        return of(transport.responseFactory.create(input));
-    }
-    return next(input, context);
-}
+// export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
+//     const transport = context.get(ClientTransport);
+//     const len = transport.headerAdapter.getContentLength(input);
+//     if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
+//         input.body = null;
+//         return of(transport.responseFactory.create(input));
+//     }
+//     return next(input, context);
+// }
 
 
-export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
-    const transport = context.get(ClientTransport);
-    // HTTP fetch step 5
-    if (transport.redirector) {
-        if (transport.statusAdapter?.isRedirect(input.status ?? input.statusCode)) {
-            // HTTP fetch step 5.2
-            return transport.redirector.redirect<ResponseEvent<any>>(context.get(AbstractRequest)!, input.status ?? input.statusCode, transport.headerAdapter.getHeaders(input) ?? input.headers!, transport.protocol);
-        }
-    }
-    return next(input, context);
-}
+// export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
+//     const transport = context.get(ClientTransport);
+//     // HTTP fetch step 5
+//     if (transport.redirector) {
+//         if (transport.statusAdapter?.isRedirect(input.status ?? input.statusCode)) {
+//             // HTTP fetch step 5.2
+//             return transport.redirector.redirect<ResponseEvent<any>>(context.get(AbstractRequest)!, input.status ?? input.statusCode, transport.headerAdapter.getHeaders(input) ?? input.headers!, transport.protocol);
+//         }
+//     }
+//     return next(input, context);
+// }
 
-export const compressResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
-    return defer(async () => {
-        const response = input;
-        const transport = context.get(ClientTransport);
-        const codings = transport.headerAdapter.getContentEncoding(response);
-        const req = context.get(AbstractRequest)!;
-        const streamAdapter = transport.streamAdapter;
-        const rqstatus = req.context.get(REQUEST_STAUTS);
-        // HTTP-network fetch step 12.1.1.4: handle content codings
-        // in following scenarios we ignore compression support
-        // 1. compression support is disabled
-        // 2. HEAD request
-        // 3. no Content-Encoding header
-        // 4. no content response (204)
-        // 5. content not modified response (304)
-        if (rqstatus.compress && (req as UrlRequest).method !== HEAD && codings) {
+// export const compressResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
+//     return defer(async () => {
+//         const response = input;
+//         const transport = context.get(ClientTransport);
+//         const codings = transport.headerAdapter.getContentEncoding(response);
+//         const req = context.get(AbstractRequest)!;
+//         const streamAdapter = transport.streamAdapter;
+//         const rqstatus = req.context.get(REQUEST_STAUTS);
+//         // HTTP-network fetch step 12.1.1.4: handle content codings
+//         // in following scenarios we ignore compression support
+//         // 1. compression support is disabled
+//         // 2. HEAD request
+//         // 3. no Content-Encoding header
+//         // 4. no content response (204)
+//         // 5. content not modified response (304)
+//         if (rqstatus.compress && (req as UrlRequest).method !== HEAD && codings) {
 
-            let body = response.body;
-            // For Node v6+
-            // Be less strict when decoding compressed responses, since sometimes
-            // servers send slightly invalid responses that are still accepted
-            // by common browsers.
-            // Always using Z_SYNC_FLUSH is what cURL does.
-            const constants = streamAdapter.getZipConstants();
-            const zlibOptions = {
-                flush: constants.Z_SYNC_FLUSH,
-                finishFlush: constants.Z_SYNC_FLUSH
-            };
+//             let body = response.body;
+//             // For Node v6+
+//             // Be less strict when decoding compressed responses, since sometimes
+//             // servers send slightly invalid responses that are still accepted
+//             // by common browsers.
+//             // Always using Z_SYNC_FLUSH is what cURL does.
+//             const constants = streamAdapter.getZipConstants();
+//             const zlibOptions = {
+//                 flush: constants.Z_SYNC_FLUSH,
+//                 finishFlush: constants.Z_SYNC_FLUSH
+//             };
 
-            try {
-                if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
-                    const unzip = streamAdapter.createGunzip(zlibOptions);
-                    await streamAdapter.pipeTo(body, unzip);
-                    body = unzip;
-                } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
-                    // Handle the infamous raw deflate response from old servers
-                    // a hack for old IIS and Apache servers
-                    const raw = streamAdapter.createPassThrough();
-                    await streamAdapter.pipeTo(body, raw);
-                    const defer = lang.defer();
-                    raw.on(ev.DATA, chunk => {
-                        if ((chunk[0] & 0x0F) === 0x08) {
-                            body = streamAdapter.pipeline(body, streamAdapter.createInflate(), err => {
-                                if (err) {
-                                    defer.reject(err);
-                                }
-                            });
-                        } else {
-                            body = streamAdapter.pipeline(body, streamAdapter.createInflateRaw(), err => {
-                                if (err) {
-                                    defer.reject(err);
-                                }
-                            });
-                        }
-                    });
+//             try {
+//                 if (codings === 'gzip' || codings === 'x-gzip') { // For gzip
+//                     const unzip = streamAdapter.createGunzip(zlibOptions);
+//                     await streamAdapter.pipeTo(body, unzip);
+//                     body = unzip;
+//                 } else if (codings === 'deflate' || codings === 'x-deflate') { // For deflate
+//                     // Handle the infamous raw deflate response from old servers
+//                     // a hack for old IIS and Apache servers
+//                     const raw = streamAdapter.createPassThrough();
+//                     await streamAdapter.pipeTo(body, raw);
+//                     const defer = lang.defer();
+//                     raw.on(ev.DATA, chunk => {
+//                         if ((chunk[0] & 0x0F) === 0x08) {
+//                             body = streamAdapter.pipeline(body, streamAdapter.createInflate(), err => {
+//                                 if (err) {
+//                                     defer.reject(err);
+//                                 }
+//                             });
+//                         } else {
+//                             body = streamAdapter.pipeline(body, streamAdapter.createInflateRaw(), err => {
+//                                 if (err) {
+//                                     defer.reject(err);
+//                                 }
+//                             });
+//                         }
+//                     });
 
-                    raw.once(ev.END, defer.resolve);
+//                     raw.once(ev.END, defer.resolve);
 
-                    await defer.promise;
+//                     await defer.promise;
 
-                } else if (codings === 'br') { // For br
-                    const unBr = streamAdapter.createBrotliDecompress();
-                    await streamAdapter.pipeTo(body, unBr);
-                    body = unBr;
-                }
-                response.body = body;
-                return response
+//                 } else if (codings === 'br') { // For br
+//                     const unBr = streamAdapter.createBrotliDecompress();
+//                     await streamAdapter.pipeTo(body, unBr);
+//                     body = unBr;
+//                 }
+//                 response.body = body;
+//                 return response
 
-            } catch (err) {
-                response.error = err;
-                throw transport.responseFactory.create(response)
-            }
-        }
-        return response;
-    }).pipe(
-        mergeMap(event => next(event, context))
-    )
+//             } catch (err) {
+//                 response.error = err;
+//                 throw transport.responseFactory.create(response)
+//             }
+//         }
+//         return response;
+//     }).pipe(
+//         mergeMap(event => next(event, context))
+//     )
 
-}
-
-
-
-export class RequestStauts {
-    public highWaterMark: number;
-    public insecureParser: boolean;
-    public referrerPolicy: ReferrerPolicy;
-    readonly compress: boolean;
-    constructor(init: {
-        compress?: boolean;
-        follow?: number;
-        counter?: number;
-        highWaterMark?: number;
-        insecureParser?: boolean;
-        referrerPolicy?: ReferrerPolicy;
-        redirect?: 'manual' | 'error' | 'follow' | '';
-    } = {}) {
-        this.compress = init.compress ?? false;
-        this.highWaterMark = init.highWaterMark ?? 16384;
-        this.insecureParser = init.insecureParser ?? false;
-        this.referrerPolicy = init.referrerPolicy ?? '';
-    }
-}
-
-const REQUEST_STAUTS = new ContextToken(() => new RequestStauts())
+// }
 
 
-const backenFn = (input: ClientIncoming<any>, context: RequestContext) => {
-    return defer(async () => {
-        const transport = context.get(Transport) as ClientTransport;
-        const { responseFactory, headerAdapter, streamAdapter, statusAdapter } = transport;
 
-        const req = context.get(AbstractRequest)!;
-        let responseType = req.responseType;
+// export class RequestStauts {
+//     public highWaterMark: number;
+//     public insecureParser: boolean;
+//     public referrerPolicy: ReferrerPolicy;
+//     readonly compress: boolean;
+//     constructor(init: {
+//         compress?: boolean;
+//         follow?: number;
+//         counter?: number;
+//         highWaterMark?: number;
+//         insecureParser?: boolean;
+//         referrerPolicy?: ReferrerPolicy;
+//         redirect?: 'manual' | 'error' | 'follow' | '';
+//     } = {}) {
+//         this.compress = init.compress ?? false;
+//         this.highWaterMark = init.highWaterMark ?? 16384;
+//         this.insecureParser = init.insecureParser ?? false;
+//         this.referrerPolicy = init.referrerPolicy ?? '';
+//     }
+// }
 
-        const contentType = headerAdapter.getContentType(input);
-        if (contentType && !req.forceJson && responseType === 'json') {
-            const mimeAdapter = req.context.get(MimeAdapter);
-            if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
-                if (mimeAdapter.isXml(contentType) || mimeAdapter.isText(contentType)) {
-                    responseType = 'text';
-                } else {
-                    responseType = 'blob';
-                }
-            } else if (!mimeAdapter && !jsonType.test(contentType)) {
-                if (xmlType.test(contentType) || textType.test(contentType)) {
-                    responseType = 'text';
-                } else {
-                    responseType = 'blob';
-                }
-            }
-        }
+// const REQUEST_STAUTS = new ContextToken(() => new RequestStauts())
 
-        let body, originalBody;
-        body = originalBody = input.body;
 
-        if (responseType !== 'stream' && streamAdapter.isReadable(body)) {
-            body = await toBuffer(body);
-        }
+// const backenFn = (input: ClientIncoming<any>, context: RequestContext) => {
+//     return defer(async () => {
+//         const transport = context.get(Transport) as ClientTransport;
+//         const { responseFactory, headerAdapter, streamAdapter, statusAdapter } = transport;
 
-        let error = input.error;
-        let ok = statusAdapter?.isOk(input.status ?? input.statusCode) ?? input.ok ?? !error;
-        if (!isNil(body)) {
-            switch (responseType) {
-                case 'json':
-                    // Save the original body, before attempting XSSI prefix stripping.
-                    if (isBuffer(body)) {
-                        body = context.get(TEXT_DECODER).decode(body);
-                    }
-                    if (isString(body)) {
-                        originalBody = body;
-                        try {
-                            body = body.replace(XSSI_PREFIX, '');
-                            // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                            body = (body !== '') ? JSON.parse(body) : null;
-                        } catch (err) {
-                            // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                            // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                            // a better error response.
-                            body = originalBody;
+//         const req = context.get(AbstractRequest)!;
+//         let responseType = req.responseType;
 
-                            // If this was an error request to begin with, leave it as a string, it probably
-                            // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                            if (ok) {
-                                // Even though the response status was 2xx, this is still an error.
-                                ok = false;
-                                // The parse error contains the text of the body that failed to parse.
-                                error = { error: err, text: body } as ResponseJsonParseError
-                            }
-                        }
-                    }
-                    break;
+//         const contentType = headerAdapter.getContentType(input);
+//         if (contentType && !req.forceJson && responseType === 'json') {
+//             const mimeAdapter = req.context.get(MimeAdapter);
+//             if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
+//                 if (mimeAdapter.isXml(contentType) || mimeAdapter.isText(contentType)) {
+//                     responseType = 'text';
+//                 } else {
+//                     responseType = 'blob';
+//                 }
+//             } else if (!mimeAdapter && !jsonType.test(contentType)) {
+//                 if (xmlType.test(contentType) || textType.test(contentType)) {
+//                     responseType = 'text';
+//                 } else {
+//                     responseType = 'blob';
+//                 }
+//             }
+//         }
 
-                case 'arraybuffer':
-                    body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
-                    break;
+//         let body, originalBody;
+//         body = originalBody = input.body;
 
-                case 'blob':
-                    body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: headerAdapter.getContentType(input)
-                    });
-                    break;
+//         if (responseType !== 'stream' && streamAdapter.isReadable(body)) {
+//             body = await toBuffer(body);
+//         }
 
-                case 'stream':
-                    body = streamAdapter.isStream(body) ? body : streamAdapter.jsonSreamify(body);
-                    break;
+//         let error = input.error;
+//         let ok = statusAdapter?.isOk(input.status ?? input.statusCode) ?? input.ok ?? !error;
+//         if (!isNil(body)) {
+//             switch (responseType) {
+//                 case 'json':
+//                     // Save the original body, before attempting XSSI prefix stripping.
+//                     if (isBuffer(body)) {
+//                         body = context.get(TEXT_DECODER).decode(body);
+//                     }
+//                     if (isString(body)) {
+//                         originalBody = body;
+//                         try {
+//                             body = body.replace(XSSI_PREFIX, '');
+//                             // Attempt the parse. If it fails, a parse error should be delivered to the user.
+//                             body = (body !== '') ? JSON.parse(body) : null;
+//                         } catch (err) {
+//                             // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+//                             // JSON response. Restore the original body (including any XSSI prefix) to deliver
+//                             // a better error response.
+//                             body = originalBody;
 
-                case 'text':
-                default:
-                    if (isBuffer(body)) {
-                        body = context.get(TEXT_DECODER).decode(body);
-                    }
-                    break;
+//                             // If this was an error request to begin with, leave it as a string, it probably
+//                             // just isn't JSON. Otherwise, deliver the parsing error to the user.
+//                             if (ok) {
+//                                 // Even though the response status was 2xx, this is still an error.
+//                                 ok = false;
+//                                 // The parse error contains the text of the body that failed to parse.
+//                                 error = { error: err, text: body } as ResponseJsonParseError
+//                             }
+//                         }
+//                     }
+//                     break;
 
-            }
-        }
+//                 case 'arraybuffer':
+//                     body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
+//                     break;
 
-        if (ok) {
-            input.ok = ok;
-            input.body = body;
-            return responseFactory.create(input);
-        } else {
-            input.ok = ok;
-            input.body = body;
-            input.error = error;
-            throw responseFactory.create(input);
-        }
+//                 case 'blob':
+//                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
+//                         type: headerAdapter.getContentType(input)
+//                     });
+//                     break;
 
-    })
-}
+//                 case 'stream':
+//                     body = streamAdapter.isStream(body) ? body : streamAdapter.jsonSreamify(body);
+//                     break;
 
-const jsonType = /json/i;
-const textType = /^text/i;
-const xmlType = /xml$/i;
+//                 case 'text':
+//                 default:
+//                     if (isBuffer(body)) {
+//                         body = context.get(TEXT_DECODER).decode(body);
+//                     }
+//                     break;
 
-export const RESPONSE_TRANSFER_INTERCEPTORS = [
-    emptyResponseInterceptor,
-    errorResponseInterceptor,
-];
+//             }
+//         }
 
-export const STATUS_RESPONSE_TRANSFER_INTERCEPTORS = [
-    redirectInterceptor,
-    emptyResponseInterceptor,
-    errorResponseInterceptor,
-    compressResponseInterceptor,
-];
+//         if (ok) {
+//             input.ok = ok;
+//             input.body = body;
+//             return responseFactory.create(input);
+//         } else {
+//             input.ok = ok;
+//             input.body = body;
+//             input.error = error;
+//             throw responseFactory.create(input);
+//         }
 
-@Injectable()
-export class DefaultClientTransferFactory extends AbstractTransferFactory<ClientIncoming, ResponseEvent<any>, ClientTransfer> implements ClientTransferFactory {
+//     })
+// }
 
-    protected override vaildOptions(options?: TransferOpts): TransferOpts<ClientIncoming<any, any>> {
-        return {
-            enableTypeChain: true,
-            backend: backenFn,
-            ...options
-        }
-    }
+// const jsonType = /json/i;
+// const textType = /^text/i;
+// const xmlType = /xml$/i;
 
-    protected override createInstace(handler: RequestHandler): ClientTransfer {
-        return new ClientTransfer(handler);
-    }
-}
+// export const RESPONSE_TRANSFER_INTERCEPTORS = [
+//     emptyResponseInterceptor,
+//     errorResponseInterceptor,
+// ];
+
+// export const STATUS_RESPONSE_TRANSFER_INTERCEPTORS = [
+//     redirectInterceptor,
+//     emptyResponseInterceptor,
+//     errorResponseInterceptor,
+//     compressResponseInterceptor,
+// ];
+
+// @Injectable()
+// export class DefaultClientTransferFactory extends AbstractTransferFactory<ClientIncoming, ResponseEvent<any>, ClientTransfer> implements ClientTransferFactory {
+
+//     protected override vaildOptions(options?: TransferOpts): TransferOpts<ClientIncoming<any, any>> {
+//         return {
+//             enableTypeChain: true,
+//             backend: backenFn,
+//             ...options
+//         }
+//     }
+
+//     protected override createInstace(handler: RequestHandler): ClientTransfer {
+//         return new ClientTransfer(handler);
+//     }
+// }

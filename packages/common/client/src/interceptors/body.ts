@@ -1,9 +1,9 @@
 import { isNil, isString } from '@tsdi/ioc';
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RequestParams, AbstractRequest, RequestHandlerFn, RequestInterceptorFn, RequestContext } from '@tsdi/common';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RequestParams, AbstractRequest, RequestHandlerFn, RequestInterceptorFn, RequestContext, HeaderAdapter } from '@tsdi/common';
 import { IStream, Packet, StreamAdapter } from '@tsdi/common/transport';
 import { defer, mergeMap } from 'rxjs';
 import { Buffer } from 'buffer';
-import { ClientTransport } from '../transport';
+// import { ClientTransport } from '../transport';
 
 /**
  * Request body servialize interceptor
@@ -14,24 +14,25 @@ import { ClientTransport } from '../transport';
  */
 export const bodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any> & RequestSerialize, Packet> = (req: AbstractRequest<any> & RequestSerialize, next: RequestHandlerFn, context: RequestContext) => {
 
-    const transport = context.get(ClientTransport);
-    let body = req.serializeBody ? req.serializeBody(req.body) : serializeBody(transport.streamAdapter, req.body);
+    const streamAdapter = context.get(StreamAdapter);
+    let body = req.serializeBody ? req.serializeBody(req.body) : serializeBody(streamAdapter, req.body);
     if (body == null) {
         return next(req, context);
     }
     return defer(async () => {
         let headers = req.headers;
-        const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : detectContentTypeHeader(transport.streamAdapter, req.body);
-        if (!transport.headerAdapter.hasContentType(headers) && contentType) {
-            headers = transport.headerAdapter.setContentType(headers, contentType);
+        const headerAdapter = context.get(HeaderAdapter);
+        const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : detectContentTypeHeader(streamAdapter, req.body);
+        if (!headerAdapter.hasContentType(headers) && contentType) {
+            headers = headerAdapter.setContentType(headers, contentType);
         }
-        if (!transport.headerAdapter.hasContentLength(headers)) {
+        if (!headerAdapter.hasContentLength(headers)) {
             if (isBlob(body)) {
                 const arrbuff = await body.arrayBuffer();
                 body = Buffer.from(arrbuff);
-            } else if (transport.streamAdapter.isFormDataLike(body)) {
+            } else if (streamAdapter.isFormDataLike(body)) {
                 if (isFormData(body)) {
-                    const form = transport.streamAdapter.createFormData();
+                    const form = streamAdapter.createFormData();
                     body.forEach((v, k, parent) => {
                         form.append(k, v);
                     });
@@ -39,7 +40,7 @@ export const bodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any
                 }
                 body = (body as any).getBuffer();
             }
-            headers = transport.headerAdapter.setContentLength(headers, Buffer.byteLength(body as Buffer));
+            headers = headerAdapter.setContentLength(headers, Buffer.byteLength(body as Buffer));
         }
 
         return req.clone({ body, headers });

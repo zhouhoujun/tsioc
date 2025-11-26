@@ -6,7 +6,7 @@ import {
     Middleware, RestfulRequestContext, EndpointModule,
     RedirectResult, ContentInterceptor, JsonInterceptor, BodyparserInterceptor,
     createRouteProviders,
-    RequestContext
+    RespondContext
 } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -105,7 +105,7 @@ class DeviceController {
 })
 class DeviceQueue implements Handler {
 
-    async handle(ctx: RestfulRequestContext, context: RequestContext): Promise<void> {
+    async handle(ctx: RestfulRequestContext, context: RespondContext): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')

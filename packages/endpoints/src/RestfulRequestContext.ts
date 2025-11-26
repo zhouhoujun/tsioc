@@ -1,6 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
-import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedException } from '@tsdi/common/transport';
-import { RequestContext } from './RequestContext';
+import { NotSupportedException } from '@tsdi/common';
+import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype } from '@tsdi/common/transport';
+import { RespondContext } from './context';
 import { ServiceConfig } from './server.options';
 import * as Cookies from 'cookies';
 
@@ -14,7 +15,7 @@ export abstract class RestfulRequestContext<
     TRequest extends Incoming<any> = Incoming<any>,
     TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any,
     TOptions extends ServiceConfig = ServiceConfig,
-    TStatus = any> extends RequestContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
+    TStatus = any> extends RespondContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
 
     abstract get socket(): TSocket;
 

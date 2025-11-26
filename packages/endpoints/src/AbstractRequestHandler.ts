@@ -1,7 +1,7 @@
 import { Abstract, Type, Token } from '@tsdi/ioc';
 import { AbstractConfigableHandler, InvocationHandlerOptions } from '@tsdi/core';
 import { RequestHandler } from '@tsdi/common';
-import { RequestContext } from './RequestContext';
+import { RespondContext } from './context';
 import { Router } from './router/router';
 
 
@@ -10,7 +10,7 @@ import { Router } from './router/router';
  * configable request handler
  */
 @Abstract()
-export abstract class AbstractRequestHandler<TInput extends RequestContext = RequestContext, TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>>
+export abstract class AbstractRequestHandler<TInput extends RespondContext = RespondContext, TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>>
     extends AbstractConfigableHandler<TInput, any, TOptions> implements RequestHandler<TInput> {
 
     /**
@@ -27,7 +27,7 @@ export abstract class AbstractRequestHandler<TInput extends RequestContext = Req
  * 
  * 传输节点配置
  */
-export interface RequestHandlerOptions<T extends RequestContext = RequestContext> extends InvocationHandlerOptions<T> {
+export interface RequestHandlerOptions<T extends RespondContext = RespondContext> extends InvocationHandlerOptions<T> {
     classType?: Type<RequestHandler>;
 
     /**

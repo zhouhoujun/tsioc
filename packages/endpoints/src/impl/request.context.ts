@@ -2,13 +2,13 @@ import { Injector } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, parseQueryString } from '@tsdi/common';
 import { Incoming, MessageException, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 import { ServiceConfig } from '../server.options';
 import { ServerTransport } from '../transport';
 
 
 
-export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RespondContext<TRequest, TResponse, TSocket> {
 
 
     private _URL?: URL;
@@ -125,7 +125,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
 const abstl = /^\w+:\/\//i;
 
 
-export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RespondContext<TRequest, TResponse, TSocket> {
 
     readonly originalUrl: string;
 
@@ -180,7 +180,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     }
 }
 
-export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicIncoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicIncoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RespondContext<TRequest, TResponse, TSocket> {
 
     readonly originalUrl: string;
 

@@ -1,13 +1,10 @@
-import { Abstract, DefaultInvocationContext, isArray, isDefined, isNil, isString, lang, TargetInvokeArguments } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, isNil, isString, lang, TargetInvokeArguments } from '@tsdi/ioc';
 import { MODEL_RESOLVERS, ParameterScope, createPayloadResolveInterceptors } from '@tsdi/core';
-import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
-import {
-    FileAdapter, Incoming, InternalServerException, MessageException, MimeAdapter, Outgoing,
-    StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
-} from '@tsdi/common/transport';
+import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException, RequestContext } from '@tsdi/common';
+import { FileAdapter, Incoming,  MimeAdapter, Outgoing, StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp } from '@tsdi/common/transport';
 import { ServiceConfig } from './server.options';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
-import { ServerTransport } from './transport';
+// import { ServerTransport } from './transport';
 import { AcceptsPriority } from './accepts';
 import { Session } from './sessions/Session';
 
@@ -17,24 +14,24 @@ import { Session } from './sessions/Session';
  * 请求上下文
  */
 @Abstract()
-export abstract class RequestContext<
+export abstract class RespondContext<
     TRequest extends Incoming<any> = Incoming<any>,
     TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,
     TOptions extends ServiceConfig = ServiceConfig,
-    TStatus = any> extends DefaultInvocationContext {
+    TStatus = any> extends RequestContext {
 
     request!: TRequest;
 
-    protected override initOptions(options: TargetInvokeArguments): void {
-        const res = [...options.resolvers ?? [], ...primitiveResolvers];
-        const modelResolvers = this.get(MODEL_RESOLVERS, null);
-        if (modelResolvers?.length) {
-            res.unshift(...modelResolvers);
-        }
-        options.resolvers = res;
+    // protected override initOptions(options: TargetInvokeArguments): void {
+    //     const res = [...options.resolvers ?? [], ...primitiveResolvers];
+    //     const modelResolvers = this.get(MODEL_RESOLVERS, null);
+    //     if (modelResolvers?.length) {
+    //         res.unshift(...modelResolvers);
+    //     }
+    //     options.resolvers = res;
 
-    }
+    // }
 
     // protected override playloadDefaultResolvers(): ResolveInterceptorLike[] {
     //     const res = [...primitiveResolvers];
@@ -47,10 +44,10 @@ export abstract class RequestContext<
 
     abstract get serverOptions(): TOptions;
 
-    /**
-     * transport
-     */
-    abstract get transport(): ServerTransport<TSocket>;
+    // /**
+    //  * transport
+    //  */
+    // abstract get transport(): ServerTransport<TSocket>;
 
     /**
      * response.
@@ -60,39 +57,27 @@ export abstract class RequestContext<
     /**
      * mime adapter.
      */
-    get mimeAdapter(): MimeAdapter | null {
-        return this.transport.mimeAdapter
-    }
+    abstract get mimeAdapter(): MimeAdapter | null;
     /**
      * mime accepts priority
      */
-    get acceptsPriority(): AcceptsPriority | null {
-        return this.transport.acceptsPriority
-    }
+    abstract get acceptsPriority(): AcceptsPriority | null;
     /**
      * status adapter.
      */
-    get statusAdapter(): StatusAdapter<TStatus> | null {
-        return this.transport.statusAdapter
-    }
+    abstract get statusAdapter(): StatusAdapter<TStatus> | null;
     /**
      * stream adapter
      */
-    get headerAdapter(): HeaderAdapter {
-        return this.transport.headerAdapter!
-    }
+    abstract get headerAdapter(): HeaderAdapter;
     /**
      * stream adapter
      */
-    get streamAdapter(): StreamAdapter {
-        return this.transport.streamAdapter
-    }
+    abstract get streamAdapter(): StreamAdapter;
     /**
      * file adapter
      */
-    get fileAdapter(): FileAdapter {
-        return this.transport.fileAdapter
-    }
+    abstract get fileAdapter(): FileAdapter;
 
     private _session?: Session;
     get session(): Session {

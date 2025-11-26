@@ -1,9 +1,19 @@
-import { Context, ContextToken, Token } from '@tsdi/ioc';
+import { Context, ContextToken, Token, tokenId } from '@tsdi/ioc';
 import { RunableContext } from '@tsdi/core';
+import { Protocols } from './protocols';
 
+
+
+const PROTOCOL = tokenId<Protocols>('Protocol');
 
 export class RequestContext extends RunableContext {
 
+    getProtocol(): Protocols {
+        return this.get(PROTOCOL);
+    }
+    setProtocol(value: Protocols) {
+        this.set(PROTOCOL, value);
+    }
 }
 
 export function createRequestContext(entries?: Iterable<readonly [Token | ContextToken, any]>): RequestContext;

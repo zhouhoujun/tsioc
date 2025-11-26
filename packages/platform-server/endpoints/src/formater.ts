@@ -1,6 +1,6 @@
 import { hasProps, Injectable } from '@tsdi/ioc';
 import { Logger, ConsoleLog } from '@tsdi/logger';
-import { RequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
+import { RespondContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import * as chalk from 'chalk';
 
 
@@ -11,11 +11,11 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     readonly incoming = '--->';
     readonly outgoing = '<---';
 
-    format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[] {
+    format(logger: Logger, ctx: RespondContext, hrtime?: [number, number]): string[] {
         return this.formatWithColor(logger instanceof ConsoleLog, ctx, hrtime);
     }
 
-    protected formatWithColor(withColor: boolean, ctx: RequestContext, hrtime?: [number, number]) {
+    protected formatWithColor(withColor: boolean, ctx: RespondContext, hrtime?: [number, number]) {
         if (hrtime) {
             const [status, message] = ctx.statusAdapter ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
             const hrtimeStr = this.htime.format(hrtime);
@@ -40,7 +40,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         }
     }
 
-    private formatState(ctx: RequestContext, withColor: boolean): [string, string] {
+    private formatState(ctx: RespondContext, withColor: boolean): [string, string] {
         const status = ctx.response?.error ? 'failed' : 'ok';
         const statusMessage = ctx.response?.error?.message ?? '';
 
@@ -52,7 +52,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
     }
 
-    private formatStatus(ctx: RequestContext, withColor: boolean): [string, string] {
+    private formatStatus(ctx: RespondContext, withColor: boolean): [string, string] {
         const { status, statusMessage } = ctx;
         if (!withColor) return [status, statusMessage ?? ''];
 

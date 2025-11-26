@@ -1,7 +1,8 @@
 import { Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
+import { RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
-import { RequestContext } from '../RequestContext';
+import { RespondContext } from '../context';
 
 
 
@@ -9,12 +10,12 @@ import { RequestContext } from '../RequestContext';
  * session.
  */
 @Injectable()
-export class SessionInterceptor implements Interceptor<RequestContext> {
+export class SessionInterceptor implements RequestInterceptor<RespondContext> {
 
-    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
+    intercept(input: RespondContext, next: RequestHandler<RespondContext, any>, context: RespondContext): Observable<any> {
         const session = input.session;
         if (!session) {
-            return next.handle(input);
+            return next.handle(input, context);
         }
 
         // 添加错误处理和状态检查
@@ -24,7 +25,7 @@ export class SessionInterceptor implements Interceptor<RequestContext> {
                     if (!session.isValid()) {
                         return throwError(() => new Error('Invalid session'));
                     }
-                    return next.handle(input);
+                    return next.handle(input, context);
                 }),
                 catchError(error => {
                     console.error('Session error:', error);

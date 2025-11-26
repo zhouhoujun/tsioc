@@ -3,21 +3,21 @@ import {
     Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
-import { isMicroTransport, NotImplementedException, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
+import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ServiceConfig } from './server.options';
-import { ServerTransportFactory } from './transport';
+// import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { createRouteProviders, getRouterToken } from './router/router.providers';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
-import { ExceptionFinalizeFilter } from './exception.filter';
+// import { ExceptionFinalizeFilter } from './exception.filter';
+// import { FinalizeFilter } from './finalize.filter';
 import { DefaultExceptionHandlers } from './exception.handlers';
-import { FinalizeFilter } from './finalize.filter';
 // import { createRequestHandler } from './impl/request.handler';
 import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
-import { createRequestHandler } from '@tsdi/common';
+import { createRequestHandler, NotImplementedException } from '@tsdi/common';
 
 
 /**
@@ -39,8 +39,8 @@ import { createRequestHandler } from '@tsdi/common';
         ContentInterceptor,
         BodyparserInterceptor,
 
-        FinalizeFilter,
-        ExceptionFinalizeFilter
+        // FinalizeFilter,
+        // ExceptionFinalizeFilter
     ]
 })
 export class EndpointModule {
@@ -146,7 +146,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 }
 
                 if (!serverOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
-                if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
+                // if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
                 if (microservice) {
                     serverOpts.microservice = microservice;
@@ -164,7 +164,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                     })
                 }
 
-                serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory));
+                // serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory));
 
                 if (!serverOpts.execptionHandlers) {
                     serverOpts.execptionHandlers = [DefaultExceptionHandlers]
