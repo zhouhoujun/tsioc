@@ -1,10 +1,9 @@
-import { Injector } from '@tsdi/ioc';
-import { HeaderAdapter } from '@tsdi/common';
+import { Exception, Injector } from '@tsdi/ioc';
+import { HeaderAdapter, RequestContext } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { Incoming } from './Incoming';
-import { TransportContext } from './context';
 
 /**
  * transport.
@@ -19,7 +18,7 @@ export abstract class Transport<TSocket = any, TIncoming extends Incoming = Inco
      * transport client side or not.
      */
     abstract get client(): boolean;
-    
+
     /**
      * protocol
      */
@@ -46,13 +45,20 @@ export abstract class Transport<TSocket = any, TIncoming extends Incoming = Inco
      * @param data
      * @param context transport context 
      */
-    abstract send(data: TOutgoing, context?: TransportContext): Observable<any>;
+    abstract send(data: TOutgoing, context: RequestContext): Observable<any>;
+
+    /**
+     * send.
+     * @param exception Exception
+     * @param context transport context 
+     */
+    abstract sendException(exception: Exception, context: RequestContext): Observable<any>;
 
     /**
      * receive
      * @param context transport context 
      */
-    abstract receive(context?: TransportContext): Observable<TIncoming>;
+    abstract receive(context?: RequestContext): Observable<TIncoming>;
     /**
      * close transport.
      */

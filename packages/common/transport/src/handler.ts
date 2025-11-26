@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestHandlerFn,  RequestHandlerLike } from '@tsdi/common';
+import { RequestContext, RequestHandler } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 

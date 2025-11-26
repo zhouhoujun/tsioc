@@ -1,5 +1,5 @@
-import { Abstract, DefaultInvocationContext, InvocationContext, isArray, isDefined, isNil, isString, lang, ResolveContext, ResolveInterceptorLike, TargetInvokeArguments } from '@tsdi/ioc';
-import { MODEL_RESOLVERS, ParameterScope, TransportParameter, createPayloadResolveInterceptors } from '@tsdi/core';
+import { Abstract, DefaultInvocationContext, isArray, isDefined, isNil, isString, lang, TargetInvokeArguments } from '@tsdi/ioc';
+import { MODEL_RESOLVERS, ParameterScope, createPayloadResolveInterceptors } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerException, MessageException, MimeAdapter, Outgoing,
@@ -790,19 +790,19 @@ export abstract class RequestContext<
 }
 
 
-// export function getScopeValue(req: RequestContext | null | undefined, scope: ParameterScope) {
-//     if (!req) {
-//         return null;
-//     }
-//     switch (scope) {
-//         case 'body':
-//             return req['body'] ?? req['payload'];
-//         case 'payload':
-//             return req['payload'] ?? req['body'];
-//         default:
-//             return req[scope]
-//     }
-// }
+export function getScopeValue(req: any, scope: ParameterScope) {
+    if (!req) {
+        return null;
+    }
+    switch (scope) {
+        case 'body':
+            return req['body'] ?? req['payload'];
+        case 'payload':
+            return req['payload'] ?? req['body'];
+        default:
+            return req[scope]
+    }
+}
 
 const primitiveResolvers = createPayloadResolveInterceptors(
     (input, scope, field) => {

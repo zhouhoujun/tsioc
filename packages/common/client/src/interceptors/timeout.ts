@@ -14,7 +14,7 @@ export const requestTimeoutInterceptor: RequestInterceptorFn = (input: AbstractR
                 timeout(input.timeout),
                 catchError(err => {
                     if (err.name == 'TimeoutError') {
-                        const transport = context.get(ClientTransport) as ClientTransport;
+                        const transport = context.get(ClientTransport);
                         const factory = transport?.responseFactory;
                         return throwError(() => factory ? factory.create({ headers: {}, error: err, ok: false }) : err);
                     }

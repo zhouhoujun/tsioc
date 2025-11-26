@@ -37,7 +37,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @param err 
      * @param caught 
      */
-    abstract catchError(input: TInput, err: any, context?: TContext): HandleResult<TOutput>;
+    abstract catchError(input: TInput, err: any, context: TContext): HandleResult<TOutput>;
 }
 
 /**

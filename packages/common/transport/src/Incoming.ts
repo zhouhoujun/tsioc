@@ -1,6 +1,6 @@
+import { Injectable } from '@tsdi/ioc';
 import { Header, HeaderAccess, HeaderMappings, HeadersLike, ParameterCodec, RequestContext, StatusOptions } from '@tsdi/common';
 import { IReadable } from './stream';
-import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
 import { Outgoing } from './Outgoing';
 

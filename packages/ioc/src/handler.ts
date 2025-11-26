@@ -182,6 +182,15 @@ export function toObservable<T>(res: HandleResult<T>): Observable<T> {
     return isPromise(res) ? from(res) : of(res);
 }
 
+/**
+ * parse handle result to `Promise`
+ */
+export function toPromise<T>(res: HandleResult<T>): Promise<T> {
+    if (isObservable(res)) {
+        return lastValueFrom(res);
+    }
+    return isPromise(res) ? res : Promise.resolve(res);
+}
 
 export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => HandleResult<TOutput>);
 

@@ -4,7 +4,6 @@ import {
     BadRequestException, InternalServerException, MessageException
 } from '@tsdi/common/transport';
 import { MissingModelFieldException } from '@tsdi/repository';
-import { RequestContext } from './RequestContext';
 
 
 

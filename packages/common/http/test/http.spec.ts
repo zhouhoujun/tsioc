@@ -1,11 +1,12 @@
-import { Injector, Injectable, lang, tokenId, isArray, Module, Handler, composeHandlers } from '@tsdi/ioc';
+import { Injector, Injectable, lang, tokenId, isArray, Module, Handler, composeHandlers, toPromise } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestException } from '@tsdi/common/transport';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
     Middleware, RestfulRequestContext, EndpointModule,
     RedirectResult, ContentInterceptor, JsonInterceptor, BodyparserInterceptor,
-    createRouteProviders
+    createRouteProviders,
+    RequestContext
 } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -104,7 +105,7 @@ class DeviceController {
 })
 class DeviceQueue implements Handler {
 
-    async handle(ctx: RestfulRequestContext): Promise<void> {
+    async handle(ctx: RestfulRequestContext, context: RequestContext): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
@@ -112,7 +113,7 @@ class DeviceQueue implements Handler {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await composeHandlers(ctx.get(DEVICE_MIDDLEWARES))(ctx);
+        await toPromise(composeHandlers(ctx.get(DEVICE_MIDDLEWARES))(ctx, context));
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');

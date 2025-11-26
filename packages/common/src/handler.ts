@@ -1,6 +1,8 @@
-import { Handler, InterceptingHandler, toObservable } from '@tsdi/ioc';
+import { Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, toObservable, Type } from '@tsdi/ioc';
+import { AbstractConfigableHandler, ConfigableHandler, ConfigableHandlerOptions, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
+import { ForbiddenException } from '../transport';
 
 
 /**
@@ -38,4 +40,66 @@ export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext ex
     }
 }
 
+
+/**
+ * Request handler options.
+ * 
+ * 传输节点配置
+ */
+export interface RequestHandlerOptions<T = any> extends ConfigableHandlerOptions<T> {
+    classType?: Type<RequestHandler>;
+
+}
+
+
+
+export abstract class ConfigableRequestHandler<
+    TInput = any,
+    TOutput = any,
+    TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>,
+    TContext extends RequestContext = RequestContext
+> extends AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+
+}
+
+/**
+ * Request handler.
+ * 
+ * 传输节点
+ */
+export class DefaultRequestHandler<
+    TInput = any, TOutput = any,
+    TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>,
+    TContext extends RequestContext = RequestContext
+>
+    extends ConfigableHandler<TInput, TOutput, TOptions, TContext> implements ConfigableRequestHandler<TInput, TOutput, TOptions, TContext> {
+
+    override handle(input: TInput, context: TContext): Observable<TOutput> {
+        return toObservable(super.handle(input, context));
+    }
+
+    protected override getChain(input: TInput): InterceptorFn<TInput, TOutput> {
+        return this.getChainOf(getType(input)) ?? super.getChain(input);
+    }
+
+    protected override forbiddenError(): Exception {
+        return new ForbiddenException()
+    }
+}
+
+
+
+/**
+ * create request handler.
+ * 
+ * 创建传输节点处理器实例化对象
+ * @param context 
+ * @param options 
+ * @returns 
+ */
+export function createRequestHandler<TInput extends RequestContext>(injector: Injector, options: RequestHandlerOptions<TInput>): RequestHandler<TInput> {
+    options = normalizeConfigableHandlerOptions(options);
+    const Type = options.classType ?? DefaultRequestHandler;
+    return new Type(injector, options, options);
+}
 

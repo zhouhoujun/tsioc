@@ -1,6 +1,6 @@
 import { isNil, isString } from '@tsdi/ioc';
 import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RequestParams, AbstractRequest, RequestHandlerFn, RequestInterceptorFn, RequestContext } from '@tsdi/common';
-import { IStream, Packet, StreamAdapter, Transport } from '@tsdi/common/transport';
+import { IStream, Packet, StreamAdapter } from '@tsdi/common/transport';
 import { defer, mergeMap } from 'rxjs';
 import { Buffer } from 'buffer';
 import { ClientTransport } from '../transport';

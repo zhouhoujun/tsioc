@@ -1,15 +1,8 @@
-import { Context, ContextToken, DefaultContext, Injector, Token } from '@tsdi/ioc';
+import { Context, ContextToken, Token } from '@tsdi/ioc';
+import { RunableContext } from '@tsdi/core';
 
 
-export class RequestContext extends DefaultContext {
-
-    setInjector(injector: Injector) {
-        this.set(Injector, injector);
-    }
-
-    getInjector() {
-        return this.get(Injector)
-    }
+export class RequestContext extends RunableContext {
 
 }
 
