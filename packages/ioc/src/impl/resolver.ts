@@ -12,7 +12,7 @@ import { isAbstractType, isArray, isFunction, isNil, isString, isType } from '..
 import { getTypeName } from '../utils/lang';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { resolveArgs, resolveParameters } from './common';
-import { Operator } from './injector';
+import { InjectUtil } from './injector';
 
 
 export class DefaultResolver implements Resolver {
@@ -143,7 +143,7 @@ function tryResolve(injector: Injector, token: Token, flags?: InjectFlags) {
         return UNRESOLVED;
     }
     if (!injector.has(token)) {
-        Operator.register(injector, token);
+        InjectUtil.register(injector, token);
     }
     return injector.get(token, UNRESOLVED, flags);
 }

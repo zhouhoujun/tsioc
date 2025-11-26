@@ -1,6 +1,6 @@
 import {
     isNumber, AbstractType, Injectable, tokenId, ClassRef, isFunction, getClassify, ProvdierOf, 
-    Invocation, ArgumentException, HandlerLike, composeHandlers, Type, Operator,
+    Invocation, ArgumentException, HandlerLike, composeHandlers, Type, InjectUtil,
     HandleResult, promiseOf, isArray, InterceptorLike, toMutilProvdierOf
 } from '@tsdi/ioc';
 import { ApplicationRunners } from '../ApplicationRunners';
@@ -82,7 +82,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         let injector = this.context.getRuntime().getRegisterIn(target.type);
         if (!injector) {
             injector = this.context;
-            Operator.register(injector, target.type as Type);
+            InjectUtil.register(injector, target.type as Type);
         }
         const invocation = target.createInvocation(injector, options);
         this.attachRef(invocation, options.order);

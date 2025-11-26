@@ -1,4 +1,4 @@
-import { Injector, isArray, isMetadataObject, isString, lang, Modules, noPointcut, Operator, Type } from '@tsdi/ioc';
+import { Injector, isArray, isMetadataObject, isString, lang, Modules, noPointcut, InjectUtil, Type } from '@tsdi/ioc';
 import { LoadType, ModuleLoader, PathModules } from '../ModuleLoader';
 
 /**
@@ -22,7 +22,7 @@ export class DefaultModuleLoader extends ModuleLoader {
 
     async register(injecor: Injector, modules: LoadType[]): Promise<Type[]> {
         const mdls = await this.load(modules);
-        return Operator.use(injecor, mdls)
+        return InjectUtil.use(injecor, mdls)
     }
 
     /**

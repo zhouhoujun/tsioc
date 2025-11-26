@@ -1,4 +1,4 @@
-import { AbstractType, DefaultInvocationContext, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut, Operator } from '@tsdi/ioc';
+import { AbstractType, DefaultInvocationContext, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut, InjectUtil } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
@@ -28,7 +28,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     constructor(parent: ModuleRef, options: EnvironmentOption = {}) {
         super(parent, options);
         this._multicaster = parent.get(ApplicationEventMulticaster);
-        Operator.setValue(this.getParent(), ApplicationContext, this);
+        InjectUtil.setValue(this.getParent(), ApplicationContext, this);
         this._runners = parent.get(ApplicationRunners);
         this.onDestroy(this._runners);
         if (options.eventsOptions) {
@@ -108,7 +108,7 @@ export class DefaultApplicationContextFactory extends ApplicationContextFactory 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext<T> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
-            Operator.setValue(root, PROCESS_ROOT, ann.baseURL)
+            InjectUtil.setValue(root, PROCESS_ROOT, ann.baseURL)
         }
         if (!option) {
             option = {};

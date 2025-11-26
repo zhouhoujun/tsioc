@@ -198,7 +198,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
      */
     resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
     resolve<T>(token: any, arg?: any): T {
-        return Operator.resolve(this, token, arg);
+        return InjectUtil.resolve(this, token, arg);
     }
 
     /**
@@ -347,7 +347,7 @@ function registerCores(container: Injector, platform: Runtime) {
 
 
 
-export namespace Operator {
+export namespace InjectUtil {
     /**
      * set gloabl singleton.
      * 
@@ -723,28 +723,28 @@ export class DefaultInjectOperator implements InjectOperator {
 
 
     setSingleton<T>(token: Token<T>, value: T): this {
-        Operator.setSingleton(this.injector, token, value);
+        InjectUtil.setSingleton(this.injector, token, value);
         return this;
     }
 
     setValue<T>(token: Token<T>, value: T, type?: AbstractType<T> | undefined): this {
-        Operator.setValue(this.injector, token, value, type);
+        InjectUtil.setValue(this.injector, token, value, type);
         return this
     }
     cache<T>(token: Token<T>, cache: T, expires: number): this {
-        Operator.cache(this.injector, token, cache, expires);
+        InjectUtil.cache(this.injector, token, cache, expires);
         return this
     }
 
     provider(provider: StaticProvider | DynamicProvider) {
-        Operator.provider(this.injector, provider);
+        InjectUtil.provider(this.injector, provider);
         return this;
     }
 
     inject(providers: Provider | Provider[]): this;
     inject(...providers: Provider[]): this;
     inject(...args: any[]): this {
-        Operator.inject(this.injector, ...args);
+        InjectUtil.inject(this.injector, ...args);
         return this
     }
 
@@ -752,7 +752,7 @@ export class DefaultInjectOperator implements InjectOperator {
     use(...modules: ModuleType[]): Type[];
     use(...args: any[]): Type[] {
         const types: Type[] = [];
-        Operator.use(this.injector, args, types);
+        InjectUtil.use(this.injector, args, types);
         return types
     }
 
@@ -760,19 +760,19 @@ export class DefaultInjectOperator implements InjectOperator {
     useAsync(modules: ModuleType[]): Promise<Type[]>;
     useAsync(...modules: ModuleType[]): Promise<Type[]>;
     useAsync(...args: any[]): Promise<Type[]> {
-        return Operator.useAsync(this.injector, args);
+        return InjectUtil.useAsync(this.injector, args);
     }
 
 
     register(types: (AbstractType | RegisterOption)[]): this;
     register(...types: (AbstractType | RegisterOption)[]): this;
     register(...args: any[]): this {
-        Operator.register(this.injector, ...args);
+        InjectUtil.register(this.injector, ...args);
         return this
     }
 
     unregister<T>(token: Token<T>): this {
-        Operator.unregister(this.injector, token);
+        InjectUtil.unregister(this.injector, token);
         return this
     }
 
@@ -782,7 +782,7 @@ export class DefaultInjectOperator implements InjectOperator {
     resolve<T>(token: Token<T>, providers?: Provider[]): T;
     resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     resolve<T>(token: Token<T>, ...args: any[]) {
-        return Operator.resolve(this.injector, token, ...args);
+        return InjectUtil.resolve(this.injector, token, ...args);
     }
 
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
@@ -790,7 +790,7 @@ export class DefaultInjectOperator implements InjectOperator {
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-        return Operator.invoke(this.injector, target, propertyKey, ...args);
+        return InjectUtil.invoke(this.injector, target, propertyKey, ...args);
     }
 }
 

@@ -1,7 +1,7 @@
 import {
     InjectFlags, Injector, ProvdierOf, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
     InvocationContext, createInvocationContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory,
-    some, Operator, invokeTails, TailNext, toHandlerFn, HandleResult, hasProps
+    some, InjectUtil, invokeTails, TailNext, toHandlerFn, HandleResult, hasProps
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../interceptor';
@@ -59,7 +59,7 @@ export class ConfigableHandler<
 
         this.options = this.initOptions(options);
         if (this.options.backend && isType(this.options.backend) && !this.context.has(this.options.backend, InjectFlags.Self)) {
-            Operator.provider(this.context, this.options.backend);
+            InjectUtil.provider(this.context, this.options.backend);
         }
 
         this.append(this.options);
@@ -111,7 +111,7 @@ export class ConfigableHandler<
     append(options: HandlerOptions<TInput>): this {
         if (!options || !hasProps(options)) return this;
         if (options.pipes) {
-            Operator.inject(this.context, options.pipes);
+            InjectUtil.inject(this.context, options.pipes);
         }
         if (options.guards) {
             if (!this.options.guardsToken) throw new ArgumentException('no guards token');
@@ -262,16 +262,16 @@ export class ConfigableHandler<
     protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number) {
         const multi = true;
         if (isArray(providers)) {
-            Operator.inject(this.context, providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
+            InjectUtil.inject(this.context, providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
         } else {
-            Operator.provider(this.context, toProvider(token, providers, { multi, multiOrder }));
+            InjectUtil.provider(this.context, toProvider(token, providers, { multi, multiOrder }));
         }
     }
 
     protected clear() {
-        if (this.options.interceptorsToken) Operator.unregister(this.context, this.options.interceptorsToken);
-        if (this.options.guardsToken) Operator.unregister(this.context, this.options.guardsToken);
-        if (this.options.filtersToken) Operator.unregister(this.context, this.options.filtersToken);
+        if (this.options.interceptorsToken) InjectUtil.unregister(this.context, this.options.interceptorsToken);
+        if (this.options.guardsToken) InjectUtil.unregister(this.context, this.options.guardsToken);
+        if (this.options.filtersToken) InjectUtil.unregister(this.context, this.options.filtersToken);
         this.chain = undefined;
         this.backendFn = undefined;
         this.chains?.clear();

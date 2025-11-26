@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { AbstractType, isString, Injector, isNil, isAbstractType, Static, isFunction, Inject, INJECTOR, Type, isType, Operator } from '@tsdi/ioc';
+import { AbstractType, isString, Injector, isNil, isAbstractType, Static, isFunction, Inject, INJECTOR, Type, isType, InjectUtil } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, HandleContext } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
@@ -117,7 +117,7 @@ export class TypeormAdapter {
         if (options.type == 'mongodb') {
             const mgd = await injector.get(ModuleLoader).require('mongodb');
             if (mgd.ObjectID) {
-                Operator.setValue(injector, ObjectIDToken, mgd.ObjectID)
+                InjectUtil.setValue(injector, ObjectIDToken, mgd.ObjectID)
             }
         }
 
@@ -146,12 +146,12 @@ export class TypeormAdapter {
                 },
             ]
         });
-        Operator.provider(injector, { provide: MODEL_RESOLVERS, useValue: resovler, multi: true });
+        InjectUtil.provider(injector, { provide: MODEL_RESOLVERS, useValue: resovler, multi: true });
 
         if (getMetadataArgsStorage().entityRepositories?.length) {
             getMetadataArgsStorage().entityRepositories?.forEach(meta => {
                 if (options.entities?.some(e => e === meta.entity)) {
-                    Operator.provider(injector, { provide: meta.target, useFactory: () => this.getConnection(options.name!)?.getCustomRepository(meta.target) })
+                    InjectUtil.provider(injector, { provide: meta.target, useFactory: () => this.getConnection(options.name!)?.getCustomRepository(meta.target) })
                 }
             });
         }

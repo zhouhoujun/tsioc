@@ -3,7 +3,7 @@ import {
     MethodPropDecorator, Token, ArgumentException, object2string, InvokeOptions, ActionType,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata, Invocation,
-    Operator, StaticProvider
+    InjectUtil, StaticProvider
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -187,10 +187,10 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
             const injector = ctx.injector
             const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor!);
             if (meta.imports) {
-                Operator.provider(injector, {
+                InjectUtil.provider(injector, {
                     provider: async (injector) => {
                         const invocation = typeRef.createInvocation(injector)
-                        await Operator.useAsync(invocation.context, meta.imports!);
+                        await InjectUtil.useAsync(invocation.context, meta.imports!);
                         injectBean(injector, typeRef, meta, invocation)
                     },
                 })
@@ -212,7 +212,7 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
     }
 
 
-    if (meta.providers) Operator.inject(invocation.context, meta.providers);
+    if (meta.providers) InjectUtil.inject(invocation.context, meta.providers);
 
     typeRef.getDefines(Bean)
         .forEach(d => {
@@ -236,7 +236,7 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
                     multiOrder
                 }
             }
-            Operator.provider(injector, provider);
+            InjectUtil.provider(injector, provider);
         });
 }
 
@@ -497,7 +497,7 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
                 const interceptor = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: interceptor, useValue: interceptor, multi: true, multiOrder: order };
-                    Operator.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
+                    InjectUtil.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
                 } else {
                     const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(InterceptorResolver) : currResolver;
                     resolver.addInterceptor(target as AbstractType | string, interceptor, order);
@@ -545,7 +545,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
                 const filter = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: target, useValue: filter, multi: true, multiOrder: order };
-                    Operator.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
+                    InjectUtil.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
                 } else {
                     const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(FilterResolver) : currResolver;
                     resolver.addFilter(target as AbstractType | string, filter, order);

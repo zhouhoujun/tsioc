@@ -9,7 +9,7 @@ import { Invocation } from '../invocation';
 import { RuntimeHandler } from '../lifescope/handler';
 import { nonEnumerable } from '../metadata/decor';
 import { createRecord, createValueRecord, LAZY, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
-import { AbstractInjector, deferProcessProviders, Operator } from './injector';
+import { AbstractInjector, deferProcessProviders } from './injector';
 import { DefaultResolver, getParameterResolveHanlder } from './resolver';
 
 

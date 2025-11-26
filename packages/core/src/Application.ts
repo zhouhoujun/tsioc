@@ -1,6 +1,6 @@
 import {
     isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, ClassRef, lang,
-    ModuleRef, getModuleType, createModuleRef, ModuleType, createInjector, getClassRef, Operator
+    ModuleRef, getModuleType, createModuleRef, ModuleType, createInjector, getClassRef, InjectUtil
 } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
@@ -152,14 +152,14 @@ export class Application<T = any> {
     protected createInjector<T>(providers: Provider[], option: ApplicationOption<T>) {
         const container = option.injector ?? createInjector(providers);
         if (option.baseURL) {
-            Operator.setValue(container, PROCESS_ROOT, option.baseURL);
+            InjectUtil.setValue(container, PROCESS_ROOT, option.baseURL);
         }
         if (this.loader) {
-            Operator.setValue(container, ModuleLoader, this.loader);
+            InjectUtil.setValue(container, ModuleLoader, this.loader);
         } else {
             this.loader = new DefaultModuleLoader();
         }
-        option.platformDeps && Operator.use(container, option.platformDeps);
+        option.platformDeps && InjectUtil.use(container, option.platformDeps);
         // option.depProviders = [this.getRootDependenceProviders() ?? Empty, option.depProviders ?? Empty];
         option.deps = [this.getRootDependencies(), option.deps ?? []];
         option.providers = [this.getRootDependenceProviders(), this.getRootDefaultProviders(), option.providers ?? []];
@@ -201,7 +201,7 @@ export class Application<T = any> {
     }
 
     protected initRoot() {
-        Operator.setValue(this.root, Application, this);
+        InjectUtil.setValue(this.root, Application, this);
         if (!this.loader) {
             this.loader = this.root.get(ModuleLoader);
         }

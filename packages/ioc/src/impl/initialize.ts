@@ -5,7 +5,7 @@ import { ClassRef, ctorName, DecoratorFn, DecoratorScope, Decors } from '../meta
 import { Runtime } from '../runtime';
 import { Type } from '../types';
 import { RuntimeHandler } from '../lifescope/handler';
-import { Operator } from './injector';
+import { InjectUtil } from './injector';
 import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArgs, resolveParameters } from './common';
@@ -67,7 +67,7 @@ export const cacheInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (i
         const ann = input.getAnnotation();
         if (!ann.singleton && (ann.expires && ann.expires > 0)) {
             const injector = context.raiseInjector;
-            Operator.cache(injector, input.type, instance, ann.expires!);
+            InjectUtil.cache(injector, input.type, instance, ann.expires!);
         }
         return instance;
     });
