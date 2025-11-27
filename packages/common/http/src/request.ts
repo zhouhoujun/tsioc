@@ -13,7 +13,6 @@ import { HttpParams } from './params';
  */
 export interface HttpRequestInit {
     headers?: HeadersLike;
-    context: RequestContext;
     reportProgress?: boolean;
     params?: HttpParams;
 
@@ -125,8 +124,6 @@ export class HttpRequest<T> implements UrlRequest<T> {
      */
     readonly urlWithParams: string;
 
-    readonly context: RequestContext;
-
     readonly timeout: number | undefined;
 
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init: {
@@ -135,8 +132,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-        context: RequestContext
+        withCredentials?: boolean
     });
     constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init: {
         headers?: HeadersLike,
@@ -144,8 +140,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-        context: RequestContext
+        withCredentials?: boolean
     });
     constructor(method: string, url: string, body: T | null, init: {
         headers?: HeadersLike,
@@ -153,8 +148,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         params?: HttpParams,
         observe?: 'body' | 'events' | 'response',
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-        context: RequestContext
+        withCredentials?: boolean
     });
     constructor(
         method: string, readonly url: string, third?: T | {
@@ -164,8 +158,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
             observe?: 'body' | 'events' | 'response',
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
-            timeout?: number,
-            context: RequestContext
+            timeout?: number
         } | null,
         fourth?: {
             headers?: HeadersLike,
@@ -174,8 +167,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
             observe?: 'body' | 'events' | 'response',
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
-            timeout?: number,
-            context: RequestContext
+            timeout?: number
         }) {
         this.method = method.toUpperCase();
         // Next, need to figure out which argument holds the HttpRequestInit
@@ -196,7 +188,6 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
 
         this.observe = options.observe || 'body';
-        this.context = options.context!;
         this.forceJson = options.responseType === 'json';
         // If options have been passed, interpret them.
         // if (options) {
@@ -315,7 +306,6 @@ export class HttpRequest<T> implements UrlRequest<T> {
     clone(): HttpRequest<T>;
     clone<V>(update: {
         headers?: HeadersLike,
-        context?: RequestContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -329,7 +319,6 @@ export class HttpRequest<T> implements UrlRequest<T> {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HeadersLike,
-        context?: RequestContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -343,7 +332,6 @@ export class HttpRequest<T> implements UrlRequest<T> {
     }): HttpRequest<T>;
     clone(update: {
         headers?: HeadersLike,
-        context?: RequestContext,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -377,7 +365,6 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
     protected cloneOpts(update: {
         headers?: HeadersLike,
-        context?: RequestContext,
         reportProgress?: boolean,
         params?: RequestParams | HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -397,8 +384,6 @@ export class HttpRequest<T> implements UrlRequest<T> {
         const reportProgress =
             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
 
-
-        const context = update.context ?? this.context!;
         // Headers and params may be appended to if `setHeaders` or
         // `setParams` are used.
         let headers: HeaderMappings;
@@ -422,8 +407,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
             headers,
             reportProgress,
             responseType,
-            withCredentials,
-            context
+            withCredentials
         }
 
     }

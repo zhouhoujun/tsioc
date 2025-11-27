@@ -1,6 +1,6 @@
 import { Abstract, AbstractType, Invocation, ProvidedInMetadata, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerOptions } from './handlers/configable';
-import { Handler, RunableContext } from './handler';
+import { Handler, RunContext } from './handler';
 
 
 /**
@@ -11,7 +11,7 @@ export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
     TOptions extends InvocationHandlerOptions = InvocationHandlerOptions,
-    TContext extends RunableContext = RunableContext,
+    TContext extends RunContext = RunContext,
     T = any> implements Handler<TInput, TOutput, TContext> {
 
     /**
@@ -71,7 +71,7 @@ export abstract class Respond<TInput = any> {
      * @param input endpoint input data.
      * @param value handled returnning value
      */
-    abstract respond<T>(input: TInput, value: T, context: RunableContext): void;
+    abstract respond<T>(input: TInput, value: T, context: RunContext): void;
 }
 
 /**
@@ -85,7 +85,7 @@ export abstract class TypedRespond<TInput = any> {
      * @param value handled returnning value
      * @param responseType response type
      */
-    abstract respond<T>(input: TInput, value: T, responseType: 'body' | 'header' | 'response', context: RunableContext): void;
+    abstract respond<T>(input: TInput, value: T, responseType: 'body' | 'header' | 'response', context: RunContext): void;
 }
 
 
@@ -111,6 +111,6 @@ export interface InvocationHandlerOptions<T = any> extends Omit<ConfigableHandle
     /**
      * endpoint handler response as.
      */
-    response?: 'body' | 'header' | 'response' | AbstractType<Respond<T>> | ((input: T, returnning: any, context: RunableContext) => void);
+    response?: 'body' | 'header' | 'response' | AbstractType<Respond<T>> | ((input: T, returnning: any, context: RunContext) => void);
 
 }

@@ -22,13 +22,13 @@ export interface ResponseAs {
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
-export interface RequestWithContext {
+// export interface RequestWithContext {
 
-    /**
-     * request context.
-     */
-    context: RequestContext;
-}
+//     /**
+//      * request context.
+//      */
+//     context: RequestContext;
+// }
 
 export interface PayloadOptions<T = any> {
     /**
@@ -54,6 +54,11 @@ export interface RequestOptions<T = any> extends PayloadOptions<T> {
      * request params.
      */
     params?: RequestParamsLike;
+
+    /**
+     * request context.
+     */
+    context?: RequestContext;
 
     /**
      * parameter codec.
@@ -87,7 +92,7 @@ export type RequestCloneOpts<T, TOptions extends RequestOptions> = TOptions & Pa
 /**
  * Request clone options.
  */
-export type RequestInitOpts<T, TOptions extends RequestOptions> = Required<RequestWithContext> & TOptions & PayloadOptions<T> & CloneExtendOpts & ResponseAs;
+export type RequestInitOpts<T, TOptions extends RequestOptions> = TOptions & PayloadOptions<T> & CloneExtendOpts & ResponseAs;
 
 /**
  * Abstract request.
@@ -229,7 +234,6 @@ export abstract class PatternRequest<T = any, TOptions extends TopicRequestOptio
 export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = RequestOptions<T>> extends AbstractRequest<T, TOptions> {
     readonly headers: HeaderMappings;
     readonly params: RequestParams;
-    readonly context: RequestContext;
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly withCredentials: boolean | undefined;
@@ -255,7 +259,6 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
         this.payload = initOptions.payload ?? null;
         this.payload = initOptions.body ?? initOptions.payload ?? null;
         this.params = new RequestParams(initOptions);
-        this.context = initOptions.context;
         this.responseType = initOptions.responseType ?? 'json';
         this.forceJson = initOptions.responseType === 'json';
         this.observe = initOptions.observe ?? 'body';

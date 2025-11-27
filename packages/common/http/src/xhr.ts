@@ -1,5 +1,5 @@
 import { Exception, Injectable, isArray, isString, isUndefined } from '@tsdi/ioc';
-import { JSONP, HeaderMappings, HttpStatusCode, statusMessage } from '@tsdi/common';
+import { JSONP, HeaderMappings, HttpStatusCode, statusMessage, RequestContext } from '@tsdi/common';
 import { Observable, Observer } from 'rxjs';
 import { HttpBackend, XhrFactory } from './handler';
 import { HttpRequest } from './request';
@@ -40,7 +40,7 @@ export class HttpXhrBackend implements HttpBackend {
      * @param req The request object.
      * @returns An observable of the response events.
      */
-    handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    handle(req: HttpRequest<any>, context: RequestContext): Observable<HttpEvent<any>> {
         // Quick check to give a better error message when a user attempts to use
         // HttpClient.jsonp() without installing the HttpClientJsonpModule
         if (req.method === JSONP) {

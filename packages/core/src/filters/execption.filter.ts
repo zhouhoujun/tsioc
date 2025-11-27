@@ -1,5 +1,5 @@
 import { Abstract, Exception, Injectable, isUndefined, composeHandlers, invokeTail, HandleResult } from '@tsdi/ioc';
-import { Handler, RunableContext } from '../handler';
+import { Handler, RunContext } from '../handler';
 import { Filter, FilterHandlerResolver } from './filter';
 
 
@@ -9,7 +9,7 @@ import { Filter, FilterHandlerResolver } from './filter';
  * 异常处理过滤器
  */
 @Abstract()
-export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Filter<TInput, TOutput, TContext> {
+export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext extends RunContext = RunContext> extends Filter<TInput, TOutput, TContext> {
     /**
      * execption filter.
      * @param context execption context.
@@ -44,7 +44,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
  * execption handler filter.
  */
 @Injectable({ static: true })
-export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends RunableContext = RunableContext> extends ExceptionFilter<TInput, TOutput, TContext> {
+export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends RunContext = RunContext> extends ExceptionFilter<TInput, TOutput, TContext> {
 
 
     catchError(input: TInput, err: any, context: TContext): HandleResult<TOutput> {

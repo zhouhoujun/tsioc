@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RunableContext } from '../handler';
+import { RunContext } from '../handler';
 
 
 /**
@@ -18,9 +18,9 @@ export abstract class ResultValue<T> {
      * send value.
      *
      * @abstract
-     * @param {RunableContext} context
+     * @param {RunContext} context
      * @returns {Promise<any>}
      * @memberof ResultValue
      */
-    abstract sendValue(context: RunableContext): Promise<any>;
+    abstract sendValue(context: RunContext): Promise<any>;
 }

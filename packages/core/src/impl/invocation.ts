@@ -1,5 +1,5 @@
 import { Invocation, isFunction, isString, Type, invokeTails, HandleResult, ResolveContext } from '@tsdi/ioc';
-import { HandlerFn, RunableContext } from '../handler';
+import { HandlerFn, RunContext } from '../handler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
@@ -9,7 +9,7 @@ export class DefaultInvocationHandler<
     TInput = any,
     TOutput = any,
     TOptions extends InvocationHandlerOptions<TInput> = InvocationHandlerOptions<TInput>,
-    TContext extends RunableContext = RunableContext,
+    TContext extends RunContext = RunContext,
     T = any
 > extends ConfigableHandler<TInput, TOutput, TOptions, TContext> implements InvocationHandler<TInput, TOutput, TOptions, TContext, T> {
 

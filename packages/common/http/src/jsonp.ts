@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import { Inject, Injectable } from '@tsdi/ioc';
-import { JSONP, HttpStatusCode, DOCUMENT } from '@tsdi/common';
+import { JSONP, HttpStatusCode, DOCUMENT, RequestContext } from '@tsdi/common';
 import { Observable, Observer } from 'rxjs';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
@@ -242,11 +242,11 @@ export class JsonpInterceptor {
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    intercept(req: HttpRequest<any>, next: HttpHandler, context: RequestContext): Observable<HttpEvent<any>> {
         if (req.method === JSONP) {
             return this.jsonp.handle(req as HttpRequest<never>)
         }
         // Fall through for normal HTTP requests.
-        return next.handle(req)
+        return next.handle(req, context)
     }
 }

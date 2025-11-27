@@ -3,12 +3,12 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
 import { HandlerAppendService, HandlerOptions } from './handlers/configable';
-import { RunableContext } from './handler';
+import { RunContext } from './handler';
 
 
-export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = Interceptor<TInput, any, RunableContext>;
-export type EventInterceptorFn<TInput extends ApplicationEvent = ApplicationEvent> = InterceptorFn<TInput, any, RunableContext>;
-export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEvent> = InterceptorLike<TInput, any, RunableContext>;
+export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = Interceptor<TInput, any, RunContext>;
+export type EventInterceptorFn<TInput extends ApplicationEvent = ApplicationEvent> = InterceptorFn<TInput, any, RunContext>;
+export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEvent> = InterceptorLike<TInput, any, RunContext>;
 
 /**
  * providing the basic listener registration facility.
@@ -16,7 +16,7 @@ export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEv
  * 提供基本的事件侦听器注册工具。
  */
 @Abstract()
-export abstract class ApplicationEventMulticaster implements HandlerAppendService<ApplicationEvent, any, RunableContext>, ApplicationEventPublisher {
+export abstract class ApplicationEventMulticaster implements HandlerAppendService<ApplicationEvent, any, RunContext>, ApplicationEventPublisher {
 
     static [noPointcut] = true;
 
@@ -50,7 +50,7 @@ export abstract class ApplicationEventMulticaster implements HandlerAppendServic
      * use and append hanlder options.
      * @param options 
      */
-    abstract use(options: HandlerOptions<ApplicationEvent, any, RunableContext>): this;
+    abstract use(options: HandlerOptions<ApplicationEvent, any, RunContext>): this;
 
     /**
      * add event handler.
@@ -73,12 +73,12 @@ export abstract class ApplicationEventMulticaster implements HandlerAppendServic
      * event downward
      * @param event 
      */
-    abstract downward(event: ApplicationEvent, context: RunableContext): Promise<void | false>;
+    abstract downward(event: ApplicationEvent, context: RunContext): Promise<void | false>;
     /**
      * event bubble up
      * @param event 
      */
-    abstract bubbleup(event: ApplicationEvent, context: RunableContext): Promise<void | false>;
+    abstract bubbleup(event: ApplicationEvent, context: RunContext): Promise<void | false>;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events
@@ -90,7 +90,7 @@ export abstract class ApplicationEventMulticaster implements HandlerAppendServic
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    abstract publishEvent(event: ApplicationEvent | Object, context?: RunableContext): Promise<void | false>;
+    abstract publishEvent(event: ApplicationEvent | Object, context?: RunContext): Promise<void | false>;
 
 
     abstract clear(): void;

@@ -1,6 +1,6 @@
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationContext } from './ApplicationContext';
-import { RunableContext } from './handler';
+import { RunContext } from './handler';
 
 
 /**
@@ -21,6 +21,6 @@ export interface ApplicationEventPublisher {
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    publishEvent(event: ApplicationEvent | Object, context?: RunableContext): Promise<void | false>;
+    publishEvent(event: ApplicationEvent | Object, context?: RunContext): Promise<void | false>;
 
 }

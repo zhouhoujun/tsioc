@@ -1,6 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
-import { HttpRequestMethod, HeadersLike, HeaderMappings, DELETE, GET, HEAD, JSONP, PATCH, POST, PUT, createRequestContext, RequestContext  } from '@tsdi/common';
-import { concatMap, filter, map, Observable, of } from 'rxjs';
+import { Injectable, Injector } from '@tsdi/ioc';
+import { HttpRequestMethod, HeadersLike, HeaderMappings, DELETE, GET, HEAD, JSONP, PATCH, POST, PUT, createRequestContext, RequestContext } from '@tsdi/common';
+import { concatMap, filter, finalize, map, Observable, of } from 'rxjs';
 import { HttpHandler } from './handler';
 import { HttpParams } from './params';
 import { HttpRequest } from './request';
@@ -15,7 +15,10 @@ import { HttpEvent, HttpResponse } from './response';
 @Injectable()
 export class HttpClient {
 
-    constructor(readonly handler: HttpHandler) {
+    constructor(
+        private injector: Injector,
+        readonly handler: HttpHandler
+    ) {
 
     }
 
@@ -432,12 +435,10 @@ export class HttpClient {
                     params = new HttpParams({ params: options.params })
                 }
             }
-
             // Construct the request.
             req = new HttpRequest(method ?? GET, url!, (options.body !== undefined ? options.body : null), {
                 headers,
                 params,
-                context: options.context ?? createRequestContext(),
                 reportProgress: options.reportProgress,
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json',
@@ -445,12 +446,14 @@ export class HttpClient {
             })
         }
 
+        const context = options.context ?? createRequestContext(this.injector, [[HttpClient, this]]);
+
         // Start with an Observable.of() the initial request, and run the handler (which
         // includes all interceptors) inside a concatMap(). This way, the handler runs
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<HttpEvent<any>> =
-            of(req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req)));
+            of(req).pipe(concatMap((req: HttpRequest<any>) => this.handler.handle(req, context)));
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
         // the only option is to get the event stream. Otherwise, return the event stream if
@@ -463,6 +466,7 @@ export class HttpClient {
         // case, the first step is to filter the event stream to extract a stream of
         // responses(s).
         const res$: Observable<HttpResponse<any>> = <Observable<HttpResponse<any>>>events$.pipe(
+            finalize(() => context.onDestroy()),
             filter((event: HttpEvent<any>) => event instanceof HttpResponse));
 
         // Decide which stream to return.

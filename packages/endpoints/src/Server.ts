@@ -1,4 +1,4 @@
-import { Abstract, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
+import { Abstract, InvocationContext, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
 import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, HandlerOptions, isHandlerOptions } from '@tsdi/core';
 import { CommonProtocols, RequestHandler, RequestInterceptorLike } from '@tsdi/common';
 import { RespondContext } from './context';
@@ -14,6 +14,7 @@ import { ServiceConfig } from './server.options';
 @Abstract()
 export abstract class MicroService<TRequest extends RespondContext = RespondContext> {
 
+    abstract get context(): InvocationContext;
     /**
      * micro service handler
      */
@@ -21,7 +22,7 @@ export abstract class MicroService<TRequest extends RespondContext = RespondCont
 
     @Runner()
     async start() {
-        // if (this.handler.ready) await this.handler.ready;
+        if (this.context.ready) await this.context.ready;
         return await this.onStart()
     }
 

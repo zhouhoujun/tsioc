@@ -2,6 +2,7 @@ import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Obse
 import { getType, isArray, isDefined, isFunction, isPromise } from './utils/chk';
 import { Token } from './tokens';
 import { Type } from './types';
+import e = require('express');
 
 /**
  * `Handler` is the fundamental building block of handle.
@@ -335,7 +336,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
 
     constructor(
         backend: HandlerLike<TInput, TOutput, TContext>,
-        protected interceptors: InterceptorLike[]
+        protected interceptors: InterceptorLike[] | (() => InterceptorLike[])
     ) {
         if (isFunction(backend)) {
             this.backend = backend
@@ -350,13 +351,12 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
         }
         return tail ? invokeTail(() => this.chain!(input, this.backend, context), tail) : this.chain(input, this.backend, context);
     }
-
     protected reset() {
         this.chain = null;
     }
 
     protected compose(): InterceptorFn<TInput, TOutput, TContext> {
-        return composeInterceptors(this.interceptors)
+        return composeInterceptors(isFunction(this.interceptors) ? this.interceptors() : this.interceptors);
     }
 }
 

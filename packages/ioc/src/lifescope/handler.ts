@@ -1,17 +1,24 @@
-import { composeInterceptors, Handler, HandlerFn, InterceptingHandler, InterceptorFn, InterceptorLike } from '../handler';
-import { isNumber } from '../utils/chk';
+import { composeInterceptors, Handler, HandleResult, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, TailNext } from '../handler';
+import { isFunction, isNumber } from '../utils/chk';
 
 /**
  * runtime handler.
  */
-export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> extends InterceptingHandler<TInput, TOutput, TContext> implements Handler<TInput, TOutput, TContext> {
+export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
 
-
+    private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
+    private backend: HandlerFn<TInput, TOutput, TContext>;
+    protected interceptors: InterceptorLike[];
     constructor(
         backend: HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>,
         interceptors?: InterceptorLike<TInput, TOutput, TContext>[]
     ) {
-        super(backend, interceptors?.slice() ?? []);
+        if (isFunction(backend)) {
+            this.backend = backend
+        } else {
+            this.backend = (req, ctx) => (backend as Handler).handle(req, ctx);
+        }
+        this.interceptors = interceptors?.slice(0) ?? []
     }
 
 
@@ -37,12 +44,19 @@ export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> extends
     }
 
 
-    /**
-     * compose iterceptors and filters in chain.
-     * @returns 
-     */
-    protected compose(): InterceptorFn {
-        return composeInterceptors(this.interceptors)
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput> {
+        if (!this.chain) {
+            this.chain = this.compose();
+        }
+        return tail ? invokeTail(() => this.chain!(input, this.backend, context), tail) : this.chain(input, this.backend, context);
     }
+    protected reset() {
+        this.chain = null;
+    }
+
+    protected compose(): InterceptorFn<TInput, TOutput, TContext> {
+        return composeInterceptors(this.interceptors);
+    }
+
 
 }

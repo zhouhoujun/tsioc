@@ -1,5 +1,5 @@
-import { Injectable, tokenId, Inject } from '@tsdi/ioc';
-import { RequestInterceptingHandler, RequestInterceptor } from '@tsdi/common';
+import { Injectable, tokenId, Inject, Injector } from '@tsdi/ioc';
+import { RequestContext, RequestInterceptingHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
@@ -14,7 +14,7 @@ export interface HttpInterceptor extends RequestInterceptor<HttpRequest<any>, Ht
      * @param req request.
      * @param next route handler.
      */
-    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>>;
+    intercept(req: HttpRequest<any>, next: HttpHandler, context: RequestContext): Observable<HttpEvent<any>>;
 }
 
 
@@ -35,14 +35,14 @@ export const HTTP_COMMON_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_COMMON_
  */
 @Injectable()
 export class HttpInterceptingHandler extends RequestInterceptingHandler<HttpRequest<any>, HttpEvent<any>> implements HttpHandler {
-    constructor(backend: HttpBackend, @Inject(HTTP_COMMON_INTERCEPTORS) interceptors: HttpInterceptor[]) {
-        super(backend, interceptors)
+    constructor(backend: HttpBackend, injector: Injector) {
+        super(backend, () => injector.get(HTTP_COMMON_INTERCEPTORS))
     }
 }
 
 @Injectable()
 export class NoopInterceptor implements HttpInterceptor {
-    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-        return next.handle(req)
+    intercept(req: HttpRequest<any>, next: HttpHandler, context: RequestContext): Observable<HttpEvent<any>> {
+        return next.handle(req, context)
     }
 }

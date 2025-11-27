@@ -13,7 +13,7 @@ export abstract class HttpHandler implements RequestHandler<HttpRequest<any>, Ht
      * http transport handler.
      * @param req http request input.
      */
-    abstract handle(req: HttpRequest<any>, context?: RequestContext): Observable<HttpEvent<any>>;
+    abstract handle(req: HttpRequest<any>, context: RequestContext): Observable<HttpEvent<any>>;
 }
 
 /**
@@ -26,7 +26,7 @@ export abstract class HttpBackend implements RequestHandler<HttpRequest<any>, Ht
      * @param req http request input.
      * @param context request with context for interceptor
      */
-    abstract handle(req: HttpRequest<any>, context?: RequestContext): Observable<HttpEvent<any>>;
+    abstract handle(req: HttpRequest<any>, context: RequestContext): Observable<HttpEvent<any>>;
 }
 
 /**

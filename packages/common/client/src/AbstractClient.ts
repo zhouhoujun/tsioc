@@ -1,6 +1,6 @@
 import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
-import { createRunableContext, Shutdown } from '@tsdi/core';
-import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter, RequestHandler } from '@tsdi/common';
+import { Shutdown } from '@tsdi/core';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, RequestHandler, createRequestContext } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientConfig } from './options';
 
@@ -22,15 +22,6 @@ export abstract class AbstractClient<
      * client handler
      */
     abstract get handler(): RequestHandler<TRequest, TResponse>;
-
-    private _formatter?: PatternFormatter;
-    get formatter(): PatternFormatter {
-        if (!this._formatter) {
-            const formatter = this.getOptions().formatter;
-            this._formatter = formatter ? this.context.get(formatter, defaultFormatter) : defaultFormatter;
-        }
-        return this._formatter;
-    }
 
     abstract getOptions(): TOptions;
 
@@ -277,15 +268,19 @@ export abstract class AbstractClient<
 
     protected request(first: Pattern | TRequest, options: TReqOptions = {} as any): Observable<any> {
         const req = this.buildRequest(first, options);
-
+        let context = options.context;
+        if (!context) {
+            context = createRequestContext(this.context, [[AbstractClient, this]]);
+            this.initContext(context);
+        }
         // Start with an Observable.of() the initial request, and run the handler (which
         // includes all interceptors) inside a concatMap(). This way, the handler runs
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<ResponseEvent<any>> =
             of(req).pipe(
-                concatMap((req: TRequest) => this.handler.handle(req, req.context)),
-                finalize(() => req.context.onDestroy())
+                concatMap((req: TRequest) => this.handler.handle(req, context)),
+                finalize(() => context.onDestroy())
             );
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
@@ -382,13 +377,8 @@ export abstract class AbstractClient<
                 }
             }
 
-            const context = options.context || createRunableContext(this.context, options.context);
-            context.set(AbstractClient, this)
-                .set(PatternFormatter, this.formatter);
-            this.initContext(context);
             // Construct the request.
             req = this.createRequest(first, {
-                context,
                 timeout: this.getOptions().timeout,
                 ...options,
                 headers,

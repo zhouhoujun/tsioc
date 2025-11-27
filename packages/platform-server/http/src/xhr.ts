@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Module, Injectable, Injector, Provider } from '@tsdi/ioc';
-import { DOCUMENT, PLATFORM_ID, PLATFORM_SERVER_ID } from '@tsdi/common';
+import { DOCUMENT, PLATFORM_ID, PLATFORM_SERVER_ID, RequestContext } from '@tsdi/common';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, XhrFactory } from '@tsdi/common/http';
 import { XMLHttpRequest2 } from './xhr.request';
 import { Observable } from 'rxjs';
@@ -25,7 +25,7 @@ export class HttpClientBackend implements HttpBackend {
 
   }
 
-  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+  handle(req: HttpRequest<any>, context: RequestContext): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
       let request: HttpRequest<any>;
       if (!isAbsoluteUrl.test(req.url)) {
@@ -40,7 +40,7 @@ export class HttpClientBackend implements HttpBackend {
       } else {
         request = req
       }
-      this.backend.handle(request).subscribe(observer)
+      this.backend.handle(request, context).subscribe(observer)
     }))
   }
 
