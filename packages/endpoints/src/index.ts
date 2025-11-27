@@ -11,7 +11,6 @@ export * from './content';
 // export * from './transport';
 export * from './context';
 export * from './AbstractRequestHandler';
-// export * from './RequestHandler';
 export * from './RestfulRequestContext';
 
 export * from './accepts';
@@ -41,8 +40,8 @@ export * from './impl/request.context';
 export * from './impl/exception.handlers';
 
 
-export * from './impl/transfer';
-export * from './impl/transport';
+// export * from './impl/transfer';
+// export * from './impl/transport';
 
 export * from './SetupServices';
 export * from './endpoint.options';

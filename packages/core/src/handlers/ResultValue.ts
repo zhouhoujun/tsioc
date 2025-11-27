@@ -10,9 +10,9 @@ import { RunContext } from '../handler';
  * @class ResultValue
  */
 @Abstract()
-export abstract class ResultValue<T> {
+export abstract class ResultValue {
 
-    constructor(public contentType: string, readonly value: T) { }
+    constructor(public contentType: string) { }
 
     /**
      * send value.

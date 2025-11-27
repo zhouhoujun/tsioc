@@ -3,8 +3,8 @@ import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, HandlerOption
 import { CommonProtocols, RequestHandler, RequestInterceptorLike } from '@tsdi/common';
 import { RespondContext } from './context';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
-// import { RequestHandler } from './RequestHandler';
 import { ServiceConfig } from './server.options';
+// import { RequestHandler } from './RequestHandler';
 // import { TOutgoing } from '@tsdi/common/transport';
 
 
@@ -14,6 +14,9 @@ import { ServiceConfig } from './server.options';
 @Abstract()
 export abstract class MicroService<TRequest extends RespondContext = RespondContext> {
 
+    /**
+     * context
+     */
     abstract get context(): InvocationContext;
     /**
      * micro service handler

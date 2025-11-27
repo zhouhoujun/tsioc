@@ -57,7 +57,9 @@ export interface RequestHandlerOptions<T = any> extends ConfigableHandlerOptions
 }
 
 
-
+/**
+ * configable request handler.
+ */
 export abstract class ConfigableRequestHandler<
     TInput = any,
     TOutput = any,

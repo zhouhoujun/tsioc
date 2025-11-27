@@ -16,7 +16,7 @@ export abstract class JsonOptions {
 
 
 @Injectable()
-export class JsonInterceptor implements  Interceptor<RespondContext> {
+export class JsonInterceptor implements Interceptor<RespondContext> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
@@ -53,7 +53,7 @@ export class JsonInterceptor implements  Interceptor<RespondContext> {
             // ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) 
             // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
-            ctx.contentType  = ctype.APPL_JSON_UTF8;
+            ctx.contentType = ctype.APPL_JSON_UTF8;
             ctx.body = JSON.stringify(body, null, this.spaces);
         }
     }

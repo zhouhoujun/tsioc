@@ -1,6 +1,6 @@
 import { Type, Exception, getToken, Invocation } from '@tsdi/ioc';
-import { HandlerFn, InterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
-import { ForbiddenException, NotFoundException } from '@tsdi/common';
+import { InterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { ForbiddenException, NotFoundException, RequestHandlerFn } from '@tsdi/common';
 import { throwError } from 'rxjs';
 import { RespondContext } from '../context';
 import { RouteHandler } from '../router/route.handler';
@@ -33,7 +33,7 @@ export class RouteHandlerImpl<TInput extends RespondContext = RespondContext, TO
 
 export function pathInterceptor(invocation: Invocation, route: RouteOptions) {
 
-    return (input: RespondContext, next: HandlerFn<RespondContext>, ctx?: any) => {
+    return (input: RespondContext, next: RequestHandlerFn<RespondContext>, ctx?: any) => {
         if (route.paths && input.request.path) {
             if (Object.entries(route.paths).some(([key, value]) => {
                 const filters: any[] = invocation.context.get(value, []);

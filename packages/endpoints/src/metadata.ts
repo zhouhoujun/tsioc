@@ -1,8 +1,7 @@
 import {
     isArray, isString, lang, AbstractType, TypeOf, createDecorator, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject,
-    AnnotationMetadata, Handler, Type,
-    ActionType
+    AnnotationMetadata, Handler, Type, ActionType
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
@@ -120,6 +119,12 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     isMatadata: (args) => {
         return isMetadataObject(args) && isString(args.route)
     },
+    appendProps: (meta) => {
+        if (!meta.resolvers) {
+            meta.resolvers = [];
+        }
+        meta.resolvers.push(typeResolveInterceptor);
+    },
     props: (route: Pattern, arg1?: Protocols | RouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
@@ -130,7 +135,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     design: {
         method: (typeRef, ctx) => {
 
-            const defines =typeRef.getDefines<HandleMetadata>(ctx.currDecor!);
+            const defines = typeRef.getDefines<HandleMetadata>(ctx.currDecor!);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
@@ -255,6 +260,12 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
             } else {
                 return { ...arg2 as T, route };
             }
+        },
+        appendProps: (meta) => {
+            if (!meta.resolvers) {
+                meta.resolvers = [];
+            }
+            meta.resolvers.push(typeResolveInterceptor);
         },
         def: controllerOnly ? undefined : {
             class: (ctx) => {
@@ -448,6 +459,12 @@ export interface RouteMethodDecorator {
  */
 export function createRouteDecorator(method: RequestMethod) {
     return createDecorator<RouteMappingMetadata>('Route', {
+        appendProps: (meta) => {
+            if (!meta.resolvers) {
+                meta.resolvers = [];
+            }
+            meta.resolvers.push(typeResolveInterceptor);
+        },
         props: (
             route: string,
             arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: AbstractType<CanHandle>[], contentType?: string, method?: string }
