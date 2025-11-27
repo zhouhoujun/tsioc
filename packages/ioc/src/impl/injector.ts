@@ -481,7 +481,7 @@ export namespace InjectUtil {
             isp.value = value;
             if (type) isp.type = type
         } else if (!isNil(value)) {
-            records.set(token, createValueRecord(value, type))
+            records.set(token, createValueRecord(value))
         }
     }
 

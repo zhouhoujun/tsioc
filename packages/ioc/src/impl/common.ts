@@ -12,8 +12,8 @@ import { createResolveContext, getResolver, isParameter, Parameter, ParameterLik
 
 
 
-export function createValueRecord<T = any>(value: T, type?: AbstractType<T>): InjectorRecord<T> {
-    return { type, value };
+export function createValueRecord<T = any>(value: T): InjectorRecord<T> {
+    return { value };
 }
 
 export function createRecord<T>(factory: RecordFactory<T> | undefined, isStatic?: boolean, multi?: boolean): InjectorRecord<T> {

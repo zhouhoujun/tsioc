@@ -2,7 +2,6 @@ import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Obse
 import { getType, isArray, isDefined, isFunction, isPromise } from './utils/chk';
 import { Token } from './tokens';
 import { Type } from './types';
-import e = require('express');
 
 /**
  * `Handler` is the fundamental building block of handle.

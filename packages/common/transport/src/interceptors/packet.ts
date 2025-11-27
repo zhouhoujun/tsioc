@@ -25,7 +25,9 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
     }
 
     intercept(input: string | Buffer | IReadable, next: TransportHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
-        const streamAdapter = context.get(StreamAdapter);
+        const injector = context.getInjector();
+        const streamAdapter = injector.get(StreamAdapter);
+        const pipe = injector.get<PipeTransform>('bytes-format');
         if (!input || streamAdapter.isReadable(input)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
@@ -41,7 +43,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
                 cache.contentLength = null;
                 this.channels.set(channel, cache)
             }
-            this.handleData(channel, cache, packet, subscriber, context);
+            this.handleData(channel, cache, packet, subscriber, streamAdapter, pipe);
 
             return subscriber;
 
@@ -50,10 +52,9 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
         );
     }
 
-    protected handleData(channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, context: RequestContext): void {
+    protected handleData(channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter, bpipe: PipeTransform): void {
 
         // const transport = context.get(Transport) as AbstractTransport;
-        const streamAdapter = context.get(StreamAdapter);
         const options = transport.options;
 
         if (!isNumber(cache.length)) {
@@ -87,9 +88,8 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
                     cache.length = 0;
                     cache.payload.end();
                     cache.payload = null;
-                    const btpipe = context.getInjector().get<PipeTransform>('bytes-format');
                     if (rawContentLength) {
-                        throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
+                        throw new PacketLengthException(`Packet length ${bpipe.transform(rawContentLength)} great than max size ${bpipe.transform(options.maxSize)}`);
                     } else {
                         throw new PacketLengthException(`No packet length`);
                     }
@@ -113,7 +113,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
                 const rest = data.subarray(idx);
                 this.handleMessage(channel, cache, subscriber, !rest.length);
                 if (rest.length) {
-                    this.handleData(channel, cache, rest, subscriber, context);
+                    this.handleData(channel, cache, rest, subscriber, streamAdapter, bpipe);
                 }
             } else {
                 cache.payload.write(data);
