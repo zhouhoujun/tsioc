@@ -8,6 +8,6 @@ export abstract class Redirector<TStatus = any> {
     /**
      * redirect.
      */
-    abstract redirect<T>(req: AbstractRequest<any>, context: RequestContext, status: TStatus, headers: HeadersLike, protocol: string): Observable<T>
+    abstract redirect<T>(req: AbstractRequest<any>, context: RequestContext, status: TStatus, headers: HeadersLike): Observable<T>
 }
 

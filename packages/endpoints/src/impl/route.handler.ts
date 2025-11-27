@@ -1,6 +1,6 @@
 import { Type, Exception, getToken, Invocation } from '@tsdi/ioc';
 import { HandlerFn, InterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
-import { ForbiddenException, NotFoundException } from '@tsdi/common/transport';
+import { ForbiddenException, NotFoundException } from '@tsdi/common';
 import { throwError } from 'rxjs';
 import { RespondContext } from '../context';
 import { RouteHandler } from '../router/route.handler';

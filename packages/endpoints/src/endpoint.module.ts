@@ -14,7 +14,7 @@ import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 // import { FinalizeFilter } from './finalize.filter';
 import { DefaultExceptionHandlers } from './exception.handlers';
 // import { createRequestHandler } from './impl/request.handler';
-import { DefaultServerTransferFactory } from './impl/transfer';
+// import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
 import { createRequestHandler, NotImplementedException } from '@tsdi/common';
@@ -29,7 +29,7 @@ import { createRequestHandler, NotImplementedException } from '@tsdi/common';
     ],
     providers: [
         SetupServices,
-        DefaultServerTransferFactory,
+        // DefaultServerTransferFactory,
         HttpStatusAdapter,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },

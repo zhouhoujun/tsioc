@@ -1,7 +1,6 @@
-import { AbstractRequest, PatternFormatter, RequestHandler } from '@tsdi/common';
-// import { TransportConfigure } from '@tsdi/common/transport';
-import { ConfigableHandlerOptions } from '@tsdi/core';
 import { Token, AbstractType } from '@tsdi/ioc';
+import { ConfigableHandlerOptions } from '@tsdi/core';
+import { AbstractRequest, PatternFormatter, RequestHandler } from '@tsdi/common';
 import { RequestBackend } from './backend';
 
 /**

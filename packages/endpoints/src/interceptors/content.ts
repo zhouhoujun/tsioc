@@ -1,6 +1,6 @@
 import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { GET, HEAD, NotFoundException } from '@tsdi/common';
+import { GET, HEAD, NotFoundException, RequestContext } from '@tsdi/common';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { RespondContext } from '../context';
 
@@ -17,7 +17,7 @@ export class ContentInterceptor implements Interceptor<RespondContext> {
     constructor() { }
 
 
-    intercept(input: RespondContext, next: Handler<RespondContext, any>, context: RespondContext): Observable<any> {
+    intercept(input: RespondContext, next: Handler<RespondContext, any>, context: RequestContext): Observable<any> {
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
             || !input.originalUrl) {
             return next.handle(input, context);

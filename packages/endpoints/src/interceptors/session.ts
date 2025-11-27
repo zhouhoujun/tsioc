@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
 import { RespondContext } from '../context';
 
@@ -12,7 +12,7 @@ import { RespondContext } from '../context';
 @Injectable()
 export class SessionInterceptor implements RequestInterceptor<RespondContext> {
 
-    intercept(input: RespondContext, next: RequestHandler<RespondContext, any>, context: RespondContext): Observable<any> {
+    intercept(input: RespondContext, next: RequestHandler<RespondContext, any>, context: RequestContext): Observable<any> {
         const session = input.session;
         if (!session) {
             return next.handle(input, context);

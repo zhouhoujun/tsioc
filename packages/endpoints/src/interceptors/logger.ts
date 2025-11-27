@@ -3,6 +3,7 @@ import { Interceptor, Handler, Filter, BytesFormatPipe, HrtimeFormatter } from '
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
 import { RespondContext } from '../context';
+import { RequestContext } from '@tsdi/common';
 
 
 /**
@@ -60,16 +61,16 @@ export class LoggerInterceptor implements Interceptor, Filter {
         this.options = { ...defopts, ...options } as LoggerOptions;
     }
 
-    doFilter(input: any, next: Handler, context?: any): Observable<any> {
+    doFilter(input: any, next: Handler, context: RequestContext): Observable<any> {
         return this.intercept(input, next, context);
     }
 
-    intercept(ctx: RespondContext, next: Handler, context?: any): Observable<any> {
-        const logger = ctx.get(Logger, this.logger, InjectFlags.Self);
+    intercept(ctx: RespondContext, next: Handler, context: RequestContext): Observable<any> {
+        const logger = ctx.getInjector().get(Logger, this.logger, InjectFlags.Self);
 
         const level = this.options.level;
         if (!matchLevel(logger.level, level)) {
-            return next.handle(ctx);
+            return next.handle(ctx, context);
         }
 
         //todo console log and other. need to refactor formater.

@@ -3,6 +3,7 @@ import { Handler, Interceptor } from '@tsdi/core';
 import { ctype } from '@tsdi/common/transport';
 import { Observable, map } from 'rxjs';
 import { RespondContext } from '../context';
+import { RequestContext } from '@tsdi/common';
 
 
 @Abstract()
@@ -26,7 +27,7 @@ export class JsonInterceptor implements  Interceptor<RespondContext> {
         this.paramName = option?.param ?? '';
     }
 
-    intercept(input: RespondContext, next: Handler<RespondContext, any>, context?: any): Observable<any> {
+    intercept(input: RespondContext, next: Handler<RespondContext, any>, context: RequestContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 map(res => {

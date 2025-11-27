@@ -271,6 +271,7 @@ export abstract class AbstractClient<
         let context = options.context;
         if (!context) {
             context = createRequestContext(this.context, [[AbstractClient, this]]);
+            context.setProtocol(this.getOptions().protocol);
             this.initContext(context);
         }
         // Start with an Observable.of() the initial request, and run the handler (which

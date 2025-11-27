@@ -1,17 +1,16 @@
-import { Context, ContextToken, Injector, Token, tokenId } from '@tsdi/ioc';
+import { Context, ContextToken, Injector, Token } from '@tsdi/ioc';
 import { RunContext } from '@tsdi/core';
-import { Protocols } from './protocols';
 
 
 
-const PROTOCOL = tokenId<Protocols>('Protocol');
+const PROTOCOL = new ContextToken<string | undefined>(() => undefined);
 
 export class RequestContext extends RunContext {
 
-    get protocol(): Protocols {
+    getProtocol(): string | undefined {
         return this.get(PROTOCOL);
     }
-    set protocol(value: Protocols) {
+    setProtocol(value: string | undefined) {
         this.set(PROTOCOL, value);
     }
 }

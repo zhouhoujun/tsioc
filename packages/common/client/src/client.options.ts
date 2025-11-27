@@ -1,6 +1,5 @@
 import { ModuleType, ProvdierOf, Provider, Token, AbstractType } from '@tsdi/ioc';
 import { Protocols } from '@tsdi/common';
-// import { TransportConfigure } from '@tsdi/common/transport';
 import { RequestBackend } from './backend';
 import { ClientConfig } from './options';
 import { AbstractClient } from './AbstractClient';

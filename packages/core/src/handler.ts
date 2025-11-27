@@ -13,6 +13,16 @@ export class RunContext extends DefaultContext {
         return this.get(Injector)
     }
 
+    protected getToken<T>(token: Token<T>) {
+        return this.map.get(token) ?? this.getFromInjector(token)
+    }
+
+    protected getFromInjector<T>(token: Token<T>) {
+        const value = this.getInjector().get(token);
+        this.set(token, value);
+        return value;
+    }
+
 }
 
 

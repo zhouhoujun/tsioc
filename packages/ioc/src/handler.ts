@@ -501,11 +501,23 @@ export class DefaultContext extends Context {
      * @returns The stored value or default if one is defined.
      */
     get<T>(token: Token<T> | ContextToken<T>): T {
-        if (token instanceof ContextToken && !this.map.has(token)) {
+        if (token instanceof ContextToken) {
+            return this.getContentToken(token)
+        }
+        return this.getToken(token);
+    }
+
+    protected getToken<T>(token: Token<T>) {
+        return this.map.get(token) ?? null;
+    }
+
+    protected getContentToken<T>(token: ContextToken<T>) {
+        if (!this.map.has(token)) {
             this.map.set(token, token.defaultValue());
         }
         return this.map.get(token) ?? null;
     }
+
     /**
      * Delete the value associated with the given token.
      *
