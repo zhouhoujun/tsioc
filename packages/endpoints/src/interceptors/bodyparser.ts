@@ -5,7 +5,7 @@ import { RequestHandler, BadRequestException, UnsupportedMediaTypeException, Req
 import { IReadable, MimeTypes, isBuffer } from '@tsdi/common/transport';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
-import { RespondContext } from '../context';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 
 
 @Abstract()
@@ -30,7 +30,7 @@ export class PayloadOptions {
 }
 
 @Injectable()
-export class BodyparserInterceptor implements RequestInterceptor<RespondContext> {
+export class BodyparserInterceptor implements RequestInterceptor<AbstractRequestContext> {
 
     private options: {
         json: {
@@ -70,13 +70,13 @@ export class BodyparserInterceptor implements RequestInterceptor<RespondContext>
         this.enableXml = this.enableType('xml');
     }
 
-    protected canHanlde(input: RespondContext): boolean {
+    protected canHanlde(input: AbstractRequestContext): boolean {
         return (isUndefined(input.request.body) && input.streamAdapter.isReadable(input.request))
             || input.streamAdapter.isReadable(input.request.body)
             || isBuffer(input.request.body);
     }
 
-    intercept(input: RespondContext, next: RequestHandler<RespondContext, any>, context: RequestContext): Observable<any> {
+    intercept(input: AbstractRequestContext, next: RequestHandler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
         if (!this.canHanlde(input)) return next.handle(input, context);
         return from(this.parseBody(input))
             .pipe(
@@ -88,7 +88,7 @@ export class BodyparserInterceptor implements RequestInterceptor<RespondContext>
             )
     }
 
-    private parseBody(context: RespondContext): Promise<{ raw?: any, body?: any }> {
+    private parseBody(context: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
         const types = context.get(MimeTypes);
         if (this.enableJson && context.is(types?.json ?? 'json')) {
             return this.parseJson(context)
@@ -106,7 +106,7 @@ export class BodyparserInterceptor implements RequestInterceptor<RespondContext>
         return Promise.resolve({})
     }
 
-    protected async parseJson(context: RespondContext): Promise<{ raw?: any, body?: any }> {
+    protected async parseJson(context: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
         const len = context.getContentLength();
         const hdrcode = context.getContentEncoding() as string || identity;
         let length: number | undefined;
@@ -131,11 +131,11 @@ export class BodyparserInterceptor implements RequestInterceptor<RespondContext>
         }
     }
 
-    private getStream(ctx: RespondContext, encoding: string): IReadable {
+    private getStream(ctx: AbstractRequestContext, encoding: string): IReadable {
         return this.unzipify(ctx, encoding);
     }
 
-    protected unzipify(ctx: RespondContext, encoding: string) {
+    protected unzipify(ctx: AbstractRequestContext, encoding: string) {
         switch (encoding) {
             case 'gzip':
             case 'deflate':
@@ -177,7 +177,7 @@ export class BodyparserInterceptor implements RequestInterceptor<RespondContext>
         return JSON.parse(str)
     }
 
-    protected async parseForm(ctx: RespondContext): Promise<{ raw?: any, body?: any }> {
+    protected async parseForm(ctx: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getContentLength();
         const hdrcode = ctx.getContentEncoding() as string || identity;
         let length: number | undefined;
@@ -208,7 +208,7 @@ export class BodyparserInterceptor implements RequestInterceptor<RespondContext>
         }
     }
 
-    protected async parseText(ctx: RespondContext): Promise<{ raw?: any, body?: any }> {
+    protected async parseText(ctx: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
         const len = ctx.getContentLength();
         const hdrcode = ctx.getContentEncoding() as string || identity;
         let length: number | undefined;

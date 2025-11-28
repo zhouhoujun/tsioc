@@ -14,7 +14,7 @@ import { Session } from './sessions/Session';
  * 请求上下文
  */
 @Abstract()
-export abstract class RespondContext<
+export abstract class AbstractRequestContext<
     TRequest extends Incoming<any> = Incoming<any>,
     TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,

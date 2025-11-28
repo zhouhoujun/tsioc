@@ -3,10 +3,10 @@ import { HandlerFn, InterceptorFn, PipeTransform } from '@tsdi/core';
 import { HEAD, ENOENT, RequestInterceptorFn, RequestHandlerFn } from '@tsdi/common';
 import { Outgoing, Packet, PacketLengthException, TEXT_DECODER, toBuffer } from '@tsdi/common/transport';
 import { defer, map, of, throwError } from 'rxjs';
-import { RespondContext } from '../context';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 
 
-export const packetIfySerializeInterceptor: RequestInterceptorFn<RespondContext, Packet> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const packetIfySerializeInterceptor: RequestInterceptorFn<AbstractRequestContext, Packet> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     return next(input, context)
         .pipe(
             map(pkg => {
@@ -32,7 +32,7 @@ export const packetIfySerializeInterceptor: RequestInterceptorFn<RespondContext,
 /**
  * execption serialize
  */
-export const execptionMessageSerializeInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext>, context: RespondContext) => {
+export const execptionMessageSerializeInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext>, context: AbstractRequestContext) => {
     if (input.execption) {
         const err = input.execption;
 
@@ -77,7 +77,7 @@ export const execptionMessageSerializeInterceptor: RequestInterceptorFn<RespondC
 /**
  * execption serialize
  */
-export const execptionSerializeInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const execptionSerializeInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     if (input.execption) {
 
         const err = input.execption;
@@ -146,7 +146,7 @@ export const execptionSerializeInterceptor: RequestInterceptorFn<RespondContext>
 /**
  * empty status serialize
  */
-export const emptyStatusSerializeInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const emptyStatusSerializeInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     if (input.statusAdapter?.isEmpty(input.status)) {
         const payload = input.body = null;
         return of(payload)
@@ -157,7 +157,7 @@ export const emptyStatusSerializeInterceptor: RequestInterceptorFn<RespondContex
 /**
  * head method
  */
-export const headMethodSerializeInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const headMethodSerializeInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     if (input.method?.toUpperCase() == HEAD) {
         if (!input.headersSent && !input.headerAdapter.hasContentLength(input.response)) {
             const length = input.length;
@@ -175,7 +175,7 @@ export const headMethodSerializeInterceptor: RequestInterceptorFn<RespondContext
  * @param context 
  * @returns 
  */
-export const noBodySerializeInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const noBodySerializeInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     if (input.body === null) {
         if (input.explicitNullBody) {
             input.headerAdapter.setContentType(input.response, null);
@@ -204,7 +204,7 @@ export const noBodySerializeInterceptor: RequestInterceptorFn<RespondContext> = 
  * @param context 
  * @returns 
  */
-export const lengthLimitSerializeInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const lengthLimitSerializeInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     if (!input.execption) {
         const transport = context.transport as AbstractTransport;
         const length = input.length;
@@ -220,7 +220,7 @@ export const lengthLimitSerializeInterceptor: RequestInterceptorFn<RespondContex
 /**
  * limited readable body to buffuer
  */
-export const limitedReadableSerializeInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const limitedReadableSerializeInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     if (input.streamAdapter.isReadable(input.body)) {
         return defer(async () => {
             const body = await toBuffer(input.body);
@@ -232,7 +232,7 @@ export const limitedReadableSerializeInterceptor: RequestInterceptorFn<RespondCo
 
 
 
-function parseToOutgoing(input: RespondContext): Outgoing {
+function parseToOutgoing(input: AbstractRequestContext): Outgoing {
     const id = input.response.id ?? input.request.id;
     const headers = input.headerAdapter.getHeaders(input.response);
     const pkg = {
@@ -260,7 +260,7 @@ function parseToOutgoing(input: RespondContext): Outgoing {
  * @param context 
  * @returns 
  */
-export const headersReadableBodyInterceptor: RequestInterceptorFn<RespondContext> = (input: RespondContext, next: RequestHandlerFn<RespondContext, Packet>, context: RespondContext) => {
+export const headersReadableBodyInterceptor: RequestInterceptorFn<AbstractRequestContext> = (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext, Packet>, context: AbstractRequestContext) => {
     if (input.streamAdapter.isReadable(input.body)) {
         let contentLength = input.length || 0;
         const pkg = parseToOutgoing(input);
@@ -300,7 +300,7 @@ export const headersReadableBodyInterceptor: RequestInterceptorFn<RespondContext
  * @param context 
  * @returns 
  */
-export const contextSerializeBackend: RequestHandlerFn<RespondContext> = (input: RespondContext, context: RespondContext) => {
+export const contextSerializeBackend: RequestHandlerFn<AbstractRequestContext> = (input: AbstractRequestContext, context: AbstractRequestContext) => {
 
     return defer(async () => {
         const pkg = parseToOutgoing(input);
@@ -329,7 +329,7 @@ export const contextSerializeBackend: RequestHandlerFn<RespondContext> = (input:
  * @param context 
  * @returns 
  */
-export const contextBodySerializeBackend: BackendFn<RespondContext> = (input: RespondContext, context: TransportContext) => {
+export const contextBodySerializeBackend: BackendFn<AbstractRequestContext> = (input: AbstractRequestContext, context: TransportContext) => {
     if (input.streamAdapter.isJson(input.body)) {
         const body = JSON.stringify(input.body);
         if (!input.headersSent) {

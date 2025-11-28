@@ -1,7 +1,7 @@
 import { Abstract, InvocationContext, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
 import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, HandlerOptions, isHandlerOptions } from '@tsdi/core';
 import { CommonProtocols, RequestHandler, RequestInterceptorLike } from '@tsdi/common';
-import { RespondContext } from './context';
+import { AbstractRequestContext } from './AbstractRequestContext';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { ServiceConfig } from './server.options';
 // import { RequestHandler } from './RequestHandler';
@@ -12,7 +12,7 @@ import { ServiceConfig } from './server.options';
  * microservice.
  */
 @Abstract()
-export abstract class MicroService<TRequest extends RespondContext = RespondContext> {
+export abstract class MicroService<TRequest extends AbstractRequestContext = AbstractRequestContext> {
 
     /**
      * context
@@ -48,7 +48,7 @@ export abstract class MicroService<TRequest extends RespondContext = RespondCont
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest extends RespondContext = RespondContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerAppendService<TRequest> {
+export abstract class Server<TRequest extends AbstractRequestContext = AbstractRequestContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerAppendService<TRequest> {
 
     /**
      * service request handler.

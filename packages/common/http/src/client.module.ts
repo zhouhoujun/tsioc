@@ -72,7 +72,7 @@ export class HttpClientXsrfModule {
  * http client module, Configures the module injector for {@link HttpClient}.
  * 
  * You can add interceptors to the chain behind `HttpClient` by binding them to the
- * multiprovider for built-in {@link HTTP_INTERCEPTORS}.
+ * multiprovider for built-in {@link HTTP_COMMON_INTERCEPTORS}.
  */
 @Module({
     /**
@@ -102,7 +102,7 @@ export class HttpClientModule {
  * with method JSONP, where they are rejected.
  *
  * You can add interceptors to the chain behind `HttpClient` by binding them to the
- * multiprovider for built-in {@link HTTP_INTERCEPTORS}.
+ * multiprovider for built-in {@link HTTP_COMMON_INTERCEPTORS}.
  *
  * @publicApi
  */

@@ -2,7 +2,7 @@ import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import { GET, HEAD, NotFoundException, RequestContext } from '@tsdi/common';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
-import { RespondContext } from '../context';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 
 
 
@@ -10,14 +10,14 @@ import { RespondContext } from '../context';
  * static content resources.
  */
 @Injectable()
-export class ContentInterceptor implements Interceptor<RespondContext> {
+export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
 
     options?: ContentOptions;
 
     constructor() { }
 
 
-    intercept(input: RespondContext, next: Handler<RespondContext, any>, context: RequestContext): Observable<any> {
+    intercept(input: AbstractRequestContext, next: Handler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
             || !input.originalUrl) {
             return next.handle(input, context);
@@ -45,7 +45,7 @@ export class ContentInterceptor implements Interceptor<RespondContext> {
         }
     }
 
-    protected async send(ctx: RespondContext, options: ContentOptions) {
+    protected async send(ctx: AbstractRequestContext, options: ContentOptions) {
         let file = '';
         if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return file;
 
@@ -76,7 +76,7 @@ export interface SendOptions<TStats = any> {
     extensions?: string[] | false;
     brotli?: boolean;
     gzip?: boolean;
-    setHeaders?: (ctx: RespondContext, path: string, stats: TStats) => void;
+    setHeaders?: (ctx: AbstractRequestContext, path: string, stats: TStats) => void;
 }
 
 
@@ -100,7 +100,7 @@ export abstract class ContentSendAdapter {
      * @param path file path
      * @param options send options
      */
-    abstract send(ctx: RespondContext, path: string, options: SendOptions): Promise<string>;
+    abstract send(ctx: AbstractRequestContext, path: string, options: SendOptions): Promise<string>;
 }
 
 

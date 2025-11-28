@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-condition */
 /* eslint-disable no-case-declarations */
 import { Injectable, lang } from '@tsdi/ioc';
-import { HeaderMappings, HttpStatusCode } from '@tsdi/common';
+import { HeaderMappings, HttpStatusCode, RequestContext } from '@tsdi/common';
 import { Observable, Observer } from 'rxjs';
 import { HttpBackend } from './handler';
 import { HttpRequest } from './request';
@@ -26,7 +26,7 @@ export class FetchBackend implements HttpBackend {
   // We use an arrow function to always reference the current global implementation of `fetch`.
   // This is helpful for cases when the global `fetch` implementation is modified by external code,
 
-  handle(request: HttpRequest<any>): Observable<HttpEvent<any>> {
+  handle(request: HttpRequest<any>, context: RequestContext): Observable<HttpEvent<any>> {
     return new Observable((observer) => {
       const aborter = new AbortController();
       this.doRequest(request, aborter.signal, observer).then(noop, (error) =>

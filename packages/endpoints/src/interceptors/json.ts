@@ -2,7 +2,7 @@ import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { ctype } from '@tsdi/common/transport';
 import { Observable, map } from 'rxjs';
-import { RespondContext } from '../context';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 import { RequestContext } from '@tsdi/common';
 
 
@@ -16,7 +16,7 @@ export abstract class JsonOptions {
 
 
 @Injectable()
-export class JsonInterceptor implements Interceptor<RespondContext> {
+export class JsonInterceptor implements Interceptor<AbstractRequestContext> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
@@ -27,7 +27,7 @@ export class JsonInterceptor implements Interceptor<RespondContext> {
         this.paramName = option?.param ?? '';
     }
 
-    intercept(input: RespondContext, next: Handler<RespondContext, any>, context: RequestContext): Observable<any> {
+    intercept(input: AbstractRequestContext, next: Handler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 map(res => {
@@ -37,7 +37,7 @@ export class JsonInterceptor implements Interceptor<RespondContext> {
             )
     }
 
-    protected streamify(ctx: RespondContext) {
+    protected streamify(ctx: AbstractRequestContext) {
         const body = ctx.body;
         const strm = ctx.streamAdapter.isStream(body);
         const json = ctx.streamAdapter.isJson(body);

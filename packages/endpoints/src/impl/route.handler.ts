@@ -2,14 +2,14 @@ import { Type, Exception, getToken, Invocation } from '@tsdi/ioc';
 import { InterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { ForbiddenException, NotFoundException, RequestHandlerFn } from '@tsdi/common';
 import { throwError } from 'rxjs';
-import { RespondContext } from '../context';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 import { RouteHandler } from '../router/route.handler';
 import { RouteOptions } from '../router/route';
 
 
 
 
-export class RouteHandlerImpl<TInput extends RespondContext = RespondContext, TOutput = any> extends RouteHandler<TInput, TOutput> {
+export class RouteHandlerImpl<TInput extends AbstractRequestContext = AbstractRequestContext, TOutput = any> extends RouteHandler<TInput, TOutput> {
 
 
     readonly route: string;
@@ -21,7 +21,7 @@ export class RouteHandlerImpl<TInput extends RespondContext = RespondContext, TO
 
 
     protected override defaultRespond(ctx: TInput, res: any): void {
-        if (ctx instanceof RespondContext) {
+        if (ctx instanceof AbstractRequestContext) {
             ctx.body = res;
         }
     }
@@ -33,7 +33,7 @@ export class RouteHandlerImpl<TInput extends RespondContext = RespondContext, TO
 
 export function pathInterceptor(invocation: Invocation, route: RouteOptions) {
 
-    return (input: RespondContext, next: RequestHandlerFn<RespondContext>, ctx?: any) => {
+    return (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext>, ctx?: any) => {
         if (route.paths && input.request.path) {
             if (Object.entries(route.paths).some(([key, value]) => {
                 const filters: any[] = invocation.context.get(value, []);

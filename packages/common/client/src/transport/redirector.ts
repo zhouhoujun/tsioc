@@ -102,7 +102,7 @@ export class UrlRedirector implements Redirector {
                         reqhdrs = reqhdrs.set('referrer-policy', responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = context.get(AbstractClient)!.send(locationURL, {
+                    sub = context.get(AbstractClient).send(locationURL, {
                         method,
                         headers: reqhdrs,
                         body,

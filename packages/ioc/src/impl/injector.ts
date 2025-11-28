@@ -654,13 +654,13 @@ export namespace InjectUtil {
      * 
      * 调用类方法
      * @template T
-     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
+     * @param {(T | Token<T> | ClassRef<T>)} target type of class or instance
      * @param {MethodType} propertyKey method name.
      * @param {InvocationContext} context ivacation context.
      * @returns {TR} the returnning of invoked method.
      */
-    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         injector.assertNotDestroyed();
         let providers: Provider[] | undefined;
         let context: InvocationContext | undefined;

@@ -4,7 +4,7 @@ import {
     BadRequestException, InternalServerException, MessageException
 } from '@tsdi/common';
 import { MissingModelFieldException } from '@tsdi/repository';
-import { RespondContext } from './context';
+import { AbstractRequestContext } from './AbstractRequestContext';
 
 
 
@@ -19,7 +19,7 @@ export class DefaultExceptionHandlers {
 
 
     @ExceptionHandler(InvalidJsonException)
-    badJsonException(ctx: RespondContext, execption: InvalidJsonException) {
+    badJsonException(ctx: AbstractRequestContext, execption: InvalidJsonException) {
         let exp: MessageException;
         if (isNil(ctx.body)) {
             exp = new InternalServerException(execption.message);
@@ -30,31 +30,31 @@ export class DefaultExceptionHandlers {
     }
 
     @ExceptionHandler(NotHandleException)
-    notHanldeException(ctx: RespondContext, err: NotHandleException) {
+    notHanldeException(ctx: AbstractRequestContext, err: NotHandleException) {
         const execption = new InternalServerException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
 
     @ExceptionHandler(ArgumentException)
-    anguException(ctx: RespondContext, err: ArgumentException) {
+    anguException(ctx: AbstractRequestContext, err: ArgumentException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(MissingModelFieldException)
-    missFieldException(ctx: RespondContext, err: MissingModelFieldException) {
+    missFieldException(ctx: AbstractRequestContext, err: MissingModelFieldException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
     @ExceptionHandler(MissingParameterException)
-    missException(ctx: RespondContext, err: MissingParameterException) {
+    missException(ctx: AbstractRequestContext, err: MissingParameterException) {
         const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined);
         ctx.throwException(execption)
     }
 
-    protected detailError(ctx: RespondContext): boolean {
+    protected detailError(ctx: AbstractRequestContext): boolean {
         return ctx.serverOptions.detailError == true;
     }
 }

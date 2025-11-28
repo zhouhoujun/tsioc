@@ -9,7 +9,7 @@ export * from './router/router.providers';
 export * from './metadata';
 export * from './content';
 // export * from './transport';
-export * from './context';
+export * from './AbstractRequestContext';
 export * from './AbstractRequestHandler';
 export * from './RestfulRequestContext';
 

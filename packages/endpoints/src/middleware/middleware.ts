@@ -1,6 +1,6 @@
 import { HandlerFn, InterceptorFn, isFunction } from '@tsdi/ioc';
 import { from, lastValueFrom } from 'rxjs';
-import { RespondContext } from '../context';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 
 
 /**
@@ -8,7 +8,7 @@ import { RespondContext } from '../context';
  * 
  * 中间件, 可以可链接上下文的行为修饰符。
  */
-export interface Middleware<Tx extends RespondContext = RespondContext> {
+export interface Middleware<Tx extends AbstractRequestContext = AbstractRequestContext> {
     /**
      * invoke the middleware.
      * @param ctx  context with request and response.
@@ -24,16 +24,16 @@ export interface Middleware<Tx extends RespondContext = RespondContext> {
  * 
  * 中间件函数
  */
-export type MiddlewareFn<T extends RespondContext = RespondContext> = (ctx: T, next: () => Promise<void>) => Promise<void>;
+export type MiddlewareFn<T extends AbstractRequestContext = AbstractRequestContext> = (ctx: T, next: () => Promise<void>) => Promise<void>;
 /**
  * middleware like. instance of middleware or middleware function.
  * 
  * 类中间件，中间件或中间件函数。
  */
-export type MiddlewareLike<T extends RespondContext = RespondContext> = Middleware<T> | MiddlewareFn<T>;
+export type MiddlewareLike<T extends AbstractRequestContext = AbstractRequestContext> = Middleware<T> | MiddlewareFn<T>;
 
 
-export function convertToInterceptor<TInput extends RespondContext>(middleware: MiddlewareLike<TInput>): InterceptorFn<TInput> {
+export function convertToInterceptor<TInput extends AbstractRequestContext>(middleware: MiddlewareLike<TInput>): InterceptorFn<TInput> {
     return (input: TInput, next: HandlerFn<TInput>, context?: any) => {
         if (isFunction(middleware)) {
             return from(middleware(input, () => lastValueFrom(next(input, context))))
