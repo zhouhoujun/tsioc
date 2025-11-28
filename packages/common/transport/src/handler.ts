@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 @Abstract()
 export abstract class TransportHandler<TInput = any, TOutput = any> implements RequestHandler<TInput, TOutput> {
     /**
-     * mesaage transport handler.
+     * handle transport mesaage.
      * @param intput the request message input.
      */
     abstract handle(intput: TInput, context: RequestContext): Observable<TOutput>;

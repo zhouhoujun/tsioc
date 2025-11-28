@@ -3,7 +3,6 @@ import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RequestParams, Ab
 import { IStream, Packet, StreamAdapter } from '@tsdi/common/transport';
 import { defer, mergeMap } from 'rxjs';
 import { Buffer } from 'buffer';
-// import { ClientTransport } from '../transport';
 
 /**
  * Request body servialize interceptor

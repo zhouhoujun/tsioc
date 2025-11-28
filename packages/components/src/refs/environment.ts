@@ -17,7 +17,7 @@ export class EnvironmentState {
     readonly computedCache: Map<string, { value: any, deps: Set<any> }> = new Map();
 
     clear() {
-        this.componentRefs.clear();        
+        this.componentRefs.clear();
         this.directiveRefs.clear();
         this.templateRefs.clear();
         this.computedCache.clear();
@@ -29,7 +29,7 @@ export class EnvironmentState {
  * Environment context
  */
 
-export class EnvironmentContext extends DefaultInvocationContext {
+export class EnvironmentContext extends DefaultInvocationContext<EnvironmentContext> {
 
     // 私有属性用于存储引用映射
     private state = new EnvironmentState();
@@ -43,7 +43,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
     //  * get computed cache.
     //  */
     // getComputed(key: string): Map<string, { value: any, deps: Set<any> }> {
-       
+
     // }
 
 
@@ -55,10 +55,10 @@ export class EnvironmentContext extends DefaultInvocationContext {
     attachComponent<C>(compRef: ComponentRef<C>): void {
         if (compRef && compRef.elementRef && compRef.elementRef.nativeElement) {
             const el = compRef.elementRef.nativeElement;
-            if (!this._elementRefs.has(el)) {
-                this._elementRefs.set(el, compRef.elementRef);
+            if (!this.state.elementRefs.has(el)) {
+                this.state.elementRefs.set(el, compRef.elementRef);
             }
-            this._componentRefs.set(compRef.elementRef.nativeElement, compRef);
+            this.state.componentRefs.set(compRef.elementRef.nativeElement, compRef);
         }
     }
 
@@ -69,13 +69,13 @@ export class EnvironmentContext extends DefaultInvocationContext {
     attachDirective<C>(dirRef: DirectiveRef<C>): void {
         if (dirRef && dirRef.elementRef && dirRef.elementRef.nativeElement) {
             const element = dirRef.elementRef.nativeElement;
-            if (!this._elementRefs.has(element)) {
-                this._elementRefs.set(element, dirRef.elementRef);
+            if (!this.state.elementRefs.has(element)) {
+                this.state.elementRefs.set(element, dirRef.elementRef);
             }
-            if (!this._directiveRefs.has(element)) {
-                this._directiveRefs.set(element, []);
+            if (!this.state.directiveRefs.has(element)) {
+                this.state.directiveRefs.set(element, []);
             }
-            this._directiveRefs.get(element)!.push(dirRef);
+            this.state.directiveRefs.get(element)!.push(dirRef);
         }
     }
 
@@ -87,10 +87,10 @@ export class EnvironmentContext extends DefaultInvocationContext {
     attachTemplate<C>(tempRef: TemplateRef<C>): void {
         if (tempRef && tempRef.elementRef && tempRef.elementRef.nativeElement) {
             const el = tempRef.elementRef.nativeElement;
-            if (!this._elementRefs.has(el)) {
-                this._elementRefs.set(el, tempRef.elementRef);
+            if (!this.state.elementRefs.has(el)) {
+                this.state.elementRefs.set(el, tempRef.elementRef);
             }
-            this._templateRefs.set(el, tempRef);
+            this.state.templateRefs.set(el, tempRef);
         }
     }
 
@@ -100,8 +100,8 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param componentType component type.
      */
     getComponentRef<T>(componentType: Type<T>): ComponentRef<T>[] {
-        const results: ComponentRef<T>[] = [];
-        this._componentRefs.forEach(ref => {
+        const results: ComponentRef<T>[] = this._parent?.getComponentRef(componentType) ?? [];
+        this.state.componentRefs.forEach(ref => {
             if (ref.instance instanceof componentType) {
                 results.push(ref as ComponentRef<T>);
             }
@@ -114,7 +114,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param node element.
      */
     getComponentRefByNode(node: RNode): ComponentRef<any> | null {
-        return this._componentRefs.get(node) || null;
+        return this.state.componentRefs.get(node) ?? this._parent?.getComponentRefByNode(node) ?? null;
     }
 
     /**
@@ -122,8 +122,8 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param componentType directive type.
      */
     getDirectiveRef<T>(componentType: Type<T>): DirectiveRef<T>[] {
-        const results: DirectiveRef<T>[] = [];
-        this._directiveRefs.forEach(refs => {
+        const results: DirectiveRef<T>[] = this._parent?.getDirectiveRef(componentType) ?? [];
+        this.state.directiveRefs.forEach(refs => {
             refs.forEach(ref => {
                 if (ref.instance instanceof componentType) {
                     results.push(ref as DirectiveRef<T>);
@@ -138,8 +138,8 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param node element.
      */
     getDirectiveRefByNode(node: RNode): DirectiveRef<any> | null {
-        const refs = this._directiveRefs.get(node);
-        return refs && refs.length > 0 ? refs[0] : null;
+        const refs = this.state.directiveRefs.get(node);
+        return refs && refs.length > 0 ? refs[0] : this._parent?.getDirectiveRefByNode(node) ?? null;
     }
 
     /**
@@ -147,7 +147,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param node template element.
      */
     getTemplateRef<T>(node: RNode): TemplateRef<T> | null {
-        return this._templateRefs.get(node) ?? null;
+        return this.state.templateRefs.get(node) ?? this._parent?.getTemplateRef(node) ?? null;
     }
 
     /**
@@ -159,9 +159,16 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @memberof EnvironmentContext
      */
     getElementRef<T extends RNode>(node: T): ElementRef<T> {
-        if (!this._elementRefs.has(node)) {
-            this._elementRefs.set(node, new ElementRef(node));
+        if (!this.state.elementRefs.has(node)) {
+            this.state.elementRefs.set(node, new ElementRef(node));
         }
-        return this._elementRefs.get(node) as ElementRef<T>;
+        return this.state.elementRefs.get(node) ?? this._parent?.getElementRef(node) ?? this.createElementRef(node);
     }
+
+    createElementRef<T extends RNode>(node: T): ElementRef<T> {
+        const eRef = new ElementRef(node);
+        this.state.elementRefs.set(node, eRef);
+        return eRef;
+    }
+
 }

@@ -111,7 +111,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         return providers;
     }
 
-    protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: ComponentOptions): EnvironmentContext {
+    protected override createContext<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
         return new EnvironmentContext(injector, options, typeRef.type);
     }
 

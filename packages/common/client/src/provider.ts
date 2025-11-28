@@ -16,6 +16,7 @@ import { getInterceptorFnsToken, getLegacyInterceptorToken, legacyInterceptorFnF
  * @publicApi
  */
 export enum FeatureKind {
+    Configure,
     Interceptors,
     LegacyInterceptors,
     CustomXsrfConfiguration,
@@ -38,10 +39,15 @@ export interface ClientFeature<Kind extends FeatureKind> {
  * @returns 
  */
 export function provideClient(...features: ClientFeature<FeatureKind>[]): Provider[] {
+    // const kinds = new Set(features.map(f=> f.kind));
+    // if(kinds.has(FeatureKind.Fetch)) {
 
+    // }
+    
     const providers: Provider[] = [
         
-    ]
+    ];
+
 
     return providers;
 }
@@ -137,7 +143,7 @@ export function withInterceptorsFromDi(protocol: Protocols) {
 /**
  * global register client modules.
  */
-export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
+export const CLIENT_MODULES = tokenId<ClientModuleOpts[]>('CLIENT_MODULES');
 
 
 function clientProviders(options: ClientOptions, idx?: number) {
