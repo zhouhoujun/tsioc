@@ -17,11 +17,11 @@ export abstract class AbstractClient<
     TOptions extends ClientConfig = ClientConfig
 > {
 
-    abstract get context(): InvocationContext;
+    protected abstract get context(): InvocationContext;
     /**
      * client handler
      */
-    abstract get handler(): RequestHandler<TRequest, TResponse>;
+    protected abstract get handler(): RequestHandler<TRequest, TResponse>;
 
     abstract getOptions(): TOptions;
 

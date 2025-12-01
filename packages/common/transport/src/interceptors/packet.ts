@@ -12,6 +12,7 @@ import { OutgoingMessage } from '../Outgoing';
 import { Packet } from '../socket';
 import { TransportHandler } from '../handler';
 import { StreamAdapter } from '../StreamAdapter';
+import { PACKET_DELIMITER, PACKET_IDLEN, PACKET_LIMIT, PACKET_MAXSIZE } from '../context';
 
 
 
@@ -43,7 +44,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
                 cache.contentLength = null;
                 this.channels.set(channel, cache)
             }
-            this.handleData(channel, cache, packet, subscriber, streamAdapter, pipe);
+            this.handleData(context, channel, cache, packet, subscriber, streamAdapter, pipe);
 
             return subscriber;
 
@@ -52,10 +53,10 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
         );
     }
 
-    protected handleData(channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter, bpipe: PipeTransform): void {
+    protected handleData(context: RequestContext, channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter, bpipe: PipeTransform): void {
 
         // const transport = context.get(Transport) as AbstractTransport;
-        const options = transport.options;
+        // const options = transport.options;
 
         if (!isNumber(cache.length)) {
             cache.length = 0;
@@ -65,7 +66,8 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
         }
 
         if (cache.contentLength == null) {
-            const delimiter = options.delimiter ?? Buffer.from('#');
+            const delimiter = context.get(PACKET_DELIMITER);
+            const maxSize = context.get(PACKET_MAXSIZE);
             const countLen = 4;
             const i = data.indexOf(delimiter);
             if (i !== -1) {
@@ -83,13 +85,13 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
                     data = data.subarray(i + 1);
                 }
                 const rawContentLength = buffer.readUIntBE(0, countLen);
-                if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
+                if (isNaN(rawContentLength) || (maxSize && rawContentLength > maxSize)) {
                     cache.contentLength = null;
                     cache.length = 0;
                     cache.payload.end();
                     cache.payload = null;
                     if (rawContentLength) {
-                        throw new PacketLengthException(`Packet length ${bpipe.transform(rawContentLength)} great than max size ${bpipe.transform(options.maxSize)}`);
+                        throw new PacketLengthException(`Packet length ${bpipe.transform(rawContentLength)} great than max size ${bpipe.transform(maxSize)}`);
                     } else {
                         throw new PacketLengthException(`No packet length`);
                     }
@@ -113,7 +115,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
                 const rest = data.subarray(idx);
                 this.handleMessage(channel, cache, subscriber, !rest.length);
                 if (rest.length) {
-                    this.handleData(channel, cache, rest, subscriber, streamAdapter, bpipe);
+                    this.handleData(context, channel, cache, rest, subscriber, streamAdapter, bpipe);
                 }
             } else {
                 cache.payload.write(data);
@@ -155,7 +157,7 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
         const streamAdapter = context.get(StreamAdapter);
         const headerAdapter = context.get(HeaderAdapter);
         // const transport = context.get(Transport) as AbstractTransport;
-        const idLen = transport.options.idLen ?? 2;
+        const idLen = context.get(PACKET_IDLEN) ?? 2;
         let id: string | number;
         const payload = input.payload;
 
@@ -235,7 +237,8 @@ export const messageVaildateInterceptor: RequestInterceptorFn<OutgoingMessage, P
     const headerAdapter = context.get(HeaderAdapter);
     const length = headerAdapter.getContentLength(input);
     const injector = context.getInjector();
-    const sizeLimit = transport.options.maxSize ?? transport.options.limit;
+    const maxSize = context.get(PACKET_MAXSIZE);
+    const sizeLimit = context.get(PACKET_LIMIT) ?? maxSize;
     if (length && sizeLimit && length > sizeLimit) {
         const btpipe = injector.get<PipeTransform>('bytes-format');
         return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
@@ -261,14 +264,14 @@ export const messageSerializeInterceptor: RequestInterceptorFn<OutgoingMessage, 
             const streamAdapter = context.get(StreamAdapter);
             const countLen = 4;
             let buffLen: Buffer;
-            const delimiter = transport.options.delimiter ?? Buffer.from('#');
-            const delimiterLen = Buffer.byteLength(delimiter);
+            const delimiter = Buffer.from(context.get(PACKET_DELIMITER));
+            const delimiterLen = Buffer.byteLength(delimiter as Uint8Array);
             let data = msg.payload;
             if (streamAdapter.isReadable(data)) {
                 buffLen = Buffer.alloc(countLen);
                 buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
                 const total = countLen + delimiterLen;
-                const prfix = Buffer.concat([buffLen, delimiter], total);
+                const prfix = Buffer.concat([buffLen, delimiter] as Uint8Array[], total);
                 data.unshift(prfix);
             } else {
                 if (isString(data)) {
@@ -276,10 +279,10 @@ export const messageSerializeInterceptor: RequestInterceptorFn<OutgoingMessage, 
                 }
                 if (!data) data = Buffer.alloc(0);
                 buffLen = Buffer.alloc(countLen);
-                const dataLen = Buffer.byteLength(data);
+                const dataLen = Buffer.byteLength(data as Uint8Array);
                 buffLen.writeUIntBE(dataLen, 0, countLen);
                 const total = countLen + delimiterLen + dataLen;
-                data = Buffer.concat([buffLen, delimiter, data], total);
+                data = Buffer.concat([buffLen, delimiter, data] as Uint8Array[], total);
             }
             msg.payload = data;
 

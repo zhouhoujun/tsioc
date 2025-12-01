@@ -1,7 +1,6 @@
 import {
-    ArgumentException,
-    Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
-    Provider, isArray, isString, lang, toProvider, tokenId
+    ArgumentException, Injector, ModuleRef,
+    Provider, isString, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
 import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
@@ -87,10 +86,10 @@ export function provideService(nameOrFeature: string | ServiceFeature<ServFeatur
         ...kinds.get(ServFeatureKind.Configure)!,
         {
             provide: name,
-            useFactory: (injector: Injector)=> {
+            useFactory: (injector: Injector) => {
                 // createRequestHandler(injector)
             },
-            deps:[
+            deps: [
                 Injector
             ]
         }

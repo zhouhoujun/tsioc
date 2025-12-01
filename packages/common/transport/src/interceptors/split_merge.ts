@@ -7,8 +7,8 @@ import { PacketLengthException } from '../exceptions';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { Packet } from '../socket';
-import { AbstractTransport } from '../transports';
-import { Transport } from '../Transport';
+// import { AbstractTransport } from '../transports';
+// import { Transport } from '../Transport';
 
 interface CachePacket {
     packet: Packet<IDuplex>;

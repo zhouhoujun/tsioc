@@ -1,6 +1,6 @@
 import { Injector, Injectable, lang, tokenId, isArray, Module, Handler, composeHandlers, toPromise } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { BadRequestException } from '@tsdi/common/transport';
+import { BadRequestException } from '@tsdi/common';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
     Middleware, RestfulRequestContext, EndpointModule,
@@ -108,13 +108,13 @@ class DeviceQueue implements Handler {
     async handle(ctx: RestfulRequestContext, context: AbstractRequestContext): Promise<void> {
 
         console.log('device msg start.');
-        ctx.setValue('device', 'device data')
+        ctx.set('device', 'device data')
 
 
         console.log('device msg start.');
-        ctx.setValue('device', 'device data')
+        ctx.set('device', 'device data')
         await toPromise(composeHandlers(ctx.get(DEVICE_MIDDLEWARES))(ctx, context));
-        ctx.setValue('device', 'device next');
+        ctx.set('device', 'device next');
 
         const device = ctx.get('device');
         const deviceA_state = ctx.get('deviceA_state');
@@ -140,7 +140,7 @@ class DeviceStartupHandle implements Handler {
         if (ctx.request.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
-            ctx.setValue('deviceB_state', ret);
+            ctx.set('deviceB_state', ret);
         }
     }
 }
@@ -152,7 +152,7 @@ class DeviceAStartupHandle implements Handler {
         if (ctx.request.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
-            ctx.setValue('deviceA_state', ret);
+            ctx.set('deviceA_state', ret);
         }
     }
 }

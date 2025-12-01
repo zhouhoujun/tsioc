@@ -1,4 +1,3 @@
-import { AbstractType } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { deepForEach, getTypeName } from '../utils/lang';
 import { isArray, isFunction, isNumber } from '../utils/chk';
