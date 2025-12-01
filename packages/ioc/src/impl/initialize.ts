@@ -1,5 +1,7 @@
 import { Exception } from '../exception';
-import { ContextToken, HandlerFn, InterceptorFn, InterceptorLike } from '../handler';
+import { ContextToken } from '../handlers/Context';
+import { HandlerFn } from '../handlers/handler';
+import { InterceptorFn, InterceptorLike } from '../handlers/interceptor';
 import { PropertyMetadata } from '../metadata/meta';
 import { ClassRef, ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Runtime } from '../runtime';

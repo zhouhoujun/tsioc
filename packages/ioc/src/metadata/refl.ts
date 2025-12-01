@@ -11,7 +11,7 @@ import {
     DecorContext, DecoratorOption
 } from './class';
 import { InvokeOptions } from '../context';
-import { Context, HandleResult, HandlerFn } from '../handler';
+import { HandleResult } from '../handlers/handler';
 import { RuntimeHandler } from '../lifescope/handler';
 
 export type DecorHandlerFn = (input: DecorContext, context?: any) => HandleResult<any>;

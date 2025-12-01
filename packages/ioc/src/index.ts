@@ -32,8 +32,13 @@ export * from './metadata/tk';
 export * from './providers';
 
 
+// handlers
+export * from './handlers/Context';
+export * from './handlers/handler';
+export * from './handlers/interceptor';
+export * from './handlers/compose';
+export * from './handlers/intercepting';
 
-export * from './handler';
 export * from './lifescope/context';
 export * from './lifescope/handler';
 export * from './impl/initialize';

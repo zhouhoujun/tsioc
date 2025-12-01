@@ -1,4 +1,7 @@
-import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
+import { Context, ContextToken } from '../handlers/Context';
+import { HandlerFn } from '../handlers/handler';
+import { InterceptorLike } from '../handlers/interceptor';
+import { invokeTail } from '../handlers/compose';
 import { InjectorRecord } from '../injector';
 import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { AbstractInjector } from './injector';

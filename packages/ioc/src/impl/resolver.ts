@@ -1,5 +1,7 @@
 import { Exception } from '../exception';
-import { Context, ContextToken, HandlerLike, InterceptorLike } from '../handler';
+import { Context, ContextToken } from '../handlers/Context';
+import { HandlerLike } from '../handlers/handler';
+import { InterceptorLike } from '../handlers/interceptor';
 import { Injector, InjectorRecord } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
 import { ClassRef } from '../metadata/class';

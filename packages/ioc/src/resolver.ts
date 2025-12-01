@@ -1,4 +1,6 @@
-import { Context, DefaultContext, ContextToken, Handler, HandlerFn, HandlerLike, Interceptor, InterceptorFn, InterceptorLike } from './handler';
+import { Context, ContextToken, DefaultContext } from './handlers/Context';
+import { Handler, HandlerFn, HandlerLike } from './handlers/handler';
+import { Interceptor, InterceptorFn, InterceptorLike } from './handlers/interceptor';
 import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
 import { InjectFlags, Token, tokenId } from './tokens';

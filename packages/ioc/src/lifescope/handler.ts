@@ -1,4 +1,6 @@
-import { composeInterceptors, Handler, HandleResult, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, TailNext } from '../handler';
+import { Handler, HandleResult, HandlerFn, TailNext } from '../handlers/handler';
+import { InterceptorFn, InterceptorLike } from '../handlers/interceptor';
+import { composeInterceptors, invokeTail } from '../handlers/compose';
 import { isFunction, isNumber } from '../utils/chk';
 
 /**

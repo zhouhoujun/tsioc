@@ -8,7 +8,7 @@ import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
-import { composeHandlers } from '../handler';
+import { composeHandlers } from '../handlers/compose';
 import { getClassify } from '../metadata/refl';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';

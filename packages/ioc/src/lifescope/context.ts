@@ -1,4 +1,4 @@
-import { Context, DefaultContext, ContextToken } from '../handler';
+import { Context, DefaultContext, ContextToken } from '../handlers/Context';
 import { Injector } from '../injector';
 import { DecoratorFn } from '../metadata/class';
 import { Parameters, Parameter } from '../resolver';
@@ -11,7 +11,6 @@ const RAISE_INJECTOR = new ContextToken<Injector>(() => null!);
 const PROVIDE = new ContextToken<Token | null>(() => null);
 const CTOR_ARGS = new ContextToken<any[] | null>(() => null);
 const CTOR_PARAMS = new ContextToken<Array<Token | [Token, ...InjectFlags[]] | Parameter> | null>(() => null);
-
 
 const INSTANCE = new ContextToken<any>(() => null!);
 
@@ -59,6 +58,13 @@ export class IocContext extends DefaultContext {
 
 export class RuntimeContext extends IocContext {
     /**
+     * raise injector
+     */
+    get raiseInjector(): Injector {
+        return this.get(RAISE_INJECTOR);
+    }
+
+    /**
      * constructor parameters.
      */
     get params(): Parameters {
@@ -74,10 +80,6 @@ export class RuntimeContext extends IocContext {
 
     set args(value: any[] | null) {
         this.set(CTOR_ARGS, value);
-    }
-
-    get raiseInjector(): Injector {
-        return this.get(RAISE_INJECTOR);
     }
 
 

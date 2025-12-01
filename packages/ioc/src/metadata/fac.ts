@@ -7,7 +7,8 @@ import { getToken, Token } from '../tokens';
 import { AbstractType } from '../types';
 import { isMetadataObject } from '../utils/obj';
 import { Exception } from '../exception';
-import { composeHandlers, HandlerFn } from '../handler';
+import { HandlerFn } from '../handlers/handler';
+import { composeHandlers } from '../handlers/compose';
 
 
 

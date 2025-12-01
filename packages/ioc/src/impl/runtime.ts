@@ -9,7 +9,7 @@ import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ModuleRef } from '../module.ref';
 import { RuntimeHandler } from '../lifescope/handler';
-import { Context, ContextToken, DefaultContext } from '../handler';
+import { Context, ContextToken, DefaultContext } from '../handlers/Context';
 import { INITIALIZE_INTERCEPTORS, instanceHandler } from './initialize';
 import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
