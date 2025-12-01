@@ -65,7 +65,7 @@ export function toHandlerFn(handler: Handler & { [handleFn]?: HandlerFn }): Hand
     return fn;
 }
 
-export function toHandler(handle: HandlerFn & { [owner]?: Handler }): Handler {
+function toHandler(handle: HandlerFn & { [owner]?: Handler }): Handler {
     if (handle[owner]) {
         return handle[owner];
     }
@@ -76,7 +76,7 @@ export function toHandler(handle: HandlerFn & { [owner]?: Handler }): Handler {
 
 
 const interceptorFn = Symbol('__interceptorFn');
-export function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: InterceptorFn }): InterceptorFn {
+function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: InterceptorFn }): InterceptorFn {
     if (interceptor[interceptorFn]) {
         return interceptor[interceptorFn];
     }

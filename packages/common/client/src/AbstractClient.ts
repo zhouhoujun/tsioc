@@ -1,6 +1,6 @@
 import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, RequestHandler, createRequestContext } from '@tsdi/common';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, RequestHandler, createRequestContext, RequestContext } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientConfig } from './options';
 
@@ -270,8 +270,7 @@ export abstract class AbstractClient<
         const req = this.buildRequest(first, options);
         let context = options.context;
         if (!context) {
-            context = createRequestContext(this.context, [[AbstractClient, this]]);
-            context.setProtocol(this.getOptions().protocol);
+            context = this.createContext();
             this.initContext(context);
         }
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -340,6 +339,12 @@ export abstract class AbstractClient<
                 // Guard against new future observe types being added.
                 throw new Exception(`Unreachable: unhandled observe type ${req.observe}}`)
         }
+    }
+
+    protected createContext(): RequestContext {
+        const context = createRequestContext(this.context, [[AbstractClient, this]]);
+        context.setProtocol(this.getOptions().protocol);
+        return context;
     }
 
     protected onError(err: Error): Error {

@@ -1,6 +1,6 @@
 import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isAbstractType, tokenId } from '@tsdi/ioc';
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
-import { InternalServerException } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/common';
 import { Routes } from './route';
 import { Router } from './router';
 

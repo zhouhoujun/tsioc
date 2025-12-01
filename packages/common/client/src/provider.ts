@@ -1,4 +1,4 @@
-import { Arrayify, Injector, Module, ModuleRef, ModuleWithProviders, Provider, Token, getToken, isArray, lang, toProvider, tokenId } from '@tsdi/ioc';
+import { Arrayify, Injector, Module, ModuleRef, ModuleWithProviders, Provider, Token, getToken, isArray, isString, lang, toProvider, tokenId } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory, NotImplementedException, Protocols, RequestHandlerFn, RequestInterceptorFn } from '@tsdi/common';
 import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
@@ -11,7 +11,7 @@ import { getInterceptorFnsToken, getLegacyInterceptorToken, legacyInterceptorFnF
 
 
 /**
- * Identifies a particular kind of `HttpFeature`.
+ * Identifies a particular kind of `ClientFeature`.
  *
  * @publicApi
  */
@@ -38,7 +38,27 @@ export interface ClientFeature<Kind extends FeatureKind> {
  * @param features module options.
  * @returns 
  */
-export function provideClient(...features: ClientFeature<FeatureKind>[]): Provider[] {
+export function provideClient(name:string, ...features: ClientFeature<FeatureKind>[]): Provider[];
+/**
+ * Configures client with features.
+ * @param features module options.
+ * @returns 
+ */
+export function provideClient(...features: ClientFeature<FeatureKind>[]): Provider[];
+
+/**
+ * Configures client with features.
+ * @param features module options.
+ * @returns 
+ */
+export function provideClient(nameOrFeature: string|ClientFeature<FeatureKind>, ...features: ClientFeature<FeatureKind>[]): Provider[] {
+    let name:string;
+    if(isString(nameOrFeature)){
+        name = nameOrFeature;
+    } else {
+        name = 'default';
+        features.unshift(nameOrFeature);
+    }
     // const kinds = new Set(features.map(f=> f.kind));
     // if(kinds.has(FeatureKind.Fetch)) {
 

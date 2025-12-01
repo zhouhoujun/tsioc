@@ -37,13 +37,21 @@ export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TIn
  */
 export type HandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>;
 
+/**
+ * next operation
+ */
 export interface NextOpter<TOutput, TContext = any> {
     next?: (res: TOutput, context?: TContext) => any;
     error?: (error: any) => any;
     finally?: () => any;
 }
 
+/**
+ * Handle result.
+ */
 export type HandleResult<TOutput> = TOutput | Promise<TOutput> | Observable<TOutput>;
 
-
+/**
+ * Tail next.
+ */
 export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => HandleResult<TOutput>);
