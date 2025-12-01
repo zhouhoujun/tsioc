@@ -265,8 +265,8 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
     return createDecorator(name, {
         actionType: ActionType.providers,
         props: (filter?: AbstractType | string, options?: InvocationHandlerOptions) => ({ filter, ...options }),
-        appendProps:(meta)=> {
-            if(!meta.resolvers) {
+        appendProps: (meta) => {
+            if (!meta.resolvers) {
                 meta.resolvers = [];
             }
             meta.resolvers.push(typeResolveInterceptor);
@@ -290,13 +290,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
             }
         },
         runtime: {
-            method: (typeRef, ctx) => {
-                if (!runtime && (
-                    !ctx.isResolve
-                    || typeRef.getAnnotation().static === true
-                    || typeRef.getAnnotation().singleton
-                )) return;
-
+            method: runtime? (typeRef, ctx) => {
                 const defines = typeRef.getDefines(ctx.currDecor!);
                 const injector = ctx.raiseInjector;
                 const invocation = typeRef.createInvocation(injector, { instance: ctx.instance });
@@ -309,7 +303,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     invocation.onDestroy(() => multicaster.removeListener(event, handler))
                 });
-            }
+            } : undefined
         }
     })
 }
@@ -497,7 +491,7 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
                 const interceptor = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: interceptor, useValue: interceptor, multi: true, multiOrder: order };
-                    InjectUtil.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
+                    InjectUtil.provider(providedIn ? injector.getRuntime().getInjector(providedIn) : injector, provider);
                 } else {
                     const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(InterceptorResolver) : currResolver;
                     resolver.addInterceptor(target as AbstractType | string, interceptor, order);
@@ -545,7 +539,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
                 const filter = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: target, useValue: filter, multi: true, multiOrder: order };
-                    InjectUtil.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
+                    InjectUtil.provider(providedIn ? injector.getRuntime().getInjector(providedIn) : injector, provider);
                 } else {
                     const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(FilterResolver) : currResolver;
                     resolver.addFilter(target as AbstractType | string, filter, order);

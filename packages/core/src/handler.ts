@@ -13,7 +13,7 @@ export class RunContext extends DefaultContext {
         return this.get(Injector)
     }
 
-    protected getToken<T>(token: Token<T>) {
+    protected override getToken<T>(token: Token<T>) {
         return this.map.get(token) ?? this.getFromInjector(token)
     }
 

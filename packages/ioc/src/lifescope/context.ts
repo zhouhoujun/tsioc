@@ -12,7 +12,6 @@ const PROVIDE = new ContextToken<Token | null>(() => null);
 const CTOR_ARGS = new ContextToken<any[] | null>(() => null);
 const CTOR_PARAMS = new ContextToken<Array<Token | [Token, ...InjectFlags[]] | Parameter> | null>(() => null);
 
-const IS_RESOLVE = new ContextToken<boolean>(() => false);
 
 const INSTANCE = new ContextToken<any>(() => null!);
 
@@ -28,18 +27,10 @@ export class IocContext extends DefaultContext {
         return this.get(Runtime);
     }
 
-    set runtime(value: Runtime) {
-        this.set(Runtime, value);
-    }
 
     get injector(): Injector {
         return this.get(INJECTOR);
     }
-
-    set injector(value: Injector) {
-        this.set(INJECTOR, value);
-    }
-
 
     /**
      * the token to provide.
@@ -48,19 +39,11 @@ export class IocContext extends DefaultContext {
         return this.get(PROVIDE);
     }
 
-    set provide(value: Token | null) {
-        this.set(PROVIDE, value);
-    }
-
     /**
      * whether the context is mutil.
      */
     get isMutil(): boolean {
         return this.get(MUTIL);
-    }
-
-    set isMutil(value: boolean) {
-        this.set(MUTIL, value);
     }
 
     get currDecor(): DecoratorFn | null {
@@ -82,10 +65,6 @@ export class RuntimeContext extends IocContext {
         return this.get(CTOR_PARAMS);
     }
 
-    set params(value: Parameters) {
-        this.set(CTOR_PARAMS, value);
-    }
-
     /**
      * constructor arguments.
      */
@@ -101,10 +80,6 @@ export class RuntimeContext extends IocContext {
         return this.get(RAISE_INJECTOR);
     }
 
-    set raiseInjector(value: Injector) {
-        this.set(RAISE_INJECTOR, value);
-    }
-
 
     get instance(): any {
         return this.get(INSTANCE);
@@ -114,16 +89,6 @@ export class RuntimeContext extends IocContext {
         this.set(INSTANCE, value);
     }
 
-    /**
-     * whether the context is resolve.
-     */
-    get isResolve(): boolean {
-        return this.get(IS_RESOLVE);
-    }
-
-    set isResolve(value: boolean) {
-        this.set(IS_RESOLVE, value);
-    }
 }
 
 

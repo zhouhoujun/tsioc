@@ -20,7 +20,7 @@ export class BigFileInterceptor implements RequestInterceptor {
         return next.handle(input, context);
     }
 
-    async genedata(input: RequestContext) {
+    async genedata(input: AbstractRequestContext) {
         const filename = join(__dirname, './public/big-temp.json');
         if (!fs.existsSync(filename)) {
             const defer = lang.defer();
