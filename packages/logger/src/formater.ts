@@ -25,7 +25,7 @@ export abstract class JoinPointFormater {
 /**
  * JoinPoint log formater
  */
-export type LOGFormater = JoinPointFormater | Token<JoinPointFormater> | ((joinPoint?: JoinPoint, ...messages: any[]) => any[]) | string;
+export type LOGFormater = JoinPointFormater | Token<JoinPointFormater> | ((joinPoint?: JoinPoint, ...messages: any[]) => any[]);
 
 
 @NonePointcut()

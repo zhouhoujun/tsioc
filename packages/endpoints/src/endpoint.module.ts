@@ -1,5 +1,5 @@
 import {
-    Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
+    Injector, Module, ModuleRef, ModuleWithProviders,
     Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
@@ -56,8 +56,8 @@ export class EndpointModule {
      * @param options
      * @param autoBootstrap default true 
      */
-    static register(options: Array<ServiceOptions>): ModuleWithProviders<EndpointModule>;
-    static register(options: Arrayify<ServiceOptions>): ModuleWithProviders<EndpointModule> {
+    static register(...options: ServiceOptions[]): ModuleWithProviders<EndpointModule>;
+    static register(...options: ServiceOptions[]): ModuleWithProviders<EndpointModule> {
         return provideService(options as any);
     }
 }
@@ -73,8 +73,8 @@ export function provideService(options: ServiceOptions): ModuleWithProviders<End
  * @param options
  * @param autoBootstrap default true 
  */
-export function provideService(options: Array<ServiceOptions>): ModuleWithProviders<EndpointModule>;
-export function provideService(options: Arrayify<ServiceOptions>): ModuleWithProviders<EndpointModule> {
+export function provideService(...options: ServiceOptions[]): ModuleWithProviders<EndpointModule>;
+export function provideService(...options: ServiceOptions[]): ModuleWithProviders<EndpointModule> {
 
     const providers: Provider[] = [];
     if (isArray(options)) {

@@ -33,10 +33,6 @@ export class InjectToken<T = any> {
  */
 export type Token<T = any> = string | symbol | InjectToken<T> | AbstractType<T>;
 
-/**
- * provide token
- */
-export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType<T>;
 
 /**
  * parse id string to token, type of {@link Token}.

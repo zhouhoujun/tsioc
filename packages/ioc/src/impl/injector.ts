@@ -916,14 +916,6 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
             return runtime.get(type);
         }
 
-        // const context = new RuntimeContext(runtime);
-        // if (multi) context.isMutil = true;
-        // if (params) {
-        //     context.params = params;
-        // }
-
-        // context.raiseInjector = raise ?? injector;
-        // context.injector = injector;
         const context = createRuntimeContext(injector, undefined, runtime, raise, multi, params);
         const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
@@ -943,12 +935,6 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
     }
 
     record.onRegister = () => {
-        // const context = new IocContext(runtime);
-        // if (multi) context.isMutil = true;
-        // context.injector = injector;
-        // if (!multi && provide) {
-        //     context.provide = provide;
-        // }
         const context = createDesignContext(injector, undefined, runtime, multi, provide);
         runtime.getRegisterHandler().handle(typeRef, context, { finally: () => context.onDestroy() })
     }

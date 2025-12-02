@@ -49,15 +49,15 @@ export type FilterLike<TInput = any, TOutput = any, TContext extends RunContext 
  */
 export const FILTERS_TOKEN = tokenId<FilterLike[]>('FILTERS_TOKEN');
 
-const FILTERS = 'FILTERS';
-/**
- * get target filters token.
- * @param request 
- * @returns 
- */
-export function getFiltersToken(type: TypeOf<any>, propertyKey?: string): Token<Filter[]> {
-    return getTokenOf(type, FILTERS, propertyKey)
-}
+// const FILTERS = 'FILTERS';
+// /**
+//  * get target filters token.
+//  * @param request 
+//  * @returns 
+//  */
+// export function getFiltersToken(type: TypeOf<any>, propertyKey?: string): Token<Filter[]> {
+//     return getTokenOf(type, FILTERS, propertyKey)
+// }
 
 
 

@@ -15,7 +15,7 @@ export interface TransportParameter<T = object> extends Parameter<T> {
     /**
      * pipe
      */
-    pipe?: string | TypeOf<PipeTransform>;
+    pipe?: TypeOf<PipeTransform>;
     /**
      * pipe extends args
      */

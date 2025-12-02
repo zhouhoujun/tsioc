@@ -124,9 +124,6 @@ export interface AnnotationType<T = any> extends AbstractType<T> {
  * type or type instance.
  */
 export type TypeOf<T> = AbstractType<T> | Exclude<T, Function>;
-/**
- * arrayify.
- */
-export type Arrayify<T> = Array<T> | T;
+
 
 

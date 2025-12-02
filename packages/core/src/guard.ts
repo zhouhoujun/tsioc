@@ -38,12 +38,12 @@ export type GuardLike<T = any, TContext = any> = CanHandle<T, TContext> | CanHan
 export const GUARDS_TOKEN = tokenId<CanHandle[]>('GUARDS_TOKEN');
 
 
-const GUARDS = 'GUARDS';
-/**
- * get target guards token.
- * @param request 
- * @returns 
- */
-export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanHandle[]> {
-    return getTokenOf(type, GUARDS, propertyKey)
-}
+// const GUARDS = 'GUARDS';
+// /**
+//  * get target guards token.
+//  * @param request 
+//  * @returns token of guards.
+//  */
+// export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanHandle[]> {
+//     return getTokenOf(type, GUARDS, propertyKey)
+// }
