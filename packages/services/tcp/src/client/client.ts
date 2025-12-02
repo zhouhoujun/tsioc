@@ -1,7 +1,7 @@
-import { Injectable, isString, promisify, Context } from '@tsdi/ioc';
+import { Injectable, isString, promisify, Context, Injector, getClassRef } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientFeatureLike, FeatureKind, makeClientFeature } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'node:net';
@@ -9,6 +9,7 @@ import * as tls from 'node:tls';
 import { TcpClientConfig } from './options';
 import { TcpHandler } from './handler';
 import { TcpRequest } from './request';
+import { getClientHanlderToken, getClientToken } from '@tsdi/common/client/src/tokens';
 
 
 /**
@@ -115,4 +116,25 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
         return socket
     }
 
+}
+
+
+export function withTcpTransport(options: TcpClientConfig): ClientFeatureLike<FeatureKind.Transport> {
+    return (protocol, name) => makeClientFeature(FeatureKind.Transport, [
+        {
+            provide: TcpHandler,
+            useExisting: getClientHanlderToken(protocol, name)
+        },
+        {
+            provide: TcpClient,
+            useFactory: (injector: Injector) => {
+                return getClassRef(TcpClient).createInvocation(injector, options).instance;
+            },
+
+        },
+        {
+            provide: getClientToken(protocol, name),
+            useExisting: TcpClient
+        }
+    ])
 }

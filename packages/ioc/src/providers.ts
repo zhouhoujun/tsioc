@@ -242,7 +242,7 @@ export interface ModuleWithProviders<T = any> {
     providers: Provider[];
 }
 
-export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType>;
+export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType|Provider>;
 
 /**
  * is module providers or not.

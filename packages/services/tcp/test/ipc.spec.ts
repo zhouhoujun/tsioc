@@ -2,7 +2,7 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { BadRequestException, ErrorResponse, Response } from '@tsdi/common';
-import { provideClient } from '@tsdi/common/client';
+import { provideClient, withInterceptors } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult, provideService, getRouterToken, createRouteProviders } from '@tsdi/endpoints';
@@ -11,7 +11,7 @@ import * as os from 'os';
 import expect = require('expect');
 import path = require('path');
 import { rm } from 'shelljs';
-import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule } from '../src';
+import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, withTcpTransport } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -100,18 +100,26 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             ServerModule,
             LoggerModule,
             ServerEndpointModule,
-            provideClient({
-                transport: 'tcp',
-                microservice: false,
-                config: {
-                    connectOpts: {
-                        path: ipcpath
-                    },
-                    transportOptions: {
-                        maxSize: 1024 * 1024 * 20
-                    },
-                }
-            }),
+            provideClient('tcp',
+                withTcpTransport({
+                    microservice: true
+                    // connectOpts: {
+                    //     path: ipcpath
+                    // }
+                })
+            ),
+            // provideClient({
+            //     transport: 'tcp',
+            //     microservice: false,
+            //     config: {
+            //         connectOpts: {
+            //             path: ipcpath
+            //         },
+            //         transportOptions: {
+            //             maxSize: 1024 * 1024 * 20
+            //         },
+            //     }
+            // }),
             // RouterModule.forRoot('tcp', {microservice: true}),
             provideService({
                 transport: 'tcp',

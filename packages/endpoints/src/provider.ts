@@ -1,6 +1,6 @@
 import {
     ArgumentException, Injector, ModuleRef,
-    Provider, isString, lang, toProvider, token
+    Provider, isFunction, isString, lang, toProvider, token
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
 import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
@@ -17,7 +17,7 @@ import { DefaultExceptionHandlers } from './exception.handlers';
 // import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
-import { createRequestHandler, NotImplementedException } from '@tsdi/common';
+import { createRequestHandler, NotImplementedException, Protocols } from '@tsdi/common';
 
 
 /**
@@ -42,6 +42,7 @@ export enum ServFeatureKind {
     Router,
     Controller,
     Transport,
+    Transfer
 }
 
 
@@ -56,19 +57,19 @@ export interface ServiceFeature<Kind extends ServFeatureKind> {
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(name: string, ...features: ServiceFeature<ServFeatureKind>[]): Provider[];
+export function provideService(protocol: Protocols, name: string, ...features: ServiceFeature<ServFeatureKind>[]): Provider[];
 /**
  * provide service with optioos.
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(...features: ServiceFeature<ServFeatureKind>[]): Provider[];
+export function provideService(protocol: Protocols, ...features: ServiceFeature<ServFeatureKind>[]): Provider[];
 /**
  * provide service with optioos.
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(nameOrFeature: string | ServiceFeature<ServFeatureKind>, ...features: ServiceFeature<ServFeatureKind>[]): Provider[] {
+export function provideService(protocol: Protocols, nameOrFeature: string | ServiceFeature<ServFeatureKind>, ...features: ServiceFeature<ServFeatureKind>[]): Provider[] {
     let name: string;
     if (isString(nameOrFeature)) {
         name = nameOrFeature;
@@ -77,9 +78,19 @@ export function provideService(nameOrFeature: string | ServiceFeature<ServFeatur
         features.unshift(nameOrFeature);
     }
 
-    const kinds = new Map(features.map(f => [f.kind, f.providers]));
+    const kinds = new Map<ServFeatureKind, Provider[]>();
+    features.forEach(f => {
+        const feature = isFunction(f) ? f(protocol, name) : f;
+        const pdrs = kinds.get(feature.kind);
+        if (pdrs) {
+            pdrs.push(...feature.providers);
+        } else {
+            kinds.set(feature.kind, feature.providers.slice(0));
+        }
+    });
+
     if (!kinds.has(ServFeatureKind.Configure)) {
-        throw new ArgumentException('messings service configure');
+        throw new ArgumentException(`messings ${protocol} service configure` + (name ? `, ailas with name ${name}` : ''));
     }
 
     const providers: Provider[] = [
