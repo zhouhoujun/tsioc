@@ -1,4 +1,4 @@
-import { Injectable, tokenId, Inject } from '@tsdi/ioc';
+import { Injectable, token, Inject } from '@tsdi/ioc';
 import { RequestInterceptingHandler, RequestInterceptor } from '@tsdi/common';
 import { TransportBackend, TransportHandler } from './handler';
 
@@ -7,7 +7,7 @@ import { TransportBackend, TransportHandler } from './handler';
 /**
  * common transport interceptors for server side.
  */
-export const TRANSPORT_INTERCEPTORS = tokenId<RequestInterceptor[]>('TRANSPORT_INTERCEPTORS');
+export const TRANSPORT_INTERCEPTORS = token<RequestInterceptor[]>('TRANSPORT_INTERCEPTORS');
 
 
 /**
@@ -31,7 +31,7 @@ export class TransportInterceptingHandler<TInput = any, TOutput = any> extends R
 /**
  * common transport interceptors for client side.
  */
-export const CLIENT_TRANSPORT_INTERCEPTORS = tokenId<RequestInterceptor[]>('CLIENT_TRANSPORT_INTERCEPTORS');
+export const CLIENT_TRANSPORT_INTERCEPTORS = token<RequestInterceptor[]>('CLIENT_TRANSPORT_INTERCEPTORS');
 
 
 /**

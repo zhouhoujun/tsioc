@@ -1,4 +1,4 @@
-import { Token, tokenId } from '@tsdi/ioc';
+import { Token, token } from '@tsdi/ioc';
 import { Filter, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { AbstractClient, ClientConfig } from '@tsdi/common/client';
@@ -36,13 +36,13 @@ export interface HttpClientsConfig extends HttpClientConfig {
 /**
  * http client interceptors for `Http`.
  */
-export const HTTP_CLIENT_INTERCEPTORS = tokenId<Interceptor<HttpRequest<any>, HttpEvent<any>>[]>('HTTP_CLIENT_INTERCEPTORS');
+export const HTTP_CLIENT_INTERCEPTORS = token<Interceptor<HttpRequest<any>, HttpEvent<any>>[]>('HTTP_CLIENT_INTERCEPTORS');
 /**
  * http client filters for `Http`.
  */
-export const HTTP_CLIENT_FILTERS = tokenId<Filter<HttpRequest<any>, HttpEvent<any>>[]>('HTTP_CLIENT_FILTERS');
+export const HTTP_CLIENT_FILTERS = token<Filter<HttpRequest<any>, HttpEvent<any>>[]>('HTTP_CLIENT_FILTERS');
 /**
  * http serssion options.
  */
-export const HTTP_SESSIONOPTIONS = tokenId<HttpSessionOpts>('HTTP_SESSIONOPTIONS');
+export const HTTP_SESSIONOPTIONS = token<HttpSessionOpts>('HTTP_SESSIONOPTIONS');
 

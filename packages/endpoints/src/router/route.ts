@@ -1,4 +1,4 @@
-import { Handler, HandlerFn, HandlerLike, Invocation, Token, tokenId, AbstractType, TypeOf } from '@tsdi/ioc';
+import { Handler, HandlerFn, HandlerLike, Invocation, Token, token, AbstractType, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { Pattern, Protocols, RequestMethod } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -122,7 +122,7 @@ export type Routes = Route[];
 /**
  * ROUTES
  */
-export const ROUTES = tokenId<Routes>('ROUTES');
+export const ROUTES = token<Routes>('ROUTES');
 
 /**
  * route options

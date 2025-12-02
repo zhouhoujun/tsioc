@@ -1,4 +1,4 @@
-import { Injectable, Provider, Invocation, AbstractType, tokenId } from '@tsdi/ioc';
+import { Injectable, Provider, Invocation, AbstractType, token } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { Server } from './Server';
 
@@ -10,7 +10,7 @@ export interface RegisterService {
     providers: Provider[]
 }
 
-export const REGISTER_SERVICES = tokenId<RegisterService[]>('REGISTER_SERVICES');
+export const REGISTER_SERVICES = token<RegisterService[]>('REGISTER_SERVICES');
 
 
 

@@ -1,4 +1,4 @@
-import { AbstractType, Abstract, Injector, tokenId, Token, Provider } from '@tsdi/ioc';
+import { AbstractType, Abstract, Injector, token, Token, Provider } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
 import { Transport } from '@tsdi/common/transport';
 import { LogConfigure } from '@tsdi/logger';
@@ -79,7 +79,7 @@ export const CONFIGURATION = ApplicationConfiguration;
 /**
  * default configuration token.
  */
-export const DEFAULT_CONFIG: Token<ApplicationConfiguration> = tokenId<ApplicationConfiguration>('DEFAULT_CONFIG');
+export const DEFAULT_CONFIG: Token<ApplicationConfiguration> = token<ApplicationConfiguration>('DEFAULT_CONFIG');
 
 
 /**

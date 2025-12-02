@@ -1,4 +1,4 @@
-import { Parameter, tokenId, Invocation, AbstractType, PropertyMetadata, ResolveInterceptor } from '@tsdi/ioc';
+import { Parameter, token, Invocation, AbstractType, PropertyMetadata, ResolveInterceptor } from '@tsdi/ioc';
 
 
 /**
@@ -20,5 +20,5 @@ export interface ModelArgumentResolver<TOutput = any> extends ResolveInterceptor
  * model argument resolvers multi token.
  * provider instances of {@link ModelArgumentResolver}
  */
-export const MODEL_RESOLVERS = tokenId<ModelArgumentResolver[]>('MODEL_RESOLVERS');
+export const MODEL_RESOLVERS = token<ModelArgumentResolver[]>('MODEL_RESOLVERS');
 

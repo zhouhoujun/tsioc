@@ -1,4 +1,4 @@
-import { AnnotationType, AbstractType, typeFac, Annotation } from '../types';
+import { AnnotationType, AbstractType, typeFac } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
 import { getType, isBoolean, isFunction, isPrimitive } from '../utils/chk';
 import {

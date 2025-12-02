@@ -1,4 +1,4 @@
-import { tokenId } from '@tsdi/ioc';
+import { token } from '@tsdi/ioc';
 
-export const AOP_EXTEND_TARGET_TOKEN = tokenId<(target: any) => void>('AOP_EXTEND_TARGET_TOKEN')
+export const AOP_EXTEND_TARGET_TOKEN = token<(target: any) => void>('AOP_EXTEND_TARGET_TOKEN')
 

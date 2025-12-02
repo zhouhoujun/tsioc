@@ -1,4 +1,4 @@
-import { Injector, Module, ModuleRef, ModuleWithProviders, Provider, Token, getToken, isArray, isString, lang, toProvider, tokenId } from '@tsdi/ioc';
+import { Injector, Module, ModuleRef, ModuleWithProviders, Provider, Token, getToken, isArray, isString, lang, toProvider, token } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory, NotImplementedException, Protocols, RequestHandlerFn, RequestInterceptorFn } from '@tsdi/common';
 import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
@@ -163,7 +163,7 @@ export function withInterceptorsFromDi(protocol: Protocols) {
 /**
  * global register client modules.
  */
-export const CLIENT_MODULES = tokenId<ClientModuleOpts[]>('CLIENT_MODULES');
+export const CLIENT_MODULES = token<ClientModuleOpts[]>('CLIENT_MODULES');
 
 
 function clientProviders(options: ClientOptions, idx?: number) {

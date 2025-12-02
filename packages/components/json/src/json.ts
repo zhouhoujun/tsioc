@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
@@ -381,7 +381,7 @@ export class JsonTemplateParser implements TemplateParser {
     }
 }
 
-export const JSON_COMPILER_OPTIONS = tokenId<TemplateCompilerOptions>('JSON_COMPILER_OPTIONS');
+export const JSON_COMPILER_OPTIONS = token<TemplateCompilerOptions>('JSON_COMPILER_OPTIONS');
 
 const jsonDefaultOptions = {
     delimiters: ['{{', '}}'],

@@ -1,6 +1,6 @@
 import {
     ArgumentException, composeHandlers, getType, InjectFlags, HandlerLike,
-    Injector, ProvdierOf, tokenId, AbstractType, ContextToken,
+    Injector, ProvdierOf, token, AbstractType, ContextToken,
     HandleResult, promiseOf, isArray, toMutilProvdierOf
 } from '@tsdi/ioc';
 import { CanHandle } from '../guard';
@@ -19,17 +19,17 @@ import { HandlerOptions, isHandlerOptions } from '../handlers';
 /**
  *  event multicaster interceptors multi token.
  */
-export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
+export const EVENT_MULTICASTER_INTERCEPTORS = token<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
 /**
  *  event multicaster filters multi token.
  */
-export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FILTERS');
+export const EVENT_MULTICASTER_FILTERS = token<Filter[]>('EVENT_MULTICASTER_FILTERS');
 
 /**
  *  event multicaster guards multi token.
  */
-export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
+export const EVENT_MULTICASTER_GUARDS = token<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
 
 export const WITH_SELF = new ContextToken(() => false);
 

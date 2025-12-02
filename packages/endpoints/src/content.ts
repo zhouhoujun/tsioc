@@ -1,6 +1,6 @@
-import { tokenId } from '@tsdi/ioc';
+import { token } from '@tsdi/ioc';
 
-export const CONTENT_DISPOSITION_TOKEN = tokenId<ContentDisposition>('CONTENT_DISPOSITION');
+export const CONTENT_DISPOSITION_TOKEN = token<ContentDisposition>('CONTENT_DISPOSITION');
 
 /**
  * Create an attachment `Content-Disposition` header value using the given file name, if supplied.

@@ -1,6 +1,6 @@
 import {
     Injector, Module, ModuleRef, ModuleWithProviders,
-    Provider, isArray, lang, toProvider, tokenId
+    Provider, isArray, lang, toProvider, token
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
 import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
@@ -94,7 +94,7 @@ export function provideService(...options: ServiceOptions[]): ModuleWithProvider
 /**
  * global registered server modules
  */
-export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
+export const SERVER_MODULES = token<ServiceModuleOpts[]>('SERVER_MODULES');
 
 
 function createServiceProviders(options: ServiceOptions, idx: number) {

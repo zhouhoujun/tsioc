@@ -1,4 +1,4 @@
-import { createDecorator, AnnotationType, noPointcut, getModuleType, ActionType, tokenId, InvocationContext } from '@tsdi/ioc';
+import { createDecorator, AnnotationType, noPointcut, getModuleType, ActionType, token, InvocationContext } from '@tsdi/ioc';
 import { ComponentFactory, ComponentOptions, ComponentRef } from '../refs/component';
 import { Attribute, AttributeMetadata } from './atteribute';
 import { DIRECTIVES } from './directive';
@@ -9,7 +9,7 @@ import { NodeType } from '../renderer/Node';
 
 
 
-export const COMPONENTS = tokenId<ComponentDef[]>('COMPONENTS');
+export const COMPONENTS = token<ComponentDef[]>('COMPONENTS');
 
 export type ComponentDecorator = (options: Partial<ComponentDef>) => ClassDecorator;
 

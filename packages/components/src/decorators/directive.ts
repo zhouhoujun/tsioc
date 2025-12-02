@@ -1,9 +1,9 @@
-import { createDecorator, ActionType, AnnotationType, getModuleType, noPointcut, tokenId, InvocationContext } from '@tsdi/ioc';
+import { createDecorator, ActionType, AnnotationType, getModuleType, noPointcut, token, InvocationContext } from '@tsdi/ioc';
 import { Attribute, AttributeMetadata } from './atteribute';
 import { DirectiveDef, DirectiveFactory, DirectiveOptions, Factoriable, factoryKey } from '../refs/directive';
 
 
-export const DIRECTIVES = tokenId<DirectiveDef[]>('DIRECTIVES');
+export const DIRECTIVES = token<DirectiveDef[]>('DIRECTIVES');
 
 
 /**

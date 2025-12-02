@@ -1,4 +1,4 @@
-import { Injectable, ContextToken, InjectFlags, isNil, promisify, tokenId } from '@tsdi/ioc';
+import { Injectable, ContextToken, InjectFlags, isNil, promisify, token } from '@tsdi/ioc';
 import { Bean, Configuration, ExceptionHandlerFilter } from '@tsdi/core';
 import { Header, HeaderAdapter, LOCALHOST, ResponseFactory } from '@tsdi/common';
 import {
@@ -369,7 +369,7 @@ const {
 const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
 
-const REQUEST_STREAM = tokenId<ClientHttp2Stream | ClientRequest>('REQUEST_STREAM');
+const REQUEST_STREAM = token<ClientHttp2Stream | ClientRequest>('REQUEST_STREAM');
 
 const ABORT_CONTROLLER = new ContextToken(() => new AbortController());
 

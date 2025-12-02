@@ -1,4 +1,4 @@
-import { createInjector, DefaultEnvironmentInjector, DefaultInjector, Injectable, InjectFlags, Injector, InvocationFactory, isNumber, tokenId } from '@tsdi/ioc';
+import { createInjector, DefaultEnvironmentInjector, DefaultInjector, Injectable, InjectFlags, Injector, InvocationFactory, isNumber, token } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -7,9 +7,9 @@ class Person {
     constructor(public name: string, public age: number) { }
 }
 
-const GROUP1 = tokenId<Person[]>('GROUP1');
+const GROUP1 = token<Person[]>('GROUP1');
 
-const Students = tokenId<Student[]>('Students');
+const Students = token<Student[]>('Students');
 
 @Injectable()
 class PlcService {

@@ -1,4 +1,4 @@
-import { tokenId, Token, Injector } from '@tsdi/ioc';
+import { token, Token, Injector } from '@tsdi/ioc';
 import { CompilerOptions } from 'typescript';
 import { Src } from '@tsdi/activities';
 import { GlobbyOptions } from 'globby';
@@ -147,4 +147,4 @@ export interface CmdOptions {
     silent?: boolean;
 }
 
-export const PlatformServiceToken: Token<IPlatformService> = tokenId<IPlatformService>('pack_PlatformService');
+export const PlatformServiceToken: Token<IPlatformService> = token<IPlatformService>('pack_PlatformService');

@@ -1,4 +1,4 @@
-import { Abstract, Inject, Injectable, Nullable, tokenId } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Nullable, token } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { GET, HEAD, OPTIONS } from '@tsdi/common';
 import { ForbiddenException } from '@tsdi/common/transport';
@@ -30,7 +30,7 @@ const defOpts = {
     disableQuery: false
 } as CsrfOptions;
 
-export const CSRF = tokenId<string>('CSRF');
+export const CSRF = token<string>('CSRF');
 
 /**
  * Csrf tokens.

@@ -1,4 +1,4 @@
-import { Autowired, Injectable, Param, Singleton, Inject, Container, CONTAINER, Abstract } from '../src';
+import { Autowired, Injectable, Param, Singleton, Inject, Container, CONTAINER, Abstract, token } from '../src';
 
 export class SimppleAutoWried {
     constructor() {
@@ -169,7 +169,7 @@ export class StringIdTest {
     }
 }
 
-export const CollClassRoom = Symbol('CollegeClassRoom');
+export const CollClassRoom = token('CollegeClassRoom');
 
 @Injectable(CollClassRoom)
 export class SymbolCollegeClassRoom {

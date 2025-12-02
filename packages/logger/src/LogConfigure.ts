@@ -1,4 +1,4 @@
-import { Token, tokenId } from '@tsdi/ioc';
+import { Token, token } from '@tsdi/ioc';
 import { LOGFormater } from './formater';
 import { LoggerManager } from './LoggerManager';
 
@@ -37,4 +37,4 @@ export interface LogConfigure {
 /**
  * multi log configures
  */
-export const LOG_CONFIGURES =  tokenId<LogConfigure[]>('LOG_CONFIGURES');
+export const LOG_CONFIGURES =  token<LogConfigure[]>('LOG_CONFIGURES');

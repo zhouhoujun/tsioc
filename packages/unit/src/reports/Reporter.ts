@@ -1,4 +1,4 @@
-import { Token, Abstract, tokenId, Inject } from '@tsdi/ioc';
+import { Token, Abstract, token, Inject } from '@tsdi/ioc';
 import { SuiteDescribe, ICaseDescribe } from './interface';
 import { HrtimeFormatter } from '@tsdi/core';
 
@@ -6,7 +6,7 @@ import { HrtimeFormatter } from '@tsdi/core';
 /**
  * unit report multi token.
  */
-export const UNIT_REPORTES = tokenId<Reporter[]>('UNIT_REPORTES');
+export const UNIT_REPORTES = token<Reporter[]>('UNIT_REPORTES');
 
 /**
  * reportor.

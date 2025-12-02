@@ -15,10 +15,12 @@ export function isToken(target: any): target is Token {
         case 'function':
             return isNewable(target);
         case 'string':
-            return true
-        case 'symbol':
-            return true
+            return true;
+        // case 'symbol':
+        //     return true
+        case 'object':
+            return target instanceof InjectToken;
+        default:
+            return false;
     }
-
-    return target instanceof InjectToken
 }

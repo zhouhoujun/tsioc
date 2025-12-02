@@ -1,4 +1,4 @@
-import { HandleResult, Token, TypeOf, getTokenOf, tokenId } from '@tsdi/ioc';
+import { HandleResult, Token, TypeOf, getTokenOf, token } from '@tsdi/ioc';
 
 
 /**
@@ -35,7 +35,7 @@ export type GuardLike<T = any, TContext = any> = CanHandle<T, TContext> | CanHan
  * 
  *  处理器守卫组的标记令牌
  */
-export const GUARDS_TOKEN = tokenId<CanHandle[]>('GUARDS_TOKEN');
+export const GUARDS_TOKEN = token<CanHandle[]>('GUARDS_TOKEN');
 
 
 // const GUARDS = 'GUARDS';

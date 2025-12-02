@@ -1,4 +1,4 @@
-import { Injectable, tokenId, Inject, Injector } from '@tsdi/ioc';
+import { Injectable, token, Inject, Injector } from '@tsdi/ioc';
 import { RequestContext, RequestInterceptingHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { HttpBackend, HttpHandler } from './handler';
@@ -21,7 +21,7 @@ export interface HttpInterceptor extends RequestInterceptor<HttpRequest<any>, Ht
 /**
  * common http client interceptors for `HttpClient`.
  */
-export const HTTP_COMMON_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_COMMON_INTERCEPTORS');
+export const HTTP_COMMON_INTERCEPTORS = token<HttpInterceptor[]>('HTTP_COMMON_INTERCEPTORS');
 
 
 /**

@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
 import * as cssSelect from 'css-select';
 import {
@@ -391,7 +391,7 @@ const xmlDefaultOptions = {
     delimiters: ['{{', '}}'],
 } as TemplateCompilerOptions;
 
-export const XML_COMPILER_OPTIONS = tokenId<TemplateCompilerOptions>('XML_COMPILER_OPTIONS');
+export const XML_COMPILER_OPTIONS = token<TemplateCompilerOptions>('XML_COMPILER_OPTIONS');
 
 @Injectable()
 export class XmlTemplateCompiler extends AbstractTemplateCompiler {

@@ -1,4 +1,4 @@
-import { Inject, Injectable, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, token } from '@tsdi/ioc';
 import { GET, HEAD, DOCUMENT, PLATFORM_ID, RequestContext } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
@@ -7,8 +7,8 @@ import { HttpInterceptor } from './interceptor';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';
 
-export const XSRF_COOKIE_NAME = tokenId<string>('XSRF_COOKIE_NAME');
-export const XSRF_HEADER_NAME = tokenId<string>('XSRF_HEADER_NAME');
+export const XSRF_COOKIE_NAME = token<string>('XSRF_COOKIE_NAME');
+export const XSRF_HEADER_NAME = token<string>('XSRF_HEADER_NAME');
 
 /**
  * Retrieves the current XSRF token to use with the next outgoing request.

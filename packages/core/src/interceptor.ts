@@ -1,4 +1,4 @@
-import { getTokenOf, Token, TypeOf, tokenId, Abstract, AbstractType, Interceptor, InterceptorLike } from '@tsdi/ioc';
+import { getTokenOf, Token, TypeOf, token, Abstract, AbstractType, Interceptor, InterceptorLike } from '@tsdi/ioc';
 
 export { Interceptor, InterceptorFn, InterceptorLike } from '@tsdi/ioc';
 
@@ -7,7 +7,7 @@ export { Interceptor, InterceptorFn, InterceptorLike } from '@tsdi/ioc';
  * 
  * 拦截器组的标识令牌
  */
-export const INTERCEPTORS_TOKEN = tokenId<Interceptor[]>('INTERCEPTORS_TOKEN');
+export const INTERCEPTORS_TOKEN = token<Interceptor[]>('INTERCEPTORS_TOKEN');
 
 
 // /**

@@ -1,9 +1,9 @@
-import { tokenId, Type } from '@tsdi/ioc';
+import { token, Type } from '@tsdi/ioc';
 
 /**
  * db connections multi token.
  */
-export const CONNECTIONS = tokenId<ConnectionOptions[]>('CONNECTIONS');
+export const CONNECTIONS = token<ConnectionOptions[]>('CONNECTIONS');
 
 /**
  * connection options

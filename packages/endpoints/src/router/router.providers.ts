@@ -1,4 +1,4 @@
-import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isType, tokenId } from '@tsdi/ioc';
+import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isType, token } from '@tsdi/ioc';
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
 import { InternalServerException } from '@tsdi/common';
 import { Routes } from './route';
@@ -12,19 +12,19 @@ import { TrieOptions } from './trie';
 /**
  * global router prefix.
  */
-export const ROUTER_PREFIX = tokenId<string>('ROUTER_PREFIX');
+export const ROUTER_PREFIX = token<string>('ROUTER_PREFIX');
 
 
 /**
  * microservice message routers.
  */
-export const MESSAGE_ROUTERS = tokenId<Router[]>('MESSAGE_ROUTERS');
+export const MESSAGE_ROUTERS = token<Router[]>('MESSAGE_ROUTERS');
 
 
 /**
  *  service routers.
  */
-export const ROUTERS = tokenId<Router[]>('ROUTERS');
+export const ROUTERS = token<Router[]>('ROUTERS');
 
 export function getRouter(injector: Injector, protocol?: Protocols, microservice?: boolean): Router;
 export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router;

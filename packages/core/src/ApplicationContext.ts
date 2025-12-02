@@ -1,6 +1,6 @@
 import {
     Provider, Injector, Abstract, AbstractType, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeOptions
+    InvocationContext, ModuleMetadata, ModuleDef, Token, token, ClassRef, Invocation, InvokeOptions
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { ApplicationRunners } from './ApplicationRunners';
@@ -94,7 +94,7 @@ export interface BootstrapOption extends InvocationHandlerOptions<any> {
 /**
  * appliaction boot process root path.
  */
-export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
+export const PROCESS_ROOT: Token<string> = token<string>('PROCESS_ROOT');
 
 /**
  * Environment option.

@@ -31,15 +31,15 @@ export class InjectToken<T = any> {
  * 
  * 标记令牌
  */
-export type Token<T = any> = string | symbol | InjectToken<T> | AbstractType<T>;
+export type Token<T = any> = string | InjectToken<T> | AbstractType<T>;
 
 
 /**
- * parse id string to token, type of {@link Token}.
- * @param key id
+ * create token, type of {@link InjectToken}.
+ * @param desc
  */
-export function tokenId<T = any>(key: string): Token<T> {
-    return Symbol(key)
+export function token<T = any>(desc: string, providedIn?: AbstractType | 'root' | 'platform' | string): InjectToken<T> {
+    return new InjectToken<T>(desc, providedIn);
 }
 
 /**
@@ -78,7 +78,7 @@ export function getToken(token: Token, alias?: string): Token<any> {
             atk = token.to(alias);
         } else {
             const type = isString(token) ? token : getTypeName(token);
-            atk = Symbol(`${type}_${alias}`);
+            atk = new InjectToken(`${type}_${alias}`);
         }
         maps.set(alias, atk);
     }

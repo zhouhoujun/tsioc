@@ -1,4 +1,4 @@
-import { Injectable, lang, InjectUtil, Provider, tokenId } from '@tsdi/ioc';
+import { Injectable, lang, InjectUtil, Provider, token } from '@tsdi/ioc';
 import { Application, ApplicationContext, Start, Startup } from '@tsdi/core';
 import * as assert from 'assert';
 import * as expect from 'expect';
@@ -8,7 +8,7 @@ import { ExpectToken } from './assert/expects';
 import { AbstractReporter, UNIT_REPORTES } from './reports/Reporter';
 
 
-export const UNITTESTCONFIGURE = tokenId<UnitTestConfigure>('UNITTESTCONFIGURE');
+export const UNITTESTCONFIGURE = token<UnitTestConfigure>('UNITTESTCONFIGURE');
 /**
  * unit test configure register.
  *

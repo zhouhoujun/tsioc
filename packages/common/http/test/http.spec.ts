@@ -1,4 +1,4 @@
-import { Injector, Injectable, lang, tokenId, isArray, Module, Handler, composeHandlers, toPromise } from '@tsdi/ioc';
+import { Injector, Injectable, lang, token, isArray, Module, Handler, composeHandlers, toPromise } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestException } from '@tsdi/common';
 import {
@@ -157,7 +157,7 @@ class DeviceAStartupHandle implements Handler {
     }
 }
 
-export const DEVICE_MIDDLEWARES = tokenId<Handler[]>('DEVICE_MIDDLEWARES');
+export const DEVICE_MIDDLEWARES = token<Handler[]>('DEVICE_MIDDLEWARES');
 
 @Module({
     providers: [

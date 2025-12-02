@@ -1,4 +1,4 @@
-import { tokenId } from '@tsdi/ioc';
+import { token } from '@tsdi/ioc';
 
 export const PLATFORM_BROWSER_ID = 'browser';
 export const PLATFORM_SERVER_ID = 'server';
@@ -6,11 +6,11 @@ export const PLATFORM_SERVER_ID = 'server';
 /**
  * platform id.
  */
-export const PLATFORM_ID = tokenId<Object>('PLATFORM_ID');
+export const PLATFORM_ID = token<Object>('PLATFORM_ID');
 /**
  * document.
  */
-export const DOCUMENT = tokenId<Object>('DOCUMENT');
+export const DOCUMENT = token<Object>('DOCUMENT');
 
 /**
  * Returns whether a platform id represents a browser platform.

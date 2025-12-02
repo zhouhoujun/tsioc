@@ -1,5 +1,5 @@
 import {
-    tokenId, Injector, DefaultInvocationContext, lang, AbstractType,
+    token, Injector, DefaultInvocationContext, lang, AbstractType,
     DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, Parameters,
     Abstract,
 } from '@tsdi/ioc';
@@ -38,7 +38,7 @@ export interface JoinpointOption extends TargetInvokeArguments {
 }
 
 
-export const AOP_METHOD_ANNOTATIONS = tokenId<any[]>('AOP_METHOD_ANNOTATIONS');
+export const AOP_METHOD_ANNOTATIONS = token<any[]>('AOP_METHOD_ANNOTATIONS');
 
 export interface ReturnDefer {
     returningDefer: Defer;

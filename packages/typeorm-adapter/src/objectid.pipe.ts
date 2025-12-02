@@ -1,10 +1,10 @@
-import { Inject, isString, Token, tokenId, Type } from '@tsdi/ioc';
+import { Inject, isString, Token, token, Type } from '@tsdi/ioc';
 import { invalidPipeArgument, Pipe, PipeTransform } from '@tsdi/core';
 
 /**
  * ObjectID token for objectId pipe {@link ParseObjectIdPipe}
  */
-export const ObjectIDToken: Token<Type> = tokenId<Type>('ObjectID');
+export const ObjectIDToken: Token<Type> = token<Type>('ObjectID');
 
 @Pipe('objectId')
 export class ParseObjectIdPipe implements PipeTransform {

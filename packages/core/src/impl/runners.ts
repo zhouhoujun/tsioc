@@ -1,5 +1,5 @@
 import {
-    isNumber, AbstractType, Injectable, tokenId, ClassRef, isFunction, getClassify, ProvdierOf, 
+    isNumber, AbstractType, Injectable, token, ClassRef, isFunction, getClassify, ProvdierOf, 
     Invocation, ArgumentException, HandlerLike, composeHandlers, Type, InjectUtil,
     HandleResult, promiseOf, isArray, InterceptorLike, toMutilProvdierOf
 } from '@tsdi/ioc';
@@ -22,17 +22,17 @@ import { HandlerOptions, isHandlerOptions } from '../handlers/configable';
 /**
  *  Application runner interceptors multi token
  */
-export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor[]>('APP_RUNNERS_INTERCEPTORS');
+export const APP_RUNNERS_INTERCEPTORS = token<Interceptor[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
  *  Application runner filters multi token
  */
-export const APP_RUNNERS_FILTERS = tokenId<Filter[]>('APP_RUNNERS_FILTERS');
+export const APP_RUNNERS_FILTERS = token<Filter[]>('APP_RUNNERS_FILTERS');
 
 /**
  *  Application runner guards multi token
  */
-export const APP_RUNNERS_GUARDS = tokenId<CanHandle[]>('APP_RUNNERS_GUARDS');
+export const APP_RUNNERS_GUARDS = token<CanHandle[]>('APP_RUNNERS_GUARDS');
 
 
 @Injectable()

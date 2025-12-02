@@ -3,7 +3,7 @@ import { Handler, HandlerFn, HandlerLike } from './handlers/handler';
 import { Interceptor, InterceptorFn, InterceptorLike } from './handlers/interceptor';
 import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
-import { InjectFlags, Token, tokenId } from './tokens';
+import { InjectFlags, Token, token } from './tokens';
 import { AbstractType, TypeOf } from './types';
 import { isDefined, isObject } from './utils/chk';
 
@@ -117,7 +117,7 @@ export function getResolver(injector: Injector) {
     return injector.get(Resolver, null, InjectFlags.Self) ?? injector.get(DEFAULTA_RESOLVER);
 }
 
-export const DEFAULTA_RESOLVER = tokenId<Resolver>('DEFAULTA_RESOLVER');
+export const DEFAULTA_RESOLVER = token<Resolver>('DEFAULTA_RESOLVER');
 const PAYLOAD = new ContextToken<any>(() => null);
 const RESOLVER_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) => void>(() => null!);
 const RESOLVER_INJECTOR = new ContextToken<Injector>(() => null!);
