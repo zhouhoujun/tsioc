@@ -63,8 +63,8 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                         def.providers.push(...metadata.providers);
                     }
                     if (metadata.imports) def.imports = getModuleType(metadata.imports);
-                    if (metadata.exports) def.exports = getTypes<Type>(metadata.exports, true);
-                    if (metadata.declarations) def.declarations = getTypes<Type>(metadata.declarations, true);
+                    if (metadata.exports) def.exports = getTypes(metadata.exports);
+                    if (metadata.declarations) def.declarations = getTypes(metadata.declarations);
                     if (metadata.bootstrap) def.bootstrap = getTypes(metadata.bootstrap);
                 },
                 ...isArray(hd) ? hd : [hd]

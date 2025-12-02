@@ -58,7 +58,7 @@ export class DefaultModuleLoader extends ModuleLoader {
      */
     async loadType(mdl: LoadType): Promise<Type[]> {
         const mdls = await this.getMoudle(mdl);
-        return lang.getTypes(mdls, true)
+        return lang.getTypes(mdls)
     }
 
     /**
@@ -69,7 +69,7 @@ export class DefaultModuleLoader extends ModuleLoader {
      */
     async loadTypes(modules: LoadType[]): Promise<Type[][]> {
         const mdls = await this.load(modules);
-        return mdls.map(md => lang.getTypes(md, true))
+        return mdls.map(md => lang.getTypes(md))
     }
 
     require(moduleName: string): Promise<any> {

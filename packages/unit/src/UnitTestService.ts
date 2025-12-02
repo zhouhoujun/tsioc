@@ -1,4 +1,4 @@
-import { Injectable, isString, isAbstractType, isArray, step, getDef } from '@tsdi/ioc';
+import { Injectable, isString, isType, isArray, step, getDef } from '@tsdi/ioc';
 import { ApplicationContext, ModuleLoader, Runner } from '@tsdi/core';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
@@ -23,10 +23,10 @@ export class UnitTestService {
         oldRunner.registerGlobalScope();
         if (isString(src)) {
             suites = await loader.loadType({ files: [src], basePath: ctx.baseURL })
-        } else if (isAbstractType(src)) {
+        } else if (isType(src)) {
             suites = [src]
         } else if (isArray(src)) {
-            if (src.some(t => isAbstractType(t))) {
+            if (src.some(t => isType(t))) {
                 suites = src
             } else {
                 suites = await loader.loadType({ files: src as string | string[], basePath: ctx.baseURL })

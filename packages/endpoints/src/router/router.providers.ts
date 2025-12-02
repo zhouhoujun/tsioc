@@ -1,4 +1,4 @@
-import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isAbstractType, tokenId } from '@tsdi/ioc';
+import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isType, tokenId } from '@tsdi/ioc';
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
 import { InternalServerException } from '@tsdi/common';
 import { Routes } from './route';
@@ -50,7 +50,7 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
             useFactory: (injector: Injector) => {
                 const opts = isFunction(optsify) ? optsify(injector)! : optsify;
                 return new OptimizedRouter(injector,
-                    opts.formatter ? (isAbstractType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
+                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     opts.prefix,
                     protocol,
                     opts.options,

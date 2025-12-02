@@ -195,7 +195,7 @@ export class Application<T = any> {
             ...module,
             module: true,
             imports: module.imports ? getModuleType(module.imports) : [],
-            exports: module.exports ? lang.getTypes<Type>(module.exports, true) : [],
+            exports: module.exports ? lang.getTypes(module.exports) : [],
             bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
         } as ModuleDef);
     }

@@ -2,7 +2,7 @@ import { Type, Modules, AbstractType } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector } from './injector';
 import { isPlainObject } from './utils/obj';
-import { isArray, isBoolean, isDefined, isFunction, isAbstractType, isNil } from './utils/chk';
+import { isArray, isBoolean, isDefined, isFunction, isNil, isType } from './utils/chk';
 import { ArgumentException } from './exception';
 import { getTypeName } from './utils/lang';
 import { Parameter } from './resolver';
@@ -299,9 +299,9 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
         onRegistered?: (injector: Injector) => void
     };
 
-    if (isAbstractType(useOf)) {
+    if (isType(useOf)) {
         if (provide == useOf) throw new ArgumentException(getTypeName(provide) + ': provide is equals to provider')
-        return { ...options, provide, useClass: useOf as Type };
+        return { ...options, provide, useClass: useOf };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)
         || isDefined((useOf as UseFactory<T>).useFactory)
@@ -309,20 +309,23 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
         return { ...options, ...useOf, provide } as StaticProvider;
     }
 
-    return { ...options, provide, useValue: useOf as T }
+    return { ...options, provide, useValue: useOf as T };
+    // throw new ArgumentException('the argument is not ProviderOf type');
 }
 
 export function toMutilProvdierOf<T>(useOf: ProvdierOf<T>, multiOrder?: number): ProvdierOf<T> {
     if (isNil(multiOrder)) return useOf;
-    if (isAbstractType(useOf)) {
-        return { useClass: useOf as Type, multi: true, multiOrder };
+    if (isType(useOf)) {
+        return { useClass: useOf, multi: true, multiOrder };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)
         || isDefined((useOf as UseFactory<T>).useFactory)
         || isDefined((useOf as UseExisting<T>).useExisting))) {
         return { ...useOf, multi: true, multiOrder }
     }
+
     return { useValue: useOf as T, multi: true, multiOrder }
+    // throw new ArgumentException('the argument is not ProviderOf type');
 }
 
 /**
@@ -349,111 +352,3 @@ export function toProviders<T>(provide: Token, useOf: ProvdierOf<T>[], multi?: b
     return useOf.map(r => toProvider(provide, r, multi as any));
 }
 
-
-
-/**
- * convert to factory provider
- * @param provide provide token
- * @param useOf Provider
- * @param multi 
- * @returns 
- */
-export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean): FactoryProvider<T>;
-/**
- * convert to factory provider
- * @param provide provide token
- * @param useOf Provider
- * @param options 
- * @returns 
- */
-export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, options?: {
-    multi?: boolean,
-    static?: boolean,
-    /**
-     * init factory result.
-     * @param val 
-     * @param injector 
-     * @returns 
-     */
-    init?: (val: T, injector: Injector) => T,
-    onRegistered?: (injector: Injector) => void,
-    multiOrder?: number
-}): FactoryProvider<T>;
-
-export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean | {
-    multi?: boolean,
-    /**
-     * init factory result.
-     * @param val 
-     * @param injector 
-     * @returns 
-     */
-    init?: (val: T, injector: Injector) => T,
-    onRegistered?: (injector: Injector) => void,
-    multiOrder?: number,
-}): FactoryProvider<T> {
-
-    const { init, ...opts } = (isBoolean(multi) ? { multi } : (multi ?? {})) as {
-        multi?: boolean,
-        init?: (val: T, injector: Injector) => T,
-        onRegistered?: (injector: Injector) => void,
-        multiOrder?: number
-    }
-
-    const deps: any[] = [];
-    let useFactory: (...args: any[]) => T;
-
-    const isPlainObj = isPlainObject(useOf);
-    if (isPlainObj && isDefined((useOf as UseClass<T>).useClass)) {
-        const { deps: cdeps, useClass } = useOf as UseClass<T>;
-        if (cdeps && cdeps.length) {
-            deps.push(...cdeps, Injector);
-            useFactory = (...args: any[]) => {
-                const injector = args.pop() as Injector;
-                const val = new useClass(...args);
-                return init ? init(val, injector) : val;
-            }
-        } else {
-            deps.push(Injector);
-            useFactory = (injector: Injector) => {
-                const val = injector.get(useClass);
-                return init ? init(val, injector) : val;
-            }
-        }
-    } else if (isPlainObj && isDefined((useOf as UseValue<T>).useValue)) {
-        const { useValue } = useOf as UseValue<T>;
-        deps.push(Injector);
-        useFactory = (injector: Injector) => {
-            return init ? init(useValue, injector) : useValue;
-        }
-    } else if (isPlainObj && isDefined((useOf as UseFactory<T>).useFactory)) {
-        const { deps: cdeps, useFactory: factory } = useOf as UseFactory<T>;
-        cdeps && deps.push(...cdeps);
-        deps.push(Injector);
-        useFactory = (...args: any[]) => {
-            const injector = args.pop() as Injector;
-            const val = factory(...args);
-            return init ? init(val, injector) : val;
-        }
-    } else if (isPlainObj && isDefined((useOf as UseExisting<T>).useExisting)) {
-        const { useExisting } = useOf as UseExisting<T>;
-        deps.push(Injector);
-        useFactory = (injector: Injector) => {
-            const val = injector.get(useExisting);
-            return init ? init(val, injector) : val;
-        }
-    } else if (isAbstractType(useOf)) {
-        deps.push(Injector);
-        useFactory = (injector: Injector) => {
-            const val = injector.get(useOf);
-            return init ? init(val, injector) : val;
-        }
-    } else {
-        deps.push(Injector);
-        useFactory = (injector: Injector) => {
-            return init ? init(useOf as T, injector) : useOf as T;
-        }
-    }
-
-    return { ...opts, provide, useFactory, deps }
-}

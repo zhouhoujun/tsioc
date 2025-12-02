@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { Type, AbstractType } from '../types';
+import { Type } from '../types';
 
 
 export { isObservable } from 'rxjs';
@@ -23,9 +23,9 @@ const class$ = /^[\s\S]*class\s+/;
 const fncallErr = `cannot be invoked without 'new'`;
 
 
-const newable = Symbol('newable');
+const hasInstance = Symbol('hasInstance');
 interface Newable extends Function {
-    [newable]?: boolean;
+    [hasInstance]?: boolean;
 }
 
 /**
@@ -38,34 +38,33 @@ export function isNewable(fn: Function): boolean {
     if (typeof Symbol.hasInstance !== 'undefined') {
         return fn[Symbol.hasInstance] ? true : false;
     }
-    if (isBoolean((fn as Newable)[newable])) return (fn as Newable)[newable] as boolean;
+    const has = (fn as Newable)[hasInstance];
+    if (isBoolean(has)) return has;
 
     const str = String(fn);
-    if (class$.test(str)) return true;
-    if (fnc$.test(str)) return false;
+    if (class$.test(str)) {
+        (fn as Newable)[hasInstance] = true;
+        return true;
+    }
+    if (fnc$.test(str)) {
+        (fn as Newable)[hasInstance] = false;
+        return false;
+    }
 
     try {
         fn();
-        (fn as Newable)[newable] = false;
+        (fn as Newable)[hasInstance] = false;
         return false;
     } catch (err: any) {
         if (err.toString().indexOf(fncallErr) > 0) {
-            (fn as Newable)[newable] = true;
+            (fn as Newable)[hasInstance] = true;
             return true;
         }
-        (fn as Newable)[newable] = false;
+        (fn as Newable)[hasInstance] = false;
         return false;
     }
 }
 
-/**
- * is abstract type or not.
- * @param t 
- * @returns 
- */
-export function isAbstractType(t: any): t is AbstractType<any> {
-    return typeof t === 'function' && isNewable(t);
-}
 
 /**
  * is type or not.
@@ -73,7 +72,7 @@ export function isAbstractType(t: any): t is AbstractType<any> {
  * @returns 
  */
 export function isType(t: any): t is Type<any> {
-    return isAbstractType(t) && !isPrimitive(t)
+    return typeof t === 'function' && !isPrimitive(t) && isNewable(t)
 }
 
 

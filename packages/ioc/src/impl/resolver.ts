@@ -10,7 +10,7 @@ import { Parameter, ParameterLike, ResolveContext, ResolveHandler, Resolver } fr
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';
-import { isAbstractType, isArray, isFunction, isNil, isString, isType } from '../utils/chk';
+import { isArray, isFunction, isNil, isString, isType } from '../utils/chk';
 import { getTypeName } from '../utils/lang';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { resolveArgs, resolveParameters } from './common';
@@ -100,7 +100,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `[${obj.map(v => object2string(v, options)).join(', ')}]`
     } else if (isString(obj)) {
         return `"${obj}"`
-    } else if (isAbstractType(obj)) {
+    } else if (isType(obj)) {
         return 'Type<' + getTypeName(obj) + '>'
     } else if (obj instanceof ClassRef) {
         return `[${obj.className} TypeReflect]`

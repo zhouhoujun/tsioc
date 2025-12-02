@@ -1,5 +1,5 @@
-import { Module } from '@tsdi/ioc';
-import { provideClient, withInterceptorsFromDi } from './provider';
+// import { Module } from '@tsdi/ioc';
+// import { provideClient, withInterceptorsFromDi } from './provider';
 
 
 // /**

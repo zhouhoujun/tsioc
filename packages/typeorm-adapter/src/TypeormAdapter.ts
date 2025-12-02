@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import { AbstractType, isString, Injector, isNil, isAbstractType, Static, isFunction, Inject, INJECTOR, Type, isType, InjectUtil } from '@tsdi/ioc';
-import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, HandleContext } from '@tsdi/core';
+import { AbstractType, isString, Injector, isNil, Static, isFunction, Inject, INJECTOR, Type, isType, InjectUtil } from '@tsdi/ioc';
+import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
 import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository, EntityManager } from 'typeorm';
@@ -55,7 +55,7 @@ export class TypeormAdapter {
                     let type: AbstractType;
                     let dbtype: string | undefined;
                     if (opType) {
-                        if (isAbstractType(opType)) {
+                        if (isType(opType)) {
                             type = opType;
                         } else if (isString(opType)) {
                             dbtype = opType;

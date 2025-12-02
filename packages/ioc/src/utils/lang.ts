@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { AbstractType, AnnotationType, Modules, Type } from '../types';
-import { getType, isArray, isFunction, isNil, isObject, isType, isPromise, isAbstractType, isUndefined } from './chk';
+import { getType, isArray, isFunction, isNil, isObject, isType, isPromise, isUndefined } from './chk';
 import { isPlainObject } from './obj';
 
 /**
@@ -300,11 +300,10 @@ export function isExtends<T extends AbstractType>(target: AbstractType, baseType
  * @param {...Express<Type, boolean>[]} filters
  * @returns {Type[]}
  */
-export function getTypes<T extends AbstractType>(mds: Modules | Modules[], typeOnly?: boolean): T[] {
-    const types: T[] = [];
-    const typFn = typeOnly ? isType : isAbstractType;
+export function getTypes(mds: Modules | Modules[]): Type[] {
+    const types: Type[] = [];
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
-        typFn(ty) && types.push(ty as T)
+        isType(ty) && types.push(ty)
     }, v => isPlainObject(v));
     return types
 }
