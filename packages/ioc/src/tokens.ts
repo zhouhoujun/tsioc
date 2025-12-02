@@ -15,7 +15,7 @@ import { getTypeName } from './utils/lang';
 export class InjectToken<T = any> {
     constructor(
         protected desc: string,
-        readonly providedIn: AbstractType | 'root' | 'platform' | string = '') { }
+        readonly providedIn: AbstractType | 'root' | 'platform' | null = null) { }
 
     toString(): string {
         return `Token ${this.desc}`
@@ -38,7 +38,7 @@ export type Token<T = any> = string | InjectToken<T> | AbstractType<T>;
  * create token, type of {@link InjectToken}.
  * @param desc
  */
-export function token<T = any>(desc: string, providedIn?: AbstractType | 'root' | 'platform' | string): InjectToken<T> {
+export function token<T = any>(desc: string, providedIn?: AbstractType | 'root' | 'platform'): InjectToken<T> {
     return new InjectToken<T>(desc, providedIn);
 }
 
