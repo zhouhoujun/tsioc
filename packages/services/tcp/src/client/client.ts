@@ -138,6 +138,6 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
                 provide: getClientToken(config.protocol, config.name, config.microservice),
                 useExisting: TcpClient
             }
-        ], config)
+        ], config) as ClientTransportFeature;
     });
 }

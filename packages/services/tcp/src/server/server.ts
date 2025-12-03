@@ -170,6 +170,6 @@ export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[
                 provide: getServiceToken(config.protocol, config.name, config.microservice),
                 useExisting: TcpServer
             }
-        ], config);
+        ], config) as TransportFeature;
     })
 }
