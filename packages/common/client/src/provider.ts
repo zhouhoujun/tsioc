@@ -1,12 +1,11 @@
-import { ArgumentException, Injector, Module, ModuleRef, ModuleWithProviders, ProvdierOf, Provider, Token, getToken, isArray, isFunction, isString, lang, toProvider, token } from '@tsdi/ioc';
+import { ArgumentException, Injector, ModuleRef, ProvdierOf, Provider, isFunction, isString, lang, toProvider, token } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
-import { createRequestHandler, DefaultResponseFactory, NotImplementedException, Protocols, RequestHandlerFn, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
-import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
+import { createRequestHandler, NotImplementedException, Protocols, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
+import { isMicroTransport, toTransportModuleName } from '@tsdi/common/transport';
 import { RequestBackend } from './backend';
-import { UrlRedirector } from './transport';
 import { ClientConfig } from './options';
 import { ClientOptions, ClientModuleOpts } from './client.options';
-import { getClientHanlderToken, getClientOptionsToken, getClientToken, getInterceptorFnsToken, getInterceptorsToken, getLegacyInterceptorToken } from './tokens';
+import { getClientHanlderToken, getClientOptionsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 
 
 
@@ -15,12 +14,12 @@ import { getClientHanlderToken, getClientOptionsToken, getClientToken, getInterc
  *
  * @publicApi
  */
-export enum FeatureKind {
+export enum ClientFeatureKind {
     Configure,
     Interceptors,
     // LegacyInterceptors,
-    // CustomXsrfConfiguration,
-    // NoXsrfProtection,
+    CustomXsrfConfiguration,
+    NoXsrfProtection,
     JsonpSupport,
     RequestsMadeViaParent,
     Redirector,
@@ -29,12 +28,12 @@ export enum FeatureKind {
     Transfer
 }
 
-export interface ClientFeature<Kind extends FeatureKind> {
+export interface ClientFeature<Kind extends ClientFeatureKind> {
     kind: Kind;
     providers: Provider[];
 }
 
-export type ClientFeatureLike<Kind extends FeatureKind> = ClientFeature<Kind> | ((protocol: Protocols, name?: string) => ClientFeature<Kind>);
+export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ((protocol: Protocols, name?: string) => ClientFeature<Kind>);
 
 
 /**
@@ -42,20 +41,20 @@ export type ClientFeatureLike<Kind extends FeatureKind> = ClientFeature<Kind> | 
  * @param features module options.
  * @returns 
  */
-export function provideClient(protocol: Protocols, name: string, ...features: ClientFeatureLike<FeatureKind>[]): Provider[];
+export function provideClient(protocol: Protocols, name: string, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[];
 /**
  * Configures client with features.
  * @param features module options.
  * @returns 
  */
-export function provideClient(protocol: Protocols, ...features: ClientFeatureLike<FeatureKind>[]): Provider[];
+export function provideClient(protocol: Protocols, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[];
 
 /**
  * Configures client with features.
  * @param features module options.
  * @returns 
  */
-export function provideClient(protocol: Protocols, nameOrFeature: string | ClientFeatureLike<FeatureKind>, ...features: ClientFeatureLike<FeatureKind>[]): Provider[] {
+export function provideClient(protocol: Protocols, nameOrFeature: string | ClientFeatureLike<ClientFeatureKind>, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[] {
     let name: string;
     if (isString(nameOrFeature)) {
         name = nameOrFeature;
@@ -63,7 +62,7 @@ export function provideClient(protocol: Protocols, nameOrFeature: string | Clien
         name = 'default';
         features.unshift(nameOrFeature);
     }
-    const kinds = new Map<FeatureKind, Provider[]>();
+    const kinds = new Map<ClientFeatureKind, Provider[]>();
     features.forEach(f => {
         const feature = isFunction(f) ? f(protocol, name) : f;
         const pdrs = kinds.get(feature.kind);
@@ -74,11 +73,11 @@ export function provideClient(protocol: Protocols, nameOrFeature: string | Clien
         }
     });
 
-    if (!kinds.has(FeatureKind.Configure)) {
-        throw new ArgumentException(`messings ${protocol} client configure` + (name ? `, ailas with name ${name}` : ''));
-    }
+    // if (!kinds.has(FeatureKind.Configure)) {
+    //     throw new ArgumentException(`messings ${protocol} client configure` + (name ? `, ailas with name ${name}` : ''));
+    // }
 
-    if (!kinds.has(FeatureKind.Transport)) {
+    if (!kinds.has(ClientFeatureKind.Transport)) {
         throw new ArgumentException(`messings ${protocol} client transport` + (name ? `, ailas with name ${name}` : ''));
     }
 
@@ -87,27 +86,27 @@ export function provideClient(protocol: Protocols, nameOrFeature: string | Clien
         providers.push(...kinds.get(k)!);
     });
 
-    const handlerToken = getClientHanlderToken(protocol, name);
-    const optionsToken = getClientOptionsToken(protocol, name);
+    // const handlerToken = getClientHanlderToken(protocol, name);
+    // const optionsToken = getClientOptionsToken(protocol, name);
 
-    providers.push(
-        {
-            provide: handlerToken,
-            useFactory: (injector: Injector) => {
-                // const options = injector.get(optionsToken);
-                return createRequestHandler(injector, injector.get(optionsToken));
-            },
-            deps: [
-                Injector
-            ]
+    // providers.push(
+    //     {
+    //         provide: handlerToken,
+    //         useFactory: (injector: Injector) => {
+    //             // const options = injector.get(optionsToken);
+    //             return createRequestHandler(injector, injector.get(optionsToken));
+    //         },
+    //         deps: [
+    //             Injector
+    //         ]
 
-        }
-    );
+    //     }
+    // );
 
     return providers;
 }
 
-export function makeClientFeature<T extends FeatureKind>(kind: T, providers: Provider[]): ClientFeature<T> {
+export function makeClientFeature<T extends ClientFeatureKind>(kind: T, providers: Provider[]): ClientFeature<T> {
     return {
         kind,
         providers
@@ -123,17 +122,40 @@ export function makeClientFeature<T extends FeatureKind>(kind: T, providers: Pro
  * @see {@link provideClient}
  * @publicApi
  */
-export function withInterceptors(
-    interceptors: ProvdierOf<RequestInterceptorLike>[],
-): ClientFeatureLike<FeatureKind.Interceptors> {
+export function withClientInterceptors(
+    ...interceptors: ProvdierOf<RequestInterceptorLike>[]
+): ClientFeatureLike<ClientFeatureKind.Interceptors> {
     return (protocol, name) => {
-        const token = getInterceptorsToken(protocol, name)
+        const token = getClientInterceptorsToken(protocol, name)
         return makeClientFeature(
-            FeatureKind.Interceptors,
+            ClientFeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true))
         );
     }
 }
+
+
+/**
+ * Adds one or more functional-style client transfers interceptors to the configuration of the `Client`
+ * instance.
+ *
+ * @see {@link RequestInterceptorFn}
+ * @see {@link provideClient}
+ * @publicApi
+ */
+export function withClientTransfers(
+    ...interceptors: ProvdierOf<RequestInterceptorLike>[]
+): ClientFeatureLike<ClientFeatureKind.Transfer> {
+    return (protocol, name) => {
+        const token = getClientTransfersToken(protocol, name)
+        return makeClientFeature(
+            ClientFeatureKind.Transfer,
+            interceptors.map((u) => toProvider(token, u, true))
+        );
+    }
+}
+
+
 
 
 // /**

@@ -5,7 +5,6 @@ import { AnnotationType, Type } from '../types';
 
 const fnc$ = /^function\s*\(|^function\s+anonymous\(/;
 const class$ = /^[\s\S]*class\s+/;
-// const fncallErr = `cannot be invoked without 'new'`;
 
 
 const hasInst = Symbol('hasInst');
@@ -34,26 +33,13 @@ export function isNewable(fn: Function): boolean {
         return setResult(fn, false);
     }
     
+    // complier min js, get anncation.
     const def = getDef(fn);
     if (def) {
         return setResult(fn, true);
     } else {
         return setResult(fn, false);
     }
-    // return false;
-
-    // try {
-    //     fn();
-    //     (fn as Newable)[hasInst] = false;
-    //     return false;
-    // } catch (err: any) {
-    //     if (err.toString().indexOf(fncallErr) > 0) {
-    //         (fn as Newable)[hasInst] = true;
-    //         return true;
-    //     }
-    //     (fn as Newable)[hasInst] = false;
-    //     return false;
-    // }
 }
 
 function setResult(fn: Function, result: boolean): boolean {

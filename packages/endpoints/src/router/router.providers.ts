@@ -6,6 +6,7 @@ import { Router } from './router';
 
 import { OptimizedRouter } from './router.optimize';
 import { TrieOptions } from './trie';
+import { getRouterToken } from '../tokens';
 
 
 
@@ -38,12 +39,9 @@ export function getRouter(injector: Injector, protocol?: string, microservice?: 
 }
 
 
-export function getRouterToken(protocol: Protocols, microservice?: boolean): Token<Router> {
-    return getToken(microservice ? 'MicroRouter' : Router, protocol)
-}
 
-export function createRouteProviders(protocol: Protocols, microservice: boolean, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
-    const token = getRouterToken(protocol, microservice);
+export function createRouteProviders(protocol: Protocols, microservice?: boolean, name?: string, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
+    token ??= getRouterToken(protocol, microservice, name);
     return [
         {
             provide: token,
@@ -71,6 +69,7 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
 
 export interface RouteOpts {
     formatter?: TypeOf<PatternFormatter>;
+    microservice?: boolean;
     prefix?: string;
     options?: Partial<TrieOptions>;
     routes?: Routes;

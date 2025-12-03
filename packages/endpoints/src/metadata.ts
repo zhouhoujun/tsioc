@@ -1,9 +1,10 @@
 import {
     isArray, isString, lang, AbstractType, TypeOf, createDecorator, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject,
-    AnnotationMetadata, Handler, Type, ActionType
+    AnnotationMetadata, Handler, Type, ActionType,
+    getTypeName
 } from '@tsdi/ioc';
-import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
+import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
 import { Route, RouteOptions } from './router/route';
 import { MappingDef, RouteMappingMetadata, RouteMappingOptions, Router } from './router/router';
@@ -168,9 +169,9 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
             const route = mapping.route;
-            if (!route) throw new Exception(lang.getTypeName(typeRef.type) + ' has not route!');
-            if (!router) throw new Exception(lang.getTypeName(parent) + ' has not registered!');
-            if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + ' is not router!');
+            if (!route) throw new Exception(getTypeName(typeRef.type) + ' has not route!');
+            if (!router) throw new Exception(getTypeName(parent) + ' has not registered!');
+            if (!(router instanceof Router)) throw new Exception(getTypeName(router) + ' is not router!');
 
             router.use({
                 prefix: joinPath(mapping.prefix, mapping.version),
@@ -279,8 +280,8 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                 const mapping = typeRef.getAnnotation<MappingDef>();
 
                 const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
-                if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
-                if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
+                if (!router) throw new Exception(getTypeName(parent) + 'has not registered!');
+                if (!(router instanceof Router)) throw new Exception(getTypeName(router) + 'is not router!');
 
                 const route = {
                     prefix: joinPath(mapping.prefix, mapping.version),

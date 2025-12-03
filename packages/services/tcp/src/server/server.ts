@@ -1,9 +1,9 @@
-import { getTypeName, Injectable, isNumber, isString, promisify } from '@tsdi/ioc';
+import { getClassRef, getTypeName, Injectable, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
-import { InternalServerException, ev } from '@tsdi/common/transport';
-import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException } from '@tsdi/common';
+import { ev } from '@tsdi/common/transport';
+import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHanlderToken, getServiceToken } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -16,7 +16,7 @@ import { TcpRequestHandler } from './handler';
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server<RequestContext, TcpServConfig> implements ListenService {
+export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> implements ListenService {
 
     protected serv?: net.Server | tls.Server | null;
 
@@ -148,4 +148,25 @@ export class TcpServer extends Server<RequestContext, TcpServConfig> implements 
         return this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
     }
 
+}
+
+
+export function withTcpTransport(options: TcpServConfig): FeatureLike<FeatureKind.Transport> {
+    return (protocol, name) => makeFeature(FeatureKind.Transport, [
+        {
+            provide: TcpRequestHandler,
+            useExisting: getServiceHanlderToken(protocol, name)
+        },
+        {
+            provide: TcpServer,
+            useFactory: (injector: Injector) => {
+                return getClassRef(TcpServer).createInvocation(injector, options).instance;
+            },
+
+        },
+        {
+            provide: getServiceToken(protocol, name),
+            useExisting: TcpServer
+        }
+    ])
 }

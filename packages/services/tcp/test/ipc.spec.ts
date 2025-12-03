@@ -2,16 +2,23 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { BadRequestException, ErrorResponse, Response } from '@tsdi/common';
-import { provideClient, withInterceptors } from '@tsdi/common/client';
+import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult, provideService, getRouterToken, createRouteProviders } from '@tsdi/endpoints';
+import {
+    RequestBody, RequestParam, RequestPath, RouteMapping, Handle,
+    ContentInterceptor, JsonInterceptor, BodyparserInterceptor, getRouterToken,
+    RedirectResult, provideService, 
+    createRouteProviders, withInterceptors, withJson, withBodyparser, withRouter,
+    withLogger,
+    withContent,
+} from '@tsdi/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as os from 'os';
 import expect = require('expect');
 import path = require('path');
 import { rm } from 'shelljs';
-import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, withTcpTransport } from '../src';
+import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, withTcpClientTransport, withTcpTransport } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -101,11 +108,27 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             LoggerModule,
             ServerEndpointModule,
             provideClient('tcp',
+                withClientInterceptors(),
+                withClientTransfers(),
+                withTcpClientTransport({
+                    connectOpts: {
+                        path: ipcpath
+                    }
+                })
+            ),
+            provideService(
+                'tcp',
+                withInterceptors(BigFileInterceptor),
+                withJson(),
+                withBodyparser(),
+                withContent(),
+                withRouter(),
+                withRouter({microservice: true}),
+                withLogger(),
                 withTcpTransport({
-                    microservice: true
-                    // connectOpts: {
-                    //     path: ipcpath
-                    // }
+                    listenOpts: {
+                        path: ipcpath
+                    }
                 })
             ),
             // provideClient({
@@ -121,34 +144,35 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             //     }
             // }),
             // RouterModule.forRoot('tcp', {microservice: true}),
-            provideService({
-                transport: 'tcp',
-                microservice: false,
-                config: {
-                    detailError: false,
-                    // timeout: 1000,
-                    listenOpts: {
-                        path: ipcpath
-                    },
-                    transportOptions: {
-                        maxSize: 1024 * 1024 * 20
-                    },
-                    interceptors: [
-                        BigFileInterceptor,
-                        JsonInterceptor,
-                        ContentInterceptor,
-                        BodyparserInterceptor,
-                        { useExisting: getRouterToken('tcp', true) }
-                    ]
-                },
-                providers: [
-                    { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-                ]
-            }),
+
+            // provideService({
+            //     transport: 'tcp',
+            //     microservice: false,
+            //     config: {
+            //         detailError: false,
+            //         // timeout: 1000,
+            //         listenOpts: {
+            //             path: ipcpath
+            //         },
+            //         transportOptions: {
+            //             maxSize: 1024 * 1024 * 20
+            //         },
+            //         interceptors: [
+            //             BigFileInterceptor,
+            //             JsonInterceptor,
+            //             ContentInterceptor,
+            //             BodyparserInterceptor,
+            //             { useExisting: getRouterToken('tcp', true) }
+            //         ]
+            //     },
+            //     providers: [
+            //         { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+            //     ]
+            // }),
         ],
-        providers: [            
-            createRouteProviders('tcp', true),
-        ],
+        // providers: [
+        //     createRouteProviders('tcp', true),
+        // ],
         declarations: [
             DeviceController
         ]

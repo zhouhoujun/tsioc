@@ -1,6 +1,5 @@
 import { Abstract, HandlerLike, ProvidedInMetadata, AbstractType, TypeDef } from '@tsdi/ioc';
-import { Interceptor, Backend, Handler } from '@tsdi/core';
-import { Pattern, Protocols, PatternFormatter } from '@tsdi/common';
+import { Pattern, Protocols, PatternFormatter, RequestInterceptor, RequestHandler } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 import { AssetRoute, Route, RouteOptions, Routes } from './route';
@@ -37,7 +36,7 @@ export interface RoutePatterns {
  * public api for global router
  */
 @Abstract()
-export abstract class Router<T = RouteHanlder> implements Backend<AbstractRequestContext>, Interceptor<AbstractRequestContext> {
+export abstract class Router<T = RouteHanlder> implements RequestHandler<AbstractRequestContext>, RequestInterceptor<AbstractRequestContext> {
     /**
      * protocol
      */
@@ -93,7 +92,7 @@ export abstract class Router<T = RouteHanlder> implements Backend<AbstractReques
      * @param input 
      * @param next 
      */
-    abstract intercept(input: AbstractRequestContext, next: Handler): Observable<any>;
+    abstract intercept(input: AbstractRequestContext, next: RequestHandler): Observable<any>;
 
 }
 

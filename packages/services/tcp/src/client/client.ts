@@ -1,7 +1,7 @@
 import { Injectable, isString, promisify, Context, Injector, getClassRef } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientFeatureLike, FeatureKind, makeClientFeature } from '@tsdi/common/client';
+import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'node:net';
@@ -119,8 +119,8 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 }
 
 
-export function withTcpTransport(options: TcpClientConfig): ClientFeatureLike<FeatureKind.Transport> {
-    return (protocol, name) => makeClientFeature(FeatureKind.Transport, [
+export function withTcpClientTransport(options: TcpClientConfig): ClientFeatureLike<ClientFeatureKind.Transport> {
+    return (protocol, name) => makeClientFeature(ClientFeatureKind.Transport, [
         {
             provide: TcpHandler,
             useExisting: getClientHanlderToken(protocol, name)

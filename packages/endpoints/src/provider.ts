@@ -1,5 +1,6 @@
 import {
     ArgumentException, Injector, ModuleRef,
+    ProvdierOf,
     Provider, isFunction, isString, lang, toProvider, token
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
@@ -7,8 +8,8 @@ import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '
 import { ServiceConfig } from './server.options';
 // import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
-import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
-import { createRouteProviders, getRouterToken } from './router/router.providers';
+import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions } from './interceptors';
+import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 // import { ExceptionFinalizeFilter } from './exception.filter';
 // import { FinalizeFilter } from './finalize.filter';
@@ -17,18 +18,19 @@ import { DefaultExceptionHandlers } from './exception.handlers';
 // import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
-import { createRequestHandler, NotImplementedException, Protocols } from '@tsdi/common';
+import { createRequestHandler, NotImplementedException, Protocols, RequestInterceptorLike } from '@tsdi/common';
+import { getFiltersToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 
 
 /**
- * Identifies a particular kind of `ServiceFeature`.
+ * Identifies a particular kind of `Feature`.
  *
  * @publicApi
  */
-export enum ServFeatureKind {
+export enum FeatureKind {
     Configure,
     Interceptors,
-    LegacyInterceptors,
+    // LegacyInterceptors,
     Logger,
     Csrf,
     Helmet,
@@ -37,8 +39,7 @@ export enum ServFeatureKind {
     Authenticate,
     Content,
     Json,
-    Body,
-    JsonpSupport,
+    Bodyparser,
     Router,
     Controller,
     Transport,
@@ -46,10 +47,15 @@ export enum ServFeatureKind {
 }
 
 
-export interface ServiceFeature<Kind extends ServFeatureKind> {
+export interface Feature<Kind extends FeatureKind> {
     kind: Kind;
     providers: Provider[];
 }
+
+
+export type FeatureLike<Kind extends FeatureKind> = Feature<Kind> | ((protocol: Protocols, name?: string) => Feature<Kind>);
+
+
 
 /**
  * provide service with optioos.
@@ -57,19 +63,19 @@ export interface ServiceFeature<Kind extends ServFeatureKind> {
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(protocol: Protocols, name: string, ...features: ServiceFeature<ServFeatureKind>[]): Provider[];
+export function provideService(protocol: Protocols, name: string, ...features: FeatureLike<FeatureKind>[]): Provider[];
 /**
  * provide service with optioos.
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(protocol: Protocols, ...features: ServiceFeature<ServFeatureKind>[]): Provider[];
+export function provideService(protocol: Protocols, ...features: FeatureLike<FeatureKind>[]): Provider[];
 /**
  * provide service with optioos.
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(protocol: Protocols, nameOrFeature: string | ServiceFeature<ServFeatureKind>, ...features: ServiceFeature<ServFeatureKind>[]): Provider[] {
+export function provideService(protocol: Protocols, nameOrFeature: string | FeatureLike<FeatureKind>, ...features: FeatureLike<FeatureKind>[]): Provider[] {
     let name: string;
     if (isString(nameOrFeature)) {
         name = nameOrFeature;
@@ -78,7 +84,7 @@ export function provideService(protocol: Protocols, nameOrFeature: string | Serv
         features.unshift(nameOrFeature);
     }
 
-    const kinds = new Map<ServFeatureKind, Provider[]>();
+    const kinds = new Map<FeatureKind, Provider[]>();
     features.forEach(f => {
         const feature = isFunction(f) ? f(protocol, name) : f;
         const pdrs = kinds.get(feature.kind);
@@ -89,26 +95,175 @@ export function provideService(protocol: Protocols, nameOrFeature: string | Serv
         }
     });
 
-    if (!kinds.has(ServFeatureKind.Configure)) {
+    if (!kinds.has(FeatureKind.Configure)) {
         throw new ArgumentException(`messings ${protocol} service configure` + (name ? `, ailas with name ${name}` : ''));
     }
 
+
+    if (!kinds.has(FeatureKind.Transport)) {
+        throw new ArgumentException(`messings ${protocol} client transport` + (name ? `, ailas with name ${name}` : ''));
+    }
+
     const providers: Provider[] = [
-        ...kinds.get(ServFeatureKind.Configure)!,
-        {
-            provide: name,
-            useFactory: (injector: Injector) => {
-                // createRequestHandler(injector)
-            },
-            deps: [
-                Injector
-            ]
-        }
+        BodyparserInterceptor,
+        ContentInterceptor,
+        JsonInterceptor,
+        LoggerInterceptor
     ];
+    Array.from(kinds.keys()).sort().forEach(k => {
+        providers.push(...kinds.get(k)!);
+    });
 
 
     return providers;
 }
+
+
+export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[]): Feature<T> {
+    return {
+        kind,
+        providers
+    }
+}
+
+
+export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureLike<FeatureKind.Logger> {
+    return (protocol, name) => {
+        const token = filter ? getFiltersToken(protocol, name) : getInterceptorsToken(protocol, name)
+        return makeFeature(
+            FeatureKind.Logger,
+            [
+                {
+                    provide: token,
+                    useExisting: LoggerInterceptor,
+                    // deps: [
+                    //     { provide: LoggerOptions, useValue: options }
+                    // ],
+                    multi: true
+                }
+            ]
+        );
+    }
+}
+
+
+export function withJson(options?: JsonOptions): FeatureLike<FeatureKind.Json> {
+    return (protocol, name) => {
+        const token = getInterceptorsToken(protocol, name)
+        return makeFeature(
+            FeatureKind.Json,
+            [
+                {
+                    provide: token,
+                    useExisting: JsonInterceptor,
+                    // deps: [
+                    //     { provide: LoggerOptions, useValue: options }
+                    // ],
+                    multi: true
+                }
+            ]
+        );
+    }
+}
+
+
+export function withContent(options?: ContentOptions): FeatureLike<FeatureKind.Content> {
+    return (protocol, name) => {
+        const token = getInterceptorsToken(protocol, name)
+        return makeFeature(
+            FeatureKind.Content,
+            [
+                {
+                    provide: token,
+                    useExisting: ContentInterceptor,
+                    // deps: [
+                    //     { provide: LoggerOptions, useValue: options }
+                    // ],
+                    multi: true
+                }
+            ]
+        );
+    }
+}
+
+
+export function withBodyparser(options?: PayloadOptions): FeatureLike<FeatureKind.Bodyparser> {
+    return (protocol, name) => {
+        const token = getInterceptorsToken(protocol, name)
+        return makeFeature(
+            FeatureKind.Bodyparser,
+            [
+                {
+                    provide: token,
+                    useExisting: BodyparserInterceptor,
+                    // deps: [
+                    //     { provide: LoggerOptions, useValue: options }
+                    // ],
+                    multi: true
+                }
+            ]
+        );
+    }
+}
+
+
+export function withRouter(options?: RouteOpts): FeatureLike<FeatureKind.Router> {
+    return (protocol, name) => {
+        const token = getInterceptorsToken(protocol, name);
+        const routerToken = getRouterToken(protocol, options?.microservice, name);
+        return makeFeature(
+            FeatureKind.Router,
+            [
+                ...createRouteProviders(protocol, options?.microservice, name, routerToken, options),
+                {
+                    provide: token,
+                    useExisting: routerToken,
+                    multi: true
+                }
+            ]
+        );
+    }
+}
+
+
+/**
+ * Adds one or more functional-style client interceptors to the configuration of the `Client`
+ * instance.
+ *
+ * @see {@link RequestInterceptorFn}
+ * @see {@link provideClient}
+ * @publicApi
+ */
+export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureLike<FeatureKind.Interceptors> {
+    return (protocol, name) => {
+        const token = getInterceptorsToken(protocol, name)
+        return makeFeature(
+            FeatureKind.Interceptors,
+            interceptors.map((u) => toProvider(token, u, true))
+        );
+    }
+}
+
+
+/**
+ * Adds one or more functional-style client transfers interceptors to the configuration of the `Client`
+ * instance.
+ *
+ * @see {@link RequestInterceptorFn}
+ * @see {@link provideClient}
+ * @publicApi
+ */
+export function withTransfers(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureLike<FeatureKind.Transfer> {
+    return (protocol, name) => {
+        const token = getTransfersToken(protocol, name)
+        return makeFeature(
+            FeatureKind.Transfer,
+            interceptors.map((u) => toProvider(token, u, true))
+        );
+    }
+}
+
+
 
 // /**
 //  * provide service.
@@ -230,7 +385,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
 
                 return [
                     moduleOpts.providers ?? [],
-                    createRouteProviders(moduleOpts.transport, microservice, serverOpts.routes),
+                    createRouteProviders(moduleOpts.transport, microservice, undefined, undefined, serverOpts.routes),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
             }

@@ -1,10 +1,8 @@
 import {
-    Type, composeHandlers, DecorDefine, Exception, getClassRef, Handler, HandlerFn, hasProps, Injector, Invocation,
+    Type, composeHandlers, DecorDefine, Exception, getClassRef,  HandlerFn, hasProps, Injector, Invocation,
     isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
-import { Handler } from '@tsdi/core';
-import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
-import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
+import { Pattern, PatternFormatter, Protocols, BadRequestException, NotFoundException, RequestHandler } from '@tsdi/common';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 import { AssetRoute, Route, ROUTES, Routes } from './route';
@@ -192,7 +190,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         )
     }
 
-    intercept(ctx: AbstractRequestContext, next: Handler<AbstractRequestContext>): Observable<any> {
+    intercept(ctx: AbstractRequestContext, next: RequestHandler<AbstractRequestContext>): Observable<any> {
         return this.handle(ctx, () => next.handle(ctx))
     }
 
@@ -222,10 +220,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             const module = await (isObservable(res) ? lastValueFrom(res) : res);
             if (isType(module)) {
                 const runtime = this.injector.getRuntime();
-                if (!runtime.modules.has(module)) {
+                if (!runtime.getModules().has(module)) {
                     await this.injector.get(ModuleRef).import(module, true);
                 }
-                const routes = runtime.modules.get(module)?.injector.get(ROUTES);
+                const routes = runtime.getModules().get(module)?.injector.get(ROUTES);
                 return routes?.map(r => {
                     r.prefix = route.path;
                     if (route.pathParams) {
@@ -271,7 +269,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     protected parse(route: Route): HandlerFn | undefined {
         if (route.handler) {
-            let handler: Handler;
+            let handler: RequestHandler;
             if (isFunction(route.handler)) {
                 if (isType(route.handler) && !this.injector.has(route.handler)) {
                     this.injector.getInject().register(route.handler);
@@ -407,7 +405,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
 
 
-function handlerEquals(r1: TypeOf<Handler>, r2: TypeOf<Handler>) {
+function handlerEquals(r1: TypeOf<RequestHandler>, r2: TypeOf<RequestHandler>) {
     return r1 === r2 ||
         (r1 instanceof RouteHandler
             && r2 instanceof RouteHandler
