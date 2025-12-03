@@ -1,6 +1,6 @@
 import { ArgumentException, Injector, ModuleRef, ProvdierOf, Provider, isFunction, isString, lang, toProvider, token } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
-import { createRequestHandler, NotImplementedException, Protocols, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
+import { createRequestHandler, NotImplementedException, ProtocolConfig, Protocols, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
 import { isMicroTransport, toTransportModuleName } from '@tsdi/common/transport';
 import { RequestBackend } from './backend';
 import { ClientConfig } from './options';
@@ -33,38 +33,27 @@ export interface ClientFeature<Kind extends ClientFeatureKind> {
     providers: Provider[];
 }
 
-export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ((protocol: Protocols, name?: string) => ClientFeature<Kind>);
+export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ((options: ProtocolConfig) => ClientFeature<Kind>);
 
 
-/**
- * Configures client with features.
- * @param features module options.
- * @returns 
- */
-export function provideClient(protocol: Protocols, name: string, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[];
-/**
- * Configures client with features.
- * @param features module options.
- * @returns 
- */
-export function provideClient(protocol: Protocols, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[];
 
 /**
  * Configures client with features.
  * @param features module options.
  * @returns 
  */
-export function provideClient(protocol: Protocols, nameOrFeature: string | ClientFeatureLike<ClientFeatureKind>, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[] {
-    let name: string;
-    if (isString(nameOrFeature)) {
-        name = nameOrFeature;
+export function provideClient(protocolOrConfig: Protocols | ProtocolConfig, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[] {
+    let config: ProtocolConfig;
+    if (isString(protocolOrConfig)) {
+        config = {
+            protocol: protocolOrConfig as Protocols
+        };
     } else {
-        name = 'default';
-        features.unshift(nameOrFeature);
+        config = protocolOrConfig;
     }
     const kinds = new Map<ClientFeatureKind, Provider[]>();
     features.forEach(f => {
-        const feature = isFunction(f) ? f(protocol, name) : f;
+        const feature = isFunction(f) ? f(config) : f;
         const pdrs = kinds.get(feature.kind);
         if (pdrs) {
             pdrs.push(...feature.providers);
@@ -78,7 +67,7 @@ export function provideClient(protocol: Protocols, nameOrFeature: string | Clien
     // }
 
     if (!kinds.has(ClientFeatureKind.Transport)) {
-        throw new ArgumentException(`messings ${protocol} client transport` + (name ? `, ailas with name ${name}` : ''));
+        throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} client transport` + (config.name ? `, ailas with name ${config.name}` : ''));
     }
 
     const providers: Provider[] = [];
@@ -125,8 +114,8 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
 export function withClientInterceptors(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureLike<ClientFeatureKind.Interceptors> {
-    return (protocol, name) => {
-        const token = getClientInterceptorsToken(protocol, name)
+    return (options) => {
+        const token = getClientInterceptorsToken(options.protocol, options.name, options.microservice)
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true))
@@ -146,8 +135,8 @@ export function withClientInterceptors(
 export function withClientTransfers(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureLike<ClientFeatureKind.Transfer> {
-    return (protocol, name) => {
-        const token = getClientTransfersToken(protocol, name)
+    return (options) => {
+        const token = getClientTransfersToken(options.protocol, options.name, options.microservice)
         return makeClientFeature(
             ClientFeatureKind.Transfer,
             interceptors.map((u) => toProvider(token, u, true))

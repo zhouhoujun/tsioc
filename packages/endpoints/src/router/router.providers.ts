@@ -41,7 +41,7 @@ export function getRouter(injector: Injector, protocol?: string, microservice?: 
 
 
 export function createRouteProviders(protocol: Protocols, microservice?: boolean, name?: string, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
-    token ??= getRouterToken(protocol, microservice, name);
+    token ??= getRouterToken(protocol, name, microservice);
     return [
         {
             provide: token,

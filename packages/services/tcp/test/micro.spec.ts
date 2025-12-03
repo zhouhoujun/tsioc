@@ -1,10 +1,10 @@
-import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, Module, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ErrorResponse } from '@tsdi/common';
 import { TransportPacketModule } from '@tsdi/common/transport';
-import { provideClient } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { TCP_SERV_INTERCEPTORS, TcpClient } from '../src';
+import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
+import { TCP_SERV_INTERCEPTORS, TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
@@ -14,7 +14,7 @@ import path = require('path');
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 
-const SENSORS = tokenId<string[]>('SENSORS');
+const SENSORS = token<string[]>('SENSORS');
 
 
 @Injectable()
@@ -54,33 +54,59 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TransportPacketModule,
-        provideClient({
-            transport: 'tcp',
-            microservice: true,
-            config: {
-                transportOptions: {
-                    maxSize: 1024 * 1024 * 20
-                },
+        // TransportPacketModule,
+        provideClient(
+            { protocol: 'tcp', microservice: true },
+            withClientInterceptors(),
+            withClientTransfers(),
+            withTcpClientTransport({
+                microservice: true,
                 connectOpts: {
                     port: 2000
-                },
-            }
-        }),
-        provideService({
-            transport: 'tcp',
-            microservice: true,
-            config: {
-                transportOptions: {
-                    maxSize: 1024 * 1024 * 20
-                },
-                // timeout: 1000,
-                detailError: false,
-                listenOpts: {
-                    port: 2000
                 }
-            }
-        })
+            })
+        ),
+        provideService(
+            { protocol: 'tcp', microservice: true },
+            withInterceptors(BigFileInterceptor),
+            withJson(),
+            withBodyparser(),
+            // withContent(),
+            // withRouter(),
+            withRouter(),
+            withLogger(),
+            withTcpTransport({
+                listenOpts: {
+                    port: 200
+                }
+            })
+        ),
+        // provideClient({
+        //     transport: 'tcp',
+        //     microservice: true,
+        //     config: {
+        //         transportOptions: {
+        //             maxSize: 1024 * 1024 * 20
+        //         },
+        //         connectOpts: {
+        //             port: 2000
+        //         },
+        //     }
+        // }),
+        // provideService({
+        //     transport: 'tcp',
+        //     microservice: true,
+        //     config: {
+        //         transportOptions: {
+        //             maxSize: 1024 * 1024 * 20
+        //         },
+        //         // timeout: 1000,
+        //         detailError: false,
+        //         listenOpts: {
+        //             port: 2000
+        //         }
+        //     }
+        // })
     ],
     declarations: [
         TcpService

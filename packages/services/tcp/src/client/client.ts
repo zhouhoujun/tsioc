@@ -120,10 +120,10 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
 
 export function withTcpClientTransport(options: TcpClientConfig): ClientFeatureLike<ClientFeatureKind.Transport> {
-    return (protocol, name) => makeClientFeature(ClientFeatureKind.Transport, [
+    return (config) => makeClientFeature(ClientFeatureKind.Transport, [
         {
             provide: TcpHandler,
-            useExisting: getClientHanlderToken(protocol, name)
+            useExisting: getClientHanlderToken(config.protocol, config.name, config.microservice)
         },
         {
             provide: TcpClient,
@@ -133,7 +133,7 @@ export function withTcpClientTransport(options: TcpClientConfig): ClientFeatureL
 
         },
         {
-            provide: getClientToken(protocol, name),
+            provide: getClientToken(config.protocol, config.name, config.microservice),
             useExisting: TcpClient
         }
     ])

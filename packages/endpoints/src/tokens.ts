@@ -6,13 +6,17 @@ import { Router } from './router/router';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 
 
-export function getFiltersToken(protocol: Protocols, name?: string): Token<FilterLike[]> {
-    return getToken<FilterLike[]>(`${protocol.toUpperCase()}_FILTERS`, name);
+function toMicroName(name?: string, microservice?: boolean) {
+    return microservice ? 'MICRO_' + (name ?? '') : name
+}
+
+export function getFiltersToken(protocol: Protocols, name?: string, microservice?: boolean): Token<FilterLike[]> {
+    return getToken<FilterLike[]>(`${protocol.toUpperCase()}_FILTERS`, toMicroName(name, microservice));
 }
 
 
-export function getInterceptorsToken(protocol: Protocols, name?: string): Token<RequestInterceptorLike[]> {
-    return getToken<RequestInterceptor[]>(`${protocol.toUpperCase()}_INTERCEPTORS`, name);
+export function getInterceptorsToken(protocol: Protocols, name?: string, microservice?: boolean): Token<RequestInterceptorLike[]> {
+    return getToken<RequestInterceptor[]>(`${protocol.toUpperCase()}_INTERCEPTORS`, toMicroName(name, microservice));
 }
 
 // export function getInterceptorFnsToken(protocol: Protocols, name?: string): Token<RequestInterceptorFn[]> {
@@ -25,27 +29,27 @@ export function getInterceptorsToken(protocol: Protocols, name?: string): Token<
 // }
 
 
-export function getTransfersToken(protocol: Protocols, name?: string): Token<RequestInterceptorLike[]> {
-    return getToken<RequestInterceptorLike[]>(`${protocol.toUpperCase()}_TRANSFERS`, name);
+export function getTransfersToken(protocol: Protocols, name?: string, microservice?: boolean): Token<RequestInterceptorLike[]> {
+    return getToken<RequestInterceptorLike[]>(`${protocol.toUpperCase()}_TRANSFERS`, toMicroName(name, microservice));
 }
 
 
-export function getRouterToken(protocol: Protocols, microservice?: boolean,  name?: string): Token<Router> {
-    return getToken(microservice ? 'MicroRouter' : Router, protocol)
+export function getRouterToken(protocol: Protocols, name?: string, microservice?: boolean): Token<Router> {
+    return getToken(Router, protocol + '_' + toMicroName(name, microservice))
 }
 
 
 
 
-export function getServiceOptionsToken(protocol: Protocols, name?: string): Token<ServiceConfig> {
-    return getToken<ServiceConfig>(`${protocol.toUpperCase()}_OPTIONS`, name);
+export function getServiceOptionsToken(protocol: Protocols, name?: string, microservice?: boolean): Token<ServiceConfig> {
+    return getToken<ServiceConfig>(`${protocol.toUpperCase()}_OPTIONS`, toMicroName(name, microservice));
 }
 
-export function getServiceHanlderToken(protocol: Protocols, name?: string): Token<AbstractRequestHandler> {
-    return getToken<AbstractRequestHandler>(`${protocol.toUpperCase()}_HANDLER`, name);
+export function getServiceHanlderToken(protocol: Protocols, name?: string, microservice?: boolean): Token<AbstractRequestHandler> {
+    return getToken<AbstractRequestHandler>(`${protocol.toUpperCase()}_HANDLER`, toMicroName(name, microservice));
 }
 
 
-export function getServiceToken(protocol: Protocols, name?: string): Token<ServiceConfig> {
-    return getToken<ServiceConfig>(`${protocol.toUpperCase()}_SERVICE`, name);
+export function getServiceToken(protocol: Protocols, name?: string, microservice?: boolean): Token<ServiceConfig> {
+    return getToken<ServiceConfig>(`${protocol.toUpperCase()}_SERVICE`, toMicroName(name, microservice));
 }

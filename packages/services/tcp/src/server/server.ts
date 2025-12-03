@@ -121,7 +121,7 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
 
         if (!options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
-            await lastValueFrom(context.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this)));
+            await context.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this));
         }
 
         if (!bindServer) {
@@ -152,10 +152,10 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
 
 
 export function withTcpTransport(options: TcpServConfig): FeatureLike<FeatureKind.Transport> {
-    return (protocol, name) => makeFeature(FeatureKind.Transport, [
+    return (config) => makeFeature(FeatureKind.Transport, [
         {
             provide: TcpRequestHandler,
-            useExisting: getServiceHanlderToken(protocol, name)
+            useExisting: getServiceHanlderToken(config.protocol, config.name, config.microservice)
         },
         {
             provide: TcpServer,
@@ -165,7 +165,7 @@ export function withTcpTransport(options: TcpServConfig): FeatureLike<FeatureKin
 
         },
         {
-            provide: getServiceToken(protocol, name),
+            provide: getServiceToken(config.protocol, config.name, config.microservice),
             useExisting: TcpServer
         }
     ])

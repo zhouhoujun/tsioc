@@ -2,13 +2,13 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestException } from '@tsdi/common/transport';
-import { ClientModule, provideClient } from '@tsdi/common/client';
+import { BadRequestException } from '@tsdi/common';
+import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, getRouterToken, Handle, JsonInterceptor, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
-import { TCP_SERV_INTERCEPTORS, TcpClient } from '../src';
+import { Handle, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, withBodyparser, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
+import { TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
 
 import { BigFileInterceptor } from './BigFileInterceptor';
 
@@ -94,60 +94,113 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        provideClient([
-            {
-                transport: 'tcp',
-                microservice: false,
-                config: {
-                    connectOpts: {
-                        port: 2000
-                    },
-                }
-            },
-            {
-                transport: 'tcp',
-                client: 'micro-client',
+        provideClient(
+            { protocol: 'tcp', microservice: true },
+            withClientInterceptors(),
+            withClientTransfers(),
+            withTcpClientTransport({
                 microservice: true,
-                config: {
-                    connectOpts: {
-                        port: 3000
-                    }
+                connectOpts: {
+                    port: 3000
                 }
-            }
-        ]),
-        provideService([
-            {
-                transport: 'tcp',
+            })
+        ),
+        provideService(
+            { protocol: 'tcp', microservice: true },
+            withInterceptors(BigFileInterceptor),
+            withJson(),
+            withBodyparser(),
+            // withContent(),
+            // withRouter(),
+            withRouter(),
+            withLogger(),
+            withTcpTransport({
+                listenOpts: {
+                    port: 3000
+                }
+            })
+        ),
+
+        provideClient(
+            'tcp',
+            withClientInterceptors(),
+            withClientTransfers(),
+            withTcpClientTransport({
                 microservice: true,
-                config: {
-                    detailError: false,
-                    listenOpts: {
-                        port: 3000
-                    }
+                connectOpts: {
+                    port: 2000
                 }
-            },
-            {
-                transport: 'tcp',
-                microservice: false,
-                config: {
-                    // timeout: 1000,
-                    detailError: false,
-                    listenOpts: {
-                        port: 2000
-                    },
-                    interceptors: [
-                        BigFileInterceptor,
-                        JsonInterceptor,
-                        ContentInterceptor,
-                        BodyparserInterceptor,
-                        { useExisting: getRouterToken('tcp', true) }
-                    ]
-                },
-                providers: [
-                    { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-                ]
-            }
-        ])
+            })
+        ),
+        provideService(
+            'tcp',
+            withInterceptors(BigFileInterceptor),
+            withJson(),
+            withBodyparser(),
+            // withContent(),
+            // withRouter(),
+            withRouter(),
+            withLogger(),
+            withTcpTransport({
+                listenOpts: {
+                    port: 2000
+                }
+            })
+        ),
+        // provideClient([
+        //     {
+        //         transport: 'tcp',
+        //         microservice: false,
+        //         config: {
+        //             connectOpts: {
+        //                 port: 2000
+        //             },
+        //         }
+        //     },
+        //     {
+        //         transport: 'tcp',
+        //         client: 'micro-client',
+        //         microservice: true,
+        //         config: {
+        //             connectOpts: {
+        //                 port: 3000
+        //             }
+        //         }
+        //     }
+        // ]),
+        // provideService([
+        //     {
+        //         transport: 'tcp',
+        //         microservice: true,
+        //         config: {
+        //             detailError: false,
+        //             listenOpts: {
+        //                 port: 3000
+        //             }
+        //         }
+        //     },
+        //     {
+        //         transport: 'tcp',
+        //         microservice: false,
+        //         config: {
+        //             // timeout: 1000,
+        //             detailError: false,
+        //             listenOpts: {
+        //                 port: 2000
+        //             },
+        //             interceptors: [
+        //                 BigFileInterceptor,
+        //                 JsonInterceptor,
+        //                 ContentInterceptor,
+        //                 BodyparserInterceptor,
+        //                 { useExisting: getRouterToken('tcp', true) }
+        //             ]
+        //         },
+        //         providers: [
+        //             { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
+        //         ]
+        //     }
+        // ])
     ],
     declarations: [
         DeviceController
@@ -174,7 +227,7 @@ describe('TCP Server & TCP Client', () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET', responseType: 'json' })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -186,7 +239,7 @@ describe('TCP Server & TCP Client', () => {
         const res: any = await lastValueFrom(client.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -198,7 +251,7 @@ describe('TCP Server & TCP Client', () => {
         const a = await lastValueFrom(client.send<any[]>('/device')
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -211,7 +264,7 @@ describe('TCP Server & TCP Client', () => {
         const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -256,7 +309,7 @@ describe('TCP Server & TCP Client', () => {
         const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(b.status).toEqual(200);
@@ -267,7 +320,7 @@ describe('TCP Server & TCP Client', () => {
     it('route with request body pipe', async () => {
         const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }).pipe(
             catchError((err, ct) => {
-               //  ctx.getLogger().error(err);
+                //  ctx.getLogger().error(err);
                 return of(err);
             })));
         // a.error && console.log(a.error);
@@ -282,7 +335,7 @@ describe('TCP Server & TCP Client', () => {
         const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST' })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
@@ -293,7 +346,7 @@ describe('TCP Server & TCP Client', () => {
         const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
@@ -311,7 +364,7 @@ describe('TCP Server & TCP Client', () => {
         const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
@@ -322,7 +375,7 @@ describe('TCP Server & TCP Client', () => {
         const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: 'test' } })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
@@ -340,7 +393,7 @@ describe('TCP Server & TCP Client', () => {
         const r = await lastValueFrom(client.send('/device//used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(r.status).toEqual(404);
@@ -351,7 +404,7 @@ describe('TCP Server & TCP Client', () => {
         const r = await lastValueFrom(client.send('/device/age1/used', { observe: 'response', params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
@@ -363,7 +416,7 @@ describe('TCP Server & TCP Client', () => {
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', responseType: 'text' })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
         // expect(r.status).toEqual(200);
@@ -374,7 +427,7 @@ describe('TCP Server & TCP Client', () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
-               //  ctx.getLogger().error(err);
+                //  ctx.getLogger().error(err);
                 return of(err);
             })));
         // expect(r.status).toEqual(200);
@@ -386,7 +439,7 @@ describe('TCP Server & TCP Client', () => {
         const result = 'reload2';
         const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
-               //  ctx.getLogger().error(err);
+                //  ctx.getLogger().error(err);
                 return of(err);
             })));
         // expect(r.status).toEqual(200);
@@ -397,7 +450,7 @@ describe('TCP Server & TCP Client', () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
-               //  ctx.getLogger().error(err);
+                //  ctx.getLogger().error(err);
                 return of(err);
             })));
         // expect(r.status).toEqual(200);

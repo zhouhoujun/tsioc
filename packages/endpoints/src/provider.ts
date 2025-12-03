@@ -18,7 +18,7 @@ import { DefaultExceptionHandlers } from './exception.handlers';
 // import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
-import { createRequestHandler, NotImplementedException, Protocols, RequestInterceptorLike } from '@tsdi/common';
+import { createRequestHandler, NotImplementedException, ProtocolConfig, Protocols, RequestInterceptorLike } from '@tsdi/common';
 import { getFiltersToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 
 
@@ -53,40 +53,26 @@ export interface Feature<Kind extends FeatureKind> {
 }
 
 
-export type FeatureLike<Kind extends FeatureKind> = Feature<Kind> | ((protocol: Protocols, name?: string) => Feature<Kind>);
+export type FeatureLike<Kind extends FeatureKind> = Feature<Kind> | ((config: ProtocolConfig) => Feature<Kind>);
 
 
-
-/**
- * provide service with optioos.
- * @param service alias name
- * @param options 
- * @param autoBootstrap default true 
- */
-export function provideService(protocol: Protocols, name: string, ...features: FeatureLike<FeatureKind>[]): Provider[];
 /**
  * provide service with optioos.
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(protocol: Protocols, ...features: FeatureLike<FeatureKind>[]): Provider[];
-/**
- * provide service with optioos.
- * @param options 
- * @param autoBootstrap default true 
- */
-export function provideService(protocol: Protocols, nameOrFeature: string | FeatureLike<FeatureKind>, ...features: FeatureLike<FeatureKind>[]): Provider[] {
-    let name: string;
-    if (isString(nameOrFeature)) {
-        name = nameOrFeature;
+export function provideService(protocolOrConfig: Protocols | ProtocolConfig, ...features: FeatureLike<FeatureKind>[]): Provider[] {
+    let config: ProtocolConfig;
+    if (isString(protocolOrConfig)) {
+        config = {
+            protocol: protocolOrConfig as Protocols
+        };
     } else {
-        name = 'default';
-        features.unshift(nameOrFeature);
+        config = protocolOrConfig;
     }
-
     const kinds = new Map<FeatureKind, Provider[]>();
     features.forEach(f => {
-        const feature = isFunction(f) ? f(protocol, name) : f;
+        const feature = isFunction(f) ? f(config) : f;
         const pdrs = kinds.get(feature.kind);
         if (pdrs) {
             pdrs.push(...feature.providers);
@@ -96,12 +82,12 @@ export function provideService(protocol: Protocols, nameOrFeature: string | Feat
     });
 
     if (!kinds.has(FeatureKind.Configure)) {
-        throw new ArgumentException(`messings ${protocol} service configure` + (name ? `, ailas with name ${name}` : ''));
+        throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} service configure` + (config.name ? `, ailas with name ${config.name}` : ''));
     }
 
 
     if (!kinds.has(FeatureKind.Transport)) {
-        throw new ArgumentException(`messings ${protocol} client transport` + (name ? `, ailas with name ${name}` : ''));
+        throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} service transport` + (config.name ? `, ailas with name ${config.name}` : ''));
     }
 
     const providers: Provider[] = [
@@ -128,8 +114,9 @@ export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[
 
 
 export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureLike<FeatureKind.Logger> {
-    return (protocol, name) => {
-        const token = filter ? getFiltersToken(protocol, name) : getInterceptorsToken(protocol, name)
+    return (config) => {
+        const token = filter ? getFiltersToken(config.protocol, config.name, config.microservice)
+            : getInterceptorsToken(config.protocol, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Logger,
             [
@@ -148,8 +135,8 @@ export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureLi
 
 
 export function withJson(options?: JsonOptions): FeatureLike<FeatureKind.Json> {
-    return (protocol, name) => {
-        const token = getInterceptorsToken(protocol, name)
+    return (config) => {
+        const token = getInterceptorsToken(config.protocol, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Json,
             [
@@ -168,8 +155,8 @@ export function withJson(options?: JsonOptions): FeatureLike<FeatureKind.Json> {
 
 
 export function withContent(options?: ContentOptions): FeatureLike<FeatureKind.Content> {
-    return (protocol, name) => {
-        const token = getInterceptorsToken(protocol, name)
+    return (config) => {
+        const token = getInterceptorsToken(config.protocol, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Content,
             [
@@ -188,8 +175,8 @@ export function withContent(options?: ContentOptions): FeatureLike<FeatureKind.C
 
 
 export function withBodyparser(options?: PayloadOptions): FeatureLike<FeatureKind.Bodyparser> {
-    return (protocol, name) => {
-        const token = getInterceptorsToken(protocol, name)
+    return (config) => {
+        const token = getInterceptorsToken(config.protocol, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Bodyparser,
             [
@@ -208,13 +195,14 @@ export function withBodyparser(options?: PayloadOptions): FeatureLike<FeatureKin
 
 
 export function withRouter(options?: RouteOpts): FeatureLike<FeatureKind.Router> {
-    return (protocol, name) => {
-        const token = getInterceptorsToken(protocol, name);
-        const routerToken = getRouterToken(protocol, options?.microservice, name);
+    return (config) => {
+        const { protocol, name, microservice } = config;
+        const token = getInterceptorsToken(protocol, name, microservice ?? options?.microservice);
+        const routerToken = getRouterToken(protocol, name, microservice ?? options?.microservice);
         return makeFeature(
             FeatureKind.Router,
             [
-                ...createRouteProviders(protocol, options?.microservice, name, routerToken, options),
+                ...createRouteProviders(protocol, microservice, name, routerToken, options),
                 {
                     provide: token,
                     useExisting: routerToken,
@@ -235,8 +223,8 @@ export function withRouter(options?: RouteOpts): FeatureLike<FeatureKind.Router>
  * @publicApi
  */
 export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureLike<FeatureKind.Interceptors> {
-    return (protocol, name) => {
-        const token = getInterceptorsToken(protocol, name)
+    return (config) => {
+        const token = getInterceptorsToken(config.protocol, config.name)
         return makeFeature(
             FeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true))
@@ -254,8 +242,8 @@ export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorL
  * @publicApi
  */
 export function withTransfers(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureLike<FeatureKind.Transfer> {
-    return (protocol, name) => {
-        const token = getTransfersToken(protocol, name)
+    return (config) => {
+        const token = getTransfersToken(config.protocol, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Transfer,
             interceptors.map((u) => toProvider(token, u, true))
@@ -333,7 +321,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 });
 
                 const serverOpts = {
-                    backend: getRouterToken(moduleOpts.transport, microservice),
+                    backend: getRouterToken(moduleOpts.transport, '', microservice),
                     enableTypeChain: true,
                     ...cloneOpts
                 } as ServiceConfig & { providers: Provider[] };
