@@ -5,16 +5,12 @@ import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
 } from './meta';
-import {
-    ctorName, DecorDefine, Decors,
-    ClassRef, TypeDef, ActionType,
-    DecorContext, DecoratorOption
-} from './class';
+import {  ctorName, DecorDefine, Decors,  ActionType,  DecorContext, DecoratorOption } from './handlers';
 import { InvokeOptions } from '../context';
 import { HandleResult } from '../handlers/handler';
 import { RuntimeHandler } from '../lifescope/handler';
-import { getType, isPrimitive } from './type';
-import { getDef } from './type.def';
+import { TypeDef } from './type.def';
+import { getClassRef } from './class';
 
 export type DecorHandlerFn = (input: DecorContext, context?: any) => HandleResult<any>;
 
@@ -273,32 +269,3 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
 }
 
 
-
-
-const CLASS_REF = Symbol('CLASS_REF');
-/**
- * get type class reflective {@link ClassRef}.
- * @param type type.
- */
-export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
-    if (!type || isPrimitive(type)) return null!;
-    let tyRef = Reflect.getMetadata(CLASS_REF, type) as ClassRef;
-
-    if (tyRef?.type !== type) {
-        let prRef = tyRef as ClassRef;
-        if (!prRef) {
-            const parentType = getParentType(type);
-            if (parentType) {
-                prRef = getClassRef(parentType)
-            }
-        }
-        tyRef = new ClassRef(type, getDef(type), prRef);
-        Reflect.defineMetadata(CLASS_REF, tyRef, type);
-
-    }
-    return tyRef;
-}
-
-export function getClassify<T>(type: AbstractType<T> | ClassRef<T> | T): ClassRef<T> {
-    return type instanceof ClassRef ? type : getClassRef(isFunction(type) ? type : getType(type))
-}

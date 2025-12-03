@@ -11,7 +11,8 @@ import { ResolveInterceptorLike } from '../resolver';
 import { InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
-import { ActionType, DecoratorOption, ModuleDef } from './class';
+import { ActionType, DecoratorOption } from './handlers';
+import { ModuleDef } from './type.def';
 
 
 /**

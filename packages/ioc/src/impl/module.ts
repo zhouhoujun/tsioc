@@ -1,12 +1,12 @@
 import { Exception } from '../exception';
 import { Injector, InjectorScope } from '../injector';
-import { getClassRef, getClassify } from '../metadata/refl';
-import { ClassRef, ModuleDef } from '../metadata/class';
+import { ClassRef,  getClassRef, getClassify  } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { Type } from '../types';
 import { createValueRecord, mergePromise } from './common';
 import { AbstractInjector, processInjectType, processProviders, processUse } from './injector';
+import { ModuleDef } from '../metadata/type.def';
 
 
 /**

@@ -1,6 +1,6 @@
 import { Context, DefaultContext, ContextToken } from '../handlers/Context';
 import { Injector } from '../injector';
-import { DecoratorFn } from '../metadata/class';
+import { DecoratorFn } from '../metadata/handlers';
 import { Parameters, Parameter } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';

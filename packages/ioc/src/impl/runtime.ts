@@ -1,8 +1,7 @@
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';
 import { isFunction, isNil } from '../utils/chk';
-import { getClassify } from '../metadata/refl';
-import { ClassRef } from '../metadata/class';
+import { ClassRef, getClassify } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { EnvironmentInjector, Injector, InjectorScope } from '../injector';
 import { Exception } from '../exception';
