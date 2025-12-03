@@ -22,6 +22,7 @@ export interface ProxyOpts {
  * service config.
  */
 export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any> {
+    name?: string;
     /**
      * request timeout.
      */

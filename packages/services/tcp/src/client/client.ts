@@ -1,7 +1,7 @@
 import { Injectable, isString, promisify, Context, Injector, getClassRef } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ProtocolConfig } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature } from '@tsdi/common/client';
+import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature, ClientFeatureFn, ClientTransportFeature } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'node:net';
@@ -119,22 +119,25 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 }
 
 
-export function withTcpClientTransport(options: TcpClientConfig): ClientFeatureLike<ClientFeatureKind.Transport> {
-    return (config) => makeClientFeature(ClientFeatureKind.Transport, [
-        {
-            provide: TcpHandler,
-            useExisting: getClientHanlderToken(config.protocol, config.name, config.microservice)
-        },
-        {
-            provide: TcpClient,
-            useFactory: (injector: Injector) => {
-                return getClassRef(TcpClient).createInvocation(injector, options).instance;
+export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTransportFeature[] {
+    return options.map(option => {
+        const config: ProtocolConfig = { protocol: 'tcp', name: option.name, microservice: option.microservice };
+        return makeClientFeature(ClientFeatureKind.Transport, [
+            {
+                provide: TcpHandler,
+                useExisting: getClientHanlderToken(config.protocol, config.name, config.microservice)
             },
+            {
+                provide: TcpClient,
+                useFactory: (injector: Injector) => {
+                    return getClassRef(TcpClient).createInvocation(injector, option).instance;
+                },
 
-        },
-        {
-            provide: getClientToken(config.protocol, config.name, config.microservice),
-            useExisting: TcpClient
-        }
-    ])
+            },
+            {
+                provide: getClientToken(config.protocol, config.name, config.microservice),
+                useExisting: TcpClient
+            }
+        ], config)
+    });
 }

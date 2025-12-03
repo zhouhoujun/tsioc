@@ -7,6 +7,7 @@ import { RequestBackend } from './backend';
  * Client options.
  */
 export interface ClientConfig<TConnOpts = any> extends ConfigableHandlerOptions<AbstractRequest<any>> {
+    name?: string;
     /**
      * url
      */

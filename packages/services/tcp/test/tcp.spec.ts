@@ -95,18 +95,35 @@ export class DeviceController {
         LoggerModule,
         ServerEndpointModule,
         provideClient(
-            { protocol: 'tcp', microservice: true },
+            // [
+            //     { protocol: 'tcp', port: 2000 },
+            //     { protocol: 'tcp', microservice: true, port: 3000  }
+            // ],
             withClientInterceptors(),
             withClientTransfers(),
-            withTcpClientTransport({
-                microservice: true,
-                connectOpts: {
-                    port: 3000
+            withTcpClientTransport(
+                {
+                    // name: 'tcp-client',
+                    // microservice: true,
+                    connectOpts: {
+                        port: 2000
+                    }
+                },
+                {
+                    // name: 'tcp-client2',
+                    microservice: true,
+                    connectOpts: {
+                        port: 3000
+                    }
                 }
-            })
+                
+            )
         ),
         provideService(
-            { protocol: 'tcp', microservice: true },
+            // [
+            //     { protocol: 'tcp', port: 2000 },
+            //     { protocol: 'tcp', microservice: true, port: 3000  }
+            // ],
             withInterceptors(BigFileInterceptor),
             withJson(),
             withBodyparser(),
@@ -114,39 +131,76 @@ export class DeviceController {
             // withRouter(),
             withRouter(),
             withLogger(),
-            withTcpTransport({
-                listenOpts: {
-                    port: 3000
+            withTcpTransport(
+                {
+                    // microservice: true,
+                    listenOpts: {
+                        port: 2000
+                    }
+                },
+                {
+                    microservice: true,
+                    listenOpts: {
+                        port: 3000
+                    }
                 }
-            })
+            )
         ),
+        // provideClient(
+        //     { protocol: 'tcp', microservice: true },
+        //     withClientInterceptors(),
+        //     withClientTransfers(),
+        //     withTcpClientTransport({
+        //         microservice: true,
+        //         connectOpts: {
+        //             port: 3000
+        //         }
+        //     })
+        // ),
+        // provideService(
+        //     { protocol: 'tcp', microservice: true },
+        //     withInterceptors(BigFileInterceptor),
+        //     withJson(),
+        //     withBodyparser(),
+        //     // withContent(),
+        //     // withRouter(),
+        //     withRouter(),
+        //     withLogger(),
+        //     withTcpTransport({
+        //         listenOpts: {
+        //             port: 3000
+        //         }
+        //     })
+        // ),
 
-        provideClient(
-            'tcp',
-            withClientInterceptors(),
-            withClientTransfers(),
-            withTcpClientTransport({
-                microservice: true,
-                connectOpts: {
-                    port: 2000
-                }
-            })
-        ),
-        provideService(
-            'tcp',
-            withInterceptors(BigFileInterceptor),
-            withJson(),
-            withBodyparser(),
-            // withContent(),
-            // withRouter(),
-            withRouter(),
-            withLogger(),
-            withTcpTransport({
-                listenOpts: {
-                    port: 2000
-                }
-            })
-        ),
+        // provideClient(
+        //     'tcp',
+        //     withClientInterceptors(),
+        //     withClientTransfers(),
+        //     withTcpClientTransport({
+        //         microservice: true,
+        //         connectOpts: {
+        //             port: 2000
+        //         }
+        //     })
+        // ),
+        // provideService(
+        //     'tcp',
+        //     withInterceptors(BigFileInterceptor),
+        //     withJson(),
+        //     withBodyparser(),
+        //     // withContent(),
+        //     // withRouter(),
+        //     withRouter(),
+        //     withLogger(),
+        //     withTcpTransport({
+        //         listenOpts: {
+        //             port: 2000
+        //         }
+        //     })
+        // ),
+
+
         // provideClient([
         //     {
         //         transport: 'tcp',

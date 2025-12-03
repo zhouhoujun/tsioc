@@ -8,7 +8,7 @@ import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, In
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, getClassRef } from '../metadata/class';
-import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders } from '../providers';
+import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders, DependLike } from '../providers';
 import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
@@ -895,7 +895,9 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
 }
 
 
-export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: Parameters, provide?: Token, multi?: boolean): InjectorRecord {
+
+
+export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: DependLike[], provide?: Token, multi?: boolean): InjectorRecord {
 
     const { static: decStatic, providedIn, singleton } = typeRef.getAnnotation();
     const origin = injector;

@@ -1,11 +1,13 @@
-import { ArgumentException, Injector, ModuleRef, ProvdierOf, Provider, isFunction, isString, lang, toProvider, token } from '@tsdi/ioc';
+import { ArgumentException, Injector, ModuleRef, ProvdierOf, Provider, isArray, isFunction, isString, lang, toProvider, token } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
-import { createRequestHandler, NotImplementedException, ProtocolConfig, Protocols, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
+import { createRequestHandler, isEqualProtocolConfig, NotImplementedException, ProtocolConfig, Protocols, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
 import { isMicroTransport, toTransportModuleName } from '@tsdi/common/transport';
 import { RequestBackend } from './backend';
 import { ClientConfig } from './options';
 import { ClientOptions, ClientModuleOpts } from './client.options';
 import { getClientHanlderToken, getClientOptionsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
+import { bodyServializeInterceptor } from './interceptors/body';
+import { requestTimeoutInterceptor } from './interceptors/timeout';
 
 
 
@@ -23,6 +25,7 @@ export enum ClientFeatureKind {
     JsonpSupport,
     RequestsMadeViaParent,
     Redirector,
+    BodySerialize,
     Fetch,
     Transport,
     Transfer
@@ -30,10 +33,20 @@ export enum ClientFeatureKind {
 
 export interface ClientFeature<Kind extends ClientFeatureKind> {
     kind: Kind;
+    config?: ProtocolConfig;
     providers: Provider[];
 }
 
-export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ((options: ProtocolConfig) => ClientFeature<Kind>);
+export interface ClientTransportFeature {
+    kind: ClientFeatureKind.Transport;
+    config: ProtocolConfig;
+    providers: Provider[];
+}
+
+export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: ProtocolConfig) => ClientFeature<Kind>;
+
+
+export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ClientTransportFeature[] | ClientFeatureFn<Exclude<Kind, ClientFeatureKind.Transport>>;
 
 
 
@@ -42,33 +55,38 @@ export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Ki
  * @param features module options.
  * @returns 
  */
-export function provideClient(protocolOrConfig: Protocols | ProtocolConfig, ...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[] {
-    let config: ProtocolConfig;
-    if (isString(protocolOrConfig)) {
-        config = {
-            protocol: protocolOrConfig as Protocols
-        };
-    } else {
-        config = protocolOrConfig;
-    }
+export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[] {
+ 
+    const transports = features.filter(f => isArray(f)).flatMap(f => f as ClientTransportFeature[]);
+
+    const configs: ProtocolConfig[] = transports.map(t => t.config);
+
     const kinds = new Map<ClientFeatureKind, Provider[]>();
     features.forEach(f => {
-        const feature = isFunction(f) ? f(config) : f;
-        const pdrs = kinds.get(feature.kind);
-        if (pdrs) {
-            pdrs.push(...feature.providers);
-        } else {
-            kinds.set(feature.kind, feature.providers.slice(0));
+        if (isArray(f)) {
+            return;
         }
+        configs.forEach(c => {
+            const feature = isFunction(f) ? f(c) : f;
+            if(feature.config && !isEqualProtocolConfig(feature.config, c)) {
+                return;
+            }
+            const pdrs = kinds.get(feature.kind);
+            if (pdrs) {
+                pdrs.push(...feature.providers);
+            } else {
+                kinds.set(feature.kind, feature.providers.slice(0));
+            }
+        });
     });
 
     // if (!kinds.has(FeatureKind.Configure)) {
     //     throw new ArgumentException(`messings ${protocol} client configure` + (name ? `, ailas with name ${name}` : ''));
     // }
 
-    if (!kinds.has(ClientFeatureKind.Transport)) {
-        throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} client transport` + (config.name ? `, ailas with name ${config.name}` : ''));
-    }
+    // if (!kinds.has(ClientFeatureKind.Transport)) {
+    //     throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} client transport` + (config.name ? `, ailas with name ${config.name}` : ''));
+    // }
 
     const providers: Provider[] = [];
     Array.from(kinds.keys()).sort().forEach(k => {
@@ -95,9 +113,10 @@ export function provideClient(protocolOrConfig: Protocols | ProtocolConfig, ...f
     return providers;
 }
 
-export function makeClientFeature<T extends ClientFeatureKind>(kind: T, providers: Provider[]): ClientFeature<T> {
+export function makeClientFeature<T extends ClientFeatureKind>(kind: T, providers: Provider[], config?:ProtocolConfig): ClientFeature<T> {
     return {
         kind,
+        config,
         providers
     }
 }
@@ -113,7 +132,7 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
  */
 export function withClientInterceptors(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
-): ClientFeatureLike<ClientFeatureKind.Interceptors> {
+): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (options) => {
         const token = getClientInterceptorsToken(options.protocol, options.name, options.microservice)
         return makeClientFeature(
@@ -134,12 +153,42 @@ export function withClientInterceptors(
  */
 export function withClientTransfers(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
-): ClientFeatureLike<ClientFeatureKind.Transfer> {
+): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (options) => {
         const token = getClientTransfersToken(options.protocol, options.name, options.microservice)
         return makeClientFeature(
             ClientFeatureKind.Transfer,
             interceptors.map((u) => toProvider(token, u, true))
+        );
+    }
+}
+
+export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatureKind.Interceptors> {
+    return (options) => {
+        const token = getClientInterceptorsToken(options.protocol, options.name, options.microservice)
+        return makeClientFeature(
+            ClientFeatureKind.Interceptors,
+            [{
+                provide: token,
+                useValue: requestTimeoutInterceptor,
+                multi: true
+            }]
+        );
+    }
+}
+
+
+
+export function withClientBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
+    return (options) => {
+        const token = getClientInterceptorsToken(options.protocol, options.name, options.microservice)
+        return makeClientFeature(
+            ClientFeatureKind.BodySerialize,
+            [{
+                provide: token,
+                useValue: bodyServializeInterceptor,
+                multi: true
+            }]
         );
     }
 }

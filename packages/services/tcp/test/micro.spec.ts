@@ -56,7 +56,6 @@ export class TcpService {
         ServerEndpointModule,
         // TransportPacketModule,
         provideClient(
-            { protocol: 'tcp', microservice: true },
             withClientInterceptors(),
             withClientTransfers(),
             withTcpClientTransport({
@@ -67,7 +66,6 @@ export class TcpService {
             })
         ),
         provideService(
-            { protocol: 'tcp', microservice: true },
             withInterceptors(BigFileInterceptor),
             withJson(),
             withBodyparser(),

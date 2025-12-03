@@ -1,10 +1,10 @@
 import { Type, Modules, AbstractType } from './types';
-import { InjectFlags, Token } from './tokens';
-import { Injector } from './injector';
+import { Token } from './tokens';
+import { Injector, InjectorRecord } from './injector';
 import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isFunction, isNil } from './utils/chk';
 import { ArgumentException } from './exception';
-import { Parameter } from './resolver';
+import { ParameterLike } from './resolver';
 import { isType, getTypeName } from './metadata/type';
 
 /**
@@ -20,7 +20,7 @@ export interface Provide<T = any> {
     provide: Token<T>;
 }
 
-export type DepLike = Token | [Token, ...InjectFlags[]] | Parameter;
+export type DependLike =  InjectorRecord | ParameterLike;
 
 export interface UseAsStatic {
     /**
@@ -72,7 +72,7 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
      * 
      * [[token1, InjectFlags.SkipSelf], token2]
      */
-    deps?: DepLike[];
+    deps?: DependLike[];
     /**
      * singleton or not.
      */
@@ -140,7 +140,7 @@ export interface UseFactory<T> extends ProviderExts, UseAsStatic {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: DepLike[];
+    deps?: DependLike[];
 }
 
 /**
@@ -169,7 +169,7 @@ export interface ConstructorProvider<T = any> extends MutilProvider {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: DepLike[];
+    deps?: DependLike[];
 }
 
 

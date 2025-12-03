@@ -1,9 +1,9 @@
 import { getClassRef, getTypeName, Injectable, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException } from '@tsdi/common';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, ProtocolConfig } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHanlderToken, getServiceToken } from '@tsdi/endpoints';
+import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHanlderToken, getServiceToken, FeatureFn, TransportFeature } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -151,22 +151,25 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
 }
 
 
-export function withTcpTransport(options: TcpServConfig): FeatureLike<FeatureKind.Transport> {
-    return (config) => makeFeature(FeatureKind.Transport, [
-        {
-            provide: TcpRequestHandler,
-            useExisting: getServiceHanlderToken(config.protocol, config.name, config.microservice)
-        },
-        {
-            provide: TcpServer,
-            useFactory: (injector: Injector) => {
-                return getClassRef(TcpServer).createInvocation(injector, options).instance;
+export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[] {
+    return options.map(option => {
+        const config: ProtocolConfig = { protocol: 'tcp', name: option.name, microservice: option.microservice };
+        return makeFeature(FeatureKind.Transport, [
+            {
+                provide: TcpRequestHandler,
+                useExisting: getServiceHanlderToken(config.protocol, config.name, config.microservice)
             },
+            {
+                provide: TcpServer,
+                useFactory: (injector: Injector) => {
+                    return getClassRef(TcpServer).createInvocation(injector, option).instance;
+                },
 
-        },
-        {
-            provide: getServiceToken(config.protocol, config.name, config.microservice),
-            useExisting: TcpServer
-        }
-    ])
+            },
+            {
+                provide: getServiceToken(config.protocol, config.name, config.microservice),
+                useExisting: TcpServer
+            }
+        ], config);
+    })
 }

@@ -467,7 +467,7 @@ export interface InjectorRecord<T = any> {
     /**
      * 预创建的值或占位符
      */
-    value: T | undefined | null | {};
+    value?: T | null | {};
 
     /**
      * 多提供者的依赖数组

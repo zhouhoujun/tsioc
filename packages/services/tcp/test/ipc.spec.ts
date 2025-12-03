@@ -107,7 +107,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             ServerModule,
             LoggerModule,
             ServerEndpointModule,
-            provideClient('tcp',
+            provideClient(
                 withClientInterceptors(),
                 withClientTransfers(),
                 withTcpClientTransport({
@@ -117,7 +117,6 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
                 })
             ),
             provideService(
-                'tcp',
                 withInterceptors(BigFileInterceptor),
                 withJson(),
                 withBodyparser(),
