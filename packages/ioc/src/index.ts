@@ -21,13 +21,12 @@ export * as lang from './utils/lang';
 // metadata
 export * from './metadata/meta';
 export * from './metadata/type';
-export * from './metadata/handlers';
+export * from './metadata/define';
 export * from './metadata/class';
 export * from './metadata/type.def';
 export * from './metadata/fac';
 export * from './metadata/decor';
 export { Autowired as AutoWired, Module as DIModule } from './metadata/decor';
-export * from './metadata/tk';
 
 
 // providers

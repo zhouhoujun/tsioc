@@ -1,7 +1,7 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
 import { AbstractType, Type } from './types';
 import { ClassProvider, DynamicProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, StaticProvider, ValueProvider } from './providers';
-import { Token, InjectFlags } from './tokens';
+import { Token, InjectFlags, token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';
 import { ProvidedInMetadata } from './metadata/meta';
@@ -116,6 +116,18 @@ export abstract class Injector implements Destroyable, OnDestroy {
 export abstract class EnvironmentInjector extends Injector {
 
 }
+
+
+/**
+ * ROOT injector instance token of self.
+ */
+export const INJECTOR: Token<Injector> = token<Injector>('DI_INJECTOR');
+
+/**
+ * appliction platform injector token.
+ */
+export const CONTAINER: Token<Injector> = token<Injector>('CONTAINER', 'platform');
+
 
 /**
  * inject operator.

@@ -5,7 +5,7 @@ import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
 } from './meta';
-import {  ctorName, DecorDefine, Decors,  ActionType,  DecorContext, DecoratorOption } from './handlers';
+import {  ctorName, DecorDefine, Decors,  ActionType,  DecorContext, DecoratorOption } from './define';
 import { InvokeOptions } from '../context';
 import { HandleResult } from '../handlers/handler';
 import { RuntimeHandler } from '../lifescope/handler';

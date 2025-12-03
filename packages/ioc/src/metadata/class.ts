@@ -9,12 +9,10 @@ import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { ArgumentException, Exception } from '../exception';
 import { Injector, MethodType, Resolve } from '../injector';
-import { HandlerFn } from '../handlers/handler';
 import { Invocation, InvocationFactory } from '../invocation';
-import { IocContext, RuntimeContext } from '../lifescope/context';
 import { getDef, proxyTag, TypeDef } from './type.def';
 import { getType, isPrimitive } from './type';
-import { ctorName, DecoratorFn, DecoratorType, DecorDefine, Decors, RunableDefine } from './handlers';
+import { ctorName, DecoratorFn, DecoratorType, DecorDefine, Decors, RunableDefine } from './define';
 
 
 /**

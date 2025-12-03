@@ -3,7 +3,7 @@ import { ModuleWithProviders, Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
 import { Token } from '../tokens';
 import { AbstractType, Annotation, AnnotationType, Type, TypeOf } from '../types';
-import { DecoratorFn, DecorDefine, RunableDefine } from './handlers';
+import { DecoratorFn, DecorDefine, RunableDefine } from './define';
 import { AnnotationMetadata, ParameterMetadata, PropertyMetadata } from './meta';
 
 

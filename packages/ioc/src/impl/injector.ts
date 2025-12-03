@@ -4,7 +4,7 @@ import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, isUndefined } from '../utils/chk';
 import { getType, getTypeName, isType } from '../metadata/type';
-import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, getClassRef } from '../metadata/class';
@@ -15,7 +15,6 @@ import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, merg
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { createDesignContext, createRuntimeContext } from '../lifescope/context';
 import { createResolveContext, getResolver, isParameter, Parameter, Parameters } from '../resolver';
-import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
 import { DefaultRuntime } from './runtime';

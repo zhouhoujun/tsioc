@@ -15,8 +15,6 @@ export interface DecorContext<T = any> {
 }
 
 
-
-
 /**
  * decorator def hanldes.
  */

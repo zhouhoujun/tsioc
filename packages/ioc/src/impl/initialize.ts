@@ -3,7 +3,7 @@ import { ContextToken } from '../handlers/Context';
 import { HandlerFn } from '../handlers/handler';
 import { InterceptorFn, InterceptorLike } from '../handlers/interceptor';
 import { PropertyMetadata } from '../metadata/meta';
-import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/handlers';
+import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/define';
 import { ClassRef } from '../metadata/class';
 import { Runtime } from '../runtime';
 import { Type } from '../types';

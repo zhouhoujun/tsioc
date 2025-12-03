@@ -3,7 +3,7 @@ import { HandlerFn } from '../handlers/handler';
 import { InterceptorLike } from '../handlers/interceptor';
 import { invokeTail } from '../handlers/compose';
 import { InjectorRecord } from '../injector';
-import { DecoratorFn, DecoratorScope, Decors } from '../metadata/handlers';
+import { DecoratorFn, DecoratorScope, Decors } from '../metadata/define';
 import { ClassRef } from '../metadata/class';
 import { AbstractInjector } from './injector';
 import { Runtime } from '../runtime';
