@@ -1,6 +1,7 @@
 import { AbstractType } from '../types';
 import { remove, deepTypeChain } from '../utils/lang';
-import { getType, isType, isNil } from '../utils/chk';
+import { isNil } from '../utils/chk';
+import { getType, isType } from '../metadata/type';
 import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeOptions } from '../context';
 import { InjectFlags, Token } from '../tokens';

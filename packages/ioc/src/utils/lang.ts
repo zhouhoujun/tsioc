@@ -1,8 +1,9 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { AbstractType, AnnotationType, Modules, Type } from '../types';
-import { getType, isArray, isFunction, isNil, isObject, isType, isPromise, isUndefined } from './chk';
+import { isArray, isFunction, isNil, isObject, isPromise, isUndefined } from './chk';
 import { isPlainObject } from './obj';
+import { getType, isType } from '../metadata/type';
 
 /**
  * assign source object to target object.

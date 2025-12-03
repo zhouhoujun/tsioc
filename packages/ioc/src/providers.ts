@@ -2,10 +2,11 @@ import { Type, Modules, AbstractType } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector } from './injector';
 import { isPlainObject } from './utils/obj';
-import { isArray, isBoolean, isDefined, isFunction, isNil, isType } from './utils/chk';
+import { isArray, isBoolean, isDefined, isFunction, isNil } from './utils/chk';
 import { ArgumentException } from './exception';
 import { getTypeName } from './utils/lang';
 import { Parameter } from './resolver';
+import { isType } from './metadata/type';
 
 /**
  * provide for {@link Injector }.

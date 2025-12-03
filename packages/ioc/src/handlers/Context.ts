@@ -1,6 +1,7 @@
+import { getType } from '../metadata/type';
 import { Token } from '../tokens';
 import { Type } from '../types';
-import { getType, isArray } from '../utils/chk';
+import { isArray } from '../utils/chk';
 
 /**
  * context token.

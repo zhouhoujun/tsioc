@@ -1,6 +1,3 @@
-import { Observable } from 'rxjs';
-import { Type } from '../types';
-
 
 export { isObservable } from 'rxjs';
 
@@ -16,63 +13,6 @@ declare let process: any;
  */
 export function isFunction(t: any): t is Function {
     return typeof t === 'function'
-}
-
-const fnc$ = /^function\s+\(|^function\s+anonymous\(/;
-const class$ = /^[\s\S]*class\s+/;
-const fncallErr = `cannot be invoked without 'new'`;
-
-
-const hasInstance = Symbol('hasInstance');
-interface Newable extends Function {
-    [hasInstance]?: boolean;
-}
-
-/**
- * this fn can use new or not.
- * @param fn 
- * @returns 
- */
-export function isNewable(fn: Function): boolean {
-    if (!fn.prototype || fn.prototype.constructor !== fn) return false;
-    if (typeof Symbol.hasInstance !== 'undefined') {
-        return fn[Symbol.hasInstance] ? true : false;
-    }
-    const has = (fn as Newable)[hasInstance];
-    if (isBoolean(has)) return has;
-
-    const str = String(fn);
-    if (class$.test(str)) {
-        (fn as Newable)[hasInstance] = true;
-        return true;
-    }
-    if (fnc$.test(str)) {
-        (fn as Newable)[hasInstance] = false;
-        return false;
-    }
-
-    try {
-        fn();
-        (fn as Newable)[hasInstance] = false;
-        return false;
-    } catch (err: any) {
-        if (err.toString().indexOf(fncallErr) > 0) {
-            (fn as Newable)[hasInstance] = true;
-            return true;
-        }
-        (fn as Newable)[hasInstance] = false;
-        return false;
-    }
-}
-
-
-/**
- * is type or not.
- * @param t 
- * @returns 
- */
-export function isType(t: any): t is Type<any> {
-    return typeof t === 'function' && !isPrimitive(t) && isNewable(t)
 }
 
 
@@ -285,64 +225,4 @@ export function isRegExp(target: any): target is RegExp {
     return !!target && target instanceof RegExp // || toString.call(target) === '[object RegExp]'
 }
 
-
-/**
- * check target is primitive type or not.
- *
- * @export
- * @param {*} target
- * @returns {boolean}
- */
-export function isPrimitiveType(target: any): boolean {
-    return isFunction(target) && isPrimitive(target)
-}
-
-export function isIterableType(target: Function): boolean {
-    return target === Array
-        || target === Set
-        || target === Map
-    // || target === WeakMap
-    // || target === WeakSet
-}
-
-export function isPrimitive(target: Function): boolean {
-    return isBasicType(target)
-        || isIterableType(target)
-        || target === Object
-        || target === Promise
-        || target === Observable
-}
-
-/**
- * is target basic type, value or not.
- * @param target 
- * @returns 
- */
-export function isBasic(target: any): boolean {
-    return isBasicType(getType(target))
-}
-export function isBasicType(target: Function): boolean {
-    return target === Function
-        || target === String
-        || target === Number
-        || target === BigInt
-        || target === Boolean
-        || target === Date
-        || target === Symbol
-}
-
-
-/**
- * get type of object.
- *
- * @export
- * @param {*} target
- * @returns {Type}
- */
-export function getType(target: any): Type {
-    if (isType(target)) {
-        return target
-    }
-    return target.constructor || target.prototype.constructor
-}
 

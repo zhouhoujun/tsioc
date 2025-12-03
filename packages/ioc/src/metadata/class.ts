@@ -575,6 +575,7 @@ export class ClassRef<T = any> {
     }
 }
 
+
 interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
     __name: string;
 }

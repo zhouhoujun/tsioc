@@ -2,9 +2,9 @@ import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { ModuleType, ModuleWithProviders, Provider } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
+import { isType } from './metadata/type';
 import { ClassRef } from './metadata/class';
 import { AbstractType, Type } from './types';
-import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
 import { isPlainObject } from './utils/obj';
 

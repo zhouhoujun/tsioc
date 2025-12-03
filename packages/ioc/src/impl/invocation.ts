@@ -1,7 +1,8 @@
 import { AbstractType, TypeOf } from '../types';
 import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvocationOptions, InvokeOptions } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
-import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
+import { isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
+import { getType } from '../metadata/type';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { ClassRef } from '../metadata/class';
 import { Injector, MethodType } from '../injector';

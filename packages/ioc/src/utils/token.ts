@@ -1,5 +1,5 @@
 import { InjectToken, Token } from '../tokens';
-import { isNewable } from './chk';
+import { isNewable } from '../metadata/type';
 
 
 /**

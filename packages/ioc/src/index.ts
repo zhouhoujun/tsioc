@@ -20,8 +20,10 @@ export * as lang from './utils/lang';
 
 // metadata
 export * from './metadata/meta';
+export * from './metadata/type';
 export * from './metadata/class';
-export { getDef, getClassRef, getClassify } from './metadata/refl';
+export * from './metadata/type.def';
+export { getClassRef, getClassify } from './metadata/refl';
 export * from './metadata/fac';
 export * from './metadata/decor';
 export { Autowired as AutoWired, Module as DIModule } from './metadata/decor';

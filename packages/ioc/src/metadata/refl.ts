@@ -1,6 +1,6 @@
 import { AnnotationType, AbstractType, typeFac } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
-import { getType, isBoolean, isFunction, isPrimitive } from '../utils/chk';
+import { isBoolean, isFunction } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
@@ -13,6 +13,8 @@ import {
 import { InvokeOptions } from '../context';
 import { HandleResult } from '../handlers/handler';
 import { RuntimeHandler } from '../lifescope/handler';
+import { getType, isPrimitive } from './type';
+import { getDef } from './type.def';
 
 export type DecorHandlerFn = (input: DecorContext, context?: any) => HandleResult<any>;
 
@@ -270,25 +272,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
     dispatch(paramDecorLifeScope, target, type, define, options)
 }
 
-const TYEP_DEF = Symbol('TYEP_DEF');
-/**
- * get type def.
- * @param type class type.
- */
-export function getDef<T extends TypeDef>(type: AbstractType): Partial<T> {
-    let tagAnn = Reflect.getMetadata(TYEP_DEF, type) as Partial<T>;
-    if (tagAnn?.type !== type) {
-        tagAnn = (type as AnnotationType).ƿAnn?.() as Partial<T>;
-        if (tagAnn?.type !== type) {
-            tagAnn = {
-                name: type.name,
-                type
-            } as Partial<T>;
-            Reflect.defineMetadata(TYEP_DEF, tagAnn, type);
-        }
-    }
-    return tagAnn as T
-}
+
 
 
 const CLASS_REF = Symbol('CLASS_REF');
