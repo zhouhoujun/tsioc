@@ -8,7 +8,7 @@ import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '
 import { ServiceConfig } from './server.options';
 // import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
-import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions } from './interceptors';
+import { BodyparserInterceptor, contentInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 // import { ExceptionFinalizeFilter } from './exception.filter';
@@ -142,10 +142,10 @@ export function withJson(options?: JsonOptions): FeatureLike<FeatureKind.Json> {
             [
                 {
                     provide: token,
-                    useExisting: JsonInterceptor,
-                    // deps: [
-                    //     { provide: LoggerOptions, useValue: options }
-                    // ],
+                    useClass: JsonInterceptor,
+                    deps: [
+                        { provide: JsonOptions, useValue: options }
+                    ],
                     multi: true
                 }
             ]
@@ -162,10 +162,7 @@ export function withContent(options?: ContentOptions): FeatureLike<FeatureKind.C
             [
                 {
                     provide: token,
-                    useExisting: ContentInterceptor,
-                    // deps: [
-                    //     { provide: LoggerOptions, useValue: options }
-                    // ],
+                    useValue: contentInterceptor(options),
                     multi: true
                 }
             ]

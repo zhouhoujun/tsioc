@@ -1,8 +1,52 @@
 import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { GET, HEAD, NotFoundException, RequestContext } from '@tsdi/common';
+import { GET, HEAD, NotFoundException, RequestContext, RequestInterceptorFn } from '@tsdi/common';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
+
+
+export function contentInterceptor(options?: ContentOptions): RequestInterceptorFn<AbstractRequestContext> {
+
+    const send = async (ctx: AbstractRequestContext, options: ContentOptions) => {
+        let file = '';
+        if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return file;
+
+        const sender = ctx.get(ContentSendAdapter);
+
+        file = await sender.send(ctx, ctx.originalUrl, options);
+
+        return file;
+    };
+
+    return (input, next, context) => {
+        if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
+            || !input.originalUrl) {
+            return next(input, context);
+        }
+
+        options ??= { ...defOpts, ...input.serverOptions.content };
+        if (options.defer) {
+            return next(input, context)
+                .pipe(
+                    mergeMap(async res => {
+                        const file = await send(input, options!)
+                        if (!file) {
+                            return throwError(() => new NotFoundException())
+                        }
+                    })
+                )
+        } else {
+            return from(send(input, options))
+                .pipe(
+                    mergeMap(file => {
+                        if (!file) return next(input, context)
+                        return of(file);
+                    })
+                )
+        }
+
+    }
+}
 
 
 
@@ -56,11 +100,6 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
         return file;
     }
 
-    static create(options?: ContentOptions): ContentInterceptor {
-        const ct = new ContentInterceptor();
-        ct.options = options;
-        return ct;
-    }
 
 }
 

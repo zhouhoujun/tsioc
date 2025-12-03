@@ -6,7 +6,7 @@ import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
-import { Provider, StaticProvider, DynamicProvider, Provide } from '../providers';
+import { Provider, StaticProvider, DynamicProvider, Provide, DepLike } from '../providers';
 import { createResolveContext, getResolver, isParameter, Parameter, ParameterLike, ResolveContext, Resolver } from '../resolver';
 
 
@@ -50,7 +50,7 @@ export function resolveParameters(injector: Injector, params?: Parameter[], reso
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
-export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], resolver?: Resolver, context?: ResolveContext): any[] {
+export function resolveArgs(injector: Injector, deps?: (DepLike | InjectorRecord)[], resolver?: Resolver, context?: ResolveContext): any[] {
     if (!deps || !deps.length) return [];
 
     const args: any[] = [];
@@ -71,7 +71,7 @@ export function resolveArgs(injector: Injector, deps?: (ParameterLike | Injector
     return args;
 }
 
-function resolveArg(injector: Injector, arg: Token | [Token, ...InjectFlags[]] | InjectorRecord): any {
+function resolveArg(injector: Injector, arg: DepLike | InjectorRecord): any {
 
     if (isArray(arg)) {
         let depFlags = InjectFlags.Default;

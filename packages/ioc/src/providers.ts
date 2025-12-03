@@ -20,6 +20,8 @@ export interface Provide<T = any> {
     provide: Token<T>;
 }
 
+export type DepLike = Token | [Token, ...InjectFlags[]] | Parameter;
+
 export interface UseAsStatic {
     /**
      * is static value for provide.
@@ -70,7 +72,7 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
      * 
      * [[token1, InjectFlags.SkipSelf], token2]
      */
-    deps?: Array<Token | [Token, ...InjectFlags[]]>;
+    deps?: DepLike[];
     /**
      * singleton or not.
      */
@@ -108,6 +110,7 @@ export interface UseValue<T> extends ProviderExts {
     useValue: T;
 }
 
+
 /**
  * value provider.
  *
@@ -137,7 +140,7 @@ export interface UseFactory<T> extends ProviderExts, UseAsStatic {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: Array<Token | [Token, ...InjectFlags[]]>;
+    deps?: DepLike[];
 }
 
 /**
@@ -166,7 +169,7 @@ export interface ConstructorProvider<T = any> extends MutilProvider {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: Array<Token | [Token, ...InjectFlags[]] | Parameter>;
+    deps?: DepLike[];
 }
 
 
