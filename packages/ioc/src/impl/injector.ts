@@ -1,9 +1,9 @@
 import { AbstractType, Type, noPointcut } from '../types';
 import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
-import { cleanObj, deepForEach, Defer, defer, getTypeName, immediate } from '../utils/lang';
+import { cleanObj, deepForEach, Defer, defer, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, isUndefined } from '../utils/chk';
-import { getType, isType } from '../metadata/type';
+import { getType, getTypeName, isType } from '../metadata/type';
 import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';

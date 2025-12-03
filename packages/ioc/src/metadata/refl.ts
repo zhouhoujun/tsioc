@@ -1,6 +1,6 @@
 import { AnnotationType, AbstractType, typeFac } from '../types';
-import { cleanObj, getParentType } from '../utils/lang';
-import { isBoolean, isFunction } from '../utils/chk';
+import { cleanObj } from '../utils/lang';
+import { isBoolean } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata

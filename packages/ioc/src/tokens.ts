@@ -1,7 +1,6 @@
-import { getType } from './metadata/type';
+import { getType, getTypeName } from './metadata/type';
 import { AbstractType, TypeOf } from './types';
 import { isString } from './utils/chk';
-import { getTypeName } from './utils/lang';
 
 
 /**

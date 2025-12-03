@@ -4,9 +4,8 @@ import { Injector } from './injector';
 import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isFunction, isNil } from './utils/chk';
 import { ArgumentException } from './exception';
-import { getTypeName } from './utils/lang';
 import { Parameter } from './resolver';
-import { isType } from './metadata/type';
+import { isType, getTypeName } from './metadata/type';
 
 /**
  * provide for {@link Injector }.

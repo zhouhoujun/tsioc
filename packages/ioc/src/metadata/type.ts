@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { getDef } from './type.def';
-import { Type } from '../types';
+import { AnnotationType, Type } from '../types';
 
 
 const fnc$ = /^function\s*\(|^function\s+anonymous\(/;
@@ -129,4 +129,20 @@ export function getType(target: any): Type {
         return target
     }
     return target.constructor || target.prototype.constructor
+}
+
+
+/**
+ * get type name.
+ *
+ * @export
+ * @param {} target
+ * @returns {string}
+ */
+export function getTypeName(target: any): string {
+    const classType = getType(target);
+    if (!classType) {
+        return ''
+    }
+    return (classType as AnnotationType).ƿAnn?.()?.name ?? classType.name
 }

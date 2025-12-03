@@ -1,7 +1,6 @@
 import {
-    token, Injector, DefaultInvocationContext, lang, AbstractType,
+    token, Injector, DefaultInvocationContext, AbstractType, Abstract, getTypeName,
     DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, Parameters,
-    Abstract,
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
@@ -87,7 +86,7 @@ export class JoinPoint extends DefaultInvocationContext {
         this.receiver = options.receiver;
         this.targetRef = options.targetRef;
         this.targetType = options.targetType ?? options.targetRef.type;
-        this.fullName = options.fullName ?? lang.getTypeName(this.targetType) + '.' + this.propertyKey?.toString();
+        this.fullName = options.fullName ?? getTypeName(this.targetType) + '.' + this.propertyKey?.toString();
         this.advisor = options.advisor;
         this.originProxy = options.originProxy;
         this.originMethod = options.originMethod;

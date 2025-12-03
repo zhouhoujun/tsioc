@@ -1,12 +1,14 @@
 import { InjectFlags, Token } from '../tokens';
-import { deepForEach, getTypeName } from '../utils/lang';
+import { getTypeName } from '../metadata/type';
+import { deepForEach } from '../utils/lang';
 import { isArray, isFunction, isNumber } from '../utils/chk';
+import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { Provider, StaticProvider, DynamicProvider, Provide } from '../providers';
-import { isPlainObject } from '../utils/obj';
 import { createResolveContext, getResolver, isParameter, Parameter, ParameterLike, ResolveContext, Resolver } from '../resolver';
+
 
 
 

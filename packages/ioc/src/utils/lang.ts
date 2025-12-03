@@ -192,20 +192,6 @@ export function last<T>(list?: T[]): T {
     return null!
 }
 
-/**
- * get type name.
- *
- * @export
- * @param {} target
- * @returns {string}
- */
-export function getTypeName(target: any): string {
-    const classType = getType(target);
-    if (!classType) {
-        return ''
-    }
-    return (classType as AnnotationType).ƿAnn?.()?.name ?? classType.name
-}
 
 /**
  * get target type parent type.
