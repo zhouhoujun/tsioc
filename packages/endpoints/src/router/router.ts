@@ -1,5 +1,5 @@
 import { Abstract, HandlerLike, ProvidedInMetadata, AbstractType, TypeDef } from '@tsdi/ioc';
-import { Pattern, Protocols, PatternFormatter, RequestInterceptor, RequestHandler } from '@tsdi/common';
+import { Pattern, PatternFormatter, RequestInterceptor, RequestHandler, Transport } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 import { AssetRoute, Route, RouteOptions, Routes } from './route';
@@ -40,7 +40,7 @@ export abstract class Router<T = RouteHanlder> implements RequestHandler<Abstrac
     /**
      * protocol
      */
-    abstract get protocol(): Protocols | null;
+    abstract get transport(): Transport | null;
 
     asDefault?: boolean;
 

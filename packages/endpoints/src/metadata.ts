@@ -2,10 +2,11 @@ import {
     isArray, isString, lang, AbstractType, TypeOf, createDecorator, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject,
     AnnotationMetadata, Handler, Type, ActionType,
-    getTypeName
+    getTypeName,
+    isNumber
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor } from '@tsdi/core';
-import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
+import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
 import { Route, RouteOptions } from './router/route';
 import { MappingDef, RouteMappingMetadata, RouteMappingOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
@@ -26,16 +27,16 @@ export interface Subscribe {
      * Subscribe handle. use to handle subscribe message event.
      *
      * @param {string} topic message match pattern.
-     * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
+     * @param {RouteOptions} option message match option.
      */
     (topic: string, option?: RouteOptions): MethodDecorator;
     /**
      * Subscribe handle. use to handle subscribe message event.
      *
      * @param {string} topic message match pattern.
-     * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
+     * @param {RouteOptions} option message match option.
      */
-    (topic: string, protocol?: Protocols, option?: RouteOptions): MethodDecorator;
+    (topic: string, transport?: Transport, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -46,8 +47,8 @@ export interface Subscribe {
  */
 export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe', {
     actionType: ActionType.annoation | ActionType.runnable,
-    props: (route: string, arg1?: Protocols | RouteOptions, option?: RouteOptions) =>
-        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
+    props: (route: string, arg1?: Transport | RouteOptions, option?: RouteOptions) =>
+        (isNumber(arg1) ? ({ route, transport: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
     design: {
         method: (typeRef, ctx) => {
 
@@ -59,7 +60,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
 
             defines.forEach(def => {
                 const metadata = def.metadata;
-                const router = getRouter(injector, metadata.protocol, true);
+                const router = getRouter(injector, metadata.transport, true);
 
                 const prefix = joinPath(metadata.prefix, metadata.version);
                 const path = router.formatter.format(metadata.route!);
@@ -104,9 +105,10 @@ export interface Handle {
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {Pattern} pattern message match pattern.
-     * @param {cmd?: string, pattern?: string } option message match option.
+     * @param {Transport} transport message transport.
+     * @param {Omit<RouteOptions, 'transport'>} option message match option.
      */
-    (pattern: Pattern, protocol?: Protocols, option?: Omit<RouteOptions, 'protocol'>): MethodDecorator;
+    (pattern: Pattern, transport?: Transport, option?: Omit<RouteOptions, 'transport'>): MethodDecorator;
 }
 
 /**
@@ -126,8 +128,8 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         }
         meta.resolvers.push(typeResolveInterceptor);
     },
-    props: (route: Pattern, arg1?: Protocols | RouteOptions, option?: RouteOptions) =>
-        (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
+    props: (route: Pattern, arg1?: Transport | RouteOptions, option?: RouteOptions) =>
+        (isNumber(arg1) ? ({ route, transport: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
         class: (ctx) => {
             ctx.classRef.assignAnnotation(ctx.define.metadata);
@@ -144,10 +146,10 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             defines.forEach(def => {
                 const metadata = def.metadata;
-                const router = getRouter(injector, metadata.protocol, true);
+                const router = getRouter(injector, metadata.transport, true);
 
                 const prefix = joinPath(metadata.prefix, metadata.version);
-                if (!router || !(router instanceof Router)) throw new Exception(metadata.protocol + ' microservice router has not register.');
+                if (!router || !(router instanceof Router)) throw new Exception(metadata.transport + ' microservice router has not register.');
                 const path = router.formatter.format(metadata.route!);
                 const handler = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
                 const route = {
@@ -167,7 +169,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
             const type = typeRef.type as Type<Handler>;
 
-            const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
+            const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.transport);
             const route = mapping.route;
             if (!route) throw new Exception(getTypeName(typeRef.type) + ' has not route!');
             if (!router) throw new Exception(getTypeName(parent) + ' has not registered!');
@@ -279,7 +281,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                 const injector = ctx.injector;
                 const mapping = typeRef.getAnnotation<MappingDef>();
 
-                const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
+                const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.transport);
                 if (!router) throw new Exception(getTypeName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Exception(getTypeName(router) + 'is not router!');
 
@@ -727,8 +729,8 @@ export interface HandleMetadata<TArg = any> extends AnnotationMetadata, RouteOpt
     prefix?: string;
 
     /**
-     * protocol
+     * transport protocol
      */
-    protocol?: Protocols;
+    transport?: Transport;
 }
 

@@ -2,7 +2,7 @@ import {
     Type, composeHandlers, DecorDefine, Exception, getClassRef,  HandlerFn, hasProps, Injector, Invocation,
     isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
-import { Pattern, PatternFormatter, Protocols, BadRequestException, NotFoundException, RequestHandler } from '@tsdi/common';
+import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport } from '@tsdi/common';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 import { AssetRoute, Route, ROUTES, Routes } from './route';
@@ -35,7 +35,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         private injector: Injector,
         readonly formatter: PatternFormatter,
         readonly prefix: string = '',
-        readonly protocol: Protocols | null = null,
+        readonly transport:  Transport | null = null,
         options?: Partial<TrieOptions>,
         routes?: Routes,
         private microservice?: boolean
@@ -44,8 +44,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         this.options = {
             loader: r => this.load(r),
             equals: microservice ? microEquals : resetfulEquals,
-            toParts: microservice ? getMicroToPartsBy(protocol) : urlToParts,
-            wlidcards: microservice ? getMicroWildcardsBy(protocol) : restWildcards,
+            toParts: microservice ? getMicroToPartsBy(transport) : urlToParts,
+            wlidcards: microservice ? getMicroWildcardsBy(transport) : restWildcards,
             ...options
         };
         this.trieRouter = new TrieRouter(this.options);
@@ -559,22 +559,21 @@ const kafkaWildcards: Wlidcard[] = [
     matchWildcard('*', 'startEnd', true, true)
 ];
 
-function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
+function getMicroWildcardsBy(protocol: Transport | null): Wlidcard[] {
     switch (protocol) {
-        case 'mqtt':
-        case 'mqtts':
+        case Transport.MQTT:
             return mqttWildcards;
 
-        case 'redis':
+        case Transport.Redis:
             return redisWildcards;
 
-        case 'kafka':
+        case Transport.Kafka:
             return kafkaWildcards;
 
-        case 'nats':
+        case Transport.NATS:
             return natsWildcards;
 
-        case 'amqp':
+        case Transport.AMQP:
             return amqpWildcards;
 
         default:
@@ -583,20 +582,19 @@ function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
 }
 
 
-function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[] {
+function getMicroToPartsBy(protocol: Transport | null): (url: string) => string[] {
     switch (protocol) {
-        case 'mqtt':
-        case 'mqtts':
+        case Transport.MQTT:
             return mqttToParts;
 
-        case 'redis':
+        case Transport.Redis:
             return redisToParts;
 
-        case 'kafka':
+        case Transport.Kafka:
             return kafkaToParts;
 
-        case 'amqp':
-        case 'nats':
+        case Transport.AMQP:
+        case Transport.NATS:
             return dotParts;
 
         default:

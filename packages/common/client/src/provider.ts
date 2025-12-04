@@ -1,10 +1,10 @@
 import { ArgumentException, Injector, ModuleRef, ProvdierOf, Provider, isArray, isFunction, isString, lang, toProvider, token } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
-import { createRequestHandler, isEqualProtocolConfig, NotImplementedException, ProtocolConfig, Protocols, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
-import { isMicroTransport, toTransportModuleName } from '@tsdi/common/transport';
+import { createRequestHandler, isEqualTransport, NotImplementedException, TransportConfig, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
+// import { isMicroTransport, toTransportModuleName } from '@tsdi/common/transport';
 import { RequestBackend } from './backend';
 import { ClientConfig } from './options';
-import { ClientOptions, ClientModuleOpts } from './client.options';
+// import { ClientOptions, ClientModuleOpts } from './client.options';
 import { getClientHanlderToken, getClientOptionsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
@@ -33,20 +33,20 @@ export enum ClientFeatureKind {
 
 export interface ClientFeature<Kind extends ClientFeatureKind> {
     kind: Kind;
-    config?: ProtocolConfig;
+    config?: TransportConfig;
     providers: Provider[];
 }
 
 export interface ClientTransportFeature {
     kind: ClientFeatureKind.Transport;
-    config: ProtocolConfig;
+    config: TransportConfig;
     providers: Provider[];
 }
 
-export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: ProtocolConfig) => ClientFeature<Kind>;
+export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: TransportConfig) => ClientFeature<Kind>;
 
 
-export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ClientTransportFeature[] | ClientFeatureFn<Exclude<Kind, ClientFeatureKind.Transport>>;
+export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Exclude<Kind, ClientFeatureKind.Transport>> | ClientTransportFeature[] | ClientFeatureFn<Exclude<Kind, ClientFeatureKind.Transport>>;
 
 
 
@@ -56,10 +56,14 @@ export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Ki
  * @returns 
  */
 export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[] {
- 
+
     const transports = features.filter(f => isArray(f)).flatMap(f => f as ClientTransportFeature[]);
 
-    const configs: ProtocolConfig[] = transports.map(t => t.config);
+    if(!transports.length) {
+        throw new ArgumentException('client transport feature is required.');
+    }
+
+    const configs: TransportConfig[] = transports.map(t => t.config);
 
     const kinds = new Map<ClientFeatureKind, Provider[]>();
     features.forEach(f => {
@@ -68,7 +72,7 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
         }
         configs.forEach(c => {
             const feature = isFunction(f) ? f(c) : f;
-            if(feature.config && !isEqualProtocolConfig(feature.config, c)) {
+            if (feature.config && !isEqualTransport(feature.config, c)) {
                 return;
             }
             const pdrs = kinds.get(feature.kind);
@@ -113,7 +117,7 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
     return providers;
 }
 
-export function makeClientFeature<T extends ClientFeatureKind>(kind: T, providers: Provider[], config?:ProtocolConfig): ClientFeature<T> {
+export function makeClientFeature<T extends ClientFeatureKind>(kind: T, providers: Provider[], config?: TransportConfig): ClientFeature<T> {
     return {
         kind,
         config,
@@ -133,11 +137,12 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
 export function withClientInterceptors(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureFn<ClientFeatureKind.Interceptors> {
-    return (options) => {
-        const token = getClientInterceptorsToken(options.protocol, options.name, options.microservice)
+    return (config) => {
+        const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
-            interceptors.map((u) => toProvider(token, u, true))
+            interceptors.map((u) => toProvider(token, u, true)),
+            config
         );
     }
 }
@@ -154,25 +159,27 @@ export function withClientInterceptors(
 export function withClientTransfers(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
-    return (options) => {
-        const token = getClientTransfersToken(options.protocol, options.name, options.microservice)
+    return (config) => {
+        const token = getClientTransfersToken(config.transport, config.name, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.Transfer,
-            interceptors.map((u) => toProvider(token, u, true))
+            interceptors.map((u) => toProvider(token, u, true)),
+            config
         );
     }
 }
 
 export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatureKind.Interceptors> {
-    return (options) => {
-        const token = getClientInterceptorsToken(options.protocol, options.name, options.microservice)
+    return (config) => {
+        const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
             [{
                 provide: token,
                 useValue: requestTimeoutInterceptor,
                 multi: true
-            }]
+            }],
+            config
         );
     }
 }
@@ -180,15 +187,16 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
 
 
 export function withClientBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
-    return (options) => {
-        const token = getClientInterceptorsToken(options.protocol, options.name, options.microservice)
+    return (config) => {
+        const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.BodySerialize,
             [{
                 provide: token,
                 useValue: bodyServializeInterceptor,
                 multi: true
-            }]
+            }],
+            config
         );
     }
 }
@@ -231,108 +239,108 @@ export function withClientBodySerialize(): ClientFeatureFn<ClientFeatureKind.Bod
 // }
 
 
-/**
- * global register client modules.
- */
-export const CLIENT_MODULES = token<ClientModuleOpts[]>('CLIENT_MODULES');
+// /**
+//  * global register client modules.
+//  */
+// export const CLIENT_MODULES = token<ClientModuleOpts[]>('CLIENT_MODULES');
 
 
-function clientProviders(options: ClientOptions, idx?: number) {
-    const microservice = isMicroTransport(options);
-    return [
-        options.providers ?? [],
-        {
-            provider: async (injector) => {
-                const transportName = toTransportModuleName(options.transport);
-                let defts = injector.get(CLIENT_MODULES, null)?.find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
-                if (!defts) {
-                    try {
-                        const m = await import(`@tsdi/${transportName}`);
-                        const transportModuleName = transportName.charAt(0).toUpperCase() + transportName.slice(1) + 'Module';
-                        if (m[transportModuleName]) {
-                            await injector.get(ModuleRef).import(m[transportModuleName]);
-                            defts = injector.get(CLIENT_MODULES, []).find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
-                        }
-                        if (!defts) {
-                            throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found transport module!')
-                        }
-                    } catch (err: any) {
-                        throw new NotImplementedException(`${options.transport} ${microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
-                    }
-                }
-                const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientOptions;
+// function clientProviders(options: ClientOptions, idx?: number) {
+//     const microservice = isMicroTransport(options);
+//     return [
+//         options.providers ?? [],
+//         {
+//             provider: async (injector) => {
+//                 const transportName = toTransportModuleName(options.transport);
+//                 let defts = injector.get(CLIENT_MODULES, null)?.find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
+//                 if (!defts) {
+//                     try {
+//                         const m = await import(`@tsdi/${transportName}`);
+//                         const transportModuleName = transportName.charAt(0).toUpperCase() + transportName.slice(1) + 'Module';
+//                         if (m[transportModuleName]) {
+//                             await injector.get(ModuleRef).import(m[transportModuleName]);
+//                             defts = injector.get(CLIENT_MODULES, []).find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
+//                         }
+//                         if (!defts) {
+//                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found transport module!')
+//                         }
+//                     } catch (err: any) {
+//                         throw new NotImplementedException(`${options.transport} ${microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
+//                     }
+//                 }
+//                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientOptions;
 
 
-                const cloneOpts = lang.deepClone(opts.config, opts.defaultConfig, (n, value, deft) => {
-                    if (n == 'providers') {
-                        return [value, deft];
-                    }
-                    return value;
-                });
-                const clientOpts = {
-                    backend: opts.backend ?? RequestBackend,
-                    enableTypeChain: true,
-                    ...cloneOpts
-                } as ClientConfig & { providers: Provider[] };
+//                 const cloneOpts = lang.deepClone(opts.config, opts.defaultConfig, (n, value, deft) => {
+//                     if (n == 'providers') {
+//                         return [value, deft];
+//                     }
+//                     return value;
+//                 });
+//                 const clientOpts = {
+//                     backend: opts.backend ?? RequestBackend,
+//                     enableTypeChain: true,
+//                     ...cloneOpts
+//                 } as ClientConfig & { providers: Provider[] };
 
-                if (!clientOpts.providers) {
-                    clientOpts.providers = [];
-                }
+//                 if (!clientOpts.providers) {
+//                     clientOpts.providers = [];
+//                 }
 
-                if (microservice) {
-                    clientOpts.microservice = microservice;
-                }
-                if (!clientOpts.protocol) {
-                    clientOpts.protocol = options.transport
-                }
-
-
-                // if (!opts.backend) {
-                //     clientOpts.providers.push({ provide: RequestBackend, useClass: RequestTransportBackend });
-                // }
-
-                if (!clientOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
-                // if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
-
-                if (opts.imports) {
-                    clientOpts.providers.push({
-                        provider: async (injector) => {
-                            await injector.getInject().useAsync(opts.imports!)
-                        }
-                    })
-                }
-
-                // clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory));
-
-                // if (!clientOpts.execptionHandlers) {
-                //     clientOpts.execptionHandlers = [DefaultExceptionHandlers]
-                // }
+//                 if (microservice) {
+//                     clientOpts.microservice = microservice;
+//                 }
+//                 if (!clientOpts.protocol) {
+//                     clientOpts.protocol = options.transport
+//                 }
 
 
-                const providers: Provider[] = [];
+//                 // if (!opts.backend) {
+//                 //     clientOpts.providers.push({ provide: RequestBackend, useClass: RequestTransportBackend });
+//                 // }
 
-                if (opts.clientProvider) {
-                    providers.push(toProvider(opts.clientType, opts.clientProvider));
-                }
-                providers.push({
-                    provide: clientOpts.handlerType,
-                    useFactory: (injector: Injector) => {
-                        return createHandler(injector, lang.deepClone(clientOpts));
-                    },
-                    deps: [Injector]
-                });
+//                 if (!clientOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
+//                 // if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
-                return opts.client ? [
-                    {
-                        provide: opts.client,
-                        useFactory: (injector: Injector) => {
-                            return injector.getInject().resolve(opts.clientType, providers);
-                        },
-                        deps: [Injector]
+//                 if (opts.imports) {
+//                     clientOpts.providers.push({
+//                         provider: async (injector) => {
+//                             await injector.getInject().useAsync(opts.imports!)
+//                         }
+//                     })
+//                 }
 
-                    }
-                ] : providers;
-            }
-        }
-    ] as Provider[];
-}
+//                 // clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory));
+
+//                 // if (!clientOpts.execptionHandlers) {
+//                 //     clientOpts.execptionHandlers = [DefaultExceptionHandlers]
+//                 // }
+
+
+//                 const providers: Provider[] = [];
+
+//                 if (opts.clientProvider) {
+//                     providers.push(toProvider(opts.clientType, opts.clientProvider));
+//                 }
+//                 providers.push({
+//                     provide: clientOpts.handlerType,
+//                     useFactory: (injector: Injector) => {
+//                         return createHandler(injector, lang.deepClone(clientOpts));
+//                     },
+//                     deps: [Injector]
+//                 });
+
+//                 return opts.client ? [
+//                     {
+//                         provide: opts.client,
+//                         useFactory: (injector: Injector) => {
+//                             return injector.getInject().resolve(opts.clientType, providers);
+//                         },
+//                         deps: [Injector]
+
+//                     }
+//                 ] : providers;
+//             }
+//         }
+//     ] as Provider[];
+// }

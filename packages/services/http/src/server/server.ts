@@ -102,8 +102,8 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
 
         const option = opts.serverOpts;
         const isSecure = this.isSecure;
-        if (!opts.protocol) {
-            opts.protocol = this._secure ? 'https' : 'http';
+        if (!opts.transport) {
+            opts.transport = this._secure ? 'https' : 'http';
         }
         if ((opts.majorVersion ?? 1) >= 2) {
             this._server = isSecure ? http2.createSecureServer(option as http2.SecureServerOptions)
@@ -156,7 +156,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
     }
 
     protected validOptions(opts: HttpServConfig) {
-        const withCredentials = this._secure = opts.protocol !== 'http' && !!(opts.serverOpts as any)?.cert;
+        const withCredentials = this._secure = opts.transport !== 'http' && !!(opts.serverOpts as any)?.cert;
         opts.listenOpts = { ...opts.listenOpts!, withCredentials, majorVersion: opts.majorVersion } as ListenOptions;
     }
 

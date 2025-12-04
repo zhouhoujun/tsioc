@@ -4,7 +4,7 @@ import {
     Provider, isArray, isFunction, isString, lang, toProvider, token
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
-import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
+// import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ServiceConfig } from './server.options';
 // import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
@@ -16,10 +16,11 @@ import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { DefaultExceptionHandlers } from './exception.handlers';
 // import { createRequestHandler } from './impl/request.handler';
 // import { DefaultServerTransferFactory } from './impl/transfer';
-import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
+// import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
-import { createRequestHandler, isEqualProtocolConfig, NotImplementedException, ProtocolConfig, Protocols, RequestInterceptorLike } from '@tsdi/common';
+import { createRequestHandler, isEqualTransport, NotImplementedException, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
 import { getFiltersToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
+import { MimeModule } from './mime.module';
 
 
 /**
@@ -49,21 +50,21 @@ export enum FeatureKind {
 
 export interface Feature<Kind extends FeatureKind> {
     kind: Kind;
-    config?: ProtocolConfig;
+    config?: TransportConfig;
     providers: Provider[];
 }
 
 
 export interface TransportFeature {
     kind: FeatureKind.Transport;
-    config: ProtocolConfig;
+    config: TransportConfig;
     providers: Provider[];
 }
 
-export type FeatureFn<Kind extends Exclude<FeatureKind, FeatureKind.Transport>> = (config: ProtocolConfig) => Feature<Kind>;
+export type FeatureFn<Kind extends Exclude<FeatureKind, FeatureKind.Transport>> = (config: TransportConfig) => Feature<Kind>;
 
 
-export type FeatureLike<Kind extends FeatureKind> = Feature<Kind> | TransportFeature[] | FeatureFn<Exclude<Kind, FeatureKind.Transport>>;
+export type FeatureLike<Kind extends FeatureKind> = Feature<Exclude<Kind, FeatureKind.Transport>> | TransportFeature[] | FeatureFn<Exclude<Kind, FeatureKind.Transport>>;
 
 
 /**
@@ -74,8 +75,11 @@ export type FeatureLike<Kind extends FeatureKind> = Feature<Kind> | TransportFea
 export function provideService(...features: FeatureLike<FeatureKind>[]): Provider[] {
 
     const transports = features.filter(f => isArray(f)).flatMap(f => f as TransportFeature[]);
+    if(!transports.length) {
+        throw new ArgumentException('endpoint transport feature is required.');
+    }
 
-    const configs: ProtocolConfig[] = transports.map(t => t.config);
+    const configs: TransportConfig[] = transports.map(t => t.config);
 
     const kinds = new Map<FeatureKind, Provider[]>();
     features.forEach(f => {
@@ -84,7 +88,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
         }
         configs.forEach(config => {
             const feature = isFunction(f) ? f(config) : f;
-            if (feature.config && !isEqualProtocolConfig(feature.config, config)) {
+            if (feature.config && !isEqualTransport(feature.config, config)) {
                 return;
             }
             const pdrs = kinds.get(feature.kind);
@@ -97,15 +101,16 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
     });
 
     // if (!kinds.has(FeatureKind.Configure)) {
-    //     throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} service configure` + (config.name ? `, ailas with name ${config.name}` : ''));
+    //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service configure` + (config.name ? `, ailas with name ${config.name}` : ''));
     // }
 
 
     // if (!kinds.has(FeatureKind.Transport)) {
-    //     throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} service transport` + (config.name ? `, ailas with name ${config.name}` : ''));
+    //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service transport` + (config.name ? `, ailas with name ${config.name}` : ''));
     // }
 
     const providers: Provider[] = [
+        MimeModule,
         BodyparserInterceptor,
         ContentInterceptor,
         JsonInterceptor,
@@ -120,7 +125,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
 }
 
 
-export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[], config?: ProtocolConfig): Feature<T> {
+export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[], config?: TransportConfig): Feature<T> {
     return {
         kind,
         config,
@@ -131,8 +136,8 @@ export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[
 
 export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn<FeatureKind.Logger> {
     return (config) => {
-        const token = filter ? getFiltersToken(config.protocol, config.name, config.microservice)
-            : getInterceptorsToken(config.protocol, config.name, config.microservice)
+        const token = filter ? getFiltersToken(config.transport, config.name, config.microservice)
+            : getInterceptorsToken(config.transport, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Logger,
             [
@@ -145,7 +150,8 @@ export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn
                     ],
                     multi: true
                 }
-            ]
+            ],
+            config
         );
     }
 }
@@ -153,7 +159,7 @@ export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn
 
 export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
     return (config) => {
-        const token = getInterceptorsToken(config.protocol, config.name, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Json,
             [
@@ -165,7 +171,8 @@ export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
                     ],
                     multi: true
                 }
-            ]
+            ],
+            config
         );
     }
 }
@@ -173,7 +180,7 @@ export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
 
 export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Content> {
     return (config) => {
-        const token = getInterceptorsToken(config.protocol, config.name, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Content,
             [
@@ -182,7 +189,8 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
                     useValue: contentInterceptor(options),
                     multi: true
                 }
-            ]
+            ],
+            config
         );
     }
 }
@@ -190,7 +198,7 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
 
 export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.Bodyparser> {
     return (config) => {
-        const token = getInterceptorsToken(config.protocol, config.name, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Bodyparser,
             [
@@ -202,7 +210,8 @@ export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.
                     ],
                     multi: true
                 }
-            ]
+            ],
+            config
         );
     }
 }
@@ -210,19 +219,20 @@ export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.
 
 export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
     return (config) => {
-        const { protocol, name, microservice } = config;
-        const token = getInterceptorsToken(protocol, name, microservice ?? options?.microservice);
-        const routerToken = getRouterToken(protocol, name, microservice ?? options?.microservice);
+        const { transport, name, microservice } = config;
+        const token = getInterceptorsToken(transport, name, microservice ?? options?.microservice);
+        const routerToken = getRouterToken(transport, name, microservice ?? options?.microservice);
         return makeFeature(
             FeatureKind.Router,
             [
-                ...createRouteProviders(protocol, microservice, name, routerToken, options),
+                ...createRouteProviders(transport, microservice, name, routerToken, options),
                 {
                     provide: token,
                     useExisting: routerToken,
                     multi: true
                 }
-            ]
+            ],
+            config
         );
     }
 }
@@ -238,10 +248,11 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
  */
 export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Interceptors> {
     return (config) => {
-        const token = getInterceptorsToken(config.protocol, config.name)
+        const token = getInterceptorsToken(config.transport, config.name)
         return makeFeature(
             FeatureKind.Interceptors,
-            interceptors.map((u) => toProvider(token, u, true))
+            interceptors.map((u) => toProvider(token, u, true)),
+            config
         );
     }
 }
@@ -257,10 +268,11 @@ export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorL
  */
 export function withTransfers(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Transfer> {
     return (config) => {
-        const token = getTransfersToken(config.protocol, config.name, config.microservice)
+        const token = getTransfersToken(config.transport, config.name, config.microservice)
         return makeFeature(
             FeatureKind.Transfer,
-            interceptors.map((u) => toProvider(token, u, true))
+            interceptors.map((u) => toProvider(token, u, true)),
+            config
         );
     }
 }
@@ -290,111 +302,111 @@ export function withTransfers(...interceptors: ProvdierOf<RequestInterceptorLike
 //     }
 // }
 
-/**
- * global registered server modules
- */
-export const SERVER_MODULES = token<ServiceModuleOpts[]>('SERVER_MODULES');
+// /**
+//  * global registered server modules
+//  */
+// export const SERVER_MODULES = token<ServiceModuleOpts[]>('SERVER_MODULES');
 
 
-function createServiceProviders(options: ServiceOptions, idx: number) {
+// function createServiceProviders(options: ServiceOptions, idx: number) {
 
-    const microservice = isMicroTransport(options);
-    return [
-        options.providers ?? [],
-        {
-            provider: async (injector) => {
-                const transportName = toTransportModuleName(options.transport);
-                let mdopts = injector.get(SERVER_MODULES, null)?.find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
+//     const microservice = isMicroTransport(options);
+//     return [
+//         options.providers ?? [],
+//         {
+//             provider: async (injector) => {
+//                 const transportName = toTransportModuleName(options.transport);
+//                 let mdopts = injector.get(SERVER_MODULES, null)?.find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
 
-                if (!mdopts) {
-                    try {
-                        const m = await import(`@tsdi/${transportName}`);
+//                 if (!mdopts) {
+//                     try {
+//                         const m = await import(`@tsdi/${transportName}`);
 
-                        const transportModuleName = transportName.charAt(0).toUpperCase() + transportName.slice(1) + 'Module';
-                        if (m[transportModuleName]) {
-                            await injector.get(ModuleRef).import(m[transportModuleName]);
-                            mdopts = injector.get(SERVER_MODULES, []).find(r => (r.transport === options.transport || r.transport == transportName) && ((microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r)))));
-                        }
-                        if (!mdopts) {
-                            throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')
-                        }
-                    } catch (err: any) {
+//                         const transportModuleName = transportName.charAt(0).toUpperCase() + transportName.slice(1) + 'Module';
+//                         if (m[transportModuleName]) {
+//                             await injector.get(ModuleRef).import(m[transportModuleName]);
+//                             mdopts = injector.get(SERVER_MODULES, []).find(r => (r.transport === options.transport || r.transport == transportName) && ((microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r)))));
+//                         }
+//                         if (!mdopts) {
+//                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')
+//                         }
+//                     } catch (err: any) {
 
-                        throw new NotImplementedException(`${options.transport} ${microservice ? 'microservice' : 'server'} ${err.message ?? 'has not implemented'}`);
-                    }
+//                         throw new NotImplementedException(`${options.transport} ${microservice ? 'microservice' : 'server'} ${err.message ?? 'has not implemented'}`);
+//                     }
 
-                }
+//                 }
 
-                const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOptions;
+//                 const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOptions;
 
-                const cloneOpts = lang.deepClone(moduleOpts.config, moduleOpts.defaultConfig, (n, value, deft) => {
-                    if (n == 'providers' || n === 'routes') {
-                        return [value, deft];
-                    }
-                    return value;
-                });
+//                 const cloneOpts = lang.deepClone(moduleOpts.config, moduleOpts.defaultConfig, (n, value, deft) => {
+//                     if (n == 'providers' || n === 'routes') {
+//                         return [value, deft];
+//                     }
+//                     return value;
+//                 });
 
-                const serverOpts = {
-                    backend: getRouterToken(moduleOpts.transport, '', microservice),
-                    enableTypeChain: true,
-                    ...cloneOpts
-                } as ServiceConfig & { providers: Provider[] };
+//                 const serverOpts = {
+//                     backend: getRouterToken(moduleOpts.transport, '', microservice),
+//                     enableTypeChain: true,
+//                     ...cloneOpts
+//                 } as ServiceConfig & { providers: Provider[] };
 
-                if (!serverOpts.providers) {
-                    serverOpts.providers = [];
-                }
+//                 if (!serverOpts.providers) {
+//                     serverOpts.providers = [];
+//                 }
 
-                if (!serverOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
-                // if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
+//                 if (!serverOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
+//                 // if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
-                if (microservice) {
-                    serverOpts.microservice = microservice;
-                }
-                if (!serverOpts.protocol) {
-                    serverOpts.protocol = options.transport
-                }
-
-
-                if (moduleOpts.imports) {
-                    serverOpts.providers.push({
-                        provider: async (injector) => {
-                            await injector.getInject().useAsync(moduleOpts.imports!)
-                        }
-                    })
-                }
-
-                // serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory));
-
-                if (!serverOpts.execptionHandlers) {
-                    serverOpts.execptionHandlers = [DefaultExceptionHandlers]
-                }
+//                 if (microservice) {
+//                     serverOpts.microservice = microservice;
+//                 }
+//                 if (!serverOpts.transport) {
+//                     serverOpts.transport = options.transport
+//                 }
 
 
-                const providers: Provider[] = [];
+//                 if (moduleOpts.imports) {
+//                     serverOpts.providers.push({
+//                         provider: async (injector) => {
+//                             await injector.getInject().useAsync(moduleOpts.imports!)
+//                         }
+//                     })
+//                 }
 
-                if (moduleOpts.server) {
-                    providers.push(toProvider(moduleOpts.serverType, moduleOpts.server));
-                }
+//                 // serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory));
 
-                providers.push({
-                    provide: serverOpts.handlerType,
-                    useFactory: (injector: Injector) => {
-                        const opts = lang.deepClone(serverOpts) as ServiceConfig;
-                        return createRequestHandler(injector, opts)
-                    },
-                    deps: [Injector]
-                });
+//                 if (!serverOpts.execptionHandlers) {
+//                     serverOpts.execptionHandlers = [DefaultExceptionHandlers]
+//                 }
 
-                return [
-                    moduleOpts.providers ?? [],
-                    createRouteProviders(moduleOpts.transport, microservice, undefined, undefined, serverOpts.routes),
-                    { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
-                ];
-            }
-        }
 
-    ] as Provider[];
+//                 const providers: Provider[] = [];
 
-}
+//                 if (moduleOpts.server) {
+//                     providers.push(toProvider(moduleOpts.serverType, moduleOpts.server));
+//                 }
+
+//                 providers.push({
+//                     provide: serverOpts.handlerType,
+//                     useFactory: (injector: Injector) => {
+//                         const opts = lang.deepClone(serverOpts) as ServiceConfig;
+//                         return createRequestHandler(injector, opts)
+//                     },
+//                     deps: [Injector]
+//                 });
+
+//                 return [
+//                     moduleOpts.providers ?? [],
+//                     createRouteProviders(moduleOpts.transport, microservice, undefined, undefined, serverOpts.routes),
+//                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
+//                 ];
+//             }
+//         }
+
+//     ] as Provider[];
+
+// }
 
 

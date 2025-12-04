@@ -1,9 +1,9 @@
 import { ProvdierOf, AbstractType } from '@tsdi/ioc';
-import { RequestHandler, RequestMethod } from '@tsdi/common';
+import { RequestHandler, RequestMethod, Transport } from '@tsdi/common';
 import { MimeSource } from '@tsdi/common/transport';
-import { ServerOptions as Http1ServerOptions } from 'http';
-import { ServerOptions as HttsServerOptions } from 'https';
-import { ServerOptions as Http2ServerOptions, SecureServerOptions } from 'http2';
+// import { ServerOptions as Http1ServerOptions } from 'http';
+// import { ServerOptions as HttsServerOptions } from 'https';
+// import { ServerOptions as Http2ServerOptions, SecureServerOptions } from 'http2';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
@@ -37,7 +37,7 @@ export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any
     /**
      * transport protocol
      */
-    protocol?: string;
+    transport?: Transport;
 
     /**
      * server request handler type
@@ -154,47 +154,47 @@ export interface CsrfOps {
     secretLength?: number;
 }
 
-export interface HttpBasicServConfig<TSerOpts> extends ServiceConfig<TSerOpts> {
-    proxy?: ProxyOpts;
-    cors?: boolean | CorsOpts;
-    mimeDb?: Record<string, MimeSource>;
-    content?: ContentOptions;
-    controllers?: string[] | AbstractType[];
-    listenOpts?: ListenOpts;
-    csrf?: boolean | CsrfOps;
-}
+// export interface HttpBasicServConfig<TSerOpts> extends ServiceConfig<TSerOpts> {
+//     proxy?: ProxyOpts;
+//     cors?: boolean | CorsOpts;
+//     mimeDb?: Record<string, MimeSource>;
+//     content?: ContentOptions;
+//     controllers?: string[] | AbstractType[];
+//     listenOpts?: ListenOpts;
+//     csrf?: boolean | CsrfOps;
+// }
 
-/**
- * http options.
- */
-export interface Http1ServConfig extends HttpBasicServConfig<Http1ServerOptions> {
-    majorVersion?: 1,
-    protocol?: 'http';
-}
+// /**
+//  * http options.
+//  */
+// export interface Http1ServConfig extends HttpBasicServConfig<Http1ServerOptions> {
+//     majorVersion?: 1,
+//     transport?: 'http';
+// }
 
-/**
- * https options.
- */
-export interface HttpsServConfig extends HttpBasicServConfig<HttsServerOptions> {
-    majorVersion?: 1,
-    protocol?: 'https';
-}
+// /**
+//  * https options.
+//  */
+// export interface HttpsServConfig extends HttpBasicServConfig<HttsServerOptions> {
+//     majorVersion?: 1,
+//     transport?: 'https';
+// }
 
-/**
- * http2 options.
- */
-export interface Http2ServConfig extends HttpBasicServConfig<Http2ServerOptions> {
-    majorVersion: 2,
-    protocol?: 'http';
-}
+// /**
+//  * http2 options.
+//  */
+// export interface Http2ServConfig extends HttpBasicServConfig<Http2ServerOptions> {
+//     majorVersion: 2,
+//     transport?: 'http';
+// }
 
-/**
- * http2 options.
- */
-export interface Http2SecureServConfig extends HttpBasicServConfig<SecureServerOptions> {
-    majorVersion: 2,
-    protocol?: 'https';
-}
+// /**
+//  * http2 options.
+//  */
+// export interface Http2SecureServConfig extends HttpBasicServConfig<SecureServerOptions> {
+//     majorVersion: 2,
+//     transport?: 'https';
+// }
 
 
-export type HttpServConfig = Http1ServConfig | HttpsServConfig | Http2ServConfig | Http2SecureServConfig;
+// export type HttpServConfig = Http1ServConfig | HttpsServConfig | Http2ServConfig | Http2SecureServConfig;

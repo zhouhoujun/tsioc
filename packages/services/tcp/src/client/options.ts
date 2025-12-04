@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { ApplicationInterceptor, Filter } from '@tsdi/core';
+import { Filter } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
 import { ConnectionOptions } from 'node:tls';

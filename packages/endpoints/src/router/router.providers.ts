@@ -1,5 +1,5 @@
-import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isType, token } from '@tsdi/ioc';
-import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
+import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isNumber, isType, token } from '@tsdi/ioc';
+import { PatternFormatter, Transport, defaultFormatter } from '@tsdi/common';
 import { InternalServerException } from '@tsdi/common';
 import { Routes } from './route';
 import { Router } from './router';
@@ -27,20 +27,18 @@ export const MESSAGE_ROUTERS = token<Router[]>('MESSAGE_ROUTERS');
  */
 export const ROUTERS = token<Router[]>('ROUTERS');
 
-export function getRouter(injector: Injector, protocol?: Protocols, microservice?: boolean): Router;
-export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router;
-export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router {
+export function getRouter(injector: Injector, transport?: Transport, microservice?: boolean): Router {
     const routers = injector.get(microservice ? MESSAGE_ROUTERS : ROUTERS, null);
-    if (!routers) throw new InternalServerException(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
-    if (!protocol && routers.length > 1) throw new InternalServerException(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);
-    const router = routers.find(r => r.protocol == protocol) ?? routers.find(r => r.asDefault) ?? routers[0];
-    if (!router) throw new InternalServerException(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
+    if (!routers) throw new InternalServerException(`${transport ? Transport[transport] : ''} ${microservice ? 'micro' : ''}service router has not register.`);
+    if (!transport && routers.length > 1) throw new InternalServerException(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);
+    const router = routers.find(r => r.transport == transport) ?? routers.find(r => r.asDefault) ?? routers[0];
+    if (!router) throw new InternalServerException(`${transport ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
     return router;
 }
 
 
 
-export function createRouteProviders(protocol: Protocols, microservice?: boolean, name?: string, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
+export function createRouteProviders(protocol: Transport, microservice?: boolean, name?: string, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
     token ??= getRouterToken(protocol, name, microservice);
     return [
         {

@@ -7,7 +7,7 @@ import { provideClient, withClientInterceptors, withClientTransfers } from '@tsd
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { Handle, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, withBodyparser, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
+import { Handle, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, withBodyparser, withContent, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
 import { TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
 
 import { BigFileInterceptor } from './BigFileInterceptor';
@@ -95,10 +95,6 @@ export class DeviceController {
         LoggerModule,
         ServerEndpointModule,
         provideClient(
-            // [
-            //     { protocol: 'tcp', port: 2000 },
-            //     { protocol: 'tcp', microservice: true, port: 3000  }
-            // ],
             withClientInterceptors(),
             withClientTransfers(),
             withTcpClientTransport(
@@ -120,15 +116,10 @@ export class DeviceController {
             )
         ),
         provideService(
-            // [
-            //     { protocol: 'tcp', port: 2000 },
-            //     { protocol: 'tcp', microservice: true, port: 3000  }
-            // ],
             withInterceptors(BigFileInterceptor),
             withJson(),
             withBodyparser(),
-            // withContent(),
-            // withRouter(),
+            withContent()({protocol: 'tcp'}),
             withRouter(),
             withLogger(),
             withTcpTransport(

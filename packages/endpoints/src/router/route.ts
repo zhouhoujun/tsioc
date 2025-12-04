@@ -1,6 +1,6 @@
 import { Handler, HandlerFn, HandlerLike, Invocation, Token, token, AbstractType, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
-import { Pattern, Protocols, RequestMethod } from '@tsdi/common';
+import { Pattern, RequestMethod, Transport } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 /**
@@ -160,7 +160,7 @@ export interface RouteOptions<T = any> extends InvocationHandlerOptions<T> {
     /**
      * transport protocol
      */
-    protocol?: Protocols;
+    transport?: Transport;
 
     /**
      * http content type.

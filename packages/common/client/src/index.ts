@@ -5,7 +5,7 @@ export * from './interceptors/timeout';
 // export * from './interceptors/serializes';
 export * from './AbstractClient';
 export * from './options';
-export * from './client.options';
+// export * from './client.options';
 export * from './provider';
 // export * from './client.module';
 export * from './transport';

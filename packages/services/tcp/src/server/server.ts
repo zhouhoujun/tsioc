@@ -1,7 +1,7 @@
 import { getClassRef, getTypeName, Injectable, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, ProtocolConfig } from '@tsdi/common';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHanlderToken, getServiceToken, FeatureFn, TransportFeature } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
@@ -41,7 +41,7 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
         if (!this.serv) throw new InternalServerException();
         const options = this.getOptions();
         const isSecure = options.secure = this.isSecure;
-        const protocol = options.protocol = options.protocol ?? (isSecure ? 'ssl' : 'tcp');
+        const protocol = options.transport = options.transport ?? (isSecure ? 'ssl' : 'tcp');
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
@@ -153,11 +153,12 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
 
 export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[] {
     return options.map(option => {
-        const config: ProtocolConfig = { protocol: 'tcp', name: option.name, microservice: option.microservice };
+        const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
         return makeFeature(FeatureKind.Transport, [
+            TcpServer,
             {
                 provide: TcpRequestHandler,
-                useExisting: getServiceHanlderToken(config.protocol, config.name, config.microservice)
+                useExisting: getServiceHanlderToken(config.transport, config.name, config.microservice)
             },
             {
                 provide: TcpServer,
@@ -167,7 +168,7 @@ export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[
 
             },
             {
-                provide: getServiceToken(config.protocol, config.name, config.microservice),
+                provide: getServiceToken(config.transport, config.name, config.microservice),
                 useExisting: TcpServer
             }
         ], config) as TransportFeature;

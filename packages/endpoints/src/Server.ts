@@ -1,6 +1,6 @@
 import { Abstract, InvocationContext, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
 import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, HandlerOptions, isHandlerOptions } from '@tsdi/core';
-import { CommonProtocols, RequestHandler, RequestInterceptorLike } from '@tsdi/common';
+import { RequestHandler, RequestInterceptorLike, Transport } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { ServiceConfig } from './server.options';
@@ -76,7 +76,7 @@ export abstract class Server<TRequest extends AbstractRequestContext = AbstractR
  */
 export class BindServerEvent<T = any> extends ApplicationEvent {
 
-    constructor(readonly server: T, readonly transport: CommonProtocols, target: any) {
+    constructor(readonly server: T, readonly transport: Transport, target: any) {
         super(target)
     }
 

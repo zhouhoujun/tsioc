@@ -1,5 +1,5 @@
 import { Abstract, promisify } from '@tsdi/ioc';
-import { Protocols, RequestContext } from '@tsdi/common';
+import { RequestContext, Transport } from '@tsdi/common';
 // import { Observable, Subject, map, mergeMap, share, takeUntil } from 'rxjs';
 // import { Transport } from './Transport';
 import { IReadable, IWritable } from './stream';
@@ -157,27 +157,27 @@ export function writePacket(socket: IWritable, msg: Packet, streamAdapter: Strea
     return promisify<any, void>(socket.write, socket)(msg.payload)
 }
 
-export function toTransportModuleName(transport: Protocols) {
-    if (/^(https|mqtts|wss)$/.test(transport)) {
-        return transport.slice(0, transport.length - 1);
-    }
-    return transport;
-}
+// export function toTransportModuleName(transport: Protocols) {
+//     if (/^(https|mqtts|wss)$/.test(transport)) {
+//         return transport.slice(0, transport.length - 1);
+//     }
+//     return transport;
+// }
 
 
 
-const microservices = {
-    mqtt: true,
-    mqtts: true,
-    redis: true,
-    kafka: true,
-    nats: true,
-    amqp: true,
-    ws: true,
-    wss: true,
-    udp: true
-} as Record<Protocols, boolean>;
+// const microservices = {
+//     mqtt: true,
+//     mqtts: true,
+//     redis: true,
+//     kafka: true,
+//     nats: true,
+//     amqp: true,
+//     ws: true,
+//     wss: true,
+//     udp: true
+// } as Record<Protocols, boolean>;
 
-export function isMicroTransport(options: { transport: Protocols, microservice?: boolean }) {
-    return microservices[options.transport] || (options.transport == 'tcp' && options.microservice === true)
-}
+// export function isMicroTransport(options: { transport: Transport, microservice?: boolean }) {
+//     return microservices[options.transport] || (options.transport == 'tcp' && options.microservice === true)
+// }

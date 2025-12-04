@@ -1,8 +1,8 @@
-import { ModuleType, ProvdierOf, Provider, AbstractType } from '@tsdi/ioc';
+import { ModuleType, ProvdierOf, Provider } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
-import { CommonProtocols, Protocols } from '@tsdi/common';
+import { Transport } from '@tsdi/common';
 // import { TransportConfigure } from '@tsdi/common/transport';
-import { Http1ServConfig, Http2SecureServConfig, Http2ServConfig, HttpsServConfig, ServiceConfig } from './server.options';
+// import { Http1ServConfig, Http2SecureServConfig, Http2ServConfig, HttpsServConfig, ServiceConfig } from './server.options';
 import { Server } from './Server';
 
 
@@ -13,7 +13,7 @@ export interface HeybirdOpts {
     /**
     * heybird or not.
     */
-    heybird?: boolean | CommonProtocols;
+    heybird?: boolean | Transport.HTTP | Transport.gRPC | Transport.TCP | Transport.CoAP;
 }
 
 
@@ -24,7 +24,7 @@ export interface BasicServiceOpts {
     /**
      * service transport.
      */
-    transport: Protocols;
+    transport: Transport;
     /**
      * imports modules
      */
@@ -47,128 +47,128 @@ export interface BasicServiceOpts {
     providers?: Provider[];
 }
 
-export interface MqttServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'mqtt' | 'mqtts';
-    config?: ServiceConfig<TSerOpts>
-}
+// export interface MqttServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'mqtt' | 'mqtts';
+//     config?: ServiceConfig<TSerOpts>
+// }
 
-export interface RedisServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'redis';
-    config?: ServiceConfig<TSerOpts>
-}
+// export interface RedisServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'redis';
+//     config?: ServiceConfig<TSerOpts>
+// }
 
-export interface KafkaServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'kafka';
-    config?: ServiceConfig<TSerOpts>
-}
+// export interface KafkaServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'kafka';
+//     config?: ServiceConfig<TSerOpts>
+// }
 
-export interface NatsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'nats';
-    config?: ServiceConfig<TSerOpts>
-}
+// export interface NatsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'nats';
+//     config?: ServiceConfig<TSerOpts>
+// }
 
-export interface AmqpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'amqp';
-    config?: ServiceConfig<TSerOpts>
-}
+// export interface AmqpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'amqp';
+//     config?: ServiceConfig<TSerOpts>
+// }
 
-export interface WsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'ws' | 'wss';
-    config?: ServiceConfig<TSerOpts> & HeybirdOpts & {
-        enableStream?: boolean;
-        // streamTransport?: TransportConfigure;
-    }
-}
+// export interface WsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'ws' | 'wss';
+//     config?: ServiceConfig<TSerOpts> & HeybirdOpts & {
+//         enableStream?: boolean;
+//         // streamTransport?: TransportConfigure;
+//     }
+// }
 
-export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'tcp';
-    /**
-     * microservice or not.
-     */
-    microservice: true;
-    config?: ServiceConfig<TSerOpts> & HeybirdOpts
-}
+// export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'tcp';
+//     /**
+//      * microservice or not.
+//      */
+//     microservice: true;
+//     config?: ServiceConfig<TSerOpts> & HeybirdOpts
+// }
 
-export interface UdpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'udp';
-    config?: ServiceConfig<TSerOpts>
-}
-
-
-
-/**
- * microservice options.
- */
-export type MicroServiceOpts = MqttServiceOpts | RedisServiceOpts | KafkaServiceOpts | NatsServiceOpts | AmqpServiceOpts | WsServiceOpts | TcpMicroServiceOpts | UdpServiceOpts;
-
-
-export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'tcp';
-    /**
-     * microservice or not.
-     */
-    microservice: false;
-    config?: ServiceConfig<TSerOpts>;
-}
-
-export interface HttpServiceOpts extends BasicServiceOpts {
-    transport: 'http'
-    config?: Http1ServConfig | Http2ServConfig;
-}
-
-export interface HttpsServiceOpts extends BasicServiceOpts {
-    transport: 'https';
-    config?: HttpsServConfig | Http2SecureServConfig;
-}
-
-export interface CoapServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'coap';
-    config?: ServiceConfig<TSerOpts>;
-}
-
-export interface GrpcServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'grpc';
-    config?: ServiceConfig<TSerOpts>;
-}
+// export interface UdpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'udp';
+//     config?: ServiceConfig<TSerOpts>
+// }
 
 
 
-export type CommonServiceOpts = TcpServiceOpts | HttpServiceOpts | HttpsServiceOpts | CoapServiceOpts | GrpcServiceOpts;
+// /**
+//  * microservice options.
+//  */
+// export type MicroServiceOpts = MqttServiceOpts | RedisServiceOpts | KafkaServiceOpts | NatsServiceOpts | AmqpServiceOpts | WsServiceOpts | TcpMicroServiceOpts | UdpServiceOpts;
 
 
-export type ServiceOptions = CommonServiceOpts | MicroServiceOpts;
+// export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'tcp';
+//     /**
+//      * microservice or not.
+//      */
+//     microservice: false;
+//     config?: ServiceConfig<TSerOpts>;
+// }
 
+// export interface HttpServiceOpts extends BasicServiceOpts {
+//     transport: 'http'
+//     config?: Http1ServConfig | Http2ServConfig;
+// }
 
-export type ServerModuleOpts = CommonServiceOpts & {
-    /**
-     * as default service.
-     */
-    asDefault?: boolean;
-    /**
-     * server type.
-     */
-    serverType: AbstractType<Server>;
-    /**
-     * server default config.
-     */
-    defaultConfig?: ServiceConfig;
-}
+// export interface HttpsServiceOpts extends BasicServiceOpts {
+//     transport: 'https';
+//     config?: HttpsServConfig | Http2SecureServConfig;
+// }
 
-export type MicroServerModuleOpts = MicroServiceOpts & {
-    /**
-     * as default service.
-     */
-    asDefault?: boolean | null;
-    /**
-     * server type.
-     */
-    serverType: AbstractType<Server>;
-    /**
-     * server default options.
-     */
-    defaultConfig?: ServiceConfig;
-}
+// export interface CoapServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'coap';
+//     config?: ServiceConfig<TSerOpts>;
+// }
+
+// export interface GrpcServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+//     transport: 'grpc';
+//     config?: ServiceConfig<TSerOpts>;
+// }
 
 
 
-export type ServiceModuleOpts = MicroServerModuleOpts | ServerModuleOpts;
+// export type CommonServiceOpts = TcpServiceOpts | HttpServiceOpts | HttpsServiceOpts | CoapServiceOpts | GrpcServiceOpts;
+
+
+// export type ServiceOptions = CommonServiceOpts | MicroServiceOpts;
+
+
+// export type ServerModuleOpts = CommonServiceOpts & {
+//     /**
+//      * as default service.
+//      */
+//     asDefault?: boolean;
+//     /**
+//      * server type.
+//      */
+//     serverType: AbstractType<Server>;
+//     /**
+//      * server default config.
+//      */
+//     defaultConfig?: ServiceConfig;
+// }
+
+// export type MicroServerModuleOpts = MicroServiceOpts & {
+//     /**
+//      * as default service.
+//      */
+//     asDefault?: boolean | null;
+//     /**
+//      * server type.
+//      */
+//     serverType: AbstractType<Server>;
+//     /**
+//      * server default options.
+//      */
+//     defaultConfig?: ServiceConfig;
+// }
+
+
+
+// export type ServiceModuleOpts = MicroServerModuleOpts | ServerModuleOpts;

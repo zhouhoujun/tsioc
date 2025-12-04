@@ -1,5 +1,5 @@
 import { Injectable, isString, promisify, Context, Injector, getClassRef } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ProtocolConfig } from '@tsdi/common';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature, ClientFeatureFn, ClientTransportFeature } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -121,11 +121,12 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
 export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTransportFeature[] {
     return options.map(option => {
-        const config: ProtocolConfig = { protocol: 'tcp', name: option.name, microservice: option.microservice };
+        const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
         return makeClientFeature(ClientFeatureKind.Transport, [
+            TcpClient,
             {
                 provide: TcpHandler,
-                useExisting: getClientHanlderToken(config.protocol, config.name, config.microservice)
+                useExisting: getClientHanlderToken(config.transport, config.name, config.microservice)
             },
             {
                 provide: TcpClient,
@@ -135,7 +136,7 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
 
             },
             {
-                provide: getClientToken(config.protocol, config.name, config.microservice),
+                provide: getClientToken(config.transport, config.name, config.microservice),
                 useExisting: TcpClient
             }
         ], config) as ClientTransportFeature;
