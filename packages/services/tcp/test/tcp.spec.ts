@@ -2,7 +2,7 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestException } from '@tsdi/common';
+import { BadRequestException, Transport } from '@tsdi/common';
 import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
@@ -76,7 +76,7 @@ export class DeviceController {
         return 'reload';
     }
 
-    @Handle({ cmd: 'xxx' }, 'tcp')
+    @Handle({ cmd: 'xxx' }, Transport.TCP)
     async subMessage(@Payload() message: string) {
         return message;
     }
@@ -112,14 +112,14 @@ export class DeviceController {
                         port: 3000
                     }
                 }
-                
+
             )
         ),
         provideService(
             withInterceptors(BigFileInterceptor),
             withJson(),
             withBodyparser(),
-            withContent()({protocol: 'tcp'}),
+            withContent()({ transport: Transport.TCP }),
             withRouter(),
             withLogger(),
             withTcpTransport(

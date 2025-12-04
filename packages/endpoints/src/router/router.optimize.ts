@@ -1,8 +1,8 @@
 import {
-    Type, composeHandlers, DecorDefine, Exception, getClassRef,  HandlerFn, hasProps, Injector, Invocation,
+    Type, composeHandlers, DecorDefine, Exception, getClassRef, HandlerFn, hasProps, Injector, Invocation,
     isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
-import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport } from '@tsdi/common';
+import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext } from '@tsdi/common';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 import { AssetRoute, Route, ROUTES, Routes } from './route';
@@ -35,7 +35,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         private injector: Injector,
         readonly formatter: PatternFormatter,
         readonly prefix: string = '',
-        readonly transport:  Transport | null = null,
+        readonly transport: Transport | null = null,
         options?: Partial<TrieOptions>,
         routes?: Routes,
         private microservice?: boolean
@@ -168,7 +168,16 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         };
     }
 
-    handle(ctx: AbstractRequestContext, noFound?: () => Observable<any>): Observable<any> {
+    handle(ctx: AbstractRequestContext, context: RequestContext): Observable<any> {
+        return this.doHandle(ctx, context)
+    }
+
+
+    intercept(ctx: AbstractRequestContext, next: RequestHandler<AbstractRequestContext>, context: RequestContext): Observable<any> {
+        return this.doHandle(ctx, context, () => next.handle(ctx, context))
+    }
+
+    doHandle(ctx: AbstractRequestContext, context: RequestContext, notFound?: () => Observable<any>): Observable<any> {
         if (ctx.headersSent || (ctx.status && ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status))) return of(ctx);
 
         return defer(async () => {
@@ -181,17 +190,13 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             mergeMap(route => {
 
                 if (route?.handle) {
-                    return route.handle(ctx);
+                    return route.handle(ctx, context);
                 }
 
-                if (noFound) return noFound();
+                if (notFound) return notFound();
                 return throwError(() => new NotFoundException())
             })
         )
-    }
-
-    intercept(ctx: AbstractRequestContext, next: RequestHandler<AbstractRequestContext>): Observable<any> {
-        return this.handle(ctx, () => next.handle(ctx))
     }
 
     protected async load(route: Route): Promise<Routes> {

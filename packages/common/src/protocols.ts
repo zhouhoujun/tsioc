@@ -1,3 +1,4 @@
+import { Type } from '@tsdi/ioc';
 
 /**
  * protocol types.
@@ -107,6 +108,10 @@ export interface TransportConfig {
      * protocol type
      */
     transport: Transport;
+    /**
+     * transport endpoint.
+     */
+    endpoint: Type,
     /**
      * the transport ailas name
      */

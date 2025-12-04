@@ -1,7 +1,7 @@
 import { Token, AbstractType } from '@tsdi/ioc';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { AbstractRequest, PatternFormatter, RequestHandler } from '@tsdi/common';
-import { RequestBackend } from './backend';
+import { ClientBackend } from './handler';
 
 /**
  * Client options.
@@ -40,7 +40,7 @@ export interface ClientConfig<TConnOpts = any> extends ConfigableHandlerOptions<
     /**
      * transport backend.
      */
-    backend?: Token<RequestBackend> | RequestBackend;
+    backend?: Token<ClientBackend> | ClientBackend;
 
     formatter?: Token<PatternFormatter>;
 }

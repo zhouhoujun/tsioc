@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHanlderToken, getServiceToken, FeatureFn, TransportFeature } from '@tsdi/endpoints';
+import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHandlerToken, getServiceToken, FeatureFn, TransportFeature } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -158,7 +158,7 @@ export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[
             TcpServer,
             {
                 provide: TcpRequestHandler,
-                useExisting: getServiceHanlderToken(config.transport, config.name, config.microservice)
+                useExisting: getServiceHandlerToken(config.transport, config.name, config.microservice)
             },
             {
                 provide: TcpServer,

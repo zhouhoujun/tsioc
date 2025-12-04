@@ -1,11 +1,6 @@
-import { ArgumentException, Injector, ModuleRef, ProvdierOf, Provider, isArray, isFunction, isString, lang, toProvider, token } from '@tsdi/ioc';
-import { ConfigMissingException, createHandler } from '@tsdi/core';
-import { createRequestHandler, isEqualTransport, NotImplementedException, TransportConfig, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
-// import { isMicroTransport, toTransportModuleName } from '@tsdi/common/transport';
-import { RequestBackend } from './backend';
-import { ClientConfig } from './options';
-// import { ClientOptions, ClientModuleOpts } from './client.options';
-import { getClientHanlderToken, getClientOptionsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
+import { ArgumentException, Injector, ProvdierOf, Provider, getClassRef, getType, isArray, isFunction, toProvider } from '@tsdi/ioc';
+import { isEqualTransport, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
+import { getClientHandlerToken, getClientOptionsToken, getClientInterceptorsToken, getClientTransfersToken, getClientToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 
@@ -59,20 +54,21 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
 
     const transports = features.filter(f => isArray(f)).flatMap(f => f as ClientTransportFeature[]);
 
-    if(!transports.length) {
+    if (!transports.length) {
         throw new ArgumentException('client transport feature is required.');
     }
 
-    const configs: TransportConfig[] = transports.map(t => t.config);
+    const providers: Provider[] = [];
 
-    const kinds = new Map<ClientFeatureKind, Provider[]>();
-    features.forEach(f => {
-        if (isArray(f)) {
-            return;
-        }
-        configs.forEach(c => {
-            const feature = isFunction(f) ? f(c) : f;
-            if (feature.config && !isEqualTransport(feature.config, c)) {
+    transports.map(ts => {
+        const kinds = new Map<ClientFeatureKind, Provider[]>();
+        const config = ts.config;
+        features.forEach(f => {
+            if (isArray(f)) {
+                return;
+            }
+            const feature = isFunction(f) ? f(config) : f;
+            if (feature.config && !isEqualTransport(feature.config, config)) {
                 return;
             }
             const pdrs = kinds.get(feature.kind);
@@ -82,39 +78,42 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
                 kinds.set(feature.kind, feature.providers.slice(0));
             }
         });
+
+        // if (!kinds.has(FeatureKind.Configure)) {
+        //     throw new ArgumentException(`messings ${protocol} client configure` + (name ? `, ailas with name ${name}` : ''));
+        // }
+
+        // if (!kinds.has(ClientFeatureKind.Transport)) {
+        //     throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} client transport` + (config.name ? `, ailas with name ${config.name}` : ''));
+        // }
+
+        const endProviders: Provider[] = [
+            ...ts.providers
+        ];
+        Array.from(kinds.keys()).sort().forEach(k => {
+            endProviders.push(...kinds.get(k)!);
+        });
+
+        const clientToken = getClientToken(config.transport, config.name, config.microservice);
+        const EndpointType = config.endpoint;
+        providers.push(
+            EndpointType,
+            {
+                provide: clientToken,
+                useFactory: (injector: Injector) => {
+                    const invocation = getClassRef(EndpointType).createInvocation(injector, { providers: endProviders });
+                    return invocation.instance;
+                },
+                deps: [
+                    Injector
+                ]
+            }
+        );
+
     });
-
-    // if (!kinds.has(FeatureKind.Configure)) {
-    //     throw new ArgumentException(`messings ${protocol} client configure` + (name ? `, ailas with name ${name}` : ''));
-    // }
-
-    // if (!kinds.has(ClientFeatureKind.Transport)) {
-    //     throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} client transport` + (config.name ? `, ailas with name ${config.name}` : ''));
-    // }
-
-    const providers: Provider[] = [];
-    Array.from(kinds.keys()).sort().forEach(k => {
-        providers.push(...kinds.get(k)!);
-    });
-
-    // const handlerToken = getClientHanlderToken(protocol, name);
-    // const optionsToken = getClientOptionsToken(protocol, name);
-
-    // providers.push(
-    //     {
-    //         provide: handlerToken,
-    //         useFactory: (injector: Injector) => {
-    //             // const options = injector.get(optionsToken);
-    //             return createRequestHandler(injector, injector.get(optionsToken));
-    //         },
-    //         deps: [
-    //             Injector
-    //         ]
-
-    //     }
-    // );
 
     return providers;
+
 }
 
 export function makeClientFeature<T extends ClientFeatureKind>(kind: T, providers: Provider[], config?: TransportConfig): ClientFeature<T> {
@@ -127,10 +126,10 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
 
 
 /**
- * Adds one or more functional-style client interceptors to the configuration of the `Client`
+ * Adds one or more  client interceptors to the configuration of the `Client`
  * instance.
  *
- * @see {@link RequestInterceptorFn}
+ * @see {@link RequestInterceptorLike}
  * @see {@link provideClient}
  * @publicApi
  */
@@ -149,10 +148,10 @@ export function withClientInterceptors(
 
 
 /**
- * Adds one or more functional-style client transfers interceptors to the configuration of the `Client`
+ * Adds one or more client transfers interceptors to the configuration of the `Client`
  * instance.
  *
- * @see {@link RequestInterceptorFn}
+ * @see {@link RequestInterceptorLike}
  * @see {@link provideClient}
  * @publicApi
  */
@@ -169,6 +168,14 @@ export function withClientTransfers(
     }
 }
 
+/**
+ * Adds timeout client interceptor to the configuration of the `Client`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideClient}
+ * @publicApi
+ */
 export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (config) => {
         const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)
@@ -185,7 +192,14 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
 }
 
 
-
+/**
+ * Adds body serialize client interceptor to the configuration of the `Client`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideClient}
+ * @publicApi
+ */
 export function withClientBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
     return (config) => {
         const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)

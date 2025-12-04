@@ -1,7 +1,7 @@
 import { Injectable, isString, promisify, Context, Injector, getClassRef } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature, ClientFeatureFn, ClientTransportFeature } from '@tsdi/common/client';
+import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature, ClientFeatureFn, ClientTransportFeature, getClientHandlerToken, getClientToken } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'node:net';
@@ -9,7 +9,8 @@ import * as tls from 'node:tls';
 import { TcpClientConfig } from './options';
 import { TcpHandler } from './handler';
 import { TcpRequest } from './request';
-import { getClientHanlderToken, getClientToken } from '@tsdi/common/client/src/tokens';
+
+
 
 
 /**
@@ -22,9 +23,11 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private _transport?: ClientTransport<tls.TLSSocket | net.Socket>;
+    // private _transport?: ClientTransport<tls.TLSSocket | net.Socket>;
 
-    constructor(readonly handler: TcpHandler) {
+    constructor(
+        readonly handler: TcpHandler
+    ) {
         super();
         if (!this.handler.getOptions().connectOpts) {
             this.handler.getOptions().connectOpts = {
@@ -80,7 +83,7 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
     protected override initContext(context: Context): void {
         context.set(TcpClient, this);
-        context.set(ClientTransport, this._transport);
+        // context.set(ClientTransport, this._transport);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {
@@ -121,12 +124,11 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
 export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTransportFeature[] {
     return options.map(option => {
-        const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
+        const config: TransportConfig = { endpoint: TcpClient, transport: Transport.TCP, name: option.name, microservice: option.microservice };
         return makeClientFeature(ClientFeatureKind.Transport, [
-            TcpClient,
             {
                 provide: TcpHandler,
-                useExisting: getClientHanlderToken(config.transport, config.name, config.microservice)
+                useExisting: getClientHandlerToken(config.transport, config.name, config.microservice)
             },
             {
                 provide: TcpClient,
@@ -137,7 +139,11 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
             },
             {
                 provide: getClientToken(config.transport, config.name, config.microservice),
-                useExisting: TcpClient
+                useClass: TcpClient,
+                deps: [
+                    TcpHandler,
+                    { value: option }
+                ]
             }
         ], config) as ClientTransportFeature;
     });

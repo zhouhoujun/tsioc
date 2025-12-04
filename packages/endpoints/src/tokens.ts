@@ -1,5 +1,5 @@
 import { getToken, Token } from '@tsdi/ioc';
-import { Transport, RequestInterceptor, RequestInterceptorFn, RequestInterceptorLike } from '@tsdi/common';
+import { Transport, RequestInterceptor, RequestInterceptorLike } from '@tsdi/common';
 import { ServiceConfig } from './server.options';
 import { FilterLike } from '@tsdi/core';
 import { Router } from './router/router';
@@ -19,14 +19,6 @@ export function getInterceptorsToken(transport: Transport, name?: string, micros
     return getToken<RequestInterceptor[]>(`${Transport[transport].toUpperCase()}_INTERCEPTORS`, toMicroName(name, microservice));
 }
 
-// export function getInterceptorFnsToken(transport: Transport, name?: string): Token<RequestInterceptorFn[]> {
-//     return getToken<RequestInterceptorFn[]>(`${Transport[transport].toUpperCase()}_INTERCEPTOR_FNS`, name);
-// }
-
-
-// export function getLegacyInterceptorToken(transport: Transport, name?: string): Token<RequestInterceptorFn> {
-//     return getToken<RequestInterceptorFn>(`${Transport[transport].toUpperCase()}_LEGACY_INTERCEPTOR_FN`, name);
-// }
 
 
 export function getTransfersToken(transport: Transport, name?: string, microservice?: boolean): Token<RequestInterceptorLike[]> {
@@ -45,7 +37,7 @@ export function getServiceOptionsToken(transport: Transport, name?: string, micr
     return getToken<ServiceConfig>(`${Transport[transport].toUpperCase()}_OPTIONS`, toMicroName(name, microservice));
 }
 
-export function getServiceHanlderToken(transport: Transport, name?: string, microservice?: boolean): Token<AbstractRequestHandler> {
+export function getServiceHandlerToken(transport: Transport, name?: string, microservice?: boolean): Token<AbstractRequestHandler> {
     return getToken<AbstractRequestHandler>(`${Transport[transport].toUpperCase()}_HANDLER`, toMicroName(name, microservice));
 }
 

@@ -1,6 +1,6 @@
 import { Injectable, Injector, Module, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { ErrorResponse } from '@tsdi/common';
+import { ErrorResponse, Transport } from '@tsdi/common';
 import { TransportPacketModule } from '@tsdi/common/transport';
 import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
@@ -30,12 +30,12 @@ export class TcpService {
         return message;
     }
 
-    @Handle('sensor/message/**', 'tcp')
+    @Handle('sensor/message/**', Transport.TCP)
     async handleMessage1(@Payload() message: string) {
         return message;
     }
 
-    @Subscribe('sensor/:id/start', 'tcp', {
+    @Subscribe('sensor/:id/start', Transport.TCP, {
         paths: {
             id: SENSORS
         }

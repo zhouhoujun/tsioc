@@ -1,7 +1,7 @@
 import {
     ArgumentException, Injector, ModuleRef,
     ProvdierOf,
-    Provider, isArray, isFunction, isString, lang, toProvider, token
+    Provider, Type, getClassRef, isArray, isFunction, isString, lang, toProvider, token
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
 // import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
@@ -19,7 +19,7 @@ import { DefaultExceptionHandlers } from './exception.handlers';
 // import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
 import { createRequestHandler, isEqualTransport, NotImplementedException, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
-import { getFiltersToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
+import { getFiltersToken, getInterceptorsToken, getRouterToken, getServiceToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 
 
@@ -31,7 +31,6 @@ import { MimeModule } from './mime.module';
 export enum FeatureKind {
     Configure,
     Interceptors,
-    // LegacyInterceptors,
     Logger,
     Csrf,
     Helmet,
@@ -75,18 +74,25 @@ export type FeatureLike<Kind extends FeatureKind> = Feature<Exclude<Kind, Featur
 export function provideService(...features: FeatureLike<FeatureKind>[]): Provider[] {
 
     const transports = features.filter(f => isArray(f)).flatMap(f => f as TransportFeature[]);
-    if(!transports.length) {
+    if (!transports.length) {
         throw new ArgumentException('endpoint transport feature is required.');
     }
 
-    const configs: TransportConfig[] = transports.map(t => t.config);
+    const providers: Provider[] = [
+        MimeModule,
+        BodyparserInterceptor,
+        ContentInterceptor,
+        JsonInterceptor,
+        LoggerInterceptor
+    ];
+    transports.forEach(ts => {
+        const kinds = new Map<FeatureKind, Provider[]>();
+        const config = ts.config;
+        features.forEach(f => {
+            if (isArray(f)) {
+                return;
+            }
 
-    const kinds = new Map<FeatureKind, Provider[]>();
-    features.forEach(f => {
-        if (isArray(f)) {
-            return;
-        }
-        configs.forEach(config => {
             const feature = isFunction(f) ? f(config) : f;
             if (feature.config && !isEqualTransport(feature.config, config)) {
                 return;
@@ -97,30 +103,42 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
             } else {
                 kinds.set(feature.kind, feature.providers.slice(0));
             }
+
         });
+
+        // if (!kinds.has(FeatureKind.Configure)) {
+        //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service configure` + (config.name ? `, ailas with name ${config.name}` : ''));
+        // }
+
+
+        // if (!kinds.has(FeatureKind.Transport)) {
+        //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service transport` + (config.name ? `, ailas with name ${config.name}` : ''));
+        // }
+
+        const endProviders: Provider[] = [
+            ...ts.providers
+        ]
+        Array.from(kinds.keys()).sort().forEach(k => {
+            endProviders.push(...kinds.get(k)!);
+        });
+
+        const EndpointType = config.endpoint;
+        const serviceToken = getServiceToken(config.transport, config.name, config.microservice);
+        providers.push(
+            EndpointType,
+            {
+                provide: serviceToken,
+                useFactory: (injector: Injector) => {
+                    const invocation = getClassRef(EndpointType).createInvocation(injector, { providers: endProviders });
+                    return invocation.instance;
+                },
+                deps: [
+                    Injector
+                ]
+            }
+        );
+
     });
-
-    // if (!kinds.has(FeatureKind.Configure)) {
-    //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service configure` + (config.name ? `, ailas with name ${config.name}` : ''));
-    // }
-
-
-    // if (!kinds.has(FeatureKind.Transport)) {
-    //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service transport` + (config.name ? `, ailas with name ${config.name}` : ''));
-    // }
-
-    const providers: Provider[] = [
-        MimeModule,
-        BodyparserInterceptor,
-        ContentInterceptor,
-        JsonInterceptor,
-        LoggerInterceptor
-    ];
-    Array.from(kinds.keys()).sort().forEach(k => {
-        providers.push(...kinds.get(k)!);
-    });
-
-
     return providers;
 }
 
@@ -133,7 +151,18 @@ export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[
     }
 }
 
-
+/**
+ * 
+ * Adds logger filter to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link FilterLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param options 
+ * @returns 
+ */
 export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn<FeatureKind.Logger> {
     return (config) => {
         const token = filter ? getFiltersToken(config.transport, config.name, config.microservice)
@@ -156,7 +185,18 @@ export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn
     }
 }
 
-
+/**
+ * 
+ * Adds json interceptor to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param options 
+ * @returns 
+ */
 export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
     return (config) => {
         const token = getInterceptorsToken(config.transport, config.name, config.microservice)
@@ -177,7 +217,18 @@ export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
     }
 }
 
-
+/**
+ * 
+ * Adds content interceptor to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param options 
+ * @returns 
+ */
 export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Content> {
     return (config) => {
         const token = getInterceptorsToken(config.transport, config.name, config.microservice)
@@ -195,7 +246,18 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
     }
 }
 
-
+/**
+ * 
+ * Adds bodyparser interceptor to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param options 
+ * @returns 
+ */
 export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.Bodyparser> {
     return (config) => {
         const token = getInterceptorsToken(config.transport, config.name, config.microservice)
@@ -216,7 +278,16 @@ export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.
     }
 }
 
-
+/**
+ * Adds router interceptors to the configuration of the `Service`
+ * instance.
+ * 
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param options 
+ * @returns 
+ */
 export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
     return (config) => {
         const { transport, name, microservice } = config;
@@ -239,11 +310,11 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
 
 
 /**
- * Adds one or more functional-style client interceptors to the configuration of the `Client`
+ * Adds one or more service interceptors to the configuration of the `Service`
  * instance.
  *
- * @see {@link RequestInterceptorFn}
- * @see {@link provideClient}
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
  * @publicApi
  */
 export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Interceptors> {
@@ -259,11 +330,30 @@ export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorL
 
 
 /**
- * Adds one or more functional-style client transfers interceptors to the configuration of the `Client`
+ * Adds one or more service controllers to the configuration of the `Service`
  * instance.
  *
- * @see {@link RequestInterceptorFn}
- * @see {@link provideClient}
+ * @see {@link provideService}
+ * @publicApi
+ */
+export function withControllers(controllers: Type[]): FeatureFn<FeatureKind.Controller> {
+    return (config) => {
+        return makeFeature(
+            FeatureKind.Controller,
+            controllers,
+            config
+        );
+    }
+}
+
+
+
+/**
+ * Adds one or more service transfers interceptors to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
  * @publicApi
  */
 export function withTransfers(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Transfer> {
