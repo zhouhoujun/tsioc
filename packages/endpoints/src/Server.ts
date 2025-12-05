@@ -53,12 +53,7 @@ export abstract class Server<TRequest extends AbstractRequestContext = AbstractR
     /**
      * service request handler.
      */
-    abstract get handler(): AbstractRequestHandler<TRequest, TOptions>;
-
-    getOptions(): TOptions {
-        return this.handler.getOptions()
-    }
-
+    abstract get handler(): AbstractRequestHandler<TRequest>;
 
 
     use(options: ProvdierOf<RequestInterceptorLike<TRequest>> | ProvdierOf<RequestInterceptorLike>[] | HandlerOptions<TRequest>, order?: number): this {

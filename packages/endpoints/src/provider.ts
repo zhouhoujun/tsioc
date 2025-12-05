@@ -18,7 +18,7 @@ import { DefaultExceptionHandlers } from './exception.handlers';
 // import { DefaultServerTransferFactory } from './impl/transfer';
 // import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
-import { createRequestHandler, isEqualTransport, NotImplementedException, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
+import { createRequestHandler, matchTransport, NotImplementedException, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
 import { getFiltersToken, getInterceptorsToken, getRouterToken, getServiceToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 
@@ -94,7 +94,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
             }
 
             const feature = isFunction(f) ? f(config) : f;
-            if (feature.config && !isEqualTransport(feature.config, config)) {
+            if (feature.config && !matchTransport(feature.config, config)) {
                 return;
             }
             const pdrs = kinds.get(feature.kind);
@@ -115,30 +115,17 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
         //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service transport` + (config.name ? `, ailas with name ${config.name}` : ''));
         // }
 
-        const endProviders: Provider[] = [
-            ...ts.providers
-        ]
+
         Array.from(kinds.keys()).sort().forEach(k => {
-            endProviders.push(...kinds.get(k)!);
+            providers.push(...kinds.get(k)!);
         });
 
-        const EndpointType = config.endpoint;
-        const serviceToken = getServiceToken(config.transport, config.name, config.microservice);
         providers.push(
-            EndpointType,
-            {
-                provide: serviceToken,
-                useFactory: (injector: Injector) => {
-                    const invocation = getClassRef(EndpointType).createInvocation(injector, { providers: endProviders });
-                    return invocation.instance;
-                },
-                deps: [
-                    Injector
-                ]
-            }
+            ...ts.providers
         );
 
     });
+
     return providers;
 }
 
@@ -165,8 +152,8 @@ export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[
  */
 export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn<FeatureKind.Logger> {
     return (config) => {
-        const token = filter ? getFiltersToken(config.transport, config.name, config.microservice)
-            : getInterceptorsToken(config.transport, config.name, config.microservice)
+        const token = filter ? getFiltersToken(config.transport, config.microservice)
+            : getInterceptorsToken(config.transport, config.microservice)
         return makeFeature(
             FeatureKind.Logger,
             [
@@ -199,7 +186,7 @@ export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn
  */
 export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.name, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice)
         return makeFeature(
             FeatureKind.Json,
             [
@@ -231,7 +218,7 @@ export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
  */
 export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Content> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.name, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice)
         return makeFeature(
             FeatureKind.Content,
             [
@@ -260,7 +247,7 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
  */
 export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.Bodyparser> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.name, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice)
         return makeFeature(
             FeatureKind.Bodyparser,
             [
@@ -291,8 +278,8 @@ export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.
 export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
     return (config) => {
         const { transport, name, microservice } = config;
-        const token = getInterceptorsToken(transport, name, microservice ?? options?.microservice);
-        const routerToken = getRouterToken(transport, name, microservice ?? options?.microservice);
+        const token = getInterceptorsToken(transport, microservice ?? options?.microservice);
+        const routerToken = getRouterToken(transport, microservice ?? options?.microservice);
         return makeFeature(
             FeatureKind.Router,
             [
@@ -319,7 +306,7 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
  */
 export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Interceptors> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.name)
+        const token = getInterceptorsToken(config.transport, config.microservice)
         return makeFeature(
             FeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true)),
@@ -358,7 +345,7 @@ export function withControllers(controllers: Type[]): FeatureFn<FeatureKind.Cont
  */
 export function withTransfers(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Transfer> {
     return (config) => {
-        const token = getTransfersToken(config.transport, config.name, config.microservice)
+        const token = getTransfersToken(config.transport, config.microservice)
         return makeFeature(
             FeatureKind.Transfer,
             interceptors.map((u) => toProvider(token, u, true)),

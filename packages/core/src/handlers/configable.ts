@@ -39,15 +39,9 @@ export interface HandlerAppendService<TInput, TOutput = any, TContext = any> {
 export abstract class AbstractConfigableHandler<
     TInput = any,
     TOutput = any,
-    TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
     TContext = any> implements Handler<TInput, TOutput, TContext> {
 
     abstract get context(): InvocationContext;
-    abstract get ready(): Promise<void>;
-    /**
-     * get config options.
-     */
-    abstract getOptions(): TOptions;
 
     /**
      * append handler options.
@@ -105,7 +99,7 @@ export function isHandlerOptions(target: any): target is HandlerOptions {
 /**
  * Configable handler options.
  */
-export interface ConfigableHandlerOptions<TInput = any> extends HandlerOptions<TInput>, InvokeProviders {
+export interface ConfigableHandlerOptions<TInput = any, TOutput = any, TContext = any> extends HandlerOptions<TInput, TOutput, TContext>, InvokeProviders {
     /**
      * handler type.
      */
@@ -122,17 +116,19 @@ export interface ConfigableHandlerOptions<TInput = any> extends HandlerOptions<T
     /**
      * interceptors token.
      */
-    interceptorsToken?: Token<InterceptorLike<TInput>[]>;
+    interceptorsToken?: Token<InterceptorLike<TInput, TOutput, TContext>[]>;
     /**
      * guards tokens.
      */
-    guardsToken?: Token<GuardLike<TInput>[]>;
+    guardsToken?: Token<GuardLike<TInput, TContext>[]>;
     /**
      * filter tokens.
      */
-    filtersToken?: Token<FilterLike<TInput>[]>;
+    filtersToken?: Token<FilterLike<TInput, TOutput, TContext>[]>;
 
-
-    backend?: Token<HandlerLike<TInput>> | HandlerLike<TInput>;
+    /**
+     * backend.
+     */
+    backend?: Token<HandlerLike<TInput, TOutput, TContext>> | HandlerLike<TInput, TOutput, TContext>;
 }
 

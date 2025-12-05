@@ -51,7 +51,7 @@ export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext ex
  * 
  * 传输节点配置
  */
-export interface RequestHandlerOptions<T = any> extends ConfigableHandlerOptions<T> {
+export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends ConfigableHandlerOptions<TInput, TOutput, TContext> {
     classType?: Type<RequestHandler>;
 
 }
@@ -63,9 +63,8 @@ export interface RequestHandlerOptions<T = any> extends ConfigableHandlerOptions
 export abstract class ConfigableRequestHandler<
     TInput = any,
     TOutput = any,
-    TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>,
     TContext extends RequestContext = RequestContext
-> extends AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+> extends AbstractConfigableHandler<TInput, TOutput, TContext> {
 
 }
 
@@ -76,10 +75,9 @@ export abstract class ConfigableRequestHandler<
  */
 export class DefaultRequestHandler<
     TInput = any, TOutput = any,
-    TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>,
     TContext extends RequestContext = RequestContext
 >
-    extends ConfigableHandler<TInput, TOutput, TOptions, TContext> implements ConfigableRequestHandler<TInput, TOutput, TOptions, TContext> {
+    extends ConfigableHandler<TInput, TOutput, TContext> implements ConfigableRequestHandler<TInput, TOutput, TContext> {
 
     override handle(input: TInput, context: TContext): Observable<TOutput> {
         return toObservable(super.handle(input, context));

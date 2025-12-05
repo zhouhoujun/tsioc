@@ -1,6 +1,6 @@
 import { Abstract, Type, Token } from '@tsdi/ioc';
-import { AbstractConfigableHandler, InvocationHandlerOptions } from '@tsdi/core';
-import { RequestHandler } from '@tsdi/common';
+import { InvocationHandlerOptions } from '@tsdi/core';
+import { ConfigableRequestHandler, RequestHandler } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
 import { Router } from './router/router';
 
@@ -10,8 +10,8 @@ import { Router } from './router/router';
  * configable request handler
  */
 @Abstract()
-export abstract class AbstractRequestHandler<TInput extends AbstractRequestContext = AbstractRequestContext, TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>>
-    extends AbstractConfigableHandler<TInput, any, TOptions> implements RequestHandler<TInput> {
+export abstract class AbstractRequestHandler<TInput extends AbstractRequestContext = AbstractRequestContext>
+    extends ConfigableRequestHandler<TInput, any> implements RequestHandler<TInput> {
 
     /**
      * is this equals to target or not

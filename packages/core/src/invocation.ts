@@ -10,7 +10,6 @@ import { Handler, RunContext } from './handler';
 export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
-    TOptions extends InvocationHandlerOptions = InvocationHandlerOptions,
     TContext extends RunContext = RunContext,
     T = any> implements Handler<TInput, TOutput, TContext> {
 
@@ -20,12 +19,6 @@ export abstract class InvocationHandler<
     abstract get invocation(): Invocation<T>;
 
     abstract get context(): InvocationContext;
-
-    /**
-     * get config options.
-     */
-    abstract getOptions(): TOptions;
-
 
     /**
      * append handler options.

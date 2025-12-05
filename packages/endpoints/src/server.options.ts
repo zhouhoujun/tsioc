@@ -30,6 +30,8 @@ export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any
     session?: SessionOptions;
     content?: ContentOptions;
     serverOpts?: TSerOpts;
+
+    asDefault?: boolean;
     /**
      * is microservice or not.
      */

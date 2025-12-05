@@ -11,11 +11,15 @@ import { TcpRequest } from './request';
 /**
  * tcp client config.
  */
-export interface TcpClientConfig extends ClientConfig<NetConnectOpts | ConnectionOptions> {
+export interface TcpClientConfig extends ClientConfig {
     /**
      * keep alive
      */
     keepalive?: number;
+    /**
+     * connectOptions
+     */
+    connectOptions?: NetConnectOpts | ConnectionOptions;
     /**
      * socket options.
      */

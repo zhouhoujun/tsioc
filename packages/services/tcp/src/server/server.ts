@@ -1,7 +1,7 @@
-import { getClassRef, getTypeName, Injectable, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
+import { getClassRef, getTypeName, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport } from '@tsdi/common';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport, createRequestHandler } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHandlerToken, getServiceToken, FeatureFn, TransportFeature } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
@@ -154,23 +154,33 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
 export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[] {
     return options.map(option => {
         const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
-        return makeFeature(FeatureKind.Transport, [
-            TcpServer,
-            {
-                provide: TcpRequestHandler,
-                useExisting: getServiceHandlerToken(config.transport, config.name, config.microservice)
-            },
-            {
-                provide: TcpServer,
-                useFactory: (injector: Injector) => {
-                    return getClassRef(TcpServer).createInvocation(injector, option).instance;
-                },
+        const hanlderToken = getServiceHandlerToken(config.transport, config.microservice, config.name);
+        const serviceToken = getServiceToken(config.transport, config.microservice, config.name);
 
+        const providers: Provider[] = [
+            {
+                provide: hanlderToken,
+                useFactory: (injector: Injector) => {
+                    return createRequestHandler(injector, option)
+                }
             },
             {
-                provide: getServiceToken(config.transport, config.name, config.microservice),
-                useExisting: TcpServer
+                provide: serviceToken,
+                useClass: TcpServer,
+                deps: [
+                    hanlderToken
+                ]
             }
-        ], config) as TransportFeature;
+        ];
+
+        if (options.length == 1 || option.asDefault) {
+            providers.push({
+                provide: TcpServer,
+                useExisting: serviceToken
+            })
+        }
+
+
+        return makeFeature(FeatureKind.Transport, providers, config) as TransportFeature;
     })
 }

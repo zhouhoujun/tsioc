@@ -1,5 +1,5 @@
-import { Injectable, isString, promisify, Context, Injector, getClassRef } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport } from '@tsdi/common';
+import { Injectable, isString, promisify, Context, Injector, getClassRef, Provider } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport, createRequestHandler } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature, ClientFeatureFn, ClientTransportFeature, getClientHandlerToken, getClientToken } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -124,27 +124,34 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
 export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTransportFeature[] {
     return options.map(option => {
-        const config: TransportConfig = { endpoint: TcpClient, transport: Transport.TCP, name: option.name, microservice: option.microservice };
-        return makeClientFeature(ClientFeatureKind.Transport, [
-            {
-                provide: TcpHandler,
-                useExisting: getClientHandlerToken(config.transport, config.name, config.microservice)
-            },
-            {
-                provide: TcpClient,
-                useFactory: (injector: Injector) => {
-                    return getClassRef(TcpClient).createInvocation(injector, option).instance;
-                },
+        const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
+        const clientToken = getClientToken(config.transport, config.microservice, config.name);
+        const hanlderToken = getClientHandlerToken(config.transport, config.microservice, config.name);
+        // const 
 
+        const providers: Provider[] = [
+            {
+                provide: hanlderToken,
+                useFactory: (injector: Injector) => {
+                    return createRequestHandler(injector, option)
+                }
             },
             {
-                provide: getClientToken(config.transport, config.name, config.microservice),
+                provide: clientToken,
                 useClass: TcpClient,
                 deps: [
-                    TcpHandler,
-                    { value: option }
+                    hanlderToken
                 ]
             }
-        ], config) as ClientTransportFeature;
+        ];
+
+        if (options.length == 1 || option.asDefault) {
+            providers.push({
+                provide: TcpClient,
+                useExisting: clientToken
+            })
+        }
+
+        return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
     });
 }

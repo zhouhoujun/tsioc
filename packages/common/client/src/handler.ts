@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
-import { RequestHandler, AbstractRequest, ResponseEvent, RequestContext } from '@tsdi/common';
+import { ConfigableHandler } from '@tsdi/core';
+import { RequestHandler, AbstractRequest, ResponseEvent, RequestContext, ConfigableRequestHandler } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 
@@ -8,7 +9,10 @@ import { Observable } from 'rxjs';
  * client requst Hanlder.
  */
 @Abstract()
-export abstract class ClientHandler<TReq extends AbstractRequest<any> = AbstractRequest<any>, TRes extends ResponseEvent<any> = ResponseEvent<any>> implements RequestHandler<TReq, TRes> {
+export abstract class ClientHandler<
+    TReq extends AbstractRequest<any> = AbstractRequest<any>,
+    TRes extends ResponseEvent<any> = ResponseEvent<any>>
+    extends ConfigableHandler<TReq, TRes, RequestContext> implements ConfigableRequestHandler<TReq, TRes, RequestContext> {
 
     /**
      * handle client request

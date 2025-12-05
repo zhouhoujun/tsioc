@@ -12,7 +12,7 @@ import { InterceptorFn } from '../interceptor';
  * 处理器过滤器。
  */
 @Abstract()
-export abstract class Filter<TInput = any, TOutput = any, TContext extends RunContext = RunContext> {
+export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
     /**
      * the method to implement interceptor filter.
      * @param input request input data.
@@ -36,12 +36,12 @@ export abstract class Filter<TInput = any, TOutput = any, TContext extends RunCo
  * 
  * 处理器过滤方法。
  */
-export type FilterFn<TInput = any, TOutput = any, TContext extends RunContext = RunContext> = InterceptorFn<TInput, TOutput, TContext>;
+export type FilterFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, TOutput, TContext>;
 
 /**
  * filter like
  */
-export type FilterLike<TInput = any, TOutput = any, TContext extends RunContext = RunContext> = FilterFn<TInput, TOutput, TContext> | Filter<TInput, TOutput, TContext>;
+export type FilterLike<TInput = any, TOutput = any, TContext = any> = FilterFn<TInput, TOutput, TContext> | Filter<TInput, TOutput, TContext>;
 
 
 /**

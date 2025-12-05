@@ -109,10 +109,6 @@ export interface TransportConfig {
      */
     transport: Transport;
     /**
-     * transport endpoint.
-     */
-    endpoint: Type,
-    /**
      * the transport ailas name
      */
     name?: string;
@@ -130,6 +126,8 @@ export interface TransportConfig {
 }
 
 
-export function isEqualTransport(a: TransportConfig, b: TransportConfig): boolean {
-    return a.transport === b.transport && a.name === b.name && a.microservice === b.microservice && a.port === b.port && a.host === b.host;
+export function matchTransport(source: TransportConfig, target: TransportConfig): boolean {
+    return source.transport === source.transport
+        && (source.name ? source.name === target.name : true)
+        && (source.microservice !== undefined ? source.microservice === target.microservice : true)
 }

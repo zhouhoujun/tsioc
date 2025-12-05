@@ -1,5 +1,5 @@
 import { ArgumentException, Injector, ProvdierOf, Provider, getClassRef, getType, isArray, isFunction, toProvider } from '@tsdi/ioc';
-import { isEqualTransport, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
+import { matchTransport, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
 import { getClientHandlerToken, getClientOptionsToken, getClientInterceptorsToken, getClientTransfersToken, getClientToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
@@ -68,7 +68,7 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
                 return;
             }
             const feature = isFunction(f) ? f(config) : f;
-            if (feature.config && !isEqualTransport(feature.config, config)) {
+            if (feature.config && !matchTransport(feature.config, config)) {
                 return;
             }
             const pdrs = kinds.get(feature.kind);
@@ -87,27 +87,12 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
         //     throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} client transport` + (config.name ? `, ailas with name ${config.name}` : ''));
         // }
 
-        const endProviders: Provider[] = [
-            ...ts.providers
-        ];
         Array.from(kinds.keys()).sort().forEach(k => {
-            endProviders.push(...kinds.get(k)!);
+            providers.push(...kinds.get(k)!);
         });
 
-        const clientToken = getClientToken(config.transport, config.name, config.microservice);
-        const EndpointType = config.endpoint;
         providers.push(
-            EndpointType,
-            {
-                provide: clientToken,
-                useFactory: (injector: Injector) => {
-                    const invocation = getClassRef(EndpointType).createInvocation(injector, { providers: endProviders });
-                    return invocation.instance;
-                },
-                deps: [
-                    Injector
-                ]
-            }
+            ...ts.providers
         );
 
     });
@@ -137,7 +122,7 @@ export function withClientInterceptors(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (config) => {
-        const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)
+        const token = getClientInterceptorsToken(config.transport, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true)),
@@ -159,7 +144,7 @@ export function withClientTransfers(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
-        const token = getClientTransfersToken(config.transport, config.name, config.microservice)
+        const token = getClientTransfersToken(config.transport, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.Transfer,
             interceptors.map((u) => toProvider(token, u, true)),
@@ -178,7 +163,7 @@ export function withClientTransfers(
  */
 export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (config) => {
-        const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)
+        const token = getClientInterceptorsToken(config.transport, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
             [{
@@ -202,7 +187,7 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
  */
 export function withClientBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
     return (config) => {
-        const token = getClientInterceptorsToken(config.transport, config.name, config.microservice)
+        const token = getClientInterceptorsToken(config.transport, config.microservice)
         return makeClientFeature(
             ClientFeatureKind.BodySerialize,
             [{

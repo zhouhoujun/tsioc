@@ -18,15 +18,12 @@ import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions } f
 export class ConfigableHandler<
     TInput = any,
     TOutput = any,
-    TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext = any> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+    TContext = any> implements AbstractConfigableHandler<TInput, TOutput, TContext> {
 
     private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
     private chains: Map<AbstractType | string, InterceptorFn<TInput, TOutput, TContext> | null>;
 
     private _guards?: GuardLike[] | null;
-
-    protected options: TOptions;
 
     get ready() {
         return this.context.ready;
@@ -48,16 +45,13 @@ export class ConfigableHandler<
         return this._interceptorResolver;
     }
 
-    getOptions(): TOptions {
-        return this.options;
-    }
 
 
     constructor(
         readonly context: InvocationContext,
-        options: TOptions) {
+        protected options: ConfigableHandlerOptions) {
 
-        this.options = this.initOptions(options);
+        this.initOptions(options);
         if (this.options.backend && isType(this.options.backend) && !this.context.has(this.options.backend, InjectFlags.Self)) {
             InjectUtil.provider(this.context, this.options.backend);
         }
@@ -67,15 +61,18 @@ export class ConfigableHandler<
     }
 
     protected onReady(): Promise<void> {
-        return this.ready;
+        return this.context.ready;
     }
 
-    protected initOptions(options: TOptions): TOptions {
-        return {
-            interceptorsToken: INTERCEPTORS_TOKEN,
-            guardsToken: GUARDS_TOKEN,
-            filtersToken: FILTERS_TOKEN,
-            ...options
+    protected initOptions(options: ConfigableHandlerOptions): void {
+        if (!options.interceptorsToken) {
+            options.interceptorsToken = INTERCEPTORS_TOKEN;
+        }
+        if (!options.guardsToken) {
+            options.guardsToken = GUARDS_TOKEN;
+        }
+        if (!options.filtersToken) {
+            options.filtersToken = FILTERS_TOKEN;
         }
     }
 
@@ -217,7 +214,7 @@ export class ConfigableHandler<
     }
 
     protected getHandlerType(): AbstractType {
-        return this.getOptions().handlerType ?? getType(this)
+        return this.options.handlerType ?? getType(this)
     }
 
 
@@ -317,7 +314,7 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
     type?: Type
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(
-    context: Injector | InvocationContext, 
+    context: Injector | InvocationContext,
     arg: ConfigableHandlerOptions<TInput> | Token<Handler<TInput, TOutput>> | Handler<TInput, TOutput>,
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]> | Type<ConfigableHandler>,
     guardsToken?: Token<CanHandle[]>,

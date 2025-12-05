@@ -8,23 +8,18 @@ import { ResultValue } from '../handlers/ResultValue';
 export class DefaultInvocationHandler<
     TInput = any,
     TOutput = any,
-    TOptions extends InvocationHandlerOptions<TInput> = InvocationHandlerOptions<TInput>,
     TContext extends RunContext = RunContext,
     T = any
-> extends ConfigableHandler<TInput, TOutput, TOptions, TContext> implements InvocationHandler<TInput, TOutput, TOptions, TContext, T> {
+> extends ConfigableHandler<TInput, TOutput, TContext> implements InvocationHandler<TInput, TOutput, TContext, T> {
 
     private limit?: number;
     constructor(
         readonly invocation: Invocation<T>,
-        options: TOptions,
+        protected options: InvocationHandlerOptions<TInput>,
         readonly propertyKey?: string | symbol) {
         super(propertyKey ? invocation.getMethodContext(propertyKey) : invocation.context, options)
         this.limit = options.limit;
 
-    }
-
-    getOptions(): TOptions {
-        return this.options;
     }
 
     protected getBackend(): HandlerFn<TInput, TOutput, TContext> {
