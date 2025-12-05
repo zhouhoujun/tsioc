@@ -1,5 +1,5 @@
 import {
-    isNumber, AbstractType, Injectable, token, ClassRef, isFunction, getClassify, ProvdierOf, 
+    isNumber, AbstractType, Injectable, token, ClassRef, isFunction, getClassify, ProvdierOf,
     Invocation, ArgumentException, HandlerLike, composeHandlers, Type, InjectUtil,
     HandleResult, promiseOf, isArray, InterceptorLike, toMutilProvdierOf
 } from '@tsdi/ioc';
@@ -71,22 +71,28 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this;
     }
 
-    attach<T>(type: AbstractType<T> | ClassRef<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
-        const target = getClassify(type);
+    attach<T>(type: AbstractType<T> | ClassRef<T> | Invocation<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
+        let invocation: Invocation<T>;
+        if (type instanceof Invocation) {
+            invocation = type;
+        } else {
+            const target = getClassify(type);
 
-        let ends = this._maps.get(target.type);
+            let injector = this.context.getRuntime().getRegisterIn(target.type);
+            if (!injector) {
+                injector = this.context;
+                InjectUtil.register(injector, target.type as Type);
+            }
+            invocation = target.createInvocation(injector, options);
+        }
+
+        let ends = this._maps.get(invocation.type);
         if (!ends) {
             ends = [];
-            this._maps.set(target.type, ends);
+            this._maps.set(invocation.type, ends);
         }
-        let injector = this.context.getRuntime().getRegisterIn(target.type);
-        if (!injector) {
-            injector = this.context;
-            InjectUtil.register(injector, target.type as Type);
-        }
-        const invocation = target.createInvocation(injector, options);
         this.attachRef(invocation, options.order);
-        invocation.onDestroy(() => this.detach(target.type));
+        invocation.onDestroy(() => this.detach(invocation.type));
         const handler = createInvocationHandler(invocation, options);
         ends.push(handler);
         return invocation;

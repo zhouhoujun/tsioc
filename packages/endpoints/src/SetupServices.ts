@@ -1,13 +1,13 @@
-import { Injectable, Provider, Invocation, AbstractType, token } from '@tsdi/ioc';
+import { Injectable, Provider, Invocation, AbstractType, token, isFunction } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { Server } from './Server';
 
 
 export interface RegisterService {
-    service: AbstractType<any>;
+    service: AbstractType | Invocation;
     bootstrap?: boolean;
     microservice?: boolean;
-    providers: Provider[]
+    providers?: Provider[]
 }
 
 export const REGISTER_SERVICES = token<RegisterService[]>('REGISTER_SERVICES');
@@ -35,7 +35,7 @@ export class SetupServices {
         services.forEach(s => {
 
             if (s.bootstrap === false) {
-                this.unboots.add(s.service);
+                this.unboots.add(isFunction(s.service) ? s.service : s.service.type);
             }
             this.services.push(context.runners.attach(s.service, { limit: 1, bootstrap: s.bootstrap, providers: s.providers }));
         })

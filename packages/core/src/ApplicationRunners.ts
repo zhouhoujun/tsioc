@@ -21,13 +21,13 @@ export abstract class ApplicationRunners implements HandlerAppendService<Abstrac
    * attach runner
    * @param type 
    */
-  abstract attach<T>(type: AbstractType<T> | ClassRef<T>, options: InvocationHandlerOptions<T>): Invocation<T>;
+  abstract attach<T>(type: AbstractType<T> | ClassRef<T> | Invocation<T>, options: InvocationHandlerOptions<T>): Invocation<T>;
 
   /**
    * detach runner
    * @param type 
    */
-  abstract detach<T>(type: AbstractType<T> | ClassRef<T>): void;
+  abstract detach<T>(type: AbstractType<T> | ClassRef<T> | Invocation<T>): void;
 
   /**
    * has operation or not.
