@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport, createRequestHandler } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHandlerToken, getServiceToken, FeatureFn, TransportFeature } from '@tsdi/endpoints';
+import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHandlerToken, getServiceToken, FeatureFn, TransportFeature, REGISTER_SERVICES } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -170,16 +170,14 @@ export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[
                 deps: [
                     hanlderToken
                 ]
+            },
+
+            {
+                provide: REGISTER_SERVICES,
+                useValue: config,
+                multi: true
             }
         ];
-
-        if (options.length == 1 || option.asDefault) {
-            providers.push({
-                provide: TcpServer,
-                useExisting: serviceToken
-            })
-        }
-
 
         return makeFeature(FeatureKind.Transport, providers, config) as TransportFeature;
     })

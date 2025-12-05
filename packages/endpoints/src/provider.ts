@@ -1,25 +1,10 @@
-import {
-    ArgumentException, Injector, ModuleRef,
-    ProvdierOf,
-    Provider, Type, getClassRef, isArray, isFunction, isString, lang, toProvider, token
-} from '@tsdi/ioc';
-import { ConfigMissingException, TypedRespond } from '@tsdi/core';
-// import { isMicroTransport, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
-import { ServiceConfig } from './server.options';
-// import { ServerTransportFactory } from './transport';
+import { ArgumentException, ProvdierOf, Provider, Type, isArray, isFunction, toProvider } from '@tsdi/ioc';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, contentInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
-// import { ExceptionFinalizeFilter } from './exception.filter';
-// import { FinalizeFilter } from './finalize.filter';
-import { DefaultExceptionHandlers } from './exception.handlers';
-// import { createRequestHandler } from './impl/request.handler';
-// import { DefaultServerTransferFactory } from './impl/transfer';
-// import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
-import { HttpStatusAdapter } from './impl/status';
-import { createRequestHandler, matchTransport, NotImplementedException, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
-import { getFiltersToken, getInterceptorsToken, getRouterToken, getServiceToken, getTransfersToken } from './tokens';
+import { matchTransport, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
+import { getFiltersToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 
 
@@ -79,7 +64,9 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
     }
 
     const providers: Provider[] = [
+        SetupServices,
         MimeModule,
+        EndpointTypedRespond,
         BodyparserInterceptor,
         ContentInterceptor,
         JsonInterceptor,

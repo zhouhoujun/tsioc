@@ -71,7 +71,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this;
     }
 
-    attach<T, TArg>(type: AbstractType<T> | ClassRef<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
+    attach<T>(type: AbstractType<T> | ClassRef<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
         const target = getClassify(type);
 
         let ends = this._maps.get(target.type);
