@@ -1,5 +1,3 @@
-import { Type } from '@tsdi/ioc';
-
 /**
  * protocol types.
  */
@@ -116,13 +114,6 @@ export interface TransportConfig {
      * as microservice transport
      */
     microservice?: boolean;
-
-    /**
-     * the port number
-     */
-    port?: number;
-
-    host?: string;
 }
 
 

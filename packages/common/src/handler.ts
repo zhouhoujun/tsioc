@@ -1,4 +1,4 @@
-import { Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, toObservable, Type } from '@tsdi/ioc';
+import { Abstract, Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, toObservable, Type } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandler, ConfigableHandlerOptions, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
@@ -60,12 +60,18 @@ export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext ext
 /**
  * configable request handler.
  */
+@Abstract()
 export abstract class ConfigableRequestHandler<
     TInput = any,
     TOutput = any,
     TContext extends RequestContext = RequestContext
 > extends AbstractConfigableHandler<TInput, TOutput, TContext> {
-
+    /**
+     * handle request.
+     * @param input 
+     * @param context 
+     */
+    abstract handle(input: TInput, context: TContext): Observable<TOutput>;
 }
 
 /**
@@ -102,9 +108,9 @@ export class DefaultRequestHandler<
  * @param options 
  * @returns 
  */
-export function createRequestHandler<TInput extends RequestContext>(injector: Injector, options: RequestHandlerOptions<TInput>): RequestHandler<TInput> {
+export function createRequestHandler<TInput = any, TOutput = any>(injector: Injector, options: RequestHandlerOptions<TInput, TOutput>): ConfigableRequestHandler<TInput, TOutput> {
     options = normalizeConfigableHandlerOptions(options);
     const Type = options.classType ?? DefaultRequestHandler;
-    return new Type(injector, options, options);
+    return new Type(injector, options, options) as ConfigableRequestHandler<TInput, TOutput>;
 }
 

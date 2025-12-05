@@ -10,7 +10,7 @@ export * from './metadata';
 export * from './content';
 // export * from './transport';
 export * from './AbstractRequestContext';
-export * from './AbstractRequestHandler';
+export * from './ServiceHandler';
 export * from './RestfulRequestContext';
 
 export * from './accepts';

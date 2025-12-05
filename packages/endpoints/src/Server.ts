@@ -2,7 +2,7 @@ import { Abstract, InvocationContext, isArray, ProvdierOf, toMutilProvdierOf } f
 import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, HandlerOptions, isHandlerOptions } from '@tsdi/core';
 import { RequestHandler, RequestInterceptorLike, Transport } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
-import { AbstractRequestHandler } from './AbstractRequestHandler';
+import { ServiceHandler } from './ServiceHandler';
 import { ServiceConfig } from './server.options';
 // import { RequestHandler } from './RequestHandler';
 // import { TOutgoing } from '@tsdi/common/transport';
@@ -48,12 +48,12 @@ export abstract class MicroService<TRequest extends AbstractRequestContext = Abs
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest extends AbstractRequestContext = AbstractRequestContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerAppendService<TRequest> {
+export abstract class Server<TRequest extends AbstractRequestContext = AbstractRequestContext> extends MicroService implements HandlerAppendService<TRequest> {
 
     /**
      * service request handler.
      */
-    abstract get handler(): AbstractRequestHandler<TRequest>;
+    abstract get handler(): ServiceHandler<TRequest>;
 
 
     use(options: ProvdierOf<RequestInterceptorLike<TRequest>> | ProvdierOf<RequestInterceptorLike>[] | HandlerOptions<TRequest>, order?: number): this {

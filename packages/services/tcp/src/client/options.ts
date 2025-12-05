@@ -1,6 +1,6 @@
 // import { tokenId } from '@tsdi/ioc';
 import { Filter } from '@tsdi/core';
-import { ResponseEvent } from '@tsdi/common';
+import { RequestContext, ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
 import { ConnectionOptions } from 'node:tls';
 import { SocketConstructorOpts, NetConnectOpts } from 'node:net';
@@ -11,7 +11,7 @@ import { TcpRequest } from './request';
 /**
  * tcp client config.
  */
-export interface TcpClientConfig extends ClientConfig {
+export interface TcpClientConfig extends ClientConfig<TcpRequest<any>, ResponseEvent<any>> {
     /**
      * keep alive
      */
@@ -19,7 +19,7 @@ export interface TcpClientConfig extends ClientConfig {
     /**
      * connectOptions
      */
-    connectOptions?: NetConnectOpts | ConnectionOptions;
+    connectOpts?: NetConnectOpts | ConnectionOptions;
     /**
      * socket options.
      */

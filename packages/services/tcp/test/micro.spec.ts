@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { ErrorResponse, Transport } from '@tsdi/common';
 import { TransportPacketModule } from '@tsdi/common/transport';
 import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -73,7 +73,14 @@ export class TcpService {
             // withRouter(),
             withRouter(),
             withLogger(),
+            withTransfers(
+                (req, next, context) => {
+                    const reqdata = JSON.parse(req);
+                    return next(reqdata, context)
+                }
+            ),
             withTcpTransport({
+                microservice: true,
                 listenOpts: {
                     port: 200
                 }

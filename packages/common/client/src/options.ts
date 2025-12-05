@@ -1,6 +1,6 @@
 import { Token, AbstractType } from '@tsdi/ioc';
-import { AbstractRequest, ConfigableRequestHandler, PatternFormatter, RequestContext, RequestHandler, ResponseEvent } from '@tsdi/common';
-// import { ClientBackend } from './handler';
+import { AbstractRequest, PatternFormatter, RequestHandler, RequestHandlerOptions, ResponseEvent } from '@tsdi/common';
+
 
 /**
  * Client options.
@@ -8,7 +8,7 @@ import { AbstractRequest, ConfigableRequestHandler, PatternFormatter, RequestCon
 export interface ClientConfig<
     TInput extends AbstractRequest<any> = AbstractRequest<any>,
     TOutput extends ResponseEvent<any> = ResponseEvent<any>,
-    > extends ConfigableRequestHandler<TInput, TOutput> {
+    > extends RequestHandlerOptions<TInput, TOutput> {
     name?: string;
     /**
      * url
@@ -22,18 +22,10 @@ export interface ClientConfig<
      * authority base url.
      */
     authority?: string;
-    // /**
-    //  * connect options.
-    //  */
-    // connectOpts?: TConnOpts;
     /**
      * is microservice client or not.
      */
     microservice?: boolean;
-    // /**
-    //  * protocol
-    //  */
-    // protocol?: string;
     /**
      * client handler type.
      */

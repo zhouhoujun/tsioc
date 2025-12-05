@@ -3,7 +3,7 @@ import { Transport, RequestInterceptor, RequestInterceptorLike } from '@tsdi/com
 import { ServiceConfig } from './server.options';
 import { FilterLike } from '@tsdi/core';
 import { Router } from './router/router';
-import { AbstractRequestHandler } from './AbstractRequestHandler';
+import { ServiceHandler } from './ServiceHandler';
 
 function toMicroName(microservice?: boolean, name?: string) {
     if(!name) return microservice? 'MICRO' : '';
@@ -37,8 +37,8 @@ export function getServiceOptionsToken(transport: Transport, microservice?: bool
     return getToken<ServiceConfig>(`${Transport[transport].toUpperCase()}_OPTIONS`, toMicroName(microservice, name));
 }
 
-export function getServiceHandlerToken(transport: Transport, microservice?: boolean, name?: string): Token<AbstractRequestHandler> {
-    return getToken<AbstractRequestHandler>(`${Transport[transport].toUpperCase()}_HANDLER`, toMicroName(microservice, name));
+export function getServiceHandlerToken(transport: Transport, microservice?: boolean, name?: string): Token<ServiceHandler> {
+    return getToken<ServiceHandler>(`${Transport[transport].toUpperCase()}_HANDLER`, toMicroName(microservice, name));
 }
 
 

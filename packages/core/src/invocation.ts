@@ -1,5 +1,5 @@
-import { Abstract, AbstractType, Invocation, ProvidedInMetadata, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, HandlerOptions } from './handlers/configable';
+import { Abstract, AbstractType, Invocation, ProvidedInMetadata, InvocationOptions, InvocationFactory } from '@tsdi/ioc';
+import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
 import { Handler, RunContext } from './handler';
 
 
@@ -11,35 +11,13 @@ export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
     TContext extends RunContext = RunContext,
-    T = any> implements Handler<TInput, TOutput, TContext> {
+    T = any> extends AbstractConfigableHandler<TInput, TOutput, TContext> implements Handler<TInput, TOutput, TContext> {
 
     /**
      * invocation.
      */
     abstract get invocation(): Invocation<T>;
 
-    abstract get context(): InvocationContext;
-
-    /**
-     * append handler options.
-     * @param options 
-     */
-    abstract append(options: HandlerOptions<TInput>): this;
-
-
-    /**
-     * handle.
-     * 
-     * 处理句柄
-     * @param input handle input.
-     * @param context handle with context.
-     */
-    abstract handle(input: TInput, context?: TContext): HandleResult<TOutput>;
-
-    /**
-     * destroy hooks.
-     */
-    abstract onDestroy(): void;
 }
 
 
