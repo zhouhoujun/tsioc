@@ -9,7 +9,6 @@ import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TcpServConfig } from './options';
 import { TcpRequestHandler } from './handler';
-import { TcpHandler } from '../client/handler';
 
 
 
@@ -155,8 +154,8 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
 export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[] {
     return options.map(option => {
         const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
-        const hanlderToken = getServiceHandlerToken(config.transport, config.microservice, config.name);
         const serviceToken = getServiceToken(config.transport, config.microservice, config.name);
+        // const hanlderToken = getServiceHandlerToken(config.transport, config.microservice, config.name);
 
         const providers: Provider[] = [
             TcpServer,
@@ -175,24 +174,36 @@ export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[
             // },
 
             {
-                provide: REGISTER_SERVICES,
+                provide: serviceToken,
                 useFactory: (injector: Injector) => {
-                    const heandler = createRequestHandler(injector, option);
-                    return {
-                        service: getClassRef(TcpServer).createInvocation(injector, {
-                            providers: [
-                                {
-                                    provide: TcpHandler,
-                                    useValue: heandler
-                                }
-                            ]
-                        }),
-                        bootstrap: option.bootstrap,
-                        microservice: option.microservice
-                    } as RegisterService
+                    return getClassRef(TcpServer).createInvocation(injector, {
+                        providers: [
+                            {
+                                provide: TcpRequestHandler,
+                                useFactory: (injector: Injector) => createRequestHandler(injector, option),
+                                deps: [
+                                    Injector
+                                ]
+                            }
+                        ]
+                    })
                 },
                 deps: [
                     Injector
+                ]
+            },
+
+            {
+                provide: REGISTER_SERVICES,
+                useFactory: (service) => {
+                    return {
+                        service,
+                        bootstrap: option.bootstrap,
+                        microservice: option.microservice
+                    }
+                },
+                deps: [
+                    serviceToken
                 ],
                 multi: true
             }

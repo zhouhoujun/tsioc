@@ -1,4 +1,4 @@
-import { getToken, Token } from '@tsdi/ioc';
+import { getToken, Invocation, Token } from '@tsdi/ioc';
 import { Transport, RequestInterceptor, RequestInterceptorLike } from '@tsdi/common';
 import { ServiceConfig } from './server.options';
 import { FilterLike } from '@tsdi/core';
@@ -42,6 +42,6 @@ export function getServiceHandlerToken(transport: Transport, microservice?: bool
 }
 
 
-export function getServiceToken(transport: Transport, microservice?: boolean, name?: string): Token<ServiceConfig> {
-    return getToken<ServiceConfig>(`${Transport[transport].toUpperCase()}_SERVICE`, toMicroName(microservice, name));
+export function getServiceToken<T>(transport: Transport, microservice?: boolean, name?: string): Token<Invocation<T>> {
+    return getToken<Invocation<T>>(`${Transport[transport].toUpperCase()}_SERVICE`, toMicroName(microservice, name));
 }

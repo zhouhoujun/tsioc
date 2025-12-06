@@ -127,14 +127,16 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
         const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
         const clientToken = getClientToken(config.transport, config.microservice, config.name);
         const hanlderToken = getClientHandlerToken(config.transport, config.microservice, config.name);
-        // const 
 
         const providers: Provider[] = [
             {
                 provide: hanlderToken,
                 useFactory: (injector: Injector) => {
                     return createRequestHandler(injector, option)
-                }
+                },
+                deps: [
+                    Injector
+                ]
             },
             {
                 provide: clientToken,
@@ -142,6 +144,22 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
                 deps: [
                     hanlderToken
                 ]
+                // useFactory: (injector: Injector) => {
+                //     return getClassRef(TcpClient).createInvocation(injector, {
+                //         providers: [
+                //             {
+                //                 provide: TcpHandler,
+                //                 useFactory: (injector: Injector) => createRequestHandler(injector, option),
+                //                 deps: [
+                //                     Injector
+                //                 ]
+                //             }
+                //         ]
+                //     }).instance
+                // },
+                // deps: [
+                //     Injector
+                // ]
             }
         ];
 
