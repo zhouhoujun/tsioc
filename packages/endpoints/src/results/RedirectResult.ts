@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { NotSupportedException } from '@tsdi/common/transport';
+import { NotSupportedException } from '@tsdi/common';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 

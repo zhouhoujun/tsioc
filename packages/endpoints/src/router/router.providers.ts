@@ -38,8 +38,8 @@ export function getRouter(injector: Injector, transport?: Transport, microservic
 
 
 
-export function createRouteProviders(protocol: Transport, microservice?: boolean, name?: string, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
-    token ??= getRouterToken(protocol, name, microservice);
+export function createRouteProviders(protocol: Transport, microservice?: boolean, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
+    token ??= getRouterToken(protocol, microservice);
     return [
         {
             provide: token,

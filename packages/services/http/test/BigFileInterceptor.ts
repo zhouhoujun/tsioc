@@ -1,4 +1,4 @@
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
+import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Injectable, lang } from '@tsdi/ioc';
 import { RestfulRequestContext } from '@tsdi/endpoints';
 import { ctype } from '@tsdi/common/transport';
@@ -10,13 +10,13 @@ const statify = promisify(fs.stat);
 
 
 @Injectable()
-export class BigFileInterceptor implements ApplicationInterceptor {
-    intercept(input: RestfulRequestContext, next: ApplicationHandler<any, any>): Observable<any> {
+export class BigFileInterceptor implements RequestInterceptor {
+    intercept(input: RestfulRequestContext, next: RequestHandler<any, any>, context: RequestContext): Observable<any> {
 
         if (input.url == '/content/big.json') {
             return from(this.genedata(input))
         }
-        return next.handle(input);
+        return next.handle(input, context);
     }
 
     async genedata(input: RestfulRequestContext) {

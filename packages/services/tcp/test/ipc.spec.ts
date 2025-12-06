@@ -7,11 +7,8 @@ import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import {
     RequestBody, RequestParam, RequestPath, RouteMapping, Handle,
-    ContentInterceptor, JsonInterceptor, BodyparserInterceptor, getRouterToken,
-    RedirectResult, provideService, 
-    createRouteProviders, withInterceptors, withJson, withBodyparser, withRouter,
-    withLogger,
-    withContent,
+    RedirectResult, provideService, withInterceptors, withJson, withBodyparser, withRouter,
+    withLogger, withContent,
 } from '@tsdi/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as os from 'os';

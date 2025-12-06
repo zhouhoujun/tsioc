@@ -270,7 +270,7 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
         return makeFeature(
             FeatureKind.Router,
             [
-                ...createRouteProviders(transport, microservice, name, routerToken, options),
+                ...createRouteProviders(transport, microservice, routerToken, options),
                 {
                     provide: token,
                     useExisting: routerToken,
