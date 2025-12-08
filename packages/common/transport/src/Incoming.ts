@@ -1,77 +1,8 @@
 import { Injectable } from '@tsdi/ioc';
-import { Header, HeaderAccess, HeaderMappings, HeadersLike, ParameterCodec, RequestContext, StatusOptions } from '@tsdi/common';
-import { IReadable } from './stream';
-import { StreamAdapter } from './StreamAdapter';
-import { Outgoing } from './Outgoing';
+import { HeaderMappings, HeadersLike, Incoming, IncomingMessage, StatusIncoming, ParameterCodec, StreamAdapter, StatusOptions, IReadable, TIncoming } from '@tsdi/common';
 
 
-/**
- * Incoming message
- */
-export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Header> extends HeaderAccess<THead> {
 
-    id?: number | string;
-    /**
-     * origin req message.
-     */
-    origin?: TMsg;
-
-    pattern?: string;
-
-    /**
-     * incoming body.
-     */
-    body?: T | null;
-
-}
-
-
-/**
- * Server incoming message
- */
-export interface Incoming<T = any, TMsg = any> extends IncomingMessage<T, TMsg> {
-
-    method?: string;
-    
-    cookies?: any;
-
-    params?: Record<string, any>;
-
-    query?: Record<string, any>;
-
-    context?: RequestContext;
-
-    rawBody?: any;
-
-    path?: any;
-
-    res?: Outgoing;
-
-}
-
-/**
- * Client incoming message
- */
-export interface ClientIncoming<T = any, TStatus = any, TMsg = any> extends IncomingMessage<T, TMsg> {
-    /**
-     * event type
-     */
-    type?: number;
-
-    status?: TStatus | null;
-
-    statusCode?: TStatus | null;
-
-    statusMessage?: string;
-
-    statusText?: string;
-
-    ok?: boolean;
-    error?: any;
-
-}
-
-export type TIncoming<T extends Incoming> = T | (T & IReadable);
 
 
 /**
@@ -91,8 +22,8 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
 /**
  * Client incoming factory.
  */
-export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
-    abstract create(options: ClientIncomingOpts): TIncoming<ClientIncoming>;
+export abstract class ClientIncomingFactory implements AbstractIncomingFactory<StatusIncoming> {
+    abstract create(options: ClientIncomingOpts): TIncoming<StatusIncoming>;
 }
 
 
@@ -394,7 +325,7 @@ export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T
 /**
  * client incoming packet
  */
-export abstract class AbstractClientIncoming<T, TStatus = any> implements ClientIncoming<T, TStatus> {
+export abstract class AbstractClientIncoming<T, TStatus = any> implements StatusIncoming<T, TStatus> {
 
     readonly pattern?: string | undefined;
 

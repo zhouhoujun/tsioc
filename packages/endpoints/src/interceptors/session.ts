@@ -1,8 +1,8 @@
-import { Injectable } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
+import { SESSION_OPTIONS, SessionOptions } from '../sessions/Session';
 
 
 
@@ -11,6 +11,11 @@ import { AbstractRequestContext } from '../AbstractRequestContext';
  */
 @Injectable()
 export class SessionInterceptor implements RequestInterceptor<AbstractRequestContext> {
+
+    private options: SessionOptions;
+    constructor(@Optional() @Inject(SESSION_OPTIONS) options?: SessionOptions) {
+        this.options = options ?? defOpts;
+    }
 
     intercept(input: AbstractRequestContext, next: RequestHandler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
         const session = input.session;
@@ -32,7 +37,7 @@ export class SessionInterceptor implements RequestInterceptor<AbstractRequestCon
                     return throwError(() => error);
                 }),
                 finalize(() => {
-                    if (input.serverOptions.session?.autoCommit && session.isModified()) {
+                    if (this.options?.autoCommit && session.isModified()) {
                         session.commit().catch(err => {
                             console.error('Failed to commit session:', err);
                         });

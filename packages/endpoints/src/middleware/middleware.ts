@@ -33,12 +33,12 @@ export type MiddlewareFn<T extends AbstractRequestContext = AbstractRequestConte
 export type MiddlewareLike<T extends AbstractRequestContext = AbstractRequestContext> = Middleware<T> | MiddlewareFn<T>;
 
 
-export function convertToInterceptor<TInput extends AbstractRequestContext>(middleware: MiddlewareLike<TInput>): InterceptorFn<TInput> {
-    return (input: TInput, next: HandlerFn<TInput>, context?: any) => {
+export function convertToInterceptor<TInput = any, TContext extends AbstractRequestContext = AbstractRequestContext>(middleware: MiddlewareLike<TContext>): InterceptorFn<TInput> {
+    return (input: TInput, next: HandlerFn<TInput>, context: TContext) => {
         if (isFunction(middleware)) {
-            return from(middleware(input, () => lastValueFrom(next(input, context))))
+            return from(middleware(context, () => lastValueFrom(next(input, context))))
         } else {
-            return from(middleware.invoke(input, () => lastValueFrom(next(input, context))))
+            return from(middleware.invoke(context, () => lastValueFrom(next(input, context))))
         }
     }
 }

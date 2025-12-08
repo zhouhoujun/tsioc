@@ -1,64 +1,23 @@
-import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, isDefined, Optional, token } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { GET, HEAD, NotFoundException, RequestContext, RequestInterceptorFn } from '@tsdi/common';
+import { GET, HEAD, NotFoundException, RequestContext } from '@tsdi/common';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 
 
-export function contentInterceptor(options?: ContentOptions): RequestInterceptorFn<AbstractRequestContext> {
 
-    const send = async (ctx: AbstractRequestContext, options: ContentOptions) => {
-        let file = '';
-        if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return file;
-
-        const sender = ctx.get(ContentSendAdapter);
-
-        file = await sender.send(ctx, ctx.originalUrl, options);
-
-        return file;
-    };
-
-    return (input, next, context) => {
-        if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
-            || !input.originalUrl) {
-            return next(input, context);
-        }
-
-        options ??= { ...defOpts, ...input.serverOptions.content };
-        if (options.defer) {
-            return next(input, context)
-                .pipe(
-                    mergeMap(async res => {
-                        const file = await send(input, options!)
-                        if (!file) {
-                            return throwError(() => new NotFoundException())
-                        }
-                    })
-                )
-        } else {
-            return from(send(input, options))
-                .pipe(
-                    mergeMap(file => {
-                        if (!file) return next(input, context)
-                        return of(file);
-                    })
-                )
-        }
-
-    }
-}
-
-
-
+export const CONTENT_OPTIONS = token<ContentOptions>('CONTENT_OPTIONS');
 /**
  * static content resources.
  */
 @Injectable()
 export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
 
-    options?: ContentOptions;
+    private options: ContentOptions;
 
-    constructor() { }
+    constructor(@Optional() @Inject(CONTENT_OPTIONS) options: ContentOptions) {
+        this.options = { ...defOpts, ...options };
+    }
 
 
     intercept(input: AbstractRequestContext, next: Handler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
@@ -67,7 +26,7 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
             return next.handle(input, context);
         }
 
-        const options = this.options ?? { ...defOpts, ...input.serverOptions.content };
+        const options = this.options;
         if (options.defer) {
             return next.handle(input, context)
                 .pipe(
@@ -141,6 +100,7 @@ export abstract class ContentSendAdapter {
      */
     abstract send(ctx: AbstractRequestContext, path: string, options: SendOptions): Promise<string>;
 }
+
 
 
 export const defOpts: ContentOptions = {

@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
 import { NotSupportedException } from '@tsdi/common';
-import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype } from '@tsdi/common/transport';
+import { Incoming, Outgoing, encodeUrl, escapeHtml } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
-import { ServiceConfig } from './server.options';
 import * as Cookies from 'cookies';
+import { ctype } from '@tsdi/common/transport';
 
 /**
  * abstract Restful request context.
@@ -13,11 +13,8 @@ import * as Cookies from 'cookies';
 @Abstract()
 export abstract class RestfulRequestContext<
     TRequest extends Incoming<any> = Incoming<any>,
-    TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any,
-    TOptions extends ServiceConfig = ServiceConfig,
-    TStatus = any> extends AbstractRequestContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
-
-    abstract get socket(): TSocket;
+    TResponse extends Outgoing<any> = Outgoing<any>,
+    TStatus = any> extends AbstractRequestContext<TRequest, TResponse, TStatus> {
 
     /**
      * Get WHATWG parsed URL.
@@ -80,7 +77,7 @@ export abstract class RestfulRequestContext<
     get cookies() {
         if (!this._cookies) {
             this._cookies = new Cookies(this.request as any, this.response as any, {
-                keys: this.serverOptions.session?.key? [ this.serverOptions.session?.key] : ['endpoints'],
+                keys: this.session?.id? [ this.session?.id] : ['endpoints'],
                 secure: this.secure
             });
         }

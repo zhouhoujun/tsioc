@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc'
 import { GET, POST, HttpStatusCode, statusMessage } from '@tsdi/common';
-import { StatusAdapter } from '@tsdi/common/transport';
+import { StatusAdapter } from '@tsdi/common';
 
 
 

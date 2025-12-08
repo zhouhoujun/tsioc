@@ -2,10 +2,11 @@
 import { Abstract, Injectable, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
 import { RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext } from '@tsdi/common';
-import { IReadable, MimeTypes, isBuffer } from '@tsdi/common/transport';
+import { IReadable, MimeTypes } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
+import { isBuffer } from '@tsdi/common/transport';
 
 
 @Abstract()

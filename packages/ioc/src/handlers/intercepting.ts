@@ -1,8 +1,8 @@
 import { Handler, HandlerFn, HandlerLike } from './handler';
 import { isFunction } from '../utils/chk';
-import { InterceptorFn, InterceptorLike } from './interceptor';
+import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
 import { HandleResult, TailNext } from './handler';
-import { invokeTail, composeInterceptors } from './compose';
+import { invokeTail, composeInterceptors, toHandlerFn } from './compose';
 
 
 
@@ -38,6 +38,32 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
 
     protected compose(): InterceptorFn<TInput, TOutput, TContext> {
         return composeInterceptors(isFunction(this.interceptors) ? this.interceptors() : this.interceptors);
+    }
+}
+
+/**
+ * compose interceptor.
+ */
+export class ComposeInterceptor<TInput = any, TOutput = any, TContext = any> implements Interceptor<TInput, TOutput, TContext> {
+
+    private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
+
+    constructor(
+        protected interceptors: InterceptorLike[]
+    ) { }
+
+    intercept(input: TInput, next: Handler<TInput, TOutput, TContext>, context: TContext): HandleResult<TOutput> {
+        if (!this.chain) {
+            this.chain = this.compose();
+        }
+        return this.chain(input, toHandlerFn(next), context);
+    }
+    protected reset() {
+        this.chain = null;
+    }
+
+    protected compose(): InterceptorFn<TInput, TOutput, TContext> {
+        return composeInterceptors(this.interceptors);
     }
 }
 

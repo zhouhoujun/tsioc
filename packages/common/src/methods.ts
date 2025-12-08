@@ -51,15 +51,10 @@ export const TRACE = 'TRACE';
  */
 export const JSONP = 'JSONP';
 
-//message
 /**
  * EVENT method
  */
 export const EVENT = 'EVENT';
-/**
- * MESSAGE method
- */
-export const MESSAGE = 'MESSAGE';
 
 //grpc
 /**

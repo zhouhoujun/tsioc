@@ -1,6 +1,6 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
-import { IStream } from '@tsdi/common/transport';
+import { IStream } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 

@@ -9,6 +9,7 @@ import {
     RequestBody, RequestParam, RequestPath, RouteMapping, Handle,
     RedirectResult, provideService, withInterceptors, withJson, withBodyparser, withRouter,
     withLogger, withContent,
+    withTransfers,
 } from '@tsdi/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as os from 'os';
@@ -121,6 +122,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
                 withRouter(),
                 withRouter({microservice: true}),
                 withLogger(),
+                withTransfers(),
                 withTcpTransport({
                     listenOpts: {
                         path: ipcpath

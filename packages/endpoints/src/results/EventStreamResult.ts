@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { IStream } from '@tsdi/common/transport';
+import { IStream } from '@tsdi/common';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 
 /**

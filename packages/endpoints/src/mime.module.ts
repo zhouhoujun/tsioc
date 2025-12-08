@@ -1,4 +1,4 @@
-import { MimeAdapter, MimeDb, MimeTypes } from '@tsdi/common/transport';
+import { MimeAdapter, MimeDb, MimeTypes } from '@tsdi/common';
 import { Module } from '@tsdi/ioc';
 import { MimeAdapterImpl, MimeTypesImpl } from './impl/mime';
 import { BasicMimeDb } from './impl/mimedb';

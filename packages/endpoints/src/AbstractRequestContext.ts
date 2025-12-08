@@ -1,12 +1,13 @@
 import { Abstract, isArray, isDefined, isNil, isString, lang, TargetInvokeArguments } from '@tsdi/ioc';
 import { MODEL_RESOLVERS, ParameterScope, createPayloadResolveInterceptors } from '@tsdi/core';
-import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException, RequestContext } from '@tsdi/common';
-import { FileAdapter, Incoming,  MimeAdapter, Outgoing, StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp } from '@tsdi/common/transport';
+import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException, RequestContext, Incoming, Outgoing } from '@tsdi/common';
+import { FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp } from '@tsdi/common';
 import { ServiceConfig } from './server.options';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 // import { ServerTransport } from './transport';
 import { AcceptsPriority } from './accepts';
 import { Session } from './sessions/Session';
+import { ctype, isBuffer } from '@tsdi/common/transport';
 
 /**
  * abstract request context.
@@ -17,8 +18,6 @@ import { Session } from './sessions/Session';
 export abstract class AbstractRequestContext<
     TRequest extends Incoming<any> = Incoming<any>,
     TResponse extends Outgoing<any> = Outgoing<any>,
-    TSocket = any,
-    TOptions extends ServiceConfig = ServiceConfig,
     TStatus = any> extends RequestContext {
 
     request!: TRequest;
@@ -42,7 +41,7 @@ export abstract class AbstractRequestContext<
     //     return res as ResolveInterceptorLike[];
     // }
 
-    abstract get serverOptions(): TOptions;
+    abstract get detailError(): boolean;
 
     // /**
     //  * transport

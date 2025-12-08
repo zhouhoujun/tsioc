@@ -1,9 +1,9 @@
 import { Abstract, Inject, InjectFlags, Injectable, Nullable, isNumber } from '@tsdi/ioc';
+import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Interceptor, Handler, Filter, BytesFormatPipe, HrtimeFormatter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
-import { RequestContext } from '@tsdi/common';
 
 
 /**
@@ -50,7 +50,7 @@ const defopts = {
  * Logger interceptor, filter.
  */
 @Injectable()
-export class LoggerInterceptor implements Interceptor, Filter {
+export class LoggerInterceptor implements RequestInterceptor, Filter {
 
     private options: LoggerOptions;
 
@@ -61,11 +61,11 @@ export class LoggerInterceptor implements Interceptor, Filter {
         this.options = { ...defopts, ...options } as LoggerOptions;
     }
 
-    doFilter(input: any, next: Handler, context: RequestContext): Observable<any> {
+    doFilter(input: any, next: RequestHandler, context: RequestContext): Observable<any> {
         return this.intercept(input, next, context);
     }
 
-    intercept(ctx: AbstractRequestContext, next: Handler, context: RequestContext): Observable<any> {
+    intercept(ctx: AbstractRequestContext, next: RequestHandler, context: RequestContext): Observable<any> {
         const logger = ctx.getInjector().get(Logger, this.logger, InjectFlags.Self);
 
         const level = this.options.level;

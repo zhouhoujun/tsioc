@@ -1,18 +1,14 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AbstractRequest, HeaderAdapter, RequestContext, RequestHandlerFn, RequestInterceptor, RequestInterceptorFn } from '@tsdi/common';
+import {
+    AbstractRequest, HeaderAdapter, RequestContext, RequestHandlerFn, RequestInterceptor, RequestInterceptorFn,
+    PacketLengthException, PacketIdGenerator, IDuplex, IReadable, IncomingMessage, OutgoingMessage, StreamAdapter,
+    RequestHandler
+} from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
-import { PacketLengthException } from '../exceptions';
-import { PacketIdGenerator } from '../PacketId';
-import { IDuplex, IReadable } from '../stream';
-import { IncomingMessage } from '../Incoming';
-import { OutgoingMessage } from '../Outgoing';
-// import { Transport } from '../Transport';
-// import { AbstractTransport } from '../transports';
 import { Packet } from '../socket';
-import { TransportHandler } from '../handler';
-import { StreamAdapter } from '../StreamAdapter';
 import { PACKET_DELIMITER, PACKET_IDLEN, PACKET_LIMIT, PACKET_MAXSIZE } from '../context';
+
 
 
 
@@ -25,10 +21,9 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
         this.channels = new Map();
     }
 
-    intercept(input: string | Buffer | IReadable, next: TransportHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
-        const injector = context.getInjector();
-        const streamAdapter = injector.get(StreamAdapter);
-        const pipe = injector.get<PipeTransform>('bytes-format');
+    intercept(input: string | Buffer | IReadable, next: RequestHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
+        const streamAdapter = context.get(StreamAdapter);
+        const pipe = context.get<PipeTransform>('bytes-format');
         if (!input || streamAdapter.isReadable(input)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
@@ -54,10 +49,6 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
     }
 
     protected handleData(context: RequestContext, channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter, bpipe: PipeTransform): void {
-
-        // const transport = context.get(Transport) as AbstractTransport;
-        // const options = transport.options;
-
         if (!isNumber(cache.length)) {
             cache.length = 0;
         }
@@ -152,7 +143,7 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
         this.msgs = new Map();
     }
 
-    intercept(input: Packet<IDuplex>, next: TransportHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
+    intercept(input: Packet<IDuplex>, next: RequestHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
         if (!input.payload) return next.handle(input, context);
         const streamAdapter = context.get(StreamAdapter);
         const headerAdapter = context.get(HeaderAdapter);
@@ -260,7 +251,6 @@ export const messageSerializeInterceptor: RequestInterceptorFn<OutgoingMessage, 
 
     return next(input, context)
         .pipe(map(msg => {
-            // const transport = context.get(Transport) as AbstractTransport;
             const streamAdapter = context.get(StreamAdapter);
             const countLen = 4;
             let buffLen: Buffer;

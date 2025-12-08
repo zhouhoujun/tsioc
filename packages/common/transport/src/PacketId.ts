@@ -1,13 +1,7 @@
-import { Abstract, Exception, Injectable } from '@tsdi/ioc';
-import { UuidGenerator } from '@tsdi/core';
+import { Exception, Injectable } from '@tsdi/ioc';
+import { PacketIdGenerator } from '@tsdi/common';
 import { NumberAllocator } from 'number-allocator';
 
-@Abstract()
-export abstract class PacketIdGenerator {
-    abstract getPacketId(): string | number;
-    abstract readId(raw: Buffer): string | number;
-    abstract get idLenght(): number;
-}
 
 @Injectable()
 export class PacketNumberIdGenerator implements PacketIdGenerator {
@@ -33,21 +27,5 @@ export class PacketNumberIdGenerator implements PacketIdGenerator {
         return raw.readInt16BE(0);
     }
 
-
-}
-
-@Injectable()
-export class PacketUUIdGenerator implements PacketIdGenerator {
-
-    readonly idLenght = 36;
-    constructor(private uuid: UuidGenerator) { }
-
-    getPacketId(): string | number {
-        return this.uuid.generate();
-    }
-
-    readId(raw: Buffer): string | number {
-        return raw.subarray(0, this.idLenght).toString();
-    }
 
 }

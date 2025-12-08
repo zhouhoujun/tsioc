@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, token } from '@tsdi/ioc';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 
 /**
@@ -22,6 +22,8 @@ export interface SessionOptions {
     /** 解码函数 */
     decode?: (str: string) => any;
 }
+
+export const SESSION_OPTIONS = token<SessionOptions>('SESSION_OPTIONS');
 
 /**
  * session storage.

@@ -145,6 +145,6 @@ export class HttpExceptionHandlers {
     }
 
     protected detailError(ctx: AbstractRequestContext): boolean {
-        return ctx.serverOptions.detailError === true;
+        return ctx.detailError === true;
     }
 }

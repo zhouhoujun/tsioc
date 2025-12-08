@@ -1,11 +1,12 @@
 import { ArgumentException, ProvdierOf, Provider, Type, isArray, isFunction, toProvider } from '@tsdi/ioc';
 import { EndpointTypedRespond } from './typed.respond';
-import { BodyparserInterceptor, contentInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater } from './interceptors';
+import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { matchTransport, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
 import { getFiltersToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
+import { SessionOptions } from './sessions/Session';
 
 
 /**
@@ -70,6 +71,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
         BodyparserInterceptor,
         ContentInterceptor,
         JsonInterceptor,
+        SessionInterceptor,
         LoggerInterceptor
     ];
     transports.forEach(ts => {
@@ -193,6 +195,39 @@ export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
 
 /**
  * 
+ * Adds json interceptor to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param options 
+ * @returns 
+ */
+export function withSession(options?: SessionOptions): FeatureFn<FeatureKind.Session> {
+    return (config) => {
+        const token = getInterceptorsToken(config.transport, config.microservice)
+        return makeFeature(
+            FeatureKind.Session,
+            [
+                {
+                    provide: token,
+                    useClass: SessionInterceptor,
+                    deps: [
+                        { value: options }
+                    ],
+                    multi: true
+                }
+            ],
+            config
+        );
+    }
+}
+
+
+/**
+ * 
  * Adds content interceptor to the configuration of the `Service`
  * instance.
  *
@@ -211,7 +246,10 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
             [
                 {
                     provide: token,
-                    useValue: contentInterceptor(options),
+                    useClass: ContentInterceptor,
+                    deps: [
+                        { value: options }
+                    ],
                     multi: true
                 }
             ],
