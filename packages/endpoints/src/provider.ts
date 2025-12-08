@@ -1,4 +1,4 @@
-import { ArgumentException, Injector, InterceptingHandler, ProvdierOf, Provider, Type, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
+import { ArgumentException, Injector, InterceptingHandler, ProvdierOf, Provider, Token, Type, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
@@ -37,18 +37,18 @@ export enum FeatureKind {
 
 export interface Feature<Kind extends FeatureKind> {
     kind: Kind;
-    config?: TransportConfig;
+    config?: ServiceConfig;
     providers: Provider[];
 }
 
 
 export interface TransportFeature {
     kind: FeatureKind.Transport;
-    config: TransportConfig;
+    config: ServiceConfig;
     providers: Provider[];
 }
 
-export type FeatureFn<Kind extends Exclude<FeatureKind, FeatureKind.Transport>> = (config: TransportConfig) => Feature<Kind>;
+export type FeatureFn<Kind extends Exclude<FeatureKind, FeatureKind.Transport>> = (config: ServiceConfig) => Feature<Kind>;
 
 
 export type FeatureLike<Kind extends FeatureKind> = Feature<Exclude<Kind, FeatureKind.Transport>> | TransportFeature[] | FeatureFn<Exclude<Kind, FeatureKind.Transport>>;
@@ -121,7 +121,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
 }
 
 
-export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[], config?: TransportConfig): Feature<T> {
+export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[], config?: ServiceConfig): Feature<T> {
     return {
         kind,
         config,
@@ -144,7 +144,10 @@ export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[
  */
 export function withGuards(...guards: ProvdierOf<GuardLike>[]): FeatureFn<FeatureKind.Guards> {
     return (config) => {
-        const token = getGuardsToken(config.transport, config.microservice)
+        const token = getGuardsToken(config.transport, config.microservice);
+        if (!config.guardsToken) {
+            config.guardsToken = token;
+        }
         return makeFeature(
             FeatureKind.Guards,
             guards.map((f) => toProvider(token, f, true)),
@@ -167,8 +170,16 @@ export function withGuards(...guards: ProvdierOf<GuardLike>[]): FeatureFn<Featur
  */
 export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn<FeatureKind.Filters> {
     return (config) => {
-        const token = filter ? getFiltersToken(config.transport, config.microservice)
-            : getInterceptorsToken(config.transport, config.microservice)
+        let token: Token;
+
+        if (filter) {
+            token = getFiltersToken(config.transport, config.microservice);
+            if (!config.filtersToken) config.filtersToken = token;
+        } else {
+            token = getInterceptorsToken(config.transport, config.microservice);
+            if (!config.interceptorsToken) config.interceptorsToken = token;
+        }
+
         return makeFeature(
             FeatureKind.Filters,
             [
@@ -201,7 +212,8 @@ export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn
  */
 export function withFilters(...filters: ProvdierOf<FilterLike>[]): FeatureFn<FeatureKind.Filters> {
     return (config) => {
-        const token = getFiltersToken(config.transport, config.microservice)
+        const token = getFiltersToken(config.transport, config.microservice);
+        if (!config.filtersToken) config.filtersToken = token;
         return makeFeature(
             FeatureKind.Filters,
             filters.map((f) => toProvider(token, f, true)),
@@ -224,7 +236,8 @@ export function withFilters(...filters: ProvdierOf<FilterLike>[]): FeatureFn<Fea
  */
 export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice);
+        if (!config.interceptorsToken) config.interceptorsToken = token;
         return makeFeature(
             FeatureKind.Json,
             [
@@ -256,7 +269,8 @@ export function withJson(options?: JsonOptions): FeatureFn<FeatureKind.Json> {
  */
 export function withSession(options?: SessionOptions): FeatureFn<FeatureKind.Session> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice);
+        if (!config.interceptorsToken) config.interceptorsToken = token;
         return makeFeature(
             FeatureKind.Session,
             [
@@ -289,7 +303,8 @@ export function withSession(options?: SessionOptions): FeatureFn<FeatureKind.Ses
  */
 export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Content> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice);
+        if (!config.interceptorsToken) config.interceptorsToken = token;
         return makeFeature(
             FeatureKind.Content,
             [
@@ -321,7 +336,8 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
  */
 export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.Bodyparser> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice);
+        if (!config.interceptorsToken) config.interceptorsToken = token;
         return makeFeature(
             FeatureKind.Bodyparser,
             [
@@ -353,6 +369,7 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
     return (config) => {
         const { transport, name, microservice } = config;
         const token = getInterceptorsToken(transport, microservice ?? options?.microservice);
+        if (!config.interceptorsToken) config.interceptorsToken = token;
         const routerToken = getRouterToken(transport, microservice ?? options?.microservice);
         return makeFeature(
             FeatureKind.Router,
@@ -380,7 +397,8 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
  */
 export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Interceptors> {
     return (config) => {
-        const token = getInterceptorsToken(config.transport, config.microservice)
+        const token = getInterceptorsToken(config.transport, config.microservice);
+        if (!config.interceptorsToken) config.interceptorsToken = token;
         return makeFeature(
             FeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true)),
@@ -434,17 +452,17 @@ export function withTransfers(...selectors: TransferInterceptorSelector[]): Feat
     }
 }
 
-export function appendTokens(transport: Transport, options: ServiceConfig) {
-    const guardsToken = getGuardsToken(transport, options.microservice);
-    const filtersToken = getFiltersToken(transport, options.microservice);
-    const interceptorsToknen = getInterceptorsToken(transport, options.microservice);
-    const backendTokne = getServiceBackendToken(transport, options.microservice, options.name);
+// export function appendTokens(transport: Transport, options: ServiceConfig) {
+//     const guardsToken = getGuardsToken(transport, options.microservice);
+//     const filtersToken = getFiltersToken(transport, options.microservice);
+//     const interceptorsToknen = getInterceptorsToken(transport, options.microservice);
+//     const backendTokne = getServiceBackendToken(transport, options.microservice, options.name);
 
-    options.guardsToken = guardsToken;
-    options.filtersToken = filtersToken;
-    options.interceptorsToken = interceptorsToknen;
-    options.backend = backendTokne;
-}
+//     options.guardsToken = guardsToken;
+//     options.filtersToken = filtersToken;
+//     options.interceptorsToken = interceptorsToknen;
+//     options.backend = backendTokne;
+// }
 
 export function createTransferHandler(injector: Injector, handler: RequestHandlerLike, transport: Transport, microservice?: boolean): RequestHandlerLike {
     const token = getTransfersToken(transport, microservice);

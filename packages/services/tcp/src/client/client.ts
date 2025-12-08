@@ -1,6 +1,6 @@
 import { Injectable, isString, promisify, Context, Injector, getClassRef, Provider, InvocationContext, Inject } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport, createRequestHandler, ResponseEvent, RequestContext, Event, PatternFormatter } from '@tsdi/common';
-import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, createClientTransferHandler, getClientBackendToken, getClientInterceptorsToken, appendClientTokens } from '@tsdi/common/client';
+import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'node:net';
@@ -128,13 +128,11 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 }
 
 
-export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTransportFeature[] {
+export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): ClientTransportFeature[] {
     return options.map(option => {
-        const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
-        const clientToken = getClientToken(config.transport, config.microservice, config.name);
-        const hanlderToken = getClientHandlerToken(config.transport, config.microservice, config.name);
-
-        appendClientTokens(config.transport, option);
+        option.transport = Transport.TCP;
+        const clientToken = getClientToken(option.transport, option.microservice, option.name);
+        const hanlderToken = getClientHandlerToken(option.transport, option.microservice, option.name);
 
         const providers: Provider[] = [
             {
@@ -163,6 +161,6 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
             })
         }
 
-        return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
+        return makeClientFeature(ClientFeatureKind.Transport, providers, option as TcpClientConfig) as ClientTransportFeature;
     });
 }

@@ -27,19 +27,22 @@ export enum ClientFeatureKind {
     Transfer
 }
 
+
+
 export interface ClientFeature<Kind extends ClientFeatureKind> {
     kind: Kind;
-    config?: TransportConfig;
+    config?: ClientConfig;
     providers: Provider[];
 }
 
 export interface ClientTransportFeature {
     kind: ClientFeatureKind.Transport;
-    config: TransportConfig;
+    config: ClientConfig;
     providers: Provider[];
 }
 
-export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: TransportConfig) => ClientFeature<Kind>;
+
+export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: ClientConfig) => ClientFeature<Kind>;
 
 
 export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Exclude<Kind, ClientFeatureKind.Transport>> | ClientTransportFeature[] | ClientFeatureFn<Exclude<Kind, ClientFeatureKind.Transport>>;
@@ -63,7 +66,7 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
 
     transports.map(ts => {
         const kinds = new Map<ClientFeatureKind, Provider[]>();
-        const config = ts.config;
+        const config = ts.config as ClientConfig & TransportConfig;
         features.forEach(f => {
             if (isArray(f)) {
                 return;
@@ -102,7 +105,7 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
 
 }
 
-export function makeClientFeature<T extends ClientFeatureKind>(kind: T, providers: Provider[], config?: TransportConfig): ClientFeature<T> {
+export function makeClientFeature<T extends ClientFeatureKind, TConfig extends ClientConfig>(kind: T, providers: Provider[], config?: TConfig): ClientFeature<T> {
     return {
         kind,
         config,
@@ -123,7 +126,13 @@ export function withClientInterceptors(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (config) => {
-        const token = getClientInterceptorsToken(config.transport, config.microservice)
+        const token = getClientInterceptorsToken(config.transport, config.microservice);
+        if (!config.interceptorsToken) {
+            config.interceptorsToken = token;
+        }
+        if (!config.backend) {
+            config.backend = getClientBackendToken(config.transport, config.microservice, config.name);
+        }
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true)),
@@ -154,19 +163,13 @@ export function withClientTransfers(
             selectors.map((sel) => {
                 const itps = sel(TransferSide.client);
                 return isArray(itps) ? toProviders(token, itps, true) : toProvider(token, itps, true)
-            }),            
+            }),
             config
         );
     }
 }
 
-export function appendClientTokens<TReq extends AbstractRequest<any>= AbstractRequest<any>>(transport: Transport, options: ClientConfig<TReq>) {
-    const interceptorsToknen = getClientInterceptorsToken(transport, options.microservice);
-    const backendTokne = getClientBackendToken(transport, options.microservice, options.name);
 
-    options.interceptorsToken = interceptorsToknen;
-    options.backend = backendTokne;
-}
 
 
 export function createClientTransferHandler(injector: Injector, handler: RequestHandlerLike, transport: Transport, microservice?: boolean): RequestHandlerLike {

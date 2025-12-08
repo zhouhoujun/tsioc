@@ -1,5 +1,5 @@
 import { Token, AbstractType } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, RequestHandler, RequestHandlerOptions, ResponseEvent } from '@tsdi/common';
+import { AbstractRequest, PatternFormatter, RequestHandler, RequestHandlerOptions, ResponseEvent, TransportConfig } from '@tsdi/common';
 
 
 /**
@@ -8,8 +8,7 @@ import { AbstractRequest, PatternFormatter, RequestHandler, RequestHandlerOption
 export interface ClientConfig<
     TInput extends AbstractRequest<any> = AbstractRequest<any>,
     TOutput extends ResponseEvent<any> = ResponseEvent<any>,
-    > extends RequestHandlerOptions<TInput, TOutput> {
-    name?: string;
+    > extends RequestHandlerOptions , TransportConfig {
     /**
      * url
      */

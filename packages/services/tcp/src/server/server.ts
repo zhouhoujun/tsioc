@@ -1,9 +1,8 @@
 import { getClassRef, getTypeName, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport, createRequestHandler } from '@tsdi/common';
-import { ev } from '@tsdi/common/transport';
-import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHandlerToken, getServiceToken, FeatureFn, TransportFeature, REGISTER_SERVICES, RegisterService, ServiceHandler, appendTokens } from '@tsdi/endpoints';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport, createRequestHandler, Event } from '@tsdi/common';
+import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceToken, FeatureFn, TransportFeature, REGISTER_SERVICES, RegisterService, ServiceHandler } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -102,20 +101,20 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
 
         if (!this.serv) throw new InternalServerException();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
-        this.serv.on(ev.ERROR, (err) => this.logger.error(err));
+        this.serv.on(Event.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
+        this.serv.on(Event.ERROR, (err) => this.logger.error(err));
         const context = this.handler.context;
         const factory = context.get(ServerTransportFactory);
 
         if (this.serv instanceof tls.Server) {
-            this.serv.on(ev.SECURE_CONNECTION, (socket) => {
+            this.serv.on(Event.SECURE_CONNECTION, (socket) => {
                 const transport = factory.create(context, socket, options);
-                transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+                transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
         } else {
-            this.serv.on(ev.CONNECTION, (socket) => {
+            this.serv.on(Event.CONNECTION, (socket) => {
                 const transport = factory.create(context, socket, options);
-                transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+                transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
         }
 
@@ -151,11 +150,10 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
 }
 
 
-export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[] {
+export function withTcpTransport(...options: Partial<TcpServConfig>[]): TransportFeature[] {
     return options.map(option => {
-        const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
-        const serviceToken = getServiceToken(config.transport, config.microservice, config.name);
-        appendTokens(config.transport, option);
+        option.transport = Transport.TCP;
+        const serviceToken = getServiceToken(option.transport, option.microservice, option.name);
 
         const providers: Provider[] = [
             TcpServer,
@@ -209,6 +207,6 @@ export function withTcpTransport(...options: TcpServConfig[]): TransportFeature[
             }
         ];
 
-        return makeFeature(FeatureKind.Transport, providers, config) as TransportFeature;
+        return makeFeature(FeatureKind.Transport, providers, option as TcpServConfig) as TransportFeature;
     })
 }

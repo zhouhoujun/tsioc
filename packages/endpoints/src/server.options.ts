@@ -1,5 +1,5 @@
 import { AbstractType } from '@tsdi/ioc';
-import { RequestHandler, RequestMethod, Transport } from '@tsdi/common';
+import { RequestHandler, RequestMethod, Transport, TransportConfig } from '@tsdi/common';
 import { ServiceHandlerOptions } from './ServiceHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
@@ -15,8 +15,8 @@ export interface ProxyOpts {
 /**
  * service config.
  */
-export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any> {
-    name?: string;
+export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any>, TransportConfig {
+
     /**
      * request timeout.
      */
@@ -30,10 +30,6 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
      * is microservice or not.
      */
     microservice?: boolean;
-    /**
-     * transport protocol
-     */
-    transport?: Transport;
 
     /**
      * server request handler type
@@ -60,6 +56,8 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
     proxy?: ProxyOpts;
 
     secure?: boolean;
+
+    bootstrap?: boolean;
 }
 
 /**
