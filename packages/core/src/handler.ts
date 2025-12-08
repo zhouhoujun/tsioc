@@ -5,9 +5,15 @@ export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
 
 export class RunContext extends DefaultContext {
 
-    setInjector(injector: Injector) {
+
+    constructor(injector: Injector, contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
+        super(contextOrEntries, entries);
         this.set(Injector, injector);
     }
+
+    // setInjector(injector: Injector) {
+    //     this.set(Injector, injector);
+    // }
 
     getInjector() {
         return this.get(Injector)
@@ -29,8 +35,8 @@ export class RunContext extends DefaultContext {
 export function createRunContext(injector: Injector, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;
 export function createRunContext(injector: Injector, previous?: Context, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;
 export function createRunContext(injector: Injector, previous?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
-    const context = new RunContext(previous ?? entries, entries);
-    context.setInjector(injector);
+    const context = new RunContext(injector, previous ?? entries, entries);
+    // context.setInjector(injector);
     return context;
 }
 

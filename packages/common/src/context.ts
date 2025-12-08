@@ -18,8 +18,7 @@ export class RequestContext extends RunContext {
 export function createRequestContext(injector: Injector, entries?: Iterable<readonly [Token | ContextToken, any]>): RequestContext;
 export function createRequestContext(injector: Injector, previous?: Context, entries?: Iterable<readonly [Token | ContextToken, any]>): RequestContext;
 export function createRequestContext(injector: Injector, previous?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
-    const context = new RequestContext(previous ?? entries, entries);
-    context.setInjector(injector);
+    const context = new RequestContext(injector, previous ?? entries, entries);
     return context;
 }
 

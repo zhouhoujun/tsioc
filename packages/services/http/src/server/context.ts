@@ -1,11 +1,10 @@
 import { Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, Response } from '@tsdi/common';
-import { MessageException, InternalServerException, Outgoing, append, parseTokenList, Incoming } from '@tsdi/common/transport';
-import { HttpServConfig, RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
+import { MessageException, InternalServerException, Outgoing, append, parseTokenList, Incoming } from '@tsdi/common';
+import { RestfulRequestContext, Throwable } from '@tsdi/endpoints';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
 import * as assert from 'node:assert';
-import { Socket } from 'node:net';
 import { TLSSocket } from 'node:tls';
 import { lastValueFrom } from 'rxjs';
 
@@ -17,7 +16,7 @@ export type HttpServResponse = (http.ServerResponse | http2.Http2ServerResponse)
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServResponse, TLSSocket | Socket, HttpServConfig, number> implements Throwable {
+export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServResponse, number> implements Throwable {
 
 
     private _URL?: URL;
@@ -26,14 +25,14 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
     constructor(
         injector: Injector,
-        readonly transport: ServerTransport,
+        // readonly transport: ServerTransport,
         readonly request: HttpServRequest,
         readonly response: HttpServResponse,
-        readonly serverOptions: HttpServConfig
+        // readonly serverOptions: HttpServConfig
     ) {
         super(injector, { ...serverOptions, request: request });
 
-        this.setValue(ServerTransport, transport);
+        // this.setValue(ServerTransport, transport);
         this.originalUrl = request.url!;
         this.status = HttpStatusCode.NotFound;
         this._url = this.URL.pathname;

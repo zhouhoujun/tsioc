@@ -1,8 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { ServiceHandler, HttpServConfig } from '@tsdi/endpoints';
-import { HttpContext } from './context';
+import { RequestHandler } from '@tsdi/common';
+import { HttpContext, HttpServRequest, HttpServResponse } from './context';
+import { Observable } from 'rxjs';
 
 @Abstract()
-export abstract class HttpRequestHandler extends ServiceHandler<HttpContext, HttpServConfig> {
-    
+export abstract class HttpHandler implements RequestHandler<HttpServRequest, HttpServResponse, HttpContext> {
+    abstract handle(input: HttpServRequest, context: HttpContext): Observable<HttpServResponse>;
 }

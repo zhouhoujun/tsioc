@@ -1,9 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
 import { NotSupportedException } from '@tsdi/common';
-import { Incoming, Outgoing, encodeUrl, escapeHtml } from '@tsdi/common';
+import { Incoming, Outgoing, encodeUrl, escapeHtml, ContentType } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
 import * as Cookies from 'cookies';
-import { ctype } from '@tsdi/common/transport';
 
 /**
  * abstract Restful request context.
@@ -170,13 +169,13 @@ export abstract class RestfulRequestContext<
         // html
         if (this.accepts('html')) {
             url = escapeHtml(url);
-            this.type = ctype.TEXT_HTML_UTF8;
+            this.type = ContentType.TEXT_HTML_UTF8;
             this.body = `Redirecting to <a href="${url}">${url}</a>.`;
             return
         }
 
         // text
-        this.type = ctype.TEXT_PLAIN_UTF8;
+        this.type = ContentType.TEXT_PLAIN_UTF8;
         this.body = `Redirecting to ${url}.`
     }
 

@@ -1,13 +1,13 @@
-import { Abstract, isArray, isDefined, isNil, isString, lang, TargetInvokeArguments } from '@tsdi/ioc';
-import { MODEL_RESOLVERS, ParameterScope, createPayloadResolveInterceptors } from '@tsdi/core';
-import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException, RequestContext, Incoming, Outgoing } from '@tsdi/common';
-import { FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp } from '@tsdi/common';
-import { ServiceConfig } from './server.options';
+import { Abstract, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
+import { ParameterScope, createPayloadResolveInterceptors } from '@tsdi/core';
+import {
+    HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException,
+    RequestContext, Incoming, Outgoing, FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp, ContentType
+} from '@tsdi/common';
+import { isBuffer } from '@tsdi/common/transport';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
-// import { ServerTransport } from './transport';
 import { AcceptsPriority } from './accepts';
 import { Session } from './sessions/Session';
-import { ctype, isBuffer } from '@tsdi/common/transport';
 
 /**
  * abstract request context.
@@ -224,14 +224,14 @@ export abstract class AbstractRequestContext<
 
         // string
         if (isString(val)) {
-            if (setType) this.contentType = xmlRegExp.test(val) ? ctype.TEXT_HTML : ctype.TEXT_PLAIN;
+            if (setType) this.contentType = xmlRegExp.test(val) ? ContentType.TEXT_HTML : ContentType.TEXT_PLAIN;
             this.length = Buffer.byteLength(val);
             return
         }
 
         // buffer
         if (isBuffer(val)) {
-            if (setType) this.contentType = ctype.OCTET_STREAM;
+            if (setType) this.contentType = ContentType.OCTET_STREAM;
             this.length = val.length;
             return
         }
@@ -243,13 +243,13 @@ export abstract class AbstractRequestContext<
                 if (null != original) this.headerAdapter.setContentLength(this.response, null)
             }
 
-            if (setType) this.contentType = ctype.OCTET_STREAM;
+            if (setType) this.contentType = ContentType.OCTET_STREAM;
             return
         }
 
         // json
         this.headerAdapter.setContentLength(this.response, null);
-        this.contentType = ctype.APPL_JSON;
+        this.contentType = ContentType.APPL_JSON;
     }
 
     /**

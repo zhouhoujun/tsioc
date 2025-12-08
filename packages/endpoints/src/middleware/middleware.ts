@@ -32,7 +32,11 @@ export type MiddlewareFn<T extends AbstractRequestContext = AbstractRequestConte
  */
 export type MiddlewareLike<T extends AbstractRequestContext = AbstractRequestContext> = Middleware<T> | MiddlewareFn<T>;
 
-
+/**
+ * convert middleware to interceptor.
+ * @param middleware 
+ * @returns 
+ */
 export function convertToInterceptor<TInput = any, TContext extends AbstractRequestContext = AbstractRequestContext>(middleware: MiddlewareLike<TContext>): InterceptorFn<TInput> {
     return (input: TInput, next: HandlerFn<TInput>, context: TContext) => {
         if (isFunction(middleware)) {

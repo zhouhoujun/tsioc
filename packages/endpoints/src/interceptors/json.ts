@@ -1,6 +1,5 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
-import { ctype } from '@tsdi/common/transport';
+import { RequestContext, RequestHandler, RequestInterceptor, ContentType } from '@tsdi/common';
 import { Observable, map } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 
@@ -48,11 +47,11 @@ export class JsonInterceptor implements RequestInterceptor<AbstractRequestContex
         const pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
         if (strm && ctx.accepts('json')) {
-            ctx.contentType = ctype.APPL_JSON;
+            ctx.contentType = ContentType.APPL_JSON;
             // ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) 
             // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
-            ctx.contentType = ctype.APPL_JSON_UTF8;
+            ctx.contentType = ContentType.APPL_JSON_UTF8;
             ctx.body = JSON.stringify(body, null, this.spaces);
         }
     }

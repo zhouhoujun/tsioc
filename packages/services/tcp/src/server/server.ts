@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport, createRequestHandler } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHandlerToken, getServiceToken, FeatureFn, TransportFeature, REGISTER_SERVICES, RegisterService } from '@tsdi/endpoints';
+import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceHandlerToken, getServiceToken, FeatureFn, TransportFeature, REGISTER_SERVICES, RegisterService, ServiceHandler } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -16,7 +16,7 @@ import { TcpRequestHandler } from './handler';
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> implements ListenService {
+export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, AbstractRequestContext> implements ListenService {
 
     protected serv?: net.Server | tls.Server | null;
 
@@ -27,7 +27,7 @@ export class TcpServer extends Server<AbstractRequestContext, TcpServConfig> imp
     private destroy$: Subject<void>;
 
     constructor(
-        readonly handler: TcpRequestHandler,
+        readonly handler: ServiceHandler<TReq, TRes, AbstractRequestContext>,
     ) {
         super();
 
