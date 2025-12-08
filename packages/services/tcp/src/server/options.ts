@@ -19,6 +19,7 @@ export interface TcpServConfig extends ServiceConfig<net.ServerOpts | tls.TlsOpt
     heybird?: boolean;
 }
 
+export const TCP_SERV_CONFIG = token<TcpServConfig>('TCP_SERV_CONFIG');
 
 /**
  * Tcp server interceptors.

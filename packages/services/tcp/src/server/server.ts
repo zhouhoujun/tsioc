@@ -1,4 +1,4 @@
-import { getClassRef, getTypeName, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
+import { getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport, createRequestHandler, Event } from '@tsdi/common';
@@ -6,7 +6,7 @@ import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequest
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TcpServConfig } from './options';
+import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONFIG, TcpServConfig } from './options';
 import { TcpRequestHandler } from './handler';
 
 
@@ -27,18 +27,19 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, AbstractRequestContext>,
+        @Inject(TCP_SERV_CONFIG, { nullable: true }) protected options: TcpServConfig,
     ) {
         super();
 
         this.destroy$ = new Subject();
-        this.isSecure = !!(this.getOptions().serverOpts as tls.TlsOptions)?.cert;
+        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
     listen(port: number, host?: string, listeningListener?: () => void): this;
     listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
         if (!this.serv) throw new InternalServerException();
-        const options = this.getOptions();
+        const options = this.options;
         const isSecure = options.secure = this.isSecure;
         const protocol = options.transport = options.transport ?? (isSecure ? 'ssl' : 'tcp');
         if (isNumber(arg1)) {
@@ -79,19 +80,17 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
         guardsToken: TCP_BIND_GUARDS
     })
     async bind(event: BindServerEvent<any>) {
-        const options = this.getOptions();
-        if (this.serv || (isString(options.heybird) && event.transport !== options.heybird)) return;
+        if (this.serv || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;
         await this.onStart(event.server);
     }
 
     protected async setup(): Promise<any> {
-        const opts = this.getOptions();
-        this.serv = this.createServer(opts);
+        this.serv = this.createServer();
     }
 
     protected async onStart(bindServer?: any): Promise<any> {
-        const options = this.getOptions();
-        if (options.heybird && !bindServer) return;
+
+        if (this.options.heybird && !bindServer) return;
 
         if (bindServer) {
             this.serv = bindServer;
@@ -100,11 +99,10 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
         }
 
         if (!this.serv) throw new InternalServerException();
-
-        this.serv.on(Event.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
+        this.serv.on(Event.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(Event.ERROR, (err) => this.logger.error(err));
         const context = this.handler.context;
-        const factory = context.get(ServerTransportFactory);
+        // const factory = context.get(ServerTransportFactory);
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(Event.SECURE_CONNECTION, (socket) => {
@@ -118,16 +116,16 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
             })
         }
 
-        if (!options.microservice && !bindServer) {
+        if (!this.options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
-            await context.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this));
+            await context.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, this.options.transport, this));
         }
 
         if (!bindServer) {
-            if (!options.listenOpts) {
-                options.listenOpts = { host: LOCALHOST, port: 3000 };
+            if (!this.options.listenOpts) {
+                this.options.listenOpts = { host: LOCALHOST, port: 3000 };
             }
-            this.listen(options.listenOpts)
+            this.listen(this.options.listenOpts)
         }
     }
 
@@ -143,8 +141,9 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
 
     }
 
-    protected createServer(opts: TcpServConfig): net.Server | tls.Server {
-        return this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
+    protected createServer(): net.Server | tls.Server {
+        return this.isSecure ? tls.createServer(this.options.serverOpts as tls.TlsOptions)
+            : net.createServer(this.options.serverOpts as net.ServerOpts);
     }
 
 }
@@ -176,6 +175,10 @@ export function withTcpTransport(...options: Partial<TcpServConfig>[]): Transpor
                 useFactory: (injector: Injector) => {
                     return getClassRef(TcpServer).createInvocation(injector, {
                         providers: [
+                            {
+                                provide: TCP_SERV_CONFIG,
+                                useValue: option
+                            },
                             {
                                 provide: TcpRequestHandler,
                                 useFactory: (injector: Injector) => createRequestHandler(injector, option),
