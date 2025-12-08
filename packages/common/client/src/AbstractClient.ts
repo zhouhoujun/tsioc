@@ -2,7 +2,7 @@ import { Abstract, ArgumentException, Exception, Context, isNil, isString, Invoc
 import { Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, RequestHandler, createRequestContext, RequestContext } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
-import { ClientConfig } from './options';
+import { ClientHandler } from './handler';
 
 
 
@@ -11,19 +11,18 @@ import { ClientConfig } from './options';
  */
 @Abstract()
 export abstract class AbstractClient<
-    TReqOptions extends RequestOptions = RequestOptions,
     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
     TResponse extends ResponseEvent<any> = ResponseEvent<any>,
-    TOptions extends ClientConfig = ClientConfig
+    TReqOptions extends RequestOptions = RequestOptions
 > {
 
-    protected abstract get context(): InvocationContext;
+    protected get context(): InvocationContext {
+        return this.handler.context;
+    }
     /**
      * client handler
      */
-    protected abstract get handler(): RequestHandler<TRequest, TResponse>;
-
-    abstract getOptions(): TOptions;
+    protected abstract get handler(): ClientHandler<TRequest, TResponse>;
 
     /**
      * Sends an `Request` and returns a stream of `ResponseEvent`s.
@@ -385,7 +384,6 @@ export abstract class AbstractClient<
 
             // Construct the request.
             req = this.createRequest(first, {
-                timeout: this.getOptions().timeout,
                 ...options,
                 headers,
                 params,

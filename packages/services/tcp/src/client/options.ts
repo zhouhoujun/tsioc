@@ -1,10 +1,10 @@
-// import { tokenId } from '@tsdi/ioc';
-import { Filter } from '@tsdi/core';
-import { RequestContext, ResponseEvent } from '@tsdi/common';
+import { token } from '@tsdi/ioc';
+import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
 import { ConnectionOptions } from 'node:tls';
 import { SocketConstructorOpts, NetConnectOpts } from 'node:net';
 import { TcpRequest } from './request';
+
 
 
 
@@ -26,8 +26,7 @@ export interface TcpClientConfig extends ClientConfig<TcpRequest<any>, ResponseE
     socketOpts?: SocketConstructorOpts;
 }
 
-
-
+export const TCP_CLIENT_OPTIONS =  token<TcpClientConfig>('TCP_CLIENT_OPTIONS');
 
 // /**
 //  * tcp client interceptors.

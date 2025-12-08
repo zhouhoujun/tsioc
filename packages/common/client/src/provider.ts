@@ -1,8 +1,9 @@
-import { ArgumentException, Injector, ProvdierOf, Provider, getClassRef, getType, isArray, isFunction, toProvider } from '@tsdi/ioc';
-import { matchTransport, TransportConfig, RequestInterceptorLike } from '@tsdi/common';
-import { getClientHandlerToken, getClientOptionsToken, getClientInterceptorsToken, getClientTransfersToken, getClientToken } from './tokens';
+import { ArgumentException, Injector, InterceptingHandler, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
+import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket, RequestHandlerLike, Transport, AbstractRequest } from '@tsdi/common';
+import { getClientInterceptorsToken, getClientTransfersToken, getClientBackendToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
+import { ClientConfig } from './options';
 
 
 
@@ -141,16 +142,36 @@ export function withClientInterceptors(
  * @publicApi
  */
 export function withClientTransfers(
-    ...interceptors: ProvdierOf<RequestInterceptorLike>[]
+    ...selectors: TransferInterceptorSelector[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
-        const token = getClientTransfersToken(config.transport, config.microservice)
+        const token = getClientTransfersToken(config.transport, config.microservice);
+        if (!selectors.length) {
+            selectors.push(withJsonPacket());
+        }
         return makeClientFeature(
             ClientFeatureKind.Transfer,
-            interceptors.map((u) => toProvider(token, u, true)),
+            selectors.map((sel) => {
+                const itps = sel(TransferSide.client);
+                return isArray(itps) ? toProviders(token, itps, true) : toProvider(token, itps, true)
+            }),            
             config
         );
     }
+}
+
+export function appendClientTokens<TReq extends AbstractRequest<any>= AbstractRequest<any>>(transport: Transport, options: ClientConfig<TReq>) {
+    const interceptorsToknen = getClientInterceptorsToken(transport, options.microservice);
+    const backendTokne = getClientBackendToken(transport, options.microservice, options.name);
+
+    options.interceptorsToken = interceptorsToknen;
+    options.backend = backendTokne;
+}
+
+
+export function createClientTransferHandler(injector: Injector, handler: RequestHandlerLike, transport: Transport, microservice?: boolean): RequestHandlerLike {
+    const token = getClientTransfersToken(transport, microservice);
+    return new InterceptingHandler(handler, () => injector.get(token))
 }
 
 /**
@@ -168,7 +189,7 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
             ClientFeatureKind.Interceptors,
             [{
                 provide: token,
-                useValue: requestTimeoutInterceptor,
+                useValue: requestTimeoutInterceptor(timeout ?? 15000),
                 multi: true
             }],
             config

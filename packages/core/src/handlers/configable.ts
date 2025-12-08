@@ -89,6 +89,8 @@ export interface HandlerOptions<TInput = any, TOutput = any, TContext = any> {
      */
     filters?: ProvdierOf<FilterLike<TInput, TOutput>>[];
 
+    backend?: Token<HandlerLike<TInput, TOutput, TContext>> | HandlerLike<TInput, TOutput, TContext>;
+
 }
 
 export function isHandlerOptions(target: any): target is HandlerOptions {
@@ -126,9 +128,9 @@ export interface ConfigableHandlerOptions<TInput = any, TOutput = any, TContext 
      */
     filtersToken?: Token<FilterLike<TInput, TOutput, TContext>[]>;
 
-    /**
-     * backend.
-     */
-    backend?: Token<HandlerLike<TInput, TOutput, TContext>> | HandlerLike<TInput, TOutput, TContext>;
+    // /**
+    //  * backend.
+    //  */
+    // backend?: Token<HandlerLike<TInput, TOutput, TContext>> | HandlerLike<TInput, TOutput, TContext>;
 }
 

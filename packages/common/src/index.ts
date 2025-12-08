@@ -16,6 +16,7 @@ export * from './context';
 export * from './handler';
 export * from './interceptor';
 
+export * from './packet';
 export * from './incoming';
 export * from './outgoing';
 export * from './request';

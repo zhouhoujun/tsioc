@@ -3,10 +3,9 @@ import { PipeTransform } from '@tsdi/core';
 import {
     AbstractRequest, HeaderAdapter, RequestContext, RequestHandlerFn, RequestInterceptor, RequestInterceptorFn,
     PacketLengthException, PacketIdGenerator, IDuplex, IReadable, IncomingMessage, OutgoingMessage, StreamAdapter,
-    RequestHandler
+    RequestHandler, Packet
 } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
-import { Packet } from '../socket';
 import { PACKET_DELIMITER, PACKET_IDLEN, PACKET_LIMIT, PACKET_MAXSIZE } from '../context';
 
 

@@ -1,6 +1,6 @@
 import { Injectable, Injector, Module, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { ErrorResponse, Transport } from '@tsdi/common';
+import { ErrorResponse, TransferSide, Transport, withJsonPacket } from '@tsdi/common';
 import { TransportPacketModule } from '@tsdi/common/transport';
 import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
@@ -57,7 +57,9 @@ export class TcpService {
         // TransportPacketModule,
         provideClient(
             withClientInterceptors(),
-            withClientTransfers(),
+            withClientTransfers(
+                withJsonPacket()
+            ),
             withTcpClientTransport({
                 microservice: true,
                 connectOpts: {
@@ -74,10 +76,11 @@ export class TcpService {
             withRouter(),
             withLogger(),
             withTransfers(
-                (req, next, context) => {
-                    const reqdata = JSON.parse(req);
-                    return next(reqdata, context)
-                }
+                withJsonPacket()
+                // (req, next, context) => {
+                //     const reqdata = JSON.parse(req);
+                //     return next(reqdata, context)
+                // }
             ),
             withTcpTransport({
                 microservice: true,

@@ -22,14 +22,6 @@ export interface ResponseAs {
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
-// export interface RequestWithContext {
-
-//     /**
-//      * request context.
-//      */
-//     context: RequestContext;
-// }
-
 export interface PayloadOptions<T = any> {
     /**
      * request payload, request body.
@@ -68,10 +60,6 @@ export interface RequestOptions<T = any> extends PayloadOptions<T> {
      * for restful
      */
     withCredentials?: boolean;
-    /**
-     * set request timeout times (ms).
-     */
-    timeout?: number;
 }
 
 
@@ -263,7 +251,6 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
         this.forceJson = initOptions.responseType === 'json';
         this.observe = initOptions.observe ?? 'body';
         this.withCredentials = !!initOptions.withCredentials;
-        this.timeout = initOptions.timeout;
 
     }
 
@@ -321,10 +308,9 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
         // `false` and `undefined` in the update args.
         const withCredentials =
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
-        const timeout = update.timeout ?? this.timeout;
         const id = this.id;
         const observe = update.observe ?? this.observe;
-        return { id, headers, params, payload, withCredentials, timeout, responseType, observe } as RequestInitOpts<any, TOptions>;
+        return { id, headers, params, payload, withCredentials, responseType, observe } as RequestInitOpts<any, TOptions>;
     }
 
 }

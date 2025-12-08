@@ -1,8 +1,9 @@
-import { Abstract, Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, toObservable, Type } from '@tsdi/ioc';
-import { AbstractConfigableHandler, ConfigableHandler, ConfigableHandlerOptions, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { Abstract, Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
+import { AbstractConfigableHandler, ConfigableHandler, ConfigableHandlerOptions, FilterLike, GuardLike, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
+import { RequestInterceptorLike } from './interceptor';
 
 
 /**
@@ -51,8 +52,50 @@ export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext ex
  * 
  * 传输节点配置
  */
-export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends ConfigableHandlerOptions<TInput, TOutput, TContext> {
+export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> {
+
+    /**
+     * An array of dependency-injection tokens used to look up `GuardLike()`
+     * handlers, in order to determine if the current user is allowed to
+     * activate the component. By default, any user can activate.
+     */
+    guards?: ProvdierOf<GuardLike<TInput>>[];
+    /**
+     * interceptors of handler.
+     */
+    interceptors?: ProvdierOf<RequestInterceptorLike<TInput, TOutput, TContext>>[];
+    /**
+     * pipes for the handler.
+     */
+    pipes?: StaticProvider<PipeTransform>[];
+    /**
+     * filters of handler.
+     */
+    filters?: ProvdierOf<FilterLike<TInput, TOutput>>[];
+
+
     classType?: Type<RequestHandler>;
+
+
+    /**
+     * interceptors token.
+     */
+    interceptorsToken?: Token<RequestInterceptorLike<TInput, TOutput, TContext>[]>;
+
+    /**
+     * guards tokens.
+     */
+    guardsToken?: Token<GuardLike<TInput, TContext>[]>;
+    /**
+     * filter tokens.
+     */
+    filtersToken?: Token<FilterLike<TInput, TOutput, TContext>[]>;
+
+
+    /**
+     * backend.
+     */
+    backend?: Token<RequestHandlerLike<TInput, TOutput, TContext>> | RequestHandlerLike<TInput, TOutput, TContext>;
 
 }
 

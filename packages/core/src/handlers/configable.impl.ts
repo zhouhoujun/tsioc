@@ -107,6 +107,9 @@ export class ConfigableHandler<
 
     append(options: HandlerOptions<TInput>): this {
         if (!options || !hasProps(options)) return this;
+        if (options.backend) {
+            this.options.backend = options.backend;
+        }
         if (options.pipes) {
             InjectUtil.inject(this.context, options.pipes);
         }

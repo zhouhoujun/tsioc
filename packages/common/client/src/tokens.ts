@@ -30,6 +30,9 @@ export function getClientHandlerToken(transport: Transport, microservice?: boole
 }
 
 
+export function getClientBackendToken(transport: Transport, microservice?: boolean, name?: string): Token<RequestHandler> {
+    return getToken<RequestHandler>(`${Transport[transport].toUpperCase()}_CLIENT_BACKEND`, toMicroName(microservice, name));
+}
 
 export function getClientToken(transport: Transport, microservice?: boolean, name?: string): Token<AbstractClient> {
     return getToken<AbstractClient>(`${Transport[transport].toUpperCase()}_CLIENT`, toMicroName(microservice, name));

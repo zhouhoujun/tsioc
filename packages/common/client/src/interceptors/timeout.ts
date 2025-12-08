@@ -5,11 +5,12 @@ import { catchError, throwError, timeout } from 'rxjs';
 /**
  * request body content interceptor.
  */
-export const requestTimeoutInterceptor: RequestInterceptorFn = (input: AbstractRequest<any>, next: RequestHandlerFn, context: RequestContext) => {
-    if (input.timeout) {
+export function requestTimeoutInterceptor(milliseconds: number): RequestInterceptorFn {
+    return (input: AbstractRequest<any>, next: RequestHandlerFn, context: RequestContext) => {
+
         return next(input, context)
             .pipe(
-                timeout(input.timeout),
+                timeout(milliseconds),
                 catchError(err => {
                     if (err.name == 'TimeoutError') {
                         const factory = context.get(ResponseFactory);
@@ -18,7 +19,7 @@ export const requestTimeoutInterceptor: RequestInterceptorFn = (input: AbstractR
                     return throwError(() => err);
                 })
             )
+
     }
-    return next(input, context)
 }
 

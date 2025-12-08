@@ -1,13 +1,11 @@
-import { Injectable, isString, promisify, Context, Injector, getClassRef, Provider } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport, createRequestHandler } from '@tsdi/common';
-import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientFeatureLike, ClientFeatureKind, makeClientFeature, ClientFeatureFn, ClientTransportFeature, getClientHandlerToken, getClientToken } from '@tsdi/common/client';
+import { Injectable, isString, promisify, Context, Injector, getClassRef, Provider, InvocationContext, Inject } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport, createRequestHandler, ResponseEvent, RequestContext, Event, PatternFormatter } from '@tsdi/common';
+import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, createClientTransferHandler, getClientBackendToken, getClientInterceptorsToken, appendClientTokens } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { TcpClientConfig } from './options';
-import { TcpHandler } from './handler';
+import { TCP_CLIENT_OPTIONS, TcpClientConfig } from './options';
 import { TcpRequest } from './request';
 
 
@@ -17,7 +15,8 @@ import { TcpRequest } from './request';
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>> {
+export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
+
 
     @InjectLog()
     private logger!: Logger;
@@ -26,11 +25,12 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
     // private _transport?: ClientTransport<tls.TLSSocket | net.Socket>;
 
     constructor(
-        readonly handler: TcpHandler
+        readonly handler: ClientHandler<TcpRequest<any>, ResponseEvent<any>>,
+        @Inject(TCP_CLIENT_OPTIONS, { nullable: true }) private options: TcpClientConfig
     ) {
         super();
-        if (!this.handler.getOptions().connectOpts) {
-            this.handler.getOptions().connectOpts = {
+        if (!options.connectOpts) {
+            options.connectOpts = {
                 port: 3000,
                 host: LOCALHOST
             }
@@ -42,7 +42,7 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
             const valid = this.connection && this.isValid(this.connection as (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean });
             if (!valid) {
                 if (this.connection) this.connection.removeAllListeners();
-                this.connection = this.createConnection(this.getOptions());
+                this.connection = this.createConnection(this.options);
             }
             let cleaned = false;
             const conn = this.connection;
@@ -58,25 +58,32 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
                 conn.end();
                 observer.complete();
             }
-            conn.on(ev.ERROR, onError)
-                .on(ev.DISCONNECT, onError)
-                .on(ev.END, onClose)
-                .on(ev.CLOSE, onClose);
+            conn.on(Event.ERROR, onError)
+                .on(Event.DISCONNECT, onError)
+                .on(Event.END, onClose)
+                .on(Event.CLOSE, onClose);
+
+            // this.handler.append({
+            //     backend: createClientTransferHandler(
+            //         this.context,
+            //         Transport.TCP, this.options.microservice)
+            // })
+
 
             if (valid) {
                 onConnect()
             } else {
-                conn.on(ev.CONNECT, onConnect)
+                conn.on(Event.CONNECT, onConnect)
             }
 
             return () => {
                 if (cleaned) return;
                 cleaned = true;
-                conn.off(ev.CONNECT, onConnect)
-                    .off(ev.ERROR, onError)
-                    .off(ev.DISCONNECT, onError)
-                    .off(ev.END, onClose)
-                    .off(ev.CLOSE, onClose);
+                conn.off(Event.CONNECT, onConnect)
+                    .off(Event.ERROR, onError)
+                    .off(Event.DISCONNECT, onError)
+                    .off(Event.END, onClose)
+                    .off(Event.CLOSE, onClose);
             }
         });
     }
@@ -88,17 +95,17 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {
         options.withCredentials = this.connection instanceof tls.TLSSocket;
-        const defaultMethod = this.getOptions().microservice ? undefined : 'GET';
+        const defaultMethod = this.options.microservice ? undefined : 'GET';
         if (isString(pattern)) {
             return new TcpRequest(pattern, null, options, defaultMethod);
         } else {
-            return new TcpRequest(this.formatter.format(pattern), pattern, options, defaultMethod);
+            return new TcpRequest(this.context.get(PatternFormatter).format(pattern), pattern, options, defaultMethod);
         }
     }
 
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
-        await this._transport?.destroy();
+        // await this._transport?.destroy();
         await promisify(this.connection.destroy, this.connection)(null!)
             .catch(err => {
                 this.logger?.error(err);
@@ -115,7 +122,6 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
-        this._transport = this.handler.context.get(ClientTransportFactory).create(this.handler.context, socket, opts);
         return socket
     }
 
@@ -127,6 +133,8 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
         const config: TransportConfig = { transport: Transport.TCP, name: option.name, microservice: option.microservice };
         const clientToken = getClientToken(config.transport, config.microservice, config.name);
         const hanlderToken = getClientHandlerToken(config.transport, config.microservice, config.name);
+
+        appendClientTokens(config.transport, option);
 
         const providers: Provider[] = [
             {
@@ -142,24 +150,9 @@ export function withTcpClientTransport(...options: TcpClientConfig[]): ClientTra
                 provide: clientToken,
                 useClass: TcpClient,
                 deps: [
-                    hanlderToken
+                    hanlderToken,
+                    { value: option }
                 ]
-                // useFactory: (injector: Injector) => {
-                //     return getClassRef(TcpClient).createInvocation(injector, {
-                //         providers: [
-                //             {
-                //                 provide: TcpHandler,
-                //                 useFactory: (injector: Injector) => createRequestHandler(injector, option),
-                //                 deps: [
-                //                     Injector
-                //                 ]
-                //             }
-                //         ]
-                //     }).instance
-                // },
-                // deps: [
-                //     Injector
-                // ]
             }
         ];
 
