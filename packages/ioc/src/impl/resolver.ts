@@ -131,7 +131,7 @@ export function isResolved(value: any) {
 // export function createResolveHandler(interceptors?: ResolveInterceptorLike[], backend?: ResolveHandlerLike | null): ResolveHandler {
 //     return new RuntimeHandler(backend ?? unResolve, interceptors) 
 // }
-export function createResolveHandler<TInput, TContext extends Context = Context, TOutput = any>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TOutput, TContext> {
+export function createResolveHandler<TInput, TOutput = any, TContext extends ResolveContext = ResolveContext>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TOutput, TContext> {
     return new RuntimeHandler<TInput, TOutput, TContext>(backend ?? unResolve, interceptors)
 }
 

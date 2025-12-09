@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveHandler, isFunction, isResolved, ResolveInterceptor, ResolveContext, ContextToken } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveHandler, isFunction, isResolved, ResolveInterceptor, ResolveContext, ContextToken, HandleResult } from '@tsdi/ioc';
 import { ModelArgumentResolver } from '@tsdi/core';
 import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, MissingModelFieldException, missingPropException, ModelFieldResolver } from './field.resolver';
 
@@ -22,7 +22,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
         return this.hasModel(isFunction(parameter.provider) ? parameter.provider ?? parameter.type : parameter.type) && this.hasFields(parameter, ctx)
     }
 
-    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, ResolveContext>, ctx: ResolveContext): TOutput {
+    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, ResolveContext>, ctx: ResolveContext): HandleResult<TOutput> {
         if (!this.canResolve(parameter, ctx)) return next.handle(parameter, ctx);
 
         const classType = (parameter.provider ?? parameter.type) as Type;

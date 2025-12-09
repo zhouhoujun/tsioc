@@ -67,6 +67,6 @@ export function createRouteHandler<TInput, TClass extends RouteHandler, T>(
     propertyKey?: string | symbol,
     type?: Type<TClass>): TClass {
     const Hanlder = type ?? RouteHandlerImpl;
-    options = normalizeConfigableHandlerOptions(options);
+    normalizeConfigableHandlerOptions(options);
     return new Hanlder(invocation, options, propertyKey) as TClass;
 }

@@ -363,8 +363,8 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: ResolveCo
     return pipe.transform(value, ...args);
 }
 
-const MODEL_FIELD_RESOLVER = new ContextToken<RuntimeHandler<[DBPropertyMetadata, any, Type], ResolveContext>>(() => null!);
-export function getModelFieldResolver(runtime: Runtime): RuntimeHandler<[DBPropertyMetadata, any, Type], ResolveContext> {
+const MODEL_FIELD_RESOLVER = new ContextToken<RuntimeHandler<[DBPropertyMetadata, any, Type], any, ResolveContext>>(() => null!);
+export function getModelFieldResolver(runtime: Runtime): RuntimeHandler<[DBPropertyMetadata, any, Type], any, ResolveContext> {
     let scope = runtime.get(MODEL_FIELD_RESOLVER);
     if (!scope) {
         scope = createResolveHandler(
@@ -400,7 +400,7 @@ export function getModelFieldResolver(runtime: Runtime): RuntimeHandler<[DBPrope
     return scope;
 }
 
-export type ModelFieldResolver = RuntimeHandler<[DBPropertyMetadata, any, Type], ResolveContext>;
+export type ModelFieldResolver = RuntimeHandler<[DBPropertyMetadata, any, Type], any, ResolveContext>;
 export type FieldResolveInterceptor = InterceptorLike<[DBPropertyMetadata, any, Type], any, ResolveContext>;
 
 /**

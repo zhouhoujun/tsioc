@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { normalize, joinPath } from '@tsdi/common';
-import { IReadable, FileAdapter } from '@tsdi/common/transport';
+import { IReadable, FileAdapter } from '@tsdi/common';
 import { PassThrough } from 'readable-stream';
 
 

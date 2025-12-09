@@ -8,7 +8,6 @@ import { ServerApplicationArguments } from './args';
 import { ApplicationExit } from './exit';
 import { ServerHrtimeFormatter } from './hrtime';
 
-
 /**
  * server boot module.
  */

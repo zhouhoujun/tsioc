@@ -1,6 +1,6 @@
 import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
-import { isFormData } from '@tsdi/common';
-import { StreamAdapter, ev, isBuffer, BrotliOptions, PipeSource, ZipOptions, IStream, IReadable, IWritable, IDuplex, IPassThrough } from '@tsdi/common/transport';
+import { IFormData, isFormData } from '@tsdi/common';
+import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, IStream, IReadable, IWritable, IDuplex, IPassThrough } from '@tsdi/common';
 import { EventEmitter } from 'node:events';
 import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Transform, PipelineSource, isReadable, TransformCallback, pipeline } from 'node:stream';
 import * as rstm from 'readable-stream'
@@ -181,15 +181,15 @@ export class NodeStreamAdapter extends StreamAdapter {
     isFormDataLike(target: any): boolean {
         return isFormData(target) || target instanceof FormData;
     }
-    createFormData(options?: { writable?: boolean | undefined; readable?: boolean | undefined; dataSize?: number | undefined; maxDataSize?: number | undefined; pauseStreams?: boolean | undefined; highWaterMark?: number | undefined; encoding?: string | undefined; objectMode?: boolean | undefined; read?(this: Readable, size: number): void; destroy?(this: Readable, error: Error | null, callback: (error: Error | null) => void): void; autoDestroy?: boolean | undefined; } | undefined) {
-        return new FormData(options);
+    createFormData(options?: { writable?: boolean | undefined; readable?: boolean | undefined; dataSize?: number | undefined; maxDataSize?: number | undefined; pauseStreams?: boolean | undefined; highWaterMark?: number | undefined; encoding?: string | undefined; objectMode?: boolean | undefined; read?(this: Readable, size: number): void; destroy?(this: Readable, error: Error | null, callback: (error: Error | null) => void): void; autoDestroy?: boolean | undefined; } | undefined):IFormData {
+        return new FormData(options) as IFormData;
     }
 
     isJson(target: any): boolean {
         if (!target) return false;
         if (isString(target)) return false;
         if (this.isStream(target)) return false;
-        if (isBuffer(target)) return false;
+        if (Buffer.isBuffer(target)) return false;
         return true
     }
 

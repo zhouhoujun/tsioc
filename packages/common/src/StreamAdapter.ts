@@ -1,4 +1,4 @@
-import { TypeException, isArray } from '@tsdi/ioc';
+import { isArray } from '@tsdi/ioc';
 import { IDuplex, IEventEmitter, IPassThrough, IReadable, IStream, ITransform, IWritable } from './stream';
 import { Event } from './events';
 
@@ -245,7 +245,7 @@ export abstract class StreamAdapter {
              */
             limit?: number | string | null;
         }) | string
-    ): Promise<Uint8Array>
+    ): Promise<Uint8Array|Buffer>
 
     abstract createFormData(options?: {
         writable?: boolean;
