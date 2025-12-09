@@ -16,9 +16,15 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
         return chainEndFn;
     }
     if (interceptors.length === 1) {
-        return isFunction(interceptors[0]) ? interceptors[0]: toInterceptorFn(interceptors[0]);
+        return isFunction(interceptors[0]) ? interceptors[0] : toInterceptorFn(interceptors[0]);
     }
     return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next, interceptorFn), chainEndFn) as InterceptorFn;
+}
+
+export function composeToHanlderFn(handler: HandlerLike, interceptors: InterceptorLike[]): HandlerFn {
+    const interceptorFn = composeInterceptors(interceptors);
+    const handlerFn = isFunction(handler) ? handler : toHandlerFn(handler);
+    return (req, context) => interceptorFn(req, handlerFn, context);
 }
 
 

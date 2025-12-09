@@ -1,6 +1,5 @@
-import { Abstract, ProvdierOf, Token } from '@tsdi/ioc';
-import { ConfigableRequestHandler, RequestContext, RequestHandler, RequestHandlerOptions, RequestInterceptorLike } from '@tsdi/common';
-import { AbstractRequestContext } from './AbstractRequestContext';
+import { Abstract, Token } from '@tsdi/ioc';
+import { ConfigableRequestHandler, RequestContext, RequestHandler, RequestHandlerOptions } from '@tsdi/common';
 import { Router } from './router/router';
 
 
@@ -9,8 +8,8 @@ import { Router } from './router/router';
  * service configable request handler
  */
 @Abstract()
-export abstract class ServiceHandler<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext>
-    extends ConfigableRequestHandler<TInput, TOutput, TContext> implements RequestHandler<TInput, TOutput, TContext> {
+export abstract class ServiceHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext>
+    extends ConfigableRequestHandler<TReq, TRes, TContext> implements RequestHandler<TReq, TRes, TContext> {
 
     /**
      * is this equals to target or not
@@ -26,19 +25,7 @@ export abstract class ServiceHandler<TInput = any, TOutput = any, TContext exten
  * 
  * 传输节点配置
  */
-export interface ServiceHandlerOptions<T extends AbstractRequestContext = AbstractRequestContext> extends RequestHandlerOptions<T> {
-
-    /**
-     * transfers token.
-     */
-    transfersToken?: Token<RequestInterceptorLike[]>;
-
-    /**
-     * transfers.
-     */
-    transfers?: ProvdierOf<RequestInterceptorLike[]>;
-
-
+export interface ServiceHandlerOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends RequestHandlerOptions<TReq, TRes, TContext> {
 
     routerToken?: Token<Router>;
 

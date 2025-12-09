@@ -1,5 +1,5 @@
-import { Token, ProvdierOf } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, RequestHandlerOptions, RequestInterceptorLike, ResponseEvent, TransportConfig } from '@tsdi/common';
+import { Token } from '@tsdi/ioc';
+import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, TransportConfig } from '@tsdi/common';
 
 
 /**
@@ -36,8 +36,4 @@ export interface ClientConfig<
      */
     asDefault?: boolean;
 
-
-    transfers?: ProvdierOf<RequestInterceptorLike[]>;
-
-    transfersToken?: Token<RequestInterceptorLike[]>;
 }

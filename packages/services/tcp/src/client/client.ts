@@ -1,8 +1,8 @@
-import { Injectable, isString, promisify, Context, Injector, Provider, Inject, ValueProvider, StaticProvider, asProvider, ArgumentException } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, RequestHandlerFn, Event, PatternFormatter } from '@tsdi/common';
-import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, createClientTransferHandler } from '@tsdi/common/client';
+import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException, composeInterceptors } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Event, PatternFormatter, writePacket, StreamAdapter, RequestInterceptorFn, TransferSide } from '@tsdi/common';
+import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, createClientTransferHandler, getClientTransfersToken } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { fromEvent, Observable } from 'rxjs';
+import { from, fromEvent, Observable } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientConfig } from './options';
@@ -142,12 +142,12 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): ClientTransportFeature[] {
     return options.map(option => {
         option.transport = Transport.TCP;
+        option.side = TransferSide.client;
         const config = option as TcpClientConfig;
         const clientToken = getClientToken(config);
         const hanlderToken = getClientHandlerToken(config);
         const backendToken = getClientBackendToken(config);
-
-
+        // const transersToken = getClientTransfersToken(config);
 
         const providers: Provider[] = [
             asProvider({
@@ -155,9 +155,14 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
                 useFactory: () => {
                     let socket: tls.TLSSocket | net.Socket;
                     let source$: Observable<any>;
-                    return (req, context) => {
+                    // let chain: RequestInterceptorFn;
+                    return (data: any, context) => {
+
                         const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
                         if (!currSocket) throw new ArgumentException('no socket in context');
+                        // if (!chain) {
+                        //     chain = composeInterceptors(context.getInjector().get(transersToken));
+                        // }
 
                         if (socket !== currSocket) {
                             if (socket) {
@@ -167,9 +172,24 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
                             source$ = fromEvent(socket, Event.MESSAGE);
                         }
 
-                        socket.write(req);
+                        const emit$ = writePacket(socket, data, context.get(StreamAdapter));
+
+                        if (context.get(TcpRequest)?.observe === 'emit') {
+                            return from(emit$);
+                        }
 
                         return source$
+
+                        // context.set(TcpRequest, req);
+                        // return chain(req, (data, context) => {
+                        //     const emit$ = writePacket(socket, data, context.get(StreamAdapter));
+
+                        //     if (req.observe === 'emit') {
+                        //         return from(emit$);
+                        //     }
+
+                        //     return source$
+                        // }, context)
                     }
                 },
                 multi: true

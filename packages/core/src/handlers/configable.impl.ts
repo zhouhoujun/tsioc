@@ -125,7 +125,7 @@ export class ConfigableHandler<
             this.regMulti(this.options.interceptorsToken!, options.interceptors);
             this.resetChain();
         }
-        
+
         return this;
     }
 
@@ -218,6 +218,10 @@ export class ConfigableHandler<
         if (hdlInteceptors?.length) fns.push(...hdlInteceptors);
         if (filters?.length) fns.push(composeFilters(filters));
         if (inteceptors?.length) fns.push(...inteceptors);
+        return this.generateInterceptorFn(fns);
+    }
+
+    protected generateInterceptorFn(fns: InterceptorLike[]) {
         return composeInterceptors(fns);
     }
 
@@ -233,11 +237,16 @@ export class ConfigableHandler<
      */
     protected getBackend(): HandlerFn<TInput, TOutput, TContext> {
         if (!this.backendFn) {
-            const handlers = this.context.get(this.options.backendToken!);
-            if (!handlers?.length) throw new ArgumentException('no backend handler.');
-            this.backendFn = composeHandlers(handlers);
+            this.backendFn = this.generateBackendFn();
         }
         return this.backendFn;
+    }
+
+    protected generateBackendFn() {
+        const handlers = this.context.get(this.options.backendToken!);
+        if (!handlers?.length) throw new ArgumentException('no backend handler.');
+        return composeHandlers(handlers);
+
     }
 
     /**

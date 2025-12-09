@@ -23,6 +23,7 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
      */
     abstract get handler(): RequestHandler<TRequest, TResponse, TContext>;
 
+
     @Runner()
     async start() {
         if (this.context.ready) await this.context.ready;
@@ -48,8 +49,12 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest = any, TResponse = any, TContext extends AbstractRequestContext = AbstractRequestContext>
+export abstract class Server<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
     extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, TResponse, TContext> {
+
+    get context() {
+        return this.handler.context
+    }
 
     /**
      * service request handler.

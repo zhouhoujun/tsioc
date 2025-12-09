@@ -1,4 +1,4 @@
-import { ArgumentException, TypeException } from '@tsdi/ioc';
+import { TypeException } from '@tsdi/ioc';
 import { IReadable } from '@tsdi/common';
 
 

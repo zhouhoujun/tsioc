@@ -1,15 +1,16 @@
-import { Abstract, Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
-import { AbstractConfigableHandler, ConfigableHandler, FilterLike, GuardLike, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
+import { Abstract, composeInterceptors, composeToHanlderFn, Exception, getType, Handler, HandlerFn, Injector, InterceptingHandler, InterceptorFn, InterceptorLike, InvocationContext, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
+import { AbstractConfigableHandler, ConfigableHandler, FilterLike, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
 import { RequestInterceptorLike } from './interceptor';
+import { TransferSide } from './transfer';
 
 
 /**
  * Requset handler
  */
-export interface RequestHandler<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends Handler<TInput, TOutput, TContext> {
+export interface RequestHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends Handler<TReq, TRes, TContext> {
     /**
      * handle.
      * 
@@ -18,7 +19,7 @@ export interface RequestHandler<TInput = any, TOutput = any, TContext extends Re
      * @param context handle with context.
      * @param tail next tail.
      */
-    handle(input: TInput, context: TContext): Observable<TOutput>;
+    handle(input: TReq, context: TContext): Observable<TRes>;
 
     /**
      * on destroy.
@@ -29,19 +30,19 @@ export interface RequestHandler<TInput = any, TOutput = any, TContext extends Re
 /**
  * Request handler function.
  */
-export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = (input: TInput, context: TContext) => Observable<TOutput>;
+export type RequestHandlerFn<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> = (input: TReq, context: TContext) => Observable<TRes>;
 
 
 /**
  * Request handler like.
  */
-export type RequestHandlerLike<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = RequestHandlerFn<TInput, TOutput, TContext> | RequestHandler<TInput, TOutput, TContext>;
+export type RequestHandlerLike<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> = RequestHandlerFn<TReq, TRes, TContext> | RequestHandler<TReq, TRes, TContext>;
 
 /**
  * Request intercepting handler.
  */
-export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends InterceptingHandler<TInput, TOutput, TContext> implements RequestHandler<TInput, TOutput, TContext> {
-    handle(req: TInput, context: TContext): Observable<TOutput> {
+export class RequestInterceptingHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends InterceptingHandler<TReq, TRes, TContext> implements RequestHandler<TReq, TRes, TContext> {
+    handle(req: TReq, context: TContext): Observable<TRes> {
         return toObservable(super.handle(req, context));
     }
 }
@@ -52,18 +53,18 @@ export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext ex
  * 
  * 传输节点配置
  */
-export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends InvokeProviders {
+export interface RequestHandlerOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends InvokeProviders {
 
     /**
      * An array of dependency-injection tokens used to look up `GuardLike()`
      * handlers, in order to determine if the current user is allowed to
      * activate the component. By default, any user can activate.
      */
-    guards?: ProvdierOf<GuardLike<TInput>>[];
+    guards?: ProvdierOf<GuardLike<TReq>>[];
     /**
      * interceptors of handler.
      */
-    interceptors?: ProvdierOf<RequestInterceptorLike<TInput, TOutput, TContext>>[];
+    interceptors?: ProvdierOf<RequestInterceptorLike<TReq, TRes, TContext>>[];
     /**
      * pipes for the handler.
      */
@@ -71,15 +72,18 @@ export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext ext
     /**
      * filters of handler.
      */
-    filters?: ProvdierOf<FilterLike<TInput, TOutput>>[];
+    filters?: ProvdierOf<FilterLike<TReq, TRes>>[];
     /**
      * backend.
      */
-    backend?: ProvdierOf<RequestHandlerLike<TInput, TOutput, TContext>>;
+    backend?: ProvdierOf<RequestHandlerLike<TReq, TRes, TContext>>;
+
+
+    transfers?: ProvdierOf<RequestInterceptorLike[]>;
 
 
     handlerType?: Type<RequestHandler>;
-    
+
     /**
      * enable input type filters and interceptors chain for handler.
      */
@@ -92,20 +96,22 @@ export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext ext
     /**
      * interceptors token.
      */
-    interceptorsToken?: Token<RequestInterceptorLike<TInput, TOutput, TContext>[]>;
+    interceptorsToken?: Token<RequestInterceptorLike<TReq, TRes, TContext>[]>;
 
     /**
      * guards tokens.
      */
-    guardsToken?: Token<GuardLike<TInput, TContext>[]>;
+    guardsToken?: Token<GuardLike<TReq, TContext>[]>;
     /**
      * filter tokens.
      */
-    filtersToken?: Token<FilterLike<TInput, TOutput, TContext>[]>;
+    filtersToken?: Token<FilterLike<TReq, TRes, TContext>[]>;
 
+    backendToken?: Token<RequestHandlerLike<TReq, TRes, TContext>>;
 
+    transfersToken?: Token<RequestInterceptorLike[]>;
 
-    backendToken?: Token<RequestHandlerLike<TInput, TOutput, TContext>>;
+    side?: TransferSide;
 
 }
 
@@ -115,16 +121,22 @@ export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext ext
  */
 @Abstract()
 export abstract class ConfigableRequestHandler<
-    TInput = any,
-    TOutput = any,
+    TReq = any,
+    TRes = any,
     TContext extends RequestContext = RequestContext
-> extends AbstractConfigableHandler<TInput, TOutput, TContext> {
+> extends AbstractConfigableHandler<TReq, TRes, TContext> {
+
+    /**
+     * append handler options.
+     * @param options 
+     */
+    abstract append(options: HandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this;
     /**
      * handle request.
      * @param input 
      * @param context 
      */
-    abstract handle(input: TInput, context: TContext): Observable<TOutput>;
+    abstract handle(input: TReq, context: TContext): Observable<TRes>;
 }
 
 /**
@@ -133,17 +145,49 @@ export abstract class ConfigableRequestHandler<
  * 传输节点
  */
 export class DefaultRequestHandler<
-    TInput = any, TOutput = any,
+    TReq = any, TRes = any,
     TContext extends RequestContext = RequestContext
 >
-    extends ConfigableHandler<TInput, TOutput, TContext> implements ConfigableRequestHandler<TInput, TOutput, TContext> {
+    extends ConfigableHandler<TReq, TRes, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
 
-    override handle(input: TInput, context: TContext): Observable<TOutput> {
-        return toObservable(super.handle(input, context));
+    override append(options: HandlerOptions & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this {
+        super.append(options);
+        const config = options as RequestHandlerOptions;
+        if (config.transfers) {
+            this.regMulti(config.transfersToken!, config.transfers);
+            this.resetChain();
+        }
+        return this;
     }
 
-    protected override getChain(input: TInput): InterceptorFn<TInput, TOutput> {
+    override handle(input: TReq, context: TContext): Observable<TRes> {
+        return super.handle(input, context) as Observable<TRes>;
+    }
+
+    protected override getChain(input: TReq): InterceptorFn<TReq, TRes> {
         return this.getChainOf(getType(input)) ?? super.getChain(input);
+    }
+
+    protected override generateInterceptorFn(fns: InterceptorLike[]): InterceptorFn {
+        const options = this.options as RequestHandlerOptions;
+        if (options.side !== TransferSide.client) {
+            const transfers = this.context.get(options.transfersToken!);
+            fns.unshift(...transfers)
+        }
+        return composeInterceptors(fns);
+    }
+
+    protected override generateBackendFn(): HandlerFn {
+        const handler = super.generateBackendFn();
+        const options = this.options as RequestHandlerOptions;
+        if (options.side === TransferSide.client) {
+            const transfers = this.context.get(options.transfersToken!);
+            if (transfers?.length) {
+                return composeToHanlderFn(handler, transfers)
+            }
+        }
+
+        return handler;
     }
 
     protected override forbiddenError(): Exception {
@@ -161,9 +205,9 @@ export class DefaultRequestHandler<
  * @param options 
  * @returns 
  */
-export function createRequestHandler<TInput = any, TOutput = any>(injector: Injector, options: RequestHandlerOptions<TInput, TOutput>): ConfigableRequestHandler<TInput, TOutput> {
+export function createRequestHandler<TReq = any, TRes = any>(injector: Injector, options: RequestHandlerOptions<TReq, TRes>): ConfigableRequestHandler<TReq, TRes> {
     normalizeConfigableHandlerOptions(options);
     const Type = options.handlerType ?? DefaultRequestHandler;
-    return new Type(injector, options, options) as ConfigableRequestHandler<TInput, TOutput>;
+    return new Type(injector, options, options) as ConfigableRequestHandler<TReq, TRes>;
 }
 

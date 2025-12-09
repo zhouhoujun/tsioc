@@ -1,12 +1,14 @@
-import { getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
+import { ArgumentException, asProvider, composeInterceptors, getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event } from '@tsdi/common';
-import { BindServerEvent, FeatureKind, makeFeature, AbstractRequestContext, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler } from '@tsdi/endpoints';
-import { Subject, first, fromEvent, merge } from 'rxjs';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event, createRequestContext, RequestContext, RequestInterceptorFn, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
+import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, getTransfersToken } from '@tsdi/endpoints';
+import { Observable, Subject, first, from, fromEvent, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONFIG, TcpServConfig } from './options';
+import { SOCKET, UrlIncoming } from '@tsdi/common/transport';
+import { TcpRequest } from '../client/request';
 
 
 
@@ -14,7 +16,7 @@ import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONF
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, AbstractRequestContext> implements ListenService {
+export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, RequestContext> implements ListenService {
 
     protected serv?: net.Server | tls.Server | null;
 
@@ -25,7 +27,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
     private destroy$: Subject<void>;
 
     constructor(
-        readonly handler: ServiceHandler<TReq, TRes, AbstractRequestContext>,
+        readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(TCP_SERV_CONFIG, { nullable: true }) protected options: TcpServConfig,
     ) {
         super();
@@ -105,13 +107,24 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(Event.SECURE_CONNECTION, (socket) => {
-                const transport = factory.create(context, socket, options);
-                transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
+                merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())
+                    .subscribe((data: any) => {
+                        if (!data) return;
+                        this.handler.handle(data, createRequestContext(this.context))
+                    })
+
+                // const transport = factory.create(context, socket, options);
+                // transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
         } else {
             this.serv.on(Event.CONNECTION, (socket) => {
-                const transport = factory.create(context, socket, options);
-                transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
+                merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())
+                    .subscribe((data: any) => {
+                        if (!data) return;
+                        this.handler.handle(data, createRequestContext(this.context))
+                    });
+                // const transport = factory.create(context, socket, options);
+                // transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
         }
 
@@ -151,7 +164,10 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
 export function withTcpTransport(...options: Partial<TcpServConfig>[]): TransportFeature[] {
     return options.map(option => {
         option.transport = Transport.TCP;
-        const serviceToken = getServiceToken(option as TcpServConfig);
+        option.side = TransferSide.server;
+        const config = option as TcpServConfig;
+        const serviceToken = getServiceToken(config);
+        const backendToken = getServiceBackendToken(config);
 
         const providers: Provider[] = [
             TcpServer,
@@ -168,6 +184,29 @@ export function withTcpTransport(...options: Partial<TcpServConfig>[]): Transpor
             //         hanlderToken
             //     ]
             // },
+
+            asProvider({
+                provide: backendToken,
+                useFactory: () => {
+                    let socket: tls.TLSSocket | net.Socket;
+                    return (data: any, context) => {
+
+                        const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
+                        if (!currSocket) throw new ArgumentException('no socket in context');
+
+                        if (socket !== currSocket) {
+                            if (socket) {
+                                socket.removeAllListeners();
+                            }
+                            socket = currSocket;
+                        }
+
+                        const emit$ = writePacket(socket, data, context.get(StreamAdapter));
+                        return from(emit$);
+                    }
+                },
+                multi: true
+            }),
 
             {
                 provide: serviceToken,
@@ -209,6 +248,6 @@ export function withTcpTransport(...options: Partial<TcpServConfig>[]): Transpor
             }
         ];
 
-        return makeFeature(FeatureKind.Transport, providers, option as TcpServConfig) as TransportFeature;
+        return makeFeature(FeatureKind.Transport, providers, config) as TransportFeature;
     })
 }
