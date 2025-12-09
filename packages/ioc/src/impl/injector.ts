@@ -811,7 +811,7 @@ export function processProviders(injector: AbstractInjector, providers: Provider
 
 function processProvider(injector: AbstractInjector, provider: StaticProvider | DynamicProvider): void | Promise<void> {
 
-    const token = isFunction(provider) ? provider : (provider as Provide).provide;
+    const token = isFunction(provider) ? provider : (provider as Provide<any>).provide;
     if (token) {
         const record = generateRecord(injector, provider as StaticProvider);
         if (!isFunction(provider) && (provider as MutilProvider).multi) {
@@ -867,7 +867,7 @@ function processProvider(injector: AbstractInjector, provider: StaticProvider | 
  * @param provider 提供者配置
  * @returns 优化后的提供者记录
  */
-export function generateRecord<T>(injector: AbstractInjector, provider: StaticProvider): InjectorRecord<T> {
+export function generateRecord<T>(injector: AbstractInjector, provider: StaticProvider<T>): InjectorRecord<T> {
 
     if (isTypeProvider(provider)) {
         return generateTypeRecord(injector, getClassRef(provider));
@@ -880,11 +880,11 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
         } else if (isExistingProvider(provider)) {
             factory = (raise, flags) => (raise ?? injector).get(provider.useExisting, undefined, flags);
         } else if (provider.provide) {
-            if ((provider as ClassProvider).useClass && !(provider as ClassProvider).deps && injector.has((provider as ClassProvider).useClass)) {
-                const type = (provider as ClassProvider).useClass;
+            if ((provider as ClassProvider<T>).useClass && !(provider as ClassProvider<T>).deps && injector.has((provider as ClassProvider<T>).useClass)) {
+                const type = (provider as ClassProvider<T>).useClass;
                 factory = (raise, flags) => raise?.get(type, null, flags) ?? injector.get(type, flags);
             } else {
-                const classType = (provider as ClassProvider).useClass ?? provider.provide;
+                const classType = (provider as ClassProvider<T>).useClass ?? provider.provide;
                 return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide, provider.multi);
             }
         }

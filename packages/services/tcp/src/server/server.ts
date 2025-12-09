@@ -2,12 +2,11 @@ import { getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isStr
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event } from '@tsdi/common';
-import { BindServerEvent, FeatureKind, makeFeature, AbstractRequestContext, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, RegisterService, ServiceHandler } from '@tsdi/endpoints';
+import { BindServerEvent, FeatureKind, makeFeature, AbstractRequestContext, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONFIG, TcpServConfig } from './options';
-import { TcpRequestHandler } from './handler';
 
 
 
@@ -180,7 +179,7 @@ export function withTcpTransport(...options: Partial<TcpServConfig>[]): Transpor
                                 useValue: option
                             },
                             {
-                                provide: TcpRequestHandler,
+                                provide: ServiceHandler,
                                 useFactory: (injector: Injector) => createRequestHandler(injector, option),
                                 deps: [
                                     Injector

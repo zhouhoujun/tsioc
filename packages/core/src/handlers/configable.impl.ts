@@ -125,6 +125,7 @@ export class ConfigableHandler<
             this.regMulti(this.options.interceptorsToken!, options.interceptors);
             this.resetChain();
         }
+        
         return this;
     }
 

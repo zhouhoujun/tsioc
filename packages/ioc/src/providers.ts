@@ -10,7 +10,7 @@ import { isType, getTypeName } from './metadata/type';
 /**
  * provide for {@link Injector }.
  */
-export interface Provide<T = any> {
+export interface Provide<T> {
     /**
      * this type provider to.
      *
@@ -20,7 +20,7 @@ export interface Provide<T = any> {
     provide: Token<T>;
 }
 
-export type DependLike =  InjectorRecord | ParameterLike;
+export type DependLike = InjectorRecord | ParameterLike;
 
 export interface UseAsStatic {
     /**
@@ -94,7 +94,7 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
  * Configures the `Injector` to return an instance of `useClass` for a token.
  *
  */
-export interface ClassProvider<T = any> extends Provide<T>, UseClass<T> {
+export interface ClassProvider<T> extends Provide<T>, UseClass<T> {
 }
 
 /**
@@ -116,7 +116,7 @@ export interface UseValue<T> extends ProviderExts {
  *
  * @usageNotes
  * ```
- * const provider: ClassProvider = {provide: 'someToken', useClass: MyService};
+ * const provider: ValueProvider = {provide: MyService, useValue: service };
  * ```
  * @description
  * Configures the `Injector` to return an instance of `useValue` for a token.
@@ -125,7 +125,9 @@ export interface UseValue<T> extends ProviderExts {
  * @interface ValueProvider
  * @extends {ProvideProvider}
  */
-export interface ValueProvider<T = any> extends Provide<T>, UseValue<T> { }
+export interface ValueProvider<T> extends Provide<T>, UseValue<T> {
+
+}
 
 /**
  * Use factory  as provider.
@@ -155,12 +157,12 @@ export interface UseFactory<T> extends ProviderExts, UseAsStatic {
  * Configures the `Injector` to return a value by invoking a `useFactory` function.
  *
  */
-export interface FactoryProvider<T = any> extends Provide<T>, UseFactory<T> { }
+export interface FactoryProvider<T> extends Provide<T>, UseFactory<T> { }
 
 /**
  * constructor provider.
  */
-export interface ConstructorProvider<T = any> extends MutilProvider {
+export interface ConstructorProvider<T> extends MutilProvider {
     /**
      * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
      */
@@ -197,12 +199,12 @@ export interface UseExisting<T> extends ProviderExts, UseAsStatic {
  * @interface ExistingProvider
  * @extends {ProvideProvider}
  */
-export interface ExistingProvider<T = any> extends Provide<T>, UseExisting<T> { }
+export interface ExistingProvider<T> extends Provide<T>, UseExisting<T> { }
 
 /**
  * type provider.
  */
-export type TypeProvider<T = any> = Type<T>;
+export type TypeProvider<T> = Type<T>;
 
 /**
  * dynamic provider.
@@ -229,7 +231,10 @@ export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | Value
  * providers for {@link Injector}.
  * 
  */
-export type Provider = StaticProvider | DynamicProvider | Modules[] | Array<Provider>;
+export type Provider<T = any> = StaticProvider<T> | DynamicProvider | Modules[] | Array<Provider<T>>;
+
+
+
 
 /**
  * type module with providers.
@@ -245,7 +250,7 @@ export interface ModuleWithProviders<T = any> {
     providers: Provider[];
 }
 
-export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType|Provider>;
+export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType | Provider>;
 
 /**
  * is module providers or not.
@@ -256,24 +261,24 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
     return target && isFunction(target.module) && isArray(target.providers)
 }
 
-export function isValueProvider(target: StaticProvider): target is ValueProvider {
+export function isValueProvider<T = any>(target: StaticProvider<T>): target is ValueProvider<T> {
     return isPlainObject(target) && ('useValue' in target);
 }
 
-export function isTypeProvider(target: StaticProvider): target is TypeProvider {
-    return isFunction(target);
+export function isTypeProvider<T = any>(target: StaticProvider<T>): target is TypeProvider<T> {
+    return isType(target);
 }
 
-export function isClassProvider(target: StaticProvider): target is ClassProvider {
-    return target && isFunction((target as ClassProvider).useClass);
+export function isClassProvider<T = any>(target: StaticProvider<T>): target is ClassProvider<T> {
+    return target && isFunction((target as ClassProvider<T>).useClass);
 }
 
-export function isExistingProvider(target: StaticProvider): target is ExistingProvider {
-    return target && isFunction((target as ExistingProvider).useExisting);
+export function isExistingProvider<T = any>(target: StaticProvider<T>): target is ExistingProvider<T> {
+    return target && isFunction((target as ExistingProvider<T>).useExisting);
 }
 
-export function isFactoryProvider(target: StaticProvider): target is FactoryProvider {
-    return target && isFunction((target as FactoryProvider).useFactory);
+export function isFactoryProvider<T = any>(target: StaticProvider<T>): target is FactoryProvider<T> {
+    return target && isFunction((target as FactoryProvider<T>).useFactory);
 }
 /**
  * parse to provider

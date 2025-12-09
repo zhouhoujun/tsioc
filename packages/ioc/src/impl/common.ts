@@ -202,5 +202,5 @@ export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => an
 }
 
 export function eachProvider(providers: Provider[], cb: (provider: StaticProvider | DynamicProvider) => void) {
-    return deepForEach(providers, cb, v => isPlainObject(v) && !((v as Provide).provide || (v as DynamicProvider).provider));
+    return deepForEach(providers, cb, v => isPlainObject(v) && !((v as Provide<any>).provide || (v as DynamicProvider).provider));
 }

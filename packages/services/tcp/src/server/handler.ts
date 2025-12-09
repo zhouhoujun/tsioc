@@ -1,10 +1,13 @@
 import { Abstract } from '@tsdi/ioc';
-import { ServiceHandler, AbstractRequestContext } from '@tsdi/endpoints';
-import { TcpServConfig } from './options';
+import { Incoming, Outgoing, RequestHandler } from '@tsdi/common';
+import { AbstractRequestContext } from '@tsdi/endpoints';
+import { Observable } from 'rxjs';
 
 
 @Abstract()
-export abstract class TcpRequestHandler extends ServiceHandler<AbstractRequestContext, TcpServConfig> {
+export abstract class TcpHandler<TReq, TRes> implements RequestHandler<TReq, TRes, AbstractRequestContext> {
+
+    abstract handle(input: TReq, context: AbstractRequestContext<Incoming<any, any>, Outgoing<any, any>, any>): Observable<TRes>;
 
 }
 
