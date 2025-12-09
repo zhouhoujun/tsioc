@@ -1,6 +1,6 @@
-import { Injectable, isString, promisify, Context, Injector, Provider, Inject, ValueProvider, StaticProvider } from '@tsdi/ioc';
+import { Injectable, isString, promisify, Context, Injector, Provider, Inject, ValueProvider, StaticProvider, asProvider, ArgumentException } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, RequestHandlerFn, Event, PatternFormatter } from '@tsdi/common';
-import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken } from '@tsdi/common/client';
+import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, createClientTransferHandler } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'node:net';
@@ -22,6 +22,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
+    private init = false;
     // private _transport?: ClientTransport<tls.TLSSocket | net.Socket>;
 
     constructor(
@@ -52,6 +53,17 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             }
             const onConnect = () => {
                 observer.next(conn);
+                // if (!this.init) {
+                //     this.init = true;
+                //     this.handler.append({
+                //         backend: createClientTransferHandler(
+                //             this.context,
+                //             (req, context) => {
+                //                 this.connection.on()
+                //             },
+                //             this.options)
+                //     })
+                // }
                 observer.complete();
             }
             const onClose = () => {
@@ -61,13 +73,10 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             conn.on(Event.ERROR, onError)
                 .on(Event.DISCONNECT, onError)
                 .on(Event.END, onClose)
-                .on(Event.CLOSE, onClose);
+                .on(Event.CLOSE, onClose)
+                // .on(Event.MESSAGE,);
 
-            // this.handler.append({
-            //     backend: createClientTransferHandler(
-            //         this.context,
-            //         Transport.TCP, this.options.microservice)
-            // })
+
 
 
             if (valid) {
@@ -134,16 +143,21 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
         const config = option as TcpClientConfig;
         const clientToken = getClientToken(config);
         const hanlderToken = getClientHandlerToken(config);
-        const backendToken = getClientBackendToken(config);
+        // const backendToken = getClientBackendToken(config);
 
-        const providers: StaticProvider[] = [
-            {
-                provide: backendToken,
-                useValue: (req, context)=> {
 
-                },
-                multi: true
-            },
+
+        const providers: Provider[] = [
+            // asProvider({
+            //     provide: backendToken,
+            //     useValue: (req, context)=> {
+            //         const socket = context.get(SOCKET);
+            //         if(!socket) throw new ArgumentException('no socket in context')
+            //         socket.on()
+            //         return re
+            //     },
+            //     multi: true
+            // }),
             {
                 provide: hanlderToken,
                 useFactory: (injector: Injector) => {

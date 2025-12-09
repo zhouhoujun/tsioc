@@ -101,7 +101,6 @@ export interface ClassProvider<T> extends Provide<T>, UseClass<T> {
  * Use value as provider
  */
 export interface UseValue<T> extends ProviderExts {
-
     /**
      * use value for provide.
      *
@@ -128,6 +127,8 @@ export interface UseValue<T> extends ProviderExts {
 export interface ValueProvider<T> extends Provide<T>, UseValue<T> {
 
 }
+
+
 
 /**
  * Use factory  as provider.
@@ -234,6 +235,9 @@ export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | Value
 export type Provider<T = any> = StaticProvider<T> | DynamicProvider | Modules[] | Array<Provider<T>>;
 
 
+export function asProvider<T>(provider: Provider<T>): Provider<T> {
+    return provider;
+}
 
 
 /**

@@ -1,6 +1,6 @@
 import { ArgumentException, Injector, InterceptingHandler, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
 import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket, RequestHandlerLike, Transport, AbstractRequest } from '@tsdi/common';
-import { getClientInterceptorsToken, getClientTransfersToken, getClientBackendToken } from './tokens';
+import { getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
@@ -126,13 +126,7 @@ export function withClientInterceptors(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (config) => {
-        const token = getClientInterceptorsToken(config.transport, config.microservice);
-        if (!config.interceptorsToken) {
-            config.interceptorsToken = token;
-        }
-        if (!config.backend) {
-            config.backend = getClientBackendToken(config.transport, config.microservice, config.name);
-        }
+        const token = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true)),
@@ -154,7 +148,7 @@ export function withClientTransfers(
     ...selectors: TransferInterceptorSelector[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
-        const token = getClientTransfersToken(config.transport, config.microservice);
+        const token = getClientTransfersToken(config);
         if (!selectors.length) {
             selectors.push(withJsonPacket());
         }
@@ -172,8 +166,8 @@ export function withClientTransfers(
 
 
 
-export function createClientTransferHandler(injector: Injector, handler: RequestHandlerLike, transport: Transport, microservice?: boolean): RequestHandlerLike {
-    const token = getClientTransfersToken(transport, microservice);
+export function createClientTransferHandler(injector: Injector, handler: RequestHandlerLike, config: ClientConfig): RequestHandlerLike {
+    const token = getClientTransfersToken(config);
     return new InterceptingHandler(handler, () => injector.get(token))
 }
 
@@ -187,7 +181,7 @@ export function createClientTransferHandler(injector: Injector, handler: Request
  */
 export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (config) => {
-        const token = getClientInterceptorsToken(config.transport, config.microservice)
+        const token = getClientInterceptorsToken(config)
         return makeClientFeature(
             ClientFeatureKind.Interceptors,
             [{
@@ -211,7 +205,7 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
  */
 export function withClientBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
     return (config) => {
-        const token = getClientInterceptorsToken(config.transport, config.microservice)
+        const token = getClientInterceptorsToken(config)
         return makeClientFeature(
             ClientFeatureKind.BodySerialize,
             [{
