@@ -1,4 +1,4 @@
-import { ContextToken } from '@tsdi/ioc';
+import { ContextToken, token } from '@tsdi/ioc';
 import { Socket } from './socket';
 
 
@@ -12,4 +12,4 @@ export const PACKET_LIMIT = new ContextToken(() => 1024 * 1024);
 
 export const PACKET_IDLEN = new ContextToken(() => 2);
 
-export const SOCKET = new ContextToken<Socket | null>(() => null);
+export const SOCKET = token<Socket>('SOCKET');

@@ -2,11 +2,13 @@ import { Injectable, isString, promisify, Context, Injector, Provider, Inject, V
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, RequestHandlerFn, Event, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, createClientTransferHandler } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Observable } from 'rxjs';
+import { fromEvent, Observable } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientConfig } from './options';
 import { TcpRequest } from './request';
+import { SOCKET } from '@tsdi/common/transport';
+
 
 
 
@@ -22,7 +24,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private init = false;
     // private _transport?: ClientTransport<tls.TLSSocket | net.Socket>;
 
     constructor(
@@ -53,6 +54,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             }
             const onConnect = () => {
                 observer.next(conn);
+                this.context.setValue(SOCKET, conn);
                 // if (!this.init) {
                 //     this.init = true;
                 //     this.handler.append({
@@ -74,7 +76,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
                 .on(Event.DISCONNECT, onError)
                 .on(Event.END, onClose)
                 .on(Event.CLOSE, onClose)
-                // .on(Event.MESSAGE,);
+            // .on(Event.MESSAGE,);
 
 
 
@@ -143,21 +145,35 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
         const config = option as TcpClientConfig;
         const clientToken = getClientToken(config);
         const hanlderToken = getClientHandlerToken(config);
-        // const backendToken = getClientBackendToken(config);
+        const backendToken = getClientBackendToken(config);
 
 
 
         const providers: Provider[] = [
-            // asProvider({
-            //     provide: backendToken,
-            //     useValue: (req, context)=> {
-            //         const socket = context.get(SOCKET);
-            //         if(!socket) throw new ArgumentException('no socket in context')
-            //         socket.on()
-            //         return re
-            //     },
-            //     multi: true
-            // }),
+            asProvider({
+                provide: backendToken,
+                useFactory: () => {
+                    let socket: tls.TLSSocket | net.Socket;
+                    let source$: Observable<any>;
+                    return (req, context) => {
+                        const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
+                        if (!currSocket) throw new ArgumentException('no socket in context');
+
+                        if (socket !== currSocket) {
+                            if (socket) {
+                                socket.removeAllListeners();
+                            }
+                            socket = currSocket;
+                            source$ = fromEvent(socket, Event.MESSAGE);
+                        }
+
+                        socket.write(req);
+
+                        return source$
+                    }
+                },
+                multi: true
+            }),
             {
                 provide: hanlderToken,
                 useFactory: (injector: Injector) => {

@@ -433,17 +433,6 @@ export function withTransfers(...selectors: TransferInterceptorSelector[]): Feat
     }
 }
 
-// export function appendTokens(transport: Transport, options: ServiceConfig) {
-//     const guardsToken = getGuardsToken(transport, options.microservice);
-//     const filtersToken = getFiltersToken(transport, options.microservice);
-//     const interceptorsToknen = getInterceptorsToken(transport, options.microservice);
-//     const backendTokne = getServiceBackendToken(transport, options.microservice, options.name);
-
-//     options.guardsToken = guardsToken;
-//     options.filtersToken = filtersToken;
-//     options.interceptorsToken = interceptorsToknen;
-//     options.backend = backendTokne;
-// }
 
 export function createTransferHandler(injector: Injector, handler: RequestHandlerLike, config: ServiceConfig): RequestHandlerLike {
     const token = getTransfersToken(config);
