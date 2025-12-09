@@ -1,4 +1,4 @@
-import { getTokenOf, Token, TypeOf, token, Abstract, AbstractType, Interceptor, InterceptorLike } from '@tsdi/ioc';
+import { token, Abstract, AbstractType, Interceptor, InterceptorLike } from '@tsdi/ioc';
 
 export { Interceptor, InterceptorFn, InterceptorLike } from '@tsdi/ioc';
 
@@ -9,15 +9,6 @@ export { Interceptor, InterceptorFn, InterceptorLike } from '@tsdi/ioc';
  */
 export const INTERCEPTORS_TOKEN = token<Interceptor[]>('INTERCEPTORS_TOKEN');
 
-
-// /**
-//  * get target filters token.
-//  * @param request 
-//  * @returns 
-//  */
-// export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<Interceptor[]> {
-//     return getTokenOf<Interceptor[]>(type, 'INTERCEPTORS', propertyKey);
-// }
 
 /**
  * Interceptor resolver.

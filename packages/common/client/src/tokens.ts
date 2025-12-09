@@ -1,5 +1,5 @@
 import { getToken, Token } from '@tsdi/ioc';
-import { Transport, RequestInterceptor, RequestInterceptorLike, RequestHandler } from '@tsdi/common';
+import { Transport, RequestInterceptor, RequestInterceptorLike, RequestHandler, RequestHandlerLike } from '@tsdi/common';
 import { ClientConfig } from './options';
 import { AbstractClient } from './AbstractClient';
 
@@ -9,31 +9,40 @@ function toMicroName(microservice?: boolean, name?: string) {
     return microservice ? 'MICRO_' + (name ?? '') : name
 }
 
-export function getClientInterceptorsToken(transport: Transport, microservice?: boolean): Token<RequestInterceptorLike[]> {
-    return getToken<RequestInterceptor[]>(`${Transport[transport].toUpperCase()}_CLIENT_INTERCEPTORS`, toMicroName(microservice));
+export function getClientInterceptorsToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
+    if(!config.interceptorsToken) {
+        config.interceptorsToken = getToken<RequestInterceptor[]>(`${Transport[config.transport].toUpperCase()}_CLIENT_INTERCEPTORS`, toMicroName(config.microservice));
+    }
+    return config.interceptorsToken;
 }
 
 
 
-export function getClientTransfersToken(transport: Transport, microservice?: boolean): Token<RequestInterceptorLike[]> {
-    return getToken<RequestInterceptorLike[]>(`${Transport[transport].toUpperCase()}_CLIENT_TRANSFERS`, toMicroName(microservice));
+export function getClientTransfersToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
+    if(!config.transfersToken) {
+        config.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_CLIENT_TRANSFERS`, toMicroName(config.microservice));
+    }
+    return config.transfersToken;
 }
 
 
 
-export function getClientOptionsToken(transport: Transport, microservice?: boolean, name?: string): Token<ClientConfig> {
-    return getToken<ClientConfig>(`${Transport[transport].toUpperCase()}_CLIENT_OPTIONS`, toMicroName(microservice, name));
+export function getClientOptionsToken(config: ClientConfig): Token<ClientConfig> {
+    return getToken<ClientConfig>(`${Transport[config.transport].toUpperCase()}_CLIENT_OPTIONS`, toMicroName(config.microservice, config.name));
 }
 
-export function getClientHandlerToken(transport: Transport, microservice?: boolean, name?: string): Token<RequestHandler> {
-    return getToken<RequestHandler>(`${Transport[transport].toUpperCase()}_CLIENT_HANDLER`, toMicroName(microservice, name));
+export function getClientHandlerToken(config: ClientConfig): Token<RequestHandler> {
+    return getToken<RequestHandler>(`${Transport[config.transport].toUpperCase()}_CLIENT_HANDLER`, toMicroName(config.microservice, config.name));
 }
 
 
-export function getClientBackendToken(transport: Transport, microservice?: boolean, name?: string): Token<RequestHandler> {
-    return getToken<RequestHandler>(`${Transport[transport].toUpperCase()}_CLIENT_BACKEND`, toMicroName(microservice, name));
+export function getClientBackendToken(config: ClientConfig): Token<RequestHandlerLike> {
+    if(!config.backendToken) {
+        config.backendToken = getToken<RequestHandlerLike>(`${Transport[config.transport].toUpperCase()}_CLIENT_BACKEND`, toMicroName(config.microservice, config.name));
+    }
+    return config.backendToken;
 }
 
-export function getClientToken(transport: Transport, microservice?: boolean, name?: string): Token<AbstractClient> {
-    return getToken<AbstractClient>(`${Transport[transport].toUpperCase()}_CLIENT`, toMicroName(microservice, name));
+export function getClientToken(config: ClientConfig): Token<AbstractClient> {
+    return getToken<AbstractClient>(`${Transport[config.transport].toUpperCase()}_CLIENT`, toMicroName(config.microservice, config.name));
 }

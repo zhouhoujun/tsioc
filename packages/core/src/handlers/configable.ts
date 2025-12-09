@@ -89,7 +89,10 @@ export interface HandlerOptions<TInput = any, TOutput = any, TContext = any> {
      */
     filters?: ProvdierOf<FilterLike<TInput, TOutput>>[];
 
-    backend?: Token<HandlerLike<TInput, TOutput, TContext>> | HandlerLike<TInput, TOutput, TContext>;
+    /**
+     * backend handler.
+     */
+    backend?: ProvdierOf<HandlerLike<TInput, TOutput, TContext>>;
 
 }
 
@@ -105,7 +108,7 @@ export interface ConfigableHandlerOptions<TInput = any, TOutput = any, TContext 
     /**
      * handler type.
      */
-    handlerType?: AbstractType<Handler>;
+    handlerType?: Type<Handler>;
     /**
      * enable input type filters and interceptors chain for handler.
      */
@@ -128,9 +131,10 @@ export interface ConfigableHandlerOptions<TInput = any, TOutput = any, TContext 
      */
     filtersToken?: Token<FilterLike<TInput, TOutput, TContext>[]>;
 
-    // /**
-    //  * backend.
-    //  */
-    // backend?: Token<HandlerLike<TInput, TOutput, TContext>> | HandlerLike<TInput, TOutput, TContext>;
+    /**
+     * backend handler token.
+     */
+    backendToken?: Token<HandlerLike<TInput, TOutput, TContext>[]>;
+
 }
 

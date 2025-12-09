@@ -1,9 +1,9 @@
 import { getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, TransportConfig, Transport, createRequestHandler, Event } from '@tsdi/common';
-import { BindServerEvent, FeatureKind, FeatureLike, makeFeature, AbstractRequestContext, Server, getServiceToken, FeatureFn, TransportFeature, REGISTER_SERVICES, RegisterService, ServiceHandler } from '@tsdi/endpoints';
-import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event } from '@tsdi/common';
+import { BindServerEvent, FeatureKind, makeFeature, AbstractRequestContext, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, RegisterService, ServiceHandler } from '@tsdi/endpoints';
+import { Subject, first, fromEvent, merge } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONFIG, TcpServConfig } from './options';
@@ -152,7 +152,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Abstra
 export function withTcpTransport(...options: Partial<TcpServConfig>[]): TransportFeature[] {
     return options.map(option => {
         option.transport = Transport.TCP;
-        const serviceToken = getServiceToken(option.transport, option.microservice, option.name);
+        const serviceToken = getServiceToken(option as TcpServConfig);
 
         const providers: Provider[] = [
             TcpServer,

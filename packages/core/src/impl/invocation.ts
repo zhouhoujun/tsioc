@@ -103,6 +103,6 @@ export function createInvocationHandler<TInput, TOutput, TClass extends Invocati
     propertyKey?: string | symbol,
     type?: Type<TClass>): TClass {
     const Hanlder = type ?? DefaultInvocationHandler;
-    options = normalizeConfigableHandlerOptions(options);
+    normalizeConfigableHandlerOptions(options);
     return new Hanlder(invocation, options, propertyKey) as TClass;
 }

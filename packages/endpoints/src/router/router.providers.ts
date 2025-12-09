@@ -7,6 +7,7 @@ import { Router } from './router';
 import { OptimizedRouter } from './router.optimize';
 import { TrieOptions } from './trie';
 import { getRouterToken } from '../tokens';
+import { ServiceConfig } from '../server.options';
 
 
 
@@ -38,8 +39,8 @@ export function getRouter(injector: Injector, transport?: Transport, microservic
 
 
 
-export function createRouteProviders(protocol: Transport, microservice?: boolean, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
-    token ??= getRouterToken(protocol, microservice);
+export function createRouteProviders(config: ServiceConfig, token?: Token<Router>, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
+    token ??= getRouterToken(config);
     return [
         {
             provide: token,
@@ -48,16 +49,16 @@ export function createRouteProviders(protocol: Transport, microservice?: boolean
                 return new OptimizedRouter(injector,
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     opts.prefix,
-                    protocol,
+                    config.transport,
                     opts.options,
                     opts.routes,
-                    microservice
+                    config.microservice
                 )
             },
             deps: [Injector],
         },
         {
-            provide: microservice ? MESSAGE_ROUTERS : ROUTERS,
+            provide: config.microservice ? MESSAGE_ROUTERS : ROUTERS,
             useExisting: token,
             multi: true
         }

@@ -1,7 +1,7 @@
-import { Abstract, Type } from '@tsdi/ioc';
-import { ConfigableRequestHandler, RequestContext, RequestHandler, RequestHandlerOptions } from '@tsdi/common';
+import { Abstract, ProvdierOf, Token } from '@tsdi/ioc';
+import { ConfigableRequestHandler, RequestContext, RequestHandler, RequestHandlerOptions, RequestInterceptorLike } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
-// import { Router } from './router/router';
+import { Router } from './router/router';
 
 
 
@@ -27,10 +27,19 @@ export abstract class ServiceHandler<TInput = any, TOutput = any, TContext exten
  * 传输节点配置
  */
 export interface ServiceHandlerOptions<T extends AbstractRequestContext = AbstractRequestContext> extends RequestHandlerOptions<T> {
-    classType?: Type<RequestHandler>;
 
-    // /**
-    //  * backend of endpoint. defaut `Router`
-    //  */
-    // backend?: Token<Router> | Router;
+    /**
+     * transfers token.
+     */
+    transfersToken?: Token<RequestInterceptorLike[]>;
+
+    /**
+     * transfers.
+     */
+    transfers?: ProvdierOf<RequestInterceptorLike[]>;
+
+
+
+    routerToken?: Token<Router>;
+
 }

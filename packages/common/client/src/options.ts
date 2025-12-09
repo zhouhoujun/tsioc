@@ -1,5 +1,5 @@
-import { Token, AbstractType } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, RequestHandler, RequestHandlerOptions, ResponseEvent, TransportConfig } from '@tsdi/common';
+import { Token, ProvdierOf } from '@tsdi/ioc';
+import { AbstractRequest, PatternFormatter, RequestHandlerOptions, RequestInterceptorLike, ResponseEvent, TransportConfig } from '@tsdi/common';
 
 
 /**
@@ -8,7 +8,7 @@ import { AbstractRequest, PatternFormatter, RequestHandler, RequestHandlerOption
 export interface ClientConfig<
     TInput extends AbstractRequest<any> = AbstractRequest<any>,
     TOutput extends ResponseEvent<any> = ResponseEvent<any>,
-    > extends RequestHandlerOptions , TransportConfig {
+> extends RequestHandlerOptions, TransportConfig {
     /**
      * url
      */
@@ -25,10 +25,6 @@ export interface ClientConfig<
      * is microservice client or not.
      */
     microservice?: boolean;
-    /**
-     * client handler type.
-     */
-    handlerType?: AbstractType<RequestHandler>;
 
     // /**
     //  * transport backend.
@@ -39,4 +35,9 @@ export interface ClientConfig<
      * as default client or not.
      */
     asDefault?: boolean;
+
+
+    transfers?: ProvdierOf<RequestInterceptorLike[]>;
+
+    transfersToken?: Token<RequestInterceptorLike[]>;
 }

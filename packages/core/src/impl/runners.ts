@@ -34,6 +34,11 @@ export const APP_RUNNERS_FILTERS = token<Filter[]>('APP_RUNNERS_FILTERS');
  */
 export const APP_RUNNERS_GUARDS = token<CanHandle[]>('APP_RUNNERS_GUARDS');
 
+/**
+ *  Application runner hanlders multi token.
+ */
+export const APP_RUNNERS_BACKEND = token<HandlerLike[]>('APP_RUNNERS_BACKEND');
+
 
 @Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
@@ -49,7 +54,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._handler = createHandler(context, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, {
+        this._handler = createHandler(context, this, APP_RUNNERS_BACKEND, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, {
             enableTypeChain: true,
             filters: [ExceptionHandlerFilter]
         });

@@ -1,8 +1,8 @@
 import {
-    Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf,
-    Token, token, AbstractType, TypeOf, HandlerLike, HandleResult
+    Abstract, chainEndFn, chainFactory, HandlerFn, isFunction,
+    token, AbstractType, HandlerLike, HandleResult
 } from '@tsdi/ioc';
-import { Handler, RunContext } from '../handler';
+import { Handler } from '../handler';
 import { InterceptorFn } from '../interceptor';
 
 
@@ -48,16 +48,6 @@ export type FilterLike<TInput = any, TOutput = any, TContext = any> = FilterFn<T
  * multi filters token
  */
 export const FILTERS_TOKEN = token<FilterLike[]>('FILTERS_TOKEN');
-
-// const FILTERS = 'FILTERS';
-// /**
-//  * get target filters token.
-//  * @param request 
-//  * @returns 
-//  */
-// export function getFiltersToken(type: TypeOf<any>, propertyKey?: string): Token<Filter[]> {
-//     return getTokenOf(type, FILTERS, propertyKey)
-// }
 
 
 

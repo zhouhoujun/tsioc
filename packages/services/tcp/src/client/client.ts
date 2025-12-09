@@ -1,5 +1,5 @@
-import { Injectable, isString, promisify, Context, Injector, getClassRef, Provider, InvocationContext, Inject } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, TransportConfig, Transport, createRequestHandler, ResponseEvent, RequestContext, Event, PatternFormatter } from '@tsdi/common';
+import { Injectable, isString, promisify, Context, Injector, Provider, Inject } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, RequestContext, Event, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -131,8 +131,8 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): ClientTransportFeature[] {
     return options.map(option => {
         option.transport = Transport.TCP;
-        const clientToken = getClientToken(option.transport, option.microservice, option.name);
-        const hanlderToken = getClientHandlerToken(option.transport, option.microservice, option.name);
+        const clientToken = getClientToken(option as TcpClientConfig);
+        const hanlderToken = getClientHandlerToken(option as TcpClientConfig);
 
         const providers: Provider[] = [
             {

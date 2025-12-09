@@ -27,6 +27,11 @@ export const EVENT_MULTICASTER_INTERCEPTORS = token<Interceptor<ApplicationEvent
 export const EVENT_MULTICASTER_FILTERS = token<Filter[]>('EVENT_MULTICASTER_FILTERS');
 
 /**
+ *  event multicaster hanlder multi token.
+ */
+export const EVENT_MULTICASTER_BACKEND = token<HandlerLike[]>('EVENT_MULTICASTER_BACKEND');
+
+/**
  *  event multicaster guards multi token.
  */
 export const EVENT_MULTICASTER_GUARDS = token<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
@@ -45,7 +50,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         super();
         this.maps = new Map();
         this._children = [];
-        this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS, {
+        this._handler = createHandler(injector, this, EVENT_MULTICASTER_BACKEND, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS, {
             enableTypeChain: true,
             filters: [ExceptionHandlerFilter]
         });

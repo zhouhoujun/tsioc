@@ -1,4 +1,4 @@
-import { Abstract, Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
+import { Abstract, Exception, getType, Handler, Injector, InterceptingHandler, InterceptorFn, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandler, FilterLike, GuardLike, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
@@ -52,7 +52,7 @@ export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext ex
  * 
  * 传输节点配置
  */
-export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> {
+export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends InvokeProviders {
 
     /**
      * An array of dependency-injection tokens used to look up `GuardLike()`
@@ -72,10 +72,22 @@ export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext ext
      * filters of handler.
      */
     filters?: ProvdierOf<FilterLike<TInput, TOutput>>[];
+    /**
+     * backend.
+     */
+    backend?: ProvdierOf<RequestHandlerLike<TInput, TOutput, TContext>>;
 
 
-    classType?: Type<RequestHandler>;
-
+    handlerType?: Type<RequestHandler>;
+    
+    /**
+     * enable input type filters and interceptors chain for handler.
+     */
+    enableTypeChain?: boolean;
+    /**
+     * execption handlers
+     */
+    execptionHandlers?: Type<any> | Type[] | null;
 
     /**
      * interceptors token.
@@ -92,10 +104,8 @@ export interface RequestHandlerOptions<TInput = any, TOutput = any, TContext ext
     filtersToken?: Token<FilterLike<TInput, TOutput, TContext>[]>;
 
 
-    /**
-     * backend.
-     */
-    backend?: Token<RequestHandlerLike<TInput, TOutput, TContext>> | RequestHandlerLike<TInput, TOutput, TContext>;
+
+    backendToken?: Token<RequestHandlerLike<TInput, TOutput, TContext>>;
 
 }
 
@@ -152,8 +162,8 @@ export class DefaultRequestHandler<
  * @returns 
  */
 export function createRequestHandler<TInput = any, TOutput = any>(injector: Injector, options: RequestHandlerOptions<TInput, TOutput>): ConfigableRequestHandler<TInput, TOutput> {
-    options = normalizeConfigableHandlerOptions(options);
-    const Type = options.classType ?? DefaultRequestHandler;
+    normalizeConfigableHandlerOptions(options);
+    const Type = options.handlerType ?? DefaultRequestHandler;
     return new Type(injector, options, options) as ConfigableRequestHandler<TInput, TOutput>;
 }
 

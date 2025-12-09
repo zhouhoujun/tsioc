@@ -1,6 +1,12 @@
-import { Context, ContextToken, DefaultContext, Injector, Token } from '@tsdi/ioc';
+import { Context, ContextToken, DefaultContext, HandlerLike, Injector, token, Token } from '@tsdi/ioc';
 
 export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
+
+
+/**
+ *  hanlder backend multi token.
+ */
+export const BACKENDS_TOKEN = token<HandlerLike[]>('BACKENDS');
 
 
 export class RunContext extends DefaultContext {
@@ -10,10 +16,6 @@ export class RunContext extends DefaultContext {
         super(contextOrEntries, entries);
         this.set(Injector, injector);
     }
-
-    // setInjector(injector: Injector) {
-    //     this.set(Injector, injector);
-    // }
 
     getInjector() {
         return this.get(Injector)

@@ -1,5 +1,4 @@
-import { AbstractType } from '@tsdi/ioc';
-import { RequestHandler, RequestMethod, Transport, TransportConfig } from '@tsdi/common';
+import { RequestMethod, TransportConfig } from '@tsdi/common';
 import { ServiceHandlerOptions } from './ServiceHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
@@ -30,16 +29,6 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
      * is microservice or not.
      */
     microservice?: boolean;
-
-    /**
-     * server request handler type
-     */
-    handlerType?: AbstractType<RequestHandler>;
-
-    // /**
-    //  * service transport factory.
-    //  */
-    // transportFactory?: ProvdierOf<ServerTransportFactory>;
 
     server?: any;
     /**
