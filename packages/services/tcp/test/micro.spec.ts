@@ -54,7 +54,7 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        // TransportPacketModule,
+        TransportPacketModule,
         // provideClient({
         //     transport: 'tcp',
         //     microservice: true,

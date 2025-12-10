@@ -27,5 +27,4 @@ export class PacketNumberIdGenerator implements PacketIdGenerator {
         return raw.readInt16BE(0);
     }
 
-
 }

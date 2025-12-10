@@ -1,12 +1,32 @@
-import { ProvdierOf } from '@tsdi/ioc';
+import { ProvdierOf, Provider } from '@tsdi/ioc';
 import { map } from 'rxjs';
 import { RequestInterceptorLike } from './interceptor';
+import { TransportConfig } from './protocols';
 
 export enum TransferSide {
     client = 1,
     server,
 }
 
+export enum TransferFeatureKind {
+    UnPacket,
+    Decode,
+    Deserialize,
+    Serialize,
+    Encode,
+    Packet
+}
+
+export interface TransferConfig extends TransportConfig {
+    side: TransferSide;
+}
+
+
+export interface TransferFeature<Kind extends TransferFeatureKind> {
+    kind: Kind;
+    config?: TransferConfig;
+    providers: Provider[];
+}
 
 
 export interface TransferInterceptorSelector {

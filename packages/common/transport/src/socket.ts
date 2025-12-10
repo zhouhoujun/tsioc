@@ -1,4 +1,4 @@
-import { IHeaders, IDuplex, IEventEmitter, IReadable } from '@tsdi/common';
+import { IDuplex, IEventEmitter } from '@tsdi/common';
 
 
 /**
