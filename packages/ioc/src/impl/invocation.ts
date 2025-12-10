@@ -208,14 +208,13 @@ export abstract class AbstractInvocation<T = any,
         let payload: any | undefined;
         if (INVOCATION_CONTEXT_IMPL.isContext(option)) {
             context = option;
-            const ext = ctx.hasRef(context);// || context.hasRef(ctx);
-            if (!ext) {
-                context.addRef(ctx);
+            if (context.addRef(ctx)) {
                 destroy = () => {
                     if (context.used || context.destroyed) return;
                     context.removeRef(ctx);
                 }
             }
+
         } else if (hasContextOptions(option)) {
             context = this.createContext(ctx, option);
             payload = option?.payload;

@@ -64,12 +64,12 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * add reference resolver.
      * @param contexts the list instance of {@link InvocationContext}.
      */
-    abstract addRef(...contexts: InvocationContext[]): void;
+    abstract addRef(context: InvocationContext): boolean;
     /**
      * remove reference resolver.
      * @param context instance of {@link InvocationContext}.
      */
-    abstract removeRef(...contexts: InvocationContext[]): void;
+    abstract removeRef(context: InvocationContext): void;
     /**
      * has ref or not.
      * @param context 

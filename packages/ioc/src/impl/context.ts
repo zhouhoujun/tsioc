@@ -86,8 +86,9 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     attach(option: InvocationContext | InvokeOptions): void {
         if (isInvocationContext(option)) {
-            this.addRef(option);
-            this.onDestroy(() => this.removeRef(option));
+            if (this.addRef(option)) {
+                this.onDestroy(() => this.removeRef(option));
+            }
         } else {
             if (option.values?.length) {
                 for (let i = 0, len = option.values.length; i < len; i++) {
@@ -138,36 +139,36 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      * add reference contexts.
      * @param contexts the list instance of {@link Injector} or {@link InvocationContext}.
      */
-    addRef(...contexts: InvocationContext[]): void {
-        this.assertNotDestroyed();
-        for (let i = 0, len = contexts.length; i < len; i++) {
-            const j = contexts[i];
-            if (!this.existRef(j)) {
-                this._refs!.unshift(j)
-            }
+    addRef(context: InvocationContext): boolean {
+        // this.assertNotDestroyed();
+
+        if (!this.hasRef(context)) {
+            this._refs!.unshift(context);
+            return true;
         }
+
+        return false;
     }
+
+
 
     /**
      * remove reference resolver.
-     * @param contexts instance of {@link InvocationContext}.
+     * @param context instance of {@link InvocationContext}.
      */
-    removeRef(...contexts: InvocationContext[]): void {
+    removeRef(context: InvocationContext): void {
         this.assertNotDestroyed();
-        for (let i = 0, len = contexts.length; i < len; i++) {
-            const j = contexts[i];
-            remove(this._refs, j);
-        }
+        remove(this._refs, context);
     }
 
     hasRef(ctx: InvocationContext): boolean {
         this.assertNotDestroyed();
-        return this.existRef(ctx);
+        return this.existRef(ctx) //|| (ctx instanceof DefaultInvocationContext && ctx.existRef(this));
     }
 
     protected existRef(ctx: InvocationContext): boolean {
         if (ctx === this || this._refs!.indexOf(ctx) >= 0) return true;
-        return (this.getParent() as TParent & DefaultInvocationContext)?.existRef?.(ctx)  ?? false;
+        return (this.getParent() as TParent & DefaultInvocationContext)?.existRef?.(ctx) ?? false;
     }
 
     get used(): boolean {

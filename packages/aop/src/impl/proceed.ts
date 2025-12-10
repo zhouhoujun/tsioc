@@ -11,6 +11,7 @@ import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
 import { Advicer } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
+import e = require('express');
 
 
 const POINTCUT = new ContextToken(() => false);
@@ -333,13 +334,16 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer, runtime: RuntimeCo
     }
 
     const context = advicer.aspect.context;
+    let added: boolean;
     if (context) {
-        joinPoint.addRef(context)
+        added = joinPoint.addRef(context)
+    } else {
+        added = false;
     }
 
-    return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), {
+    return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), added ? {
         finally: () => {
             context && joinPoint.removeRef(context);
         }
-    });
+    } : undefined);
 }
