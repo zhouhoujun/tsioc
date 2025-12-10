@@ -1,4 +1,4 @@
-import { ArgumentException, ProvdierOf, Provider, Type, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, Type, isArray, isBoolean, isFunction, toProvider, toProviders } from '@tsdi/ioc';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
@@ -351,18 +351,24 @@ export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.
  */
 export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
     return (config) => {
+
         const token = getInterceptorsToken(config);
         const routerToken = getRouterToken(config);
+        const providers: Provider[] = [
+            ...createRouteProviders(config, routerToken, options),
+            {
+                provide: token,
+                useExisting: routerToken,
+                multi: true
+            }
+        ];
+        if (isBoolean(options?.microservice) && config.microservice !== options.microservice) {
+            const cfg = {...config, routerToken:undefined, microservice: options.microservice}
+            providers.push(createRouteProviders(cfg, routerToken, options))
+        }
         return makeFeature(
             FeatureKind.Router,
-            [
-                ...createRouteProviders(config, routerToken, options),
-                {
-                    provide: token,
-                    useExisting: routerToken,
-                    multi: true
-                }
-            ],
+            providers,
             config
         );
     }

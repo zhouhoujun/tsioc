@@ -142,7 +142,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this.assertNotDestroyed();
         for (let i = 0, len = contexts.length; i < len; i++) {
             const j = contexts[i];
-            if (!this.hasRef(j)) {
+            if (!this.existRef(j)) {
                 this._refs!.unshift(j)
             }
         }
@@ -162,7 +162,13 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     hasRef(ctx: InvocationContext): boolean {
         this.assertNotDestroyed();
-        return ctx === this && this._refs!.indexOf(ctx) >= 0;
+        return this.existRef(ctx);
+    }
+
+    protected existRef(ctx: InvocationContext): boolean {
+        if (ctx === this && this._refs!.indexOf(ctx) >= 0) return true;
+        const parent = this.getParent();
+        return parent instanceof DefaultInvocationContext ? parent.existRef(ctx) || false : false;
     }
 
     get used(): boolean {
