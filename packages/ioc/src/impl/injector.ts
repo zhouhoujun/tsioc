@@ -144,11 +144,10 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
 
-        const defaultNotFound = this.defaultNotFound();
         // 检查单例缓存
         if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
         if (notFoundValue === undefined) {
-            notFoundValue = defaultNotFound;
+            notFoundValue = this.defaultNotFound();
         }
         // 检查当前注入器记录
         const record = this.records.get(token);
@@ -156,7 +155,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             const value = tryResolveToken(token, record, runtime, this, raise ?? this,
                 notFoundValue,
                 flags, this.isStatic);
-            if (value !== defaultNotFound) return value;
+            if (value !== THROW_FLAGE) return value;
         }
 
         // 父注入器查找
@@ -167,7 +166,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
                 flags & InjectFlags.NonSingleton,
                 raise ?? this);
 
-            if (!isNil(value) && value !== defaultNotFound) {
+            if (!isNil(value) && value !== THROW_FLAGE) {
                 this.isStatic && this.records.set(token, createValueRecord(value));
                 return value;
             }
