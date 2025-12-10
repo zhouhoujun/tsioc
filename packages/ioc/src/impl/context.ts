@@ -163,7 +163,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     hasRef(ctx: InvocationContext): boolean {
         this.assertNotDestroyed();
-        return this.existRef(ctx) //|| (ctx instanceof DefaultInvocationContext && ctx.existRef(this));
+        return this.existRef(ctx) || (ctx instanceof DefaultInvocationContext && ctx.existRef(this));
     }
 
     protected existRef(ctx: InvocationContext): boolean {
