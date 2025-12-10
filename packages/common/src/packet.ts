@@ -1,7 +1,7 @@
 import { promisify } from '@tsdi/ioc';
 import { IHeaders } from './headers';
 import { IReadable, IWritable } from './stream';
-import { StreamAdapter } from './StreamAdapter';
+import { PipeSource, StreamAdapter } from './StreamAdapter';
 
 
 export interface Packet<T = any> {
@@ -42,9 +42,9 @@ export interface Packet<T = any> {
 }
 
 
-export function writePacket(socket: IWritable, msg: Packet, streamAdapter: StreamAdapter): Promise<void> {
-    if (streamAdapter.isReadable(msg.payload)) {
-        return streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });
+export function writePacket(socket: IWritable, msg: PipeSource, streamAdapter: StreamAdapter): Promise<void> {
+    if (streamAdapter.isReadable(msg)) {
+        return streamAdapter.pipeTo(msg as IReadable, socket, { end: false });
     }
-    return promisify<any, void>(socket.write, socket)(msg.payload)
+    return promisify<any, void>(socket.write, socket)(msg)
 }

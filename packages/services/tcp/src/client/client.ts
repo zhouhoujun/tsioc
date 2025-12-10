@@ -3,7 +3,7 @@ import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, crea
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken } from '@tsdi/common/client';
 import { SOCKET } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { from, fromEvent, Observable } from 'rxjs';
+import { filter, first, from, fromEvent, merge, Observable, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientConfig } from './options';
@@ -142,23 +142,22 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
                 useFactory: () => {
                     let socket: tls.TLSSocket | net.Socket;
                     let source$: Observable<any>;
-                    // let chain: RequestInterceptorFn;
                     return (data: any, context) => {
 
                         const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
                         if (!currSocket) throw new ArgumentException('no socket in context');
-                        // if (!chain) {
-                        //     chain = composeInterceptors(context.getInjector().get(transersToken));
-                        // }
 
                         if (socket !== currSocket) {
                             if (socket) {
                                 socket.removeAllListeners();
                             }
                             socket = currSocket;
-                            source$ = fromEvent(socket, Event.MESSAGE);
+                            source$ = fromEvent(socket, Event.DATA)
+                                .pipe(
+                                    takeUntil(merge(fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())),
+                                    filter(r=> !!r)
+                                );
                         }
-
                         const emit$ = writePacket(socket, data, context.get(StreamAdapter));
 
                         if (context.get(TcpRequest)?.observe === 'emit') {
@@ -166,17 +165,6 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
                         }
 
                         return source$
-
-                        // context.set(TcpRequest, req);
-                        // return chain(req, (data, context) => {
-                        //     const emit$ = writePacket(socket, data, context.get(StreamAdapter));
-
-                        //     if (req.observe === 'emit') {
-                        //         return from(emit$);
-                        //     }
-
-                        //     return source$
-                        // }, context)
                     }
                 },
                 multi: true
