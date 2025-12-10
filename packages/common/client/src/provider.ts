@@ -1,5 +1,5 @@
-import { ArgumentException, Injector, InterceptingHandler, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
-import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket, RequestHandlerLike, Transport, AbstractRequest } from '@tsdi/common';
+import { ArgumentException, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
+import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket } from '@tsdi/common';
 import { getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
@@ -163,13 +163,6 @@ export function withClientTransfers(
     }
 }
 
-
-
-
-export function createClientTransferHandler(injector: Injector, handler: RequestHandlerLike, config: ClientConfig): RequestHandlerLike {
-    const token = getClientTransfersToken(config);
-    return new InterceptingHandler(handler, () => injector.get(token))
-}
 
 /**
  * Adds timeout client interceptor to the configuration of the `Client`

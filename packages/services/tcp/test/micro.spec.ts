@@ -55,40 +55,6 @@ export class TcpService {
         LoggerModule,
         ServerEndpointModule,
         // TransportPacketModule,
-        provideClient(
-            withClientInterceptors(),
-            withClientTransfers(
-                withJsonPacket()
-            ),
-            withTcpClientTransport({
-                microservice: true,
-                connectOpts: {
-                    port: 2000
-                }
-            })
-        ),
-        provideService(
-            withInterceptors(BigFileInterceptor),
-            withJson(),
-            withBodyparser(),
-            // withContent(),
-            // withRouter(),
-            withRouter(),
-            withLogger(),
-            withTransfers(
-                withJsonPacket()
-                // (req, next, context) => {
-                //     const reqdata = JSON.parse(req);
-                //     return next(reqdata, context)
-                // }
-            ),
-            withTcpTransport({
-                microservice: true,
-                listenOpts: {
-                    port: 200
-                }
-            })
-        ),
         // provideClient({
         //     transport: 'tcp',
         //     microservice: true,
@@ -115,6 +81,38 @@ export class TcpService {
         //         }
         //     }
         // })
+    ],
+    providers: [
+        provideClient(
+            withClientInterceptors(),
+            withClientTransfers(
+                withJsonPacket()
+            ),
+            withTcpClientTransport({
+                microservice: true,
+                connectOpts: {
+                    port: 2000
+                }
+            })
+        ),
+        provideService(
+            withInterceptors(BigFileInterceptor),
+            withJson(),
+            withBodyparser(),
+            // withContent(),
+            // withRouter(),
+            withRouter(),
+            withLogger(),
+            withTransfers(
+                withJsonPacket()
+            ),
+            withTcpTransport({
+                microservice: true,
+                listenOpts: {
+                    port: 2000
+                }
+            })
+        ),
     ],
     declarations: [
         TcpService

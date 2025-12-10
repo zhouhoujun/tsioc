@@ -1,14 +1,13 @@
-import { ArgumentException, asProvider, composeInterceptors, getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
+import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event, createRequestContext, RequestContext, RequestInterceptorFn, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
-import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, getTransfersToken } from '@tsdi/endpoints';
-import { Observable, Subject, first, from, fromEvent, merge } from 'rxjs';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event, createRequestContext, RequestContext, writePacket, StreamAdapter, TransferSide, NotFoundException } from '@tsdi/common';
+import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken } from '@tsdi/endpoints';
+import { Subject, filter, first, fromEvent, merge, mergeMap, of, takeUntil, throwError } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONFIG, TcpServConfig } from './options';
-import { SOCKET, UrlIncoming } from '@tsdi/common/transport';
-import { TcpRequest } from '../client/request';
+
 
 
 
@@ -85,11 +84,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         await this.onStart(event.server);
     }
 
-    protected async setup(): Promise<any> {
-        this.serv = this.createServer();
-    }
-
-    protected async onStart(bindServer?: any): Promise<any> {
+    protected override async onStart(bindServer?: any): Promise<any> {
 
         if (this.options.heybird && !bindServer) return;
 
@@ -103,26 +98,16 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         this.serv.on(Event.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(Event.ERROR, (err) => this.logger.error(err));
         const context = this.handler.context;
-        // const factory = context.get(ServerTransportFactory);
-
+        const streamAdapter = context.get(StreamAdapter);
         if (this.serv instanceof tls.Server) {
             this.serv.on(Event.SECURE_CONNECTION, (socket) => {
-                merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())
-                    .subscribe((data: any) => {
-                        if (!data) return;
-                        this.handler.handle(data, createRequestContext(this.context))
-                    })
-
+                this.handleMessage(socket, streamAdapter);
                 // const transport = factory.create(context, socket, options);
                 // transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
         } else {
             this.serv.on(Event.CONNECTION, (socket) => {
-                merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())
-                    .subscribe((data: any) => {
-                        if (!data) return;
-                        this.handler.handle(data, createRequestContext(this.context))
-                    });
+                this.handleMessage(socket, streamAdapter);
                 // const transport = factory.create(context, socket, options);
                 // transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
@@ -141,7 +126,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         }
     }
 
-    protected async onShutdown(): Promise<any> {
+    protected override async onShutdown(): Promise<any> {
         if (!this.serv) return;
         this.destroy$.next();
         this.destroy$.complete();
@@ -153,7 +138,23 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
 
     }
 
-    protected createServer(): net.Server | tls.Server {
+    private async setup(): Promise<any> {
+        this.serv = this.createServer();
+    }
+
+    private handleMessage(socket: tls.TLSSocket | net.Socket, streamAdapter: StreamAdapter) {
+        fromEvent(socket, Event.DATA).pipe(
+            takeUntil(merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())),
+            filter((data: any) => !!data),
+            mergeMap((data: any) => this.handler.handle(data, createRequestContext(this.context))),
+            mergeMap((res: any) => {
+                if (!res) return of(null);
+                return writePacket(socket, res, streamAdapter);
+            })
+        ).subscribe();
+    }
+
+    private createServer(): net.Server | tls.Server {
         return this.isSecure ? tls.createServer(this.options.serverOpts as tls.TlsOptions)
             : net.createServer(this.options.serverOpts as net.ServerOpts);
     }
@@ -171,40 +172,28 @@ export function withTcpTransport(...options: Partial<TcpServConfig>[]): Transpor
 
         const providers: Provider[] = [
             TcpServer,
-            // {
-            //     provide: hanlderToken,
-            //     useFactory: (injector: Injector) => {
-            //         return createRequestHandler(injector, option)
-            //     }
-            // },
-            // {
-            //     provide: serviceToken,
-            //     useClass: TcpServer,
-            //     deps: [
-            //         hanlderToken
-            //     ]
-            // },
-
             asProvider({
                 provide: backendToken,
-                useFactory: () => {
-                    let socket: tls.TLSSocket | net.Socket;
-                    return (data: any, context) => {
-
-                        const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
-                        if (!currSocket) throw new ArgumentException('no socket in context');
-
-                        if (socket !== currSocket) {
-                            if (socket) {
-                                socket.removeAllListeners();
-                            }
-                            socket = currSocket;
-                        }
-
-                        const emit$ = writePacket(socket, data, context.get(StreamAdapter));
-                        return from(emit$);
-                    }
+                useValue: (data: any, context) => {
+                    return throwError(() => new NotFoundException());
                 },
+                // useFactory: () => {
+                //     let socket: tls.TLSSocket | net.Socket;
+                //     return (data: any, context) => {
+                //         const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
+                //         if (!currSocket) throw new ArgumentException('no socket in context');
+
+                //         if (socket !== currSocket) {
+                //             if (socket) {
+                //                 socket.removeAllListeners();
+                //             }
+                //             socket = currSocket;
+                //         }
+
+                //         const emit$ = writePacket(socket, data, context.get(StreamAdapter));
+                //         return from(emit$);
+                //     }
+                // },
                 multi: true
             }),
 

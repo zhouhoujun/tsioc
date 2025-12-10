@@ -270,7 +270,7 @@ export abstract class AbstractClient<
         let context = options.context;
         if (!context) {
             context = this.createContext();
-            this.initContext(context);
+            this.initContext(context, req);
         }
         // Start with an Observable.of() the initial request, and run the handler (which
         // includes all interceptors) inside a concatMap(). This way, the handler runs
@@ -421,7 +421,7 @@ export abstract class AbstractClient<
      * init request context.
      * @param context 
      */
-    protected abstract initContext(context: Context): void;
+    protected abstract initContext(context: Context, req: TRequest): void;
 
     protected abstract onShutdown(): Promise<void>;
 

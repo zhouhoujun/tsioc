@@ -9,7 +9,7 @@ import { Injector } from '../injector';
 import { Invocation } from '../invocation';
 import { RuntimeHandler } from '../lifescope/handler';
 import { nonEnumerable } from '../metadata/decor';
-import { createRecord, createValueRecord, LAZY, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
+import { createRecord, createValueRecord, LAZY } from './common';
 import { AbstractInjector, deferProcessProviders } from './injector';
 import { DefaultResolver, getParameterResolveHanlder } from './resolver';
 
@@ -73,7 +73,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     }
 
     protected initOptions(options: TargetInvokeArguments) {
-        
+
     }
 
     override getParent(): TParent {
@@ -169,85 +169,24 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return this._injected
     }
 
-    /**
-     * has token in the context or not.
-     * 
-     * 上下文中是否有注入该标记指令
-     * @param token the token to check.
-     * @param flags inject flags, type of {@link InjectFlags}.
-     * @returns boolean.
-     */
-    has(token: Token, flags = InjectFlags.Default): boolean {
-        this.assertNotDestroyed();
-        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().has(token)) return true;
-        if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
-        if (!(flags & InjectFlags.Self)) {
-            return this._parent?.has(token, flags) === true
-        }
+    protected defaultNotFound() {
+        return null;
+    }
+
+    protected override hasFinal<T>(token: Token<T>, flags: InjectFlags): boolean {
         return this._refs!.some(i => i.has(token, flags))
     }
 
-    /**
-     * get token factory resolve instace in current.
-     *
-     * 获取标记令牌的实例。
-     * @template T
-     * @param {Token<T>} token token id {@link Token}.
-     * @param {T} notFoundValue not found token, return this value.
-     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {Injector} raise invocation context. type of {@link Injector}, use to resolve with token.
-     * @returns {T} token value.
-     */
-    get<T>(token: Token<T>, notFoundValue?: T, flags: InjectFlags = InjectFlags.Default, raise?: Injector): T {
-        this.assertNotDestroyed();
-        const runtime = this.getRuntime();
-        if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
-
-        // 检查当前注入器记录
-        const record = this.records.get(token);
-        if (record && !(flags & InjectFlags.SkipSelf)) {
-            const value = tryResolveToken(token, record, runtime, this, raise ?? this,
-                null,
-                flags, this.isStatic);
-            if (!isNil(value)) return value;
-        }
-
-        // 父注入器查找
-        if (this._parent && !(flags & InjectFlags.Self)) {
-            const value = this._parent.get(
-                token,
-                null,
-                flags & InjectFlags.NonSingleton,
-                raise ?? this);
-
-            if (!isNil(value)) {
-                if (this.isStatic) this.records.set(token, { value })
-                return value;
-            }
-        }
-
+    protected override getFinal<T>(token: Token<T>, flags: InjectFlags): T | undefined | null {
         if (this._refs?.length) {
             const value = this.getFormRef(token, flags);
             if (!isNil(value)) {
-                if (this.isStatic) this.records.set(token, { value })
+                if (this.isStatic) this.records.set(token, createValueRecord(value))
                 return value;
             }
         }
-
-
-        // 处理未找到的情况
-        let value: T;
-        if (!(flags & InjectFlags.Optional)) {
-            if (notFoundValue === THROW_FLAGE) {
-                throw new NullInjectorException(token);
-            }
-            value = notFoundValue ?? null!;
-        } else {
-            value = notFoundValue ?? null!;
-        }
-
-        return value;
     }
+
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
         let val: T | undefined;

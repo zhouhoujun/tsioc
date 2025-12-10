@@ -166,11 +166,13 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
     }
 
     // 返回默认值
-    if (notFoundValue !== undefined) {
-        return notFoundValue;
-    }
+    return notFoundValue;
+    
+    // if (notFoundValue !== undefined) {
+    //     return notFoundValue;
+    // }
 
-    throw new NullInjectorException(token);
+    // throw new NullInjectorException(token);
 }
 
 

@@ -254,7 +254,7 @@ export interface ModuleWithProviders<T = any> {
     providers: Provider[];
 }
 
-export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType | Provider>;
+export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType>;
 
 /**
  * is module providers or not.
@@ -278,7 +278,7 @@ export function isClassProvider<T = any>(target: StaticProvider<T>): target is C
 }
 
 export function isExistingProvider<T = any>(target: StaticProvider<T>): target is ExistingProvider<T> {
-    return target && isFunction((target as ExistingProvider<T>).useExisting);
+    return isPlainObject(target) && ('useExisting' in target);
 }
 
 export function isFactoryProvider<T = any>(target: StaticProvider<T>): target is FactoryProvider<T> {

@@ -94,104 +94,6 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        provideClient(
-            withClientInterceptors(),
-            withClientTransfers(),
-            withTcpClientTransport(
-                {
-                    // name: 'tcp-client',
-                    // microservice: true,
-                    connectOpts: {
-                        port: 2000
-                    }
-                },
-                {
-                    // name: 'tcp-client2',
-                    microservice: true,
-                    connectOpts: {
-                        port: 3000
-                    }
-                }
-
-            )
-        ),
-        provideService(
-            withInterceptors(BigFileInterceptor),
-            withJson(),
-            withBodyparser(),
-            withContent()({ transport: Transport.TCP }),
-            withRouter(),
-            withLogger(),
-            withTcpTransport(
-                {
-                    // microservice: true,
-                    listenOpts: {
-                        port: 2000
-                    }
-                },
-                {
-                    microservice: true,
-                    listenOpts: {
-                        port: 3000
-                    }
-                }
-            )
-        ),
-        // provideClient(
-        //     { protocol: 'tcp', microservice: true },
-        //     withClientInterceptors(),
-        //     withClientTransfers(),
-        //     withTcpClientTransport({
-        //         microservice: true,
-        //         connectOpts: {
-        //             port: 3000
-        //         }
-        //     })
-        // ),
-        // provideService(
-        //     { protocol: 'tcp', microservice: true },
-        //     withInterceptors(BigFileInterceptor),
-        //     withJson(),
-        //     withBodyparser(),
-        //     // withContent(),
-        //     // withRouter(),
-        //     withRouter(),
-        //     withLogger(),
-        //     withTcpTransport({
-        //         listenOpts: {
-        //             port: 3000
-        //         }
-        //     })
-        // ),
-
-        // provideClient(
-        //     'tcp',
-        //     withClientInterceptors(),
-        //     withClientTransfers(),
-        //     withTcpClientTransport({
-        //         microservice: true,
-        //         connectOpts: {
-        //             port: 2000
-        //         }
-        //     })
-        // ),
-        // provideService(
-        //     'tcp',
-        //     withInterceptors(BigFileInterceptor),
-        //     withJson(),
-        //     withBodyparser(),
-        //     // withContent(),
-        //     // withRouter(),
-        //     withRouter(),
-        //     withLogger(),
-        //     withTcpTransport({
-        //         listenOpts: {
-        //             port: 2000
-        //         }
-        //     })
-        // ),
-
-
         // provideClient([
         //     {
         //         transport: 'tcp',
@@ -246,6 +148,51 @@ export class DeviceController {
         //         ]
         //     }
         // ])
+    ],
+    providers: [
+        provideClient(
+            withClientInterceptors(),
+            withClientTransfers(),
+            withTcpClientTransport(
+                {
+                    // name: 'tcp-client',
+                    // microservice: true,
+                    connectOpts: {
+                        port: 2000
+                    }
+                },
+                {
+                    // name: 'tcp-client2',
+                    microservice: true,
+                    connectOpts: {
+                        port: 3000
+                    }
+                }
+
+            )
+        ),
+        provideService(
+            withInterceptors(BigFileInterceptor),
+            withJson(),
+            withBodyparser(),
+            withContent()({ transport: Transport.TCP }),
+            withRouter(),
+            withLogger(),
+            withTcpTransport(
+                {
+                    // microservice: true,
+                    listenOpts: {
+                        port: 2000
+                    }
+                },
+                {
+                    microservice: true,
+                    listenOpts: {
+                        port: 3000
+                    }
+                }
+            )
+        ),
     ],
     declarations: [
         DeviceController

@@ -1,10 +1,10 @@
-import { ArgumentException, Injector, InterceptingHandler, ProvdierOf, Provider, Token, Type, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, Type, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
-import { REGISTER_SERVICES, SetupServices } from './SetupServices';
-import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket, RequestHandlerLike, Transport } from '@tsdi/common';
-import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getServiceBackendToken, getTransfersToken } from './tokens';
+import { SetupServices } from './SetupServices';
+import { matchTransport, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket } from '@tsdi/common';
+import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { ServiceConfig } from './server.options';
@@ -431,12 +431,6 @@ export function withTransfers(...selectors: TransferInterceptorSelector[]): Feat
             config
         );
     }
-}
-
-
-export function createTransferHandler(injector: Injector, handler: RequestHandlerLike, config: ServiceConfig): RequestHandlerLike {
-    const token = getTransfersToken(config);
-    return new InterceptingHandler(handler, () => injector.get(token))
 }
 
 

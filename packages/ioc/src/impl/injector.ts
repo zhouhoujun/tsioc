@@ -129,24 +129,34 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         if (!(flags & InjectFlags.Self)) {
             return this._parent?.has(token, flags) === true
         }
+        return this.hasFinal(token, flags)
+    }
+
+    protected hasFinal<T>(token: Token<T>, flags: InjectFlags) {
         return false
+    }
+
+    protected defaultNotFound(): any {
+        return THROW_FLAGE;
     }
 
     get<T>(token: Token<T>, notFoundValue?: any, flags: InjectFlags = InjectFlags.Default, raise?: Injector): T {
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
 
+        const defaultNotFound = this.defaultNotFound();
         // 检查单例缓存
         if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
         if (notFoundValue === undefined) {
-            notFoundValue = THROW_FLAGE!;
+            notFoundValue = defaultNotFound;
         }
         // 检查当前注入器记录
         const record = this.records.get(token);
         if (record && !(flags & InjectFlags.SkipSelf)) {
-            return tryResolveToken(token, record, runtime, this, raise ?? this,
+            const value = tryResolveToken(token, record, runtime, this, raise ?? this,
                 notFoundValue,
                 flags, this.isStatic);
+            if (value !== defaultNotFound) return value;
         }
 
         // 父注入器查找
@@ -157,12 +167,22 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
                 flags & InjectFlags.NonSingleton,
                 raise ?? this);
 
-            if (this.isStatic && !isNil(value)) {
-                this.records.set(token, createValueRecord(value))
+            if (!isNil(value) && value !== defaultNotFound) {
+                this.isStatic && this.records.set(token, createValueRecord(value));
+                return value;
             }
-            return value;
+
         }
 
+        return this.getFinal(token, flags)
+            ?? this.notFound(token, notFoundValue, flags);
+    }
+
+    protected getFinal<T>(token: Token<T>, flags: InjectFlags): T | null | undefined {
+        return;
+    }
+
+    protected notFound<T>(token: Token<T>, notFoundValue: any, flags: InjectFlags): T {
         // 处理未找到的情况
         let value: T;
         if (!(flags & InjectFlags.Optional)) {

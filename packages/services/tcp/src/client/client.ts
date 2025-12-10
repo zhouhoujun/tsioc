@@ -1,13 +1,13 @@
-import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException, composeInterceptors } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Event, PatternFormatter, writePacket, StreamAdapter, RequestInterceptorFn, TransferSide } from '@tsdi/common';
-import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, createClientTransferHandler, getClientTransfersToken } from '@tsdi/common/client';
+import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Event, PatternFormatter, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
+import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken } from '@tsdi/common/client';
+import { SOCKET } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { from, fromEvent, Observable } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientConfig } from './options';
 import { TcpRequest } from './request';
-import { SOCKET } from '@tsdi/common/transport';
 
 
 
@@ -24,7 +24,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    // private _transport?: ClientTransport<tls.TLSSocket | net.Socket>;
 
     constructor(
         readonly handler: ClientHandler<TcpRequest<any>, ResponseEvent<any>>,
@@ -55,17 +54,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             const onConnect = () => {
                 observer.next(conn);
                 this.context.setValue(SOCKET, conn);
-                // if (!this.init) {
-                //     this.init = true;
-                //     this.handler.append({
-                //         backend: createClientTransferHandler(
-                //             this.context,
-                //             (req, context) => {
-                //                 this.connection.on()
-                //             },
-                //             this.options)
-                //     })
-                // }
                 observer.complete();
             }
             const onClose = () => {
@@ -76,7 +64,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
                 .on(Event.DISCONNECT, onError)
                 .on(Event.END, onClose)
                 .on(Event.CLOSE, onClose)
-            // .on(Event.MESSAGE,);
 
 
 
@@ -99,9 +86,10 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         });
     }
 
-    protected override initContext(context: Context): void {
+    protected override initContext(context: Context, req: TcpRequest<any>): void {
         context.set(TcpClient, this);
-        // context.set(ClientTransport, this._transport);
+        context.set(TcpRequest, req);
+        context.set(SOCKET, this.connection);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {
@@ -116,7 +104,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
-        // await this._transport?.destroy();
         await promisify(this.connection.destroy, this.connection)(null!)
             .catch(err => {
                 this.logger?.error(err);

@@ -105,30 +105,6 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             ServerModule,
             LoggerModule,
             ServerEndpointModule,
-            provideClient(
-                withClientInterceptors(),
-                withClientTransfers(),
-                withTcpClientTransport({
-                    connectOpts: {
-                        path: ipcpath
-                    }
-                })
-            ),
-            provideService(
-                withInterceptors(BigFileInterceptor),
-                withJson(),
-                withBodyparser(),
-                withContent(),
-                withRouter(),
-                withRouter({microservice: true}),
-                withLogger(),
-                withTransfers(),
-                withTcpTransport({
-                    listenOpts: {
-                        path: ipcpath
-                    }
-                })
-            ),
             // provideClient({
             //     transport: 'tcp',
             //     microservice: false,
@@ -168,9 +144,32 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             //     ]
             // }),
         ],
-        // providers: [
-        //     createRouteProviders('tcp', true),
-        // ],
+        providers: [            
+            provideClient(
+                withClientInterceptors(),
+                withClientTransfers(),
+                withTcpClientTransport({
+                    connectOpts: {
+                        path: ipcpath
+                    }
+                })
+            ),
+            provideService(
+                withInterceptors(BigFileInterceptor),
+                withJson(),
+                withBodyparser(),
+                withContent(),
+                withRouter(),
+                withRouter({microservice: true}),
+                withLogger(),
+                withTransfers(),
+                withTcpTransport({
+                    listenOpts: {
+                        path: ipcpath
+                    }
+                })
+            )
+        ],
         declarations: [
             DeviceController
         ]
