@@ -2,6 +2,7 @@ import { ProvdierOf, Provider } from '@tsdi/ioc';
 import { map } from 'rxjs';
 import { RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
+import { RequestContext } from './context';
 
 export enum TransferSide {
     client = 1,
@@ -34,14 +35,21 @@ export interface TransferInterceptorSelector {
 }
 
 
-export function withJsonPacket(options?: {
+
+export function withSimpleJson(options?: {
+    /**
+     * parse value to simple mapping json.
+     * @param value 
+     * @returns 
+     */
+    mapping?: (value: any, context: RequestContext) => any,
     reviver?: (this: any, key: string, value: any) => any;
     replacer?: ((this: any, key: string, value: any) => any);
     space?: string | number;
 }): TransferInterceptorSelector {
     return (side) =>
         side === TransferSide.client ? (req, next, context) => {
-            const reqdata = JSON.stringify(req, options?.replacer, options?.space);
+            const reqdata = JSON.stringify(options?.mapping ? options.mapping(req, context) : req, options?.replacer, options?.space);
             return next(reqdata, context)
                 .pipe(
                     map(res => JSON.parse(res, options?.reviver))
@@ -52,7 +60,7 @@ export function withJsonPacket(options?: {
                 const reqdata = JSON.parse(req, options?.reviver);
                 return next(reqdata, context)
                     .pipe(
-                        map(res => JSON.stringify(res, options?.replacer, options?.space))
+                        map(res => JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space))
                     )
             }
 

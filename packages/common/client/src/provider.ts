@@ -1,5 +1,5 @@
 import { ArgumentException, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
-import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket } from '@tsdi/common';
+import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withSimpleJson } from '@tsdi/common';
 import { getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
@@ -150,7 +150,7 @@ export function withClientTransfers(
     return (config) => {
         const token = getClientTransfersToken(config);
         if (!selectors.length) {
-            selectors.push(withJsonPacket());
+            selectors.push(withSimpleJson());
         }
         return makeClientFeature(
             ClientFeatureKind.Transfer,
@@ -196,7 +196,7 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
  * @see {@link provideClient}
  * @publicApi
  */
-export function withClientBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
+export function withBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
     return (config) => {
         const token = getClientInterceptorsToken(config)
         return makeClientFeature(

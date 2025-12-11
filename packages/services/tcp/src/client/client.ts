@@ -134,7 +134,6 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
         const clientToken = getClientToken(config);
         const hanlderToken = getClientHandlerToken(config);
         const backendToken = getClientBackendToken(config);
-        // const transersToken = getClientTransfersToken(config);
 
         const providers: Provider[] = [
             asProvider({

@@ -1,7 +1,7 @@
-import { isUndefined } from '@tsdi/ioc';
+import { isNil, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams, RequestParamsLike } from './params';
-import { Pattern } from './pattern';
+import { Pattern, PatternFormatter } from './pattern';
 import { Clonable } from './Clonable';
 import { normalize } from './utils';
 import { RequestContext } from './context';
@@ -244,7 +244,6 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
         super()
         this.id = initOptions.id;
         this.headers = new HeaderMappings(initOptions.headers);
-        this.payload = initOptions.payload ?? null;
         this.payload = initOptions.body ?? initOptions.payload ?? null;
         this.params = new RequestParams(initOptions);
         this.responseType = initOptions.responseType ?? 'json';
@@ -373,6 +372,27 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
     getUrlWithParams(): string {
         return appendUrlParams(this.url, this.params);
     }
+
+    /**
+     * parse request to simple json.
+     * @returns 
+     */
+    toJson(formatter?: PatternFormatter): Record<string, any> {
+        const json: Record<string, any> = {
+            url: this.getUrlWithParams()
+        };
+        if (this.pattern) {
+            json.pattern = formatter ? formatter.format(this.pattern) : this.pattern;
+        }
+        if (this.headers.size) {
+            json.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.body)) {
+            json.body = this.body;
+        }
+
+        return json;
+    }
 }
 
 export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends BaseRequest<T, TOptions> implements TopicRequest<T, TOptions> {
@@ -388,6 +408,28 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
 
     protected getResponseTopic(topic: string, options: RequestInitOpts<T, TOptions>): string {
         return `${topic}/reply`
+    }
+
+    /**
+     * parse request to simple json.
+     * @returns 
+     */
+    toJson(formatter?: PatternFormatter): Record<string, any> {
+        const json: Record<string, any> = {
+            topic: this.topic,
+            responseTopic: this.responseTopic
+        };
+        if (this.pattern) {
+            json.pattern = formatter ? formatter.format(this.pattern) : this.pattern;
+        }
+        if (this.headers.size) {
+            json.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.body)) {
+            json.body = this.body;
+        }
+
+        return json;
     }
 
 

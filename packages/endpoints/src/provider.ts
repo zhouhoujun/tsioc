@@ -3,7 +3,7 @@ import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { SetupServices } from './SetupServices';
-import { matchTransport, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withJsonPacket } from '@tsdi/common';
+import { matchTransport, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withSimpleJson } from '@tsdi/common';
 import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
@@ -426,7 +426,7 @@ export function withTransfers(...selectors: TransferInterceptorSelector[]): Feat
     return (config) => {
         const token = getTransfersToken(config);
         if (!selectors.length) {
-            selectors.push(withJsonPacket());
+            selectors.push(withSimpleJson());
         }
         return makeFeature(
             FeatureKind.Transfer,
