@@ -125,7 +125,7 @@ export interface EnvironmentOption extends ModuleOption, InvokeOptions {
     /**
      * application arguments.
      */
-    request?: ApplicationArguments | null;
+    args?: ApplicationArguments | null;
     /**
      * application deps.
      */
