@@ -1,6 +1,6 @@
 import { ArgumentException, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
 import {
-    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, TransferSide, withSimpleJson,
+    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, TransferSide, useSimpleJson,
     UrlClientIncomingFactory, TopicClientIncomingFactory
 } from '@tsdi/common';
 import { getClientInterceptorsToken, getClientTransfersToken } from './tokens';
@@ -157,7 +157,7 @@ export function withClientTransfers(
             TopicClientIncomingFactory,
         ];
         if (!selectors.length) {
-            selectors.push(withSimpleJson());
+            selectors.push(useSimpleJson());
         }
         selectors.forEach((fac) => {
             const itps = fac(config);

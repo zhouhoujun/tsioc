@@ -1,6 +1,6 @@
 import { Injectable, Injector, Module, isNil, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { ErrorResponse, PatternFormatter, TransferSide, Transport, UrlOutgoing, withSimpleJson } from '@tsdi/common';
+import { ErrorResponse, PatternFormatter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
 import { provideClient, withBodySerialize, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
@@ -84,7 +84,8 @@ export class TcpService {
         provideClient(
             withBodySerialize(),
             withClientTransfers(
-                withSimpleJson({
+                useSimpleJson({
+                    generateId: true,
                     mapping: (req, context) => {
                         if (req instanceof TcpRequest) {
                             return req.toJson(context.get(PatternFormatter));
@@ -109,7 +110,7 @@ export class TcpService {
             withRouter(),
             withLogger(),
             withTransfers(
-                withSimpleJson({
+                useSimpleJson({
                     mapping:(res, context)=> {
                         if (res instanceof UrlOutgoing) {
                            return res.toJson()

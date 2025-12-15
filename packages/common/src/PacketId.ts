@@ -1,5 +1,10 @@
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, ContextToken, Injectable } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
+
+
+
+
+export const PACKET_ID = new ContextToken<string | number | null>(() => null);
 
 @Abstract()
 export abstract class PacketIdGenerator {

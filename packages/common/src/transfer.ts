@@ -1,8 +1,11 @@
 import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
-import { map } from 'rxjs';
-import { RequestInterceptorLike } from './interceptor';
+import { filter, map } from 'rxjs';
+import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
 import { RequestContext } from './context';
+import { AbstractRequest } from './request';
+import { Incoming } from './incoming';
+import { PACKET_ID, PacketIdGenerator } from './PacketId';
 
 export enum TransferSide {
     client = 1,
@@ -18,8 +21,22 @@ export enum TransferFeatureKind {
     Packet
 }
 
+export interface TransferOptions {
+    delimiter?: string;
+    maxSize?: number;
+    limitSize?: number;
+
+    idSize?: number;
+    /**
+     * packet with size.
+     */
+    size?: number;
+
+}
+
 export interface TransferConfig extends TransportConfig {
     side: TransferSide;
+    transfer?: TransferOptions
 }
 
 
@@ -29,15 +46,28 @@ export interface TransferFeature<Kind extends TransferFeatureKind> {
     providers: Provider[];
 }
 
+export function makeTransferFeature<T extends TransferFeatureKind>(kind: T, providers: Provider[], config?: TransferConfig): TransferFeature<T> {
+    return {
+        kind,
+        config,
+        providers
+    }
+}
+
 
 export interface TransferInterceptorFactory {
     (side: TransferConfig): ProvdierOf<RequestInterceptorLike> | ProvdierOf<RequestInterceptorLike>[];
 }
 
+
 export const PAYLOAD_KEY = new ContextToken<string>(() => 'body');
 
 
-export function withSimpleJson(options?: {
+export function useSimpleJson(options?: {
+    /**
+     * generate packet id for client or not.
+     */
+    generateId?: boolean;
     /**
      * parse value to simple mapping json.
      * @param value 
@@ -48,8 +78,8 @@ export function withSimpleJson(options?: {
     replacer?: ((this: any, key: string, value: any) => any);
     space?: string | number;
 }): TransferInterceptorFactory {
-    return (config) =>
-        config.side === TransferSide.client ? (req, next, context) => {
+    return (config) => {
+        const interceptor: RequestInterceptorFn = config.side === TransferSide.client ? (req, next, context) => {
             const reqdata = JSON.stringify(options?.mapping ? options.mapping(req, context) : req, options?.replacer, options?.space);
             return next(reqdata, context)
                 .pipe(
@@ -63,7 +93,34 @@ export function withSimpleJson(options?: {
                     .pipe(
                         map(res => JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space))
                     )
-            }
+            };
+
+        if (options?.generateId && config.side === TransferSide.client) {
+            return [
+                packetIdInterceptor,
+                interceptor
+            ]
+        }
+        return interceptor;
+    }
+
 
 }
 
+
+export const packetIdInterceptor: RequestInterceptorFn<AbstractRequest<any>, Incoming<any>> = (req, next, context) => {
+    let id: string | number;
+    if (!req.id) {
+        id = req.id = context.get(PacketIdGenerator).getPacketId();
+    } else {
+        id = req.id;
+    }
+    context.set(PACKET_ID, id);
+    return next(req, context)
+        .pipe(
+            filter(res => {
+                return res.id == id;
+            })
+        )
+
+}

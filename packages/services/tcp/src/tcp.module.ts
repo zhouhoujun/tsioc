@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { TcpClient } from './client/client';
 import { TcpServer, withTcpTransport } from './server/server';
 import { provideService, withBodyparser, withContent, withInterceptors, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
-import { withSimpleJson } from '@tsdi/common';
+import { useSimpleJson } from '@tsdi/common';
 import { TCP_SERV_CONFIG, TcpServConfig } from './server/options';
 // import { TcpConfiguration } from './configuration';
 
@@ -17,7 +17,7 @@ import { TCP_SERV_CONFIG, TcpServConfig } from './server/options';
             withRouter(),
             withLogger(),
             withTransfers(
-                withSimpleJson()
+                useSimpleJson()
             ),
             withTcpTransport({
                 microservice: true,

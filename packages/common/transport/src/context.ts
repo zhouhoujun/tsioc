@@ -6,7 +6,11 @@ export const TEXT_DECODER = new ContextToken(() => new TextDecoder());
 
 export const PACKET_DELIMITER = new ContextToken(() => '\n');
 
-export const PACKET_MAXSIZE = new ContextToken(() => 1024 * 1024);
+export const PACKET_MAXSIZE = new ContextToken(() => 0);
+
+export const PACKET_LENGTH = new ContextToken(() => 0);
+
+export const CONTENT_LENGTH = new ContextToken(() => 0);
 
 export const PACKET_LIMIT = new ContextToken(() => 1024 * 1024);
 

@@ -7,7 +7,7 @@ import {
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { EndpointTypedRespond } from './typed.respond';
 import { SetupServices } from './SetupServices';
-import { matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory, TransferSide, UrlIncomingFactory, withSimpleJson } from '@tsdi/common';
+import { matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory, TransferSide, UrlIncomingFactory, useSimpleJson } from '@tsdi/common';
 import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
@@ -433,7 +433,7 @@ export function withTransfers(...selectors: TransferInterceptorFactory[]): Featu
             TopicIncomingFactory,
         ];
         if (!selectors.length) {
-            selectors.push(withSimpleJson());
+            selectors.push(useSimpleJson());
         }
         selectors.forEach((fac) => {
             const itps = fac(config);            
