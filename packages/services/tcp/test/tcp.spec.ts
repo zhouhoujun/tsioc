@@ -175,7 +175,7 @@ export class DeviceController {
             withInterceptors(BigFileInterceptor),
             withJson(),
             withBodyparser(),
-            withContent()({ transport: Transport.TCP }),
+            withContent(),
             withRouter(),
             withLogger(),
             withTcpTransport(

@@ -20,33 +20,10 @@ export abstract class AbstractRequestContext<
     TResponse extends Outgoing<any> = Outgoing<any>,
     TStatus = any> extends RequestContext {
 
-    request!: TRequest;
+    abstract get request(): TRequest;
 
-    // protected override initOptions(options: TargetInvokeArguments): void {
-    //     const res = [...options.resolvers ?? [], ...primitiveResolvers];
-    //     const modelResolvers = this.get(MODEL_RESOLVERS, null);
-    //     if (modelResolvers?.length) {
-    //         res.unshift(...modelResolvers);
-    //     }
-    //     options.resolvers = res;
-
-    // }
-
-    // protected override playloadDefaultResolvers(): ResolveInterceptorLike[] {
-    //     const res = [...primitiveResolvers];
-    //     const modelResolvers = this.get(MODEL_RESOLVERS, null);
-    //     if (modelResolvers?.length) {
-    //         res.unshift(...modelResolvers);
-    //     }
-    //     return res as ResolveInterceptorLike[];
-    // }
 
     abstract get detailError(): boolean;
-
-    // /**
-    //  * transport
-    //  */
-    // abstract get transport(): ServerTransport<TSocket>;
 
     /**
      * response.

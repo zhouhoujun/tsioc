@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
-import { OutgoingOpts } from '@tsdi/common/transport';
+import { OutgoingOpts } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
 
 @Injectable()

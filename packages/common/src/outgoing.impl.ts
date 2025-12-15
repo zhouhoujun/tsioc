@@ -1,10 +1,18 @@
-import { Injectable } from '@tsdi/ioc';
-import { Header, HeadersLike, StatusOptions, HeaderMappings, Incoming, IReadable, IWritable, StreamAdapter, OutgoingMessage, Outgoing, TOutgoing } from '@tsdi/common';
+import { Abstract, Injectable, isNil } from '@tsdi/ioc';
+import { Outgoing, OutgoingMessage, TOutgoing } from './outgoing';
+import { Header, HeaderMappings, HeadersLike } from './headers';
+import { Incoming } from './incoming';
+import { StatusOptions } from './response';
+import { IReadable, IWritable } from './stream';
+import { StreamAdapter } from './StreamAdapter';
 
 
 
 
-
+/**
+ * Abstract outgoing factory.
+ */
+@Abstract()
 export abstract class AbstractOutgoingFactory<T extends OutgoingMessage = OutgoingMessage> {
     abstract create(options: {
         socket?: any;
@@ -17,6 +25,7 @@ export abstract class AbstractOutgoingFactory<T extends OutgoingMessage = Outgoi
 /**
  * Outgoing factory.
  */
+@Abstract()
 export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoing<any>> {
     abstract create(options: {
         incoming?: Incoming;
@@ -54,6 +63,7 @@ export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TSta
 /**
  * abstract server outgoing.
  */
+@Abstract()
 export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, TStatus> {
     /**
      * packet id
@@ -71,6 +81,8 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
 
     protected _status: TStatus | null;
     protected _message: string | undefined;
+
+    body?: T | null;
 
     constructor(init: OutgoingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
         this.pattern = init.pattern;
@@ -141,6 +153,8 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
         this.headers.removeHeader(field);
     }
 
+    abstract toJson(): Record<string, any>;
+
 }
 
 /**
@@ -151,6 +165,38 @@ export class UrlOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, TSt
     constructor(init: OutgoingOpts & { url: string }) {
         super(init)
         this.url = init.url;
+    }
+
+    /**
+     * parse url outgoing to simple json.
+     * @param payloadKey payload key. default is 'body'.
+     * @returns 
+     */
+    toJson(payloadKey: 'body' | 'payload' = 'body'): Record<string, any> {
+        const json: Record<string, any> = {
+            url: this.url,
+            ok: this.ok,
+        };
+        if (this.id) {
+            json.id = this.id;
+        }
+        if (this.pattern) {
+            json.pattern = this.pattern;
+        }
+        if (this.headers.size) {
+            json.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.status)) {
+            json.status = this.status;
+        }
+        if (this.statusMessage) {
+            json.statusMessage = this.statusMessage;
+        }
+        if (!isNil(this.body)) {
+            json[payloadKey] = this.body;
+        }
+
+        return json;
     }
 
 }
@@ -190,6 +236,38 @@ export class TopicOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, T
     constructor(init: OutgoingOpts & { topic: string }) {
         super(init)
         this.topic = init.topic;
+    }
+
+    /**
+     * parse topic outgoing to simple json.
+     * @param payloadKey payload key. default is 'body'.
+     * @returns 
+     */
+    toJson(payloadKey: 'body' | 'payload' = 'body'): Record<string, any> {
+        const json: Record<string, any> = {
+            topic: this.topic,
+            ok: this.ok,
+        };
+        if (this.id) {
+            json.id = this.id;
+        }
+        if (this.pattern) {
+            json.pattern = this.pattern;
+        }
+        if (this.headers.size) {
+            json.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.status)) {
+            json.status = this.status;
+        }
+        if (this.statusMessage) {
+            json.statusMessage = this.statusMessage;
+        }
+        if (!isNil(this.body)) {
+            json[payloadKey] = this.body;
+        }
+
+        return json;
     }
 }
 

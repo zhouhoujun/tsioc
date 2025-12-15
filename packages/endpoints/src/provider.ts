@@ -1,14 +1,17 @@
 import { ArgumentException, ProvdierOf, Provider, Type, isArray, isBoolean, isFunction, toProvider, toProviders } from '@tsdi/ioc';
-import { EndpointTypedRespond } from './typed.respond';
-import { BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor, LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor } from './interceptors';
+import { FilterLike, GuardLike } from '@tsdi/core';
+import {
+    BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor,
+    LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor
+} from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
+import { EndpointTypedRespond } from './typed.respond';
 import { SetupServices } from './SetupServices';
-import { matchTransport, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withSimpleJson } from '@tsdi/common';
+import { matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory, TransferSide, UrlIncomingFactory, withSimpleJson } from '@tsdi/common';
 import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { ServiceConfig } from './server.options';
-import { FilterLike, GuardLike } from '@tsdi/core';
 
 /**
  * Identifies a particular kind of `Feature`.
@@ -363,7 +366,7 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
             }
         ];
         if (isBoolean(options?.microservice) && config.microservice !== options.microservice) {
-            const cfg = {...config, routerToken:undefined, microservice: options.microservice}
+            const cfg = { ...config, routerToken: undefined, microservice: options.microservice }
             providers.push(createRouteProviders(cfg, routerToken, options))
         }
         return makeFeature(
@@ -422,18 +425,27 @@ export function withControllers(controllers: Type[]): FeatureFn<FeatureKind.Cont
  * @see {@link provideService}
  * @publicApi
  */
-export function withTransfers(...selectors: TransferInterceptorSelector[]): FeatureFn<FeatureKind.Transfer> {
+export function withTransfers(...selectors: TransferInterceptorFactory[]): FeatureFn<FeatureKind.Transfer> {
     return (config) => {
         const token = getTransfersToken(config);
+        const providers: Provider[] = [
+            UrlIncomingFactory,
+            TopicIncomingFactory,
+        ];
         if (!selectors.length) {
             selectors.push(withSimpleJson());
         }
+        selectors.forEach((fac) => {
+            const itps = fac(config);            
+            if (isArray(itps)) {
+                providers.push(...toProviders(token, itps, true));
+            } else {
+                providers.push(toProvider(token, itps, true));
+            }
+        });
         return makeFeature(
             FeatureKind.Transfer,
-            selectors.map((sel) => {
-                const itps = sel(TransferSide.server);
-                return isArray(itps) ? toProviders(token, itps, true) : toProvider(token, itps, true)
-            }),
+            providers,
             config
         );
     }

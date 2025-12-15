@@ -1,7 +1,6 @@
-import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { ContentType, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Injectable, lang } from '@tsdi/ioc';
 import { RestfulRequestContext } from '@tsdi/endpoints';
-import { ctype } from '@tsdi/common/transport';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { join } from 'path';
@@ -40,7 +39,7 @@ export class BigFileInterceptor implements RequestInterceptor {
 
         const stats = await statify(filename);
         input.length = stats.size;
-        input.type = ctype.APPL_JSON;
+        input.type = ContentType.APPL_JSON;
         input.body = fs.createReadStream(filename);
 
     }

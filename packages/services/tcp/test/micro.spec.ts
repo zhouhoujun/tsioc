@@ -1,7 +1,6 @@
 import { Injectable, Injector, Module, isNil, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { ErrorResponse, PatternFormatter, TransferSide, Transport, withSimpleJson } from '@tsdi/common';
-import { TransportPacketModule, UrlOutgoing } from '@tsdi/common/transport';
+import { ErrorResponse, PatternFormatter, TransferSide, Transport, UrlOutgoing, withSimpleJson } from '@tsdi/common';
 import { provideClient, withBodySerialize, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
@@ -54,7 +53,6 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TransportPacketModule,
         // provideClient({
         //     transport: 'tcp',
         //     microservice: true,
@@ -114,17 +112,7 @@ export class TcpService {
                 withSimpleJson({
                     mapping:(res, context)=> {
                         if (res instanceof UrlOutgoing) {
-                            const json: Record<string, any> = {
-                                url: res.url,
-                            };
-                            if (res.headers.size) {
-                                json.headers = res.headers.getHeaders();
-                            }
-                            if(!isNil(res)) {
-                                json.body = res.status;
-                            }
-
-                            return json;
+                           return res.toJson()
                         }
                         return res;
                     }

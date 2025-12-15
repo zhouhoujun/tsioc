@@ -375,9 +375,11 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
 
     /**
      * parse request to simple json.
+     * @param formatter pattern formatter.
+     * @param payloadKey payload key. default is 'body'.
      * @returns 
      */
-    toJson(formatter?: PatternFormatter): Record<string, any> {
+    toJson(formatter?: PatternFormatter, payloadKey: 'body' | 'payload' = 'body'): Record<string, any> {
         const json: Record<string, any> = {
             url: this.getUrlWithParams()
         };
@@ -388,7 +390,7 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
             json.headers = this.headers.getHeaders();
         }
         if (!isNil(this.body)) {
-            json.body = this.body;
+            json[payloadKey] = this.body;
         }
 
         return json;
@@ -412,9 +414,11 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
 
     /**
      * parse request to simple json.
+     * @param formatter pattern formatter.
+     * @param payloadKey payload key. default is 'body'.
      * @returns 
      */
-    toJson(formatter?: PatternFormatter): Record<string, any> {
+    toJson(formatter?: PatternFormatter, payloadKey: 'body' | 'payload' = 'body'): Record<string, any> {
         const json: Record<string, any> = {
             topic: this.topic,
             responseTopic: this.responseTopic
@@ -426,7 +430,7 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
             json.headers = this.headers.getHeaders();
         }
         if (!isNil(this.body)) {
-            json.body = this.body;
+            json[payloadKey] = this.body;
         }
 
         return json;

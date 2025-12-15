@@ -1,4 +1,4 @@
-import { RequestMethod, TransportConfig } from '@tsdi/common';
+import { RequestMethod, TransferConfig, TransferSide, TransportConfig } from '@tsdi/common';
 import { ServiceHandlerOptions } from './ServiceHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
@@ -14,7 +14,9 @@ export interface ProxyOpts {
 /**
  * service config.
  */
-export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any>, TransportConfig {
+export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any>, TransferConfig {
+
+    side: TransferSide.server;
 
     /**
      * request timeout.
@@ -47,6 +49,8 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
     secure?: boolean;
 
     bootstrap?: boolean;
+    
+    payloadKey?: 'body' | 'payload';
 }
 
 /**

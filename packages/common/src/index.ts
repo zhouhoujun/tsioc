@@ -7,6 +7,9 @@ export * from './params';
 export * from './pattern';
 export * from './status';
 export * from './utils';
+export * from './headers.impl';
+
+export * from './events';
 
 export * from './listen';
 
@@ -21,8 +24,8 @@ export * from './incoming';
 export * from './outgoing';
 export * from './request';
 export * from './response';
-
-export * from './events';
+export * from './incoming.impl';
+export * from './outgoing.impl';
 export * from './FileAdapter';
 export * from './MimeAdapter';
 export * from './PacketId';

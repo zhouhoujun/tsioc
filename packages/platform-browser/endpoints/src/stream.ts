@@ -1,6 +1,6 @@
 import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
 import { global, isFormData } from '@tsdi/common';
-import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, isBuffer } from '@tsdi/common/transport';
+import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions } from '@tsdi/common';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import { EventEmitter } from 'pumpify';
 import * as pumpify from 'pumpify';
@@ -174,7 +174,7 @@ export class BrowserStreamAdapter extends StreamAdapter {
         if (!target) return false;
         if (isString(target)) return false;
         if (this.isStream(target)) return false;
-        if (isBuffer(target)) return false;
+        if (Buffer.isBuffer(target)) return false;
         return true
     }
 

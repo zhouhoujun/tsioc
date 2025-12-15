@@ -1,4 +1,4 @@
-import { ProvdierOf, Provider } from '@tsdi/ioc';
+import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
 import { map } from 'rxjs';
 import { RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
@@ -30,10 +30,11 @@ export interface TransferFeature<Kind extends TransferFeatureKind> {
 }
 
 
-export interface TransferInterceptorSelector {
-    (side: TransferSide): ProvdierOf<RequestInterceptorLike> | ProvdierOf<RequestInterceptorLike>[];
+export interface TransferInterceptorFactory {
+    (side: TransferConfig): ProvdierOf<RequestInterceptorLike> | ProvdierOf<RequestInterceptorLike>[];
 }
 
+export const PAYLOAD_KEY = new ContextToken<string>(() => 'body');
 
 
 export function withSimpleJson(options?: {
@@ -46,9 +47,9 @@ export function withSimpleJson(options?: {
     reviver?: (this: any, key: string, value: any) => any;
     replacer?: ((this: any, key: string, value: any) => any);
     space?: string | number;
-}): TransferInterceptorSelector {
-    return (side) =>
-        side === TransferSide.client ? (req, next, context) => {
+}): TransferInterceptorFactory {
+    return (config) =>
+        config.side === TransferSide.client ? (req, next, context) => {
             const reqdata = JSON.stringify(options?.mapping ? options.mapping(req, context) : req, options?.replacer, options?.space);
             return next(reqdata, context)
                 .pipe(

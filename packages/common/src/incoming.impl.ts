@@ -1,6 +1,10 @@
-import { Injectable } from '@tsdi/ioc';
-import { HeaderMappings, HeadersLike, Incoming, IncomingMessage, StatusIncoming, ParameterCodec, StreamAdapter, StatusOptions, IReadable, TIncoming } from '@tsdi/common';
-
+import { Abstract, Injectable } from '@tsdi/ioc';
+import { Incoming, IncomingMessage, StatusIncoming, TIncoming } from './incoming';
+import { HeaderMappings, HeadersLike } from './headers';
+import { ParameterCodec } from './params';
+import { IReadable } from './stream';
+import { StreamAdapter } from './StreamAdapter';
+import { StatusOptions } from './response';
 
 
 
@@ -8,6 +12,7 @@ import { HeaderMappings, HeadersLike, Incoming, IncomingMessage, StatusIncoming,
 /**
  * Abstract incoming factory.
  */
+@Abstract()
 export abstract class AbstractIncomingFactory<T extends IncomingMessage = IncomingMessage> {
     abstract create(options: any): TIncoming<T>;
 }
@@ -15,6 +20,7 @@ export abstract class AbstractIncomingFactory<T extends IncomingMessage = Incomi
 /**
  * server incoming factory.
  */
+@Abstract()
 export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming<any>> {
     abstract create(options: IncomingOpts): TIncoming<Incoming<any>>;
 }
@@ -22,6 +28,7 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
 /**
  * Client incoming factory.
  */
+@Abstract()
 export abstract class ClientIncomingFactory implements AbstractIncomingFactory<StatusIncoming> {
     abstract create(options: ClientIncomingOpts): TIncoming<StatusIncoming>;
 }
@@ -121,6 +128,7 @@ export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions
 /**
  * Incoming base packet.
  */
+@Abstract()
 export abstract class AbstractIncoming<T> implements Incoming<T> {
 
     readonly id?: any;
@@ -325,6 +333,7 @@ export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T
 /**
  * client incoming packet
  */
+@Abstract()
 export abstract class AbstractClientIncoming<T, TStatus = any> implements StatusIncoming<T, TStatus> {
 
     readonly pattern?: string | undefined;

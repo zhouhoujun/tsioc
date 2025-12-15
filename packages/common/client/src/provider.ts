@@ -1,5 +1,8 @@
 import { ArgumentException, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
-import { matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorSelector, TransferSide, withSimpleJson } from '@tsdi/common';
+import {
+    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, TransferSide, withSimpleJson,
+    UrlClientIncomingFactory, TopicClientIncomingFactory
+} from '@tsdi/common';
 import { getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
@@ -145,19 +148,28 @@ export function withClientInterceptors(
  * @publicApi
  */
 export function withClientTransfers(
-    ...selectors: TransferInterceptorSelector[]
+    ...selectors: TransferInterceptorFactory[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
         const token = getClientTransfersToken(config);
+        const providers: Provider[] = [
+            UrlClientIncomingFactory,
+            TopicClientIncomingFactory,
+        ];
         if (!selectors.length) {
             selectors.push(withSimpleJson());
         }
+        selectors.forEach((fac) => {
+            const itps = fac(config);
+            if (isArray(itps)) {
+                providers.push(...toProviders(token, itps, true));
+            } else {
+                providers.push(toProvider(token, itps, true));
+            }
+        });
         return makeClientFeature(
             ClientFeatureKind.Transfer,
-            selectors.map((sel) => {
-                const itps = sel(TransferSide.client);
-                return isArray(itps) ? toProviders(token, itps, true) : toProvider(token, itps, true)
-            }),
+            providers,
             config
         );
     }

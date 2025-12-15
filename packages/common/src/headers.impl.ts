@@ -1,5 +1,5 @@
 import { Injectable, isNil, isTypeObject } from '@tsdi/ioc';
-import { Header, HeaderAccess, HeaderAdapter, HeadersLike, IHeaders, hasHeader, getHeader, getHeaders } from '@tsdi/common';
+import { getHeader, getHeaders, hasHeader, Header, HeaderAccess, HeaderAdapter, HeadersLike, IHeaders } from './headers';
 
 @Injectable()
 export class DefaultHeaderAdapter implements HeaderAdapter {

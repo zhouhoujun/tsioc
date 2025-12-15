@@ -149,7 +149,7 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
         const streamAdapter = context.get(StreamAdapter);
         const headerAdapter = context.get(HeaderAdapter);
         // const transport = context.get(Transport) as AbstractTransport;
-        const idLen = context.get(PACKET_IDLEN) ?? 2;
+        const idLen = context.get(PACKET_IDLEN);
         let id: string | number;
         const payload = input.payload;
 

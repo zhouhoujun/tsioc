@@ -1,5 +1,5 @@
 import { Token } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, TransportConfig } from '@tsdi/common';
+import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, TransferConfig, TransferSide } from '@tsdi/common';
 
 
 /**
@@ -8,7 +8,9 @@ import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent
 export interface ClientConfig<
     TInput extends AbstractRequest<any> = AbstractRequest<any>,
     TOutput extends ResponseEvent<any> = ResponseEvent<any>,
-> extends RequestHandlerOptions, TransportConfig {
+> extends RequestHandlerOptions, TransferConfig {
+
+    side: TransferSide.client;
     /**
      * url
      */
@@ -35,5 +37,7 @@ export interface ClientConfig<
      * as default client or not.
      */
     asDefault?: boolean;
+
+    payloadKey?: 'body' | 'payload';
 
 }
