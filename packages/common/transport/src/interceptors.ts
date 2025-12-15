@@ -88,7 +88,7 @@ function packet(data: any, options: TransferOptions, context: RequestContext) {
     const streamAdapter = context.get(StreamAdapter);
     let len = 0;
     if (Buffer.isBuffer(data)) {
-        data = Buffer.concat([data, Buffer.from(delimiter)]);
+        data = Buffer.concat([data, Buffer.from(delimiter)] as Uint8Array[]);
         len = Buffer.byteLength(data);
     } else if (isString(data)) {
         data = data + delimiter!;
@@ -96,7 +96,7 @@ function packet(data: any, options: TransferOptions, context: RequestContext) {
         const packetLen = context.get(PACKET_LENGTH);
         const bufDt = Buffer.from(delimiter);
         data.push(bufDt);
-        len = packetLen + Buffer.byteLength(bufDt);
+        len = packetLen + Buffer.byteLength(bufDt as Uint8Array);
     }
 
     if (maxSize && len >= maxSize) {
@@ -143,7 +143,7 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
             unpacketData(context, options, cache, data, subscriber, streamAdapter);
         }
     } else {
-        cache.length += Buffer.byteLength(data);
+        cache.length += Buffer.byteLength(data as Uint8Array);
         cache.payload.write(data);
     }
 

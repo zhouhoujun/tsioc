@@ -1,4 +1,4 @@
-import { Abstract, composeInterceptors, composeToHanlderFn, Exception, getType, Handler, HandlerFn, Injector, InterceptingHandler, InterceptorFn, InterceptorLike, InvocationContext, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
+import { Abstract, composeInterceptors, composeToHanlderFn, createInvocationContext, Exception, getType, Handler, HandlerFn, Injector, InterceptingHandler, InterceptorFn, InterceptorLike, InvocationContext, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandler, FilterLike, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
@@ -208,6 +208,6 @@ export class DefaultRequestHandler<
 export function createRequestHandler<TReq = any, TRes = any>(injector: Injector, options: RequestHandlerOptions<TReq, TRes>): ConfigableRequestHandler<TReq, TRes> {
     normalizeConfigableHandlerOptions(options);
     const Type = options.handlerType ?? DefaultRequestHandler;
-    return new Type(injector, options, options) as ConfigableRequestHandler<TReq, TRes>;
+    return new Type(createInvocationContext(injector, options, options.handlerType), options, options) as ConfigableRequestHandler<TReq, TRes>;
 }
 

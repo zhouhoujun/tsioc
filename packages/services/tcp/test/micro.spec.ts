@@ -1,6 +1,7 @@
 import { Injectable, Injector, Module, isNil, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { ErrorResponse, PatternFormatter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
+import { ErrorResponse, PacketIdGenerator, PatternFormatter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
+import { PacketNumberIdGenerator, usePacket } from '@tsdi/common/transport';
 import { provideClient, withBodySerialize, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
@@ -92,9 +93,13 @@ export class TcpService {
                         }
                         return req
                     }
-                })
+                }),
+                usePacket()
             ),
             withTcpClientTransport({
+                providers: [
+                    { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator }
+                ],
                 microservice: true,
                 connectOpts: {
                     port: 2000
@@ -111,13 +116,14 @@ export class TcpService {
             withLogger(),
             withTransfers(
                 useSimpleJson({
-                    mapping:(res, context)=> {
+                    mapping: (res, context) => {
                         if (res instanceof UrlOutgoing) {
-                           return res.toJson()
+                            return res.toJson()
                         }
                         return res;
                     }
-                })
+                }),
+                usePacket()
             ),
             withTcpTransport({
                 microservice: true,

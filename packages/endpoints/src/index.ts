@@ -33,6 +33,7 @@ export * from './interceptors';
 // export * from './finalize.filter';
 
 // export * from './exception.filter';
+export * from './exception.handlers';
 
 export * from './impl/status';
 // export * from './impl/request.handler';

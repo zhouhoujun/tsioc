@@ -6,5 +6,5 @@ export * from './PacketId';
 
 export * from './context';
 
-export * from './interceptors';
+export * from './providers';
 

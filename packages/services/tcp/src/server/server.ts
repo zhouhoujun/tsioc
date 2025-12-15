@@ -2,7 +2,7 @@ import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isN
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event, createRequestContext, RequestContext, writePacket, StreamAdapter, TransferSide, NotFoundException } from '@tsdi/common';
-import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken } from '@tsdi/endpoints';
+import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, DefaultExceptionHandlers } from '@tsdi/endpoints';
 import { Subject, filter, first, fromEvent, merge, mergeMap, of, takeUntil, throwError } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -41,7 +41,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         if (!this.serv) throw new InternalServerException();
         const options = this.options;
         const isSecure = options.secure = this.isSecure;
-        const protocol = options.transport = options.transport ?? (isSecure ? 'ssl' : 'tcp');
+        const protocol = isSecure ? 'ssl' : 'tcp';
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
@@ -166,6 +166,8 @@ export function withTcpTransport(...options: Partial<TcpServConfig>[]): Transpor
     return options.map(option => {
         option.transport = Transport.TCP;
         option.side = TransferSide.server;
+
+        option.execptionHandlers ??= [DefaultExceptionHandlers];
         const config = option as TcpServConfig;
         const serviceToken = getServiceToken(config);
         const backendToken = getServiceBackendToken(config);
