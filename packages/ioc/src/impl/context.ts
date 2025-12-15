@@ -168,7 +168,9 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     protected existRef(ctx: InvocationContext): boolean {
         if (ctx === this || this._refs!.indexOf(ctx) >= 0) return true;
-        return (this.getParent() as TParent & DefaultInvocationContext)?.existRef?.(ctx) ?? false;
+        const parent = this.getParent() as TParent & DefaultInvocationContext;
+        if(parent === ctx) return true;
+        return parent?.existRef?.(ctx) ?? false;
     }
 
     get used(): boolean {
