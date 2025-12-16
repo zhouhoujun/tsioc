@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
 import { ContextToken, ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader, BadRequestException, RequestContext, HeaderAdapter } from '@tsdi/common';
-import { Redirector, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
+import { Redirector, StatusAdapter, StreamAdapter } from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { AbstractClient } from '../AbstractClient';
 

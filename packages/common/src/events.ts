@@ -4,7 +4,7 @@
 /**
  * event type name.
  */
-export namespace Event {
+export namespace Events {
 
     export const CONN_ERR = 'CONN_ERR';
 

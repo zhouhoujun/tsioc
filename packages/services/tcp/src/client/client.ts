@@ -1,9 +1,9 @@
-import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException, Exception } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Event, PatternFormatter, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
+import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException, Exception, isNil } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Events, PatternFormatter, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken } from '@tsdi/common/client';
 import { SOCKET } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { filter, first, from, fromEvent, merge, Observable, takeUntil } from 'rxjs';
+import { filter, first, from, fromEvent, merge, Observable, race, share, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientConfig } from './options';
@@ -54,16 +54,15 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             const onConnect = () => {
                 observer.next(conn);
                 this.context.setValue(SOCKET, conn);
-                observer.complete();
             }
             const onClose = () => {
                 conn.end();
                 observer.complete();
             }
-            conn.on(Event.ERROR, onError)
-                .on(Event.DISCONNECT, onError)
-                .on(Event.END, onClose)
-                .on(Event.CLOSE, onClose)
+            conn.on(Events.ERROR, onError)
+                .on(Events.DISCONNECT, onError)
+                .on(Events.END, onClose)
+                .on(Events.CLOSE, onClose)
 
 
 
@@ -71,17 +70,17 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             if (valid) {
                 onConnect()
             } else {
-                conn.on(Event.CONNECT, onConnect)
+                conn.on(Events.CONNECT, onConnect)
             }
 
             return () => {
                 if (cleaned) return;
                 cleaned = true;
-                conn.off(Event.CONNECT, onConnect)
-                    .off(Event.ERROR, onError)
-                    .off(Event.DISCONNECT, onError)
-                    .off(Event.END, onClose)
-                    .off(Event.CLOSE, onClose);
+                conn.off(Events.CONNECT, onConnect)
+                    .off(Events.ERROR, onError)
+                    .off(Events.DISCONNECT, onError)
+                    .off(Events.END, onClose)
+                    .off(Events.CLOSE, onClose);
             }
         });
     }
@@ -151,11 +150,12 @@ export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): 
                                 socket.removeAllListeners();
                             }
                             socket = currSocket;
-                            source$ = fromEvent(socket, Event.DATA)
+                            source$ = fromEvent(socket, Events.DATA)
                                 .pipe(
-                                    takeUntil(merge(fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())),
-                                    filter(r=> !!r)
-                                );
+                                    takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+                                    filter(r=> !isNil(r)),
+                                    share()
+                                )
                         }
                         const emit$ = writePacket(socket, data, context.get(StreamAdapter));
 

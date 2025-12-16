@@ -1,9 +1,9 @@
-import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
+import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isNil, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Event, createRequestContext, RequestContext, writePacket, StreamAdapter, TransferSide, NotFoundException } from '@tsdi/common';
+import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Events, createRequestContext, RequestContext, writePacket, StreamAdapter, TransferSide, NotFoundException } from '@tsdi/common';
 import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, DefaultExceptionHandlers } from '@tsdi/endpoints';
-import { Subject, filter, first, fromEvent, merge, mergeMap, of, takeUntil, throwError } from 'rxjs';
+import { Subject, filter, first, fromEvent, merge, mergeMap, of, race, share, take, takeUntil, throwError } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONFIG, TcpServConfig } from './options';
@@ -95,21 +95,17 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         }
 
         if (!this.serv) throw new InternalServerException();
-        this.serv.on(Event.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
-        this.serv.on(Event.ERROR, (err) => this.logger.error(err));
+        this.serv.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
+        this.serv.on(Events.ERROR, (err) => this.logger.error(err));
         const context = this.handler.context;
         const streamAdapter = context.get(StreamAdapter);
         if (this.serv instanceof tls.Server) {
-            this.serv.on(Event.SECURE_CONNECTION, (socket) => {
+            this.serv.on(Events.SECURE_CONNECTION, (socket) => {
                 this.handleMessage(socket, streamAdapter);
-                // const transport = factory.create(context, socket, options);
-                // transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
         } else {
-            this.serv.on(Event.CONNECTION, (socket) => {
+            this.serv.on(Events.CONNECTION, (socket) => {
                 this.handleMessage(socket, streamAdapter);
-                // const transport = factory.create(context, socket, options);
-                // transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first()));
             })
         }
 
@@ -143,14 +139,15 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
     }
 
     private handleMessage(socket: tls.TLSSocket | net.Socket, streamAdapter: StreamAdapter) {
-        fromEvent(socket, Event.DATA).pipe(
-            takeUntil(merge(this.destroy$, fromEvent(socket, Event.CLOSE), fromEvent(socket, Event.DISCONNECT)).pipe(first())),
-            filter((data: any) => !!data),
+        fromEvent(socket, Events.DATA).pipe(
+            takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+            filter(data => !isNil(data)),
+            share(),
             mergeMap((data: any) => this.handler.handle(data, createRequestContext(this.context))),
             mergeMap((res: any) => {
                 if (!res) return of(null);
                 return writePacket(socket, res, streamAdapter);
-            })
+            }),
         ).subscribe();
     }
 

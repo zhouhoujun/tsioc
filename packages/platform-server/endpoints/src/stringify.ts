@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 /* eslint-disable no-misleading-character-class */
 import { Exception, isNumber, isPromise, isString } from '@tsdi/ioc';
-import { Event } from '@tsdi/common';
+import { Events } from '@tsdi/common';
 import { Readable } from 'node:stream';
 
 export class JsonStreamStringify extends Readable {
@@ -121,19 +121,19 @@ export class JsonStreamStringify extends Readable {
         } else if (type === Types.ReadableString || type === Types.ReadableObject) {
             this.depth += 1;
             if (realValue.readableEnded || realValue._readableState?.endEmitted) {
-                this.emit(Event.ERROR, new Error('Readable Stream has ended before it was serialized. All stream data have been lost'), realValue, key || index);
+                this.emit(Events.ERROR, new Error('Readable Stream has ended before it was serialized. All stream data have been lost'), realValue, key || index);
             } else if (realValue.readableFlowing || realValue._readableState?.flowing) {
                 realValue.pause();
-                this.emit(Event.ERROR, new Error('Readable Stream is in flowing mode, data may have been lost. Trying to pause stream.'), realValue, key || index);
+                this.emit(Events.ERROR, new Error('Readable Stream is in flowing mode, data may have been lost. Trying to pause stream.'), realValue, key || index);
             }
             obj.readCount = 0;
-            realValue.once(Event.END, () => {
+            realValue.once(Events.END, () => {
                 obj.end = true;
                 this.__read();
             });
-            realValue.once(Event.ERROR, (err: any) => {
+            realValue.once(Events.ERROR, (err: any) => {
                 this.error = true;
-                this.emit(Event.ERROR, err);
+                this.emit(Events.ERROR, err);
             });
         }
         this.stack.unshift(obj);
@@ -311,7 +311,7 @@ export class JsonStreamStringify extends Readable {
             })
             .catch((err) => {
                 this.error = true;
-                this.emit(Event.ERROR, err);
+                this.emit(Events.ERROR, err);
             });
     }
 
@@ -413,11 +413,11 @@ function readAsPromised(stream: Readable, size: number) {
     if (value === null) {
         return new Promise((resolve, reject) => {
             const endListener = () => resolve(null);
-            stream.once(Event.END, endListener);
-            stream.once(Event.ERROR, reject);
-            stream.once(Event.READABLE, () => {
-                stream.removeListener(Event.END, endListener);
-                stream.removeListener(Event.ERROR, reject);
+            stream.once(Events.END, endListener);
+            stream.once(Events.ERROR, reject);
+            stream.once(Events.READABLE, () => {
+                stream.removeListener(Events.END, endListener);
+                stream.removeListener(Events.ERROR, reject);
                 resolve(stream.read());
             })
         })

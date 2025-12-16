@@ -1,6 +1,6 @@
 import { isArray } from '@tsdi/ioc';
 import { IDuplex, IEventEmitter, IPassThrough, IReadable, IStream, ITransform, IWritable } from './stream';
-import { Event } from './events';
+import { Events } from './events';
 
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadable;
 
@@ -56,12 +56,12 @@ export abstract class StreamAdapter {
 
         const source = sources.shift()!;
 
-        source.once(Event.ERROR, (err) => {
+        source.once(Events.ERROR, (err) => {
             source.removeAllListeners();
-            writable.emit(Event.ERROR, err);
+            writable.emit(Events.ERROR, err);
         });
 
-        source.once(Event.END, () => {
+        source.once(Events.END, () => {
             source.removeAllListeners();
             this.merge(writable, sources);
         });

@@ -115,6 +115,7 @@ export class TcpService {
             withRouter(),
             withLogger(),
             withTransfers(
+                usePacket(),
                 useSimpleJson({
                     mapping: (res, context) => {
                         if (res instanceof UrlOutgoing) {
@@ -122,8 +123,7 @@ export class TcpService {
                         }
                         return res;
                     }
-                }),
-                usePacket()
+                })
             ),
             withTcpTransport({
                 microservice: true,
