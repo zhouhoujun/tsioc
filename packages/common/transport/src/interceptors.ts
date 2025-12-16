@@ -3,8 +3,8 @@ import { isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { filter, mergeMap, Observable, of, Subject, Subscriber, throwError } from 'rxjs';
-import { PACKET_LENGTH } from './context';
+import { mergeMap, Observable, of, Subject, Subscriber, throwError } from 'rxjs';
+import { CONTENT_LENGTH, PACKET_LENGTH } from './context';
 
 
 
@@ -31,33 +31,35 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
         payload: null,
     } as Packet;
     const handle = options.size ? unpackSizeData : unpacketData;
-    const subject$ = new Subject<IDuplex>();
     return config.side === TransferSide.client ? (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
         return next(req, context)
             .pipe(
                 mergeMap(res => {
-                    try {
-                        handle(context, options, cache, res, subject$, streamAdapter);
-                    } catch (err) {
-                        subject$.error(err);
-                        subject$.complete();
-                    }
-                    return subject$.asObservable();
-
+                    return new Observable((subscriber: Subscriber<IDuplex>) => {
+                        try {
+                            handle(context, options, cache, res, subscriber, streamAdapter);
+                        } catch (err) {
+                            subscriber.error(err);
+                            subscriber.complete();
+                        }
+                        return subscriber;
+                    })
                 })
             )
     } : (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
-        try {
-            handle(context, options, cache, req, subject$, streamAdapter);
-        } catch (err) {
-            subject$.error(err);
-            subject$.complete();
-        }
-        return subject$.asObservable()
+        return new Observable((subscriber: Subscriber<IDuplex>) => {
+            try {
+                handle(context, options, cache, req, subscriber, streamAdapter);
+            } catch (err) {
+                subscriber.error(err);
+                subscriber.complete();
+            }
+            return subscriber;
+        })
             .pipe(
-                mergeMap(res => next(res, context))
+                mergeMap(req => next(req, context))
             )
     }
 }
@@ -118,7 +120,7 @@ function packet(data: any, options: TransferOptions, context: RequestContext) {
 }
 
 
-function unpacketData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subject: Subject<IDuplex>, streamAdapter: StreamAdapter): void {
+function unpacketData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<IDuplex>, streamAdapter: StreamAdapter): void {
     if (!isNumber(cache.length)) {
         cache.length = 0;
     }
@@ -136,7 +138,7 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
     const delimiter = options.delimiter!;
     let idx = data.indexOf(delimiter);
     const dsize = Buffer.byteLength(delimiter);
-    while (idx < data.length) {
+    while (idx >= 0 && idx < data.length) {
         if (data.toString('utf8', idx + dsize, idx + dsize * 2) == delimiter) {
             idx = idx + dsize;
         } else {
@@ -146,22 +148,26 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
 
     if (idx !== -1) {
         const buf = data.subarray(0, idx);
-        const subData = data.subarray(idx + dsize);
+        cache.length += buf.length;
+        data = data.subarray(idx + dsize);
         cache.payload.write(buf);
-        handleMessage(cache, subject);
-        // subscriber.complete();
-        if (subData.length) {
-            unpacketData(context, options, cache, subData, subject, streamAdapter);
+        handleMessage(cache, subscriber, context);
+
+        if (data.length) {
+            unpacketData(context, options, cache, data, subscriber, streamAdapter);
+        } else {
+            subscriber.complete();
         }
     } else {
         cache.length += Buffer.byteLength(data as Uint8Array);
         cache.payload.write(data);
+        subscriber.complete();
     }
 
 }
 
 
-function unpackSizeData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subject: Subject<IDuplex>, streamAdapter: StreamAdapter): void {
+function unpackSizeData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<IDuplex>, streamAdapter: StreamAdapter): void {
     if (!isNumber(cache.length)) {
         cache.length = 0;
     }
@@ -212,33 +218,39 @@ function unpackSizeData(context: RequestContext, options: TransferOptions, cache
         if (total === cache.contentLength) {
             cache.length = total;
             cache.payload.write(data);
-            handleMessage(cache, subject, true);
-            // subject.complete();
+            handleMessage(cache, subscriber, context);
+            subscriber.complete();
         } else if (total > cache.contentLength) {
             const idx = data.length - (total - cache.contentLength);
             cache.payload.write(data.subarray(0, idx));
             const rest = data.subarray(idx);
-            handleMessage(cache, subject, !rest.length);
+            handleMessage(cache, subscriber, context);
             if (rest.length) {
-                unpackSizeData(context, options, cache, rest, subject, streamAdapter);
+                unpackSizeData(context, options, cache, rest, subscriber, streamAdapter);
+            } else {
+                subscriber.complete();
             }
         } else {
             cache.payload.write(data);
             cache.length = total;
-            // subject.complete();
+            subscriber.complete();
         }
     } else {
         cache.payload.write(data);
         cache.length += data.length;
-        // subject.complete();
+        subscriber.complete();
     }
 }
 
-function handleMessage(cache: Packet<IDuplex>, subject: Subject<IDuplex>, clear?: boolean) {
+function handleMessage(cache: Packet<IDuplex>, subscriber: Subscriber<IDuplex>, context: RequestContext) {
     const data = cache.payload!;
+    context.set(PACKET_LENGTH, cache.length);
+    if (cache.contentLength !== null && cache.contentLength !== undefined) {
+        context.set(CONTENT_LENGTH, cache.contentLength);
+    }
     cache.payload?.end();
     cache.payload = null;
     cache.contentLength = null;
     cache.length = 0;
-    subject.next(data);
+    subscriber.next(data);
 }

@@ -1,11 +1,12 @@
 import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
-import { filter, map } from 'rxjs';
+import { defer, filter, map, mergeMap } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
 import { RequestContext } from './context';
 import { AbstractRequest } from './request';
 import { Incoming } from './incoming';
 import { PACKET_ID, PacketIdGenerator } from './PacketId';
+import { StreamAdapter } from './StreamAdapter';
 
 export enum TransferSide {
     client = 1,
@@ -83,14 +84,27 @@ export function useSimpleJson(options?: {
             const reqdata = JSON.stringify(options?.mapping ? options.mapping(req, context) : req, options?.replacer, options?.space);
             return next(reqdata, context)
                 .pipe(
-                    map(res => JSON.parse(res, options?.reviver))
+                    mergeMap(async res => {
+                        const streamAdapter = context.get(StreamAdapter);
+                        if (streamAdapter.isReadable(res)) {
+                            res = res.read();
+                        }
+                        return JSON.parse(res, options?.reviver);
+                    })
                 )
         }
             :
             (req, next, context) => {
-                const reqdata = JSON.parse(req, options?.reviver);
-                return next(reqdata, context)
+                return defer(async () => {
+                    const streamAdapter = context.get(StreamAdapter);
+                    if (streamAdapter.isReadable(req)) {
+                        req = req.read();
+                    }
+                    const reqdata = JSON.parse(req, options?.reviver);
+                    return reqdata;
+                })
                     .pipe(
+                        mergeMap(rjson => next(rjson, context)),
                         map(res => JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space))
                     )
             };
