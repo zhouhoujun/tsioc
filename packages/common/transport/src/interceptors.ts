@@ -3,7 +3,7 @@ import { isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { mergeMap, Observable, Subscriber, throwError } from 'rxjs';
+import { mergeMap, Observable, of, Subscriber, throwError } from 'rxjs';
 import { PACKET_LENGTH } from './context';
 
 
@@ -35,19 +35,32 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
         const streamAdapter = context.get(StreamAdapter);
         return next(req, context)
             .pipe(
-                mergeMap((res) => new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
-                    handle(context, options, cache, res, subscriber, streamAdapter);
-                    return subscriber;
-                }))
+                mergeMap(res => {
+                    return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
+                        try {
+                            handle(context, options, cache, res, subscriber, streamAdapter);
+                        } catch (err) {
+                            subscriber.error(err);
+                            subscriber.complete();
+                        }
+                        return subscriber;
+                    })
+                })
             )
     } : (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
-            handle(context, options, cache, req, subscriber, streamAdapter);
+            try {
+                handle(context, options, cache, req, subscriber, streamAdapter);
+            } catch (err) {
+                subscriber.error(err);
+                subscriber.complete();
+            }
             return subscriber;
-        }).pipe(
-            mergeMap(req => next(req, context))
-        )
+        })
+            .pipe(
+                mergeMap(req => next(req, context))
+            )
     }
 }
 
@@ -138,7 +151,7 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
         data = data.subarray(idx);
         cache.payload.write(buf);
         handleMessage(cache, subscriber);
-        subscriber.complete();
+        // subscriber.complete();
         if (data.length) {
             unpacketData(context, options, cache, data, subscriber, streamAdapter);
         }
@@ -202,7 +215,7 @@ function unpackSizeData(context: RequestContext, options: TransferOptions, cache
             cache.length = total;
             cache.payload.write(data);
             handleMessage(cache, subscriber, true);
-            subscriber.complete();
+            // subscriber.complete();
         } else if (total > cache.contentLength) {
             const idx = data.length - (total - cache.contentLength);
             cache.payload.write(data.subarray(0, idx));
@@ -214,12 +227,12 @@ function unpackSizeData(context: RequestContext, options: TransferOptions, cache
         } else {
             cache.payload.write(data);
             cache.length = total;
-            subscriber.complete();
+            // subscriber.complete();
         }
     } else {
         cache.payload.write(data);
         cache.length += data.length;
-        subscriber.complete();
+        // subscriber.complete();
     }
 }
 
