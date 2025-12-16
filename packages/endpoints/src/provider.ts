@@ -20,9 +20,9 @@ import { ServiceConfig } from './server.options';
  */
 export enum FeatureKind {
     Configure,
+    Filters,
     Guards,
     Interceptors,
-    Filters,
     Csrf,
     Helmet,
     Cors,

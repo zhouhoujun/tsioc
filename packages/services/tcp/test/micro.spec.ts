@@ -1,9 +1,9 @@
 import { Injectable, Injector, Module, isNil, isString, token } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, ExceptionHandlerFilter } from '@tsdi/core';
 import { ErrorResponse, PacketIdGenerator, PatternFormatter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
 import { PacketNumberIdGenerator, usePacket } from '@tsdi/common/transport';
 import { provideClient, withBodySerialize, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -114,6 +114,7 @@ export class TcpService {
             // withRouter(),
             withRouter(),
             withLogger(),
+            withFilters(ExceptionHandlerFilter),
             withTransfers(
                 usePacket(),
                 useSimpleJson({

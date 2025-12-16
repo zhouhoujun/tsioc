@@ -161,11 +161,7 @@ export class DefaultRequestHandler<
     }
 
     override handle(input: TReq, context: TContext): Observable<TRes> {
-        return super.handle(input, context) as Observable<TRes>;
-    }
-
-    protected override getChain(input: TReq): InterceptorFn<TReq, TRes> {
-        return this.getChainOf(getType(input)) ?? super.getChain(input);
+        return toObservable(super.handle(input, context)) as Observable<TRes>;
     }
 
     protected override generateInterceptorFn(fns: InterceptorLike[]): InterceptorFn {
@@ -207,7 +203,8 @@ export class DefaultRequestHandler<
  */
 export function createRequestHandler<TReq = any, TRes = any>(injector: Injector, options: RequestHandlerOptions<TReq, TRes>): ConfigableRequestHandler<TReq, TRes> {
     normalizeConfigableHandlerOptions(options);
+    options.enableTypeChain ??= true;
     const Type = options.handlerType ?? DefaultRequestHandler;
-    return new Type(createInvocationContext(injector, options, options.handlerType), options, options) as ConfigableRequestHandler<TReq, TRes>;
+    return new Type(createInvocationContext(injector, options, options.handlerType), options) as ConfigableRequestHandler<TReq, TRes>;
 }
 
