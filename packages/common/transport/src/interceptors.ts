@@ -3,7 +3,7 @@ import { isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { mergeMap, Observable, of, Subscriber, throwError } from 'rxjs';
+import { filter, mergeMap, Observable, of, Subject, Subscriber, throwError } from 'rxjs';
 import { PACKET_LENGTH } from './context';
 
 
@@ -31,35 +31,33 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
         payload: null,
     } as Packet;
     const handle = options.size ? unpackSizeData : unpacketData;
+    const subject$ = new Subject<IDuplex>();
     return config.side === TransferSide.client ? (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
         return next(req, context)
             .pipe(
                 mergeMap(res => {
-                    return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
-                        try {
-                            handle(context, options, cache, res, subscriber, streamAdapter);
-                        } catch (err) {
-                            subscriber.error(err);
-                            subscriber.complete();
-                        }
-                        return subscriber;
-                    })
+                    try {
+                        handle(context, options, cache, res, subject$, streamAdapter);
+                    } catch (err) {
+                        subject$.error(err);
+                        subject$.complete();
+                    }
+                    return subject$.asObservable();
+
                 })
             )
     } : (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
-        return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
-            try {
-                handle(context, options, cache, req, subscriber, streamAdapter);
-            } catch (err) {
-                subscriber.error(err);
-                subscriber.complete();
-            }
-            return subscriber;
-        })
+        try {
+            handle(context, options, cache, req, subject$, streamAdapter);
+        } catch (err) {
+            subject$.error(err);
+            subject$.complete();
+        }
+        return subject$.asObservable()
             .pipe(
-                mergeMap(req => next(req, context))
+                mergeMap(res => next(res, context))
             )
     }
 }
@@ -120,7 +118,7 @@ function packet(data: any, options: TransferOptions, context: RequestContext) {
 }
 
 
-function unpacketData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter): void {
+function unpacketData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subject: Subject<IDuplex>, streamAdapter: StreamAdapter): void {
     if (!isNumber(cache.length)) {
         cache.length = 0;
     }
@@ -148,12 +146,12 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
 
     if (idx !== -1) {
         const buf = data.subarray(0, idx);
-        data = data.subarray(idx);
+        const subData = data.subarray(idx + dsize);
         cache.payload.write(buf);
-        handleMessage(cache, subscriber);
+        handleMessage(cache, subject);
         // subscriber.complete();
-        if (data.length) {
-            unpacketData(context, options, cache, data, subscriber, streamAdapter);
+        if (subData.length) {
+            unpacketData(context, options, cache, subData, subject, streamAdapter);
         }
     } else {
         cache.length += Buffer.byteLength(data as Uint8Array);
@@ -163,7 +161,7 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
 }
 
 
-function unpackSizeData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, streamAdapter: StreamAdapter): void {
+function unpackSizeData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subject: Subject<IDuplex>, streamAdapter: StreamAdapter): void {
     if (!isNumber(cache.length)) {
         cache.length = 0;
     }
@@ -214,34 +212,33 @@ function unpackSizeData(context: RequestContext, options: TransferOptions, cache
         if (total === cache.contentLength) {
             cache.length = total;
             cache.payload.write(data);
-            handleMessage(cache, subscriber, true);
-            // subscriber.complete();
+            handleMessage(cache, subject, true);
+            // subject.complete();
         } else if (total > cache.contentLength) {
             const idx = data.length - (total - cache.contentLength);
             cache.payload.write(data.subarray(0, idx));
             const rest = data.subarray(idx);
-            handleMessage(cache, subscriber, !rest.length);
+            handleMessage(cache, subject, !rest.length);
             if (rest.length) {
-                unpackSizeData(context, options, cache, rest, subscriber, streamAdapter);
+                unpackSizeData(context, options, cache, rest, subject, streamAdapter);
             }
         } else {
             cache.payload.write(data);
             cache.length = total;
-            // subscriber.complete();
+            // subject.complete();
         }
     } else {
         cache.payload.write(data);
         cache.length += data.length;
-        // subscriber.complete();
+        // subject.complete();
     }
 }
 
-function handleMessage(cache: Packet<IDuplex>, subscriber: Subscriber<Packet<IDuplex>>, clear?: boolean) {
-    const data = { ...cache };
+function handleMessage(cache: Packet<IDuplex>, subject: Subject<IDuplex>, clear?: boolean) {
+    const data = cache.payload!;
     cache.payload?.end();
     cache.payload = null;
     cache.contentLength = null;
     cache.length = 0;
-
-    subscriber.next(data);
+    subject.next(data);
 }
