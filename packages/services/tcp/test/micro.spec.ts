@@ -83,33 +83,33 @@ export class TcpService {
     ],
     providers: [
         provideClient(
-            withClientFeatures({
-                transfers: [
-                    useSimpleJson({
-                        generateId: true,
-                        mapping: (req, context) => {
-                            if (req instanceof TcpRequest) {
-                                return req.toJson(context.get(PatternFormatter));
-                            }
-                            return req
-                        }
-                    }),
-                    usePacket()
-                ]
-            }),
-            // withBodySerialize(),
-            // withClientTransfers(
-            //     useSimpleJson({
-            //         generateId: true,
-            //         mapping: (req, context) => {
-            //             if (req instanceof TcpRequest) {
-            //                 return req.toJson(context.get(PatternFormatter));
+            // withClientFeatures({
+            //     transfers: [
+            //         useSimpleJson({
+            //             generateId: true,
+            //             mapping: (req, context) => {
+            //                 if (req instanceof TcpRequest) {
+            //                     return req.toJson(context.get(PatternFormatter));
+            //                 }
+            //                 return req
             //             }
-            //             return req
-            //         }
-            //     }),
-            //     usePacket()
-            // ),
+            //         }),
+            //         usePacket()
+            //     ]
+            // }),
+            withBodySerialize(),
+            withClientTransfers(
+                useSimpleJson({
+                    generateId: true,
+                    mapping: (req, context) => {
+                        if (req instanceof TcpRequest) {
+                            return req.toJson(context.get(PatternFormatter));
+                        }
+                        return req
+                    }
+                }),
+                usePacket()
+            ),
             withTcpClientTransport({
                 providers: [
                     { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator }
