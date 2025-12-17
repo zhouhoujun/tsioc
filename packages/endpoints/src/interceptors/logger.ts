@@ -1,6 +1,6 @@
 import { Abstract, Inject, InjectFlags, Injectable, Nullable, isNumber } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
-import { Interceptor, Handler, Filter, BytesFormatPipe, HrtimeFormatter } from '@tsdi/core';
+import { Incoming, Outgoing, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { Filter, BytesFormatPipe, HrtimeFormatter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
@@ -50,7 +50,7 @@ const defopts = {
  * Logger interceptor, filter.
  */
 @Injectable()
-export class LoggerInterceptor implements RequestInterceptor, Filter {
+export class LoggerInterceptor implements RequestInterceptor<Incoming, Outgoing, AbstractRequestContext>, Filter<Incoming, Outgoing, AbstractRequestContext> {
 
     private options: LoggerOptions;
 
@@ -61,25 +61,25 @@ export class LoggerInterceptor implements RequestInterceptor, Filter {
         this.options = { ...defopts, ...options } as LoggerOptions;
     }
 
-    doFilter(input: any, next: RequestHandler, context: RequestContext): Observable<any> {
-        return this.intercept(input, next, context);
+    doFilter(req: Incoming, next: RequestHandler, context: AbstractRequestContext): Observable<Outgoing> {
+        return this.intercept(req, next, context);
     }
 
-    intercept(ctx: AbstractRequestContext, next: RequestHandler, context: RequestContext): Observable<any> {
+    intercept(req: Incoming, next: RequestHandler, context: AbstractRequestContext): Observable<Outgoing> {
         const logger = context.getInjector().get(Logger, this.logger, InjectFlags.Self);
 
         const level = this.options.level;
         if (!matchLevel(logger.level, level)) {
-            return next.handle(ctx, context);
+            return next.handle(req, context);
         }
 
         //todo console log and other. need to refactor formater.
         const start = this.formatter.htime.hrtime();
-        logger[level](...this.formatter.format(logger, ctx));
-        return next.handle(ctx, context)
+        logger[level](...this.formatter.format(logger, context));
+        return next.handle(req, context)
             .pipe(
                 map(res => {
-                    logger[level](...this.formatter.format(logger, ctx, this.formatter.htime.hrtime(start)));
+                    logger[level](...this.formatter.format(logger, context, this.formatter.htime.hrtime(start)));
                     return res
                 })
             )
