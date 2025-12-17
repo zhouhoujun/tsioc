@@ -10,7 +10,7 @@ import { isBuffer } from '@tsdi/common/transport';
 
 
 @Abstract()
-export class PayloadOptions {
+export class BodyparserOptions {
 
     json?: {
         strict?: boolean;
@@ -58,7 +58,7 @@ export class BodyparserInterceptor implements RequestInterceptor<AbstractRequest
     private enableText: boolean;
     private enableXml: boolean;
 
-    constructor(@Nullable() options: PayloadOptions) {
+    constructor(@Nullable() options: BodyparserOptions) {
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };

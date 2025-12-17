@@ -9,24 +9,24 @@ import { TCP_SERV_CONFIG, TcpServConfig } from './server/options';
 
 
 @Module({
-    providers: [
-        provideService(
-            withInterceptors(),
-            withBodyparser(),
-            withContent(),
-            withRouter(),
-            withLogger(),
-            withTransfers(
-                useSimpleJson()
-            ),
-            withTcpTransport({
-                microservice: true,
-                listenOpts: {
-                    port: 3000
-                }
-            })
-        ),
-    ]
+    // providers: [
+    //     provideService(
+    //         withInterceptors(),
+    //         withBodyparser(),
+    //         withContent(),
+    //         withRouter(),
+    //         withLogger(),
+    //         withTransfers(
+    //             useSimpleJson()
+    //         ),
+    //         withTcpTransport({
+    //             microservice: true,
+    //             listenOpts: {
+    //                 port: 3000
+    //             }
+    //         })
+    //     ),
+    // ]
 })
 export class TcpModule {
 

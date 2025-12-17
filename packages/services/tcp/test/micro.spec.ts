@@ -2,8 +2,8 @@ import { Injectable, Injector, Module, isNil, isString, token } from '@tsdi/ioc'
 import { Application, ApplicationContext, ExceptionHandlerFilter } from '@tsdi/core';
 import { ErrorResponse, PacketIdGenerator, PatternFormatter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
 import { PacketNumberIdGenerator, usePacket } from '@tsdi/common/transport';
-import { provideClient, withBodySerialize, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
+import { provideClient, withBodySerialize, withClientFeatures, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withFeatures, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -83,19 +83,33 @@ export class TcpService {
     ],
     providers: [
         provideClient(
-            withBodySerialize(),
-            withClientTransfers(
-                useSimpleJson({
-                    generateId: true,
-                    mapping: (req, context) => {
-                        if (req instanceof TcpRequest) {
-                            return req.toJson(context.get(PatternFormatter));
+            withClientFeatures({
+                transfers: [
+                    useSimpleJson({
+                        generateId: true,
+                        mapping: (req, context) => {
+                            if (req instanceof TcpRequest) {
+                                return req.toJson(context.get(PatternFormatter));
+                            }
+                            return req
                         }
-                        return req
-                    }
-                }),
-                usePacket()
-            ),
+                    }),
+                    usePacket()
+                ]
+            }),
+            // withBodySerialize(),
+            // withClientTransfers(
+            //     useSimpleJson({
+            //         generateId: true,
+            //         mapping: (req, context) => {
+            //             if (req instanceof TcpRequest) {
+            //                 return req.toJson(context.get(PatternFormatter));
+            //             }
+            //             return req
+            //         }
+            //     }),
+            //     usePacket()
+            // ),
             withTcpClientTransport({
                 providers: [
                     { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator }
@@ -107,25 +121,41 @@ export class TcpService {
             })
         ),
         provideService(
-            withInterceptors(BigFileInterceptor),
-            withJson(),
-            withBodyparser(),
-            // withContent(),
-            // withRouter(),
-            withRouter(),
-            withLogger(),
-            withFilters(ExceptionHandlerFilter),
-            withTransfers(
-                usePacket(),
-                useSimpleJson({
-                    mapping: (res, context) => {
-                        if (res instanceof UrlOutgoing) {
-                            return res.toJson()
+            withFeatures({
+                content: true,
+                interceptors: [BigFileInterceptor],
+                transfers: [
+                    usePacket(),
+                    useSimpleJson({
+                        mapping: (res, context) => {
+                            if (res instanceof UrlOutgoing) {
+                                return res.toJson()
+                            }
+                            return res;
                         }
-                        return res;
-                    }
-                })
-            ),
+                    })
+
+                ]
+            }),
+            // withInterceptors(BigFileInterceptor),
+            // withJson(),
+            // withBodyparser(),
+            // withContent(),
+            // // withRouter(),
+            // withRouter(),
+            // withLogger(),
+            // withFilters(ExceptionHandlerFilter),
+            // withTransfers(
+            //     usePacket(),
+            //     useSimpleJson({
+            //         mapping: (res, context) => {
+            //             if (res instanceof UrlOutgoing) {
+            //                 return res.toJson()
+            //             }
+            //             return res;
+            //         }
+            //     })
+            // ),
             withTcpTransport({
                 microservice: true,
                 listenOpts: {

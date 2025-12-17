@@ -3,10 +3,11 @@ import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, TransferSide, useSimpleJson,
     UrlClientIncomingFactory, TopicClientIncomingFactory
 } from '@tsdi/common';
-import { getClientInterceptorsToken, getClientTransfersToken } from './tokens';
+import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
+import { FilterLike, GuardLike } from '@tsdi/core';
 
 
 
@@ -17,6 +18,8 @@ import { ClientConfig } from './options';
  */
 export enum ClientFeatureKind {
     Configure,
+    Guards,
+    Filters,
     Interceptors,
     // LegacyInterceptors,
     CustomXsrfConfiguration,
@@ -32,7 +35,7 @@ export enum ClientFeatureKind {
 
 
 
-export interface ClientFeature<Kind extends ClientFeatureKind> {
+export interface ClientFeature<Kind extends ClientFeatureKind = ClientFeatureKind> {
     kind: Kind;
     config?: ClientConfig;
     providers: Provider[];
@@ -45,10 +48,10 @@ export interface ClientTransportFeature {
 }
 
 
-export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: ClientConfig) => ClientFeature<Kind>;
+export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: ClientConfig) => ClientFeature<Kind> | ClientFeature<Kind>[];
 
 
-export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Exclude<Kind, ClientFeatureKind.Transport>> | ClientTransportFeature[] | ClientFeatureFn<Exclude<Kind, ClientFeatureKind.Transport>>;
+export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ClientFeature<Kind>[] | ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> | ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>>[];
 
 
 
@@ -59,7 +62,8 @@ export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Ex
  */
 export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[]): Provider[] {
 
-    const transports = features.filter(f => isArray(f)).flatMap(f => f as ClientTransportFeature[]);
+    const allFeatures = features.flatMap(f => f as (ClientFeature<ClientFeatureKind> | ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>>));
+    const transports = allFeatures.filter(f => !isFunction(f) && f.kind === ClientFeatureKind.Transport) as ClientTransportFeature[];
 
     if (!transports.length) {
         throw new ArgumentException('client transport feature is required.');
@@ -67,23 +71,26 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
 
     const providers: Provider[] = [];
 
-    transports.map(ts => {
+    transports.forEach(ts => {
         const kinds = new Map<ClientFeatureKind, Provider[]>();
         const config = ts.config as ClientConfig & TransportConfig;
-        features.forEach(f => {
-            if (isArray(f)) {
+
+        allFeatures.forEach(f => {
+            if ((f as ClientTransportFeature).kind === ClientFeatureKind.Transport) {
                 return;
             }
-            const feature = isFunction(f) ? f(config) : f;
-            if (feature.config && !matchTransport(feature.config, config)) {
-                return;
-            }
-            const pdrs = kinds.get(feature.kind);
-            if (pdrs) {
-                pdrs.push(...feature.providers);
-            } else {
-                kinds.set(feature.kind, feature.providers.slice(0));
-            }
+            const fs = isFunction(f) ? f(config) : f;
+            (isArray(fs) ? fs : [fs]).forEach(feature => {
+                if (feature.config && !matchTransport(feature.config, config)) {
+                    return;
+                }
+                const pdrs = kinds.get(feature.kind);
+                if (pdrs) {
+                    pdrs.push(...feature.providers);
+                } else {
+                    kinds.set(feature.kind, feature.providers.slice(0));
+                }
+            });
         });
 
         // if (!kinds.has(FeatureKind.Configure)) {
@@ -94,7 +101,7 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
         //     throw new ArgumentException(`messings ${config.protocol}${config.microservice ? ' microservice' : ''} client transport` + (config.name ? `, ailas with name ${config.name}` : ''));
         // }
 
-        Array.from(kinds.keys()).sort().forEach(k => {
+        Array.from(kinds.keys()).sort((a, b) => a - b).forEach(k => {
             providers.push(...kinds.get(k)!);
         });
 
@@ -224,6 +231,93 @@ export function withBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySeria
 }
 
 
+/**
+ * 
+ * Add guards to the configuration of the `Client`
+ * instance.
+ *
+ * @see {@link FilterLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param guards 
+ * @returns
+ */
+export function withClientGuards(...guards: ProvdierOf<GuardLike>[]): ClientFeatureFn<ClientFeatureKind.Guards> {
+    return (config) => {
+        const token = getClientGuardsToken(config);
+        return makeClientFeature(
+            ClientFeatureKind.Guards,
+            guards.map((f) => toProvider(token, f, true)),
+            config
+        );
+    }
+}
+
+/**
+ * 
+ * Add filters to the configuration of the `Client`
+ * instance.
+ *
+ * @see {@link FilterLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param filters 
+ * @returns
+ */
+export function withClientFilters(...filters: ProvdierOf<FilterLike>[]): ClientFeatureFn<ClientFeatureKind.Filters> {
+    return (config) => {
+        const token = getClientFiltersToken(config);
+        return makeClientFeature(
+            ClientFeatureKind.Filters,
+            filters.map((f) => toProvider(token, f, true)),
+            config
+        );
+    }
+}
+
+
+
+const defaultOptions = {
+    bodySerialize: true
+}
+
+export function withClientFeatures(options?: {
+    filters?: ProvdierOf<FilterLike>[];
+    interceptors?: ProvdierOf<RequestInterceptorLike>[];
+    guards?: ProvdierOf<GuardLike>[];
+    timeout?: number;
+    bodySerialize?: boolean;
+    transfers?: TransferInterceptorFactory[];
+}): ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> {
+    const opts = { ...defaultOptions, ...options };
+    return (config) => {
+        const features: any[] = [];
+        if (opts.filters) {
+            features.push(withClientFilters(...opts.filters)(config));
+        }
+        if (opts.interceptors) {
+            features.push(withClientInterceptors(...opts.interceptors)(config));
+        }
+        if (opts.guards) {
+            features.push(withClientGuards(...opts.guards)(config));
+        }
+
+        if (opts.timeout) {
+            features.push(withClientTimeout(opts.timeout)(config));
+        }
+        if (opts.bodySerialize) {
+            features.push(withBodySerialize()(config));
+        }
+        if (opts.transfers) {
+            features.push(withClientTransfers(...opts.transfers)(config))
+        }
+
+        return features;
+    }
+
+}
 
 
 // /**

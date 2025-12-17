@@ -2,7 +2,7 @@ import { ArgumentException, ProvdierOf, Provider, Type, isArray, isBoolean, isFu
 import { FilterLike, GuardLike } from '@tsdi/core';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, LoggerInterceptor,
-    LoggerOptions, PayloadOptions, ResponseStatusFormater, SessionInterceptor
+    LoggerOptions, BodyparserOptions, ResponseStatusFormater, SessionInterceptor
 } from './interceptors';
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { EndpointTypedRespond } from './typed.respond';
@@ -11,7 +11,7 @@ import { matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferI
 import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
-import { ServiceConfig } from './server.options';
+import { CorsOpts, CsrfOps, ServiceConfig } from './server.options';
 
 /**
  * Identifies a particular kind of `Feature`.
@@ -20,6 +20,7 @@ import { ServiceConfig } from './server.options';
  */
 export enum FeatureKind {
     Configure,
+    Transfer,
     Filters,
     Guards,
     Interceptors,
@@ -33,12 +34,11 @@ export enum FeatureKind {
     Bodyparser,
     Router,
     Controller,
-    Transport,
-    Transfer
+    Transport
 }
 
 
-export interface Feature<Kind extends FeatureKind> {
+export interface Feature<Kind extends FeatureKind = FeatureKind> {
     kind: Kind;
     config?: ServiceConfig;
     providers: Provider[];
@@ -51,10 +51,10 @@ export interface TransportFeature {
     providers: Provider[];
 }
 
-export type FeatureFn<Kind extends Exclude<FeatureKind, FeatureKind.Transport>> = (config: ServiceConfig) => Feature<Kind>;
+export type FeatureFn<Kind extends Exclude<FeatureKind, FeatureKind.Transport>> = (config: ServiceConfig) => Feature<Kind> | Feature<Kind>[];
 
 
-export type FeatureLike<Kind extends FeatureKind> = Feature<Exclude<Kind, FeatureKind.Transport>> | TransportFeature[] | FeatureFn<Exclude<Kind, FeatureKind.Transport>>;
+export type FeatureLike<Kind extends FeatureKind> = Feature<Kind> | Feature<Kind>[] | FeatureFn<Exclude<Kind, FeatureKind.Transport>> | FeatureFn<Exclude<Kind, FeatureKind.Transport>>[];
 
 
 /**
@@ -63,8 +63,8 @@ export type FeatureLike<Kind extends FeatureKind> = Feature<Exclude<Kind, Featur
  * @param autoBootstrap default true 
  */
 export function provideService(...features: FeatureLike<FeatureKind>[]): Provider[] {
-
-    const transports = features.filter(f => isArray(f)).flatMap(f => f as TransportFeature[]);
+    const allFeatures = features.flatMap(f => f as (Feature<FeatureKind> | FeatureFn<Exclude<FeatureKind, FeatureKind.Transport>>));
+    const transports = allFeatures.filter(f => !isFunction(f) && f.kind === FeatureKind.Transport) as TransportFeature[];
     if (!transports.length) {
         throw new ArgumentException('endpoint transport feature is required.');
     }
@@ -82,22 +82,24 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
     transports.forEach(ts => {
         const kinds = new Map<FeatureKind, Provider[]>();
         const config = ts.config;
-        features.forEach(f => {
-            if (isArray(f)) {
+        allFeatures.forEach(f => {
+            if ((f as TransportFeature).kind === FeatureKind.Transport) {
                 return;
             }
 
-            const feature = isFunction(f) ? f(config) : f;
-            if (feature.config && !matchTransport(feature.config, config)) {
-                return;
-            }
-            const pdrs = kinds.get(feature.kind);
-            if (pdrs) {
-                pdrs.push(...feature.providers);
-            } else {
-                kinds.set(feature.kind, feature.providers.slice(0));
-            }
+            const fs = isFunction(f) ? f(config) : f;
 
+            (isArray(fs) ? fs : [fs]).forEach(feature => {
+                if (feature.config && !matchTransport(feature.config, config)) {
+                    return;
+                }
+                const pdrs = kinds.get(feature.kind);
+                if (pdrs) {
+                    pdrs.push(...feature.providers);
+                } else {
+                    kinds.set(feature.kind, feature.providers.slice(0));
+                }
+            });
         });
 
         // if (!kinds.has(FeatureKind.Configure)) {
@@ -110,7 +112,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
         // }
 
 
-        Array.from(kinds.keys()).sort().forEach(k => {
+        Array.from(kinds.keys()).sort((a, b) => a - b).forEach(k => {
             providers.push(...kinds.get(k)!);
         });
 
@@ -132,6 +134,77 @@ export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[
     }
 }
 
+
+export interface FeatureOptions {
+    filters?: ProvdierOf<FilterLike>[];
+    interceptors?: ProvdierOf<RequestInterceptorLike>[];
+    guards?: ProvdierOf<GuardLike>[];
+    cors?: boolean | CorsOpts;
+    session?: boolean | SessionOptions;
+    csrf?: boolean | CsrfOps;
+    content?: boolean | ContentOptions;
+    logger?: boolean | LoggerOptions;
+    json?: boolean | JsonOptions;
+    bodyparser?: boolean | BodyparserOptions;
+    router?: boolean | RouteOpts;
+    transfers?: TransferInterceptorFactory[];
+}
+
+const defaultOptions: FeatureOptions = {
+    logger: true,
+    bodyparser: true,
+    content: false,
+    json: false,
+    router: true
+};
+
+export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<FeatureKind, FeatureKind.Transport>> {
+    const opts = { ...defaultOptions, ...options };
+    return (config) => {
+        const features: any[] = [];
+
+        Object.keys(opts)
+
+        if (opts.filters) {
+            features.push(withFilters(...opts.filters)(config));
+        }
+        if (opts.interceptors) {
+            features.push(withInterceptors(...opts.interceptors)(config));
+        }
+        if (opts.guards) {
+            features.push(withGuards(...opts.guards)(config));
+        }
+
+        if (opts.logger) {
+            features.push(withLogger(isBoolean(opts.logger) ? undefined : opts.logger)(config))
+        }
+
+        if (opts.session) {
+            features.push(withSession(isBoolean(opts.session) ? undefined : opts.session)(config));
+        }
+
+        // if(opts.cors) {
+        //     features.push()
+        // }
+
+        if (opts.content) {
+            features.push(withContent(isBoolean(opts.content) ? undefined : opts.content)(config));
+        }
+        if (opts.bodyparser) {
+            features.push(withBodyparser(isBoolean(opts.bodyparser) ? undefined : opts.bodyparser)(config))
+        }
+
+        if (opts.router) {
+            features.push(withRouter(isBoolean(opts.router) ? undefined : opts.router)(config))
+        }
+
+        if (opts.transfers) {
+            features.push(withTransfers(...opts.transfers)(config));
+        }
+
+        return features.flatMap(r => r);
+    }
+}
 
 /**
  * 
@@ -322,7 +395,7 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
  * @param options 
  * @returns 
  */
-export function withBodyparser(options?: PayloadOptions): FeatureFn<FeatureKind.Bodyparser> {
+export function withBodyparser(options?: BodyparserOptions): FeatureFn<FeatureKind.Bodyparser> {
     return (config) => {
         const token = getInterceptorsToken(config);
         return makeFeature(
@@ -436,7 +509,7 @@ export function withTransfers(...selectors: TransferInterceptorFactory[]): Featu
             selectors.push(useSimpleJson());
         }
         selectors.forEach((fac) => {
-            const itps = fac(config);            
+            const itps = fac(config);
             if (isArray(itps)) {
                 providers.push(...toProviders(token, itps, true));
             } else {
