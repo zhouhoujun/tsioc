@@ -1,5 +1,5 @@
 import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
-import { IFormData, isFormData } from '@tsdi/common';
+import { IFormData, IPipeDestination, isFormData } from '@tsdi/common';
 import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, IStream, IReadable, IWritable, IDuplex, IPassThrough } from '@tsdi/common';
 import { EventEmitter } from 'node:events';
 import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Transform, PipelineSource, isReadable, TransformCallback, pipeline } from 'node:stream';
@@ -17,10 +17,10 @@ const gunzip = promisify(zlib.gunzip, zlib);
 @Injectable({ static: true })
 export class NodeStreamAdapter extends StreamAdapter {
 
-    async pipeTo(source: PipeSource | IStream, destination: Writable, options: { end?: boolean, signal?: any } = { end: true }): Promise<void> {
+    async pipeTo(source: PipeSource | IStream, destination: IPipeDestination, options: { end?: boolean, signal?: any } = { end: true }): Promise<void> {
         await pmPipeline(source as PipelineSource<any>, destination, options as any)
             .then(r => {
-                if (options.end && !destination.writableEnded) return promisify(destination.end, destination)();
+                if (options.end && !(destination as Writable).writableEnded) return promisify((destination as Writable).end, destination)();
                 return r;
             })
             .finally(() => {
@@ -29,10 +29,22 @@ export class NodeStreamAdapter extends StreamAdapter {
             });
     }
 
-    pipeline<T extends Writable>(source: PipeSource<any>, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, transform3: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    async read<T extends Uint8Array>(readable: IReadable, options: { end?: boolean } = { end: true }): Promise<T> {
+        const chunks: Uint8Array<ArrayBufferLike>[] = [];
+        await pmPipeline(readable,
+            async (source) => {
+                for await (const chunk of source) {
+                    chunks.push(chunk);
+                }
+            }, options);
+
+        return Buffer.concat(chunks) as Uint8Array as T;
+    }
+
+    pipeline<T extends Writable>(source: PipeSource<any>, destination: IPipeDestination, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, destination: IPipeDestination, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, destination: IPipeDestination, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, transform3: Transform, destination: IPipeDestination, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends Writable>(...args: any[]): T {
         if (!isFunction(args[args.length - 1])) {
             args.push((err: any) => {

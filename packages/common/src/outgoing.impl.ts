@@ -1,9 +1,9 @@
 import { Abstract, Injectable, isNil } from '@tsdi/ioc';
-import { Outgoing, OutgoingMessage, TOutgoing } from './outgoing';
+import { Outgoing, OutgoingMessage } from './outgoing';
 import { Header, HeaderMappings, HeadersLike } from './headers';
 import { Incoming } from './incoming';
 import { StatusOptions } from './response';
-import { IReadable, IWritable } from './stream';
+import { IReadable, IWritable, WritableLike } from './stream';
 import { StreamAdapter } from './StreamAdapter';
 
 
@@ -19,7 +19,7 @@ export abstract class AbstractOutgoingFactory<T extends OutgoingMessage = Outgoi
         pattern?: string;
         headers?: HeadersLike;
         payload?: any;
-    }): TOutgoing<T>
+    }): WritableLike<T>
 }
 
 /**
@@ -44,7 +44,7 @@ export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoin
         error?: any;
         headers?: HeadersLike;
         payload?: any;
-    }): TOutgoing<Outgoing>
+    }): WritableLike<Outgoing>
 }
 
 
@@ -153,7 +153,7 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
         this.headers.removeHeader(field);
     }
 
-    abstract toJson(): Record<string, any>;
+    abstract toJson(payloadKey?: 'body' | 'payload'): Record<string, any>;
 
 }
 
@@ -218,7 +218,7 @@ export function parseUrlOutgoing(init: OutgoingOpts<IReadable> & { url: string }
 export class UrlOutgoingFactory implements OutgoingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
-    create(options: OutgoingOpts & { url: string }): TOutgoing<UrlOutgoing> {
+    create(options: OutgoingOpts & { url: string }): WritableLike<UrlOutgoing> {
         if (this.streamAdapter.isReadable(options.payload)) {
             return parseUrlOutgoing(options);
         }
@@ -287,7 +287,7 @@ export function parseTopicOutgoing(init: OutgoingOpts<IReadable> & { topic: stri
 export class TopicOutgoingFactory implements OutgoingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
-    create(options: OutgoingOpts & { topic: string }): TOutgoing<TopicOutgoing> {
+    create(options: OutgoingOpts & { topic: string }): WritableLike<TopicOutgoing> {
         if (this.streamAdapter.isReadable(options.payload)) {
             return parseTopicOutgoing(options);
         }

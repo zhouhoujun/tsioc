@@ -1,5 +1,5 @@
 import { isArray } from '@tsdi/ioc';
-import { IDuplex, IEventEmitter, IPassThrough, IReadable, IStream, ITransform, IWritable } from './stream';
+import { IDuplex, IEventEmitter, IPassThrough, IPipeDestination, IReadable, IStream, ITransform, IWritable } from './stream';
 import { Events } from './events';
 
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadable;
@@ -68,19 +68,25 @@ export abstract class StreamAdapter {
         source.pipe(writable, { end: false });
     }
 
+     /**
+     * read all
+     * @param readable 
+     */
+    abstract read<T extends Uint8Array>(readable: IReadable, options?: { end?: boolean }): Promise<T>;
+
     /**
      * pipe line
      * @param source 
      * @param destination
      * @param options 
      */
-    abstract pipeTo(source: PipeSource | IStream, destination: IWritable, options?: { end?: boolean, signal?: any }): Promise<void>;
+    abstract pipeTo(source: PipeSource | IStream, destination: IPipeDestination, options?: { end?: boolean, signal?: any }): Promise<void>;
     /**
      * pipe line
      * @param source 
      * @param destination 
      */
-    abstract pipeline<T extends IWritable>(source: PipeSource, destination: T, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, destination: IPipeDestination, callback?: (err: any) => void): T;
     /**
      *  pipe line
      * @param source source stream
@@ -88,7 +94,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, destination: T, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, destination: IPipeDestination, callback?: (err: any) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -97,7 +103,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, transform2: ITransform, destination: T, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, transform2: ITransform, destination: IPipeDestination, callback?: (err: any) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -107,7 +113,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, transform2: ITransform, transform3: ITransform, destination: T, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, transform2: ITransform, transform3: ITransform, destination: IPipeDestination, callback?: (err: any) => void): T;
 
     /**
      * json streamify

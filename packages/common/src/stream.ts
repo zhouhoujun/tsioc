@@ -325,7 +325,14 @@ export interface IEventEmitter {
 }
 
 
+export type IPipeDestinationIterableFunction<T> = (source: AsyncIterable<T>) => AsyncIterable<any>;
+export type IPipeDestinationPromiseFunction<T, P> = (source: AsyncIterable<T>) => Promise<P>;
+
 export type IPipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadable;
+
+export type IPipeDestination<T = any, P = any> = IWritable
+    | IPipeDestinationIterableFunction<T>
+    | IPipeDestinationPromiseFunction<T, P>
 
 export interface IStream extends IEventEmitter {
     pipe<T extends IWritable>(
@@ -380,3 +387,7 @@ export interface ITransform extends IDuplex {
 export interface IPassThrough extends ITransform {
 
 }
+
+export type ReadableLike<T> = T | (T & IReadable);
+
+export type WritableLike<T> = T | (T & IWritable);

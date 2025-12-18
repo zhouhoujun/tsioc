@@ -2,7 +2,8 @@ import { Abstract, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { ParameterScope, createPayloadResolveInterceptors } from '@tsdi/core';
 import {
     HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException,
-    RequestContext, Incoming, Outgoing, FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp, ContentType
+    RequestContext, Incoming, Outgoing, FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp, ContentType,
+    ReadableLike, WritableLike    
 } from '@tsdi/common';
 import { isBuffer } from '@tsdi/common/transport';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
@@ -16,8 +17,8 @@ import { Session } from './sessions/Session';
  */
 @Abstract()
 export abstract class AbstractRequestContext<
-    TRequest extends Incoming<any> = Incoming<any>,
-    TResponse extends Outgoing<any> = Outgoing<any>,
+    TRequest extends ReadableLike<Incoming> = ReadableLike<Incoming>,
+    TResponse extends WritableLike<Outgoing> = WritableLike<Outgoing>,
     TStatus = any> extends RequestContext {
 
     abstract get request(): TRequest;

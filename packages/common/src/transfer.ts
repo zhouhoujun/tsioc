@@ -60,6 +60,32 @@ export interface TransferInterceptorFactory {
     (side: TransferConfig): ProvdierOf<RequestInterceptorLike> | ProvdierOf<RequestInterceptorLike>[];
 }
 
+export interface StringTransferOptions {
+    type: 'string';
+    codings?: string;
+    /**
+     * custom packet unpacket.
+     */
+    packet?: TransferOptions;
+}
+
+export interface JsonTransferOptions {
+    type: 'json';
+    payloadKey?: 'payload' | 'body';
+    /**
+     * custom packet unpacket.
+     */
+    packet?: TransferOptions;
+}
+
+export interface StreamTransferOptions {
+    type: 'stream';
+
+}
+
+
+export type TransferFactoryOptions = StringTransferOptions | JsonTransferOptions | StreamTransferOptions | TransferInterceptorFactory[];
+
 
 export const PAYLOAD_KEY = new ContextToken<string>(() => 'body');
 
@@ -87,7 +113,7 @@ export function useSimpleJson(options?: {
                     mergeMap(async res => {
                         const streamAdapter = context.get(StreamAdapter);
                         if (streamAdapter.isReadable(res)) {
-                            res = res.read();
+                            res = await streamAdapter.read(res);
                         }
                         return JSON.parse(res, options?.reviver);
                     })
@@ -98,7 +124,7 @@ export function useSimpleJson(options?: {
                 return defer(async () => {
                     const streamAdapter = context.get(StreamAdapter);
                     if (streamAdapter.isReadable(req)) {
-                        req = req.read();
+                        req = await streamAdapter.read(req);
                     }
                     const reqdata = JSON.parse(req, options?.reviver);
                     return reqdata;

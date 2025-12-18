@@ -1,8 +1,8 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
-import { Incoming, IncomingMessage, StatusIncoming, TIncoming } from './incoming';
+import { Incoming, IncomingMessage, StatusIncoming } from './incoming';
 import { HeaderMappings, HeadersLike } from './headers';
 import { ParameterCodec } from './params';
-import { IReadable } from './stream';
+import { IReadable, ReadableLike } from './stream';
 import { StreamAdapter } from './StreamAdapter';
 import { StatusOptions } from './response';
 
@@ -14,7 +14,7 @@ import { StatusOptions } from './response';
  */
 @Abstract()
 export abstract class AbstractIncomingFactory<T extends IncomingMessage = IncomingMessage> {
-    abstract create(options: any): TIncoming<T>;
+    abstract create(options: any): ReadableLike<T>;
 }
 
 /**
@@ -22,7 +22,7 @@ export abstract class AbstractIncomingFactory<T extends IncomingMessage = Incomi
  */
 @Abstract()
 export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming<any>> {
-    abstract create(options: IncomingOpts): TIncoming<Incoming<any>>;
+    abstract create(options: IncomingOpts): ReadableLike<Incoming<any>>;
 }
 
 /**
@@ -30,7 +30,7 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
  */
 @Abstract()
 export abstract class ClientIncomingFactory implements AbstractIncomingFactory<StatusIncoming> {
-    abstract create(options: ClientIncomingOpts): TIncoming<StatusIncoming>;
+    abstract create(options: ClientIncomingOpts): ReadableLike<StatusIncoming>;
 }
 
 
@@ -230,7 +230,7 @@ export function parseUrlIncoming(init: UrlIncomingOptions<IReadable>): UrlIncomi
 export class UrlIncomingFactory implements IncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
-    create(options: UrlIncomingOptions): TIncoming<UrlIncoming> {
+    create(options: UrlIncomingOptions): ReadableLike<UrlIncoming> {
         if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseUrlIncoming(options);
         }
@@ -287,7 +287,7 @@ export function parseTopicIncoming(init: TopicIncomingOptions<IReadable>): Topic
 export class TopicIncomingFactory implements IncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
-    create(options: TopicIncomingOptions): TIncoming<TopicIncoming> {
+    create(options: TopicIncomingOptions): ReadableLike<TopicIncoming> {
         if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseTopicIncoming(options);
         }
@@ -430,7 +430,7 @@ export class UrlClientIncomingFactory implements ClientIncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    create<T = any>(options: UrlClientIncomingOpts<any, any>): TIncoming<UrlClientIncoming<T>> {
+    create<T = any>(options: UrlClientIncomingOpts<any, any>): ReadableLike<UrlClientIncoming<T>> {
         if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseUrlClientIncoming(options);
         }
@@ -478,7 +478,7 @@ export class TopicClientIncomingFactory implements ClientIncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    create<T = any>(options: TopicClientIncomingOpts<any, any>): TIncoming<TopicClientIncoming<T>> {
+    create<T = any>(options: TopicClientIncomingOpts<any, any>): ReadableLike<TopicClientIncoming<T>> {
         if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseTopicClientIncoming(options);
         }

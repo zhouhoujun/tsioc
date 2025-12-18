@@ -15,8 +15,6 @@ export interface OutgoingMessage<T = any, THead extends Header = Header> extends
 }
 
 
-export type TOutgoing<T extends OutgoingMessage> = T | (T & IWritable);
-
 /**
  * Server outgoing message.
  */

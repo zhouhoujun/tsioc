@@ -62,6 +62,3 @@ export interface StatusIncoming<T = any, TStatus = any, TMsg = any> extends Inco
     error?: any;
 
 }
-
-
-export type TIncoming<T extends Incoming> = T | (T & IReadable);

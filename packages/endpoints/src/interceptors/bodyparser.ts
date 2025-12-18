@@ -1,12 +1,12 @@
 /* eslint-disable no-control-regex */
 import { Abstract, Injectable, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
-import { RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext } from '@tsdi/common';
+import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike } from '@tsdi/common';
 import { IReadable, MimeTypes } from '@tsdi/common';
+import { isBuffer } from '@tsdi/common/transport';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
-import { isBuffer } from '@tsdi/common/transport';
 
 
 @Abstract()
@@ -31,7 +31,7 @@ export class BodyparserOptions {
 }
 
 @Injectable()
-export class BodyparserInterceptor implements RequestInterceptor<AbstractRequestContext> {
+export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<Incoming>, WritableLike<Outgoing>, AbstractRequestContext> {
 
     private options: {
         json: {

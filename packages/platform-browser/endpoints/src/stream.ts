@@ -1,5 +1,5 @@
 import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
-import { global, isFormData } from '@tsdi/common';
+import { global, IPipeDestination, IReadable, isFormData } from '@tsdi/common';
 import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions } from '@tsdi/common';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import { EventEmitter } from 'pumpify';
@@ -11,10 +11,10 @@ import { JsonStreamStringify } from './stringify';
 @Injectable({ static: true })
 export class BrowserStreamAdapter extends StreamAdapter {
 
-    async pipeTo(source: PipeSource | Stream, destination: Writable, options: { end?: boolean } = { end: true }): Promise<void> {
-        await promisify<PipeSource, Writable, any, void>(pumpify.pipeline, pumpify)(source as PipeSource, destination, options)
+    async pipeTo(source: PipeSource | Stream, destination: IPipeDestination, options: { end?: boolean } = { end: true }): Promise<void> {
+        await promisify<PipeSource, Writable, any, void>(pumpify.pipeline, pumpify)(source as PipeSource, destination  as Writable, options)
             .then(r => {
-                if (options.end && !destination.writableEnded) return promisify(destination.end, destination)();
+                if (options.end && !(destination as Writable).writableEnded) return promisify((destination as Writable).end, destination)();
                 return r;
             })
             .finally(() => {
@@ -22,6 +22,18 @@ export class BrowserStreamAdapter extends StreamAdapter {
                 isFunction((source as any).destroy) && (source as any).destroy();
             });
 
+    }
+
+    async read<T extends Uint8Array>(readable: IReadable, options: { end?: boolean } = {end: true}): Promise<T> {
+        const chunks: T[] = [];
+        await this.pipeTo(readable,
+            async (source) => {
+                for await (const chunk of source) {
+                    chunks.push(chunk);
+                }
+            }, options);
+
+        return Buffer.concat(chunks) as Uint8Array as T;
     }
 
     pipeline<T extends Writable>(source: PipeSource<any>, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;

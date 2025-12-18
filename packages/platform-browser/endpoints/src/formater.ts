@@ -1,6 +1,6 @@
 import { hasProps, Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
-import { RequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
+import { AbstractRequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
 
 
 @Injectable({ static: true })
@@ -9,7 +9,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
     readonly incoming = '--->';
     readonly outgoing = '<---';
 
-    format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[] {
+    format(logger: Logger, ctx: AbstractRequestContext, hrtime?: [number, number]): string[] {
         const [status, message] = this.formatStatus(ctx);
         return hrtime ? [
             this.outgoing,
@@ -28,7 +28,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         ]
     }
 
-    private formatStatus(ctx: RequestContext): [string, string] {
+    private formatStatus(ctx: AbstractRequestContext): [string, string] {
         const { status, statusMessage } = ctx;
         return [String(status), statusMessage];
     }
