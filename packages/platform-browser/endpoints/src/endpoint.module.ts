@@ -1,9 +1,9 @@
 import { Module } from '@tsdi/ioc';
-import { StreamAdapter, FileAdapter } from '@tsdi/common';
-import { ContentSendAdapter, ResponseStatusFormater } from '@tsdi/endpoints';
+import { StreamAdapter, FileAdapter, ResponseStatusFormater } from '@tsdi/common';
+// import { ContentSendAdapter,  } from '@tsdi/endpoints';
 import { BrowserResponseStatusFormater } from './formater';
 import { BrowserStreamAdapter } from './stream';
-import { BrowserContentSendAdapter } from './send';
+// import { BrowserContentSendAdapter } from './send';
 import { BrowserFileAdapter } from './file';
 
 
@@ -11,7 +11,7 @@ import { BrowserFileAdapter } from './file';
 @Module({
     providers: [
         { provide: StreamAdapter, useClass: BrowserStreamAdapter },
-        { provide: ContentSendAdapter, useClass: BrowserContentSendAdapter },
+        // { provide: ContentSendAdapter, useClass: BrowserContentSendAdapter },
         { provide: FileAdapter, useClass: BrowserFileAdapter },
         { provide: ResponseStatusFormater, useClass: BrowserResponseStatusFormater }
     ]

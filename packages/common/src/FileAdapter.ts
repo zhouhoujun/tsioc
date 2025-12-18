@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
-import { IReadable } from './stream';
+import { Encodings, IReadable } from './stream';
+
 
 /**
  * file adapter
@@ -58,10 +59,10 @@ export abstract class FileAdapter {
      */
     abstract extname(path: string, zipExt?: string): string;
 
-     /**
-     * Returns `true` if the path exists, `false` otherwise.
-     *
-     */
+    /**
+    * Returns `true` if the path exists, `false` otherwise.
+    *
+    */
     abstract existsSync(path: string): boolean;
 
     /**
@@ -90,6 +91,62 @@ export abstract class FileAdapter {
      *
      * If `options` is a string, then it specifies the encoding.
      */
-    abstract read(path: string, options?: any): IReadable;
+    abstract read(path: string, options?: Encodings | any): IReadable;
 
+    /**
+     * find file with path and options
+     * @param path 
+     * @param options 
+     * @returns 
+     */
+    abstract find<T extends IStats>(path: string, options?: FindOptions): Promise<FileStats<T> | null>;
+}
+
+
+export interface IStats<T = number> {
+    isFile(): boolean;
+    isDirectory(): boolean;
+    isBlockDevice(): boolean;
+    isCharacterDevice(): boolean;
+    isSymbolicLink(): boolean;
+    isFIFO(): boolean;
+    isSocket(): boolean;
+    dev: T;
+    ino: T;
+    mode: T;
+    nlink: T;
+    uid: T;
+    gid: T;
+    rdev: T;
+    size: T;
+    blksize: T;
+    blocks: T;
+    atimeMs: T;
+    mtimeMs: T;
+    ctimeMs: T;
+    birthtimeMs: T;
+    atime: Date;
+    mtime: Date;
+    ctime: Date;
+    birthtime: Date;
+}
+
+
+export interface FileStats<T extends IStats> {
+    filename: string;
+    stats: T;
+}
+export interface FindOptions {
+    root?: string | string[];
+    prefix?: string;
+    baseUrl?: string;
+    index?: string | boolean;
+    maxAge?: number;
+    immutable?: boolean;
+    hidden?: boolean;
+    format?: boolean;
+    extensions?: string[] | false;
+    brotli?: boolean;
+    gzip?: boolean;
+    acceptsEncodings?: (...encodings: string[]) => string | string[] | false
 }

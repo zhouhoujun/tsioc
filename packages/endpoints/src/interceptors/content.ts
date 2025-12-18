@@ -1,6 +1,6 @@
 import { Abstract, Inject, Injectable, isDefined, Optional, token } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { GET, HEAD, NotFoundException, RequestContext } from '@tsdi/common';
+import { FileAdapter, FindOptions, GET, HEAD, NotFoundException, RequestContext } from '@tsdi/common';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 
@@ -20,25 +20,27 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
     }
 
 
-    intercept(input: AbstractRequestContext, next: Handler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
+    intercept(input: AbstractRequestContext, next: Handler<AbstractRequestContext, any>, context: AbstractRequestContext): Observable<any> {
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
             || !input.originalUrl) {
             return next.handle(input, context);
         }
 
         const options = this.options;
+        const fileAdapter = context.get(FileAdapter);
         if (options.defer) {
             return next.handle(input, context)
                 .pipe(
                     mergeMap(async res => {
-                        const file = await this.send(input,  options)
+                        const file = await this.find(input, fileAdapter, options)
                         if (!file) {
                             return throwError(() => new NotFoundException())
                         }
+                        return file;
                     })
                 )
         } else {
-            return from(this.send(input, options))
+            return from(this.find(input, fileAdapter, options))
                 .pipe(
                     mergeMap(file => {
                         if (!file) return next.handle(input, context)
@@ -48,58 +50,40 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
         }
     }
 
-    protected async send(ctx: AbstractRequestContext, options: ContentOptions) {
-        let file = '';
-        if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return file;
+    protected find(ctx: AbstractRequestContext, fileAdapter: FileAdapter, options: ContentOptions) {
+        if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return Promise.resolve(null);
 
-        const sender = ctx.get(ContentSendAdapter);
+        return fileAdapter.find(ctx.originalUrl, options);
 
-        file = await sender.send(ctx, ctx.originalUrl, options);
 
-        return file;
     }
 
 
 }
 
-export interface SendOptions<TStats = any> {
-    root?: string | string[];
-    prefix?: string;
-    baseUrl?: string | boolean;
-    index?: string | boolean;
-    maxAge?: number;
-    immutable?: boolean;
-    hidden?: boolean;
-    format?: boolean;
-    extensions?: string[] | false;
-    brotli?: boolean;
-    gzip?: boolean;
-    setHeaders?: (ctx: AbstractRequestContext, path: string, stats: TStats) => void;
-}
-
-
 /**
  * Static Content options.
  */
 
-export interface ContentOptions extends SendOptions {
+export interface ContentOptions<TStats = any> extends FindOptions {
+    setHeaders?: (ctx: AbstractRequestContext, path: string, stats: TStats) => void;
     defer?: boolean;
 }
 
 
-/**
- * Content send adapter.
- */
-@Abstract()
-export abstract class ContentSendAdapter {
-    /**
-     * send file by request context
-     * @param ctx RequestContext
-     * @param path file path
-     * @param options send options
-     */
-    abstract send(ctx: AbstractRequestContext, path: string, options: SendOptions): Promise<string>;
-}
+// /**
+//  * Content send adapter.
+//  */
+// @Abstract()
+// export abstract class ContentSendAdapter {
+//     /**
+//      * send file by request context
+//      * @param ctx RequestContext
+//      * @param path file path
+//      * @param options send options
+//      */
+//     abstract send(ctx: AbstractRequestContext, path: string, options: SendOptions): Promise<string>;
+// }
 
 
 

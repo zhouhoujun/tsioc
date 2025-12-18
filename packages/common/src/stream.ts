@@ -384,6 +384,20 @@ export interface ITransform extends IDuplex {
     _flush(callback: (error?: Error | null, data?: any) => void): void;
 }
 
+
+export type Encodings = "ascii"
+    | "utf8"
+    | "utf-8"
+    | "utf16le"
+    | "utf-16le"
+    | "ucs2"
+    | "ucs-2"
+    | "base64"
+    | "base64url"
+    | "latin1"
+    | "binary"
+    | "hex";
+    
 export interface IPassThrough extends ITransform {
 
 }

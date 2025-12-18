@@ -1,76 +1,76 @@
-import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
-import { PROCESS_ROOT } from '@tsdi/core';
-import { joinPath } from '@tsdi/common';
-import { BadRequestException } from '@tsdi/common/transport';
-import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
+// import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
+// import { PROCESS_ROOT } from '@tsdi/core';
+// import { joinPath } from '@tsdi/common';
+// import { BadRequestException } from '@tsdi/common/transport';
+// import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 
-@Injectable({ static: true })
-export class BrowserContentSendAdapter extends ContentSendAdapter {
+// @Injectable({ static: true })
+// export class BrowserContentSendAdapter extends ContentSendAdapter {
 
-    async send(ctx: RequestContext, path: string, opts: SendOptions<any>): Promise<string> {
+//     async send(ctx: RequestContext, path: string, opts: SendOptions<any>): Promise<string> {
 
-        if (isNil(path) || !isString(path)) return '';
+//         if (isNil(path) || !isString(path)) return '';
 
-        if (path.startsWith('/')) {
-            path = path.substring(1);
-        }
-        if (opts.prefix) {
-            const prefix = path.startsWith('/') ? opts.prefix.substring(1) : opts.prefix;
-            if (!path.startsWith(prefix)) return '';
-            path = path.slice(prefix.length);
-        }
-        const endSlash = path[path.length - 1] === '/';
-        // path = path.substring(parse(path).root.length);
-        const roots = isArray(opts.root) ? opts.root : [opts.root ?? 'public'];
-        try {
-            path = decodeURIComponent(path)
-        } catch {
-            throw new BadRequestException('failed to decode url');
-        }
+//         if (path.startsWith('/')) {
+//             path = path.substring(1);
+//         }
+//         if (opts.prefix) {
+//             const prefix = path.startsWith('/') ? opts.prefix.substring(1) : opts.prefix;
+//             if (!path.startsWith(prefix)) return '';
+//             path = path.slice(prefix.length);
+//         }
+//         const endSlash = path[path.length - 1] === '/';
+//         // path = path.substring(parse(path).root.length);
+//         const roots = isArray(opts.root) ? opts.root : [opts.root ?? 'public'];
+//         try {
+//             path = decodeURIComponent(path)
+//         } catch {
+//             throw new BadRequestException('failed to decode url');
+//         }
 
-        let index = opts.index;
-        if (isBoolean(index)) {
-            if (index) {
-                index = 'index.html';
-            } else if (INDEX_REGEXP.test(path)) {
-                return '';
-            }
-        }
-        if (index && endSlash) path += index;
-        if (absPath.test(path)) {
-            throw new BadRequestException('Malicious Path');
-        }
-
-
-        const baseUrl = ctx.get(PROCESS_ROOT);
-        const fsdir = new FileSystemDirectoryEntry();
-        let flieEntry: FileSystemEntry | undefined;
-        await lang.some(roots.map(root => () => {
-            const defer = lang.defer();
-            const rpath = isString(opts.baseUrl) ? joinPath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? joinPath(root, path!) : joinPath(baseUrl, root, path!);
-            fsdir.getFile(rpath, {
-                create: false
-            }, (entry) => {
-                if (!entry.isFile) defer.resolve()
-                flieEntry = entry;
-                defer.resolve(entry);
-            }, defer.reject);
-            return defer.promise;
-        }), (v) => !!v);
-
-        if (!flieEntry) return '';
+//         let index = opts.index;
+//         if (isBoolean(index)) {
+//             if (index) {
+//                 index = 'index.html';
+//             } else if (INDEX_REGEXP.test(path)) {
+//                 return '';
+//             }
+//         }
+//         if (index && endSlash) path += index;
+//         if (absPath.test(path)) {
+//             throw new BadRequestException('Malicious Path');
+//         }
 
 
-        const handle = new FileSystemDirectoryHandle();
+//         const baseUrl = ctx.get(PROCESS_ROOT);
+//         const fsdir = new FileSystemDirectoryEntry();
+//         let flieEntry: FileSystemEntry | undefined;
+//         await lang.some(roots.map(root => () => {
+//             const defer = lang.defer();
+//             const rpath = isString(opts.baseUrl) ? joinPath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? joinPath(root, path!) : joinPath(baseUrl, root, path!);
+//             fsdir.getFile(rpath, {
+//                 create: false
+//             }, (entry) => {
+//                 if (!entry.isFile) defer.resolve()
+//                 flieEntry = entry;
+//                 defer.resolve(entry);
+//             }, defer.reject);
+//             return defer.promise;
+//         }), (v) => !!v);
 
-        const filehandle = await handle.getFileHandle(flieEntry.fullPath);
-        const file = await filehandle.getFile();
-        ctx.body = file;
+//         if (!flieEntry) return '';
 
-        return flieEntry.name;
-    }
 
-}
+//         const handle = new FileSystemDirectoryHandle();
 
-const absPath = /^[a-zA-Z]+:\//;
-const INDEX_REGEXP = /index(\.\w+)*$/;
+//         const filehandle = await handle.getFileHandle(flieEntry.fullPath);
+//         const file = await filehandle.getFile();
+//         ctx.body = file;
+
+//         return flieEntry.name;
+//     }
+
+// }
+
+// const absPath = /^[a-zA-Z]+:\//;
+// const INDEX_REGEXP = /index(\.\w+)*$/;
