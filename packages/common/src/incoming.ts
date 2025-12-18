@@ -1,5 +1,4 @@
 import { Header, HeaderAccess } from './headers';
-import { IReadable } from './stream';
 
 /**
  * Incoming message

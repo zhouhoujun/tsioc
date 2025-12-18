@@ -1,19 +1,19 @@
 /* eslint-disable no-case-declarations */
 import { ContextToken, ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader, BadRequestException, RequestContext, HeaderAdapter } from '@tsdi/common';
-import { Redirector, StatusAdapter, StreamAdapter } from '@tsdi/common';
+import { StatusAdapter, StreamAdapter } from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { AbstractClient } from '../AbstractClient';
 
 
 @Injectable()
-export class UrlRedirector implements Redirector {
+export class UrlRedirector  {
 
     redirect<T>(req: UrlRequest<any>, context: RequestContext, status: any, headers: HeadersLike): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if (!req.url) return observer.error(new BadRequestException());
 
-            const protocol = context.getProtocol();
+            // const protocol = context.getProtocol();
             const statusAdapter = context.get(StatusAdapter);
             const streamAdapter = context.get(StreamAdapter);
             const headerAdapter = context.get(HeaderAdapter);
@@ -68,7 +68,8 @@ export class UrlRedirector implements Redirector {
                     let method = req.method as RequestMethod;
                     let body = req.body;
 
-                    if (protocol === 'http') reqhdrs.delete(':status');
+                    // if (protocol === 'http') 
+                    reqhdrs.delete(':status');
 
                     // when forwarding sensitive headers like "Authorization",
                     // "WWW-Authenticate", and "Cookie" to untrusted targets,

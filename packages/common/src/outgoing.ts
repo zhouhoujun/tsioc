@@ -1,6 +1,4 @@
 import { Header, HeaderAccess, IHeaders } from './headers';
-import { IWritable } from './stream';
-
 
 
 /**

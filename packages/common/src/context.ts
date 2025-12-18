@@ -11,12 +11,12 @@ export const PROTOCOL = new ContextToken<string | undefined>(() => undefined);
 
 export class RequestContext extends RunContext {
 
-    getProtocol(): string | undefined {
-        return this.get(PROTOCOL);
-    }
-    setProtocol(value: string | undefined) {
-        this.set(PROTOCOL, value);
-    }
+    // getProtocol(): string | undefined {
+    //     return this.get(PROTOCOL);
+    // }
+    // setProtocol(value: string | undefined) {
+    //     this.set(PROTOCOL, value);
+    // }
 
     /**
      * set request encoding.
