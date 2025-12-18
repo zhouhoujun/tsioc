@@ -9,6 +9,7 @@ import { Incoming } from './incoming';
 import { Outgoing } from './outgoing';
 import { RequestContext } from './context';
 import { RequestHandler } from './handler';
+import { TopicIncoming, UrlIncoming } from './incoming.impl';
 
 
 /**
@@ -80,11 +81,12 @@ export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incomi
         //todo console log and other. need to refactor formater.
         const withColor = logger instanceof ConsoleLog;
         const start = this.formatter.htime.hrtime();
-        logger[level](...this.formatter.format(statusAdapter, withColor, req.path ?? req.pattern, req.method));
+        const path = (req as UrlIncoming)?.url ?? (req as TopicIncoming)?.topic ?? req.path ?? req.pattern;
+        logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method));
         return next.handle(req, context)
             .pipe(
                 map(res => {
-                    logger[level](...this.formatter.format(statusAdapter, withColor, req.path ?? req.pattern, req.method,
+                    logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method,
                         this.formatter.htime.hrtime(start), res.statusCode, res.statusMessage, context.getContentLength(), res.error));
                     return res
                 })

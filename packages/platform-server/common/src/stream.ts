@@ -2,7 +2,7 @@ import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
 import { IFormData, IPipeDestination, isFormData } from '@tsdi/common';
 import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, IStream, IReadable, IWritable, IDuplex, IPassThrough } from '@tsdi/common';
 import { EventEmitter } from 'node:events';
-import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Transform, PipelineSource, isReadable, TransformCallback, pipeline } from 'node:stream';
+import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Transform, PipelineSource, isReadable, TransformCallback, pipeline, PipelineOptions } from 'node:stream';
 import * as rstm from 'readable-stream'
 import { pipeline as pmPipeline } from 'stream/promises';
 import * as zlib from 'node:zlib';
@@ -18,7 +18,7 @@ const gunzip = promisify(zlib.gunzip, zlib);
 export class NodeStreamAdapter extends StreamAdapter {
 
     async pipeTo(source: PipeSource | IStream, destination: IPipeDestination, options: { end?: boolean, signal?: any } = { end: true }): Promise<void> {
-        await pmPipeline(source as PipelineSource<any>, destination, options as any)
+        await pmPipeline(source as PipelineSource<any>, destination, options as PipelineOptions)
             .then(r => {
                 if (options.end && !(destination as Writable).writableEnded) return promisify((destination as Writable).end, destination)();
                 return r;
@@ -36,7 +36,7 @@ export class NodeStreamAdapter extends StreamAdapter {
                 for await (const chunk of source) {
                     chunks.push(chunk);
                 }
-            }, options);
+            }, options as PipelineOptions);
 
         return Buffer.concat(chunks) as Uint8Array as T;
     }
