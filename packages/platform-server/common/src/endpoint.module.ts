@@ -17,6 +17,6 @@ import { NodeStreamAdapter } from './stream';
         { provide: ResponseStatusFormater, useClass: NodeResponseStatusFormater }
     ]
 })
-export class ServerEndpointModule {
+export class ServerCommonModule {
 
 }

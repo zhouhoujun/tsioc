@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { BadRequestException, Transport } from '@tsdi/common';
 import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerCommonModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { Handle, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, withBodyparser, withContent, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
@@ -93,7 +93,7 @@ export class DeviceController {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
+        ServerCommonModule,
         // provideClient([
         //     {
         //         transport: 'tcp',

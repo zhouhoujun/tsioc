@@ -4,7 +4,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { HttpClientModule } from '@tsdi/common/http';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { HttpModule } from '@tsdi/http';
 import { Connection } from 'typeorm';

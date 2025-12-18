@@ -5,7 +5,7 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { TcpClient } from '@tsdi/tcp';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { UdpClient } from '../src';

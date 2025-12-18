@@ -13,7 +13,7 @@
 // import { BadRequestException } from '@tsdi/common/transport';
 // import { LoggerModule } from '@tsdi/logger';
 // import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-// import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+// import { ServerEndpointModule } from '@tsdi/platform-server/common';
 
 // @RouteMapping('/device')
 // class DeviceController {

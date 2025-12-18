@@ -5,7 +5,7 @@ import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, convertToInterceptor, EndpointModule, JsonInterceptor, SetupServices } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { WsClient, WsClientConfig } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';

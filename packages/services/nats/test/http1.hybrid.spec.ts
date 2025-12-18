@@ -9,7 +9,7 @@ import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { NatsClient, NatsModule, NatsServer } from '../src';
 import { DeviceController } from './controller';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 
 
 @Module({

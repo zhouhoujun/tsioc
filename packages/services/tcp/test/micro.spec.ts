@@ -6,7 +6,7 @@ import { provideClient, withBodySerialize, withClientFeatures, withClientInterce
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withFeatures, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -53,7 +53,7 @@ export class TcpService {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
+        ServerCommonModule,
         // provideClient({
         //     transport: 'tcp',
         //     microservice: true,

@@ -9,7 +9,7 @@ import { MqttClient, MqttModule, MqttServer } from '../src';
 import { DeviceController } from './controller';
 import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 
 
 

@@ -16,5 +16,5 @@ import { BrowserFileAdapter } from './file';
         { provide: ResponseStatusFormater, useClass: BrowserResponseStatusFormater }
     ]
 })
-export class BrowserEndpointModule { }
+export class BrowserCommonModule { }
 

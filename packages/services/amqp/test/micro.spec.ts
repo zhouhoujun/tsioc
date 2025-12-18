@@ -3,7 +3,7 @@ import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');

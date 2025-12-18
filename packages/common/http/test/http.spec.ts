@@ -12,7 +12,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerCommonModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
 import { HttpClient, HttpClientModule } from '../src';
 
@@ -194,7 +194,7 @@ class DeviceAModule {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
+        ServerCommonModule,
         // RouterModule.forRoot('tcp', { microservice: true }),
         HttpClientModule,
         ServerHttpClientModule,

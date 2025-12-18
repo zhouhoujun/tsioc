@@ -4,7 +4,7 @@ import { ConnectionOptions } from '@tsdi/repository';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';

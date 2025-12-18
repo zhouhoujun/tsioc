@@ -4,7 +4,7 @@ import { ClientModule } from '@tsdi/common/client';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
 import * as fs from 'fs';

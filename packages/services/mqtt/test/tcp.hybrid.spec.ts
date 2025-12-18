@@ -5,7 +5,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
 import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { MqttClient, MqttModule } from '../src';

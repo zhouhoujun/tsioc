@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, RouterModule } from '@tsdi/endpoints';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { CoapClient, CoapServer, COAP_SERV_INTERCEPTORS, CoapModule } from '../src';

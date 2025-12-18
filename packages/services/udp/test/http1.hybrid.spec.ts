@@ -7,7 +7,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { Http, HttpModule } from '@tsdi/http';
 import { UdpClient, UdpModule } from '../src';
 import { DeviceController } from './controller';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 

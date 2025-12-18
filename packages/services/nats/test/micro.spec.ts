@@ -5,7 +5,7 @@ import { ClientModule } from '@tsdi/common/client';
 import { Handle, Payload, RequestPath, Subscribe, EndpointModule } from '@tsdi/endpoints';
 import { NATS_SERV_INTERCEPTORS, NatsClient, NatsModule } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
