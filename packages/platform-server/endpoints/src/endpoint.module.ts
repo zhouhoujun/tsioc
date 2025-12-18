@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
-import { StreamAdapter, FileAdapter } from '@tsdi/common';
-import { ContentSendAdapter, ResponseStatusFormater } from '@tsdi/endpoints';
+import { StreamAdapter, FileAdapter, ResponseStatusFormater } from '@tsdi/common';
+import { ContentSendAdapter  } from '@tsdi/endpoints';
 import { NodeResponseStatusFormater } from './formater';
 import { ContentSendAdapterImpl } from './send';
 

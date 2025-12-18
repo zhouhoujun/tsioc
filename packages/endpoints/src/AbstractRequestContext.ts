@@ -269,34 +269,35 @@ export abstract class AbstractRequestContext<
     get method(): string {
         return this.request.method!
     }
-    /**
-     * get request encoding.
-     * @returns 
-     */
-    getContentEncoding() {
-        return this.headerAdapter.getContentEncoding(this.request);
-    }
-    /**
-     * get request content type
-     * @param type 
-     */
-    getContentType(type: string | null | undefined): string {
-        return this.headerAdapter.getContentType(this.request);
-    }
+    // /**
+    //  * get request encoding.
+    //  * @returns 
+    //  */
+    // getContentEncoding() {
+    //     return this.headerAdapter.getContentEncoding(this.request);
+    // }
+    // /**
+    //  * get request content type
+    //  * @param type 
+    //  */
+    // getContentType(type: string | null | undefined): string {
+    //     return this.headerAdapter.getContentType(this.request);
+    // }
 
-    /**
-     * set request content length
-     * @param len 
-     */
-    getContentLength(): number {
-        return this.headerAdapter.getContentLength(this.request);
-    }
+    // /**
+    //  * set request content length
+    //  * @param len 
+    //  */
+    // getContentLength(): number {
+    //     return this.headerAdapter.getContentLength(this.request);
+    // }
 
     /**
      * set response content length
      * @param len 
      */
     setContentLength(len: number | null) {
+        super.setContentLength(len);
         this.headerAdapter.setContentLength(this.response, len);
     }
     /**
@@ -304,6 +305,7 @@ export abstract class AbstractRequestContext<
      * @param encoding 
      */
     setContentEncoding(encoding: string | null) {
+        super.setContentEncoding(encoding);
         this.headerAdapter.setContentEncoding(this.response, encoding);
     }
     /**
@@ -311,6 +313,7 @@ export abstract class AbstractRequestContext<
      * @param type 
      */
     setContentType(type: string | null | undefined) {
+        super.setContentType(type);
         this.headerAdapter.setContentType(this.response, type);
     }
 

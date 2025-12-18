@@ -4,7 +4,7 @@ import { PipeTransform } from '@tsdi/core';
 import { IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { mergeMap, Observable, of, Subject, Subscriber, throwError } from 'rxjs';
-import { CONTENT_LENGTH, PACKET_LENGTH } from './context';
+import { PACKET_LENGTH } from './context';
 
 
 
@@ -246,7 +246,7 @@ function handleMessage(cache: Packet<IDuplex>, subscriber: Subscriber<IDuplex>, 
     const data = cache.payload!;
     context.set(PACKET_LENGTH, cache.length);
     if (cache.contentLength !== null && cache.contentLength !== undefined) {
-        context.set(CONTENT_LENGTH, cache.contentLength);
+        context.setContentLength(cache.contentLength);
     }
     cache.payload?.end();
     cache.payload = null;

@@ -31,7 +31,7 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
             return next.handle(input, context)
                 .pipe(
                     mergeMap(async res => {
-                        const file = await this.send(input, options)
+                        const file = await this.send(input,  options)
                         if (!file) {
                             return throwError(() => new NotFoundException())
                         }

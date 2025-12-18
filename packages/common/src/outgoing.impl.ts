@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isNil } from '@tsdi/ioc';
+import { Abstract, Injectable, isNil, Provider } from '@tsdi/ioc';
 import { Outgoing, OutgoingMessage } from './outgoing';
 import { Header, HeaderMappings, HeadersLike } from './headers';
 import { Incoming } from './incoming';
@@ -293,4 +293,13 @@ export class TopicOutgoingFactory implements OutgoingFactory {
         }
         return new TopicOutgoing(options);
     }
+}
+
+
+
+export function provideOutgoings(): Provider[] {
+    return [
+        UrlOutgoingFactory,
+        TopicOutgoingFactory
+    ]
 }

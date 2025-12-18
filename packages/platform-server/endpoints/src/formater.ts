@@ -1,7 +1,6 @@
-import { hasProps, Injectable } from '@tsdi/ioc';
-import { Logger, ConsoleLog } from '@tsdi/logger';
-import { AbstractRequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
+import { Exception, hasProps, Injectable } from '@tsdi/ioc';
 import * as chalk from 'chalk';
+import { StatusAdapter, ResponseStatusFormater } from '@tsdi/common';
 
 
 
@@ -11,20 +10,16 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     readonly incoming = '--->';
     readonly outgoing = '<---';
 
-    format(logger: Logger, ctx: AbstractRequestContext, hrtime?: [number, number]): string[] {
-        return this.formatWithColor(logger instanceof ConsoleLog, ctx, hrtime);
-    }
+    format(adapter: StatusAdapter, withColor: boolean, path: string, method?: string, hrtime?: [number, number], statusCode?: string | number | null, statusMessage?: string, contentLength?: number | null, error?: Exception): string[] {
 
-    protected formatWithColor(withColor: boolean, ctx: AbstractRequestContext, hrtime?: [number, number]) {
         if (hrtime) {
-            const [status, message] = ctx.statusAdapter ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
+            const [status, message] = statusCode ? this.formatStatus(adapter, withColor, statusCode, statusMessage) : this.formatState(withColor, error);
             const hrtimeStr = this.htime.format(hrtime);
-            const sizeStr = this.formatSize(ctx.length ?? 0);
+            const sizeStr = this.formatSize(contentLength ?? 0);
             return [
                 withColor ? chalk.gray(this.outgoing) : this.outgoing,
-                withColor ? chalk.cyan(ctx.method ?? '') : ctx.method ?? '',
-                ctx.url,
-                ctx.query && hasProps(ctx.query) ? `params: ${JSON.stringify(ctx.query)}` : '',
+                withColor ? chalk.cyan(method ?? '') : method ?? '',
+                path,
                 status?.toString() ?? '',
                 withColor ? chalk.gray(hrtimeStr) : hrtimeStr,
                 withColor ? chalk.gray(sizeStr) : sizeStr,
@@ -33,52 +28,49 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         } else {
             return [
                 withColor ? chalk.gray(this.incoming) : this.incoming,
-                withColor ? chalk.cyan(ctx.method ?? '') : ctx.method ?? '',
-                ctx.url,
-                ctx.query && hasProps(ctx.query)? `params: ${JSON.stringify(ctx.query)}` : '',
+                withColor ? chalk.cyan(method ?? '') : method ?? '',
+                path
             ]
         }
     }
 
-    private formatState(ctx: AbstractRequestContext, withColor: boolean): [string, string] {
-        const status = ctx.response?.error ? 'failed' : 'ok';
-        const statusMessage = ctx.response?.error?.message ?? '';
+    private formatState(withColor: boolean, error?: Exception): [string, string] {
+        const status = error ? 'failed' : 'ok';
+        const statusMessage = error?.message ?? '';
 
         if (!withColor) return [status, statusMessage];
 
-        if (ctx.response?.error) {
+        if (error) {
             return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
         }
         return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
     }
 
-    private formatStatus(ctx: AbstractRequestContext, withColor: boolean): [string, string] {
-        const { status, statusMessage } = ctx;
-        if (!withColor) return [status, statusMessage ?? ''];
+    private formatStatus(adapter: StatusAdapter, withColor: boolean, statusCode: number | string, statusMessage?: string): [string, string] {
 
-        const adapter = ctx.statusAdapter!;
+        if (!withColor) return [statusCode?.toString(), statusMessage ?? '']
 
-        if (adapter.isOk(status)) {
-            return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : ''];
+        if (adapter.isOk(statusCode)) {
+            return [chalk.green(statusCode), statusMessage ? chalk.green(statusMessage) : ''];
         }
 
-        if (adapter.isRedirect(status)) {
-            return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
+        if (adapter.isRedirect(statusCode)) {
+            return [chalk.yellow(statusCode), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        if (adapter.isRequestFailed(status)) {
-            return [chalk.magentaBright(status), statusMessage ? chalk.magentaBright(statusMessage) : '']
+        if (adapter.isRequestFailed(statusCode)) {
+            return [chalk.magentaBright(statusCode), statusMessage ? chalk.magentaBright(statusMessage) : '']
         }
 
-        if (adapter.isServerError(status)) {
-            return [chalk.red(status), statusMessage ? chalk.red(statusMessage) : '']
+        if (adapter.isServerError(statusCode)) {
+            return [chalk.red(statusCode), statusMessage ? chalk.red(statusMessage) : '']
         }
 
-        if (adapter.isRetry(status)) {
-            return [chalk.yellow(status), statusMessage ? chalk.yellow(statusMessage) : ''];
+        if (adapter.isRetry(statusCode)) {
+            return [chalk.yellow(statusCode), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        return [chalk.cyan(status), statusMessage ? chalk.cyan(statusMessage) : '']
+        return [chalk.cyan(statusCode), statusMessage ? chalk.cyan(statusMessage) : '']
 
     }
 

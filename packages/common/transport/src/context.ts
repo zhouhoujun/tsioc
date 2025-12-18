@@ -10,8 +10,6 @@ export const PACKET_MAXSIZE = new ContextToken(() => 0);
 
 export const PACKET_LENGTH = new ContextToken(() => 0);
 
-export const CONTENT_LENGTH = new ContextToken(() => 0);
-
 export const PACKET_LIMIT = new ContextToken(() => 1024 * 1024);
 
 export const PACKET_IDLEN = new ContextToken(() => 2);

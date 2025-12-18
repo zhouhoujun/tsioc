@@ -42,6 +42,7 @@ export const bodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any
             }
             headers = headerAdapter.setContentLength(headers, Buffer.byteLength(body as Uint8Array));
         }
+        context.setContentLength(headerAdapter.getContentLength(headers));
 
         return req.clone({ body, headers });
 
