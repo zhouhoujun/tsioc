@@ -5,7 +5,7 @@ import {
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../interceptor';
-import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
+import { FILTERS_TOKEN, Filter, FilterFn, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
 import { BACKENDS_TOKEN, Handler, HandlerFn, HandlerLike, RunContext } from '../handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions } from './configable';
 
@@ -182,7 +182,7 @@ export class ConfigableHandler<
         if (!(filters.length || inteceptors.length)) return null;
 
         const fns = [];
-        if (filters?.length) fns.push(composeFilters(filters));
+        if (filters?.length) fns.push(this.composeFilterFn(filters));
         if (inteceptors?.length) fns.push(...inteceptors);
 
         return chainFactory(composeInterceptors(fns), this.chain!);
@@ -218,11 +218,15 @@ export class ConfigableHandler<
         const filters = this.getFilters();
         const inteceptors = this.getInterceptors();
         const fns = [];
-        if (hdlFilters?.length) fns.push(composeFilters(hdlFilters));
+        if (hdlFilters?.length) fns.push(this.composeFilterFn(hdlFilters));
         if (hdlInteceptors?.length) fns.push(...hdlInteceptors);
-        if (filters?.length) fns.push(composeFilters(filters));
+        if (filters?.length) fns.push(this.composeFilterFn(filters));
         if (inteceptors?.length) fns.push(...inteceptors);
         return this.generateInterceptorFn(fns);
+    }
+
+    protected composeFilterFn(filters: FilterLike[]): FilterFn {
+        return composeFilters(filters);
     }
 
     protected generateInterceptorFn(fns: InterceptorLike[]) {

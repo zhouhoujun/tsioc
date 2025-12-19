@@ -16,6 +16,7 @@ import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, 
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { CorsOpts, CsrfOps, ServiceConfig } from './server.options';
+import { DefaultExceptionHandlers } from './exception.handlers';
 
 /**
  * Identifies a particular kind of `Feature`.
@@ -304,6 +305,8 @@ export function withExceptionFilter(options?: {
         }
         if (options?.handlers?.length) {
             providers.push(...options.handlers);
+        } else {
+            providers.push(DefaultExceptionHandlers)
         }
 
         return makeFeature(

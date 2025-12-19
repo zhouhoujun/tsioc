@@ -1,5 +1,5 @@
 import { Abstract, composeInterceptors, composeToHanlderFn, createInvocationContext, Exception, getType, Handler, HandlerFn, Injector, InterceptingHandler, InterceptorFn, InterceptorLike, InvocationContext, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
-import { AbstractConfigableHandler, ConfigableHandler, FilterLike, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
+import { AbstractConfigableHandler, composeFilters, ConfigableHandler, FilterFn, FilterLike, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
@@ -162,6 +162,12 @@ export class DefaultRequestHandler<
 
     override handle(input: TReq, context: TContext): Observable<TRes> {
         return toObservable(super.handle(input, context)) as Observable<TRes>;
+    }
+
+
+    protected override composeFilterFn(filters: FilterLike[]): FilterFn {
+        const fn = composeFilters(filters);
+        return (input: any, next: HandlerFn, context?: any) => toObservable(fn(input, next, context));
     }
 
     protected override generateInterceptorFn(fns: InterceptorLike[]): InterceptorFn {
