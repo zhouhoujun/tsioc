@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 import { Abstract, Injectable, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
-import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike } from '@tsdi/common';
+import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter } from '@tsdi/common';
 import { IReadable, MimeTypes } from '@tsdi/common';
 import { isBuffer } from '@tsdi/common/transport';
 import { Observable, from, mergeMap } from 'rxjs';
@@ -71,25 +71,26 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
         this.enableXml = this.enableType('xml');
     }
 
-    protected canHanlde(input: AbstractRequestContext): boolean {
-        return (isUndefined(input.request.body) && input.streamAdapter.isReadable(input.request))
-            || input.streamAdapter.isReadable(input.request.body)
-            || isBuffer(input.request.body);
+    protected canHanlde(input: ReadableLike<Incoming>, streamAdapter: StreamAdapter): boolean {
+        return (isUndefined(input.body) && streamAdapter.isReadable(input))
+            || streamAdapter.isReadable(input.body)
+            || isBuffer(input.body);
     }
 
-    intercept(input: AbstractRequestContext, next: RequestHandler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
-        if (!this.canHanlde(input)) return next.handle(input, context);
-        return from(this.parseBody(input))
+    intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, AbstractRequestContext>, context: AbstractRequestContext): Observable<any> {
+        const streamAdapter = context.get(StreamAdapter);
+        if (!this.canHanlde(input, streamAdapter)) return next.handle(input, context);
+        return from(this.parseBody(input, context))
             .pipe(
                 mergeMap(res => {
-                    input.request.body = res.body ?? {};
-                    if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
+                    input.body = res.body ?? {};
+                    if (isUndefined(input.rawBody)) input.rawBody = res.raw;
                     return next.handle(input, context)
                 })
             )
     }
 
-    private parseBody(context: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
+    private parseBody(input: ReadableLike<Incoming>, context: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
         const types = context.get(MimeTypes);
         if (this.enableJson && context.is(types?.json ?? 'json')) {
             return this.parseJson(context)

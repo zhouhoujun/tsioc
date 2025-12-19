@@ -1,4 +1,4 @@
-import { Context, ContextToken, DefaultContext, HandlerLike, Injector, token, Token } from '@tsdi/ioc';
+import { Context, ContextToken, DefaultContext, HandlerLike, Injector, token, Token, Type } from '@tsdi/ioc';
 
 export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
 
@@ -10,7 +10,6 @@ export const BACKENDS_TOKEN = token<HandlerLike[]>('BACKENDS');
 
 
 export class RunContext extends DefaultContext {
-
 
     constructor(injector: Injector, contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
         super(contextOrEntries, entries);
