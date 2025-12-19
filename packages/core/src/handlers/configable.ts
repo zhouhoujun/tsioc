@@ -3,7 +3,7 @@ import { GuardLike } from '../guard';
 import { InterceptorLike } from '../interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FilterLike } from '../filters/filter';
-import { Handler, HandlerLike } from '../handler';
+import { Handler, HandlerLike, RunContext } from '../handler';
 
 
 
@@ -39,7 +39,7 @@ export interface HandlerAppendService<TInput, TOutput = any, TContext = any> {
 export abstract class AbstractConfigableHandler<
     TInput = any,
     TOutput = any,
-    TContext = any> implements Handler<TInput, TOutput, TContext> {
+    TContext extends RunContext = RunContext> implements Handler<TInput, TOutput, TContext> {
 
     abstract get context(): InvocationContext;
 

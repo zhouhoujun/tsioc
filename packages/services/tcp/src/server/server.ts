@@ -167,7 +167,7 @@ export function withTcpTransport(...options: Partial<TcpServConfig>[]): Transpor
         option.transport = Transport.TCP;
         option.side = TransferSide.server;
 
-        option.execptionHandlers ??= [DefaultExceptionHandlers];
+        // option.execptionHandlers ??= [DefaultExceptionHandlers];
         const config = option as TcpServConfig;
         const serviceToken = getServiceToken(config);
         const backendToken = getServiceBackendToken(config);

@@ -1,5 +1,5 @@
 import { ArgumentException, ProvdierOf, Provider, Type, isArray, isBoolean, isFunction, toProvider, toProviders } from '@tsdi/ioc';
-import { FilterLike, GuardLike } from '@tsdi/core';
+import { ExceptionFilter, ExceptionHandlerFilter, FilterLike, GuardLike } from '@tsdi/core';
 import {
     matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory,
     UrlIncomingFactory, useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
@@ -16,6 +16,7 @@ import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, 
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { CorsOpts, CsrfOps, ServiceConfig } from './server.options';
+import { DefaultExceptionHandlers } from './exception.handlers';
 
 /**
  * Identifies a particular kind of `Feature`.
@@ -25,6 +26,8 @@ import { CorsOpts, CsrfOps, ServiceConfig } from './server.options';
 export enum FeatureKind {
     Configure,
     Transfer,
+    Logger,
+    Exception,
     Filters,
     Guards,
     Interceptors,
@@ -154,6 +157,10 @@ export interface FeatureOptions {
     bodyparser?: boolean | BodyparserOptions;
     router?: boolean | RouteOpts;
     transfers?: TransferInterceptorFactory[];
+
+    exceptionFilter?: ProvdierOf<ExceptionFilter>;
+    exceptionHandlers?: Type[];
+
 }
 
 const defaultOptions: FeatureOptions = {
@@ -185,13 +192,14 @@ export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<Featur
             features.push(withLogger(isBoolean(opts.logger) ? undefined : opts.logger)(config))
         }
 
+        features.push(withExceptionFilter({
+            filter: opts.exceptionFilter,
+            handlers: opts.exceptionHandlers
+        })(config));
+
         if (opts.session) {
             features.push(withSession(isBoolean(opts.session) ? undefined : opts.session)(config));
         }
-
-        // if(opts.cors) {
-        //     features.push()
-        // }
 
         if (opts.content) {
             features.push(withContent(isBoolean(opts.content) ? undefined : opts.content)(config));
@@ -247,12 +255,12 @@ export function withGuards(...guards: ProvdierOf<GuardLike>[]): FeatureFn<Featur
  * @param options 
  * @returns 
  */
-export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn<FeatureKind.Filters> {
+export function withLogger(options?: LoggerOptions): FeatureFn<FeatureKind.Logger> {
     return (config) => {
-        const token = filter ? getFiltersToken(config) : getInterceptorsToken(config);
+        const token = getFiltersToken(config)
 
         return makeFeature(
-            FeatureKind.Filters,
+            FeatureKind.Logger,
             [
                 {
                     provide: token,
@@ -269,6 +277,45 @@ export function withLogger(options?: LoggerOptions, filter?: boolean): FeatureFn
     }
 }
 
+
+/**
+ * 
+ * Adds execption filter to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link FilterLike}
+ * @see {@link provideService}
+ * @publicApi
+ * 
+ * @param options 
+ * @returns 
+ */
+export function withExceptionFilter(options?: {
+    filter?: ProvdierOf<ExceptionFilter>;
+    handlers?: Type[];
+}): FeatureFn<FeatureKind.Exception> {
+    return (config) => {
+        const token = getFiltersToken(config);
+
+        const providers: Provider[] = [];
+        if (options?.filter) {
+            providers.push(toProvider(token, options.filter, true))
+        } else {
+            providers.push({ provide: token, useExisting: ExceptionHandlerFilter, multi: true });
+        }
+        if (options?.handlers?.length) {
+            providers.push(...options.handlers);
+        } else {
+            providers.push(DefaultExceptionHandlers)
+        }
+
+        return makeFeature(
+            FeatureKind.Exception,
+            providers,
+            config
+        );
+    }
+}
 /**
  * 
  * Add filters to the configuration of the `Service`
