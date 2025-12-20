@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isNil, Provider } from '@tsdi/ioc';
+import { Abstract, Exception, Injectable, isNil, Provider } from '@tsdi/ioc';
 import { Outgoing, OutgoingMessage } from './outgoing';
 import { Header, HeaderMappings, HeadersLike } from './headers';
 import { Incoming } from './incoming';
@@ -75,8 +75,8 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
      */
     readonly type: number | undefined;
     readonly pattern?: string;
-    readonly error: any | null;
-    readonly ok: boolean;
+    private _error: any | null;
+    private _ok: boolean;
     readonly headers: HeaderMappings;
 
     protected _status: TStatus | null;
@@ -88,12 +88,33 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
         this.pattern = init.pattern;
         this.id = init.id;
         this.headers = new HeaderMappings(init.headers);
-        this.ok = init.error ? false : init.ok != false;
+        this._ok = init.ok != false;
         this.error = init.error;
         this.type = init.type;
         this._status = init.status !== undefined ? init.status : defaultStatus ?? null;
         this._message = (init.statusMessage || init.statusText) ?? defaultStatusText;
     }
+
+    get ok(): boolean {
+        return this._ok;
+    }
+
+    get error(): any | null {
+        return this._error;
+    }
+
+    set error(err: any | null) {
+        if(err) {
+            this._ok = false;
+            if(err instanceof Exception) {
+                this.statusCode = err.code;
+                this.statusMessage = err.message;
+            }
+        }
+        this._error = err;
+    }
+
+
 
     get statusCode(): TStatus {
         return this._status!;
