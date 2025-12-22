@@ -121,41 +121,41 @@ export class TcpService {
             })
         ),
         provideService(
-            withFeatures({
-                content: true,
-                interceptors: [BigFileInterceptor],
-                transfers: [
-                    usePacket(),
-                    useSimpleJson({
-                        mapping: (res, context) => {
-                            if (res instanceof UrlOutgoing) {
-                                return res.toJson()
-                            }
-                            return res;
-                        }
-                    })
+            // withFeatures({
+            //     content: true,
+            //     interceptors: [BigFileInterceptor],
+            //     transfers: [
+            //         usePacket(),
+            //         useSimpleJson({
+            //             mapping: (res, context) => {
+            //                 if (res instanceof UrlOutgoing) {
+            //                     return res.toJson()
+            //                 }
+            //                 return res;
+            //             }
+            //         })
 
-                ]
-            }),
-            // withInterceptors(BigFileInterceptor),
+            //     ]
+            // }),
+            withInterceptors(BigFileInterceptor),
             // withJson(),
-            // withBodyparser(),
-            // withContent(),
-            // // withRouter(),
+            withBodyparser(),
+            withContent(),
             // withRouter(),
+            withRouter(),
             // withLogger(),
             // withFilters(ExceptionHandlerFilter),
-            // withTransfers(
-            //     usePacket(),
-            //     useSimpleJson({
-            //         mapping: (res, context) => {
-            //             if (res instanceof UrlOutgoing) {
-            //                 return res.toJson()
-            //             }
-            //             return res;
-            //         }
-            //     })
-            // ),
+            withTransfers(
+                usePacket(),
+                useSimpleJson({
+                    mapping: (res, context) => {
+                        if (res instanceof UrlOutgoing) {
+                            return res.toJson()
+                        }
+                        return res;
+                    }
+                })
+            ),
             withTcpTransport({
                 microservice: true,
                 listenOpts: {

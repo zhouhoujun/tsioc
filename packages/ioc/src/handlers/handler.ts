@@ -12,9 +12,8 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
      * 处理句柄
      * @param input handle input.
      * @param context handle with context.
-     * @param tail next tail.
      */
-    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput>;
+    handle(input: TInput, context: TContext): HandleResult<TOutput>;
 
     /**
      * is this equals to target or not

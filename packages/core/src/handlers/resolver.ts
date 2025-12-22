@@ -1,4 +1,4 @@
-import { ResolveInterceptorLike, Parameter, TypeOf, Token, getTokenOf, ResolveHandler, ResolveInterceptorFn, getType, isResolved } from '@tsdi/ioc';
+import { ResolveInterceptorLike, Parameter, TypeOf, Token, getTokenOf, ResolveHandler, ResolveInterceptorFn, getType, isResolved, invokeTail } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 
 
@@ -53,7 +53,7 @@ export const typeResolveInterceptor: ResolveInterceptorFn = (input, next, contex
         const token = getResolveHandlerToken(payloadType);
         const hanlder = context.getInjector().get(token, null);
         if (hanlder) {
-            return hanlder.handle(input, context, (res) => {
+            return invokeTail(() => hanlder.handle(input, context), (res) => {
                 if (isResolved(res)) return res;
 
                 return next(input, context)

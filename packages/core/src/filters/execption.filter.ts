@@ -17,7 +17,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @returns any
      */
     doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): HandleResult<TOutput> {
-        return next.handle(input, context, {
+        return invokeTail(() => next.handle(input, context), {
             error: (err) => {
                 return invokeTail(() => this.catchError(input, err, context), {
                     next: (res) => {

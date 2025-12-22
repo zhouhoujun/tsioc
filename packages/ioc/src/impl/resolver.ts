@@ -15,6 +15,7 @@ import { isArray, isFunction, isNil, isString } from '../utils/chk';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { resolveArgs, resolveParameters } from './common';
 import { InjectUtil } from './injector';
+import { invokeTail } from '../handlers/compose';
 
 
 export class DefaultResolver implements Resolver {
@@ -30,7 +31,7 @@ export class DefaultResolver implements Resolver {
             handler = createResolveHandler(metaRvr.map(r => isType(r) ? context.getInjector().get(r) : r), this.handler);
         }
 
-        return handler.handle(parameter, context,
+        return invokeTail(() => handler.handle(parameter, context),
             {
                 next: (res) => {
                     if (res === UNRESOLVED) {

@@ -64,7 +64,7 @@ export function toHandlerFn(handler: Handler & { [handleFn]?: HandlerFn }): Hand
     }
 
     // 创建标准化函数
-    const fn = (input: any, context?: any, next?: TailNext<any, any>) => handler.handle(input, context, next);
+    const fn = (input: any, context?: any) => handler.handle(input, context);
     fn[owner] = handler;
     handler[handleFn] = fn;
 
