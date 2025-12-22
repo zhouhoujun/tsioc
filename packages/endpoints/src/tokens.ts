@@ -10,7 +10,6 @@ function toMicroName(microservice?: boolean, name?: string) {
     return microservice ? 'MICRO_' + (name ?? '') : name
 }
 
-
 export function getGuardsToken(config: ServiceConfig): Token<GuardLike[]> {
     if(!config.guardsToken) {
         config.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_GUARDS`, toMicroName(config.microservice));

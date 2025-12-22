@@ -1,4 +1,4 @@
-import { Abstract, Injectable, Provider } from '@tsdi/ioc';
+import { Abstract, Injectable, Provider, StaticProvider } from '@tsdi/ioc';
 import { Incoming, IncomingMessage, StatusIncoming } from './incoming';
 import { HeaderMappings, HeadersLike } from './headers';
 import { ParameterCodec } from './params';
@@ -487,7 +487,7 @@ export class TopicClientIncomingFactory implements ClientIncomingFactory {
 }
 
 
-export function provideIncomings(): Provider[] {
+export function provideIncomings(): StaticProvider[] {
     return [
         UrlClientIncomingFactory,
         TopicClientIncomingFactory

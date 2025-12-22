@@ -6,26 +6,26 @@ import { FilterLike, GuardLike } from '@tsdi/core';
 
 
 function toMicroName(microservice?: boolean, name?: string) {
-    if(!name) return microservice? 'MICRO' : '';
+    if (!name) return microservice ? 'MICRO' : '';
     return microservice ? 'MICRO_' + (name ?? '') : name
 }
 
 export function getClientGuardsToken(config: ClientConfig): Token<GuardLike[]> {
-    if(!config.guardsToken) {
+    if (!config.guardsToken) {
         config.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_GUARDS`, toMicroName(config.microservice));
     }
     return config.guardsToken;
 }
 
 export function getClientFiltersToken(config: ClientConfig): Token<FilterLike[]> {
-    if(!config.filtersToken) {
+    if (!config.filtersToken) {
         config.filtersToken = getToken<FilterLike[]>(`${Transport[config.transport].toUpperCase()}_FILTERS`, toMicroName(config.microservice));
     }
     return config.filtersToken;
 }
 
 export function getClientInterceptorsToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
-    if(!config.interceptorsToken) {
+    if (!config.interceptorsToken) {
         config.interceptorsToken = getToken<RequestInterceptor[]>(`${Transport[config.transport].toUpperCase()}_CLIENT_INTERCEPTORS`, toMicroName(config.microservice));
     }
     return config.interceptorsToken;
@@ -34,7 +34,7 @@ export function getClientInterceptorsToken(config: ClientConfig): Token<RequestI
 
 
 export function getClientTransfersToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
-    if(!config.transfersToken) {
+    if (!config.transfersToken) {
         config.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_CLIENT_TRANSFERS`, toMicroName(config.microservice));
     }
     return config.transfersToken;
@@ -52,7 +52,7 @@ export function getClientHandlerToken(config: ClientConfig): Token<RequestHandle
 
 
 export function getClientBackendToken(config: ClientConfig): Token<RequestHandlerLike> {
-    if(!config.backendToken) {
+    if (!config.backendToken) {
         config.backendToken = getToken<RequestHandlerLike>(`${Transport[config.transport].toUpperCase()}_CLIENT_BACKEND`, toMicroName(config.microservice, config.name));
     }
     return config.backendToken;

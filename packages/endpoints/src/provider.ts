@@ -1,10 +1,9 @@
-import { ArgumentException, ProvdierOf, Provider, Type, isArray, isBoolean, isFunction, toProvider, toProviders } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
 import { ExceptionFilter, ExceptionHandlerFilter, FilterLike, GuardLike } from '@tsdi/core';
 import {
     matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory,
     UrlIncomingFactory, useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
-    provideIncomings,
-    provideOutgoings
+    provideIncomings, provideOutgoings, TransportConfig
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -135,6 +134,40 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
 }
 
 
+export interface ServiceOptions<TSerOpts = any> extends ServiceConfig<TSerOpts> {
+    features?: FeatureOptions;
+    transportFeature?: (options: ServiceOptions<TSerOpts>, asDefault?: boolean) => TransportFeature;
+}
+
+export const SERVICE_CONFIGS = token<ServiceOptions[]>('SEARVICES_CONFIGS');
+
+export function provideServiceFromDi(options: TransportConfig): Provider[] {
+    return [
+        {
+            provider: (injector) => {
+                const configs = injector.get(SERVICE_CONFIGS, []).filter(c => matchTransport(options, c));
+                if (!configs?.length) throw new ArgumentException(`messings ${options.transport}${options.microservice ? ' microservice' : ''} service configure` + (options.name ? `, ailas with name ${options.name}` : ''));
+                const featires: FeatureLike<FeatureKind>[] = [];
+                const transports: TransportFeature[] = [];
+                configs.forEach(config => {
+                    // if (!config.features) throw new ArgumentException(`messings featires ${options.transport}${options.microservice ? ' microservice' : ''} service configure` + (options.name ? `, ailas with name ${options.name}` : ''));
+                    if (!config.transportFeature) throw new ArgumentException(`messings transportFeature ${options.transport}${options.microservice ? ' microservice' : ''} service configure` + (options.name ? `, ailas with name ${options.name}` : ''));
+
+                    featires.push(withFeatures(config.features));
+                    transports.push(config.transportFeature(config, configs.length == 1 && config.asDefault))
+                });
+
+                return provideService(
+                    ...featires,
+                    transports
+                ) as StaticProvider[];
+            }
+        }
+    ]
+}
+
+
+
 export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[], config?: ServiceConfig): Feature<T> {
     return {
         kind,
@@ -171,12 +204,13 @@ const defaultOptions: FeatureOptions = {
     router: true
 };
 
+
+
 export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<FeatureKind, FeatureKind.Transport>> {
-    const opts = { ...defaultOptions, ...options };
+
     return (config) => {
         const features: any[] = [];
-
-        Object.keys(opts)
+        const opts = { ...defaultOptions, ...options };
 
         if (opts.filters) {
             features.push(withFilters(...opts.filters)(config));

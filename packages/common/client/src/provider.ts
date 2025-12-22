@@ -1,13 +1,16 @@
-import { ArgumentException, ProvdierOf, Provider, isArray, isFunction, toProvider, toProviders } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, TransferSide, useSimpleJson,
-    UrlClientIncomingFactory, TopicClientIncomingFactory
+    UrlClientIncomingFactory, TopicClientIncomingFactory,
+    AbstractRequest,
+    ResponseEvent
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
 import { FilterLike, GuardLike } from '@tsdi/core';
+import { config } from 'rxjs';
 
 
 
@@ -283,14 +286,16 @@ const defaultOptions = {
     bodySerialize: true
 }
 
-export function withClientFeatures(options?: {
+export interface ClientFeatureOptions {
     filters?: ProvdierOf<FilterLike>[];
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     guards?: ProvdierOf<GuardLike>[];
     timeout?: number;
     bodySerialize?: boolean;
     transfers?: TransferInterceptorFactory[];
-}): ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> {
+}
+
+export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> {
     const opts = { ...defaultOptions, ...options };
     return (config) => {
         const features: any[] = [];
@@ -318,6 +323,43 @@ export function withClientFeatures(options?: {
     }
 
 }
+
+
+export interface ClientOptions<
+    TReq extends AbstractRequest<any> = AbstractRequest<any>,
+    TRes extends ResponseEvent<any> = ResponseEvent<any>,
+> extends ClientConfig<TReq, TRes> {
+    features?: ClientFeatureOptions;
+    transportFeature?: (options: ClientOptions, asDefault?: boolean) => ClientTransportFeature;
+}
+
+
+export const CLIENT_CONFIGS = token<ClientOptions[]>('CLIENT_CONFIGS');
+
+export function provideClientFromDi(options: TransportConfig): Provider[] {
+    return [
+        {
+            provider: (injector) => {
+                const configs = injector.get(CLIENT_CONFIGS, []).filter(c => matchTransport(options, c));
+                if (!configs.length) throw new ArgumentException(`messings ${options.transport}${options.microservice ? ' microservice' : ''} client configure` + (options.name ? `, ailas with name ${options.name}` : ''));
+                const features: ClientFeatureLike<ClientFeatureKind>[] = [];
+                const transports: ClientTransportFeature[] = [];
+                configs.forEach(config => {
+                    // if (!config.features) throw new ArgumentException(`messings featires ${options.transport}${options.microservice ? ' microservice' : ''} client configure` + (options.name ? `, ailas with name ${options.name}` : ''));
+                    if (!config.transportFeature) throw new ArgumentException(`messings transportFeature ${options.transport}${options.microservice ? ' microservice' : ''} client configure` + (options.name ? `, ailas with name ${options.name}` : ''));
+                    features.push(withClientFeatures(config.features));
+                    transports.push(config.transportFeature(config, configs.length == 1 && config.asDefault));
+                })
+
+                return provideClient(
+                    ...features,
+                    transports
+                ) as StaticProvider[];
+            }
+        }
+    ]
+}
+
 
 
 // /**

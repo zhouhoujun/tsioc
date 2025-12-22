@@ -2,7 +2,7 @@ import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isN
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Events, createRequestContext, RequestContext, writePacket, StreamAdapter, TransferSide, NotFoundException, ResponseFactory, WritableLike, Outgoing, StatusAdapter, UrlOutgoingFactory, UrlIncoming } from '@tsdi/common';
-import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, DefaultExceptionHandlers, AbstractRequestContext } from '@tsdi/endpoints';
+import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, DefaultExceptionHandlers, AbstractRequestContext, SERVICE_CONFIGS, withFeatures } from '@tsdi/endpoints';
 import { Subject, filter, first, fromEvent, isObservable, lastValueFrom, merge, mergeMap, of, race, share, take, takeUntil, throwError } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -162,91 +162,103 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
 }
 
 
+
+export function tcpTransportFactory(option: Partial<TcpServConfig>, asDefault?: boolean): TransportFeature {
+    option.transport = Transport.TCP;
+    option.side = TransferSide.server;
+
+    // option.execptionHandlers ??= [DefaultExceptionHandlers];
+    const config = option as TcpServConfig;
+    const serviceToken = getServiceToken(config);
+    const backendToken = getServiceBackendToken(config);
+
+    const providers: Provider[] = [
+        TcpServer,
+        UrlOutgoingFactory,
+        asProvider({
+            provide: backendToken,
+            useValue: (req: UrlIncoming, context): any => {
+                const response = (context as AbstractRequestContext).response ?? context.get(UrlOutgoingFactory).create({ url: req.url });
+                const statusAdapter = context.get(StatusAdapter);
+                response.error = new NotFoundException();
+                if (statusAdapter) {
+                    response.statusCode = statusAdapter.notFound;
+                    response.statusMessage = response.error.message;
+                }
+                return response;
+            },
+            // useFactory: () => {
+            //     let socket: tls.TLSSocket | net.Socket;
+            //     return (data: any, context) => {
+            //         const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
+            //         if (!currSocket) throw new ArgumentException('no socket in context');
+
+            //         if (socket !== currSocket) {
+            //             if (socket) {
+            //                 socket.removeAllListeners();
+            //             }
+            //             socket = currSocket;
+            //         }
+
+            //         const emit$ = writePacket(socket, data, context.get(StreamAdapter));
+            //         return from(emit$);
+            //     }
+            // },
+            multi: true
+        }),
+
+        {
+            provide: serviceToken,
+            useFactory: (injector: Injector) => {
+                return getClassRef(TcpServer).createInvocation(injector, {
+                    providers: [
+                        {
+                            provide: TCP_SERV_CONFIG,
+                            useValue: option
+                        },
+                        {
+                            provide: ServiceHandler,
+                            useFactory: (injector: Injector) => createRequestHandler(injector, option),
+                            deps: [
+                                Injector
+                            ]
+                        }
+                    ]
+                })
+            },
+            deps: [
+                Injector
+            ]
+        },
+
+        {
+            provide: REGISTER_SERVICES,
+            useFactory: (service) => {
+                return {
+                    service,
+                    bootstrap: option.bootstrap,
+                    microservice: option.microservice
+                }
+            },
+            deps: [
+                serviceToken
+            ],
+            multi: true
+        }
+    ];
+
+    if (asDefault) {
+        providers.push({
+            provide: TcpServer,
+            useExisting: serviceToken
+        })
+    }
+
+    return makeFeature(FeatureKind.Transport, providers, config) as TransportFeature;
+}
+
 export function withTcpTransport(...options: Partial<TcpServConfig>[]): TransportFeature[] {
     return options.map(option => {
-        option.transport = Transport.TCP;
-        option.side = TransferSide.server;
-
-        // option.execptionHandlers ??= [DefaultExceptionHandlers];
-        const config = option as TcpServConfig;
-        const serviceToken = getServiceToken(config);
-        const backendToken = getServiceBackendToken(config);
-
-        const providers: Provider[] = [
-            TcpServer,
-            UrlOutgoingFactory,
-            asProvider({
-                provide: backendToken,
-                useValue: (req: UrlIncoming, context): any => {
-                    const response = (context as AbstractRequestContext).response ?? context.get(UrlOutgoingFactory).create({ url: req.url });
-                    const statusAdapter = context.get(StatusAdapter);
-                    response.error = new NotFoundException();
-                    if (statusAdapter) {
-                        response.statusCode = statusAdapter.notFound;
-                        response.statusMessage = response.error.message;
-                    }
-                    return response;
-                },
-                // useFactory: () => {
-                //     let socket: tls.TLSSocket | net.Socket;
-                //     return (data: any, context) => {
-                //         const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
-                //         if (!currSocket) throw new ArgumentException('no socket in context');
-
-                //         if (socket !== currSocket) {
-                //             if (socket) {
-                //                 socket.removeAllListeners();
-                //             }
-                //             socket = currSocket;
-                //         }
-
-                //         const emit$ = writePacket(socket, data, context.get(StreamAdapter));
-                //         return from(emit$);
-                //     }
-                // },
-                multi: true
-            }),
-
-            {
-                provide: serviceToken,
-                useFactory: (injector: Injector) => {
-                    return getClassRef(TcpServer).createInvocation(injector, {
-                        providers: [
-                            {
-                                provide: TCP_SERV_CONFIG,
-                                useValue: option
-                            },
-                            {
-                                provide: ServiceHandler,
-                                useFactory: (injector: Injector) => createRequestHandler(injector, option),
-                                deps: [
-                                    Injector
-                                ]
-                            }
-                        ]
-                    })
-                },
-                deps: [
-                    Injector
-                ]
-            },
-
-            {
-                provide: REGISTER_SERVICES,
-                useFactory: (service) => {
-                    return {
-                        service,
-                        bootstrap: option.bootstrap,
-                        microservice: option.microservice
-                    }
-                },
-                deps: [
-                    serviceToken
-                ],
-                multi: true
-            }
-        ];
-
-        return makeFeature(FeatureKind.Transport, providers, config) as TransportFeature;
+        return tcpTransportFactory(option, options.length === 1 && option.asDefault);
     })
 }

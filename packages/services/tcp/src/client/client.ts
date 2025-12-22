@@ -1,6 +1,6 @@
 import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException, Exception, isNil } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Events, PatternFormatter, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
-import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken } from '@tsdi/common/client';
+import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, CLIENT_CONFIGS } from '@tsdi/common/client';
 import { SOCKET } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { filter, first, from, fromEvent, merge, Observable, race, share, take, takeUntil } from 'rxjs';
@@ -124,76 +124,79 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 
 }
 
+export function tcpClientTransportFacotry(option: Partial<TcpClientConfig>, asDefault?: boolean): ClientTransportFeature {
+    option.transport = Transport.TCP;
+    option.side = TransferSide.client;
+    const config = option as TcpClientConfig;
+    const clientToken = getClientToken(config);
+    const hanlderToken = getClientHandlerToken(config);
+    const backendToken = getClientBackendToken(config);
+
+    const providers: Provider[] = [
+        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
+        asProvider({
+            provide: backendToken,
+            useFactory: () => {
+                let socket: tls.TLSSocket | net.Socket;
+                let source$: Observable<any>;
+                return (data: any, context) => {
+
+                    const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
+                    if (!currSocket) throw new ArgumentException('no socket in context');
+
+                    if (socket !== currSocket) {
+                        if (socket) {
+                            socket.removeAllListeners();
+                        }
+                        socket = currSocket;
+                        source$ = fromEvent(socket, Events.DATA)
+                            .pipe(
+                                takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+                                filter(r => !isNil(r)),
+                                share()
+                            )
+                    }
+                    const emit$ = writePacket(socket, data, context.get(StreamAdapter));
+
+                    if (context.get(TcpRequest)?.observe === 'emit') {
+                        return from(emit$);
+                    }
+
+                    return source$
+                }
+            },
+            multi: true
+        }),
+        {
+            provide: hanlderToken,
+            useFactory: (injector: Injector) => {
+                return createRequestHandler(injector, option)
+            },
+            deps: [
+                Injector
+            ]
+        },
+        {
+            provide: clientToken,
+            useClass: TcpClient,
+            deps: [
+                hanlderToken,
+                { value: option }
+            ]
+        }
+    ];
+
+    if (asDefault) {
+        providers.push({
+            provide: TcpClient,
+            useExisting: clientToken
+        })
+    }
+    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
+
+}
 
 export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): ClientTransportFeature[] {
-    return options.map(option => {
-        option.transport = Transport.TCP;
-        option.side = TransferSide.client;
-        const config = option as TcpClientConfig;
-        const clientToken = getClientToken(config);
-        const hanlderToken = getClientHandlerToken(config);
-        const backendToken = getClientBackendToken(config);
-
-        const providers: Provider[] = [
-            asProvider({
-                provide: backendToken,
-                useFactory: () => {
-                    let socket: tls.TLSSocket | net.Socket;
-                    let source$: Observable<any>;
-                    return (data: any, context) => {
-
-                        const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
-                        if (!currSocket) throw new ArgumentException('no socket in context');
-
-                        if (socket !== currSocket) {
-                            if (socket) {
-                                socket.removeAllListeners();
-                            }
-                            socket = currSocket;
-                            source$ = fromEvent(socket, Events.DATA)
-                                .pipe(
-                                    takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
-                                    filter(r=> !isNil(r)),
-                                    share()
-                                )
-                        }
-                        const emit$ = writePacket(socket, data, context.get(StreamAdapter));
-
-                        if (context.get(TcpRequest)?.observe === 'emit') {
-                            return from(emit$);
-                        }
-
-                        return source$
-                    }
-                },
-                multi: true
-            }),
-            {
-                provide: hanlderToken,
-                useFactory: (injector: Injector) => {
-                    return createRequestHandler(injector, option)
-                },
-                deps: [
-                    Injector
-                ]
-            },
-            {
-                provide: clientToken,
-                useClass: TcpClient,
-                deps: [
-                    hanlderToken,
-                    { value: option }
-                ]
-            }
-        ];
-
-        if (options.length == 1 || option.asDefault) {
-            providers.push({
-                provide: TcpClient,
-                useExisting: clientToken
-            })
-        }
-
-        return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
-    });
+    return options.map(option => tcpClientTransportFacotry(option, options.length == 1 || option.asDefault));
 }
+

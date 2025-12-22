@@ -1,41 +1,47 @@
-import { Module } from '@tsdi/ioc';
-import { TcpClient } from './client/client';
-import { TcpServer, withTcpTransport } from './server/server';
-import { provideService, withBodyparser, withContent, withInterceptors, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
-import { useSimpleJson } from '@tsdi/common';
-import { TCP_SERV_CONFIG, TcpServConfig } from './server/options';
-// import { TcpConfiguration } from './configuration';
+import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Transport } from '@tsdi/common';
+import { CLIENT_CONFIGS, provideClientFromDi } from '@tsdi/common/client';
+import { provideServiceFromDi, SERVICE_CONFIGS } from '@tsdi/endpoints';
 
-
-
+import { tcpTransportFactory } from './server/server';
+import { TcpServConfig } from './server/options';
+import { TcpClientConfig } from './client/options';
+import { tcpClientTransportFacotry } from './client/client';
 @Module({
     providers: [
-        provideService(
-            withInterceptors(),
-            withBodyparser(),
-            withContent(),
-            withRouter(),
-            withLogger(),
-            withTransfers(
-                useSimpleJson()
-            ),
-            withTcpTransport({
-                microservice: true,
-                listenOpts: {
-                    port: 3000
-                }
-            })
-        ),
+        provideClientFromDi({ transport: Transport.TCP })
     ]
 })
-export class TcpModule {
+export class TcpClientModule {
 
-    static withOptions(options: TcpServConfig) {
+    static withOptions(options: TcpClientConfig): ModuleWithProviders<TcpClientModule> {
+        if (!options.transportFeature) options.transportFeature = tcpClientTransportFacotry;
         return {
-            module: TcpModule,
+            module: TcpClientModule,
             providers: [
-                { provide: TCP_SERV_CONFIG, useValue: options }
+                { provide: CLIENT_CONFIGS, useValue: options, multi: true }
             ]
         }
     }
 }
+
+
+@Module({
+    providers: [
+        provideServiceFromDi({ transport: Transport.TCP })
+    ]
+})
+export class TcpModule {
+
+    static withOptions(options: TcpServConfig): ModuleWithProviders<TcpModule> {
+        if (!options.transportFeature) options.transportFeature = tcpTransportFactory;
+        return {
+            module: TcpModule,
+            providers: [
+                { provide: SERVICE_CONFIGS, useValue: options, multi: true }
+            ]
+        }
+    }
+}
+
+

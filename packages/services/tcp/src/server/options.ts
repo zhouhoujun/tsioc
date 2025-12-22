@@ -1,7 +1,7 @@
 import { token } from '@tsdi/ioc';
 import { Filter, GuardLike } from '@tsdi/core';
 import { RequestInterceptorLike } from '@tsdi/common';
-import { BindServerEvent, ServiceConfig } from '@tsdi/endpoints';
+import { BindServerEvent, ServiceOptions } from '@tsdi/endpoints';
 
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -10,7 +10,7 @@ import * as tls from 'node:tls';
 /**
  * TCP service config.
  */
-export interface TcpServConfig extends ServiceConfig<net.ServerOpts | tls.TlsOptions> {
+export interface TcpServConfig extends ServiceOptions<net.ServerOpts | tls.TlsOptions> {
     maxConnections?: number;
     listenOpts?: net.ListenOptions;
     /**

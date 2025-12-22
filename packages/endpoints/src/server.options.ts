@@ -1,16 +1,39 @@
-import { RequestMethod, TransferConfig, TransferSide, TransportConfig } from '@tsdi/common';
+import { LoggerOptions, RequestInterceptorLike, RequestMethod, TransferConfig, TransferInterceptorFactory, TransferSide, TransportConfig } from '@tsdi/common';
 import { ServiceHandlerOptions } from './ServiceHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
 import { RestfulRequestContext } from './RestfulRequestContext';
 import { SessionOptions } from './sessions/Session';
+import { ProvdierOf, Type } from '@tsdi/ioc';
+import { ExceptionFilter, FilterLike, GuardLike } from '@tsdi/core';
+import { BodyparserOptions, JsonOptions } from './interceptors';
 
 export interface ProxyOpts {
     proxyIpHeader: string;
     maxIpsCount?: number;
 }
 
+export interface FeatureOptions {/**
+     * request timeout.
+     */
+    timeout?: number;
+    filters?: ProvdierOf<FilterLike>[];
+    interceptors?: ProvdierOf<RequestInterceptorLike>[];
+    guards?: ProvdierOf<GuardLike>[];
+    cors?: boolean | CorsOpts;
+    session?: boolean | SessionOptions;
+    csrf?: boolean | CsrfOps;
+    content?: boolean | ContentOptions;
+    logger?: boolean | LoggerOptions;
+    json?: boolean | JsonOptions;
+    bodyparser?: boolean | BodyparserOptions;
+    router?: boolean | RouteOpts;
+    transfers?: TransferInterceptorFactory[];
 
+    exceptionFilter?: ProvdierOf<ExceptionFilter>;
+    exceptionHandlers?: Type[];
+
+}
 /**
  * service config.
  */
@@ -18,12 +41,6 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
 
     side: TransferSide.server;
 
-    /**
-     * request timeout.
-     */
-    timeout?: number;
-    session?: SessionOptions;
-    content?: ContentOptions;
     serverOpts?: TSerOpts;
 
     asDefault?: boolean;
@@ -39,10 +56,6 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
     detailError?: boolean;
 
     listenOpts?: any;
-    /**
-     * routes config.
-     */
-    routes?: RouteOpts;
 
     proxy?: ProxyOpts;
 
@@ -52,6 +65,7 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
     
     payloadKey?: 'body' | 'payload';
 }
+
 
 /**
  * cors options.
