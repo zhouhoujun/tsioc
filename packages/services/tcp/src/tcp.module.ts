@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
 import { CLIENT_CONFIGS, provideClientFromDi } from '@tsdi/common/client';
 import { provideServiceFromDi, SERVICE_CONFIGS } from '@tsdi/endpoints';
@@ -7,6 +7,9 @@ import { tcpTransportFactory } from './server/server';
 import { TcpServOptions } from './server/options';
 import { TcpClientOptions } from './client/options';
 import { tcpClientTransportFacotry } from './client/client';
+
+
+
 @Module({
     providers: [
         provideClientFromDi({ transport: Transport.TCP })
@@ -14,13 +17,14 @@ import { tcpClientTransportFacotry } from './client/client';
 })
 export class TcpClientModule {
 
-    static withOptions(options: TcpClientOptions): ModuleWithProviders<TcpClientModule> {
-        if (!options.transportFeature) options.transportFeature = tcpClientTransportFacotry;
+    static withOptions(...options: TcpClientOptions[]): ModuleWithProviders<TcpClientModule> {
+        const providers = options.map(r => {
+            if (!r.transportFeature) r.transportFeature = tcpClientTransportFacotry;
+            return { provide: CLIENT_CONFIGS, useValue: options, multi: true } as Provider
+        });
         return {
             module: TcpClientModule,
-            providers: [
-                { provide: CLIENT_CONFIGS, useValue: options, multi: true }
-            ]
+            providers
         }
     }
 }
@@ -33,13 +37,14 @@ export class TcpClientModule {
 })
 export class TcpModule {
 
-    static withOptions(options: TcpServOptions): ModuleWithProviders<TcpModule> {
-        if (!options.transportFeature) options.transportFeature = tcpTransportFactory;
+    static withOptions(...options: TcpServOptions[]): ModuleWithProviders<TcpModule> {
+        const providers = options.map(r => {
+            if (!r.transportFeature) r.transportFeature = tcpTransportFactory;
+            return { provide: SERVICE_CONFIGS, useValue: options, multi: true } as Provider
+        });
         return {
             module: TcpModule,
-            providers: [
-                { provide: SERVICE_CONFIGS, useValue: options, multi: true }
-            ]
+            providers
         }
     }
 }
