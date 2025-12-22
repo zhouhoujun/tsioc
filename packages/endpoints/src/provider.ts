@@ -14,7 +14,7 @@ import { SetupServices } from './SetupServices';
 import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
-import { CorsOpts, CsrfOps, ServiceConfig } from './server.options';
+import { CorsOpts, CsrfOps, FeatureOptions, ServiceConfig } from './server.options';
 import { DefaultExceptionHandlers } from './exception.handlers';
 
 /**
@@ -174,26 +174,6 @@ export function makeFeature<T extends FeatureKind>(kind: T, providers: Provider[
         config,
         providers
     }
-}
-
-
-export interface FeatureOptions {
-    filters?: ProvdierOf<FilterLike>[];
-    interceptors?: ProvdierOf<RequestInterceptorLike>[];
-    guards?: ProvdierOf<GuardLike>[];
-    cors?: boolean | CorsOpts;
-    session?: boolean | SessionOptions;
-    csrf?: boolean | CsrfOps;
-    content?: boolean | ContentOptions;
-    logger?: boolean | LoggerOptions;
-    json?: boolean | JsonOptions;
-    bodyparser?: boolean | BodyparserOptions;
-    router?: boolean | RouteOpts;
-    transfers?: TransferInterceptorFactory[];
-
-    exceptionFilter?: ProvdierOf<ExceptionFilter>;
-    exceptionHandlers?: Type[];
-
 }
 
 const defaultOptions: FeatureOptions = {

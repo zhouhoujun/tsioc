@@ -6,7 +6,7 @@ import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, Tra
 import { Subject, filter, first, fromEvent, isObservable, lastValueFrom, merge, mergeMap, of, race, share, take, takeUntil, throwError } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_CONFIG, TcpServConfig } from './options';
+import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTIONS, TcpServOptions } from './options';
 
 
 
@@ -27,7 +27,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
-        @Inject(TCP_SERV_CONFIG, { nullable: true }) protected options: TcpServConfig,
+        @Inject(TCP_SERV_OPTIONS, { nullable: true }) protected options: TcpServOptions,
     ) {
         super();
 
@@ -163,12 +163,12 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
 
 
 
-export function tcpTransportFactory(option: Partial<TcpServConfig>, asDefault?: boolean): TransportFeature {
+export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?: boolean): TransportFeature {
     option.transport = Transport.TCP;
     option.side = TransferSide.server;
 
     // option.execptionHandlers ??= [DefaultExceptionHandlers];
-    const config = option as TcpServConfig;
+    const config = option as TcpServOptions;
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
 
@@ -213,7 +213,7 @@ export function tcpTransportFactory(option: Partial<TcpServConfig>, asDefault?: 
                 return getClassRef(TcpServer).createInvocation(injector, {
                     providers: [
                         {
-                            provide: TCP_SERV_CONFIG,
+                            provide: TCP_SERV_OPTIONS,
                             useValue: option
                         },
                         {
@@ -257,7 +257,7 @@ export function tcpTransportFactory(option: Partial<TcpServConfig>, asDefault?: 
     return makeFeature(FeatureKind.Transport, providers, config) as TransportFeature;
 }
 
-export function withTcpTransport(...options: Partial<TcpServConfig>[]): TransportFeature[] {
+export function withTcpTransport(...options: Partial<TcpServOptions>[]): TransportFeature[] {
     return options.map(option => {
         return tcpTransportFactory(option, options.length === 1 && option.asDefault);
     })

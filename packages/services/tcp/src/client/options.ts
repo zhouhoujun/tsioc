@@ -11,7 +11,7 @@ import { TcpRequest } from './request';
 /**
  * tcp client config.
  */
-export interface TcpClientConfig extends ClientOptions<TcpRequest<any>, ResponseEvent<any>> {
+export interface TcpClientOptions extends ClientOptions<TcpRequest<any>, ResponseEvent<any>> {
     /**
      * keep alive
      */
@@ -26,7 +26,7 @@ export interface TcpClientConfig extends ClientOptions<TcpRequest<any>, Response
     socketOpts?: SocketConstructorOpts;
 }
 
-export const TCP_CLIENT_OPTIONS =  token<TcpClientConfig>('TCP_CLIENT_OPTIONS');
+export const TCP_CLIENT_OPTIONS =  token<TcpClientOptions>('TCP_CLIENT_OPTIONS');
 
 // /**
 //  * tcp client interceptors.

@@ -6,7 +6,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { filter, first, from, fromEvent, merge, Observable, race, share, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { TCP_CLIENT_OPTIONS, TcpClientConfig } from './options';
+import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
 import { TcpRequest } from './request';
 
 
@@ -27,7 +27,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 
     constructor(
         readonly handler: ClientHandler<TcpRequest<any>, ResponseEvent<any>>,
-        @Inject(TCP_CLIENT_OPTIONS, { nullable: true }) private options: TcpClientConfig
+        @Inject(TCP_CLIENT_OPTIONS, { nullable: true }) private options: TcpClientOptions
     ) {
         super();
         if (!options.connectOpts) {
@@ -114,7 +114,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         return !connection.destroyed && connection.closed !== true
     }
 
-    protected createConnection(opts: TcpClientConfig): tls.TLSSocket | net.Socket {
+    protected createConnection(opts: TcpClientOptions): tls.TLSSocket | net.Socket {
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
@@ -124,10 +124,10 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 
 }
 
-export function tcpClientTransportFacotry(option: Partial<TcpClientConfig>, asDefault?: boolean): ClientTransportFeature {
+export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     option.transport = Transport.TCP;
     option.side = TransferSide.client;
-    const config = option as TcpClientConfig;
+    const config = option as TcpClientOptions;
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
@@ -196,7 +196,7 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientConfig>, asDe
 
 }
 
-export function withTcpClientTransport(...options: Partial<TcpClientConfig>[]): ClientTransportFeature[] {
+export function withTcpClientTransport(...options: Partial<TcpClientOptions>[]): ClientTransportFeature[] {
     return options.map(option => tcpClientTransportFacotry(option, options.length == 1 || option.asDefault));
 }
 

@@ -10,7 +10,7 @@ import * as tls from 'node:tls';
 /**
  * TCP service config.
  */
-export interface TcpServConfig extends ServiceOptions<net.ServerOpts | tls.TlsOptions> {
+export interface TcpServOptions extends ServiceOptions<net.ServerOpts | tls.TlsOptions> {
     maxConnections?: number;
     listenOpts?: net.ListenOptions;
     /**
@@ -19,7 +19,7 @@ export interface TcpServConfig extends ServiceOptions<net.ServerOpts | tls.TlsOp
     heybird?: boolean;
 }
 
-export const TCP_SERV_CONFIG = token<TcpServConfig>('TCP_SERV_CONFIG');
+export const TCP_SERV_OPTIONS = token<TcpServOptions>('TCP_SERV_OPTIONS');
 
 /**
  * Tcp server interceptors.
