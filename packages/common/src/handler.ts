@@ -175,12 +175,12 @@ export class DefaultRequestHandler<
     }
 
     protected override generateBackendFn(): HandlerFn {
-        const handle = super.generateBackendFn();
+        let handle = super.generateBackendFn();
         const options = this.options as RequestHandlerOptions;
         if (options.side === TransferSide.client) {
             const transfers = this.context.get(options.transfersToken!);
             if (transfers?.length) {
-                return composeToHanlderFn(handle, transfers)
+                handle = composeToHanlderFn(handle, transfers)
             }
         }
 

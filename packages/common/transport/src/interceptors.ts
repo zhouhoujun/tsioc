@@ -14,7 +14,9 @@ export function delimiterPacket(config: TransferConfig, options: TransferOptions
     const packetFn = options.size ? packetWithSize : packet;
 
     return config.side === TransferSide.client ? (req, next, context) => {
-        return next(packetFn(req, options, context), context);
+        return packetFn(req, options, context).pipe(
+            mergeMap(pkg => next(pkg, context))
+        );
     } : (req, next, context) => {
         return next(req, context)
             .pipe(
@@ -66,7 +68,7 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
 
 
 
-function packetWithSize(data: any, options: TransferOptions, context: RequestContext) {
+function packetWithSize(data: any, options: TransferOptions, context: RequestContext): Observable<Buffer | string> {
     const streamAdapter = context.get(StreamAdapter);
     const size = options.size!;
     let buffLen: Buffer;
@@ -91,11 +93,11 @@ function packetWithSize(data: any, options: TransferOptions, context: RequestCon
         data = Buffer.concat([buffLen, delimiter, data] as Uint8Array[], total);
     }
 
-    return data;
+    return of(data);
 
 }
 
-function packet(data: any, options: TransferOptions, context: RequestContext) {
+function packet(data: any, options: TransferOptions, context: RequestContext): Observable<Buffer | string> {
     const maxSize = options.maxSize;
     const delimiter = options.delimiter!;
     const streamAdapter = context.get(StreamAdapter);
@@ -116,7 +118,7 @@ function packet(data: any, options: TransferOptions, context: RequestContext) {
         const btpipe = context.get<PipeTransform>('bytes-format');
         return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(maxSize)}`));
     }
-    return data;
+    return of(data);
 }
 
 

@@ -3,7 +3,7 @@ import { Application, ApplicationContext, ExceptionHandlerFilter } from '@tsdi/c
 import { ErrorResponse, PacketIdGenerator, PatternFormatter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
 import { PacketNumberIdGenerator, usePacket } from '@tsdi/common/transport';
 import { provideClient, withBodySerialize, withClientFeatures, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withFeatures, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withFeatures, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
@@ -143,8 +143,8 @@ export class TcpService {
             withContent(),
             // withRouter(),
             withRouter(),
-            // withLogger(),
-            // withFilters(ExceptionHandlerFilter),
+            withLogger(),
+            withExceptionFilter(),
             withTransfers(
                 usePacket(),
                 useSimpleJson({
