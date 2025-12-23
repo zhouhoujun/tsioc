@@ -45,11 +45,13 @@ function chainedInterceptorFn(
     return chainFactory(chainTailFn, interceptorFn)
 }
 
+
+
 export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: InterceptorFn): InterceptorFn {
     return (initialRequest, finalHandlerFn, context: any) =>
         interceptorFn(
             initialRequest,
-            (downstreamRequest, ctx, tail) => tail ? invokeTail(() => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context), tail) : chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
+            (downstreamRequest, ctx) => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
             context
         )
 }
@@ -112,11 +114,12 @@ export function toPromise<T>(res: HandleResult<T>): Promise<T> {
     return isPromise(res) ? res : Promise.resolve(res);
 }
 
-export function invokeTail<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<T>, nextOpter?: TailNext<T, TContext>, initial?: any, context?: TContext): HandleResult<T> {
-    const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
+
+export function invokeTail<T, TContext = any>(invoke: (arg1?: any, arg2?: any, arg3?: any) => HandleResult<T>, tail: TailNext<T, TContext>, arg1?: any, arg2?: any, arg3?: any): HandleResult<T> {
+    const opter = isFunction(tail) ? { next: tail } : tail;
 
     try {
-        const res$ = invoke(initial, context);
+        const res$ = invoke(arg1, arg2, arg3);
         if (!opter) return res$;
 
         if (isObservable(res$)) {
@@ -226,7 +229,10 @@ export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any
     return hanlders.reduceRight((next, handler) => {
         const invok = parseToHandlerFn(handler);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
-        return (input: any, context?: any) => invokeTail(invok, (res) => interceptor ? interceptor(res, nextFn, input, context) : nextFn(res ?? input, context), input, context);
+        if (interceptor) {
+            return (input: any, context?: any) => invokeTail(invok, (res) => interceptor(res, nextFn, input, context), input, context);
+        }
+        return (input: any, context?: any) => invokeTail(invok, (res) => nextFn(res ?? input, context), input, context);
     }, endHandler) as HandlerFn;
 }
 

@@ -13,11 +13,12 @@ import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArgs, resolveParameters } from './common';
 import { getResolver, ResolveContext } from '../resolver';
+import { invokeTail } from '../handlers/compose';
 
 
 export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
 
-    return next(input, context, (instance) => {
+    return invokeTail(next, (instance) => {
         const autos = input.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
             // const { injector, classRef: def, instance, context } = input;
@@ -28,18 +29,18 @@ export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, RuntimeCont
             }
         }
         return instance;
-    });
+    }, input, context);
 
 }
 
 
 const RUNTIME_CLASS_SCOPE = new ContextToken<RuntimeHandler<ClassRef, any, RuntimeContext>>(() => null!);
 export const runtimeAnnoInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
-    return next(input, context,
+    return invokeTail(next,
         (instance) => {
             getRuntimeClassScope(context.runtime).handle(input, context);
             return instance;
-        })
+        }, input, context)
 }
 
 function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: DecoratorScope, context: RuntimeContext) {
@@ -66,23 +67,23 @@ export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef,
 
 export const cacheInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
 
-    return next(input, context, (instance) => {
+    return invokeTail(next, (instance) => {
         const ann = input.getAnnotation();
         if (!ann.singleton && (ann.expires && ann.expires > 0)) {
             const injector = context.raiseInjector;
             InjectUtil.cache(injector, input.type, instance, ann.expires!);
         }
         return instance;
-    });
+    }, input, context);
 }
 
 
 
 
 export const methodInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
-    return next(input, context, (instance) => {
+    return invokeTail(next, (instance) => {
         return getRuntimeMethodScope(context.runtime).handle(input, context, () => instance);
-    })
+    }, input, context)
 }
 
 const RUNTIME_METHOD_SCOPE = new ContextToken<RuntimeHandler<ClassRef, any, RuntimeContext>>(() => null!);
@@ -101,7 +102,7 @@ export function getRuntimeMethodScope(runtime: Runtime): RuntimeHandler<ClassRef
 
 export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
 
-    return next(input, context, (instance) => {
+    return invokeTail(next, (instance) => {
         const injector = context.raiseInjector;
         if (!instance) throw new Exception('autowride property need instance');
         let meta: PropertyMetadata, key: string, val;
@@ -127,7 +128,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
         return getRuntimePropertyScope(context.runtime).handle(input, context, () => instance);
 
-    })
+    }, input, context)
 
 }
 

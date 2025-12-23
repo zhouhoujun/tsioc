@@ -74,7 +74,7 @@ export class ConfigableHandler<
         }
     }
 
-    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput> {
+    handle(input: TInput, context: TContext): HandleResult<TOutput> {
         return invokeTails(
             async () => {
                 if (this.onReady) await this.onReady();
@@ -97,8 +97,7 @@ export class ConfigableHandler<
                     return this.run(input, context);
                 }
                 throw this.forbiddenError()
-            },
-            tail
+            }
         );
     }
 

@@ -14,7 +14,7 @@ import { Provider } from '../providers';
 import { createRecord } from './common';
 
 export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return next(input, context, (res) => {
+    return invokeTail(next, (res) => {
         const runs = input.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
         if (runs.length < 1) {
             return
@@ -24,7 +24,7 @@ export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Io
         for (const meta of runs) {
             invocation.invoke(meta.propertyKey);
         }
-    })
+    }, input, context)
 }
 
 
@@ -95,22 +95,22 @@ export function getDesignMethodScope(runtime: Runtime): RuntimeHandler<ClassRef,
 
 
 export const afterPropertyAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return next(input, context, (res) => {
+    return invokeTail(next, (res) => {
         getDesignPropertyScope(context.runtime).handle(input, context);
         return res;
-    });
+    }, input, context);
 }
 export const afterMethodAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return next(input, context, (res) => {
+    return invokeTail(next, (res) => {
         getDesignMethodScope(context.runtime).handle(input, context);
         return res;
-    });
+    }, input, context);
 }
 export const afterAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return next(input, context, (res) => {
+    return invokeTail(next, (res) => {
         getDesignAfterAnnoationScope(context.runtime).handle(input, context);
         return res;
-    });
+    }, input, context);
 }
 
 export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {

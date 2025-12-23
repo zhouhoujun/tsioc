@@ -32,13 +32,13 @@ export class ProceedingScope implements Proceeding {
     pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
         const advisor = context.runtime.get(Advisor);
         if (!advisor.hasCtor(typeRef)) {
-            return next(typeRef, context, (instance) => {
+            return invokeTail(next, (instance) => {
                 if (advisor.hasPointcut(instance, typeRef, true)) {
                     context.set(POINTCUT, true);
                     // ctx.isNewContext = false;
                 }
                 return instance;
-            });
+            }, typeRef, context);
         }
 
         // ctx.isNewContext = false;
@@ -47,23 +47,23 @@ export class ProceedingScope implements Proceeding {
             args: context.args ?? [],
             params: context.params ?? [],
             originProxy: (joinPoint) => {
-                return next(typeRef, context, (instance) => {
+                return invokeTail(next, (instance) => {
                     instance = joinPoint.returning = joinPoint.target = context.instance ?? instance;
                     return instance;
-                })
+                }, typeRef, context)
             },
         })
 
     }
 
     pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
-        return next(typeRef, context, (instance) => {
+        return invokeTail(next, (instance) => {
             const advisor = context.runtime.get(Advisor);
             if (isDefined(instance) && (context.has(POINTCUT) || advisor.hasPointcut(instance, typeRef, true))) {
                 instance = context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
             }
             return instance;
-        });
+        }, typeRef, context);
     }
 
     protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: Injector) {
@@ -214,18 +214,18 @@ export function getAdvicesLifeScope(runtime: Runtime): RuntimeHandler<JoinPoint,
 
 
 export const afterReturningIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
-    return next(jp, context, (res) => {
+    return invokeTail(next, (res) => {
         jp.state = JoinpointState.AfterReturning;
         if (isDefined(res) && res !== jp) jp.returning = res;
         const advicers = jp.advisor.getAfterReturning(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
             return toHanlder(advicers)(jp, context);
         }
-    })
+    }, jp, context)
 }
 
 export const afterThrowingInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
-    return next(jp, context, {
+    return invokeTail(next, {
         error: (error) => {
             jp.throwing = error;
             jp.state = JoinpointState.AfterThrowing;
@@ -234,7 +234,7 @@ export const afterThrowingInterceptor = (jp: JoinPoint, next: HandlerFn, context
                 return toHanlder(advicers)(jp, context);
             }
         },
-    });
+    }, jp, context);
 }
 
 export const beforeIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
@@ -258,14 +258,14 @@ export const pointcutIterceptor = (jp: JoinPoint, next: HandlerFn, context: Runt
 }
 
 export const afterIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
-    return next(jp, context, (res) => {
+    return invokeTail(next, (res) => {
         jp.state = JoinpointState.After;
         if (isDefined(res) && res !== jp) jp.returning = res;
         const advicers = jp.advisor.getAfter(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
             return toHanlder(advicers)(jp, context);
         }
-    });
+    }, jp, context);
 }
 
 
@@ -341,9 +341,9 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer, runtime: RuntimeCo
         added = false;
     }
 
-    return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), added ? {
+    return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), {
         finally: () => {
-            context && joinPoint.removeRef(context);
+            added && context && joinPoint.removeRef(context);
         }
-    } : undefined);
+    });
 }

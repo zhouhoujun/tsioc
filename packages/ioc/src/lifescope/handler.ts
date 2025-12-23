@@ -50,7 +50,7 @@ export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> impleme
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return tail ? invokeTail(() => this.chain!(input, this.backend, context), tail) : this.chain(input, this.backend, context);
+        return tail ? invokeTail(this.chain, tail, input, this.backend, context) : this.chain(input, this.backend, context);
     }
     protected reset() {
         this.chain = null;

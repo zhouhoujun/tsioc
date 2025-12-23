@@ -28,7 +28,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
  * handler fn.
  * 处理器基本构建块。
  */
-export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => HandleResult<TOutput>;
+export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext) => HandleResult<TOutput>;
 
 
 /**

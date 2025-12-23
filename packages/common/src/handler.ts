@@ -161,13 +161,9 @@ export class DefaultRequestHandler<
     }
 
     override handle(input: TReq, context: TContext): Observable<TRes> {
-        return toObservable(super.handle(input, context)) as Observable<TRes>;
+        return super.handle(input, context) as Observable<TRes>;
     }
 
-    // protected override composeFilterFn(filters: FilterLike[]): FilterFn {
-    //     const fn = composeFilters(filters);
-    //     return (input: any, next: HandlerFn, context?: any) => toObservable(fn(input, next, context));
-    // }
 
     protected override generateInterceptorFn(fns: InterceptorLike[]): InterceptorFn {
         const options = this.options as RequestHandlerOptions;
