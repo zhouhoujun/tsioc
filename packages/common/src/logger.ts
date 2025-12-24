@@ -1,7 +1,7 @@
 import { Abstract, Exception, Inject, InjectFlags, Injectable, Nullable, isNumber } from '@tsdi/ioc';
 import { Filter, BytesFormatPipe, HrtimeFormatter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel, ConsoleLog } from '@tsdi/logger';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, throwError } from 'rxjs';
 import { StatusAdapter } from './StatusAdapter';
 import { RequestInterceptor } from './interceptor';
 import { ReadableLike, WritableLike } from './stream';
@@ -89,6 +89,11 @@ export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incomi
                     logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method,
                         this.formatter.htime.hrtime(start), res.statusCode, res.statusMessage, context.getContentLength(), res.error));
                     return res
+                }),
+                catchError(err => {
+                    logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method,
+                        this.formatter.htime.hrtime(start), err.statusCode, err.statusMessage, context.getContentLength(), err));
+                    return throwError(() => err);
                 })
             )
     }

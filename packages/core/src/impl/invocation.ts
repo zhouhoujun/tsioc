@@ -49,14 +49,13 @@ export class DefaultInvocationHandler<
                 const ctx = context.as(ResolveContext).setPayload(input);
                 return this.propertyKey ? this.invocation.invoke(this.propertyKey, ctx) : this.invocation.invoke(ctx);
             },
-            {
-                next: (res) => {
-                    if (res instanceof ResultValue) {
-                        return res.sendValue(context);
-                    }
-                    return this.respondAs(input, res, context);
+            (res) => {
+                if (res instanceof ResultValue) {
+                    return res.sendValue(context);
                 }
-            })
+                return this.respondAs(input, res, context);
+            }
+        )
 
     }
 

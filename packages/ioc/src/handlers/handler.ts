@@ -39,8 +39,8 @@ export type HandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerFn
 /**
  * next operation
  */
-export interface NextOpter<TOutput, TContext = any> {
-    next?: (res: TOutput, context?: TContext) => any;
+export interface NextOpter<T, TContext = any> {
+    next?: (res: T, context?: TContext) => any;
     error?: (error: any) => any;
     finally?: () => any;
 }
@@ -48,9 +48,14 @@ export interface NextOpter<TOutput, TContext = any> {
 /**
  * Handle result.
  */
-export type HandleResult<TOutput> = TOutput | Promise<TOutput> | Observable<TOutput>;
+export type HandleResult<T> = T | Promise<T> | Observable<T>;
+/**
+ * next operation fn.
+ */
+export type NextOpterFn<T, TContext = any> = (res: T, context?: TContext) => any;
+
 
 /**
  * Tail next.
  */
-export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => HandleResult<TOutput>);
+export type TailNext<T, TContext = any> = NextOpter<T, TContext> | NextOpterFn<T, TContext>;
