@@ -129,7 +129,7 @@ export abstract class ConfigableRequestHandler<
      * append handler options.
      * @param options 
      */
-    abstract append(options: HandlerOptions<TReq, Observable<TRes>, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this;
+    abstract append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this;
     /**
      * handle request.
      * @param input 
@@ -149,7 +149,7 @@ export class DefaultRequestHandler<
 >
     extends ConfigableHandler<TReq, Observable<TRes>, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
 
-    override append(options: HandlerOptions<TReq, Observable<TRes>, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this {
+    override append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this {
         super.append(options);
         const config = options as RequestHandlerOptions;
         if (config.transfers) {

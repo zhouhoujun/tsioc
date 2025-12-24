@@ -1,11 +1,8 @@
-import { Abstract, InterceptorLike, InvocationContext, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
-import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, HandlerOptions, isHandlerOptions } from '@tsdi/core';
-import { RequestContext, RequestHandler, RequestInterceptorLike, Transport } from '@tsdi/common';
-import { AbstractRequestContext } from './AbstractRequestContext';
+import { Abstract, InvocationContext, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
+import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, isHandlerOptions } from '@tsdi/core';
+import { RequestContext, RequestHandler, RequestInterceptorLike, Transport, RequestHandlerOptions } from '@tsdi/common';
 import { ServiceHandler } from './ServiceHandler';
-import { ServiceConfig } from './server.options';
-// import { RequestHandler } from './RequestHandler';
-// import { TOutgoing } from '@tsdi/common/transport';
+import { Observable } from 'rxjs';
 
 
 /**
@@ -50,7 +47,7 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
  */
 @Abstract()
 export abstract class Server<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
-    extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, TResponse, TContext> {
+    extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
 
     get context() {
         return this.handler.context
@@ -66,21 +63,21 @@ export abstract class Server<TRequest = any, TResponse = any, TContext extends R
      * @param inteceptor
      * @param order mutil order
      */
-    use(inteceptor: ProvdierOf<InterceptorLike<TRequest, TResponse, TContext>>, order?: number): this;
+    use(inteceptor: ProvdierOf<RequestInterceptorLike<TRequest, TResponse, TContext>>, order?: number): this;
     /**
      * use interceptor for this handler.
      * @param inteceptors 
      */
-    use(inteceptors: ProvdierOf<InterceptorLike<TRequest, TResponse, TContext>>[]): this;
+    use(inteceptors: ProvdierOf<RequestInterceptorLike<TRequest, TResponse, TContext>>[]): this;
     /**
      * use and append hanlder options.
      * @param options 
      */
-    use(options: HandlerOptions<TRequest, TResponse, TContext>): this;
-    use(options: ProvdierOf<InterceptorLike<TRequest, TResponse, TContext>> | ProvdierOf<InterceptorLike<TRequest, TResponse, TContext>>[] | HandlerOptions<TRequest, TResponse, TContext>, order?: number): this {
+    use(options: RequestHandlerOptions<TRequest, TResponse, TContext>): this;
+    use(options: ProvdierOf<RequestInterceptorLike<TRequest, TResponse, TContext>> | ProvdierOf<RequestInterceptorLike<TRequest, TResponse, TContext>>[] | RequestHandlerOptions<TRequest, TResponse, TContext>, order?: number): this {
         this.handler.append(
             isArray(options) ? { interceptors: options }
-                : ((isHandlerOptions(options) ? options : { interceptors: [toMutilProvdierOf(options as ProvdierOf<InterceptorLike<TRequest, TResponse, TContext>>, order)] })
+                : ((isHandlerOptions(options) ? options : { interceptors: [toMutilProvdierOf(options as ProvdierOf<RequestInterceptorLike<TRequest, TResponse, TContext>>, order)] })
                 )
         )
         return this;
