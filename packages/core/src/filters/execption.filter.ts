@@ -1,4 +1,4 @@
-import { Abstract, Exception, Injectable, isUndefined, composeHandlers, invokeTail, HandleResult } from '@tsdi/ioc';
+import { Abstract, Exception, Injectable, isUndefined, composeHandlers, invokeTail } from '@tsdi/ioc';
 import { Handler, RunContext } from '../handler';
 import { Filter, FilterHandlerResolver } from './filter';
 
@@ -16,7 +16,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): HandleResult<TOutput> {
+    doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): TOutput {
         return invokeTail(()=> next.handle(input, context), {
             error: (err) => {
                 return invokeTail(() => this.catchError(input, err, context), {
@@ -37,7 +37,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @param err 
      * @param caught 
      */
-    abstract catchError(input: TInput, err: any, context: TContext): HandleResult<TOutput>;
+    abstract catchError(input: TInput, err: any, context: TContext): TOutput;
 }
 
 /**
@@ -47,7 +47,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
 export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends RunContext = RunContext> extends ExceptionFilter<TInput, TOutput, TContext> {
 
 
-    catchError(input: TInput, err: any, context: TContext): HandleResult<TOutput> {
+    catchError(input: TInput, err: any, context: TContext): TOutput {
         const injector = context.getInjector();
         const handlers = injector.get(FilterHandlerResolver)?.resolve(err);
         if (!handlers || !handlers.length) {

@@ -1,9 +1,9 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
-import { ExceptionFilter, ExceptionHandlerFilter, FilterLike, GuardLike } from '@tsdi/core';
+import { ExceptionFilter, ExceptionHandlerFilter, GuardLike } from '@tsdi/core';
 import {
     matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory,
     UrlIncomingFactory, useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
-    provideIncomings, provideOutgoings, TransportConfig
+    provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -335,14 +335,14 @@ export function withExceptionFilter(options?: {
  * Add filters to the configuration of the `Service`
  * instance.
  *
- * @see {@link FilterLike}
+ * @see {@link RequestFilterLike}
  * @see {@link provideService}
  * @publicApi
  * 
  * @param filters 
  * @returns
  */
-export function withFilters(...filters: ProvdierOf<FilterLike>[]): FeatureFn<FeatureKind.Filters> {
+export function withFilters(...filters: ProvdierOf<RequestFilterLike>[]): FeatureFn<FeatureKind.Filters> {
     return (config) => {
         const token = getFiltersToken(config);
         return makeFeature(

@@ -1,6 +1,6 @@
 import {
     Abstract, chainEndFn, chainFactory, HandlerFn, isFunction,
-    token, AbstractType, HandlerLike, HandleResult
+    token, AbstractType, HandlerLike,
 } from '@tsdi/ioc';
 import { Handler } from '../handler';
 import { InterceptorFn } from '../interceptor';
@@ -20,7 +20,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): HandleResult<TOutput>;
+    abstract doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): TOutput;
 
     /**
      * is this equals to target or not

@@ -56,7 +56,7 @@ const defopts = {
  * Logger interceptor, filter.
  */
 @Injectable()
-export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, Filter<Incoming, Outgoing, RequestContext> {
+export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, Filter<Incoming, Observable<Outgoing>, RequestContext> {
 
     private options: LoggerOptions;
 

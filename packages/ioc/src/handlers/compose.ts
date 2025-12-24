@@ -1,10 +1,8 @@
 import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { Handler, HandlerFn, HandlerLike, NextOpterFn } from './handler';
+import { Handler, HandlerFn, HandlerLike } from './handler';
 import { isDefined, isFunction, isPromise } from '../utils/chk';
 import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
 import { HandleResult, NextOpter, TailNext } from './handler';
-import { tail } from 'shelljs';
-
 
 
 /**
@@ -98,7 +96,7 @@ function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: Intercep
 /**
  * parse handle result to `Observable`
  */
-export function toObservable<T>(res: HandleResult<T>): Observable<T> {
+export function toObservable<T>(res: any): Observable<T> {
     if (isObservable(res)) {
         return res as Observable<T>;
     }
@@ -108,23 +106,23 @@ export function toObservable<T>(res: HandleResult<T>): Observable<T> {
 /**
  * parse handle result to `Promise`
  */
-export function toPromise<T>(res: HandleResult<T>): Promise<T> {
+export function toPromise<T>(res: any): Promise<T> {
     if (isObservable(res)) {
-        return lastValueFrom(res);
+        return lastValueFrom(res) as Promise<T>;
     }
     return isPromise(res) ? res : Promise.resolve(res);
 }
 
 
-export function invokeTail<T, TContext = any>(invoke: (arg1?: any, arg2?: any, arg3?: any) => HandleResult<T>, tail: TailNext<T, TContext>, arg1?: any, arg2?: any, arg3?: any): HandleResult<T> {
+export function invokeTail<T=any, TContext = any>(invoke: (arg1?: any, arg2?: any, arg3?: any) => T, tail: TailNext<T, TContext>, arg1?: any, arg2?: any, arg3?: any): T {
     try {
         const res$ = invoke(arg1, arg2, arg3);
         if (!tail) return res$;
 
         if (isObservable(res$)) {
-            return processObservable(res$, tail);
+            return processObservable(res$, tail) as T;
         } else if (isPromise(res$)) {
-            return processPromise(res$, tail);
+            return processPromise(res$, tail) as T;
         }
         return processSync(res$, tail);
     } catch (err) {
@@ -135,15 +133,15 @@ export function invokeTail<T, TContext = any>(invoke: (arg1?: any, arg2?: any, a
 /**
  * 处理多个连续的invoke调用
  */
-export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, next: TailNext<T, TContext>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
-export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
-export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, ...invokes: ((res?: any, context?: TContext) => HandleResult<any>)[]): HandleResult<T>
-export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T> {
-    const fn = nexts.reduceRight<(res?: T, context?: TContext) => Observable<T> | Promise<T> | T>((invoke, next) => next ? (res, context) => invokeTail(invoke, next, res, context) : invoke, invoke);
+export function invokeTails<T = any, TContext = any>(invoke: () => any, next: TailNext<any, TContext>, ...nexts: (TailNext<any, TContext> | undefined)[]): T;
+export function invokeTails<T = any, TContext = any>(invoke: () => any, ...nexts: (TailNext<any, TContext> | undefined)[]): T;
+export function invokeTails<T = any, TContext = any>(invoke: () => any, ...invokes: ((res?: any, context?: TContext) => any)[]): T
+export function invokeTails<T = any, TContext = any>(invoke: () => any, ...nexts: (TailNext<any, TContext> | undefined)[]): T {
+    const fn = nexts.reduceRight<(res?: T, context?: TContext) => T>((invoke, next) => next ? (res, context) => invokeTail(invoke, next, res, context) : invoke, invoke);
     return fn();
 }
 
-function processObservableFn<T, TContext>(obs$: Observable<T>, next: (res: T, context?: TContext) => HandleResult<T>) {
+function processObservableFn<T, TContext>(obs$: Observable<T>, next: (res: T, context?: TContext) => Observable<T>) {
     return obs$.pipe(
         mergeMap(res => {
             const n$ = next(res);
@@ -152,7 +150,7 @@ function processObservableFn<T, TContext>(obs$: Observable<T>, next: (res: T, co
     )
 }
 
-function processObservable<T>(obs$: Observable<T>, opter: TailNext<T>): Observable<T> {
+function processObservable<T>(obs$: Observable<any>, opter: TailNext<any>): Observable<T> {
     if (isFunction(opter)) return processObservableFn(obs$, opter)
     if (opter.next) {
         obs$ = processObservableFn(obs$, opter.next);
@@ -171,7 +169,7 @@ function processObservable<T>(obs$: Observable<T>, opter: TailNext<T>): Observab
     return obs$;
 }
 
-function processPromise<T>(pr$: Promise<T>, opter: TailNext<T>): Promise<T> {
+function processPromise<T>(pr$: Promise<any>, opter: TailNext<T>): Promise<T> {
     if (isFunction(opter)) return pr$.then(opter);
     if (opter.next) {
         pr$ = pr$.then(opter.next);

@@ -1,9 +1,8 @@
 import { getToken, Token } from '@tsdi/ioc';
-import { Transport, RequestInterceptor, RequestInterceptorLike, RequestHandler, RequestHandlerLike } from '@tsdi/common';
+import { GuardLike } from '@tsdi/core';
+import { Transport, RequestInterceptor, RequestInterceptorLike, RequestHandler, RequestHandlerLike, RequestFilterLike } from '@tsdi/common';
 import { ClientConfig } from './options';
 import { AbstractClient } from './AbstractClient';
-import { FilterLike, GuardLike } from '@tsdi/core';
-
 
 function toMicroName(microservice?: boolean, name?: string) {
     if (!name) return microservice ? 'MICRO' : '';
@@ -17,9 +16,9 @@ export function getClientGuardsToken(config: ClientConfig): Token<GuardLike[]> {
     return config.guardsToken;
 }
 
-export function getClientFiltersToken(config: ClientConfig): Token<FilterLike[]> {
+export function getClientFiltersToken(config: ClientConfig): Token<RequestFilterLike[]> {
     if (!config.filtersToken) {
-        config.filtersToken = getToken<FilterLike[]>(`${Transport[config.transport].toUpperCase()}_FILTERS`, toMicroName(config.microservice));
+        config.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_FILTERS`, toMicroName(config.microservice));
     }
     return config.filtersToken;
 }

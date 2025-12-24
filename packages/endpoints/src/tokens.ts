@@ -1,7 +1,7 @@
 import { getToken, Invocation, Token } from '@tsdi/ioc';
-import { Transport, RequestInterceptorLike, RequestHandlerLike } from '@tsdi/common';
+import { GuardLike } from '@tsdi/core';
+import { Transport, RequestInterceptorLike, RequestHandlerLike, RequestFilterLike } from '@tsdi/common';
 import { ServiceConfig } from './server.options';
-import { FilterLike, GuardLike } from '@tsdi/core';
 import { Router } from './router/router';
 import { ServiceHandler } from './ServiceHandler';
 
@@ -17,9 +17,9 @@ export function getGuardsToken(config: ServiceConfig): Token<GuardLike[]> {
     return config.guardsToken;
 }
 
-export function getFiltersToken(config: ServiceConfig): Token<FilterLike[]> {
+export function getFiltersToken(config: ServiceConfig): Token<RequestFilterLike[]> {
     if(!config.filtersToken) {
-        config.filtersToken = getToken<FilterLike[]>(`${Transport[config.transport].toUpperCase()}_FILTERS`, toMicroName(config.microservice));
+        config.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_FILTERS`, toMicroName(config.microservice));
     }
     return config.filtersToken;
 }

@@ -1,16 +1,13 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
+import { GuardLike } from '@tsdi/core';
 import {
-    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, TransferSide, useSimpleJson,
-    UrlClientIncomingFactory, TopicClientIncomingFactory,
-    AbstractRequest,
-    ResponseEvent
+    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, useSimpleJson,
+    UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
-import { FilterLike, GuardLike } from '@tsdi/core';
-import { config } from 'rxjs';
 
 
 
@@ -269,7 +266,7 @@ export function withClientGuards(...guards: ProvdierOf<GuardLike>[]): ClientFeat
  * @param filters 
  * @returns
  */
-export function withClientFilters(...filters: ProvdierOf<FilterLike>[]): ClientFeatureFn<ClientFeatureKind.Filters> {
+export function withClientFilters(...filters: ProvdierOf<RequestFilterLike>[]): ClientFeatureFn<ClientFeatureKind.Filters> {
     return (config) => {
         const token = getClientFiltersToken(config);
         return makeClientFeature(
@@ -287,7 +284,7 @@ const defaultOptions = {
 }
 
 export interface ClientFeatureOptions {
-    filters?: ProvdierOf<FilterLike>[];
+    filters?: ProvdierOf<RequestFilterLike>[];
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     guards?: ProvdierOf<GuardLike>[];
     timeout?: number;

@@ -1,16 +1,17 @@
 import { Abstract, composeInterceptors, createInvocationContext, Exception, Handler, Injector, InterceptingHandler, InterceptorLike, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
-import { AbstractConfigableHandler, ConfigableHandler, FilterLike, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
+import { AbstractConfigableHandler, ConfigableHandler, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransferSide } from './transfer';
+import { RequestFilterLike } from './filter';
 
 
 /**
  * Requset handler
  */
-export interface RequestHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends Handler<TReq, TRes, TContext> {
+export interface RequestHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends Handler<TReq, Observable<TRes>, TContext> {
     /**
      * handle.
      * 
@@ -41,10 +42,8 @@ export type RequestHandlerLike<TReq = any, TRes = any, TContext extends RequestC
 /**
  * Request intercepting handler.
  */
-export class RequestInterceptingHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends InterceptingHandler<TReq, TRes, TContext> implements RequestHandler<TReq, TRes, TContext> {
-    handle(req: TReq, context: TContext): Observable<TRes> {
-        return super.handle(req, context) as Observable<TRes>;
-    }
+export class RequestInterceptingHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends InterceptingHandler<TReq, Observable<TRes>, TContext> implements RequestHandler<TReq, TRes, TContext> {
+
 }
 
 
@@ -72,7 +71,7 @@ export interface RequestHandlerOptions<TReq = any, TRes = any, TContext extends 
     /**
      * filters of handler.
      */
-    filters?: ProvdierOf<FilterLike<TReq, TRes>>[];
+    filters?: ProvdierOf<RequestFilterLike<TReq, TRes>>[];
     /**
      * backend.
      */
@@ -105,7 +104,7 @@ export interface RequestHandlerOptions<TReq = any, TRes = any, TContext extends 
     /**
      * filter tokens.
      */
-    filtersToken?: Token<FilterLike<TReq, TRes, TContext>[]>;
+    filtersToken?: Token<RequestFilterLike<TReq, TRes, TContext>[]>;
 
     backendToken?: Token<RequestHandlerLike<TReq, TRes, TContext>>;
 
@@ -124,13 +123,13 @@ export abstract class ConfigableRequestHandler<
     TReq = any,
     TRes = any,
     TContext extends RequestContext = RequestContext
-> extends AbstractConfigableHandler<TReq, TRes, TContext> {
+> extends AbstractConfigableHandler<TReq, Observable<TRes>, TContext> {
 
     /**
      * append handler options.
      * @param options 
      */
-    abstract append(options: HandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this;
+    abstract append(options: HandlerOptions<TReq, Observable<TRes>, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this;
     /**
      * handle request.
      * @param input 
@@ -148,9 +147,9 @@ export class DefaultRequestHandler<
     TReq = any, TRes = any,
     TContext extends RequestContext = RequestContext
 >
-    extends ConfigableHandler<TReq, TRes, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
+    extends ConfigableHandler<TReq, Observable<TRes>, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
 
-    override append(options: HandlerOptions & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this {
+    override append(options: HandlerOptions<TReq, Observable<TRes>, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this {
         super.append(options);
         const config = options as RequestHandlerOptions;
         if (config.transfers) {
@@ -158,10 +157,6 @@ export class DefaultRequestHandler<
             this.resetChain();
         }
         return this;
-    }
-
-    override handle(input: TReq, context: TContext): Observable<TRes> {
-        return super.handle(input, context) as Observable<TRes>;
     }
 
 

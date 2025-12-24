@@ -1,4 +1,4 @@
-import { Handler, HandleResult, HandlerFn, TailNext } from '../handlers/handler';
+import { Handler, HandlerFn, TailNext } from '../handlers/handler';
 import { InterceptorFn, InterceptorLike } from '../handlers/interceptor';
 import { composeInterceptors, invokeTail } from '../handlers/compose';
 import { isFunction, isNumber } from '../utils/chk';
@@ -46,7 +46,7 @@ export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> impleme
     }
 
 
-    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput> {
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): TOutput {
         if (!this.chain) {
             this.chain = this.compose();
         }

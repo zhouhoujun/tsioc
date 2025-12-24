@@ -26,7 +26,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
         }
     }
 
-    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput> {
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): TOutput {
         if (!this.chain) {
             this.chain = this.compose();
         }
@@ -52,7 +52,7 @@ export class ComposeInterceptor<TInput = any, TOutput = any, TContext = any> imp
         protected interceptors: InterceptorLike[]
     ) { }
 
-    intercept(input: TInput, next: Handler<TInput, TOutput, TContext>, context: TContext): HandleResult<TOutput> {
+    intercept(input: TInput, next: Handler<TInput, TOutput, TContext>, context: TContext): TOutput {
         if (!this.chain) {
             this.chain = this.compose();
         }

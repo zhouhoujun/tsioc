@@ -16,6 +16,7 @@ export * from './listen';
 export * from './exceptions';
 export * from './protocols';
 export * from './context';
+export * from './filter';
 export * from './handler';
 export * from './interceptor';
 

@@ -1,4 +1,4 @@
-import { Invocation, isFunction, isString, Type, invokeTails, HandleResult, ResolveContext, isNumber } from '@tsdi/ioc';
+import { Invocation, isFunction, isString, Type, invokeTails, ResolveContext, isNumber } from '@tsdi/ioc';
 import { HandlerFn, RunContext } from '../handler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -37,7 +37,7 @@ export class DefaultInvocationHandler<
      * @param input 
      * @returns 
      */
-    protected respond(input: TInput, context: TContext): HandleResult<TOutput> {
+    protected respond(input: TInput, context: TContext): TOutput {
         if (isNumber(this.limit)) {
             if (this.limit < 1) return null!;
             this.limit -= 1;
@@ -65,7 +65,7 @@ export class DefaultInvocationHandler<
      * @param res 
      * @returns 
      */
-    protected respondAs(input: TInput, res: any, context: TContext): HandleResult<TOutput> {
+    protected respondAs(input: TInput, res: any, context: TContext): TOutput {
         if (isString(this.options.response)) {
             const trespond = this.context.get(TypedRespond);
             if (trespond) {

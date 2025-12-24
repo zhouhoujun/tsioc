@@ -13,7 +13,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
      * @param input handle input.
      * @param context handle with context.
      */
-    handle(input: TInput, context: TContext): HandleResult<TOutput>;
+    handle(input: TInput, context: TContext): TOutput;
 
     /**
      * is this equals to target or not
@@ -28,7 +28,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
  * handler fn.
  * 处理器基本构建块。
  */
-export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext) => HandleResult<TOutput>;
+export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext) => TOutput;
 
 
 /**

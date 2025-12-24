@@ -1,7 +1,7 @@
 import {
     Injector, ProvdierOf, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token,
     InvocationContext, createInvocationContext, ArgumentException, isArray, isFunction, composeInterceptors, chainFactory,
-    some, InjectUtil, invokeTails, TailNext, HandleResult, hasProps, composeHandlers, Provider
+    some, InjectUtil, invokeTails, TailNext, hasProps, composeHandlers, Provider
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../interceptor';
@@ -74,7 +74,7 @@ export class ConfigableHandler<
         }
     }
 
-    handle(input: TInput, context: TContext): HandleResult<TOutput> {
+    handle(input: TInput, context: TContext): TOutput {
         return invokeTails(
             async () => {
                 if (this.onReady) await this.onReady();
