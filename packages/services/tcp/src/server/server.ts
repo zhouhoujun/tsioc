@@ -146,9 +146,9 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
             mergeMap((data: any) => this.handler.handle(data, createRequestContext(this.context))),
             mergeMap(async (res: any) => {
                 if (!res) return;
-                if (isObservable(res)) {
-                    res = await lastValueFrom(res);
-                }
+                // if (isObservable(res)) {
+                //     res = await lastValueFrom(res);
+                // }
                 return await writePacket(socket, res, streamAdapter);
             }),
         ).subscribe();
@@ -185,7 +185,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
                     response.statusCode = statusAdapter.notFound;
                     response.statusMessage = response.error.message;
                 }
-                return response;
+                return  of(response);
             },
             // useFactory: () => {
             //     let socket: tls.TLSSocket | net.Socket;

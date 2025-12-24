@@ -1,9 +1,9 @@
-import { Abstract, composeInterceptors, composeToHanlderFn, createInvocationContext, Exception, getType, Handler, HandlerFn, Injector, InterceptingHandler, InterceptorFn, InterceptorLike, InvocationContext, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
-import { AbstractConfigableHandler, composeFilters, ConfigableHandler, FilterFn, FilterLike, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
+import { Abstract, composeInterceptors, createInvocationContext, Exception, Handler, Injector, InterceptingHandler, InterceptorLike, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
+import { AbstractConfigableHandler, ConfigableHandler, FilterLike, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
-import { RequestInterceptorLike } from './interceptor';
+import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransferSide } from './transfer';
 
 
@@ -43,7 +43,7 @@ export type RequestHandlerLike<TReq = any, TRes = any, TContext extends RequestC
  */
 export class RequestInterceptingHandler<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends InterceptingHandler<TReq, TRes, TContext> implements RequestHandler<TReq, TRes, TContext> {
     handle(req: TReq, context: TContext): Observable<TRes> {
-        return toObservable(super.handle(req, context));
+        return super.handle(req, context) as Observable<TRes>;
     }
 }
 
@@ -165,7 +165,7 @@ export class DefaultRequestHandler<
     }
 
 
-    protected override generateInterceptorFn(fns: InterceptorLike[]): InterceptorFn {
+    protected override generateInterceptorFn(fns: InterceptorLike[]): RequestInterceptorFn {
         const options = this.options as RequestHandlerOptions;
         if (options.side !== TransferSide.client) {
             const transfers = this.context.get(options.transfersToken!);
@@ -174,17 +174,18 @@ export class DefaultRequestHandler<
         return composeInterceptors(fns);
     }
 
-    protected override generateBackendFn(): HandlerFn {
-        let handle = super.generateBackendFn();
+    protected override generateBackendFn(): RequestHandlerFn {
+        const handler = super.generateBackendFn() as RequestHandlerFn;
         const options = this.options as RequestHandlerOptions;
         if (options.side === TransferSide.client) {
             const transfers = this.context.get(options.transfersToken!);
             if (transfers?.length) {
-                handle = composeToHanlderFn(handle, transfers)
+                const interceptorFn = composeInterceptors(transfers) as RequestInterceptorFn;
+                return ((req: TReq, context: TContext) => interceptorFn(req, handler, context)) as RequestHandlerFn;
             }
         }
 
-        return (req: TReq, context: TContext) => toObservable(handle(req, context));
+        return handler
     }
 
     protected override forbiddenError(): Exception {

@@ -22,11 +22,11 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
     return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next, interceptorFn), chainEndFn) as InterceptorFn;
 }
 
-export function composeToHanlderFn(handler: HandlerLike, interceptors: InterceptorLike[]): HandlerFn {
-    const interceptorFn = composeInterceptors(interceptors);
-    const handlerFn = isFunction(handler) ? handler : toHandlerFn(handler);
-    return (req, context) => interceptorFn(req, handlerFn, context);
-}
+// export function composeToHanlderFn(handler: HandlerLike, interceptors: InterceptorLike[]): HandlerFn {
+//     const interceptorFn = composeInterceptors(interceptors);
+//     const handlerFn = isFunction(handler) ? handler : toHandlerFn(handler);
+//     return (req, context) => interceptorFn(req, handlerFn, context);
+// }
 
 
 export function chainEndFn(req: any, finalHandlerFn: HandlerFn, context: any) {
@@ -135,10 +135,10 @@ export function invokeTail<T, TContext = any>(invoke: (arg1?: any, arg2?: any, a
 /**
  * 处理多个连续的invoke调用
  */
-export function invokeTails<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<any>, next: TailNext<T, TContext>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
-export function invokeTails<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
-export function invokeTails<T, TContext = any>(...invokes: ((res?: any, context?: TContext) => HandleResult<any>)[]): HandleResult<T>
-export function invokeTails<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T> {
+export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, next: TailNext<T, TContext>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
+export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
+export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, ...invokes: ((res?: any, context?: TContext) => HandleResult<any>)[]): HandleResult<T>
+export function invokeTails<T, TContext = any>(invoke: () => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T> {
     const fn = nexts.reduceRight<(res?: T, context?: TContext) => Observable<T> | Promise<T> | T>((invoke, next) => next ? (res, context) => invokeTail(invoke, next, res, context) : invoke, invoke);
     return fn();
 }
@@ -147,7 +147,7 @@ function processObservableFn<T, TContext>(obs$: Observable<T>, next: (res: T, co
     return obs$.pipe(
         mergeMap(res => {
             const n$ = next(res);
-            return (isObservable(n$) || isPromise(n$)) ? n$ : of(n$);
+            return (isObservable(n$) || isPromise(n$)) ? n$ : Promise.resolve(n$);
         })
     )
 }

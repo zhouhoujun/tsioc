@@ -3,7 +3,7 @@ import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, crea
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, CLIENT_CONFIGS } from '@tsdi/common/client';
 import { SOCKET } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { filter, first, from, fromEvent, merge, Observable, race, share, take, takeUntil } from 'rxjs';
+import { defer, filter, first, from, fromEvent, merge, mergeMap, Observable, race, share, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
@@ -39,49 +39,41 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     }
 
     protected connect(): Observable<tls.TLSSocket | net.Socket> {
-        return new Observable<tls.TLSSocket | net.Socket>((observer) => {
+        return defer(async () => {
             const valid = this.connection && this.isValid(this.connection as (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean });
-            if (!valid) {
-                if (this.connection) this.connection.removeAllListeners();
-                this.connection = this.createConnection(this.options);
-            }
-            let cleaned = false;
-            const conn = this.connection;
-            const onError = (err: any) => {
-                this.logger?.error(err);
-                observer.error(err);
-            }
-            const onConnect = () => {
-                observer.next(conn);
-                this.context.setValue(SOCKET, conn);
-            }
-            const onClose = () => {
-                conn.end();
-                observer.complete();
-            }
-            conn.on(Events.ERROR, onError)
-                .on(Events.DISCONNECT, onError)
-                .on(Events.END, onClose)
-                .on(Events.CLOSE, onClose)
+            if (valid) return this.connection;
 
 
+            if (this.connection) this.connection.removeAllListeners();
 
+            return await new Promise<tls.TLSSocket | net.Socket>((r, j) => {
+                const conn = this.createConnection(this.options);
 
-            if (valid) {
-                onConnect()
-            } else {
-                conn.on(Events.CONNECT, onConnect)
-            }
+                const onError = (err: any) => {
+                    this.logger?.error(err);
+                    j(err);
+                }
 
-            return () => {
-                if (cleaned) return;
-                cleaned = true;
-                conn.off(Events.CONNECT, onConnect)
-                    .off(Events.ERROR, onError)
-                    .off(Events.DISCONNECT, onError)
-                    .off(Events.END, onClose)
-                    .off(Events.CLOSE, onClose);
-            }
+                const onConnect = () => {
+                    this.connection = conn;
+                    this.context.setValue(SOCKET, conn);
+                    r(conn);
+                }
+                const onClose = () => {
+                    conn.off(Events.CONNECT, onConnect)
+                        .off(Events.ERROR, onError)
+                        .off(Events.DISCONNECT, onError)
+                        .off(Events.END, onClose)
+                        .off(Events.CLOSE, onClose);
+                    conn.end();
+                }
+                conn.on(Events.ERROR, onError)
+                    .on(Events.DISCONNECT, onError)
+                    .on(Events.END, onClose)
+                    .on(Events.CLOSE, onClose)
+                    .on(Events.CONNECT, onConnect)
+            });
+
         });
     }
 
@@ -162,7 +154,10 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
                         return from(emit$);
                     }
 
-                    return source$
+                    return from(emit$)
+                        .pipe(
+                            mergeMap(r => source$)
+                        );
                 }
             },
             multi: true

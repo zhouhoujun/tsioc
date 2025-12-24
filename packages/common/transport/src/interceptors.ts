@@ -3,9 +3,8 @@ import { isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { mergeMap, Observable, of, Subject, Subscriber, throwError } from 'rxjs';
+import { from, mergeMap, Observable, Subscriber } from 'rxjs';
 import { PACKET_LENGTH } from './context';
-
 
 
 
@@ -14,9 +13,10 @@ export function delimiterPacket(config: TransferConfig, options: TransferOptions
     const packetFn = options.size ? packetWithSize : packet;
 
     return config.side === TransferSide.client ? (req, next, context) => {
-        return packetFn(req, options, context).pipe(
-            mergeMap(pkg => next(pkg, context))
-        );
+        return from(packetFn(req, options, context))
+            .pipe(
+                mergeMap(pkg => next(pkg, context))
+            );
     } : (req, next, context) => {
         return next(req, context)
             .pipe(
@@ -68,7 +68,7 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
 
 
 
-function packetWithSize(data: any, options: TransferOptions, context: RequestContext): Observable<Buffer | string> {
+async function packetWithSize(data: any, options: TransferOptions, context: RequestContext): Promise<Buffer | string> {
     const streamAdapter = context.get(StreamAdapter);
     const size = options.size!;
     let buffLen: Buffer;
@@ -93,11 +93,11 @@ function packetWithSize(data: any, options: TransferOptions, context: RequestCon
         data = Buffer.concat([buffLen, delimiter, data] as Uint8Array[], total);
     }
 
-    return of(data);
+    return data;
 
 }
 
-function packet(data: any, options: TransferOptions, context: RequestContext): Observable<Buffer | string> {
+async function packet(data: any, options: TransferOptions, context: RequestContext): Promise<Buffer | string> {
     const maxSize = options.maxSize;
     const delimiter = options.delimiter!;
     const streamAdapter = context.get(StreamAdapter);
@@ -116,9 +116,9 @@ function packet(data: any, options: TransferOptions, context: RequestContext): O
 
     if (maxSize && len >= maxSize) {
         const btpipe = context.get<PipeTransform>('bytes-format');
-        return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(maxSize)}`));
+        throw new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(maxSize)}`);
     }
-    return of(data);
+    return data
 }
 
 

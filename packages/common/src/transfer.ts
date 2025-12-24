@@ -1,5 +1,5 @@
 import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
-import { defer, filter, map, mergeMap } from 'rxjs';
+import { defer, filter, map, mergeMap, take } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
 import { RequestContext } from './context';
@@ -156,11 +156,14 @@ export const packetIdInterceptor: RequestInterceptorFn<AbstractRequest<any>, Inc
         id = req.id;
     }
     context.set(PACKET_ID, id);
-    return next(req, context)
+    const res$ = next(req, context)
         .pipe(
             filter(res => {
                 return res.id == id;
             })
-        )
-
+        );
+    if (req.observe === 'observe') {
+        return res$;
+    }
+    return res$.pipe(take(1))
 }
