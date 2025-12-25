@@ -191,7 +191,7 @@ function processObservable<T>(obs$: Observable<T>, opter: NextOpter<T>): Observa
         obs$ = obs$.pipe(
             mergeMap(res => {
                 const n$ = opter.next!(res);
-                return (isObservable(n$) || isPromise(n$)) ? n$ : of(res);
+                return (isObservable(n$) || isPromise(n$)) ? n$ : of(n$);
             })
         );
     }
