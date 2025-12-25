@@ -1,8 +1,8 @@
 import { Injectable, Injector, Module, isNil, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext, ExceptionHandlerFilter } from '@tsdi/core';
-import { ErrorResponse, PacketIdGenerator, PatternFormatter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
+import { ErrorResponse, PacketIdGenerator, PatternFormatter, RequestExceptionHandlerFilter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
 import { PacketNumberIdGenerator, usePacket } from '@tsdi/common/transport';
-import { provideClient, withBodySerialize, withClientFeatures, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
+import { provideClient, withBodySerialize, withClientFeatures, withClientFilters, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withFeatures, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
@@ -97,6 +97,7 @@ export class TcpService {
             //         usePacket()
             //     ]
             // }),
+            withClientFilters(RequestExceptionHandlerFilter),
             withBodySerialize(),
             withClientTransfers(
                 useSimpleJson({

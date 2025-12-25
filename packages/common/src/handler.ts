@@ -146,8 +146,7 @@ export abstract class ConfigableRequestHandler<
 export class DefaultRequestHandler<
     TReq = any, TRes = any,
     TContext extends RequestContext = RequestContext
->
-    extends ConfigableHandler<TReq, Observable<TRes>, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
+> extends ConfigableHandler<TReq, Observable<TRes>, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
 
     override append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this {
         super.append(options);
@@ -176,7 +175,7 @@ export class DefaultRequestHandler<
             const transfers = this.context.get(options.transfersToken!);
             if (transfers?.length) {
                 const interceptorFn = composeInterceptors(transfers) as RequestInterceptorFn;
-                return ((req: TReq, context: TContext) => interceptorFn(req, handler, context)) as RequestHandlerFn;
+                return (req: TReq, context: RequestContext) => interceptorFn(req, handler, context);
             }
         }
 

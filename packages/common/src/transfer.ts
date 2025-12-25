@@ -156,14 +156,12 @@ export const packetIdInterceptor: RequestInterceptorFn<AbstractRequest<any>, Inc
         id = req.id;
     }
     context.set(PACKET_ID, id);
-    const res$ = next(req, context)
+    return next(req, context)
         .pipe(
             filter(res => {
-                return res.id == id;
-            })
+                return res && res.id == id;
+            }),
+            req.observe === 'observe' ? take(1) : map(r => r)
         );
-    if (req.observe === 'observe') {
-        return res$;
-    }
-    return res$.pipe(take(1))
+
 }

@@ -1,7 +1,7 @@
 import { Handler, HandlerFn, HandlerLike } from './handler';
 import { isFunction } from '../utils/chk';
 import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
-import { HandleResult, TailNext } from './handler';
+import { TailNext } from './handler';
 import { invokeTail, composeInterceptors, toHandlerFn } from './compose';
 
 

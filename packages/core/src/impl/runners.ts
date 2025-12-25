@@ -1,7 +1,7 @@
 import {
     isNumber, AbstractType, Injectable, token, ClassRef, isFunction, getClassify, ProvdierOf,
     Invocation, ArgumentException, HandlerLike, composeHandlers, Type, InjectUtil,
-    HandleResult, promiseOf, isArray, InterceptorLike, toMutilProvdierOf
+    toPromise, isArray, InterceptorLike, toMutilProvdierOf
 } from '@tsdi/ioc';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
@@ -144,14 +144,14 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     async run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
-            await promiseOf(this._handler.handle(type, createRunContext(this.getRef(type as AbstractType)?.context ?? this.context)));
+            await toPromise(this._handler.handle(type, createRunContext(this.getRef(type as AbstractType)?.context ?? this.context)));
         } else {
             await this.startup();
             await this.beforeRun();
             if (this._types?.length) {
                 await Promise.all(this._types
                     .filter(ty => this.getRef(ty)?.bootstrap !== false)
-                    .map((ty) => promiseOf(this._handler.handle(ty, createRunContext(this.getRef(ty)?.context ?? this.context)))));
+                    .map((ty) => toPromise(this._handler.handle(ty, createRunContext(this.getRef(ty)?.context ?? this.context)))));
             }
             await this.afterRun()
         }
@@ -178,7 +178,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = null!;
     }
 
-    handle(input: AbstractType, context: RunContext): HandleResult<any> {
+    handle(input: AbstractType, context: RunContext): any {
         let handlers: HandlerLike[] | undefined;
         if (isFunction(input)) {
             handlers = this._maps.get(input)

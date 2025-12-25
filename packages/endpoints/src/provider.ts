@@ -1,10 +1,10 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
-import { ExceptionFilter, GuardLike } from '@tsdi/core';
+import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory,
     UrlIncomingFactory, useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
     provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike,
-    RequestExceptionHandlerFilter
+    RequestExceptionFilter, RequestExceptionHandlerFilter,
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -307,7 +307,7 @@ export function withLogger(options?: LoggerOptions): FeatureFn<FeatureKind.Logge
  * @returns 
  */
 export function withExceptionFilter(options?: {
-    filter?: ProvdierOf<ExceptionFilter>;
+    filter?: ProvdierOf<RequestExceptionFilter>;
     handlers?: Type[];
 }): FeatureFn<FeatureKind.Exception> {
     return (config) => {

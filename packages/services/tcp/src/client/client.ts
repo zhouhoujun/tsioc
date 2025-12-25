@@ -56,7 +56,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 
                 const onConnect = () => {
                     this.connection = conn;
-                    this.context.setValue(SOCKET, conn);
                     r(conn);
                 }
                 const onClose = () => {
@@ -151,10 +150,10 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
                     const emit$ = writePacket(socket, data, context.get(StreamAdapter));
 
                     if (context.get(TcpRequest)?.observe === 'emit') {
-                        return from(emit$);
+                        return defer(()=> emit$);
                     }
 
-                    return from(emit$)
+                    return defer(()=> emit$)
                         .pipe(
                             mergeMap(r => source$)
                         );

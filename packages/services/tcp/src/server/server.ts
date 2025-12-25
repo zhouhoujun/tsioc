@@ -146,9 +146,9 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
             mergeMap((data: any) => this.handler.handle(data, createRequestContext(this.context))),
             mergeMap(async (res: any) => {
                 if (!res) return;
-                // if (isObservable(res)) {
-                //     res = await lastValueFrom(res);
-                // }
+                if (isObservable(res)) {
+                    res = await lastValueFrom(res);
+                }
                 return await writePacket(socket, res, streamAdapter);
             }),
         ).subscribe();

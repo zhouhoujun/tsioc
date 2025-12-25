@@ -7,12 +7,11 @@ import {
 } from './meta';
 import {  ctorName, DecorDefine, Decors,  ActionType,  DecorContext, DecoratorOption } from './define';
 import { InvokeOptions } from '../context';
-import { HandleResult } from '../handlers/handler';
 import { RuntimeHandler } from '../lifescope/handler';
 import { TypeDef } from './type.def';
 import { getClassRef } from './class';
 
-export type DecorHandlerFn = (input: DecorContext, context?: any) => HandleResult<any>;
+export type DecorHandlerFn = (input: DecorContext, context?: any) => any;
 
 const decorParamInject = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.inject) {

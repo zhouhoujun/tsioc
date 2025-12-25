@@ -1,4 +1,4 @@
-import { Handler, HandleResult, HandlerFn } from './handler';
+import { Handler, HandlerFn } from './handler';
 
 /**
  * Interceptor is a chainable behavior modifier for `hanlders`.

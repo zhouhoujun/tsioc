@@ -1,5 +1,5 @@
 import {
-    Injector, ProvdierOf, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token,
+    Injector, ProvdierOf, Type, toPromise, Exception, toProvider, AbstractType, getType, Token,
     InvocationContext, createInvocationContext, ArgumentException, isArray, isFunction, composeInterceptors, chainFactory,
     some, InjectUtil, invokeTails, TailNext, hasProps, composeHandlers, Provider
 } from '@tsdi/ioc';
@@ -86,7 +86,7 @@ export class ConfigableHandler<
                 if (!this._guards || !this._guards.length) return true;
 
                 if (!(await some(
-                    this._guards!.map(gd => () => promiseOf(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
+                    this._guards!.map(gd => () => toPromise(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
                     vaild => vaild === false))) {
                     return false;
                 }

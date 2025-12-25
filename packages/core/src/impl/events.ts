@@ -1,7 +1,7 @@
 import {
     ArgumentException, composeHandlers, getType, InjectFlags, HandlerLike,
     Injector, ProvdierOf, token, AbstractType, ContextToken,
-    HandleResult, promiseOf, isArray, toMutilProvdierOf
+    HandleResult, toPromise, isArray, toMutilProvdierOf
 } from '@tsdi/ioc';
 import { CanHandle } from '../guard';
 import { Interceptor } from '../interceptor';
@@ -146,11 +146,11 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     async downward(event: ApplicationEvent, context: RunContext): Promise<void | false> {
         let res: undefined | false;
         if (context.get(WITH_SELF)) {
-            res = await promiseOf(this.handler.handle(event, context))
+            res = await toPromise(this.handler.handle(event, context))
         }
         if (res === false || !event.propagation) return false;
         if (this._children.length) {
-            return promiseOf(composeHandlers(this._children.map(r => (event, context) => r.downward(event, context)), (r, next, input, ctx) => {
+            return toPromise(composeHandlers(this._children.map(r => (event, context) => r.downward(event, context)), (r, next, input, ctx) => {
                 if (!event.propagation) return false;
                 return next(event, ctx ?? context);
             })(event, context));
@@ -160,7 +160,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     async bubbleup(event: ApplicationEvent, context: RunContext): Promise<void | false> {
         let res: undefined | false;
         if (context.get(WITH_SELF)) {
-            res = await promiseOf(this.handler.handle(event, context))
+            res = await toPromise(this.handler.handle(event, context))
         }
         if (res === false || !event.propagation) return false;
         if (this.parent) {

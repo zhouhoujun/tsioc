@@ -1,11 +1,11 @@
-import { ArgumentException, Injectable, isPlainObject, isString, MissingParameterException, Module, Invocation, HandleResult } from '@tsdi/ioc';
+import { ArgumentException, Injectable, isPlainObject, isString, MissingParameterException, Module, Invocation } from '@tsdi/ioc';
 import expect = require('expect');
 // import { catchError, lastValueFrom, Observable, of } from 'rxjs';
 import { Application, ApplicationArguments, ApplicationContext, Dispose, Handler, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start, RunContext } from '../src';
 
 @Injectable()
 export class StringFilter implements Filter  {
-    doFilter(event: PayloadApplicationEvent, next: Handler<any, any>, context: RunContext): HandleResult<any> {
+    doFilter(event: PayloadApplicationEvent, next: Handler<any, any>, context: RunContext) {
         if(isString(event.payload)){
             return next.handle(event, context);
         }
@@ -16,7 +16,7 @@ export class StringFilter implements Filter  {
 @Injectable()
 export class JsonFilter implements Filter  {
 
-    doFilter(event: PayloadApplicationEvent, next: Handler<any, any>, context: RunContext): HandleResult<any> {
+    doFilter(event: PayloadApplicationEvent, next: Handler<any, any>, context: RunContext) {
         if(isPlainObject(event.payload)){
             return next.handle(event, context);
         }
@@ -29,7 +29,7 @@ export class JsonFilter implements Filter  {
 
 @Injectable()
 export class PayloadInterceptor implements Interceptor {
-    intercept(event: PayloadApplicationEvent, next: Handler<any, any>, context: RunContext): HandleResult<any> {
+    intercept(event: PayloadApplicationEvent, next: Handler<any, any>, context: RunContext) {
         if (isString(event.payload)) {
             event.payload = 'hi ' + event.payload;
         }

@@ -1,9 +1,8 @@
 // use core-js in browser.
-import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { AbstractType, AnnotationType, Modules, Type } from '../types';
+import { AbstractType, Modules, Type } from '../types';
 import { isArray, isFunction, isNil, isObject, isPromise, isUndefined } from './chk';
 import { isPlainObject } from './obj';
-import { getType, isType } from '../metadata/type';
+import { isType } from '../metadata/type';
 
 /**
  * assign source object to target object.
@@ -417,20 +416,6 @@ export async function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T |
  */
 export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | PromiseLike<T>))[], filter: (v: T) => boolean): Promise<T> {
     return step(promises, undefined, (v) => !filter(v));
-}
-
-/**
- * to promise.
- * @param target promise of the target.
- * @returns 
- */
-export function promiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
-    if (isObservable(target)) {
-        return lastValueFrom(target)
-    } else if (isPromise(target)) {
-        return target
-    }
-    return Promise.resolve(target)
 }
 
 

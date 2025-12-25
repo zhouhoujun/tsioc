@@ -2,7 +2,7 @@ import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Obse
 import { Handler, HandlerFn, HandlerLike } from './handler';
 import { isDefined, isFunction, isPromise } from '../utils/chk';
 import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
-import { HandleResult, NextOpter, TailNext } from './handler';
+import { NextOpter, TailNext } from './handler';
 
 
 /**
@@ -99,7 +99,7 @@ export function toObservable<T>(res: any): Observable<T> {
 }
 
 /**
- * parse handle result to `Promise`
+ * parse  target to `Promise`
  */
 export function toPromise<T>(res: any): Promise<T> {
     if (isObservable(res)) {
