@@ -232,9 +232,10 @@ export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any
         if (interceptor) {
             return (input: any, context?: any) => invokeTail(invok, (res) => interceptor(res, nextFn, input, context), input, context);
         }
-        return (input: any, context?: any) => invokeTail(invok, (res) => nextFn(res ?? input, context), input, context);
+        return (input: any, context?: any) => invokeTail(invok, (res)=> nextFn(res ?? input, context), input, context);
     }, endHandler) as HandlerFn;
 }
+
 
 function parseToHandlerFn(handler: HandlerLike): HandlerFn {
     if (isFunction(handler)) {
