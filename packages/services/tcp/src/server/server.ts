@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Events, createRequestContext, RequestContext, writePacket, StreamAdapter, TransferSide, NotFoundException, ResponseFactory, WritableLike, Outgoing, StatusAdapter, UrlOutgoingFactory, UrlIncoming } from '@tsdi/common';
 import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, DefaultExceptionHandlers, AbstractRequestContext, SERVICE_CONFIGS, withFeatures } from '@tsdi/endpoints';
-import { Subject, filter, first, fromEvent, isObservable, lastValueFrom, merge, mergeMap, of, race, share, take, takeUntil, throwError } from 'rxjs';
+import { Subject, filter, fromEvent, isObservable, lastValueFrom, mergeMap, of, race, share, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTIONS, TcpServOptions } from './options';
@@ -167,7 +167,6 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     option.transport = Transport.TCP;
     option.side = TransferSide.server;
 
-    // option.execptionHandlers ??= [DefaultExceptionHandlers];
     const config = option as TcpServOptions;
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
@@ -187,23 +186,6 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
                 }
                 return  of(response);
             },
-            // useFactory: () => {
-            //     let socket: tls.TLSSocket | net.Socket;
-            //     return (data: any, context) => {
-            //         const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
-            //         if (!currSocket) throw new ArgumentException('no socket in context');
-
-            //         if (socket !== currSocket) {
-            //             if (socket) {
-            //                 socket.removeAllListeners();
-            //             }
-            //             socket = currSocket;
-            //         }
-
-            //         const emit$ = writePacket(socket, data, context.get(StreamAdapter));
-            //         return from(emit$);
-            //     }
-            // },
             multi: true
         }),
 
