@@ -1,9 +1,10 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
-import { ExceptionFilter, ExceptionHandlerFilter, GuardLike } from '@tsdi/core';
+import { ExceptionFilter, GuardLike } from '@tsdi/core';
 import {
     matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory,
     UrlIncomingFactory, useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
-    provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike
+    provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike,
+    RequestExceptionHandlerFilter
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -78,6 +79,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
     const providers: Provider[] = [
         provideIncomings(),
         provideOutgoings(),
+        RequestExceptionHandlerFilter,
         SetupServices,
         MimeModule,
         EndpointTypedRespond,
@@ -315,7 +317,7 @@ export function withExceptionFilter(options?: {
         if (options?.filter) {
             providers.push(toProvider(token, options.filter, true))
         } else {
-            providers.push({ provide: token, useExisting: ExceptionHandlerFilter, multi: true });
+            providers.push({ provide: token, useExisting: RequestExceptionHandlerFilter, multi: true });
         }
         if (options?.handlers?.length) {
             providers.push(...options.handlers);

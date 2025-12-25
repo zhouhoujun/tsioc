@@ -17,7 +17,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @returns any
      */
     doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): TOutput {
-        return invokeTail(()=> next.handle(input, context), {
+        return invokeTail(() => next.handle(input, context), {
             error: (err) => {
                 return invokeTail(() => this.catchError(input, err, context), {
                     next: (res) => {
@@ -26,7 +26,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
                         }
                         return res;
                     },
-                    error: (err) => { throw err }
+                    error: (err) => null
                 })
             }
         })
@@ -65,7 +65,6 @@ export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends RunC
                 error: (err1) => {
                     err1.originException = err;
                     err1.message = `${err1.message}\r\n${err.toString()}`;
-                    throw err1;
                 }
             }, err, context);
     }

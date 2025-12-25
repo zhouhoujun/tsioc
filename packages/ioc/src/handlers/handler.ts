@@ -41,7 +41,7 @@ export type HandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerFn
  */
 export interface NextOpter<T, TContext = any> {
     next?: (res: T, context?: TContext) => any;
-    error?: (error: any) => any;
+    error?: ((error: any) => any);
     finally?: () => any;
 }
 

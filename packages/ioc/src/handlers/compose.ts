@@ -20,11 +20,6 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
     return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next, interceptorFn), chainEndFn) as InterceptorFn;
 }
 
-// export function composeToHanlderFn(handler: HandlerLike, interceptors: InterceptorLike[]): HandlerFn {
-//     const interceptorFn = composeInterceptors(interceptors);
-//     const handlerFn = isFunction(handler) ? handler : toHandlerFn(handler);
-//     return (req, context) => interceptorFn(req, handlerFn, context);
-// }
 
 
 export function chainEndFn(req: any, finalHandlerFn: HandlerFn, context: any) {
@@ -117,7 +112,7 @@ export function toPromise<T>(res: any): Promise<T> {
 export function invokeTail<T=any, TContext = any>(invoke: (arg1?: any, arg2?: any, arg3?: any) => T, tail: TailNext<T, TContext>, arg1?: any, arg2?: any, arg3?: any): T {
     try {
         const res$ = invoke(arg1, arg2, arg3);
-        if (!tail) return res$;
+        // if (!tail) return res$;
 
         if (isObservable(res$)) {
             return processObservable(res$, tail) as T;

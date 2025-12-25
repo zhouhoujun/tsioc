@@ -1,5 +1,5 @@
 import { Abstract, composeInterceptors, createInvocationContext, Exception, Handler, Injector, InterceptingHandler, InterceptorLike, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
-import { AbstractConfigableHandler, ConfigableHandler, GuardLike, HandlerOptions, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
+import { AbstractConfigableHandler, ConfigableHandler, GuardLike, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
