@@ -108,20 +108,20 @@ export function toPromise<T>(res: any): Promise<T> {
     return isPromise(res) ? res : Promise.resolve(res);
 }
 
-export function invokeTail<T = any, TContext = any>(invoke: (arg1?: any, context?: TContext) => T, tail: TailNext<T, TContext>, arg1?: any, context?: TContext): T;
-export function invokeTail<T = any, TContext = any>(invoke: (arg1: any, context: TContext) => T, tail: TailNext<T, TContext>, arg1: any, context: TContext): T;
-export function invokeTail<T = any, TContext = any>(invoke: (arg1: any, arg2: any, context: TContext) => T, tail: TailNext<T, TContext>, arg1: any, arg2: any, context: TContext): T;
-export function invokeTail<T = any, TContext = any>(invoke: (arg1?: any, arg2?: any, arg3?: any) => T, tail: TailNext<T, TContext>, arg1?: any, arg2?: any, arg3?: TContext): T {
+export function invokeTail<T = any, TContext = any>(invoke: (input?: any, context?: TContext) => T, tail: TailNext<T, TContext>, input?: any, context?: TContext): T;
+export function invokeTail<T = any, TContext = any>(invoke: (input: any, context: TContext) => T, tail: TailNext<T, TContext>, input: any, context: TContext): T;
+export function invokeTail<T = any, TContext = any>(invoke: (input: any, arg2: any, context: TContext) => T, tail: TailNext<T, TContext>, input: any, arg2: any, context: TContext): T;
+export function invokeTail<T = any, TContext = any>(invoke: (input?: any, arg2?: any, arg3?: any) => T, tail: TailNext<T, TContext>, input?: any, arg2?: any, arg3?: TContext): T {
     try {
-        const res$ = invoke(arg1, arg2, arg3);
+        const res$ = invoke(input, arg2, arg3);
         // if (!tail) return res$;
 
         if (isObservable(res$)) {
-            return processObservable(res$, tail, arg3 ?? arg2) as T;
+            return processObservable(input, res$, tail, arg3 ?? arg2) as T;
         } else if (isPromise(res$)) {
-            return processPromise(res$, tail, arg3 ?? arg2) as T;
+            return processPromise(input, res$, tail, arg3 ?? arg2) as T;
         }
-        return processSync(res$, tail, arg3 ?? arg2);
+        return processSync(input, res$, tail, arg3 ?? arg2);
     } catch (err) {
         return handleError(err, isFunction(tail) ? null : tail);
     }
@@ -138,19 +138,19 @@ export function invokeTails<T = any, TContext = any>(invoke: () => any, ...nexts
     return fn();
 }
 
-function processObservableFn<T, TContext>(obs$: Observable<T>, next: (res: T, context?: TContext) => Observable<T>, context?: TContext) {
+function processObservableFn<T, TContext>(input: any, obs$: Observable<T>, next: (res: T, context?: TContext) => Observable<T>, context?: TContext) {
     return obs$.pipe(
         mergeMap(res => {
-            const n$ = next(res, context);
+            const n$ = next(res ?? input, context);
             return (isObservable(n$) || isPromise(n$)) ? n$ : Promise.resolve(n$);
         })
     )
 }
 
-function processObservable<T, TContext>(obs$: Observable<any>, opter: TailNext<any>, context?: TContext): Observable<T> {
-    if (isFunction(opter)) return processObservableFn(obs$, opter, context)
+function processObservable<T, TContext>(input: any, obs$: Observable<any>, opter: TailNext<any>, context?: TContext): Observable<T> {
+    if (isFunction(opter)) return processObservableFn(input, obs$, opter, context)
     if (opter.next) {
-        obs$ = processObservableFn(obs$, opter.next, context);
+        obs$ = processObservableFn(input, obs$, opter.next, context);
     }
 
     if (opter.finally) {
@@ -166,10 +166,10 @@ function processObservable<T, TContext>(obs$: Observable<any>, opter: TailNext<a
     return obs$;
 }
 
-function processPromise<T, TContext>(pr$: Promise<any>, opter: TailNext<T>, context?: TContext): Promise<T> {
-    if (isFunction(opter)) return pr$.then(context ? (r) => opter(r, context) : opter);
+function processPromise<T, TContext>(input: any, pr$: Promise<any>, opter: TailNext<T>, context?: TContext): Promise<T> {
+    if (isFunction(opter)) return pr$.then((r) => opter(r ?? input, context));
     if (opter.next) {
-        pr$ = pr$.then(context ? (r) => opter.next!(r, context) : opter.next);
+        pr$ = pr$.then((r) => opter.next!(r ?? input, context));
     }
 
     if (opter.error) {
@@ -183,10 +183,10 @@ function processPromise<T, TContext>(pr$: Promise<any>, opter: TailNext<T>, cont
     return pr$;
 }
 
-function processSync<T, TContext>(result: T, opter: TailNext<T>, context?: TContext): T {
-    if (isFunction(opter)) return opter(result, context);
+function processSync<T, TContext>(input: any, result: T, opter: TailNext<T>, context?: TContext): T {
+    if (isFunction(opter)) return opter(result ?? input, context);
     if (opter.next) {
-        result = opter.next(result, context);
+        result = opter.next(result ?? input, context);
     }
 
     if (opter.finally) {
@@ -232,7 +232,7 @@ export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any
         if (interceptor) {
             return (input: any, context?: any) => invokeTail(invok, (res) => interceptor(res, nextFn, input, context), input, context);
         }
-        return (input: any, context?: any) => invokeTail(invok, (res)=> nextFn(res ?? input, context), input, context);
+        return (input: any, context?: any) => invokeTail(invok, nextFn, input, context);
     }, endHandler) as HandlerFn;
 }
 
