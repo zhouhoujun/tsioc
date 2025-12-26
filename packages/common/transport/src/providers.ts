@@ -1,5 +1,5 @@
 import { RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useSimpleJson } from '@tsdi/common';
-import { delimiterPacket, delimiterUnpacket, socketMessage } from './interceptors';
+import { delimiterPacket, delimiterUnpacket, packetIdMessage, socketMessage } from './interceptors';
 
 const defaultOptions = {
     delimiter: '\r\n',
@@ -23,15 +23,17 @@ export function usePacket(options: PacketOptions = {}): TransferInterceptorFacto
         options = { ...defaultOptions, ...config.transfer, ...options };
 
         return config.side == TransferSide.client ? [
-            socketMessage(config, options),
+            packetIdMessage(config, options),
             useSimpleJson(options)(config) as RequestInterceptorFn,
             delimiterUnpacket(config, options),
-            delimiterPacket(config, options)
+            delimiterPacket(config, options),
+            socketMessage(config, options)
         ] : [
             socketMessage(config, options),
             delimiterUnpacket(config, options),
             delimiterPacket(config, options),
             useSimpleJson(options)(config) as RequestInterceptorFn,
+            packetIdMessage(config, options)
         ]
     }
 }

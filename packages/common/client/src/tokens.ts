@@ -11,14 +11,14 @@ function toMicroName(microservice?: boolean, name?: string) {
 
 export function getClientGuardsToken(config: ClientConfig): Token<GuardLike[]> {
     if (!config.guardsToken) {
-        config.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_GUARDS`, toMicroName(config.microservice));
+        config.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_CLIENT_GUARDS`, toMicroName(config.microservice));
     }
     return config.guardsToken;
 }
 
 export function getClientFiltersToken(config: ClientConfig): Token<RequestFilterLike[]> {
     if (!config.filtersToken) {
-        config.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_FILTERS`, toMicroName(config.microservice));
+        config.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_CLIENT_FILTERS`, toMicroName(config.microservice));
     }
     return config.filtersToken;
 }

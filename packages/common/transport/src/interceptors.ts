@@ -3,14 +3,11 @@ import { Defer, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { createRequestContext, Events, IDuplex, Packet, PACKET_ID, PacketIdGenerator, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { defer, filter, fromEvent, map, mergeMap, Observable, Subject, take } from 'rxjs';
+import { defer, filter, fromEvent, map, mergeMap, Observable, race, Subject, take, takeUntil } from 'rxjs';
 import { PACKET_LENGTH, SOCKET } from './context';
 // import { Socket } from './socket';
 
-export function socketMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
-
-    // let socket: Socket;
-    // let source$: Observable<any>;
+export function packetIdMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
     return config.side === TransferSide.client ? (req, next, context) => {
         let id: string | number;
         if (!req.id) {
@@ -26,19 +23,33 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
                 }),
                 req.observe === 'observe' ? take(1) : map(r => r)
             );
-        // .pipe(
-        //     mergeMap(async res => {
-        //         if (!res) return;
-        //         // if (isObservable(res)) {
-        //         //     res = await lastValueFrom(res);
-        //         // }
-        //         const socket = context.get(SOCKET);
-        //         const streamAdapter = context.get(StreamAdapter);
-        //         return await writePacket(socket, res, streamAdapter);
-        //     })
-        // )
     } : (req, next, context) => {
-        return fromEvent(req, options.eventName ?? Events.DATA).pipe(
+        let id: string | number;
+        if (req.id) {
+            id = req.id;
+            context.set(PACKET_ID, id);
+        }
+        return next(req, context)
+            .pipe(
+                map(res => {
+                    if (id && !res.id) res.id = id;
+                    return res;
+                })
+            );
+    }
+}
+
+export function socketMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
+
+    // let socket: Socket;
+    // let source$: Observable<any>;
+    return config.side === TransferSide.client ? (req, next, context) => {
+
+        return next(req, context)
+
+    } : (socket, next, context) => {
+        return fromEvent(socket, options.eventName ?? Events.DATA).pipe(
+            takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
             filter(r => !isNil(r)),
             mergeMap(data => {
                 const ctx = createRequestContext(context.getInjector(), context);
