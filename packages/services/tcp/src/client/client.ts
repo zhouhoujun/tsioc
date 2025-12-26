@@ -1,9 +1,9 @@
-import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException, Exception, isNil } from '@tsdi/ioc';
+import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Events, PatternFormatter, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, CLIENT_CONFIGS } from '@tsdi/common/client';
 import { SOCKET } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, filter, first, from, fromEvent, merge, mergeMap, Observable, race, share, take, takeUntil } from 'rxjs';
+import { defer, fromEvent, mergeMap, Observable, race, share, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
@@ -143,7 +143,6 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
                         source$ = fromEvent(socket, Events.DATA)
                             .pipe(
                                 takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
-                                filter(r => !isNil(r)),
                                 share()
                             )
                     }

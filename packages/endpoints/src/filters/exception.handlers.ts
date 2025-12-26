@@ -4,7 +4,7 @@ import {
     BadRequestException, InternalServerException, MessageException
 } from '@tsdi/common';
 import { MissingModelFieldException } from '@tsdi/repository';
-import { AbstractRequestContext } from './AbstractRequestContext';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 
 
 

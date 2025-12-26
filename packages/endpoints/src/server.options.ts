@@ -1,11 +1,11 @@
-import { LoggerOptions, RequestInterceptorLike, RequestMethod, TransferConfig, TransferInterceptorFactory, TransferSide, TransportConfig } from '@tsdi/common';
+import { LoggerOptions, RequestExceptionFilter, RequestFilterLike, RequestInterceptorLike, RequestMethod, TransferConfig, TransferInterceptorFactory, TransferSide, TransportConfig } from '@tsdi/common';
 import { ServiceHandlerOptions } from './ServiceHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
 import { RestfulRequestContext } from './RestfulRequestContext';
 import { SessionOptions } from './sessions/Session';
 import { ProvdierOf, Type } from '@tsdi/ioc';
-import { ExceptionFilter, FilterLike, GuardLike } from '@tsdi/core';
+import { GuardLike } from '@tsdi/core';
 import { BodyparserOptions, JsonOptions } from './interceptors';
 
 export interface ProxyOpts {
@@ -13,11 +13,12 @@ export interface ProxyOpts {
     maxIpsCount?: number;
 }
 
+
 export interface FeatureOptions {/**
      * request timeout.
      */
     timeout?: number;
-    filters?: ProvdierOf<FilterLike>[];
+    filters?: ProvdierOf<RequestFilterLike>[];
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     guards?: ProvdierOf<GuardLike>[];
     cors?: boolean | CorsOpts;
@@ -30,7 +31,7 @@ export interface FeatureOptions {/**
     router?: boolean | RouteOpts;
     transfers?: TransferInterceptorFactory[];
 
-    exceptionFilter?: ProvdierOf<ExceptionFilter>;
+    exceptionFilter?: ProvdierOf<RequestExceptionFilter>;
     exceptionHandlers?: Type[];
 
 }

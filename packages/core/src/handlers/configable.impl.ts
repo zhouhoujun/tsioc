@@ -1,7 +1,7 @@
 import {
     Injector, ProvdierOf, Type, toPromise, Exception, toProvider, AbstractType, getType, Token,
     InvocationContext, createInvocationContext, ArgumentException, isArray, isFunction, composeInterceptors, chainFactory,
-    some, InjectUtil, invokeTails, TailNext, hasProps, composeHandlers, Provider
+    some, InjectUtil, invokeTail, hasProps, composeHandlers, Provider
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../interceptor';
@@ -74,31 +74,17 @@ export class ConfigableHandler<
         }
     }
 
+
     handle(input: TInput, context: TContext): TOutput {
-        return invokeTails(
-            async () => {
-                if (this.onReady) await this.onReady();
-
-                if (this._guards === undefined) {
-                    this._guards = this.getGuards() ?? null;
-                }
-
-                if (!this._guards || !this._guards.length) return true;
-
-                if (!(await some(
-                    this._guards!.map(gd => () => toPromise(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
-                    vaild => vaild === false))) {
-                    return false;
-                }
-                return true;
-            },
+        return invokeTail(
+            () => this.canHandle(input, context),
             (r) => {
                 if (r === true) {
                     return this.run(input, context);
                 }
                 throw this.forbiddenError()
             }
-        );
+        ) as TOutput;
     }
 
 
@@ -135,14 +121,31 @@ export class ConfigableHandler<
         this.clear();
     }
 
-    protected run(input: TInput, context: TContext) {
+    protected async canHandle(input: TInput, context: TContext): Promise<boolean> {
+        if (this.onReady) await this.onReady();
+
+        if (this._guards === undefined) {
+            this._guards = this.getGuards() ?? null;
+        }
+
+        if (!this._guards || !this._guards.length) return true;
+
+        if (!(await some(
+            this._guards!.map(gd => () => toPromise(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
+            vaild => vaild === false))) {
+            return false;
+        }
+        return true;
+    }
+
+    protected run(input: TInput, context: TContext): TOutput {
         if (!this.chain) {
             this.chain = this.compose();
         }
         return this.running(this.getChain(input), input, this.getBackend(), context);
     }
 
-    protected running(chain: InterceptorFn, intput: TInput, backend: HandlerFn, context: TContext) {
+    protected running(chain: InterceptorFn, intput: TInput, backend: HandlerFn, context: TContext): TOutput {
         return chain(intput, backend, context)
     }
 

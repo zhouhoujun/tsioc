@@ -3,6 +3,7 @@ import { Handler, HandlerFn, HandlerLike } from './handler';
 import { isDefined, isFunction, isPromise } from '../utils/chk';
 import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
 import { NextOpter, TailNext } from './handler';
+import { ArgumentException } from '../exception';
 
 
 /**
@@ -108,10 +109,10 @@ export function toPromise<T>(res: any): Promise<T> {
     return isPromise(res) ? res : Promise.resolve(res);
 }
 
-export function invokeTail<T = any, TContext = any>(invoke: (input?: any, context?: TContext) => T, tail: TailNext<T, TContext>, input?: any, context?: TContext): T;
-export function invokeTail<T = any, TContext = any>(invoke: (input: any, context: TContext) => T, tail: TailNext<T, TContext>, input: any, context: TContext): T;
-export function invokeTail<T = any, TContext = any>(invoke: (input: any, arg2: any, context: TContext) => T, tail: TailNext<T, TContext>, input: any, arg2: any, context: TContext): T;
-export function invokeTail<T = any, TContext = any>(invoke: (input?: any, arg2?: any, arg3?: any) => T, tail: TailNext<T, TContext>, input?: any, arg2?: any, arg3?: TContext): T {
+export function invokeTail<T = any, TContext = any>(invoke: (input?: any, context?: TContext) => T, tail: TailNext<any, TContext>, input?: any, context?: TContext): T;
+export function invokeTail<T = any, TContext = any>(invoke: (input: any, context: TContext) => T, tail: TailNext<any, TContext>, input: any, context: TContext): T;
+export function invokeTail<T = any, TContext = any>(invoke: (input: any, arg2: any, context: TContext) => T, tail: TailNext<any, TContext>, input: any, arg2: any, context: TContext): T;
+export function invokeTail<T = any, TContext = any>(invoke: (input?: any, arg2?: any, arg3?: any) => T, tail: TailNext<any, TContext>, input?: any, arg2?: any, arg3?: TContext): T {
     try {
         const res$ = invoke(input, arg2, arg3);
         // if (!tail) return res$;
@@ -166,10 +167,17 @@ function processObservable<T, TContext>(input: any, obs$: Observable<any>, opter
     return obs$;
 }
 
+function toPromiseLiken<T>(res: any): Promise<T> {
+    if (isObservable(res)) {
+        return lastValueFrom(res) as Promise<T>;
+    }
+    return res;
+}
+
 function processPromise<T, TContext>(input: any, pr$: Promise<any>, opter: TailNext<T>, context?: TContext): Promise<T> {
-    if (isFunction(opter)) return pr$.then((r) => opter(r ?? input, context));
+    if (isFunction(opter)) return pr$.then((r) => toPromiseLiken(opter(r ?? input, context)));
     if (opter.next) {
-        pr$ = pr$.then((r) => opter.next!(r ?? input, context));
+        pr$ = pr$.then((r) => toPromiseLiken(opter.next!(r ?? input, context)));
     }
 
     if (opter.error) {
@@ -216,7 +224,9 @@ function handlePromiseError<T>(ct: any, err: any): T | Promise<T> {
     throw err;
 }
 
-const endHandler: HandlerFn = (res, context?: any) => res;
+const endHandler: HandlerFn = (res, context?: any) => {
+    return res;
+}
 
 /**
  * compose chain handlers.
@@ -226,6 +236,7 @@ const endHandler: HandlerFn = (res, context?: any) => res;
  */
 export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any, nextFn: HandlerFn, input: any, context?: any) => any): HandlerFn {
     if (!interceptor && hanlders.length === 1) return parseToHandlerFn(hanlders[0]);
+
     return hanlders.reduceRight((next, handler) => {
         const invok = parseToHandlerFn(handler);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);

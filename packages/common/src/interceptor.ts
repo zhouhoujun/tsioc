@@ -28,7 +28,7 @@ export interface RequestInterceptor<TInput = any, TOutput = any, TContext extend
  * Request interceptor function is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type RequestInterceptorFn<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = InterceptorFn<TInput, Observable<TOutput>, TContext>;
+export type RequestInterceptorFn<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = InterceptorFn<TInput, Observable<TOutput>, TContext>
 
 
 /**

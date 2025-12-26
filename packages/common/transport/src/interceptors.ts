@@ -1,11 +1,48 @@
 
 import { Defer, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide } from '@tsdi/common';
+import { createRequestContext, Events, IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { defer, mergeMap, Subject } from 'rxjs';
-import { PACKET_LENGTH } from './context';
+import { defer, fromEvent, mergeMap, Observable, Subject } from 'rxjs';
+import { PACKET_LENGTH, SOCKET } from './context';
+// import { Socket } from './socket';
 
+export function socketMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
+
+    // let socket: Socket;
+    // let source$: Observable<any>;
+    return config.side === TransferSide.client ? (req, next, context) => {
+        return next(req, context)
+        // .pipe(
+        //     mergeMap(async res => {
+        //         if (!res) return;
+        //         // if (isObservable(res)) {
+        //         //     res = await lastValueFrom(res);
+        //         // }
+        //         const socket = context.get(SOCKET);
+        //         const streamAdapter = context.get(StreamAdapter);
+        //         return await writePacket(socket, res, streamAdapter);
+        //     })
+        // )
+    } : (req, next, context) => {
+        return fromEvent(req, options.eventName ?? Events.DATA).pipe(
+            mergeMap(data => {
+                const ctx = createRequestContext(context.getInjector(), context);
+               return next(data, ctx)
+            }),
+            mergeMap(async res => {
+                if (!res) return;
+                // if (isObservable(res)) {
+                //     res = await lastValueFrom(res);
+                // }
+                const socket = context.get(SOCKET);
+                const streamAdapter = context.get(StreamAdapter);
+                return await writePacket(socket, res, streamAdapter);
+            })
+        )
+    }
+
+}
 
 
 

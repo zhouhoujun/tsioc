@@ -16,7 +16,8 @@ import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, 
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { CorsOpts, CsrfOps, FeatureOptions, ServiceConfig } from './server.options';
-import { DefaultExceptionHandlers } from './exception.handlers';
+import { DefaultExceptionHandlers } from './filters/exception.handlers';
+import { writeBufferFilter } from './filters/writeBuffer.filter';
 
 /**
  * Identifies a particular kind of `Feature`.
@@ -120,7 +121,6 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
         // if (!kinds.has(FeatureKind.Transport)) {
         //     throw new ArgumentException(`messings ${config.transport}${config.microservice ? ' microservice' : ''} service transport` + (config.name ? `, ailas with name ${config.name}` : ''));
         // }
-
 
         Array.from(kinds.keys()).sort((a, b) => a - b).forEach(k => {
             providers.push(...kinds.get(k)!);

@@ -23,6 +23,7 @@ export enum TransferFeatureKind {
 }
 
 export interface TransferOptions {
+    eventName?: string;
     delimiter?: string;
     maxSize?: number;
     limitSize?: number;

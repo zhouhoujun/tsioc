@@ -1,12 +1,19 @@
-import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isNil, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
+import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Events, createRequestContext, RequestContext, writePacket, StreamAdapter, TransferSide, NotFoundException, ResponseFactory, WritableLike, Outgoing, StatusAdapter, UrlOutgoingFactory, UrlIncoming } from '@tsdi/common';
-import { BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES, ServiceHandler, getServiceBackendToken, DefaultExceptionHandlers, AbstractRequestContext, SERVICE_CONFIGS, withFeatures } from '@tsdi/endpoints';
-import { Subject, filter, fromEvent, isObservable, lastValueFrom, mergeMap, of, race, share, take, takeUntil } from 'rxjs';
+import {
+    LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Events, UrlIncoming,
+    createRequestContext, RequestContext, TransferSide, NotFoundException, StatusAdapter, UrlOutgoingFactory
+} from '@tsdi/common';
+import {
+    BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES,
+    ServiceHandler, getServiceBackendToken, AbstractRequestContext
+} from '@tsdi/endpoints';
+import { Subject, fromEvent, mergeMap, of, race, share, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTIONS, TcpServOptions } from './options';
+import { SOCKET } from '@tsdi/common/transport';
 
 
 
@@ -26,7 +33,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
     private destroy$: Subject<void>;
 
     constructor(
-        readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
+        readonly handler: ServiceHandler<any, any, RequestContext>,
         @Inject(TCP_SERV_OPTIONS, { nullable: true }) protected options: TcpServOptions,
     ) {
         super();
@@ -98,14 +105,13 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         this.serv.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(Events.ERROR, (err) => this.logger.error(err));
         const context = this.handler.context;
-        const streamAdapter = context.get(StreamAdapter);
         if (this.serv instanceof tls.Server) {
             this.serv.on(Events.SECURE_CONNECTION, (socket) => {
-                this.handleMessage(socket, streamAdapter);
+                this.handleMessage(socket);
             })
         } else {
             this.serv.on(Events.CONNECTION, (socket) => {
-                this.handleMessage(socket, streamAdapter);
+                this.handleMessage(socket);
             })
         }
 
@@ -138,20 +144,24 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         this.serv = this.createServer();
     }
 
-    private handleMessage(socket: tls.TLSSocket | net.Socket, streamAdapter: StreamAdapter) {
-        fromEvent(socket, Events.DATA).pipe(
-            takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
-            filter(data => !isNil(data)),
-            share(),
-            mergeMap((data: any) => this.handler.handle(data, createRequestContext(this.context))),
-            mergeMap(async (res: any) => {
-                if (!res) return;
-                if (isObservable(res)) {
-                    res = await lastValueFrom(res);
-                }
-                return await writePacket(socket, res, streamAdapter);
-            }),
-        ).subscribe();
+    private handleMessage(socket: tls.TLSSocket | net.Socket) {
+        this.handler.handle(socket, createRequestContext(this.context, [[SOCKET, socket]]))
+            .pipe(
+                takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1)))
+            ).subscribe();
+
+        // fromEvent(socket, Events.DATA).pipe(
+        //     takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+        //     share(),
+        //     mergeMap((data: any) => this.handler.handle(data, createRequestContext(this.context, [[SOCKET, socket]]))),
+        //     // mergeMap(async (res: any) => {
+        //     //     if (!res) return;
+        //     //     if (isObservable(res)) {
+        //     //         res = await lastValueFrom(res);
+        //     //     }
+        //     //     return await writePacket(socket, res, streamAdapter);
+        //     // }),
+        // ).subscribe();
     }
 
     private createServer(): net.Server | tls.Server {
@@ -184,7 +194,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
                     response.statusCode = statusAdapter.notFound;
                     response.statusMessage = response.error.message;
                 }
-                return  of(response);
+                return of(response);
             },
             multi: true
         }),
