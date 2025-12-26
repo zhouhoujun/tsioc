@@ -1,4 +1,4 @@
-import { TransferInterceptorFactory, TransferOptions } from '@tsdi/common';
+import { RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, useSimpleJson } from '@tsdi/common';
 import { delimiterPacket, delimiterUnpacket, socketMessage } from './interceptors';
 
 const defaultOptions = {
@@ -6,12 +6,25 @@ const defaultOptions = {
     idSize: 2
 }
 
-export function usePacket(options: TransferOptions = {}): TransferInterceptorFactory {
+export interface PacketOptions extends TransferOptions {
+    /**
+         * parse value to simple mapping json.
+         * @param value 
+         * @returns 
+         */
+    mapping?: (value: any, context: RequestContext) => any,
+    reviver?: (this: any, key: string, value: any) => any;
+    replacer?: ((this: any, key: string, value: any) => any);
+    space?: string | number;
+}
+
+export function usePacket(options: PacketOptions = {}): TransferInterceptorFactory {
     return (config) => {
         options = { ...defaultOptions, ...config.transfer, ...options };
 
         return [
             socketMessage(config, options),
+            useSimpleJson(options)(config) as RequestInterceptorFn,
             delimiterUnpacket(config, options),
             delimiterPacket(config, options)
         ]

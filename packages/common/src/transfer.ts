@@ -93,10 +93,6 @@ export const PAYLOAD_KEY = new ContextToken<string>(() => 'body');
 
 export function useSimpleJson(options?: {
     /**
-     * generate packet id for client or not.
-     */
-    generateId?: boolean;
-    /**
      * parse value to simple mapping json.
      * @param value 
      * @returns 
@@ -136,12 +132,12 @@ export function useSimpleJson(options?: {
                     )
             };
 
-        if (options?.generateId && config.side === TransferSide.client) {
-            return [
-                packetIdInterceptor,
-                interceptor
-            ]
-        }
+        // if (options?.generateId && config.side === TransferSide.client) {
+        //     return [
+        //         packetIdInterceptor,
+        //         interceptor
+        //     ]
+        // }
         return interceptor;
     }
 
@@ -149,20 +145,20 @@ export function useSimpleJson(options?: {
 }
 
 
-export const packetIdInterceptor: RequestInterceptorFn<AbstractRequest<any>, Incoming<any>> = (req, next, context) => {
-    let id: string | number;
-    if (!req.id) {
-        id = req.id = context.get(PacketIdGenerator).getPacketId();
-    } else {
-        id = req.id;
-    }
-    context.set(PACKET_ID, id);
-    return next(req, context)
-        .pipe(
-            filter(res => {
-                return res && res.id == id;
-            }),
-            req.observe === 'observe' ? take(1) : map(r => r)
-        );
+// export const packetIdInterceptor: RequestInterceptorFn<AbstractRequest<any>, Incoming<any>> = (req, next, context) => {
+//     let id: string | number;
+//     if (!req.id) {
+//         id = req.id = context.get(PacketIdGenerator).getPacketId();
+//     } else {
+//         id = req.id;
+//     }
+//     context.set(PACKET_ID, id);
+//     return next(req, context)
+//         .pipe(
+//             filter(res => {
+//                 return res && res.id == id;
+//             }),
+//             req.observe === 'observe' ? take(1) : map(r => r)
+//         );
 
-}
+// }

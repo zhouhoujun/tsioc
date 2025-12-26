@@ -29,7 +29,7 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
 
-            const channel = context.getProtocol()!;
+            const channel = '';//context.getProtocol()!;
 
             let cache = this.channels.get(channel);
             const packet = input as Buffer;

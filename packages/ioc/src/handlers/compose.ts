@@ -3,7 +3,6 @@ import { Handler, HandlerFn, HandlerLike } from './handler';
 import { isDefined, isFunction, isPromise } from '../utils/chk';
 import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
 import { NextOpter, TailNext } from './handler';
-import { ArgumentException } from '../exception';
 
 
 /**

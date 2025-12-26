@@ -1,9 +1,9 @@
 
-import { Defer, isNumber, isString } from '@tsdi/ioc';
+import { Defer, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { createRequestContext, Events, IDuplex, Packet, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
+import { createRequestContext, Events, IDuplex, Packet, PACKET_ID, PacketIdGenerator, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { defer, fromEvent, mergeMap, Observable, Subject } from 'rxjs';
+import { defer, filter, fromEvent, map, mergeMap, Observable, Subject, take } from 'rxjs';
 import { PACKET_LENGTH, SOCKET } from './context';
 // import { Socket } from './socket';
 
@@ -12,7 +12,20 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
     // let socket: Socket;
     // let source$: Observable<any>;
     return config.side === TransferSide.client ? (req, next, context) => {
+        let id: string | number;
+        if (!req.id) {
+            id = req.id = context.get(PacketIdGenerator).getPacketId();
+        } else {
+            id = req.id;
+        }
+        context.set(PACKET_ID, id);
         return next(req, context)
+            .pipe(
+                filter(res => {
+                    return res && res.id == id;
+                }),
+                req.observe === 'observe' ? take(1) : map(r => r)
+            );
         // .pipe(
         //     mergeMap(async res => {
         //         if (!res) return;
@@ -26,9 +39,10 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
         // )
     } : (req, next, context) => {
         return fromEvent(req, options.eventName ?? Events.DATA).pipe(
+            filter(r => !isNil(r)),
             mergeMap(data => {
                 const ctx = createRequestContext(context.getInjector(), context);
-               return next(data, ctx)
+                return next(data, ctx)
             }),
             mergeMap(async res => {
                 if (!res) return;

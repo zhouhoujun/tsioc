@@ -100,16 +100,14 @@ export class TcpService {
             withClientFilters(RequestExceptionHandlerFilter),
             withBodySerialize(),
             withClientTransfers(
-                useSimpleJson({
-                    generateId: true,
-                    mapping: (req, context) => {
+                usePacket({
+                     mapping: (req, context) => {
                         if (req instanceof TcpRequest) {
                             return req.toJson(context.get(PatternFormatter));
                         }
                         return req
                     }
-                }),
-                usePacket()
+                })
             ),
             withTcpClientTransport({
                 providers: [
@@ -147,15 +145,14 @@ export class TcpService {
             withLogger(),
             withExceptionFilter(),
             withTransfers(
-                usePacket(),
-                useSimpleJson({
+                usePacket({
                     mapping: (res, context) => {
                         if (res instanceof UrlOutgoing) {
                             return res.toJson()
                         }
                         return res;
                     }
-                })
+                }),
             ),
             withTcpTransport({
                 microservice: true,
