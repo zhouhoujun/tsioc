@@ -5,15 +5,16 @@ import {
     LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Events, UrlIncoming,
     createRequestContext, RequestContext, TransferSide, NotFoundException, StatusAdapter, UrlOutgoingFactory
 } from '@tsdi/common';
+import { SOCKET } from '@tsdi/common/transport';
 import {
     BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES,
     ServiceHandler, getServiceBackendToken, AbstractRequestContext
 } from '@tsdi/endpoints';
-import { Subject, fromEvent, mergeMap, of, race, share, take, takeUntil } from 'rxjs';
+import { Subject, fromEvent, of, race, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTIONS, TcpServOptions } from './options';
-import { SOCKET } from '@tsdi/common/transport';
+
 
 
 
@@ -149,19 +150,6 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
             .pipe(
                 takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1)))
             ).subscribe();
-
-        // fromEvent(socket, Events.DATA).pipe(
-        //     takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
-        //     share(),
-        //     mergeMap((data: any) => this.handler.handle(data, createRequestContext(this.context, [[SOCKET, socket]]))),
-        //     // mergeMap(async (res: any) => {
-        //     //     if (!res) return;
-        //     //     if (isObservable(res)) {
-        //     //         res = await lastValueFrom(res);
-        //     //     }
-        //     //     return await writePacket(socket, res, streamAdapter);
-        //     // }),
-        // ).subscribe();
     }
 
     private createServer(): net.Server | tls.Server {
