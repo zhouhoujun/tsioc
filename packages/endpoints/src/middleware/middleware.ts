@@ -1,4 +1,4 @@
-import { HandlerFn, InterceptorFn, isFunction } from '@tsdi/ioc';
+import { Exception, HandlerFn, InterceptorFn, isFunction } from '@tsdi/ioc';
 import { from, lastValueFrom } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 
@@ -45,4 +45,46 @@ export function convertToInterceptor<TInput = any, TContext extends AbstractRequ
             return from(middleware.invoke(context, () => lastValueFrom(next(input, context))))
         }
     }
+}
+
+
+/**
+ * compose middleware in chain.
+ * @param middlewares 
+ */
+export function composeMiddleware<T extends AbstractRequestContext>(middlewares: MiddlewareLike<T>[]): MiddlewareFn<T> {
+    return (ctx: T, next: () => Promise<void>) => {
+        return dispatchChain(middlewares, ctx, next);
+    }
+}
+
+/**
+ * dispatch middleware in chain.
+ *
+ * @export
+ * @template T input context type.
+ * @template TR returnning type.
+ * @param {Handler<T>[]} middlewares to run handlers in chain. array of {@link Handler}.
+ * @param {T} ctx input context.
+ * @param {() => Promise<void> [next] the next step.
+ */
+function dispatchChain<T extends AbstractRequestContext>(middlewares: MiddlewareLike<T>[], ctx: T, next?: () => Promise<void>): Promise<void> {
+    if (!middlewares.length) return null!;
+    let index = -1;
+    function dispatch(i: number): Promise<void> {
+        if (i <= index) {
+            throw new Exception('next called mutiple times.');
+        }
+        index = i;
+        let handle = middlewares[i];
+        if (i === middlewares.length) {
+            handle = next!
+        }
+        if (!handle) {
+            return Promise.resolve(next?.());
+        }
+        const gnext = dispatch.bind(null, i + 1);
+        return isFunction(handle) ? handle(ctx, gnext) : handle.invoke(ctx, gnext)
+    }
+    return dispatch(0)
 }
