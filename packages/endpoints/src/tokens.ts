@@ -1,10 +1,13 @@
-import { getToken, Invocation, Token } from '@tsdi/ioc';
+import { getToken, Invocation, token, Token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
-import { Transport, RequestInterceptorLike, RequestHandlerLike, RequestFilterLike } from '@tsdi/common';
+import { Transport, RequestInterceptorLike, RequestHandlerLike, RequestFilterLike, Outgoing } from '@tsdi/common';
 import { ServiceConfig } from './server.options';
 import { Router } from './router/router';
 import { ServiceHandler } from './ServiceHandler';
 import { MiddlewareLike } from './middleware/middleware';
+
+
+export const RESPONSE = token<Outgoing>('RESPONSE');
 
 function toMicroName(microservice?: boolean, name?: string) {
     if(!name) return microservice? 'MICRO' : '';

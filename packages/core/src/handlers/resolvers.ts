@@ -1,7 +1,8 @@
 import {
     ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike,
     ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName, 
-    createResolveHandler, isResolved, isNil, isObject, isDefined
+    createResolveHandler, isResolved, isNil, isObject, isDefined,
+    ResolveInterceptorFn
 } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -58,7 +59,7 @@ export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, P
 }
 
 
-export function createPayloadResolveInterceptors(getPayload: (input: any, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorLike<TransportParameter>[] {
+export function createPayloadResolveInterceptors(getPayload: (input: any, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorFn<TransportParameter>[] {
     return [
         (parameter, next, context) => {
             const injector = context.getInjector();

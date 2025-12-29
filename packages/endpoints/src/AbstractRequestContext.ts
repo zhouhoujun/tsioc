@@ -9,6 +9,7 @@ import { isBuffer } from '@tsdi/common/transport';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { AcceptsPriority } from './accepts';
 import { Session } from './sessions/Session';
+import { ServiceConfig } from './server.options';
 
 /**
  * abstract request context.
@@ -783,28 +784,14 @@ export function getScopeValue(req: any, scope: ParameterScope) {
 
 @Abstract()
 export abstract class RequestContextFactory {
-    abstract create<TReq extends ReadableLike<Incoming>, TRes extends WritableLike<Outgoing>>(context: RequestContext, options: {
+    abstract create<TReq extends ReadableLike<Incoming>, TRes extends WritableLike<Outgoing>>(context: RequestContext,
         request: TReq,
+        options: ServiceConfig,
         response?: TRes
-    }): AbstractRequestContext<TReq, TRes>;
+    ): AbstractRequestContext<TReq, TRes>;
 }
 
-// const primitiveResolvers = createPayloadResolveInterceptors(
-//     (input, scope, field) => {
-//         if (field && !scope) {
-//             scope = 'query'
-//         }
-//         if (scope) {
-//             const data = getScopeValue(input, scope);
-//             if (field) {
-//                 return isDefined(data) ? data[field] : null;
-//             }
-//             return data;
-//         }
-//         return input;
-//     },
-//     // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
-// );
+
 
 
 /**

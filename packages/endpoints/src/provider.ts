@@ -13,7 +13,7 @@ import {
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { EndpointTypedRespond } from './typed.respond';
 import { SetupServices } from './SetupServices';
-import { getFiltersToken, getGuardsToken, getInterceptorsToken, getMiddlewaresToken, getRouterToken, getTransfersToken } from './tokens';
+import { getFiltersToken, getGuardsToken, getInterceptorsToken, getMiddlewaresToken, getRouterToken, getTransfersToken, RESPONSE } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { FeatureOptions, ServiceConfig } from './server.options';
@@ -599,7 +599,7 @@ export function withContextFactory(factoryToken?: Token<RequestContextFactory>):
         const token = getTransfersToken(config);
         const transCfg: RequestInterceptorFn = (req, next, context) => {
             const factory = context.get(factoryToken ?? RequestContextFactory);
-            return next(req, factory ? factory.create(context, { request: req }) : context);
+            return next(req, factory ? factory.create(context, req, context.get(SERV_OPTIONS), context.get(RESPONSE)) : context);
         };
         const providers = [
             { provide: token, useValue: transCfg, multi: true }
