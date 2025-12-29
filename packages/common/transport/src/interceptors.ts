@@ -1,11 +1,11 @@
 
-import { Defer, isNil, isNumber, isString } from '@tsdi/ioc';
+import { ArgumentException, Defer, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { createRequestContext, Events, IDuplex, Packet, PACKET_ID, PacketIdGenerator, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
+import { AbstractRequest, createRequestContext, Events, IDuplex, Packet, PACKET_ID, PacketIdGenerator, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { defer, filter, fromEvent, map, mergeMap, Observable, race, Subject, take, takeUntil } from 'rxjs';
+import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of } from 'rxjs';
 import { PACKET_LENGTH, SOCKET } from './context';
-// import { Socket } from './socket';
+import { Socket } from './socket';
 
 export function packetIdMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
     return config.side === TransferSide.client ? (req, next, context) => {
@@ -41,11 +41,34 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
 
 export function socketMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
 
-    // let socket: Socket;
-    // let source$: Observable<any>;
+    let socket: Socket;
+    let source$: Observable<any>;
     return config.side === TransferSide.client ? (req, next, context) => {
+        const currSocket = context.get(SOCKET);
+        if (!currSocket) {
+            return next(req, context)
+        }
 
-        return next(req, context)
+        if (socket !== currSocket) {
+            if (socket) {
+                socket.removeAllListeners();
+            }
+            socket = currSocket;
+            source$ = fromEvent(socket, Events.DATA)
+                .pipe(
+                    takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+                    filter(r => !isNil(r)),
+                    share()
+                )
+        }
+
+        return defer(() => writePacket(socket, req, context.get(StreamAdapter)))
+            .pipe(
+                mergeMap(r => {
+                    if (context.get(AbstractRequest)?.observe === 'emit') return of(r);
+                    return source$
+                })
+            )
 
     } : (socket, next, context) => {
         return fromEvent(socket, options.eventName ?? Events.DATA).pipe(
@@ -57,9 +80,6 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
             }),
             mergeMap(async res => {
                 if (!res) return;
-                // if (isObservable(res)) {
-                //     res = await lastValueFrom(res);
-                // }
                 const socket = context.get(SOCKET);
                 const streamAdapter = context.get(StreamAdapter);
                 return await writePacket(socket, res, streamAdapter);
@@ -94,30 +114,19 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
         contentLength: null,
         payload: null,
     } as Packet;
-    const subject = new Subject<IDuplex>();
     const handle = options.size ? unpackSizeData : unpacketData;
     return config.side === TransferSide.client ? (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
         return next(req, context)
             .pipe(
-                mergeMap(res => {
-                    try {
-                        handle(context, options, cache, res, subject, streamAdapter);
-                    } catch (err) {
-                        subject.error(err)
-                    }
-                    return subject;
-                })
+                mergeMap(res => handle(context, options, cache, res, streamAdapter)),
+                mergeMap(pkgs => from(pkgs))
             )
     } : (req, next, context) => {
         const streamAdapter = context.get(StreamAdapter);
-        try {
-            handle(context, options, cache, req, subject, streamAdapter);
-        } catch (err) {
-            subject.error(err)
-        }
-        return subject
+        return defer(() => handle(context, options, cache, req, streamAdapter))
             .pipe(
+                mergeMap(pkgs => from(pkgs)),
                 mergeMap(req => next(req, context))
             )
     }
@@ -179,7 +188,7 @@ async function packet(data: any, options: TransferOptions, context: RequestConte
 }
 
 
-function unpacketData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subject: Subject<IDuplex>, streamAdapter: StreamAdapter): void {
+async function unpacketData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, streamAdapter: StreamAdapter): Promise<IDuplex[]> {
     if (!isNumber(cache.length)) {
         cache.length = 0;
     }
@@ -194,6 +203,7 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
         const bpipe = context.get<PipeTransform>('bytes-format');
         throw new PacketLengthException(`Packet length ${bpipe.transform(cacheSize)} great than max size ${bpipe.transform(options.maxSize)}`);
     }
+    const packets: IDuplex[] = [];
     const delimiter = options.delimiter!;
     let idx = data.indexOf(delimiter);
     const dsize = Buffer.byteLength(delimiter);
@@ -210,21 +220,22 @@ function unpacketData(context: RequestContext, options: TransferOptions, cache: 
         cache.length += buf.length;
         data = data.subarray(idx + dsize);
         cache.payload.write(buf);
-        handleMessage(cache, subject, context);
+        packets.push(handleMessage(cache, context));
 
         if (data.length) {
-            unpacketData(context, options, cache, data, subject, streamAdapter);
+            packets.push(... await unpacketData(context, options, cache, data, streamAdapter));
         }
 
     } else {
         cache.length += Buffer.byteLength(data as Uint8Array);
         cache.payload.write(data);
     }
+    return packets;
 
 }
 
 
-function unpackSizeData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, subject: Subject<IDuplex>, streamAdapter: StreamAdapter): void {
+async function unpackSizeData(context: RequestContext, options: TransferOptions, cache: Packet<IDuplex>, data: Buffer, streamAdapter: StreamAdapter): Promise<IDuplex[]> {
     if (!isNumber(cache.length)) {
         cache.length = 0;
     }
@@ -232,6 +243,7 @@ function unpackSizeData(context: RequestContext, options: TransferOptions, cache
         cache.payload = streamAdapter.createPassThrough();
     }
 
+    const packets: IDuplex[] = [];
     if (cache.contentLength == null) {
         const delimiter = options.delimiter!;
         const maxSize = options.maxSize;
@@ -275,14 +287,14 @@ function unpackSizeData(context: RequestContext, options: TransferOptions, cache
         if (total === cache.contentLength) {
             cache.length = total;
             cache.payload.write(data);
-            handleMessage(cache, subject, context);
+            packets.push(handleMessage(cache, context));
         } else if (total > cache.contentLength) {
             const idx = data.length - (total - cache.contentLength);
             cache.payload.write(data.subarray(0, idx));
             const rest = data.subarray(idx);
-            handleMessage(cache, subject, context);
+            packets.push(handleMessage(cache, context));
             if (rest.length) {
-                unpackSizeData(context, options, cache, rest, subject, streamAdapter);
+                packets.push(... (await unpackSizeData(context, options, cache, rest, streamAdapter)));
             }
         } else {
             cache.payload.write(data);
@@ -294,9 +306,11 @@ function unpackSizeData(context: RequestContext, options: TransferOptions, cache
         cache.length += data.length;
         // subject.complete();
     }
+
+    return packets;
 }
 
-function handleMessage(cache: Packet<IDuplex>, subject: Subject<IDuplex>, context: RequestContext) {
+function handleMessage(cache: Packet<IDuplex>, context: RequestContext): IDuplex {
     const data = cache.payload!;
     context.set(PACKET_LENGTH, cache.length);
     if (cache.contentLength !== null && cache.contentLength !== undefined) {
@@ -306,5 +320,5 @@ function handleMessage(cache: Packet<IDuplex>, subject: Subject<IDuplex>, contex
     cache.payload = null;
     cache.contentLength = null;
     cache.length = 0;
-    subject.next(data);
+    return data;
 }

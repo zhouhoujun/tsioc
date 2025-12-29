@@ -132,6 +132,8 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
     abstract clone<V>(update: RequestCloneOpts<V, TOptions>): AbstractRequest<V>;
     abstract clone(update: RequestCloneOpts<T, TOptions>): AbstractRequest<T>;
 
+    abstract toJson(formatter?: PatternFormatter, payloadKey?: 'body' | 'payload'): Record<string, any>;
+
 }
 
 
@@ -383,6 +385,9 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
         const json: Record<string, any> = {
             url: this.getUrlWithParams()
         };
+        if (this.id) {
+            json.id = this.id;
+        }
         if (this.pattern) {
             json.pattern = formatter ? formatter.format(this.pattern) : this.pattern;
         }
@@ -423,6 +428,9 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
             topic: this.topic,
             responseTopic: this.responseTopic
         };
+        if (this.id) {
+            json.id = this.id;
+        }
         if (this.pattern) {
             json.pattern = formatter ? formatter.format(this.pattern) : this.pattern;
         }
