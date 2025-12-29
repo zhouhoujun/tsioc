@@ -1,12 +1,19 @@
-import { AbstractOutgoing, AbstractRequest, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useSimpleJson } from '@tsdi/common';
+import { AbstractOutgoing, AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useSimpleJson } from '@tsdi/common';
 import { delimiterPacket, delimiterUnpacket, packetIdMessage, socketMessage } from './interceptors';
+import { ProvdierOf, toProvider } from '@tsdi/ioc';
+import { PacketNumberIdGenerator } from './PacketId';
 
 const defaultOptions = {
     delimiter: '\r\n',
-    idSize: 2
-}
+    idSize: 2,
+    packetId: PacketNumberIdGenerator
+} as PacketOptions;
 
 export interface PacketOptions extends TransferOptions {
+    /**
+     * packet id generator.
+     */
+    packetId?: ProvdierOf<PacketIdGenerator>
     /**
      * parse value to simple mapping json.
      * @param value 
@@ -32,14 +39,22 @@ const outgoingMapping = (res: any, context: RequestContext) => {
     return res;
 }
 
-export function usePacket(options: PacketOptions = {}): TransferInterceptorFactory {
+export function useJsonPacket(options: PacketOptions = {}): TransferInterceptorFactory {
     return (config) => {
         options = { ...defaultOptions, ...config.transfer, ...options };
+
+        const isClient = config.side == TransferSide.client
         if (!options.mapping) {
-            options.mapping = config.side == TransferSide.client ? requestMapping : outgoingMapping
+            options.mapping = isClient ? requestMapping : outgoingMapping
+        }
+        if (isClient) {
+            if (!config.providers) {
+                config.providers = [];
+            }
+            config.providers.push(toProvider(PacketIdGenerator, options.packetId))
         }
 
-        return config.side == TransferSide.client ? [
+        return isClient ? [
             packetIdMessage(config, options),
             useSimpleJson(options)(config) as RequestInterceptorFn,
             delimiterUnpacket(config, options),

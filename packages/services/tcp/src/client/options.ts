@@ -24,6 +24,7 @@ export interface TcpClientOptions extends ClientOptions<TcpRequest<any>, Respons
      * socket options.
      */
     socketOpts?: SocketConstructorOpts;
+    
 }
 
 export const TCP_CLIENT_OPTIONS =  token<TcpClientOptions>('TCP_CLIENT_OPTIONS');

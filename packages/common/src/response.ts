@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isString } from '@tsdi/ioc';
+import { Abstract, Injectable, isBoolean, isString } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
 import { Pattern } from './pattern';
 import { StatusIncoming } from './incoming';
@@ -80,7 +80,7 @@ export abstract class ResponseBase<T, TStatus = any> {
     constructor(init: ResponseInitOpts, defaultStatus: TStatus = null!, defaultStatusText = 'OK') {
         this.headers = init.headers instanceof HeaderMappings ? init.headers : new HeaderMappings(init.headers);
         this.status = init.status !== undefined ? init.status : defaultStatus;
-        this.ok = init.error ? false : (init.ok === true || this.isOk(this.status));
+        this.ok = init.error ? false : (isBoolean(init.ok) ? init.ok : this.isOk(this.status));
         this._message = init.statusText || init.statusMessage || defaultStatusText;
         this.pattern = init.pattern;
     }
@@ -165,8 +165,12 @@ export class ErrorResponse<TStatus = any> extends ResponseBase<null, TStatus> {
         statusMessage?: string;
         statusText?: string;
     }) {
-        super(init, null!, init.error?.message ?? (isString(init.error)? init.error : 'Unknown Error'));
+        super(init, null!, init.error?.message ?? (isString(init.error) ? init.error : 'Unknown Error'));
         this.error = init.error || null;
+    }
+
+    protected isOk(status: TStatus) {
+        return false;
     }
 }
 
@@ -212,7 +216,8 @@ export class DefaultResponseFactory<TStatus = null> {
             if (!options.error) {
                 options.error = options?.body ?? options.payload;
             }
-            return new ErrorResponse(options);
+            options.ok = false;
+            throw new ErrorResponse(options);
         }
         return new Response(options);
     }

@@ -1,10 +1,10 @@
-import { Injectable, Injector, Module, isNil, isString, token } from '@tsdi/ioc';
-import { Application, ApplicationContext, ExceptionHandlerFilter } from '@tsdi/core';
-import { ErrorResponse, PacketIdGenerator, PatternFormatter, RequestExceptionHandlerFilter, TransferSide, Transport, UrlOutgoing, useSimpleJson } from '@tsdi/common';
-import { PacketNumberIdGenerator, usePacket } from '@tsdi/common/transport';
-import { provideClient, withBodySerialize, withClientFeatures, withClientFilters, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withFeatures, withFilters, withInterceptors, withJson, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
-import { TCP_SERV_INTERCEPTORS, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport } from '../src';
+import { Injectable, Module, isString, token } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { ErrorResponse, PacketIdGenerator, RequestExceptionHandlerFilter, Transport } from '@tsdi/common';
+import { PacketNumberIdGenerator, useJsonPacket } from '@tsdi/common/transport';
+import { provideClient, withBodySerialize, withClientFilters, withClientTransfers } from '@tsdi/common/client';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withInterceptors, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
+import { TCP_SERV_INTERCEPTORS, TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { LoggerModule } from '@tsdi/logger';
@@ -100,12 +100,9 @@ export class TcpService {
             withClientFilters(RequestExceptionHandlerFilter),
             withBodySerialize(),
             withClientTransfers(
-                usePacket()
+                useJsonPacket()
             ),
             withTcpClientTransport({
-                providers: [
-                    { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator }
-                ],
                 microservice: true,
                 connectOpts: {
                     port: 2000
@@ -138,7 +135,7 @@ export class TcpService {
             withLogger(),
             withExceptionFilter(),
             withTransfers(
-                usePacket(),
+                useJsonPacket(),
             ),
             withTcpTransport({
                 microservice: true,

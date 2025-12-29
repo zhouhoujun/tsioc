@@ -1,13 +1,14 @@
-import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider, ArgumentException, isNil } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Events, PatternFormatter, writePacket, StreamAdapter, TransferSide } from '@tsdi/common';
+import { Injectable, isString, promisify, Context, Injector, Provider, Inject, asProvider } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Events, PatternFormatter, writePacket, StreamAdapter, TransferSide, ResponseFactory, DefaultResponseFactory } from '@tsdi/common';
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, CLIENT_CONFIGS } from '@tsdi/common/client';
 import { SOCKET } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, filter, fromEvent, mergeMap, Observable, of, race, share, take, takeUntil } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
 import { TcpRequest } from './request';
+import { createSendMessageBackend } from '@tsdi/common/transport/src/interceptors';
 
 
 
@@ -123,40 +124,13 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
 
+    config.responseFactory ??= DefaultResponseFactory;
+
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: () => {
-                let socket: tls.TLSSocket | net.Socket;
-                let source$: Observable<any>;
-                return (data: any, context) => {
-
-                    const currSocket = context.get(SOCKET) as tls.TLSSocket | net.Socket;
-                    if (!currSocket) throw new ArgumentException('no socket in context');
-
-                    if (socket !== currSocket) {
-                        if (socket) {
-                            socket.removeAllListeners();
-                        }
-                        socket = currSocket;
-                        source$ = fromEvent(socket, Events.DATA)
-                            .pipe(
-                                takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
-                                filter(r => !isNil(r)),
-                                share()
-                            )
-                    }
-
-                    return defer(() => writePacket(socket, data, context.get(StreamAdapter)))
-                        .pipe(
-                            mergeMap(r => {
-                                if (context.get(TcpRequest)?.observe === 'emit') return of(r);
-                                return source$
-                            })
-                        );
-                }
-            },
+            useFactory: createSendMessageBackend,
             multi: true
         }),
         {

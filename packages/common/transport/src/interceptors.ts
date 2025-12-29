@@ -1,9 +1,9 @@
 
-import { ArgumentException, Defer, isNil, isNumber, isString } from '@tsdi/ioc';
+import { ArgumentException, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AbstractRequest, createRequestContext, Events, IDuplex, Packet, PACKET_ID, PacketIdGenerator, PacketLengthException, RequestContext, RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
+import { AbstractRequest, createRequestContext, Events, IDuplex, Packet, PACKET_ID, PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn, RequestInterceptorFn, ResponseFactory, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
 import { Buffer } from 'buffer';
-import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of } from 'rxjs';
+import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of, throwError } from 'rxjs';
 import { PACKET_LENGTH, SOCKET } from './context';
 import { Socket } from './socket';
 
@@ -21,7 +21,12 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                 filter(res => {
                     return res && res.id == id;
                 }),
-                req.observe === 'observe' ? take(1) : map(r => r)
+                req.observe !== 'observe' ? take(1) : map(r => r),
+                map(r => {
+                    const factory = context.get(ResponseFactory);
+                    if (factory) return factory.create(r);
+                    return r;
+                })
             );
     } : (req, next, context) => {
         let id: string | number;
@@ -39,14 +44,14 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
     }
 }
 
-export function socketMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
+export function createSendMessageBackend(eventName: string = Events.DATA, socket?: Socket): RequestHandlerFn {
 
-    let socket: Socket;
+    // let socket: Socket;
     let source$: Observable<any>;
-    return config.side === TransferSide.client ? (req, next, context) => {
-        const currSocket = context.get(SOCKET);
+    return (req, context) => {
+        const currSocket = socket ?? context.get(SOCKET);
         if (!currSocket) {
-            return next(req, context)
+            return throwError(() => new ArgumentException('no socket in context'));
         }
 
         if (socket !== currSocket) {
@@ -54,21 +59,32 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
                 socket.removeAllListeners();
             }
             socket = currSocket;
-            source$ = fromEvent(socket, Events.DATA)
+            source$ = fromEvent(currSocket, eventName)
                 .pipe(
-                    takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+                    takeUntil(race(fromEvent(currSocket, Events.CLOSE), fromEvent(currSocket, Events.DISCONNECT)).pipe(take(1))),
                     filter(r => !isNil(r)),
                     share()
                 )
         }
 
-        return defer(() => writePacket(socket, req, context.get(StreamAdapter)))
+        return defer(() => writePacket(currSocket, req, context.get(StreamAdapter)))
             .pipe(
                 mergeMap(r => {
                     if (context.get(AbstractRequest)?.observe === 'emit') return of(r);
                     return source$
                 })
             )
+
+    }
+}
+
+export function socketMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
+
+    let handle: RequestHandlerFn;
+    return config.side === TransferSide.client ? (req, next, context) => {
+        if (!options.eventName) return next(req, context);
+        if(!handle) handle = createSendMessageBackend(options.eventName);
+        return handle(req, context);        
 
     } : (socket, next, context) => {
         return fromEvent(socket, options.eventName ?? Events.DATA).pipe(

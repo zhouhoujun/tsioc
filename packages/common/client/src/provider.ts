@@ -2,7 +2,8 @@ import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isFun
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, useSimpleJson,
-    UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike
+    UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike,
+    ResponseFactory
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
@@ -74,6 +75,12 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
     transports.forEach(ts => {
         const kinds = new Map<ClientFeatureKind, Provider[]>();
         const config = ts.config as ClientConfig & TransportConfig;
+        if (config.responseFactory) {
+            if(!config.providers) {
+                config.providers = [];
+            }
+            config.providers.push(toProvider(ResponseFactory, config.responseFactory))
+        }
 
         allFeatures.forEach(f => {
             if ((f as ClientTransportFeature).kind === ClientFeatureKind.Transport) {

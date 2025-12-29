@@ -1,5 +1,5 @@
-import { Token } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, TransferConfig, TransferSide } from '@tsdi/common';
+import { ProvdierOf, Token } from '@tsdi/ioc';
+import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, ResponseFactory, TransferConfig, TransferSide } from '@tsdi/common';
 
 
 /**
@@ -33,6 +33,8 @@ export interface ClientConfig<
     //  */
     // backend?: Token<ClientBackend> | ClientBackend;
     formatter?: Token<PatternFormatter>;
+
+    responseFactory?: ProvdierOf<ResponseFactory>;
     /**
      * as default client or not.
      */

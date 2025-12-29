@@ -1,11 +1,8 @@
 import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
-import { defer, filter, map, mergeMap, take } from 'rxjs';
+import { defer, map, mergeMap } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
 import { RequestContext } from './context';
-import { AbstractRequest } from './request';
-import { Incoming } from './incoming';
-import { PACKET_ID, PacketIdGenerator } from './PacketId';
 import { StreamAdapter } from './StreamAdapter';
 
 export enum TransferSide {
@@ -38,7 +35,8 @@ export interface TransferOptions {
 
 export interface TransferConfig extends TransportConfig {
     side: TransferSide;
-    transfer?: TransferOptions
+    transfer?: TransferOptions;
+    providers?: Provider[];
 }
 
 
@@ -132,33 +130,7 @@ export function useSimpleJson(options?: {
                     )
             };
 
-        // if (options?.generateId && config.side === TransferSide.client) {
-        //     return [
-        //         packetIdInterceptor,
-        //         interceptor
-        //     ]
-        // }
         return interceptor;
     }
 
-
 }
-
-
-// export const packetIdInterceptor: RequestInterceptorFn<AbstractRequest<any>, Incoming<any>> = (req, next, context) => {
-//     let id: string | number;
-//     if (!req.id) {
-//         id = req.id = context.get(PacketIdGenerator).getPacketId();
-//     } else {
-//         id = req.id;
-//     }
-//     context.set(PACKET_ID, id);
-//     return next(req, context)
-//         .pipe(
-//             filter(res => {
-//                 return res && res.id == id;
-//             }),
-//             req.observe === 'observe' ? take(1) : map(r => r)
-//         );
-
-// }
