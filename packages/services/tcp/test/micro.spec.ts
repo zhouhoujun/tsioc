@@ -135,7 +135,7 @@ export class TcpService {
             withLogger(),
             withExceptionFilter(),
             withTransfers(
-                useJsonPacket(),
+                useJsonPacket({ maxSize: 1024 * 1024 * 10}),
             ),
             withTcpTransport({
                 microservice: true,
