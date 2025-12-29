@@ -4,10 +4,11 @@ import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
 import { RestfulRequestContext } from './RestfulRequestContext';
 import { SessionOptions } from './sessions/Session';
-import { ProvdierOf, Type } from '@tsdi/ioc';
+import { ProvdierOf, Token, Type } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import { BodyparserOptions, JsonOptions } from './interceptors';
 import { MiddlewareLike } from './middleware/middleware';
+import { RequestContextFactory } from './AbstractRequestContext';
 
 export interface ProxyOpts {
     proxyIpHeader: string;
@@ -34,6 +35,7 @@ export interface FeatureOptions {
     router?: boolean | RouteOpts;
     transfers?: TransferInterceptorFactory[];
 
+    contextFactory?: Token<RequestContextFactory>;
     exceptionFilter?: ProvdierOf<RequestExceptionFilter>;
     exceptionHandlers?: Type[];
 

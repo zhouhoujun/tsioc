@@ -1,10 +1,11 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Token, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory,
     UrlIncomingFactory, useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
     provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike,
     RequestExceptionFilter, RequestExceptionHandlerFilter,
+    RequestInterceptorFn,
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -18,6 +19,8 @@ import { SessionOptions } from './sessions/Session';
 import { FeatureOptions, ServiceConfig } from './server.options';
 import { DefaultExceptionHandlers } from './filters/exception.handlers';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware/middleware';
+import { RequestContextFactory } from './AbstractRequestContext';
+
 
 /**
  * Identifies a particular kind of `Feature`.
@@ -27,6 +30,7 @@ import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middl
 export enum FeatureKind {
     Configure,
     Transfer,
+    Context,
     Logger,
     Exception,
     Filters,
@@ -217,6 +221,8 @@ export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<Featur
             filter: opts.exceptionFilter,
             handlers: opts.exceptionHandlers
         })(config));
+
+        features.push(withContextFactory(opts.contextFactory)(config));
 
         if (opts.session) {
             features.push(withSession(isBoolean(opts.session) ? undefined : opts.session)(config));
@@ -587,6 +593,24 @@ export function withControllers(controllers: Type[]): FeatureFn<FeatureKind.Cont
     }
 }
 
+export function withContextFactory(factoryToken?: Token<RequestContextFactory>): FeatureFn<FeatureKind.Context> {
+    return (config) => {
+        const token = getTransfersToken(config);
+        const transCfg: RequestInterceptorFn = (req, next, context) => {
+            const factory = context.get(factoryToken ?? RequestContextFactory);
+            return next(req, factory ? factory.create(context, { request: req }) : context);
+        };
+        const providers = [
+            { provide: token, useValue: transCfg, multi: true }
+        ] as Provider[];
+
+        return makeFeature(
+            FeatureKind.Context,
+            providers,
+            config
+        );
+    }
+}
 
 
 /**

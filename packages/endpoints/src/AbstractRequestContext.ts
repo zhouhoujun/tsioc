@@ -1,9 +1,9 @@
-import { Abstract, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
-import { ParameterScope, createPayloadResolveInterceptors } from '@tsdi/core';
+import { Abstract, isArray, isNil, isString, lang } from '@tsdi/ioc';
+import { ParameterScope } from '@tsdi/core';
 import {
     HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException,
     RequestContext, Incoming, Outgoing, FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp, ContentType,
-    ReadableLike, WritableLike    
+    ReadableLike, WritableLike
 } from '@tsdi/common';
 import { isBuffer } from '@tsdi/common/transport';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
@@ -750,7 +750,7 @@ export abstract class AbstractRequestContext<
      * throw execption to client.
      * @param execption 
      */
-    abstract throwException(execption: MessageException): Promise<void>;
+    abstract throwException(execption: MessageException): void;
 
 }
 
@@ -769,22 +769,30 @@ export function getScopeValue(req: any, scope: ParameterScope) {
     }
 }
 
-const primitiveResolvers = createPayloadResolveInterceptors(
-    (input, scope, field) => {
-        if (field && !scope) {
-            scope = 'query'
-        }
-        if (scope) {
-            const data = getScopeValue(input, scope);
-            if (field) {
-                return isDefined(data) ? data[field] : null;
-            }
-            return data;
-        }
-        return input;
-    },
-    // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
-);
+@Abstract()
+export abstract class RequestContextFactory {
+    abstract create<TReq extends ReadableLike<Incoming>, TRes extends WritableLike<Outgoing>>(context: RequestContext, options: {
+        request: TReq,
+        response?: TRes
+    }): AbstractRequestContext<TReq, TRes>;
+}
+
+// const primitiveResolvers = createPayloadResolveInterceptors(
+//     (input, scope, field) => {
+//         if (field && !scope) {
+//             scope = 'query'
+//         }
+//         if (scope) {
+//             const data = getScopeValue(input, scope);
+//             if (field) {
+//                 return isDefined(data) ? data[field] : null;
+//             }
+//             return data;
+//         }
+//         return input;
+//     },
+//     // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
+// );
 
 
 /**

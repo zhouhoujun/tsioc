@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { ErrorResponse, RequestExceptionHandlerFilter, Transport } from '@tsdi/common';
 import { useJsonPacket } from '@tsdi/common/transport';
 import { provideClient, withBodySerialize, withClientFilters, withClientTransfers } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withInterceptors, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withContextFactory, withExceptionFilter, withInterceptors, withLogger, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
@@ -134,6 +134,7 @@ export class TcpService {
             withRouter(),
             withLogger(),
             withExceptionFilter(),
+            withContextFactory(),
             withTransfers(
                 useJsonPacket({ maxSize: 1024 * 1024 * 10}),
             ),

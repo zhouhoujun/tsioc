@@ -170,7 +170,7 @@ export class DefaultRequestHandler<
 
     protected override generateInterceptorFn(fns: InterceptorLike[]): RequestInterceptorFn {
         const options = this.options as RequestHandlerOptions;
-        if (options.side !== TransferSide.client) {
+        if (options.side === TransferSide.server) {
             const transfers = this.context.get(options.transfersToken!);
             fns.unshift(...transfers)
         }
