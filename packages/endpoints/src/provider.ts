@@ -147,6 +147,7 @@ export interface ServiceOptions<TSerOpts = any> extends ServiceConfig<TSerOpts> 
 }
 
 export const SERVICE_CONFIGS = token<ServiceOptions[]>('SEARVICES_CONFIGS');
+export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS')
 
 export function provideServiceFromDi(options: TransportConfig): Provider[] {
     return [

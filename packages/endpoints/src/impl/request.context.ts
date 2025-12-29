@@ -1,11 +1,9 @@
 import { Injector } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, parseQueryString, MessageException } from '@tsdi/common';
 import { Incoming, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common';
-import { lastValueFrom } from 'rxjs';
-import {  AbstractRequestContext } from '../AbstractRequestContext';
-import { ServiceConfig } from '../server.options';
+import { AbstractRequestContext } from '../AbstractRequestContext';
 import { RestfulRequestContext } from '../RestfulRequestContext';
-// import { ServerTransport } from '../transport';
+import { SERV_OPTIONS } from '../provider';
 
 
 
@@ -27,7 +25,10 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
     constructor(
         injector: Injector,
         readonly request: TRequest,
-        readonly response: TResponse
+        readonly response: TResponse,
+        readonly protocol: string,
+        readonly secure: boolean,
+        readonly detailError: boolean
     ) {
         super(injector);
 
@@ -94,8 +95,8 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         if (abstl.test(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = this.serverOptions.listenOpts ?? {};
-            const protocol = this.serverOptions.protocol;
+            const { host, port, path } = this.get(SERV_OPTIONS).listenOpts ?? {};
+            const protocol = this.get(SERV_OPTIONS).transport;
             let baseUrl: URL;
             try {
                 baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
@@ -114,7 +115,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
     throwException(execption: MessageException): void {
         if (this.headersSent) return;
         throw execption;
-        
+
     }
 
 }
@@ -131,7 +132,8 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     constructor(
         injector: Injector,
         readonly request: TRequest,
-        readonly response: TResponse
+        readonly response: TResponse,
+        readonly detailError: boolean
     ) {
         super(injector);
 
@@ -183,7 +185,8 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
     constructor(
         injector: Injector,
         readonly request: TRequest,
-        readonly response: TResponse
+        readonly response: TResponse,
+        readonly detailError: boolean
     ) {
         super(injector);
 

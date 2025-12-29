@@ -8,7 +8,8 @@ import {
 import { SOCKET } from '@tsdi/common/transport';
 import {
     BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES,
-    ServiceHandler, getServiceBackendToken, AbstractRequestContext
+    ServiceHandler, getServiceBackendToken, AbstractRequestContext,
+    SERV_OPTIONS
 } from '@tsdi/endpoints';
 import { Subject, fromEvent, of, race, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
@@ -168,6 +169,8 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     const config = option as TcpServOptions;
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
+    config.providers ??= [];
+    config.providers.push({ provide: SERV_OPTIONS, useExisting: TCP_SERV_OPTIONS });
 
     const providers: Provider[] = [
         TcpServer,
