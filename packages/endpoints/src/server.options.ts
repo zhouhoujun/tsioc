@@ -7,6 +7,7 @@ import { SessionOptions } from './sessions/Session';
 import { ProvdierOf, Type } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import { BodyparserOptions, JsonOptions } from './interceptors';
+import { MiddlewareLike } from './middleware/middleware';
 
 export interface ProxyOpts {
     proxyIpHeader: string;
@@ -14,12 +15,14 @@ export interface ProxyOpts {
 }
 
 
-export interface FeatureOptions {/**
+export interface FeatureOptions {
+    /**
      * request timeout.
      */
     timeout?: number;
     filters?: ProvdierOf<RequestFilterLike>[];
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
+    middlewares?: ProvdierOf<MiddlewareLike>[];
     guards?: ProvdierOf<GuardLike>[];
     cors?: boolean | CorsOpts;
     session?: boolean | SessionOptions;

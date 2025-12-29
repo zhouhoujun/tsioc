@@ -1,6 +1,7 @@
 import { Exception, HandlerFn, InterceptorFn, isFunction } from '@tsdi/ioc';
-import { from, lastValueFrom } from 'rxjs';
+import { from, lastValueFrom, map, Observable } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
+import { Incoming, Outgoing, RequestHandlerFn, RequestInterceptorFn } from '@tsdi/common';
 
 
 /**
@@ -37,18 +38,20 @@ export type MiddlewareLike<T extends AbstractRequestContext = AbstractRequestCon
  * @param middleware 
  * @returns 
  */
-export function convertToInterceptor<TInput = any, TContext extends AbstractRequestContext = AbstractRequestContext>(middleware: MiddlewareLike<TContext>): InterceptorFn<TInput> {
+export function convertToInterceptor<TInput=any, TOutput = any, TContext extends AbstractRequestContext = AbstractRequestContext>(middleware: MiddlewareLike): RequestInterceptorFn<TInput, TOutput, TContext> {
     return (input: TInput, next: HandlerFn<TInput>, context: TContext) => {
-        if (isFunction(middleware)) {
-            return from(middleware(context, () => lastValueFrom(next(input, context))))
-        } else {
-            return from(middleware.invoke(context, () => lastValueFrom(next(input, context))))
-        }
+        const nextFn = async () => {
+            await lastValueFrom(next(input, context) as any)
+        };
+
+        return from(isFunction(middleware) ? middleware(context, nextFn) : middleware.invoke(context, nextFn)).pipe(
+            map(r => context.response as TOutput)
+        ) as Observable<TOutput>;
     }
 }
 
 
-/**
+/** 
  * compose middleware in chain.
  * @param middlewares 
  */

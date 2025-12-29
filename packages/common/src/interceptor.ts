@@ -1,5 +1,5 @@
-import { Interceptor, InterceptorFn } from '@tsdi/ioc';
-import { RequestHandler } from './handler';
+import { HandlerFn, Interceptor } from '@tsdi/ioc';
+import { RequestHandler, RequestHandlerFn } from './handler';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
 
@@ -28,7 +28,7 @@ export interface RequestInterceptor<TInput = any, TOutput = any, TContext extend
  * Request interceptor function is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type RequestInterceptorFn<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = InterceptorFn<TInput, Observable<TOutput>, TContext>
+export type RequestInterceptorFn<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = (input: TInput, next: RequestHandlerFn<TInput, TOutput, TContext> | HandlerFn<TInput, Observable<TOutput>, TContext>, context: TContext) => Observable<TOutput>;
 
 
 /**

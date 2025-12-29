@@ -12,12 +12,12 @@ import {
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { EndpointTypedRespond } from './typed.respond';
 import { SetupServices } from './SetupServices';
-import { getFiltersToken, getGuardsToken, getInterceptorsToken, getRouterToken, getTransfersToken } from './tokens';
+import { getFiltersToken, getGuardsToken, getInterceptorsToken, getMiddlewaresToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
-import { CorsOpts, CsrfOps, FeatureOptions, ServiceConfig } from './server.options';
+import { FeatureOptions, ServiceConfig } from './server.options';
 import { DefaultExceptionHandlers } from './filters/exception.handlers';
-import { writeBufferFilter } from './filters/writeBuffer.filter';
+import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware/middleware';
 
 /**
  * Identifies a particular kind of `Feature`.
@@ -40,6 +40,7 @@ export enum FeatureKind {
     Content,
     Json,
     Bodyparser,
+    Middlewares,
     Router,
     Controller,
     Transport
@@ -199,6 +200,10 @@ export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<Featur
         }
         if (opts.interceptors) {
             features.push(withInterceptors(...opts.interceptors)(config));
+        }
+
+        if (opts.middlewares) {
+            features.push(withMiddlewares(...opts.middlewares)(config))
         }
         if (opts.guards) {
             features.push(withGuards(...opts.guards)(config));
@@ -534,6 +539,31 @@ export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorL
         return makeFeature(
             FeatureKind.Interceptors,
             interceptors.map((u) => toProvider(token, u, true)),
+            config
+        );
+    }
+}
+
+/**
+ * use middlewares
+ * @param middlewares 
+ * @returns 
+ */
+export function withMiddlewares(...middlewares: ProvdierOf<MiddlewareLike>[]): FeatureFn<FeatureKind.Middlewares> {
+    return (config) => {
+        const token = getMiddlewaresToken(config);
+        const providers = middlewares.map((u) => toProvider(token, u, true)) as Provider[];
+
+        const interToken = getInterceptorsToken(config);
+        providers.push({
+            provide: interToken,
+            useFactory: (middlewares: MiddlewareLike[]) => convertToInterceptor(composeMiddleware(middlewares)),
+            multi: true,
+            deps: [token]
+        })
+        return makeFeature(
+            FeatureKind.Middlewares,
+            providers,
             config
         );
     }

@@ -4,6 +4,7 @@ import { Transport, RequestInterceptorLike, RequestHandlerLike, RequestFilterLik
 import { ServiceConfig } from './server.options';
 import { Router } from './router/router';
 import { ServiceHandler } from './ServiceHandler';
+import { MiddlewareLike } from './middleware/middleware';
 
 function toMicroName(microservice?: boolean, name?: string) {
     if(!name) return microservice? 'MICRO' : '';
@@ -32,6 +33,12 @@ export function getInterceptorsToken(config: ServiceConfig): Token<RequestInterc
     return config.interceptorsToken;
 }
 
+export function getMiddlewaresToken(config: ServiceConfig): Token<MiddlewareLike[]> {
+    if(!config.middlewaresToken) {
+        config.middlewaresToken = getToken<MiddlewareLike[]>(`${Transport[config.transport].toUpperCase()}_MIDDLEWARES`, toMicroName(config.microservice));
+    }
+    return config.middlewaresToken;
+}
 
 
 export function getTransfersToken(config: ServiceConfig): Token<RequestInterceptorLike[]> {

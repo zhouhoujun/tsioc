@@ -1,6 +1,7 @@
 import { Abstract, Token } from '@tsdi/ioc';
 import { ConfigableRequestHandler, RequestContext, RequestHandler, RequestHandlerOptions } from '@tsdi/common';
 import { Router } from './router/router';
+import { MiddlewareLike } from './middleware/middleware';
 
 
 
@@ -28,5 +29,5 @@ export abstract class ServiceHandler<TReq = any, TRes = any, TContext extends Re
 export interface ServiceHandlerOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends RequestHandlerOptions<TReq, TRes, TContext> {
 
     routerToken?: Token<Router>;
-
+    middlewaresToken?: Token<MiddlewareLike[]>;
 }
