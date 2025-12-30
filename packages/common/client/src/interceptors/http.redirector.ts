@@ -1,22 +1,27 @@
 /* eslint-disable no-case-declarations */
 import { ContextToken, ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
-import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader, BadRequestException, RequestContext, HeaderAdapter } from '@tsdi/common';
+import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader, BadRequestException, RequestContext, HeaderAdapter, StatusIncoming, RequestHandlerFn } from '@tsdi/common';
 import { StatusAdapter, StreamAdapter } from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { AbstractClient } from '../AbstractClient';
+import { Redirector } from './redirector';
 
 
 @Injectable()
-export class UrlRedirector  {
+export class UrlRedirector implements Redirector<UrlRequest> {
 
-    redirect<T>(req: UrlRequest<any>, context: RequestContext, status: any, headers: HeadersLike): Observable<T> {
-        return new Observable((observer: Observer<T>) => {
+    need(res: StatusIncoming, context: RequestContext): boolean {
+        return !!res.headers && context.get(StatusAdapter)?.isRedirect(res.status ?? res.statusCode) === true;
+    }
+
+    redirect(req: UrlRequest<any>, res: StatusIncoming, handler: RequestHandlerFn,  context: RequestContext): Observable<any> {
+        return new Observable((observer: Observer<any>) => {
             if (!req.url) return observer.error(new BadRequestException());
 
             // const protocol = context.getProtocol();
             const statusAdapter = context.get(StatusAdapter);
             const streamAdapter = context.get(StreamAdapter);
             const headerAdapter = context.get(HeaderAdapter);
+            const headers = res.headers!;
 
             if (!headerAdapter) return observer.error(new ArgumentException('header adapter missing'));
 
@@ -103,13 +108,13 @@ export class UrlRedirector  {
                         reqhdrs = reqhdrs.set('referrer-policy', responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = context.get(AbstractClient).send(locationURL, {
+                    sub = handler(req.clone({
+                        url: locationURL,
                         method,
                         headers: reqhdrs,
                         body,
-                        context,
                         observe: 'response'
-                    }).subscribe(observer as any);
+                    }), context).subscribe(observer);
 
                     break;
 

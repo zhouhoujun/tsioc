@@ -341,7 +341,7 @@ export abstract class AbstractClient<
     }
 
     protected createContext(): RequestContext {
-        const context = createRequestContext(this.context, [[AbstractClient, this]]);
+        const context = createRequestContext(this.context);
         // context.setProtocol(this.getOptions().protocol);
         return context;
     }

@@ -1,15 +1,18 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Token, isArray, isFunction, isToken, toProvider, toProviders, token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, useSimpleJson,
     UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike,
-    ResponseFactory, DefaultResponseFactory, RequestInterceptorFn
+    ResponseFactory, DefaultResponseFactory
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
-import { map } from 'rxjs';
+import { responseInterceptor } from './interceptors/response';
+import { redirectInterceptor, Redirector } from './interceptors/redirector';
+
+
 
 
 
@@ -23,15 +26,14 @@ export enum ClientFeatureKind {
     Guards,
     Filters,
     Interceptors,
-    // LegacyInterceptors,
     CustomXsrfConfiguration,
     NoXsrfProtection,
     JsonpSupport,
     RequestsMadeViaParent,
-    Redirector,
     BodySerialize,
     Fetch,
     ResponseEvent,
+    Redirector,
     Transfer,
     Transport
 }
@@ -126,6 +128,34 @@ export function makeClientFeature<T extends ClientFeatureKind, TConfig extends C
 }
 
 
+export function withRedirectors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): ClientFeatureFn<ClientFeatureKind.Redirector> {
+    return (config) => {
+        const token = getClientInterceptorsToken(config);
+        return makeClientFeature(
+            ClientFeatureKind.Redirector,
+            interceptors.map((u) => toProvider(token, u, true)),
+            config
+        );
+    }
+}
+
+export function withRedirector(redirector?: ProvdierOf<Redirector> | Token<Redirector>): ClientFeatureFn<ClientFeatureKind.Redirector> {
+    return (config) => {
+        const token = getClientInterceptorsToken(config);
+        if (redirector) {
+            if (!config.providers) {
+                config.providers = [];
+            }
+            config.providers.push(isToken(redirector) ? { provide: Redirector, useExisting: redirector } : toProvider(token, redirector));
+        }
+        return makeClientFeature(
+            ClientFeatureKind.Redirector,
+            [{ provide: token, useValue: redirectInterceptor, multi: true }],
+            config
+        );
+    }
+}
+
 /**
  * Adds one or more  client interceptors to the configuration of the `Client`
  * instance.
@@ -145,17 +175,6 @@ export function withClientInterceptors(
             config
         );
     }
-}
-
-export const responseInterceptor: RequestInterceptorFn = (req, next, context) => {
-    return next(req, context)
-        .pipe(
-            map(r => {
-                const factory = context.get(ResponseFactory);
-                if (factory) return factory.create(r);
-                return r;
-            })
-        )
 }
 
 export function withResponseEvent(options?: {
@@ -330,7 +349,8 @@ export interface ClientFeatureOptions {
     responseOptions?: {
         responseFactory?: ProvdierOf<ResponseFactory>;
         interceptors?: ProvdierOf<RequestInterceptorLike>[]
-    }
+    };
+    redirector?: ProvdierOf<Redirector> | Token<Redirector> | ProvdierOf<RequestInterceptorLike>[];
 }
 
 export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> {
@@ -356,6 +376,14 @@ export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatur
 
         if (opts.responseOptions) {
             features.push(withResponseEvent(opts.responseOptions)(config))
+        }
+
+        if (opts.redirector) {
+            if (isArray(opts.redirector)) {
+                features.push(withRedirectors(...opts.redirector)(config));
+            } else {
+                features.push(withRedirector(opts.redirector))
+            }
         }
 
         if (opts.transfers) {
