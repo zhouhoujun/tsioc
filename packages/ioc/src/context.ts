@@ -1,5 +1,5 @@
 import { AbstractType, TypeOf } from './types';
-import { InjectFlags, Token } from './tokens';
+import { InjectFlags, Token, TokenOf } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector, InjectOperator, InjectorScope } from './injector';
@@ -208,7 +208,7 @@ export interface InvokeProviders {
      * 
      * 调用接口的参数解析器
      */
-    resolvers?: TypeOf<ResolveInterceptorLike>[];
+    resolvers?: TokenOf<ResolveInterceptorLike>[];
     /**
      * custom providers.
      * 

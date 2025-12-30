@@ -3,8 +3,8 @@ import { Handler, HandlerFn, HandlerLike } from './handlers/handler';
 import { Interceptor, InterceptorFn, InterceptorLike } from './handlers/interceptor';
 import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
-import { InjectFlags, Token, token } from './tokens';
-import { AbstractType, TypeOf } from './types';
+import { InjectFlags, Token, token, TokenOf } from './tokens';
+import { AbstractType } from './types';
 import { isDefined, isObject } from './utils/chk';
 
 
@@ -55,7 +55,7 @@ export interface Parameter<T = any> {
     /**
      * custom resolver to resolve property or parameter.
      */
-    resolver?: TypeOf<ResolveInterceptorLike>[];
+    resolver?: TokenOf<ResolveInterceptorLike>[];
     /**
      * null able or not.
      */

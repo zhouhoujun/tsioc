@@ -7,7 +7,7 @@ import { DestroyCallback, OnDestroy } from '../destroy';
 import { ClassRef, getClassify } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
-import { InjectFlags, Token } from '../tokens';
+import { InjectFlags, Token, TokenOf } from '../tokens';
 import { immediate } from '../utils/lang';
 import { composeHandlers } from '../handlers/compose';
 import { Runtime } from '../runtime';
@@ -363,7 +363,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
         return providers;
     }
 
-    protected mergeResolvers<T>(typeRef: ClassRef<T>, options?: TOpts): TypeOf<ResolveInterceptorLike>[] {
+    protected mergeResolvers<T>(typeRef: ClassRef<T>, options?: TOpts): TokenOf<ResolveInterceptorLike>[] {
         let resolvers = options?.resolvers;
         if (resolvers) {
             if (typeRef.resolvers) resolvers = resolvers.concat(typeRef.resolvers)

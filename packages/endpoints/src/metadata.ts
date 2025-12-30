@@ -1,17 +1,16 @@
 import {
     isArray, isString, lang, AbstractType, TypeOf, createDecorator, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject,
-    AnnotationMetadata, Handler, Type, ActionType,
-    getTypeName,
-    isNumber
+    AnnotationMetadata, Handler, Type, ActionType, getTypeName, isNumber, isDefined
 } from '@tsdi/ioc';
-import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor } from '@tsdi/core';
+import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor, createPayloadResolveInterceptors, MODEL_RESOLVERS } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
 import { Route, RouteOptions } from './router/route';
 import { MappingDef, RouteMappingMetadata, RouteMappingOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { createRouteHandler } from './impl/route.handler';
 import { getRouter } from './router/router.providers';
+import { getScopeValue } from './AbstractRequestContext';
 
 export { Topic, Payload } from '@tsdi/core';
 
@@ -39,6 +38,28 @@ export interface Subscribe {
     (topic: string, transport?: Transport, option?: RouteOptions): MethodDecorator;
 }
 
+
+const primitiveResolvers = createPayloadResolveInterceptors(
+    (input, scope, field) => {
+        if (field && !scope) {
+            scope = 'query'
+        }
+        if (scope) {
+            const data = getScopeValue(input, scope);
+            if (field) {
+                return isDefined(data) ? data[field] : null;
+            }
+            return data;
+        }
+        return input;
+    },
+    // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
+);
+
+
+
+
+
 /**
  * Subscribe decorator, use to handle subscribe message event.
  * @Handle
@@ -49,6 +70,12 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     actionType: ActionType.annoation | ActionType.runnable,
     props: (route: string, arg1?: Transport | RouteOptions, option?: RouteOptions) =>
         (isNumber(arg1) ? ({ route, transport: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
+    appendProps: (meta) => {
+        if (!meta.resolvers) {
+            meta.resolvers = [];
+        }
+        meta.resolvers.push(MODEL_RESOLVERS, typeResolveInterceptor, ...primitiveResolvers);
+    },
     design: {
         method: (typeRef, ctx) => {
 
@@ -126,7 +153,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         if (!meta.resolvers) {
             meta.resolvers = [];
         }
-        meta.resolvers.push(typeResolveInterceptor);
+        meta.resolvers.push(MODEL_RESOLVERS, typeResolveInterceptor, ...primitiveResolvers);
     },
     props: (route: Pattern, arg1?: Transport | RouteOptions, option?: RouteOptions) =>
         (isNumber(arg1) ? ({ route, transport: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
@@ -268,7 +295,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
             if (!meta.resolvers) {
                 meta.resolvers = [];
             }
-            meta.resolvers.push(typeResolveInterceptor);
+            meta.resolvers.push(MODEL_RESOLVERS, typeResolveInterceptor, ...primitiveResolvers);
         },
         def: controllerOnly ? undefined : {
             class: (ctx) => {

@@ -1,7 +1,7 @@
 import { AbstractType } from '../types';
 import { remove, deepTypeChain } from '../utils/lang';
 import { isNil } from '../utils/chk';
-import { getType, isType } from '../metadata/type';
+import { getType } from '../metadata/type';
 import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeOptions } from '../context';
 import { InjectFlags, Token } from '../tokens';
@@ -12,6 +12,7 @@ import { nonEnumerable } from '../metadata/decor';
 import { createRecord, createValueRecord, LAZY } from './common';
 import { AbstractInjector, deferProcessProviders } from './injector';
 import { DefaultResolver, getParameterResolveHanlder } from './resolver';
+import { isToken } from '../utils/token';
 
 
 
@@ -121,7 +122,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     protected getResolver(): RuntimeHandler<Parameter> {
         if (!this._resolvers) {
             const resolvers: ResolveInterceptorLike[] = [];
-            const resls = this.options.resolvers?.map(r => isType(r) ? this.get(r) : r);
+            const resls = this.options.resolvers?.map(r => isToken(r) ? this.get(r) : r)?.flatMap(r => r);
             if (resls?.length) {
                 resolvers.push(...resls);
             }
@@ -169,7 +170,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     protected existRef(ctx: InvocationContext): boolean {
         if (ctx === this || this._refs!.indexOf(ctx) >= 0) return true;
         const parent = this.getParent() as TParent & DefaultInvocationContext;
-        if(parent === ctx) return true;
+        if (parent === ctx) return true;
         return parent?.existRef?.(ctx) ?? false;
     }
 

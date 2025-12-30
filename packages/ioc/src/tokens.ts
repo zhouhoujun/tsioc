@@ -86,6 +86,10 @@ export function getToken(token: Token, alias?: string): Token<any> {
     return atk;
 }
 
+/**
+ * token or instance.
+ */
+export type TokenOf<T> = Token<T> | Exclude<T, Function>;
 
 /**
  * get token of type
