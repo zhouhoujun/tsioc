@@ -1,16 +1,15 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Token, isArray, isFunction, isToken, toProvider, toProviders, token } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Token, isArray, isBoolean, isFunction, isToken, toProvider, toProviders, token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, useSimpleJson,
     UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike,
-    ResponseFactory, DefaultResponseFactory
+    ResponseFactory, DefaultResponseFactory, Redirector, redirectInterceptor
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
-import { bodyServializeInterceptor } from './interceptors/body';
+import { browserBodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
 import { responseInterceptor } from './interceptors/response';
-import { redirectInterceptor, Redirector } from './interceptors/redirector';
 
 
 
@@ -271,16 +270,18 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
  * @see {@link provideClient}
  * @publicApi
  */
-export function withBodySerialize(): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
+export function withBodySerialize(bodySerialize?: ProvdierOf<RequestInterceptorLike>): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
     return (config) => {
         const token = getClientInterceptorsToken(config)
         return makeClientFeature(
             ClientFeatureKind.BodySerialize,
-            [{
-                provide: token,
-                useValue: bodyServializeInterceptor,
-                multi: true
-            }],
+            [
+                bodySerialize ? toProvider(token, bodySerialize, true) : {
+                    provide: token,
+                    useValue: browserBodyServializeInterceptor,
+                    multi: true
+                }
+            ],
             config
         );
     }
@@ -344,7 +345,7 @@ export interface ClientFeatureOptions {
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     guards?: ProvdierOf<GuardLike>[];
     timeout?: number;
-    bodySerialize?: boolean;
+    bodySerialize?: boolean | ProvdierOf<RequestInterceptorLike>;
     transfers?: TransferInterceptorFactory[];
     responseOptions?: {
         responseFactory?: ProvdierOf<ResponseFactory>;
@@ -371,7 +372,7 @@ export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatur
             features.push(withClientTimeout(opts.timeout)(config));
         }
         if (opts.bodySerialize) {
-            features.push(withBodySerialize()(config));
+            features.push(withBodySerialize(isBoolean(opts.bodySerialize) ? undefined : opts.bodySerialize)(config));
         }
 
         if (opts.responseOptions) {

@@ -4,6 +4,7 @@ import {
     RequestInterceptorFn, RequestContext, HeaderAdapter, IStream, StreamAdapter, Packet
 } from '@tsdi/common';
 import { defer, mergeMap } from 'rxjs';
+import { Buffer } from 'buffer';
 
 /**
  * Request body servialize interceptor
@@ -12,7 +13,7 @@ import { defer, mergeMap } from 'rxjs';
  * @param context 
  * @returns 
  */
-export const browserBodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any> & RequestSerialize, Packet> = (req: AbstractRequest<any> & RequestSerialize, next: RequestHandlerFn, context: RequestContext) => {
+export const bodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any> & RequestSerialize, Packet> = (req: AbstractRequest<any> & RequestSerialize, next: RequestHandlerFn, context: RequestContext) => {
     const streamAdapter = context.get(StreamAdapter);
     let body = req.serializeBody ? req.serializeBody(req.body) : serializeBody(streamAdapter, req.body);
     if (body == null) {
@@ -27,7 +28,8 @@ export const browserBodyServializeInterceptor: RequestInterceptorFn<AbstractRequ
         }
         if (!headerAdapter.hasContentLength(headers)) {
             if (isBlob(body)) {
-                body = await body.arrayBuffer();
+                const arrbuff = await body.arrayBuffer();
+                body = Buffer.from(arrbuff);
             } else if (streamAdapter.isFormDataLike(body)) {
                 if (isFormData(body)) {
                     const form = streamAdapter.createFormData();
@@ -62,7 +64,7 @@ function serializeBody(adapter: StreamAdapter, body: any): ArrayBuffer | IStream
     }
     // Check whether the body is already in a serialized form. If so,
     // it can just be returned directly.
-    if (isArrayBuffer(body) || adapter.isStream(body) || isBlob(body) || adapter.isFormDataLike(body) ||
+    if (isArrayBuffer(body) || Buffer.isBuffer(body) || adapter.isStream(body) || isBlob(body) || adapter.isFormDataLike(body) ||
         isUrlSearchParams(body) || isString(body)) {
         return body as any;
     }

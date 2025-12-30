@@ -34,6 +34,7 @@ export * from './StatusAdapter';
 export * from './stream';
 export * from './StreamAdapter';
 export * from './transfer';
+export * from './redirector';
 
 export * from './logger';
 export { LoggerInterceptor as LoggerFilter } from './logger';

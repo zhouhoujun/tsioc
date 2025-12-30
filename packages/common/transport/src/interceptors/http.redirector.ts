@@ -1,9 +1,12 @@
 /* eslint-disable no-case-declarations */
 import { ContextToken, ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
-import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader, BadRequestException, RequestContext, HeaderAdapter, StatusIncoming, RequestHandlerFn } from '@tsdi/common';
-import { StatusAdapter, StreamAdapter } from '@tsdi/common';
+import {
+    HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader,
+    BadRequestException, RequestContext, HeaderAdapter, StatusIncoming,
+     RequestHandlerFn, Redirector, StatusAdapter, StreamAdapter
+} from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { Redirector } from './redirector';
+
 
 
 @Injectable()
@@ -13,7 +16,7 @@ export class UrlRedirector implements Redirector<UrlRequest> {
         return !!res.headers && context.get(StatusAdapter)?.isRedirect(res.status ?? res.statusCode) === true;
     }
 
-    redirect(req: UrlRequest<any>, res: StatusIncoming, handler: RequestHandlerFn,  context: RequestContext): Observable<any> {
+    redirect(req: UrlRequest<any>, res: StatusIncoming, handler: RequestHandlerFn, context: RequestContext): Observable<any> {
         return new Observable((observer: Observer<any>) => {
             if (!req.url) return observer.error(new BadRequestException());
 
