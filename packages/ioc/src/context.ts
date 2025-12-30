@@ -1,4 +1,4 @@
-import { AbstractType, TypeOf } from './types';
+import { AbstractType } from './types';
 import { InjectFlags, Token, TokenOf } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';

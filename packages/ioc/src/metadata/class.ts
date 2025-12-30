@@ -1,8 +1,8 @@
-import { AbstractType, TypeOf } from '../types';
+import { AbstractType } from '../types';
 import { Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata } from './meta';
 import { InvocationOptions, InvokeOptions } from '../context';
-import { Token } from '../tokens';
+import { Token, TokenOf } from '../tokens';
 import { getResolver, ResolveContext, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign, getParentType } from '../utils/lang';
 import { isArray, isFunction, isString } from '../utils/chk';
@@ -81,7 +81,7 @@ export class ClassRef<T = any> {
      *
      * @type {InstanceOf<ArgumentResolver>[]}
      */
-    get resolvers(): TypeOf<ResolveInterceptorLike>[] {
+    get resolvers(): TokenOf<ResolveInterceptorLike>[] {
         return this.annotation.resolvers!;
     }
     /**

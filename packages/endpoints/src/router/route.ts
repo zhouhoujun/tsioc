@@ -1,4 +1,4 @@
-import { Handler, HandlerFn, HandlerLike, Invocation, Token, token, AbstractType, TypeOf } from '@tsdi/ioc';
+import { Handler, HandlerFn, HandlerLike, Invocation, Token, token, AbstractType, TokenOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { Pattern, RequestMethod, Transport } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -97,7 +97,7 @@ export interface Route {
     /**
      * handler.
      */
-    handler?: TypeOf<Handler>;
+    handler?: TokenOf<Handler>;
 
     /**
      * handler.

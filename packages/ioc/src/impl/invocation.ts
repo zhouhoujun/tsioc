@@ -1,4 +1,4 @@
-import { AbstractType, TypeOf } from '../types';
+import { AbstractType } from '../types';
 import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvocationOptions, InvokeOptions } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';

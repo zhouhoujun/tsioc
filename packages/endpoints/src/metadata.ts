@@ -1,7 +1,8 @@
 import {
     isArray, isString, lang, AbstractType, TypeOf, createDecorator, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject,
-    AnnotationMetadata, Handler, Type, ActionType, getTypeName, isNumber, isDefined
+    AnnotationMetadata, Handler, Type, ActionType, getTypeName, isNumber, isDefined,
+    TokenOf
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor, createPayloadResolveInterceptors, MODEL_RESOLVERS } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
@@ -230,14 +231,14 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param {AbstractType<Router>} [parent] the middlewares for the route.
      */
-    (route: string, parent?: TypeOf<Router>): ClassDecorator;
+    (route: string, parent?: Exclude<TokenOf<Router>, string>): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
      * @param {AbstractType<CanHandle>[]} [guards] the guards for the route.
      */
-    (route: string, guards?: TypeOf<CanHandle>[]): ClassMethodDecorator;
+    (route: string, guards?: TokenOf<CanHandle>[]): ClassMethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -418,16 +419,15 @@ export interface Controller {
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {TypeOf<Router>} [parent] the middlewares for the route.
      */
     (route?: string, parent?: AbstractType<Router>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {TypeOf<GuardLike>[]} [guards] the guards for the route.
+     * @param {TokenOf<GuardLike>[]} [guards] the guards for the route.
      */
-    (route?: string, guards?: TypeOf<GuardLike>[]): ClassMethodDecorator;
+    (route?: string, guards?: TokenOf<GuardLike>[]): ClassMethodDecorator;
 
     /**
      * controller decorator. define the controller method as an route.

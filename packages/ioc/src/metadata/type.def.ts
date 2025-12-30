@@ -1,8 +1,8 @@
 import { InvokeOptions } from '../context';
 import { ModuleWithProviders, Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
-import { Token } from '../tokens';
-import { AbstractType, Annotation, AnnotationType, Type, TypeOf } from '../types';
+import { Token, TokenOf } from '../tokens';
+import { AbstractType, Annotation, AnnotationType, Type } from '../types';
 import { DecoratorFn, DecorDefine, RunableDefine } from './define';
 import { AnnotationMetadata, ParameterMetadata, PropertyMetadata } from './meta';
 
@@ -24,7 +24,7 @@ export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
     /**
      * resolvers for the type
      */
-    resolvers?: TypeOf<ResolveInterceptorLike>[];
+    resolvers?: TokenOf<ResolveInterceptorLike>[];
     /**
      * runnable defines.
      */

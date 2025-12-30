@@ -1,4 +1,4 @@
-import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isNumber, isType, token } from '@tsdi/ioc';
+import { Injector, InstanceOf, Provider, Token, TokenOf, isFunction, isType, token } from '@tsdi/ioc';
 import { PatternFormatter, Transport, defaultFormatter } from '@tsdi/common';
 import { InternalServerException } from '@tsdi/common';
 import { Routes } from './route';
@@ -67,7 +67,7 @@ export function createRouteProviders(config: ServiceConfig, token?: Token<Router
 
 
 export interface RouteOpts {
-    formatter?: TypeOf<PatternFormatter>;
+    formatter?: TokenOf<PatternFormatter>;
     microservice?: boolean;
     prefix?: string;
     options?: Partial<TrieOptions>;

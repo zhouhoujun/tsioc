@@ -1,9 +1,9 @@
 import {
     isUndefined, AbstractType, createDecorator, InjectableMetadata, PropertyMetadata, InjectFlags,
     MethodPropDecorator, Token, ArgumentException, object2string, InvokeOptions, ActionType,
-    isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
+    isString, Parameter, createParamDecorator, TokenOf, isNil, UseAsStatic, isFunction,
     ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata, Invocation,
-    InjectUtil, StaticProvider
+    InjectUtil, StaticProvider    
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -687,7 +687,7 @@ export interface TransportParameterDecorator {
  */
 export const Payload: TransportParameterDecorator = createParamDecorator('Payload', {
     actionType: ActionType.inject,
-    props: (field: string, pipe?: { pipe: string | TypeOf<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    props: (field: string, pipe?: { pipe: string | TokenOf<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
             meta.flags |= InjectFlags.Request;

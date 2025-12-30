@@ -1,6 +1,6 @@
 import {
     Type, composeHandlers, DecorDefine, Exception, getClassRef, HandlerFn, hasProps, Injector, Invocation,
-    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
+    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TokenOf, isToken
 } from '@tsdi/ioc';
 import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext } from '@tsdi/common';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -275,7 +275,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     protected parse(route: Route): HandlerFn | undefined {
         if (route.handler) {
             let handler: RequestHandler;
-            if (isFunction(route.handler)) {
+            if (isToken(route.handler)) {
                 if (isType(route.handler) && !this.injector.has(route.handler)) {
                     this.injector.getInject().register(route.handler);
                 }
@@ -410,7 +410,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
 
 
-function handlerEquals(r1: TypeOf<RequestHandler>, r2: TypeOf<RequestHandler>) {
+function handlerEquals(r1: TokenOf<RequestHandler>, r2: TokenOf<RequestHandler>) {
     return r1 === r2 ||
         (r1 instanceof RouteHandler
             && r2 instanceof RouteHandler
