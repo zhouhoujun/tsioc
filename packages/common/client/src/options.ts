@@ -33,8 +33,6 @@ export interface ClientConfig<
     //  */
     // backend?: Token<ClientBackend> | ClientBackend;
     formatter?: Token<PatternFormatter>;
-
-    responseFactory?: ProvdierOf<ResponseFactory>;
     /**
      * as default client or not.
      */

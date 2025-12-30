@@ -3,7 +3,6 @@ import { Filter, FilterFn, FilterHandlerResolver } from '@tsdi/core';
 import { catchError, Observable, throwError } from 'rxjs';
 import { RequestContext } from './context';
 import { RequestHandler } from './handler';
-import { RequestInterceptorFn } from './interceptor';
 
 
 /**

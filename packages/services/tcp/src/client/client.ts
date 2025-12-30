@@ -123,8 +123,6 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
 
-    config.responseFactory ??= DefaultResponseFactory;
-
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({

@@ -80,7 +80,7 @@ export enum Transport {
      * Constrained Application Protocol
      * 受限应用协议 ，是一种专门为物联网（IoT）中的受限设备和网络设计的应用层协议
      * 
-     * https://kafka.apache.org/protocol
+     * https://guide.coap.online/
      */
     CoAP,
     /**

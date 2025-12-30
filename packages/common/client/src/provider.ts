@@ -3,12 +3,13 @@ import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, useSimpleJson,
     UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike,
-    ResponseFactory
+    ResponseFactory, DefaultResponseFactory, RequestInterceptorFn
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
+import { map } from 'rxjs';
 
 
 
@@ -30,8 +31,9 @@ export enum ClientFeatureKind {
     Redirector,
     BodySerialize,
     Fetch,
-    Transport,
-    Transfer
+    ResponseEvent,
+    Transfer,
+    Transport
 }
 
 
@@ -75,13 +77,6 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
     transports.forEach(ts => {
         const kinds = new Map<ClientFeatureKind, Provider[]>();
         const config = ts.config as ClientConfig & TransportConfig;
-        if (config.responseFactory) {
-            if(!config.providers) {
-                config.providers = [];
-            }
-            config.providers.push(toProvider(ResponseFactory, config.responseFactory))
-        }
-
         allFeatures.forEach(f => {
             if ((f as ClientTransportFeature).kind === ClientFeatureKind.Transport) {
                 return;
@@ -152,6 +147,41 @@ export function withClientInterceptors(
     }
 }
 
+export const responseInterceptor: RequestInterceptorFn = (req, next, context) => {
+    return next(req, context)
+        .pipe(
+            map(r => {
+                const factory = context.get(ResponseFactory);
+                if (factory) return factory.create(r);
+                return r;
+            })
+        )
+}
+
+export function withResponseEvent(options?: {
+    responseFactory?: ProvdierOf<ResponseFactory>;
+    interceptors?: ProvdierOf<RequestInterceptorLike>[]
+}): ClientFeatureFn<ClientFeatureKind.ResponseEvent> {
+    return (config) => {
+        const token = getClientInterceptorsToken(config);
+        const responseFactory = options?.responseFactory ?? DefaultResponseFactory;
+
+        if (!config.providers) {
+            config.providers = [];
+        }
+        config.providers.push(toProvider(ResponseFactory, responseFactory))
+
+
+        return makeClientFeature(
+            ClientFeatureKind.ResponseEvent,
+            [
+                { provide: token, useValue: responseInterceptor, multi: true },
+                options?.interceptors?.map((u) => toProvider(token, u, true)) ?? [],
+            ],
+            config
+        );
+    }
+}
 
 /**
  * Adds one or more client transfers interceptors to the configuration of the `Client`
@@ -297,6 +327,10 @@ export interface ClientFeatureOptions {
     timeout?: number;
     bodySerialize?: boolean;
     transfers?: TransferInterceptorFactory[];
+    responseOptions?: {
+        responseFactory?: ProvdierOf<ResponseFactory>;
+        interceptors?: ProvdierOf<RequestInterceptorLike>[]
+    }
 }
 
 export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> {
@@ -319,6 +353,9 @@ export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatur
         if (opts.bodySerialize) {
             features.push(withBodySerialize()(config));
         }
+
+        features.push(withResponseEvent(opts.responseOptions)(config))
+
         if (opts.transfers) {
             features.push(withClientTransfers(...opts.transfers)(config))
         }

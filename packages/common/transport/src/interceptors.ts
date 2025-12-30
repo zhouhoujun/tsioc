@@ -1,7 +1,11 @@
 
 import { ArgumentException, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { AbstractRequest, createRequestContext, Events, IDuplex, Packet, PACKET_ID, PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn, RequestInterceptorFn, ResponseFactory, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket } from '@tsdi/common';
+import {
+    AbstractRequest, createRequestContext, Events, IDuplex, Packet, PACKET_ID,
+    PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn,
+    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket
+} from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of, throwError } from 'rxjs';
 import { PACKET_LENGTH, SOCKET } from './context';
@@ -21,12 +25,7 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                 filter(res => {
                     return res && res.id == id;
                 }),
-                req.observe !== 'observe' ? take(1) : map(r => r),
-                map(r => {
-                    const factory = context.get(ResponseFactory);
-                    if (factory) return factory.create(r);
-                    return r;
-                })
+                req.observe !== 'observe' ? take(1) : map(r => r)
             );
     } : (req, next, context) => {
         let id: string | number;
@@ -83,8 +82,8 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
     let handle: RequestHandlerFn;
     return config.side === TransferSide.client ? (req, next, context) => {
         if (!options.eventName) return next(req, context);
-        if(!handle) handle = createSendMessageBackend(options.eventName);
-        return handle(req, context);        
+        if (!handle) handle = createSendMessageBackend(options.eventName);
+        return handle(req, context);
 
     } : (socket, next, context) => {
         return fromEvent(socket, options.eventName ?? Events.DATA).pipe(
