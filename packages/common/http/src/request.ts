@@ -2,6 +2,7 @@ import { isString, isUndefined, isNil } from '@tsdi/ioc';
 import {
     DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS,
     HeadersLike, HeaderMappings, RequestParams, UrlRequest, appendUrlParams, RequestContext,
+    JsonFormatOptions,
 } from '@tsdi/common';
 import { HttpParams } from './params';
 
@@ -412,21 +413,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
     }
 
-    serialize(ignores?: string[]): Record<string, any> {
-        const obj = this.toRecord();
-        if (!ignores) return obj;
-
-        const record = {} as Record<string, any>;
-        for (const n in obj) {
-            if (ignores.indexOf(n) < 0
-                && !isNil(obj[n])) {
-                record[n] = obj[n];
-            }
-        }
-        return record;
-    }
-
-    protected toRecord(): Record<string, any> {
+    toJson(options?: JsonFormatOptions): Record<string, any> {
         const rcd = {} as Record<string, any>;
         if (this.id) {
             rcd.id = this.id;
@@ -435,7 +422,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
             rcd.headers = this.headers.getHeaders();
         }
         if (!isNil(this.payload)) {
-            rcd.payload = this.payload;
+            rcd[options?.payloadKey ?? 'body'] = this.payload;
         }
         if (this.method) rcd.method = this.method;
         // rcd.withCredentials = this.withCredentials;

@@ -28,7 +28,7 @@ export interface PacketOptions extends TransferOptions {
 
 const requestMapping = (req: any, context: RequestContext) => {
     if (req instanceof AbstractRequest) {
-        return req.toJson(context.get(PatternFormatter))
+        return req.toJson({ formatter: context.get(PatternFormatter) })
     }
     return req;
 }

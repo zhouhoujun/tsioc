@@ -132,8 +132,24 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
     abstract clone<V>(update: RequestCloneOpts<V, TOptions>): AbstractRequest<V>;
     abstract clone(update: RequestCloneOpts<T, TOptions>): AbstractRequest<T>;
 
-    abstract toJson(formatter?: PatternFormatter, payloadKey?: 'body' | 'payload'): Record<string, any>;
+    /**
+     * parse request to simple json.
+     * @param optoions json format options
+     * @returns 
+     */
+    abstract toJson(optoions?: JsonFormatOptions): Record<string, any>;
 
+}
+
+export interface JsonFormatOptions {
+    /**
+     * pattern formatter.
+     */
+    formatter?: PatternFormatter;
+    /**
+     * payload key. default is 'body'.
+     */
+    payloadKey?: 'body' | 'payload';
 }
 
 
@@ -377,11 +393,10 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
 
     /**
      * parse request to simple json.
-     * @param formatter pattern formatter.
-     * @param payloadKey payload key. default is 'body'.
+     * @param optoions json format options
      * @returns 
      */
-    toJson(formatter?: PatternFormatter, payloadKey: 'body' | 'payload' = 'body'): Record<string, any> {
+    toJson(optoions?: JsonFormatOptions): Record<string, any> {
         const json: Record<string, any> = {
             url: this.getUrlWithParams()
         };
@@ -389,13 +404,13 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
             json.id = this.id;
         }
         if (this.pattern) {
-            json.pattern = formatter ? formatter.format(this.pattern) : this.pattern;
+            json.pattern = optoions?.formatter ? optoions.formatter.format(this.pattern) : this.pattern;
         }
         if (this.headers.size) {
             json.headers = this.headers.getHeaders();
         }
         if (!isNil(this.body)) {
-            json[payloadKey] = this.body;
+            json[optoions?.payloadKey ?? 'body'] = this.body;
         }
 
         return json;
@@ -419,11 +434,10 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
 
     /**
      * parse request to simple json.
-     * @param formatter pattern formatter.
-     * @param payloadKey payload key. default is 'body'.
+     * @param optoions json format options
      * @returns 
      */
-    toJson(formatter?: PatternFormatter, payloadKey: 'body' | 'payload' = 'body'): Record<string, any> {
+    toJson(options?: JsonFormatOptions): Record<string, any> {
         const json: Record<string, any> = {
             topic: this.topic,
             responseTopic: this.responseTopic
@@ -432,13 +446,13 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
             json.id = this.id;
         }
         if (this.pattern) {
-            json.pattern = formatter ? formatter.format(this.pattern) : this.pattern;
+            json.pattern = options?.formatter ? options.formatter.format(this.pattern) : this.pattern;
         }
         if (this.headers.size) {
             json.headers = this.headers.getHeaders();
         }
         if (!isNil(this.body)) {
-            json[payloadKey] = this.body;
+            json[options?.payloadKey ?? 'body'] = this.body;
         }
 
         return json;
