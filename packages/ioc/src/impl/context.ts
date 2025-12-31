@@ -22,7 +22,7 @@ import { isToken } from '../utils/token';
  */
 export class DefaultInvocationContext<TParent extends Injector = Injector> extends AbstractInjector<TParent> implements InvocationContext<TParent> {
 
-    readonly isStatic = true;
+    readonly isStatic: boolean = true;
     @nonEnumerable
     protected _refs: InvocationContext[] | null;
     private _injected = false;

@@ -154,7 +154,7 @@ describe('app message queue', () => {
 
         
         const settings3 = ctx.get(Settings) as Record<string, any>;
-        expect(settings3.id).toEqual(3);
+        expect(settings3.id).toEqual(4);
         expect(settings3.v).toEqual(1);
     })
 

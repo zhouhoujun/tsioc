@@ -22,7 +22,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
 
     private _multicaster: ApplicationEventMulticaster;
     exit = true;
-    // protected isStatic = false;
+    readonly isStatic = false;
     private _runners: ApplicationRunners;
 
     constructor(parent: ModuleRef, options: EnvironmentOption = {}) {

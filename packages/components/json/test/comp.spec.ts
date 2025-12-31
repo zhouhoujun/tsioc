@@ -6,7 +6,7 @@ import { ExampleComponent, AppComponent, AppComponent2, FieldComponet, TextCompo
 import { JsonTemplateModule, JsonTemplateParser, JsonRenderer, JsonElement, JsonNode } from '../src';
 
 @Suite('JSON Component Tests')
-export class CTest {
+export class C1Test {
 
     ctx!: ApplicationContext;
 

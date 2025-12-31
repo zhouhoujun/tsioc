@@ -39,7 +39,7 @@ export class AppComponent implements OnInit {
 })
 export class AppComponent2 implements OnInit {
   onInit(): void {
-    throw new Error('Method not implemented.');
+    // throw new Error('Method not implemented.');
   }
   label?: string;
   value?: string;

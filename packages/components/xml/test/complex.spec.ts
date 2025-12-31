@@ -6,7 +6,7 @@ import { ComplexComponent, FieldComponet } from './app';
 import { XmlTemplateModule } from '../src';
 
 @Suite('XML computed Test')
-export class CTest {
+export class ComplexTest {
 
     ctx!: ApplicationContext;
 

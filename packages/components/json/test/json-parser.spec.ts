@@ -24,7 +24,7 @@ export class JsonParserTest {
 
     @Test('can parse empty JSON object')
     async testParseEmptyObject() {
-        const jsonTemplate = '{}';
+        const jsonTemplate = {};
         const nodes = this.parser.parse(jsonTemplate, this.ctx);
         expect(nodes).toBeDefined();
         expect(nodes.length).toBe(0);
@@ -32,16 +32,10 @@ export class JsonParserTest {
 
     @Test('can parse JSON array of nodes')
     async testParseNodeArray() {
-        const jsonTemplate = JSON.stringify([
-            {
-                tagName: 'div',
-                textContent: 'First div'
-            },
-            {
-                tagName: 'p',
-                textContent: 'Paragraph'
-            }
-        ]);
+        const jsonTemplate = {
+            div: 'First div',
+            p: 'Paragraph'
+        };
 
         const nodes = this.parser.parse(jsonTemplate, this.ctx);
         expect(nodes).toBeDefined();
@@ -52,37 +46,17 @@ export class JsonParserTest {
 
     @Test('can parse nested JSON structure')
     async testParseNestedStructure() {
-        const jsonTemplate = JSON.stringify({
-            tagName: 'div',
-            attrs: {
-                class: 'container'
-            },
-            children: [
-                {
-                    tagName: 'header',
-                    children: [
-                        {
-                            tagName: 'h1',
-                            textContent: 'Nested Header'
-                        }
-                    ]
-                },
-                {
-                    tagName: 'main',
-                    children: [
-                        {
-                            tagName: 'section',
-                            children: [
-                                {
-                                    tagName: 'p',
-                                    textContent: 'Deeply nested content'
-                                }
-                            ]
-                        }
-                    ]
+        const jsonTemplate = {
+            div: {
+                '@class': 'container',
+                header: { h1: 'Nested Header' },
+                main: {
+                    section: {
+                        p: 'Deeply nested content'
+                    }
                 }
-            ]
-        });
+            }
+        };
 
         const nodes = this.parser.parse(jsonTemplate, this.ctx);
         expect(nodes).toBeDefined();
@@ -102,19 +76,17 @@ export class JsonParserTest {
 
     @Test('can parse JSON with comments')
     async testParseJsonWithComments() {
-        const jsonTemplate = JSON.stringify([
+        const jsonTemplate = [
             {
-                tagName: 'div',
-                textContent: 'Content before comment'
+                div: 'Content before comment'
             },
             {
-                comment: 'This is a JSON comment node'
+                '#comment': 'This is a JSON comment node'
             },
             {
-                tagName: 'div',
-                textContent: 'Content after comment'
+                div: 'Content after comment'
             }
-        ]);
+        ];
 
         const nodes = this.parser.parse(jsonTemplate, this.ctx);
         expect(nodes).toBeDefined();
@@ -126,28 +98,24 @@ export class JsonParserTest {
 
     @Test('can parse JSON with namespaced attributes')
     async testParseNamespacedAttributes() {
-        const jsonTemplate = JSON.stringify({
-            tagName: 'svg',
-            attrs: {
-                xmlns: {
+        const jsonTemplate = {
+            svg: {
+
+                '@xmlns': {
                     namespace: 'http://www.w3.org/2000/xmlns/',
                     value: 'http://www.w3.org/2000/svg'
                 },
-                width: '100',
-                height: '100'
-            },
-            children: [
-                {
-                    tagName: 'circle',
-                    attrs: {
-                        cx: '50',
-                        cy: '50',
-                        r: '40',
-                        fill: 'red'
-                    }
+                '@width': '100',
+                '@height': '100',
+                '@viewBox': '0 0 100 100',
+                circle: {
+                    '@cx': '50',
+                    '@cy': '50',
+                    '@r': '40',
+                    '@fill': 'red'
                 }
-            ]
-        });
+            }
+        };
 
         const nodes = this.parser.parse(jsonTemplate, this.ctx);
         expect(nodes).toBeDefined();
