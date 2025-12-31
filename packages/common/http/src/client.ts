@@ -446,7 +446,7 @@ export class HttpClient {
             })
         }
 
-        const context = options.context ?? createRequestContext(this.injector, [[HttpClient, this]]);
+        const context = options.context ?? createRequestContext(this.injector);
 
         // Start with an Observable.of() the initial request, and run the handler (which
         // includes all interceptors) inside a concatMap(). This way, the handler runs

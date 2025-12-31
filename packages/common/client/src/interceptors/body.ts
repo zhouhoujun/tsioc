@@ -1,9 +1,10 @@
 import { isNil, isString } from '@tsdi/ioc';
 import {
     isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RequestParams, AbstractRequest, RequestHandlerFn,
-    RequestInterceptorFn, RequestContext, HeaderAdapter, IStream, StreamAdapter, Packet
+    RequestInterceptorFn, RequestContext, HeaderAdapter, IStream, StreamAdapter, Packet, ContentType
 } from '@tsdi/common';
 import { defer, mergeMap } from 'rxjs';
+import { Buffer } from 'buffer';
 
 /**
  * Request body servialize interceptor
@@ -12,7 +13,7 @@ import { defer, mergeMap } from 'rxjs';
  * @param context 
  * @returns 
  */
-export const browserBodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any> & RequestSerialize, Packet> = (req: AbstractRequest<any> & RequestSerialize, next: RequestHandlerFn, context: RequestContext) => {
+export const bodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any> & RequestSerialize, Packet> = (req: AbstractRequest<any> & RequestSerialize, next: RequestHandlerFn, context: RequestContext) => {
     const streamAdapter = context.get(StreamAdapter);
     let body = req.serializeBody ? req.serializeBody(req.body) : serializeBody(streamAdapter, req.body);
     if (body == null) {
@@ -21,13 +22,16 @@ export const browserBodyServializeInterceptor: RequestInterceptorFn<AbstractRequ
     return defer(async () => {
         let headers = req.headers;
         const headerAdapter = context.get(HeaderAdapter);
-        const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : detectContentTypeHeader(streamAdapter, req.body);
-        if (!headerAdapter.hasContentType(headers) && contentType) {
-            headers = headerAdapter.setContentType(headers, contentType);
+        if (!headerAdapter.hasContentType(headers)) {
+            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : detectContentTypeHeader(streamAdapter, req.body);
+            if (!contentType) {
+                headers = headerAdapter.setContentType(headers, contentType);
+            }            
         }
         if (!headerAdapter.hasContentLength(headers)) {
             if (isBlob(body)) {
-                body = await body.arrayBuffer();
+                const arrbuff = await body.arrayBuffer();
+                body = Buffer.from(arrbuff);
             } else if (streamAdapter.isFormDataLike(body)) {
                 if (isFormData(body)) {
                     const form = streamAdapter.createFormData();
@@ -62,7 +66,7 @@ function serializeBody(adapter: StreamAdapter, body: any): ArrayBuffer | IStream
     }
     // Check whether the body is already in a serialized form. If so,
     // it can just be returned directly.
-    if (isArrayBuffer(body) || adapter.isStream(body) || isBlob(body) || adapter.isFormDataLike(body) ||
+    if (isArrayBuffer(body) || Buffer.isBuffer(body) || adapter.isStream(body) || isBlob(body) || adapter.isFormDataLike(body) ||
         isUrlSearchParams(body) || isString(body)) {
         return body as any;
     }
@@ -101,24 +105,27 @@ function detectContentTypeHeader(adapter: StreamAdapter, body: any): string | nu
     if (isBlob(body)) {
         return body.type || null
     }
+    if (adapter.isStream(body)) {
+        return ContentType.OCTET_STREAM
+    }
     // Array buffers have unknown contents and thus no type can be inferred.
-    if (isArrayBuffer(body)) {
+    if (isArrayBuffer(body) || Buffer.isBuffer(body)) {
         return null
     }
     // Technically, strings could be a form of JSON data, but it's safe enough
     // to assume they're plain strings.
     if (isString(body)) {
-        return 'text/plain'
+        return ContentType.TEXT_PLAIN
     }
     // `HttpUrlEncodedParams` has its own content-type.
     if (body instanceof RequestParams) {
-        return 'application/x-www-form-urlencoded;charset=UTF-8'
+        return ContentType.X_WWW_FORM_URLENCODED
     }
     // Arrays, objects, boolean and numbers will be encoded as JSON.
     const type = typeof body;
     if (type === 'object' || type === 'number' ||
         type === 'boolean') {
-        return 'application/json'
+        return ContentType.APPL_JSON
     }
     // No type could be inferred.
     return null

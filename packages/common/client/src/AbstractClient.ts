@@ -1,6 +1,6 @@
 import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, PAYLOAD_KEY } from '@tsdi/common';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, PAYLOAD_KEY, StreamAdapter } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 
@@ -315,6 +315,14 @@ export abstract class AbstractClient<
                             // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
                                 throw new Exception('Response is not a Blob.')
+                            }
+                            return res.body
+                        }));
+                    case 'stream':
+                        return res$.pipe(map((res: Response<any>) => {
+                            // Validate that the body is a ReadableStream.
+                            if (res.body !== null && !(this.context.get(StreamAdapter).isReadable(res.body))) {
+                                throw new Exception('Response is not a ReadableStream.')
                             }
                             return res.body
                         }));

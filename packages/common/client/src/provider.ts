@@ -6,7 +6,7 @@ import {
     ResponseFactory, DefaultResponseFactory, Redirector, redirectInterceptor
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
-import { browserBodyServializeInterceptor } from './interceptors/body';
+import { bodyServializeInterceptor } from './interceptors/body';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { ClientConfig } from './options';
 import { responseInterceptor } from './interceptors/response';
@@ -272,13 +272,13 @@ export function withClientTimeout(timeout?: number): ClientFeatureFn<ClientFeatu
  */
 export function withBodySerialize(bodySerialize?: ProvdierOf<RequestInterceptorLike>): ClientFeatureFn<ClientFeatureKind.BodySerialize> {
     return (config) => {
-        const token = getClientInterceptorsToken(config)
+        const token = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.BodySerialize,
             [
                 bodySerialize ? toProvider(token, bodySerialize, true) : {
                     provide: token,
-                    useValue: browserBodyServializeInterceptor,
+                    useValue: bodyServializeInterceptor,
                     multi: true
                 }
             ],

@@ -1,6 +1,7 @@
 import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
 import { global, IPipeDestination, IReadable, isFormData } from '@tsdi/common';
 import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions } from '@tsdi/common';
+import { Buffer } from 'buffer';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import { EventEmitter } from 'pumpify';
 import * as pumpify from 'pumpify';

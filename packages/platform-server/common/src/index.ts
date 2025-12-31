@@ -1,1 +1,1 @@
-export * from './endpoint.module';
+export * from './module';

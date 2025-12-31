@@ -7,4 +7,4 @@ export * from './params';
 export * from './request';
 export * from './response';
 export * from './client';
-export * from './client.module';
+export * from './module';
