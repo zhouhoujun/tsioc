@@ -1,4 +1,4 @@
-import { Module } from '@tsdi/ioc';
+import { Module, Runtime } from '@tsdi/ioc';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
 import { ReactiveEffect } from './ReactiveEffect';
@@ -20,8 +20,8 @@ import { TemplateOutletDirective } from './directives/template-outlet.dir';
  */
 @Module({
     providers: [
-        { provide: ComponentFactory, useClass: ComponentFactoryImpl },
-        { provide: DirectiveFactory, useClass: DirectiveFactoryImpl },
+        { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
+        { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
         { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
     ],
     exports: [

@@ -34,7 +34,7 @@ export interface Computed {
      * Computed decorator with metadata
      * @param metadata computed metadata
      */
-    <T>(metadata: Omit<ComputedMetadata<T>, 'propertyKey'| 'mutil'>): MethodPropDecorator;
+    <T>(metadata: Omit<ComputedMetadata<T>, 'propertyKey'| 'mutil'|'target'>): MethodPropDecorator;
 }
 
 /**

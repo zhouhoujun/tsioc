@@ -85,7 +85,7 @@ export interface ProvidersMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface PropertyMetadata<T = any> extends Omit<Parameter<T>, 'name'>  {
+export interface PropertyMetadata<T = any> extends Omit<Parameter<T>, 'name'> {
     /**
      * property type
      *

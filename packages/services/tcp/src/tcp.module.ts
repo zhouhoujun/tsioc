@@ -1,5 +1,5 @@
 import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
-import { Transport } from '@tsdi/common';
+import { TransferSide, Transport } from '@tsdi/common';
 import { CLIENT_CONFIGS, provideClientFromDi } from '@tsdi/common/client';
 import { provideServiceFromDi, SERVICE_CONFIGS } from '@tsdi/endpoints';
 
@@ -17,8 +17,10 @@ import { tcpClientTransportFacotry } from './client/client';
 })
 export class TcpClientModule {
 
-    static withOptions(...options: TcpClientOptions[]): ModuleWithProviders<TcpClientModule> {
+    static withOptions(...options: Partial<TcpClientOptions>[]): ModuleWithProviders<TcpClientModule> {
         const providers = options.map(r => {
+            r.transport = Transport.TCP;
+            r.side = TransferSide.client;
             if (!r.transportFeature) r.transportFeature = tcpClientTransportFacotry;
             return { provide: CLIENT_CONFIGS, useValue: options, multi: true } as Provider
         });
@@ -37,8 +39,10 @@ export class TcpClientModule {
 })
 export class TcpModule {
 
-    static withOptions(...options: TcpServOptions[]): ModuleWithProviders<TcpModule> {
+    static withOptions(...options: Partial<TcpServOptions>[]): ModuleWithProviders<TcpModule> {
         const providers = options.map(r => {
+            r.transport = Transport.TCP;
+            r.side = TransferSide.server;
             if (!r.transportFeature) r.transportFeature = tcpTransportFactory;
             return { provide: SERVICE_CONFIGS, useValue: options, multi: true } as Provider
         });

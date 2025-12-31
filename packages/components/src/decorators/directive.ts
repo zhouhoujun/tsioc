@@ -51,7 +51,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             }
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
             // def.states = typeRef.getDefines(State).map(d => d as StateMetadata);
-            def.attributes = typeRef.getDefines(Attribute).map(d => d as AttributeMetadata);
+            def.attributes = typeRef.getDefines(Attribute).map(d => d.metadata as AttributeMetadata);
         }
     },
     design: {

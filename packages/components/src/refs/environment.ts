@@ -29,7 +29,7 @@ export class EnvironmentState {
  * Environment context
  */
 
-export class EnvironmentContext extends DefaultInvocationContext<EnvironmentContext> {
+export class EnvironmentContext extends DefaultInvocationContext {
 
     // 私有属性用于存储引用映射
     private state = new EnvironmentState();
@@ -37,6 +37,10 @@ export class EnvironmentContext extends DefaultInvocationContext<EnvironmentCont
 
     protected override afterInit(): void {
         this.setValue(EnvironmentState, this.state);
+    }
+
+    getParentContext(): EnvironmentContext | null {
+        return this._parent instanceof EnvironmentContext ? this._parent : null;
     }
 
     // /**
@@ -100,7 +104,7 @@ export class EnvironmentContext extends DefaultInvocationContext<EnvironmentCont
      * @param componentType component type.
      */
     getComponentRef<T>(componentType: Type<T>): ComponentRef<T>[] {
-        const results: ComponentRef<T>[] = this._parent?.getComponentRef(componentType) ?? [];
+        const results: ComponentRef<T>[] = this.getParentContext()?.getComponentRef(componentType) ?? [];
         this.state.componentRefs.forEach(ref => {
             if (ref.instance instanceof componentType) {
                 results.push(ref as ComponentRef<T>);
@@ -114,7 +118,7 @@ export class EnvironmentContext extends DefaultInvocationContext<EnvironmentCont
      * @param node element.
      */
     getComponentRefByNode(node: RNode): ComponentRef<any> | null {
-        return this.state.componentRefs.get(node) ?? this._parent?.getComponentRefByNode(node) ?? null;
+        return this.state.componentRefs.get(node) ?? this.getParentContext()?.getComponentRefByNode(node) ?? null;
     }
 
     /**
@@ -122,7 +126,7 @@ export class EnvironmentContext extends DefaultInvocationContext<EnvironmentCont
      * @param componentType directive type.
      */
     getDirectiveRef<T>(componentType: Type<T>): DirectiveRef<T>[] {
-        const results: DirectiveRef<T>[] = this._parent?.getDirectiveRef(componentType) ?? [];
+        const results: DirectiveRef<T>[] = this.getParentContext()?.getDirectiveRef(componentType) ?? [];
         this.state.directiveRefs.forEach(refs => {
             refs.forEach(ref => {
                 if (ref.instance instanceof componentType) {
@@ -139,7 +143,7 @@ export class EnvironmentContext extends DefaultInvocationContext<EnvironmentCont
      */
     getDirectiveRefByNode(node: RNode): DirectiveRef<any> | null {
         const refs = this.state.directiveRefs.get(node);
-        return refs && refs.length > 0 ? refs[0] : this._parent?.getDirectiveRefByNode(node) ?? null;
+        return refs && refs.length > 0 ? refs[0] : this.getParentContext()?.getDirectiveRefByNode(node) ?? null;
     }
 
     /**
@@ -147,7 +151,7 @@ export class EnvironmentContext extends DefaultInvocationContext<EnvironmentCont
      * @param node template element.
      */
     getTemplateRef<T>(node: RNode): TemplateRef<T> | null {
-        return this.state.templateRefs.get(node) ?? this._parent?.getTemplateRef(node) ?? null;
+        return this.state.templateRefs.get(node) ?? this.getParentContext()?.getTemplateRef(node) ?? null;
     }
 
     /**
@@ -162,7 +166,7 @@ export class EnvironmentContext extends DefaultInvocationContext<EnvironmentCont
         if (!this.state.elementRefs.has(node)) {
             this.state.elementRefs.set(node, new ElementRef(node));
         }
-        return this.state.elementRefs.get(node) ?? this._parent?.getElementRef(node) ?? this.createElementRef(node);
+        return this.state.elementRefs.get(node) ?? this.getParentContext()?.getElementRef(node) ?? this.createElementRef(node);
     }
 
     createElementRef<T extends RNode>(node: T): ElementRef<T> {

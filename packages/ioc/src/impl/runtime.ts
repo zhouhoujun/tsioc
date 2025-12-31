@@ -31,6 +31,7 @@ export class DefaultRuntime extends DefaultContext implements Runtime {
     constructor(injector: Injector) {
         super()
         this.set(EnvironmentInjector, injector);
+        this.set(Runtime, this);
         this.set(INJECTORS, [injector]);
         this.set(DEFAULTA_RESOLVER, new DefaultResolver(getParameterResolveHanlder(this)));
         injector.onDestroy(this);
