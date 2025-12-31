@@ -345,7 +345,7 @@ export class JsonTemplateParser implements TemplateParser<Object> {
                     if (parent) {
                         parent.setAttribute(key, datan);
                     }
-                } else {
+                } else if(key) {
                     //node tag
                     const node = this.renderer.createElement(key);
                     if (parent) node.parentNode = parent;

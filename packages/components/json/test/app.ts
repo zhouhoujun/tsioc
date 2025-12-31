@@ -75,7 +75,11 @@ export class TextComponet {
   selector: 'app-example',
   template: {
     div: [
-      { h1: { '#text': '{{ title }}' } },
+      { 
+        h1: { 
+          '#text': '{{ title }}' 
+        }
+      },
       { p: { '#text': 'Count: {{ count }}' } },
       { input: { 'v-model': 'value' } },
       { p: { '#text': 'Value: {{ value }}' } },
