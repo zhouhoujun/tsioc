@@ -3,12 +3,11 @@ import { Attribute, Component, OnDestroy, OnInit } from '@tsdi/components';
 @Component({
   selector: 'app-root',
   template: {
-    $tag: 'div',
-    childNodes: [
-      { $tag: 'h1', '#text': '{{title}}' },
-      { $tag: 'button', '@click': 'handleClick', '#text': 'Click me' },
-      { $tag: 'p', ':class': '{active: isActive}', '#text': 'Status: {{status}}' }
-    ]
+    div: {
+      h1: { '#text': '{{title}}' },
+      button: { '@click': 'handleClick', '#text': 'Click me' },
+      p: { ':class': '{active: isActive}', '#text': 'Status: {{status}}' }
+    }
   }
 })
 export class AppComponent implements OnInit {
@@ -31,12 +30,11 @@ export class AppComponent implements OnInit {
 @Component({
   selector: 'app-comp',
   template: {
-    $tag: 'div',
-    childNodes: [
-      { $tag: 'Text', '[text]': "'Well come'" },
-      { $tag: 'Field', '#fie': true, '[label]': 'label', '[(value)]': 'value' },
-      { $tag: 'app-example' }
-    ]
+    div: {
+      Text: { '[text]': "'Well come'" },
+      Field: { '#fie': true, '[label]': 'label', '[(value)]': 'value' },
+      'app-example': {}
+    }
   }
 })
 export class AppComponent2 implements OnInit {
@@ -76,15 +74,14 @@ export class TextComponet {
 @Component({
   selector: 'app-example',
   template: {
-    $tag: 'div',
-    childNodes: [
-      { $tag: 'h1', '#text': '{{ title }}' },
-      { $tag: 'p', '#text': 'Count: {{ count }}' },
-      { $tag: 'input', 'v-model': 'value' },
-      { $tag: 'p', '#text': 'Value: {{ value }}' },
-      { $tag: 'button', '@click': 'increment', '#text': 'Increment' },
-      { $tag: 'button', '@click': 'clickWithData($event, item)', '#text': 'Increment' },
-      { $tag: 'p', '#text': 'Today: {{ today | date-format:\'yyyy-MM-dd\' }}' }
+    div: [
+      { h1: { '#text': '{{ title }}' } },
+      { p: { '#text': 'Count: {{ count }}' } },
+      { input: { 'v-model': 'value' } },
+      { p: { '#text': 'Value: {{ value }}' } },
+      { button: { '@click': 'increment', '#text': 'Increment' } },
+      { button: { '@click': 'clickWithData($event, item)', '#text': 'Increment' } },
+      { p: { '#text': 'Today: {{ today | date-format:\'yyyy-MM-dd\' }}' } }
     ]
   },
   styles: [
@@ -132,11 +129,11 @@ export class ExampleComponent implements OnInit, OnDestroy {
     a: '123',
     b: '456',
     c: '789',
-    childNodes:[
-      { $tag: 'Text', a: '123'},
-      { $tag: 'Text', a: '456'},
-      { $tag: 'Text', a: '789'},
-      { $tag: 'Field', a: '123'},
+    childNodes: [
+      { $tag: 'Text', a: '123' },
+      { $tag: 'Text', a: '456' },
+      { $tag: 'Text', a: '789' },
+      { $tag: 'Field', a: '123' },
     ]
   }
 })

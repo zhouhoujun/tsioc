@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { deepClone, Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
@@ -10,17 +10,15 @@ import { EventEmitter } from 'events';
 
 
 export class JsonNode implements RNode {
-
+    tagName?: string;
     get parentElement(): JsonElement | null {
         return this.parentNode instanceof JsonElement ? this.parentNode : null;
     }
 
     constructor(
         readonly nodeType: number,
-        readonly tagName?: string,
-        public textContent: string | null = null,
         public parentNode: JsonElement | null = null,
-        readonly childNodes: JsonNode[] = [],
+        public childNodes: JsonNode[] = [],
         public nextSibling: JsonNode | null = null) {
 
     }
@@ -48,8 +46,8 @@ export class JsonNode implements RNode {
             adapter: {
                 getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: JsonNode) => el.childNodes,
-                getName: (el: JsonElement) => el.tagName.toLowerCase(),
-                getText: (el: JsonNode) => el.textContent ?? '',
+                getName: (el: JsonElement) => el.tagName?.toLowerCase(),
+                getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
                 getParent: (el: JsonNode) => el.parentElement,
                 removeSubsets: (nodes: JsonNode[]) => nodes,
                 getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
@@ -65,8 +63,8 @@ export class JsonNode implements RNode {
             adapter: {
                 getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: JsonNode) => el.childNodes,
-                getName: (el: JsonElement) => el.tagName.toLowerCase(),
-                getText: (el: JsonNode) => el.textContent ?? '',
+                getName: (el: JsonElement) => el.tagName?.toLowerCase(),
+                getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
                 getParent: (el: JsonNode) => el.parentElement,
                 removeSubsets: (nodes: JsonNode[]) => nodes,
                 getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
@@ -79,14 +77,14 @@ export class JsonNode implements RNode {
 }
 
 export class JsonText extends JsonNode implements RText {
-    constructor(text: string) {
-        super(NodeType.Text, text)
+    constructor(public textContent: string) {
+        super(NodeType.Text)
     }
 }
 
 export class JsonComment extends JsonNode implements RComment {
-    constructor(text: string) {
-        super(NodeType.Comment, text)
+    constructor(public textContent: string) {
+        super(NodeType.Comment)
     }
 }
 
@@ -140,11 +138,14 @@ export class JsonElement extends JsonNode implements RElement {
         readonly className: string = '',
         nodeType: number = NodeType.Element,
         parentNode: JsonElement | null = null,
-        childNodes: JsonNode[] = [],
-        nextSibling: JsonNode | null = null,
-        textContent: string | null = null) {
-        super(nodeType, tagName, textContent, parentNode, childNodes, nextSibling)
+        readonly childNodes: JsonNode[] = [],
+        nextSibling: JsonNode | null = null) {
+        super(nodeType, parentNode, childNodes, nextSibling)
 
+    }
+
+    get textContent(): string | null {
+        return this.childNodes.filter(r => r.nodeType === NodeType.Text && (r as JsonText).textContent).map(r => (r as JsonText).textContent).join(' ') ?? null;
     }
 
 
@@ -286,22 +287,24 @@ export class JsonRenderer implements Renderer {
     }
 
 }
+const comment = '#comment';
+const textContent = '#text';
 
 
 // XML模板解析器实现示例
 @Injectable()
-export class JsonTemplateParser implements TemplateParser {
+export class JsonTemplateParser implements TemplateParser<Object> {
     constructor(
         private renderer: JsonRenderer
     ) { }
 
-    parse(template: string, environment: InvocationContext): JsonNode[] {
-        const jsonObj = JSON.parse(template);
+    parse(template: Object, environment: InvocationContext): JsonNode[] {
+        const jsonObj = deepClone(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
     }
 
-    private convertToNodes(jsonObj: any): JsonNode[] {
+    private convertToNodes(jsonObj: any, parent?: JsonElement): JsonNode[] {
         // 实现JSON到节点的转换逻辑
         // Handle text nodes
         if (typeof jsonObj === 'string') {
@@ -311,7 +314,7 @@ export class JsonTemplateParser implements TemplateParser {
 
         // 处理数组节点
         if (Array.isArray(jsonObj)) {
-            return jsonObj.flatMap(item => this.convertToNodes(item));
+            return jsonObj.flatMap(item => this.convertToNodes(item, parent));
         }
 
         // 处理对象节点
@@ -323,58 +326,99 @@ export class JsonTemplateParser implements TemplateParser {
             // - 属性存储在attrs对象中
             // - 子节点存储在children数组中
 
+            const keys = Object.keys(jsonObj);
+
+
+            // 处理子节点
+            const childNodes: any[] = [];
+            // 设置属性
+            for (const key of keys) {
+                const datan = jsonObj[key];
+                // #text
+                if (keys[0] == textContent) {
+                    childNodes.push(this.renderer.createText(jsonObj[textContent]));
+                } else if (keys[0] === comment) {  // #comment
+                    childNodes.push(this.renderer.createComment(jsonObj[comment]));
+                }
+                //attrs
+                if (key.startsWith('@') || key.startsWith('#') || key.startsWith(':') || key.startsWith('[') || key.startsWith('v-')) {
+                    if (parent) {
+                        parent.setAttribute(key, datan);
+                    }
+                } else {
+                    //node tag
+                    const node = this.renderer.createElement(key);
+                    if (parent) node.parentNode = parent;
+                    const children = this.convertToNodes(datan, node);
+                    node.childNodes.push(...children);
+                    childNodes.push(node);
+
+                }
+            }
+
+            // // 处理文本内容
+            // if ('#text' in jsonObj) {
+            //     node.textContent = jsonObj['#text'];
+            // }
+
+            // 递归转换子节点
+            // node.childNodes.push(...childNodes.flatMap(child => this.convertToNodes(child)));
+            // 设置父节点引用
+            // node.childNodes.forEach(child => child.parentNode = node);
+
             // 处理注释节点
-            if ('comment' in jsonObj) {
-                return [this.renderer.createComment(jsonObj.comment)];
-            }
+            // if (comment in jsonObj) {
+            //     return [this.renderer.createComment(jsonObj[comment])];
+            // }
 
-            // 处理文本节点
-            if ('textContent' in jsonObj && !('tagName' in jsonObj)) {
-                return [this.renderer.createText(jsonObj.textContent)];
-            }
+            // // 处理文本节点
+            // if (textContent in jsonObj && !(tagName in jsonObj)) {
+            //     return [this.renderer.createText(jsonObj[textContent])];
+            // }
 
-            // 处理元素节点
-            if ('tagName' in jsonObj) {
-                const node = this.renderer.createElement(jsonObj.tagName) as JsonElement;
+            // // 处理元素节点
+            // if (tagName in jsonObj) {
+            //     const node = this.renderer.createElement(jsonObj[tagName]) as JsonElement;
 
-                // 设置文本内容
-                if ('textContent' in jsonObj) {
-                    node.textContent = jsonObj.textContent;
-                }
+            //     // 设置文本内容
+            //     if (textContent in jsonObj) {
+            //          this.renderer.createText(jsonObj[textContent]);
+            //         node.childNodes.push()
+            //     }
 
-                // 设置属性
-                if ('attrs' in jsonObj && typeof jsonObj.attrs === 'object') {
-                    for (const [key, value] of Object.entries(jsonObj.attrs as Record<string, any>)) {
-                        if (typeof value === 'string') {
-                            node.setAttribute(key, value);
-                        } else if (typeof value === 'object' && value !== null && 'namespace' in value && 'value' in value) {
-                            node.setAttributeNS(value.namespace, key, value.value);
-                        }
-                    }
-                }
+            //     // 设置属性
+            //     if ('attrs' in jsonObj && typeof jsonObj.attrs === 'object') {
+            //         for (const [key, value] of Object.entries(jsonObj.attrs as Record<string, any>)) {
+            //             if (typeof value === 'string') {
+            //                 node.setAttribute(key, value);
+            //             } else if (typeof value === 'object' && value !== null && 'namespace' in value && 'value' in value) {
+            //                 node.setAttributeNS(value.namespace, key, value.value);
+            //             }
+            //         }
+            //     }
 
-                // 处理className
-                if ('className' in jsonObj) {
-                    node.classList.add(jsonObj.className);
-                }
+            //     // 处理className
+            //     if ('#class' in jsonObj) {
+            //         node.classList.add(jsonObj.className);
+            //     }
 
-                // 处理样式
-                if ('style' in jsonObj && typeof jsonObj.style === 'object') {
-                    for (const [prop, value] of Object.entries(jsonObj.style as Record<string, any>)) {
-                        node.style.setProperty(prop, value);
-                    }
-                }
+            //     // 处理样式
+            //     if ('#style' in jsonObj && typeof jsonObj.style === 'object') {
+            //         for (const [prop, value] of Object.entries(jsonObj.style as Record<string, any>)) {
+            //             node.style.setProperty(prop, value);
+            //         }
+            //     }
 
-                // 递归处理子节点
-                if ('children' in jsonObj && Array.isArray(jsonObj.children)) {
-                    node.childNodes.push(...jsonObj.children.flatMap((child: any) => this.convertToNodes(child)));
-                    // 设置父节点引用
-                    node.childNodes.forEach(child => child.parentNode = node);
-                }
+            //     // 递归处理子节点
+            //     if ('#children' in jsonObj && Array.isArray(jsonObj.childNodes)) {
+            //         node.childNodes = jsonObj.childNodes.flatMap((child: any) => this.convertToNodes(child));
+            //         // 设置父节点引用
+            //         node.childNodes.forEach(child => child.parentNode = node);
+            //     }
 
-                return [node];
-            }
+            return childNodes;
         }
+
 
         // 对于其他类型，返回空数组
         return [];

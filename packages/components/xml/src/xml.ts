@@ -355,12 +355,16 @@ export class XmlTemplateParser implements TemplateParser {
             // 设置属性
             for (const key of keys) {
                 const datan = jsonObj[key];
-                if (key.startsWith('@_') || key.startsWith('#')) {
+                if (key.startsWith('@_')) {
                     node.setAttribute(key.slice(2), datan);
+                } else if (key.startsWith('#')) {
+                    node.setAttribute(key.slice(1), datan);
                 } else if (key === ':@') {
                     for (const attr in datan) {
-                        if (attr.startsWith('@_') || attr.startsWith('#')) {
+                        if (attr.startsWith('@_')) {
                             node.setAttribute(attr.slice(2), datan[attr]);
+                        } else if (attr.startsWith('#')) {
+                            node.setAttribute(attr.slice(1), datan[attr]);
                         }
                     }
                 } else {
