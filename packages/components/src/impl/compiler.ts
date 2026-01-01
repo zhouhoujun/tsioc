@@ -190,7 +190,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 }
                 await this.processDirective(el, dirDef, attrs, context, viewRef);
             }
-            await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, isContainer);
+            // await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, isContainer);
         } else {
             await this.processElement(el, attrs, context, viewRef, compMap, dirMap, isContainer);
         }

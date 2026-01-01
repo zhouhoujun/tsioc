@@ -13,6 +13,11 @@ import { EnvironmentContext } from '../refs/environment';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
+import { ViewContainerRef } from '../refs/container';
+import { TemplateRef } from '../refs/template';
+import { RNode } from '../renderer/Node';
+import { createViewContainerRef } from './container';
+import { createTemplateRef } from './template';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
@@ -106,7 +111,10 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
             providers.push(toProvider(Renderer, options.renderer));
         }
         if (options?.elementRef) {
-            providers.push({ provide: ElementRef, useValue: options.elementRef });
+            const elementRef = options.elementRef;
+            providers.push({ provide: ElementRef, useValue: elementRef });
+            providers.push({ provide: ViewContainerRef, useFactory: (ctx) => createViewContainerRef(elementRef, ctx), deps: [EnvironmentContext] });
+            providers.push({ provide: TemplateRef, useFactory: (ctx) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
         }
         return providers;
     }

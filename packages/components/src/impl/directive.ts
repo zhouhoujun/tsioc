@@ -11,6 +11,11 @@ import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';
 import { TemplateCompiler } from '../template/compiler';
+import { ViewContainerRef } from '../refs/container';
+import { createViewContainerRef } from './container';
+import { TemplateRef } from '../refs/template';
+import { createTemplateRef } from './template';
+import { RNode } from '../renderer/Node';
 
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
@@ -77,7 +82,10 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
     protected override mergeProviders<T>(typeRef: ClassRef<T>, options?: DirectiveOptions): Provider[] {
         const providers = super.mergeProviders(typeRef, options);
         if (options?.elementRef) {
-            providers.push({ provide: ElementRef, useValue: options.elementRef });
+            const elementRef = options.elementRef;
+            providers.push({ provide: ElementRef, useValue: elementRef });
+            providers.push({ provide: ViewContainerRef, useFactory: (ctx) => createViewContainerRef(elementRef, ctx), deps: [EnvironmentContext] });
+            providers.push({ provide: TemplateRef, useFactory: (ctx) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
         }
         return providers;
     }

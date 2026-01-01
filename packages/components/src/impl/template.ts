@@ -1,4 +1,3 @@
-import { InvocationContext } from '@tsdi/ioc';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
