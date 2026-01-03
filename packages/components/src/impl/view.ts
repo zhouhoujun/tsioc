@@ -7,6 +7,7 @@ import { DirectiveDef, DirectiveRef } from '../refs/directive';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { EnvironmentContext } from '../refs/environment';
+import { Renderer } from '../renderer/Renderer';
 
 /**
  * Embedded view ref implement.
@@ -106,19 +107,19 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         if (!sel) {
             return null;
         }
-        for (const r of this.rootNodes) {
-            const node = r.querySelector(sel);
-            if (node) {
-                if (def) {
-                    if (def.nodeType === NodeType.Container) {
-                        return this.environment.getComponentRefByNode(node) ?? this.environment.getDirectiveRefByNode(node) ?? null
-                    }
-                    return this.environment.getDirectiveRefByNode(node) ?? null;
-                }
 
-                return this.environment.getTemplateRef(node) ?? this.environment.getElementRef(node);
+        const node = this.environment.get(Renderer).querySelector(this.rootNodes, sel);
+        if (node) {
+            if (def) {
+                if (def.nodeType === NodeType.Container) {
+                    return this.environment.getComponentRefByNode(node) ?? this.environment.getDirectiveRefByNode(node) ?? null
+                }
+                return this.environment.getDirectiveRefByNode(node) ?? null;
             }
+
+            return this.environment.getTemplateRef(node) ?? this.environment.getElementRef(node);
         }
+
         return null;
     }
 
@@ -147,18 +148,21 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         if (!sel) {
             return [];
         }
-        return this.rootNodes.flatMap(r => r.querySelectorAll(sel))
-            .filter(n => n !== null)
-            .map(node => {
-                if (def && def.nodeType) {
-                    if (def.nodeType === NodeType.Container) {
-                        return this.environment.getComponentRefByNode(node) ?? this.environment.getDirectiveRefByNode(node) ?? null
-                    }
-                    return this.environment.getDirectiveRefByNode(node) ?? null;
+        const nodes = this.environment.get(Renderer).querySelectorAll(this.rootNodes, sel);
+        if (!nodes) {
+            return [];
+        }
+        
+        return nodes.map(node => {
+            if (def && def.nodeType) {
+                if (def.nodeType === NodeType.Container) {
+                    return this.environment.getComponentRefByNode(node) ?? this.environment.getDirectiveRefByNode(node) ?? null
                 }
+                return this.environment.getDirectiveRefByNode(node) ?? null;
+            }
 
-                return this.environment.getTemplateRef(node) ?? this.environment.getElementRef(node);
-            });
+            return this.environment.getTemplateRef(node) ?? this.environment.getElementRef(node);
+        });
     }
 
 }

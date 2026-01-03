@@ -22,45 +22,48 @@ export enum RendererStyleFlags2 {
 
 @Abstract()
 export abstract class Renderer {
-    abstract createComment(value: string): RComment;
-    abstract createElement(name: string, namespace?: string | null): RElement;
-    abstract createText(value: string): RText;
+  abstract createComment(value: string): RComment;
+  abstract createElement(name: string, namespace?: string | null): RElement;
+  abstract createText(value: string): RText;
 
-    /**
-     * clone node.
-     * @param node node to clone.
-     * @returns cloned node.
-     */
-    abstract cloneNode?(node: RNode): RNode;
-    /**
-     * This property is allowed to be null / undefined,
-     * in which case the view engine won't call it.
-     * This is used as a performance optimization for production mode.
-     */
-    abstract destroyNode?: ((node: RNode) => void) | null;
+  /**
+   * clone node.
+   * @param node node to clone.
+   * @returns cloned node.
+   */
+  abstract cloneNode?(node: RNode): RNode;
+  /**
+   * This property is allowed to be null / undefined,
+   * in which case the view engine won't call it.
+   * This is used as a performance optimization for production mode.
+   */
+  abstract destroyNode?: ((node: RNode) => void) | null;
 
-    abstract appendChild(parent: RElement, newChild: RNode): void;
-    abstract insertBefore(parent: RNode, newChild: RNode, refChild: RNode | null, isMove?: boolean): void;
-    abstract removeChild(parent: RElement | null, oldChild: RNode, isHostElement?: boolean): void;
-    abstract selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): RElement;
+  abstract appendChild(parent: RElement, newChild: RNode): void;
+  abstract insertBefore(parent: RNode, newChild: RNode, refChild: RNode | null, isMove?: boolean): void;
+  abstract removeChild(parent: RElement | null, oldChild: RNode, isHostElement?: boolean): void;
+  abstract selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): RElement;
 
-    abstract parentNode(node: RNode): RElement | null;
-    abstract nextSibling(node: RNode): RNode | null;
+  abstract querySelector(el: RNode | RNode[], selector: string): RNode | null;
+  abstract querySelectorAll(el: RNode | RNode[], selector: string): RNode[] | null;
 
-    abstract setAttribute(
-        el: RElement,
-        name: string,
-        value: string,
-        namespace?: string | null,
-    ): void;
-    abstract removeAttribute(el: RElement, name: string, namespace?: string | null): void;
+  abstract parentNode(node: RNode): RElement | null;
+  abstract nextSibling(node: RNode): RNode | null;
 
-    abstract getAttributes(el: RElement): RAttr[];
+  abstract setAttribute(
+    el: RElement,
+    name: string,
+    value: string,
+    namespace?: string | null,
+  ): void;
+  abstract removeAttribute(el: RElement, name: string, namespace?: string | null): void;
 
-    abstract addClass(el: RElement, name: string): void;
-    abstract removeClass(el: RElement, name: string): void;
-    abstract setStyle(el: RElement, style: string, value: any, flags?: RendererStyleFlags2): void;
-    abstract removeStyle(el: RElement, style: string, flags?: RendererStyleFlags2): void;
-    abstract setProperty(el: RElement, name: string, value: any): void;
-    abstract setValue(node: RText | RComment, value: string): void;
+  abstract getAttributes(el: RElement): RAttr[];
+
+  abstract addClass(el: RElement, name: string): void;
+  abstract removeClass(el: RElement, name: string): void;
+  abstract setStyle(el: RElement, style: string, value: any, flags?: RendererStyleFlags2): void;
+  abstract removeStyle(el: RElement, style: string, flags?: RendererStyleFlags2): void;
+  abstract setProperty(el: RElement, name: string, value: any): void;
+  abstract setValue(node: RText | RComment, value: string): void;
 }

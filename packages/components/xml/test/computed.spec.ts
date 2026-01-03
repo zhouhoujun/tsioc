@@ -26,7 +26,8 @@ export class ComputedTest {
     async testComputedProperties() {
         // 创建FieldComponent实例
         const appCompRef = this.ctx.runners.getRef(AppComponent2) as ComponentRef<AppComponent2>;
-        const fieldComponent = appCompRef.hostView.query(FieldComponet)?.instance;
+        const fieldComponentRef = appCompRef.hostView.query(FieldComponet);
+        const fieldComponent = fieldComponentRef?.instance;
 
         expect(fieldComponent).toBeDefined();
         if(!fieldComponent) {

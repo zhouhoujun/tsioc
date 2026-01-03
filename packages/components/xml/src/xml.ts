@@ -241,6 +241,40 @@ export class XmlRenderer implements Renderer {
     selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): XmlElement {
         throw new Error('Method not implemented.');
     }
+    querySelector(node: XmlNode | XmlNode[], selector: string): XmlNode | null {
+        return cssSelect.selectOne<XmlNode, XmlElement>(selector, node, {
+            adapter: {
+                getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: XmlNode) => el.childNodes,
+                getName: (el: XmlElement) => el.tagName.toLowerCase(),
+                getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
+                getParent: (el: XmlNode) => el.parentElement,
+                removeSubsets: (nodes: XmlNode[]) => nodes,
+                getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
+                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+            }
+        });
+    }
+
+    querySelectorAll(node: XmlNode | XmlNode[], selector: string): XmlNode[] | null {
+        return cssSelect.selectAll<XmlNode, XmlElement>(selector, node, {
+            adapter: {
+                getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: XmlNode) => el.childNodes,
+                getName: (el: XmlElement) => el.tagName.toLowerCase(),
+                getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
+                getParent: (el: XmlNode) => el.parentElement,
+                removeSubsets: (nodes: XmlNode[]) => nodes,
+                getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
+                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+            }
+        });
+    }
+
     parentNode(node: XmlNode): XmlElement | null {
         return node.parentElement
     }

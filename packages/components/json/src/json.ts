@@ -241,6 +241,41 @@ export class JsonRenderer implements Renderer {
     selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): JsonElement {
         throw new Error('Method not implemented.');
     }
+
+    querySelector(node: JsonNode | JsonNode[], selector: string): JsonNode | null {
+        return cssSelect.selectOne<JsonNode, JsonElement>(selector, node, {
+            adapter: {
+                getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: JsonNode) => el.childNodes,
+                getName: (el: JsonElement) => el.tagName?.toLowerCase(),
+                getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
+                getParent: (el: JsonNode) => el.parentElement,
+                removeSubsets: (nodes: JsonNode[]) => nodes,
+                getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: JsonElement, name: string) => el.hasAttribute(name),
+                isTag: (el: JsonNode): el is JsonElement => el.nodeType === NodeType.Element
+            }
+        });
+    }
+
+    querySelectorAll(node: JsonNode | JsonNode[], selector: string): JsonNode[] | null {
+        return cssSelect.selectAll<JsonNode, JsonElement>(selector, node, {
+            adapter: {
+                getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: JsonNode) => el.childNodes,
+                getName: (el: JsonElement) => el.tagName?.toLowerCase(),
+                getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
+                getParent: (el: JsonNode) => el.parentElement,
+                removeSubsets: (nodes: JsonNode[]) => nodes,
+                getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: JsonElement, name: string) => el.hasAttribute(name),
+                isTag: (el: JsonNode): el is JsonElement => el.nodeType === NodeType.Element
+            }
+        });
+    }
+
     parentNode(node: JsonNode): JsonElement | null {
         return node.parentElement
     }
