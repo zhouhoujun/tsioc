@@ -1,4 +1,4 @@
-import { deepClone, Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { deepClone, Inject, Injectable, InvocationContext, isString, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
@@ -293,13 +293,13 @@ const textContent = '#text';
 
 // XML模板解析器实现示例
 @Injectable()
-export class JsonTemplateParser implements TemplateParser<Object> {
+export class JsonTemplateParser implements TemplateParser<Object | string> {
     constructor(
         private renderer: JsonRenderer
     ) { }
 
-    parse(template: Object, environment: InvocationContext): JsonNode[] {
-        const jsonObj = deepClone(template);
+    parse(template: Object | string, environment: InvocationContext): JsonNode[] {
+        const jsonObj = isString(template) ? JSON.parse(template) : deepClone(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
     }
@@ -345,7 +345,7 @@ export class JsonTemplateParser implements TemplateParser<Object> {
                     if (parent) {
                         parent.setAttribute(key, datan);
                     }
-                } else if(key) {
+                } else if (key) {
                     //node tag
                     const node = this.renderer.createElement(key);
                     if (parent) node.parentNode = parent;

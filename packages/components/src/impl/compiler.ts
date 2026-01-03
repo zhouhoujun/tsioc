@@ -15,7 +15,7 @@ import { EnvironmentContext } from '../refs/environment';
 
 
 @Abstract()
-export abstract class AbstractTemplateCompiler extends TemplateCompiler {
+export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler<T> {
 
     protected abstract get options(): TemplateCompilerOptions;
 
@@ -28,9 +28,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return this._delimiter;
     }
 
-    async compile<C>(template: string, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>> {
+    async compile<C>(template: T, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>> {
         // 使用模板解析器解析模板
-        const nodes = environment.get(TemplateParser).parse(template, environment);
+        const nodes = environment.get(TemplateParser<T>).parse(template, environment);
 
         const viewRef = createEmbeddedViewRef(nodes, context, environment, this.effect);
 

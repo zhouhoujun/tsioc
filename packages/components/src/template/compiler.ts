@@ -11,11 +11,11 @@ export interface TemplateCompilerOptions {
 }
 
 @Abstract()
-export abstract class TemplateCompiler {
+export abstract class TemplateCompiler<T = string> {
 
     abstract get effect(): ReactiveEffect;
 
     abstract get renderer(): Renderer;
 
-    abstract compile<C>(template: string, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>>;
+    abstract compile<C>(template: T, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>>;
 }
