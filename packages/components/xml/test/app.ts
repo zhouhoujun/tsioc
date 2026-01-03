@@ -27,22 +27,7 @@ export class AppComponent implements OnInit {
 
 
 
-@Component({
-  selector: 'app-comp',
-  template: `
-        <Text [text]="'Well come'"></Text>
-        <Field #fie [label]="label" [(value)]="value"></Field>
-        <app-example></app-example>
-    `
-})
-export class AppComponent2 implements OnInit {
-  onInit(): void {
-    // throw new Error('Method not implemented.');
-  }
-  label?: string;
-  value?: string;
-  // ...其他代码
-}
+
 
 // @Directive('Input, [Input]')
 // export class InputDirective {
@@ -94,7 +79,6 @@ export class TextComponet {
 }
 
 
-
 @Component({
   selector: 'app-example',
   template: `
@@ -144,6 +128,26 @@ export class ExampleComponent implements OnInit, OnDestroy {
   }
 
 }
+
+
+@Component({
+  selector: 'app-comp',
+  imports: [TextComponet, FieldComponet],
+  template: `
+        <Text [text]="'Well come'"></Text>
+        <Field #fie [label]="label" [(value)]="value"></Field>
+        <app-example></app-example>
+    `
+})
+export class AppComponent2 implements OnInit {
+  onInit(): void {
+    // throw new Error('Method not implemented.');
+  }
+  label?: string;
+  value?: string;
+  // ...其他代码
+}
+
 
 // 添加专门用于测试的复杂组件
 @Component({
