@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
 import * as cssSelect from 'css-select';
 import {
@@ -26,6 +26,10 @@ export class XmlNode implements RNode {
 
     removeChild(oldChild: XmlNode): XmlNode {
         const [removed] = lang.remove(this.childNodes, oldChild) ?? [];
+        if (removed) {
+            removed.parentNode = null;
+            removed.nextSibling = null;
+        }
         return removed;
     }
 
@@ -43,7 +47,7 @@ export class XmlNode implements RNode {
     }
 
     querySelector(selector: string): XmlNode | null {
-        return cssSelect.selectOne<XmlNode, XmlElement>(selector, this, {
+        return cssSelect.selectOne<XmlNode, XmlElement>(selector, [this], {
             adapter: {
                 getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: XmlNode) => el.childNodes,
@@ -60,7 +64,7 @@ export class XmlNode implements RNode {
     }
 
     querySelectorAll(selector: string): XmlNode[] | null {
-        return cssSelect.selectAll<XmlNode, XmlElement>(selector, this, {
+        return cssSelect.selectAll<XmlNode, XmlElement>(selector, [this], {
             adapter: {
                 getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: XmlNode) => el.childNodes,
@@ -242,7 +246,7 @@ export class XmlRenderer implements Renderer {
         throw new Error('Method not implemented.');
     }
     querySelector(node: XmlNode | XmlNode[], selector: string): XmlNode | null {
-        return cssSelect.selectOne<XmlNode, XmlElement>(selector, node, {
+        return cssSelect.selectOne<XmlNode, XmlElement>(selector, isArray(node) ? node : [node], {
             adapter: {
                 getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: XmlNode) => el.childNodes,
@@ -259,7 +263,7 @@ export class XmlRenderer implements Renderer {
     }
 
     querySelectorAll(node: XmlNode | XmlNode[], selector: string): XmlNode[] | null {
-        return cssSelect.selectAll<XmlNode, XmlElement>(selector, node, {
+        return cssSelect.selectAll<XmlNode, XmlElement>(selector, isArray(node) ? node : [node], {
             adapter: {
                 getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: XmlNode) => el.childNodes,

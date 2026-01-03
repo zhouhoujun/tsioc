@@ -1,4 +1,4 @@
-import { deepClone, Inject, Injectable, InvocationContext, isString, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { deepClone, Inject, Injectable, InvocationContext, isArray, isString, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
@@ -25,6 +25,10 @@ export class JsonNode implements RNode {
 
     removeChild(oldChild: JsonNode): JsonNode {
         const [removed] = lang.remove(this.childNodes, oldChild) ?? [];
+        if (removed) {
+            removed.parentNode = null;
+            removed.nextSibling = null;
+        }
         return removed;
     }
 
@@ -42,7 +46,7 @@ export class JsonNode implements RNode {
     }
 
     querySelector(selector: string): JsonNode | null {
-        return cssSelect.selectOne<JsonNode, JsonElement>(selector, this, {
+        return cssSelect.selectOne<JsonNode, JsonElement>(selector, [this], {
             adapter: {
                 getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: JsonNode) => el.childNodes,
@@ -59,7 +63,7 @@ export class JsonNode implements RNode {
     }
 
     querySelectorAll(selector: string): JsonNode[] | null {
-        return cssSelect.selectAll<JsonNode, JsonElement>(selector, this, {
+        return cssSelect.selectAll<JsonNode, JsonElement>(selector, [this], {
             adapter: {
                 getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: JsonNode) => el.childNodes,
@@ -243,7 +247,7 @@ export class JsonRenderer implements Renderer {
     }
 
     querySelector(node: JsonNode | JsonNode[], selector: string): JsonNode | null {
-        return cssSelect.selectOne<JsonNode, JsonElement>(selector, node, {
+        return cssSelect.selectOne<JsonNode, JsonElement>(selector, isArray(node) ? node : [node], {
             adapter: {
                 getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: JsonNode) => el.childNodes,
@@ -260,7 +264,7 @@ export class JsonRenderer implements Renderer {
     }
 
     querySelectorAll(node: JsonNode | JsonNode[], selector: string): JsonNode[] | null {
-        return cssSelect.selectAll<JsonNode, JsonElement>(selector, node, {
+        return cssSelect.selectAll<JsonNode, JsonElement>(selector, isArray(node) ? node : [node], {
             adapter: {
                 getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: JsonNode) => el.childNodes,
