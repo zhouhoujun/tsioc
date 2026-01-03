@@ -1,6 +1,5 @@
-import { getDef, getType, hasOwn, isFunction, isObject } from '@tsdi/ioc';
+import { hasOwn, isFunction, isObject } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { DirectiveDef } from '../refs/directive';
 import { ComputedMetadata } from '../decorators/computed';
 
 export const isReactive = Symbol('__reactive');
@@ -9,10 +8,10 @@ export const computedSymbol = Symbol('__computed');
 // 计算属性缓存和依赖追踪
 const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: Set<string | symbol> }>>();
 
-// 获取对象的计算属性定义
-function getComputedDef(target: any): ComputedMetadata[] | undefined {
-    return getDef<DirectiveDef>(getType(target))?.computeds;
-}
+// // 获取对象的计算属性定义
+// function getComputedDef(target: any): ComputedMetadata[] | undefined {
+//     return getDef<DirectiveDef>(getType(target))?.computeds;
+// }
 
 
 // 检查当前是否在计算属性求值过程中
@@ -29,13 +28,12 @@ function isNative(target: any) {
         || target instanceof WeakSet
 }
 
-export function reactive(target: any, effect: ReactiveEffect) {
+export function reactive(target: any, effect: ReactiveEffect, computeds?: ComputedMetadata[]) {
     // 如果target已经是响应式的，直接返回
     if (!target || !isObject(target) || target[isReactive]) {
         return target
     }
 
-    const computeds = getComputedDef(target);
     // 创建代理
     const proxy = new Proxy(target, {
         get(target, key, receiver) {
@@ -82,14 +80,12 @@ export function reactive(target: any, effect: ReactiveEffect) {
                 effect.trigger(target, key);
 
                 // 如果修改的是计算属性的依赖属性，清除相关计算属性的缓存
-                const computedDef = getComputedDef(target);
-                if (computedDef) {
-                    computedDef.forEach((comp: any) => {
-                        if (comp.dependencies?.includes(key as string)) {
-                            clearComputedCache(target, comp.propertyKey);
-                        }
-                    });
-                }
+                computeds?.forEach((comp: any) => {
+                    if (comp.dependencies?.includes(key as string)) {
+                        clearComputedCache(target, comp.propertyKey);
+                    }
+                });
+
             }
 
             return result;
@@ -103,14 +99,12 @@ export function reactive(target: any, effect: ReactiveEffect) {
                 effect.trigger(target, key);
 
                 // 如果删除的是计算属性的依赖属性，清除相关计算属性的缓存
-                const computedDef = getComputedDef(target);
-                if (computedDef) {
-                    computedDef.forEach((comp: any) => {
-                        if (comp.dependencies?.includes(key as string)) {
-                            clearComputedCache(target, comp.propertyKey);
-                        }
-                    });
-                }
+                computeds?.forEach((comp: any) => {
+                    if (comp.dependencies?.includes(key as string)) {
+                        clearComputedCache(target, comp.propertyKey);
+                    }
+                });
+
             }
 
             return result;

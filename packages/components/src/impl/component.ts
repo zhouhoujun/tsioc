@@ -72,7 +72,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     protected override createInstance(): T {
         const instance = super.createInstance();
-        return reactive(instance, this.context.get(ReactiveEffect))
+        const def = this.classRef.getAnnotation<ComponentDef>();
+        return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }
 
 }

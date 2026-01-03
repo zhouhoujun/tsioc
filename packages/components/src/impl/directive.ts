@@ -53,7 +53,8 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
 
     protected override createInstance(): T {
         const instance = super.createInstance();
-        return reactive(instance, this.context.get(ReactiveEffect))
+        const def = this.classRef.getAnnotation<DirectiveDef>();
+        return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }
 
 }
