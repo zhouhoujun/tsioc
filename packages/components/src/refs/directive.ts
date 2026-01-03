@@ -4,6 +4,7 @@ import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
 import { NodeType } from '../renderer/Node';
 import { EnvironmentContext } from './environment';
+import { ComputedMetadata } from '../decorators/computed';
 
 
 export const factoryKey = 'ƿfac';
@@ -18,6 +19,7 @@ export interface DirectiveDef<T = any> extends TypeDef<T> {
     nodeType?: NodeType;
     // states?: StateMetadata[];
     attributes?: AttributeMetadata[];
+    computeds?: ComputedMetadata[];
     schemas?: SchemaMetadata[];
 }
 

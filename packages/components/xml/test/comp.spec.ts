@@ -40,6 +40,11 @@ export class CTest {
         await Promise.resolve();
 
         expect(appcomRef.hostView.rootNodes[0].childNodes[1].childNodes[0].textContent).toEqual('Count: 1');
+
+        appcomRef.hostView.rootNodes[0].childNodes[4].events.emit('click');
+
+        await Promise.resolve();
+        expect(appcomRef.hostView.rootNodes[0].childNodes[1].childNodes[0].textContent).toEqual('Count: 2');
     }
 
     @Test('can bind event with args')

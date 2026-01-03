@@ -1,6 +1,7 @@
 import { createDecorator, ActionType, AnnotationType, getModuleType, noPointcut, token, InvocationContext } from '@tsdi/ioc';
 import { Attribute, AttributeMetadata } from './atteribute';
 import { DirectiveDef, DirectiveFactory, DirectiveOptions, Factoriable, factoryKey } from '../refs/directive';
+import { Computed, ComputedMetadata } from './computed';
 
 
 export const DIRECTIVES = token<DirectiveDef[]>('DIRECTIVES');
@@ -52,6 +53,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
             // def.states = typeRef.getDefines(State).map(d => d as StateMetadata);
             def.attributes = typeRef.getDefines(Attribute).map(d => d.metadata as AttributeMetadata);
+            def.computeds = typeRef.getDefines(Computed).map(d => d.metadata as ComputedMetadata);
         }
     },
     design: {

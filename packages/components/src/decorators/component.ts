@@ -6,6 +6,7 @@ import { DIRECTIVES } from './directive';
 import { ComponentDef } from '../refs/component';
 import { Factoriable, factoryKey } from '../refs/directive';
 import { NodeType } from '../renderer/Node';
+import { Computed, ComputedMetadata } from './computed';
 
 
 
@@ -31,6 +32,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
             // def.states = typeRef.getDefines(State).map(d => d as StateMetadata);
             def.attributes = typeRef.getDefines(Attribute).map(d => d.metadata as AttributeMetadata);
+            def.computeds = typeRef.getDefines(Computed).map(d => d.metadata as ComputedMetadata);
         }
     },
     design: {

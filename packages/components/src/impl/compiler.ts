@@ -1,4 +1,4 @@
-import { Abstract, Exception, isObject } from '@tsdi/ioc';
+import { Abstract, Exception, getDef, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef, EmbeddedViewRef } from '../refs/view';
@@ -11,6 +11,7 @@ import { DIRECTIVES } from '../decorators/directive';
 import { DirectiveDef, DirectiveRef, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
+import { ComputedMetadata } from '../decorators/computed';
 
 
 
@@ -190,7 +191,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 }
                 await this.processDirective(el, dirDef, attrs, context, viewRef);
             }
-            // await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, isContainer);
+            await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, isContainer);
         } else {
             await this.processElement(el, attrs, context, viewRef, compMap, dirMap, isContainer);
         }
@@ -420,33 +421,33 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     // 修改 evaluateExpression 方法以正确处理模板上下文
     private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
         try {
-            // 检查是否为计算属性访问
-            const isComputed = this.isComputedProperty(expr, context);
-            if (isComputed) {
-                const cacheKey = `${context.constructor.name}-${expr}`;
-                let cacheEntry = viewRef.computedCache.get(cacheKey);
+            // // 检查是否为计算属性访问
+            // const computed = this.getComputedProperty(expr, context);
+            // if (computed) {
+            //     const cacheKey = `${context.constructor.name}-${expr}`;
+            //     let cacheEntry = viewRef.computedCache.get(cacheKey);
 
-                if (!cacheEntry) {
-                    // 创建新的缓存条目
-                    cacheEntry = { value: undefined, deps: new Set() };
-                    viewRef.computedCache.set(cacheKey, cacheEntry);
-                }
+            //     if (!cacheEntry) {
+            //         // 创建新的缓存条目
+            //         cacheEntry = { value: undefined, deps: new Set() };
+            //         viewRef.computedCache.set(cacheKey, cacheEntry);
+            //     }
 
-                // 使用effect跟踪依赖并计算值
-                return this.effect.run(() => {
-                    // 清除旧依赖
-                    cacheEntry!.deps.clear();
+            //     // 使用effect跟踪依赖并计算值
+            //     return this.effect.run(() => {
+            //         // 清除旧依赖
+            //         cacheEntry!.deps.clear();
 
-                    // 计算新值
-                    const value = this.evaluateComputedExpression(expr, context, viewRef);
-                    cacheEntry!.value = value;
+            //         // 计算新值
+            //         const value = this.evaluateComputedExpression(computed, expr, context, viewRef);
+            //         cacheEntry!.value = value;
 
-                    // 收集新依赖（这里需要实际实现依赖收集逻辑）
-                    this.trackDependencies(expr, context, cacheEntry!.deps);
+            //         // 收集新依赖（这里需要实际实现依赖收集逻辑）
+            //         this.trackDependencies(expr, context, cacheEntry!.deps);
 
-                    return value;
-                });
-            }
+            //         return value;
+            //     });
+            // }
             const parts = expr.split('|').map(part => part.trim());
             if (parts.length <= 1) {
                 // 简单表达式求值
@@ -576,15 +577,20 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         return this.evaluateExpression(arg, context, viewRef);
     }
 
-    private isComputedProperty(expr: string, context: any): boolean {
+    private getComputedProperty(expr: string, context: any): ComputedMetadata | undefined {
         // 检查上下文对象是否有该计算属性的元数据
         const propName = expr.trim();
-        return !!Reflect.getMetadata('computed', context.constructor.prototype, propName);
+        const cDef = getDef(context) as ComponentDef | DirectiveDef;
+        return cDef?.computeds?.find(r=> r.propertyKey === propName);
     }
 
-    private evaluateComputedExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
+    private evaluateComputedExpression(computed: ComputedMetadata, expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
         // 计算属性表达式求值
-        return new Function('ctx', `with(ctx){return ${expr}}`)(context);
+        const compute = computed.compute;
+        if (typeof compute === 'function') {
+            return compute(context);
+        }
+        return new Function('ctx', `with(ctx){return ${computed.compute ?? expr}}`)(context);
     }
 
     private trackDependencies(expr: string, context: any, deps: Set<any>): void {
