@@ -94,17 +94,11 @@ export class C1Test {
 
         // 创建一个简单的JSON模板字符串
         const jsonTemplate = JSON.stringify({
-            tagName: 'div',
-            attrs: {
-                class: 'container'
-            },
-            textContent: 'Hello JSON Template',
-            children: [
-                {
-                    tagName: 'p',
-                    textContent: 'This is a paragraph'
-                }
-            ]
+            div: {
+                '@class': 'container',
+                '#text': 'Hello JSON Template',
+                p: 'This is a paragraph'
+            }
         });
 
         // 解析JSON模板
