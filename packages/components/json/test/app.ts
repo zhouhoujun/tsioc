@@ -4,7 +4,7 @@ import { Attribute, Component, OnDestroy, OnInit } from '@tsdi/components';
   selector: 'app-root',
   template: {
     div: {
-      h1: { '#text': '{{title}}' },
+      h1:  '{{title}}',
       button: { '@click': 'handleClick', '#text': 'Click me' },
       p: { ':class': '{active: isActive}', '#text': 'Status: {{status}}' }
     }
@@ -76,16 +76,14 @@ export class TextComponet {
   template: {
     div: [
       { 
-        h1: { 
-          '#text': '{{ title }}' 
-        }
+        h1:  '{{ title }}' 
       },
-      { p: { '#text': 'Count: {{ count }}' } },
+      { p: 'Count: {{ count }}' },
       { input: { 'v-model': 'value' } },
-      { p: { '#text': 'Value: {{ value }}' } },
+      { p: 'Value: {{ value }}' },
       { button: { '@click': 'increment', '#text': 'Increment' } },
       { button: { '@click': 'clickWithData($event, item)', '#text': 'Increment' } },
-      { p: { '#text': 'Today: {{ today | date-format:\'yyyy-MM-dd\' }}' } }
+      { p: 'Today: {{ today | date-format:\'yyyy-MM-dd\' }}' }
     ]
   },
   styles: [
