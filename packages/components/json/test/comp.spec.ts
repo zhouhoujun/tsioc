@@ -95,7 +95,7 @@ export class C1Test {
         // 创建一个简单的JSON模板字符串
         const jsonTemplate = JSON.stringify({
             div: {
-                '@class': 'container',
+                '.class': 'container',
                 '#text': 'Hello JSON Template',
                 p: 'This is a paragraph'
             }
@@ -111,7 +111,7 @@ export class C1Test {
 
         const rootElement = nodes[0] as JsonElement;
         expect(rootElement.tagName).toBe('div');
-        expect(rootElement.getAttribute('@class')).toBe('container');
+        expect(rootElement.getAttribute('class')).toBe('container');
         expect(rootElement.textContent).toBe('Hello JSON Template');
         expect(rootElement.childNodes.length).toBe(2);
 

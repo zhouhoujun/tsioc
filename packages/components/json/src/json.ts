@@ -381,10 +381,10 @@ export class JsonTemplateParser implements TemplateParser<Object | string> {
                     const commentNode = this.renderer.createComment(jsonObj[comment]);
                     if (parent) commentNode.parentNode = parent;
                     childNodes.push(commentNode);
-                } else if (attrRegex.test(key)) {                    
+                } else if (attrRegex.test(key)) {                                     
                     //attrs
                     if (parent) {
-                        parent.setAttribute(key, datan);
+                        parent.setAttribute(key.startsWith('.') ? key.slice(1) : key, datan);
                     }
                 } else if (key) {
                     //node tag

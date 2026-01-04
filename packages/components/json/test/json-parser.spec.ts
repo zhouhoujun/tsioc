@@ -48,7 +48,7 @@ export class JsonParserTest {
     async testParseNestedStructure() {
         const jsonTemplate = {
             div: {
-                '@class': 'container',
+                '.class': 'container',
                 header: { h1: 'Nested Header' },
                 main: {
                     section: {
@@ -100,11 +100,7 @@ export class JsonParserTest {
     async testParseNamespacedAttributes() {
         const jsonTemplate = {
             svg: {
-
-                '.xmlns': {
-                    namespace: 'http://www.w3.org/2000/xmlns/',
-                    value: 'http://www.w3.org/2000/svg'
-                },
+                '.xmlns:http://www.w3.org/2000/xmlns/': 'http://www.w3.org/2000/svg',
                 '.width': '100',
                 '.height': '100',
                 '.viewBox': '0 0 100 100',
