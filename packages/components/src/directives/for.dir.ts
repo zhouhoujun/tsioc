@@ -3,6 +3,7 @@ import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { NodeType } from '../renderer/Node';
+import { DirectiveType } from '../refs/directive';
 
 /**
  * VFor directive metadata.
@@ -35,7 +36,9 @@ export interface VForDirectiveMetadata {
  */
 @Directive({
     selector: '[v-for],[*for]',
-    nodeType: NodeType.Container
+    nodeType: NodeType.Container,
+    directiveType: DirectiveType.List,
+    priority: 20
 })
 export class VForDirective {
     private _viewRefs: any[] = [];
@@ -65,7 +68,7 @@ export class VForDirective {
         if (inMatch) {
             const [, itemPart, collectionPart] = inMatch;
             this._collectionExpr = collectionPart.trim();
-            
+
             // 解析循环变量名
             if (itemPart.trim().startsWith('(')) {
                 // 处理格式如 (item, index) 的情况
@@ -104,7 +107,7 @@ export class VForDirective {
                     even: i % 2 === 0,
                     odd: i % 2 === 1
                 };
-                
+
                 // 设置用户定义的循环变量名
                 if (this._itemNames.length > 0) {
                     context[this._itemNames[0]] = collection[i];
@@ -112,7 +115,7 @@ export class VForDirective {
                 if (this._itemNames.length > 1) {
                     context[this._itemNames[1]] = i;
                 }
-                
+
                 this.createView(context);
             }
         }
@@ -121,7 +124,7 @@ export class VForDirective {
             let index = 0;
             const keys = Object.keys(collection);
             const len = keys.length;
-            
+
             for (const key of keys) {
                 // 创建上下文对象，确保key、value等变量正确设置
                 const context: any = {
@@ -133,7 +136,7 @@ export class VForDirective {
                     even: index % 2 === 0,
                     odd: index % 2 === 1
                 };
-                
+
                 // 设置用户定义的循环变量名
                 if (this._itemNames.length > 0) {
                     context[this._itemNames[0]] = collection[key];
@@ -144,7 +147,7 @@ export class VForDirective {
                 if (this._itemNames.length > 2) {
                     context[this._itemNames[2]] = index;
                 }
-                
+
                 this.createView(context);
                 index++;
             }

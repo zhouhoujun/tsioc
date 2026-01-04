@@ -4,6 +4,7 @@ import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { ElementRef } from '../refs/element';
 import { Attribute } from '../decorators/atteribute';
+import { DirectiveType } from '../refs/directive';
 
 /**
  * v-switch directive component.
@@ -12,7 +13,9 @@ import { Attribute } from '../decorators/atteribute';
  * @class SwitchDirective
  */
 @Directive({
-    selector: '[v-switch],[*switch]'
+    selector: '[v-switch],[*switch]',
+    directiveType: DirectiveType.Structural,
+    priority: 20
 })
 export class SwitchDirective {
     private _value: any;
@@ -103,7 +106,9 @@ export class SwitchDirective {
  * @class CaseDirective
  */
 @Directive({
-    selector: '[v-case],[*case]'
+    selector: '[v-case],[*case]',
+    directiveType: DirectiveType.Structural,
+    priority: 20
 })
 export class CaseDirective {
     private _hasView = false;
@@ -170,7 +175,9 @@ export class CaseDirective {
  * @class DefaultDirective
  */
 @Directive({
-    selector: '[v-default],[*default]'
+    selector: '[v-default],[*default]',
+    directiveType: DirectiveType.Structural,
+    priority: 20
 })
 export class DefaultDirective {
     private _hasView = false;

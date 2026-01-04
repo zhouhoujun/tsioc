@@ -3,6 +3,7 @@ import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { NodeType } from '../renderer/Node';
+import { DirectiveType } from '../refs/directive';
 
 /**
  * 条件指令基类
@@ -47,7 +48,9 @@ abstract class BaseIfDirective {
  */
 @Directive({
     selector: '[v-if],[*if]',
-    nodeType: NodeType.ElementContainer
+    nodeType: NodeType.ElementContainer,
+    directiveType: DirectiveType.Conditional,
+    priority: 10
 })
 export class VIfDirective extends BaseIfDirective {
     @Attribute()
@@ -68,7 +71,9 @@ export class VIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else-if],[*else-if]',
-    nodeType: NodeType.ElementContainer
+    nodeType: NodeType.ElementContainer,
+    directiveType: DirectiveType.Conditional,
+    priority: 10
 })
 export class VElseIfDirective extends BaseIfDirective {
     @Attribute()
@@ -89,7 +94,9 @@ export class VElseIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else],[*else]',
-    nodeType: NodeType.ElementContainer
+    nodeType: NodeType.ElementContainer,
+    directiveType: DirectiveType.Conditional,
+    priority: 10
 })
 export class VElseDirective extends BaseIfDirective {
     @Attribute()

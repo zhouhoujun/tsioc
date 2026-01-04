@@ -403,6 +403,9 @@ export class XmlTemplateParser implements TemplateParser {
                             node.setAttribute(attr.slice(2), datan[attr]);
                         } else if (attr.startsWith('#')) {
                             node.setAttribute(attr.slice(1), datan[attr]);
+                        } else {
+                            // 添加else分支处理普通指令属性
+                            node.setAttribute(attr, datan[attr]);
                         }
                     }
                 } else {
