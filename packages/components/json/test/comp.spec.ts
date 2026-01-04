@@ -111,11 +111,11 @@ export class C1Test {
 
         const rootElement = nodes[0] as JsonElement;
         expect(rootElement.tagName).toBe('div');
-        expect(rootElement.getAttribute('class')).toBe('container');
+        expect(rootElement.getAttribute('@class')).toBe('container');
         expect(rootElement.textContent).toBe('Hello JSON Template');
-        expect(rootElement.childNodes.length).toBe(1);
+        expect(rootElement.childNodes.length).toBe(2);
 
-        const childElement = rootElement.childNodes[0] as JsonElement;
+        const childElement = rootElement.childNodes[1] as JsonElement;
         expect(childElement.tagName).toBe('p');
         expect(childElement.textContent).toBe('This is a paragraph');
     }

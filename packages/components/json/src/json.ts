@@ -180,12 +180,10 @@ export class JsonElement extends JsonNode implements RElement {
         return this.childNodes.filter(r => r.nodeType === NodeType.Text && (r as JsonText).textContent).map(r => (r as JsonText).textContent).join(' ') ?? null;
     }
 
-
-
-
     addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
         this.events.addListener(type, listener)
     }
+
     removeEventListener(type: string, listener?: EventListener, options?: boolean): void {
         if (listener) {
             this.events.removeListener(type, listener)
@@ -243,10 +241,6 @@ export class JsonRenderer implements Renderer {
 
     removeChild(parent: JsonElement | null, oldChild: JsonNode, isHostElement?: boolean): void {
         parent?.removeChild(oldChild)
-    }
-
-    selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): JsonElement {
-        throw new Error('Method not implemented.');
     }
 
     querySelector(node: JsonNode | JsonNode[], selector: string): JsonNode | null {
@@ -331,7 +325,7 @@ export class JsonRenderer implements Renderer {
 }
 const comment = '#comment';
 const textContent = '#text';
-
+const attrRegex = /^(@|#|:|\[|v-|\.)/;
 
 // XML模板解析器实现示例
 @Injectable()
@@ -387,7 +381,7 @@ export class JsonTemplateParser implements TemplateParser<Object | string> {
                     const commentNode = this.renderer.createComment(jsonObj[comment]);
                     if (parent) commentNode.parentNode = parent;
                     childNodes.push(commentNode);
-                } else if (key.startsWith('@') || key.startsWith('#') || key.startsWith(':') || key.startsWith('[') || key.startsWith('v-')) {
+                } else if (attrRegex.test(key)) {                    
                     //attrs
                     if (parent) {
                         parent.setAttribute(key, datan);

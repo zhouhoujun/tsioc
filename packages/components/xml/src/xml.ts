@@ -246,9 +246,7 @@ export class XmlRenderer implements Renderer {
     removeChild(parent: XmlElement | null, oldChild: XmlNode, isHostElement?: boolean): void {
         parent?.removeChild(oldChild)
     }
-    selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): XmlElement {
-        throw new Error('Method not implemented.');
-    }
+
     querySelector(node: XmlNode | XmlNode[], selector: string): XmlNode | null {
         return cssSelect.selectOne<XmlNode, XmlElement>(selector, isArray(node) ? node : [node], {
             adapter: {

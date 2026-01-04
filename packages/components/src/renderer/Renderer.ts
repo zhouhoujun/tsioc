@@ -42,7 +42,6 @@ export abstract class Renderer {
   abstract appendChild(parent: RElement, newChild: RNode): void;
   abstract insertBefore(parent: RNode, newChild: RNode, refChild: RNode | null, isMove?: boolean): void;
   abstract removeChild(parent: RElement | null, oldChild: RNode, isHostElement?: boolean): void;
-  abstract selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): RElement;
 
   abstract querySelector(el: RNode | RNode[], selector: string): RNode | null;
   abstract querySelectorAll(el: RNode | RNode[], selector: string): RNode[] | null;
