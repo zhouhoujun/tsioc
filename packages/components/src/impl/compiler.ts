@@ -1,4 +1,4 @@
-import { Abstract, Exception, getDef, isObject } from '@tsdi/ioc';
+import { Abstract, Exception, getDef, isObject, isString } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef, EmbeddedViewRef } from '../refs/view';
@@ -180,13 +180,16 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         const dirs = dirMap.get(node);
 
+        const allSelectors: string[] = [];
         // 优先处理指令组件
         if (dirs && dirs.length) {
             for (const dirDef of dirs) {
                 if (dirDef.directiveType) {
                     dirTyoe |= dirDef.directiveType;
                 }
-                await this.processDirectiveByType(el, dirDef, attrs, context, viewRef);
+                const selectors = dirDef.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
+                allSelectors.push(...selectors);
+                await this.processDirectiveByType(el, dirDef, selectors, attrs, context, viewRef);
             }
 
             // const groupedDirs = this.groupDirectivesByType(dirs);
@@ -198,9 +201,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             // }
 
             // 4. 处理元素属性（排除已处理的指令属性）
-            const processedAttrSelectors = new Set(dirs.flatMap(dir =>
-                dir.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''))
-            ));
+            const processedAttrSelectors = new Set(allSelectors);
             await this.processElement(
                 el,
                 attrs.filter(a => !processedAttrSelectors.has(a.name)),
@@ -216,48 +217,28 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     }
 
     /**
-     * 按指令类型分组
-     */
-    private groupDirectivesByType(directives: DirectiveDef[]): Map<DirectiveType, DirectiveDef[]> {
-        const groups = new Map<DirectiveType, DirectiveDef[]>();
-
-        directives.forEach(dir => {
-            // 优先使用groupName
-            const groupKey = dir.directiveType || DirectiveType.Normal;
-
-            if (!groups.has(groupKey)) {
-                groups.set(groupKey, []);
-            }
-
-            groups.get(groupKey)!.push(dir);
-        });
-
-        return groups;
-    }
-
-    /**
      * 处理指令组
      */
-    private async processDirectiveByType(el: RElement, dir: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+    private async processDirectiveByType(el: RElement, dir: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
 
         switch (dir.directiveType) {
             case DirectiveType.Conditional:
                 // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
-                await this.processConditionalDirectives(el, dir, attrs, context, viewRef);
+                await this.processConditionalDirectives(el, dir, selectors, attrs, context, viewRef);
                 break;
             case DirectiveType.List:
                 // 处理列表指令（v-for, *for）
-                await this.processListDirectives(el, dir, attrs, context, viewRef);
+                await this.processListDirectives(el, dir, selectors, attrs, context, viewRef);
                 break;
 
             case DirectiveType.Structural:
                 // 处理结构指令（v-switch）, *switch）
-                await this.processStructuralDirectives(el, dir, attrs, context, viewRef);
+                await this.processStructuralDirectives(el, dir, selectors, attrs, context, viewRef);
                 break;
 
             default:
 
-                await this.processDirective(el, dir, attrs, context, viewRef);
+                await this.processDirective(el, dir, selectors, attrs, context, viewRef);
                 break;
         }
     }
@@ -265,7 +246,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 处理条件指令组
      */
-    private async processConditionalDirectives(el: RElement, dirDef: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+    private async processConditionalDirectives(el: RElement, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
 
         const readerer = viewRef.environment.get(Renderer);
         const container = readerer.createElement('conditional') as RElement;
@@ -283,14 +264,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         // 处理条件指令
 
-        await this.processDirective(container, dirDef, attrs, context, viewRef, templateNodes);
+        await this.processDirective(container, dirDef, selectors, attrs, context, viewRef, templateNodes);
 
     }
 
     /**
      * 处理列表指令
      */
-    private async processListDirectives(el: RElement, dirDef: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+    private async processListDirectives(el: RElement, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
         // 为列表指令提供模板处理能力
         const readerer = viewRef.environment.get(Renderer);
 
@@ -310,14 +291,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         // 列表指令通常只有一个（v-for）
 
-        await this.processDirective(container, dirDef, attrs, context, viewRef, templateNodes);
+        await this.processDirective(container, dirDef, selectors, attrs, context, viewRef, templateNodes);
 
     }
 
     /**
      * 处理结构指令
      */
-    private async processStructuralDirectives(el: RElement, dirDef: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+    private async processStructuralDirectives(el: RElement, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
         // 为列表指令提供模板处理能力
         const readerer = viewRef.environment.get(Renderer);
 
@@ -337,7 +318,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
 
         // 列表指令通常只有一个（v-for）
-        await this.processDirective(container, dirDef, attrs, context, viewRef, templateNodes);
+        await this.processDirective(container, dirDef, selectors, attrs, context, viewRef, templateNodes);
 
     }
 
@@ -404,14 +385,10 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         await componentRef.render();
     }
 
-    protected async processDirective(el: RNode, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, templateNodes?: RNode[]) {
-        //提取指令名称和表达式
-        const expr = attrs.find(a => a.name === directive.selector)?.value;
-        const directiveName = directive.selector.startsWith('v-') ? directive.selector.slice(2) : directive.selector.slice(1);
-
+    protected async processDirective(el: RNode, directive: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, templateNodes?: RNode[]) {
         // 创建指令实例，并传入更多上下文信息
         const directiveRef = this.createDirectiveRef(directive, el, viewRef, templateNodes);
-        if (!directiveRef) throw new Exception(`directive ${directiveName} has not declaration!`);
+        if (!directiveRef) throw new Exception(`directive ${directive.selector} has not declaration!`);
 
         if (directiveRef) {
             viewRef.environment.attachDirective(directiveRef);
@@ -419,13 +396,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         const attributes = directive.attributes ?? [];
         const directiveInstance = directiveRef.instance;
-
-        // 设置指令值
-        if (directiveInstance && typeof directiveInstance[directiveName] === 'function') {
-            directiveInstance[directiveName](expr);
-        } else if (directiveInstance && directiveName in directiveInstance) {
-            (directiveInstance as any)[directiveName] = expr;
-        }
 
         // 解析组件属性绑定
         attrs.forEach(({ name, value }) => {
@@ -457,15 +427,13 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                         directiveInstance[inputDef.propertyKey] = attValue;
                     });
                 }
-            }
-        });
+            } else if (selectors.includes(name) && value) {
+                // 设置指令值
+                this.effect.run(() => {
+                    const attValue = isString(value) ? context[value] ?? value : value;
+                    directiveInstance[name] = attValue;
+                });
 
-        // 处理组件事件绑定
-        const events: Record<string, EventListener> = {};
-        attrs.forEach(({ name, value }) => {
-            if (name.startsWith('@')) {
-                const eventName = name.substring(1);
-                events[eventName] = this.parseEventExpression(value, context, viewRef);
             }
         });
 
