@@ -15,12 +15,41 @@ export class JsonNode implements RNode {
         return this.parentNode instanceof JsonElement ? this.parentNode : null;
     }
 
+    attributes = new Map<string, any>();
+
     constructor(
         readonly nodeType: number,
         public parentNode: JsonElement | null = null,
         public childNodes: JsonNode[] = [],
         public nextSibling: JsonNode | null = null) {
 
+    }
+
+    hasAttributeNS(namespace: string, localName: string): boolean {
+        return this.attributes.has(`${localName}:${namespace}`);
+    }
+
+    getAttributeNS(namespace: string | null, localName: string): string | null {
+        return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
+    }
+    setAttributeNS(namespace: string, name: string, value: string): void {
+        this.attributes.set(`${name}:${namespace}`, { name, namespace, value });
+    }
+    removeAttributeNS(namespace: string, localName: string): void {
+        this.attributes.delete(`${localName}:${namespace}`);
+    }
+
+    hasAttribute(name: string): boolean {
+        return this.attributes.has(name)
+    }
+    getAttribute(name: string): string | null {
+        return this.attributes.get(name)?.value ?? null
+    }
+    setAttribute(name: string, value: string): void {
+        this.attributes.set(name, { name, value });
+    }
+    removeAttribute(name: string): void {
+        this.attributes.delete(name)
     }
 
     removeChild(oldChild: JsonNode): JsonNode {
@@ -136,7 +165,6 @@ export class JsonElement extends JsonNode implements RElement {
     firstChild: RNode | null = null;
     style: RCssStyleDeclaration = new JCssStyleDeclaration();
     classList = new JDomTokenList();
-    attributes = new Map<string, any>();
     constructor(
         readonly tagName: string,
         readonly className: string = '',
@@ -153,32 +181,7 @@ export class JsonElement extends JsonNode implements RElement {
     }
 
 
-    hasAttributeNS(namespace: string, localName: string): boolean {
-        return this.attributes.has(`${localName}:${namespace}`);
-    }
 
-    getAttributeNS(namespace: string | null, localName: string): string | null {
-        return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
-    }
-    setAttributeNS(namespace: string, name: string, value: string): void {
-        this.attributes.set(`${name}:${namespace}`, { name, namespace, value });
-    }
-    removeAttributeNS(namespace: string, localName: string): void {
-        this.attributes.delete(`${localName}:${namespace}`);
-    }
-
-    hasAttribute(name: string): boolean {
-        return this.attributes.has(name)
-    }
-    getAttribute(name: string): string | null {
-        return this.attributes.get(name)?.value ?? null
-    }
-    setAttribute(name: string, value: string): void {
-        this.attributes.set(name, { name, value });
-    }
-    removeAttribute(name: string): void {
-        this.attributes.delete(name)
-    }
 
     addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
         this.events.addListener(type, listener)

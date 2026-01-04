@@ -4,8 +4,7 @@ import { Attribute, AttributeMetadata } from './atteribute';
 import { DIRECTIVES } from './directive';
 // import { State, StateMetadata } from './state';
 import { ComponentDef } from '../refs/component';
-import { Factoriable, factoryKey } from '../refs/directive';
-import { NodeType } from '../renderer/Node';
+import { DirectiveType, Factoriable, factoryKey } from '../refs/directive';
 import { Computed, ComputedMetadata } from './computed';
 
 
@@ -23,7 +22,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             (typeRef.type as AnnotationType)[noPointcut] = true;
             typeRef.assignAnnotation(ctx.define.metadata);
             const def = typeRef.getAnnotation<ComponentDef>() as ComponentDef;
-            def.nodeType = NodeType.Container;
+            def.directiveType = DirectiveType.Component;
             if (!def.selector) def.selector = typeRef.className;
             const metadata = ctx.define.metadata;
             if (metadata.providers) {

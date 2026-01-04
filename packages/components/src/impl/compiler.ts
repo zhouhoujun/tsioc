@@ -11,6 +11,7 @@ import { DIRECTIVES } from '../decorators/directive';
 import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
+import { Renderer } from '../renderer/Renderer';
 
 
 
@@ -40,32 +41,49 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const components = environment.get(COMPONENTS) || [];
         const dirMap = new Map<RNode, DirectiveDef[]>();
         const compMap = new Map<RNode, ComponentDef>();
+        const readerer = environment.get(Renderer);
 
-        rootNodes.forEach(node => {
-            components.forEach(r => {
-                const nodes = node.querySelectorAll(r.selector);
-                nodes?.forEach(n => {
-                    if (compMap.has(n)) {
-                        throw new Exception('has dup component selector')
-                    }
-                    compMap.set(n, r);
-                })
+
+        components.forEach(r => {
+            const nodes = readerer.querySelectorAll(rootNodes, r.selector);
+            nodes?.forEach(n => {
+                if (compMap.has(n)) {
+                    throw new Exception('has dup component selector')
+                }
+                compMap.set(n, r);
             })
-            directives.forEach(r => {
-                const nodes = node.querySelectorAll(r.selector);
-                nodes?.forEach(n => {
-                    if (compMap.has(n)) {
-                        return;
-                    }
-                    const dirs = dirMap.get(n);
-                    if (dirs) {
-                        dirs.push(r);
-                    } else {
-                        dirMap.set(n, [r]);
-                    }
-                })
+        })
+        directives.forEach(r => {
+            const nodes = readerer.querySelectorAll(rootNodes, r.selector);
+            nodes?.forEach(n => {
+                if (compMap.has(n)) {
+                    return;
+                }
+                const dirs = dirMap.get(n);
+                if (dirs) {
+                    dirs.push(r);
+                } else {
+                    dirMap.set(n, [r]);
+                }
             })
         });
+
+        Array.from(dirMap.keys()).forEach((key) => {
+            const sortedDirs = dirMap.get(key)!.sort((a, b) => {
+                // 先按优先级排序
+                if (a.priority !== b.priority) {
+                    return (b.priority || 0) - (a.priority || 0);
+                }
+                // 再按指令类型排序
+                if (a.directiveType !== b.directiveType) {
+                    return (b.directiveType || 0) - (a.directiveType || 0);
+                }
+                return 0;
+            });
+            dirMap.set(key, sortedDirs);
+        })
+
+
 
 
         // 处理动态内容
@@ -88,7 +106,9 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
 
     private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, dirType: DirectiveType) {
-        if (dirType & DirectiveType.List) return;
+        // 结构指令（List、Conditional）不处理子节点，由指令自己处理
+        if (dirType & (DirectiveType.List | DirectiveType.Conditional)) return;
+
         // 处理属性
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
@@ -100,8 +120,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 // 属性绑定
                 const propName = name.substring(1);
                 this.effect.run(() => {
-                    const attValue = this.evaluateExpression(value, context, viewRef);//context[value];
-                    // 移除特殊属性处理，让指令来处理
+                    const attValue = this.evaluateExpression(value, context, viewRef);
                     el.setAttribute(propName, attValue);
                 });
             } else if (this.delimiter.test(value)) {
@@ -122,8 +141,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             });
         }
 
-        // 递归处理子节点
-        if (!dirType && el.childNodes.length > 0) {
+        // 递归处理子节点（非结构指令）
+        if (el.childNodes.length > 0) {
             await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap);
         }
     }
@@ -140,9 +159,9 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
 
     protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, processChild?: (node: any) => void) {
-    
+
         const el = node as RElement;
-    
+
         const templateTag = this.options.templateTag || 'template';
         if (el.tagName === templateTag) {
             el.tagName = el.tagName.toLowerCase();
@@ -150,7 +169,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             viewRef.environment.attachTemplate(templateRef);
             return;
         }
-    
+
         const attrs = this.renderer.getAttributes(el);
         let dirTyoe: DirectiveType = DirectiveType.Normal;
         const componentDef = compMap.get(el);
@@ -158,131 +177,172 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             dirTyoe |= DirectiveType.Component;
             await this.processComponent(el, componentDef, attrs, context, viewRef);
         }
-    
+
         const dirs = dirMap.get(node);
-    
+
         // 优先处理指令组件
         if (dirs && dirs.length) {
-            // 1. 按优先级排序指令
-            const sortedDirs = [...dirs].sort((a, b) => {
-                // 先按优先级排序
-                if (a.priority !== b.priority) {
-                    return (b.priority || 0) - (a.priority || 0);
+            for (const dirDef of dirs) {
+                if (dirDef.directiveType) {
+                    dirTyoe |= dirDef.directiveType;
                 }
-                // 再按指令类型排序
-                if (a.directiveType !== b.directiveType) {
-                    return (b.directiveType || 0) - (a.directiveType || 0);
-                }
-                return 0;
-            });
-    
-            // 2. 按指令组分组
-            const groupedDirs = this.groupDirectivesByType(sortedDirs);
-    
-            // 3. 处理每个指令组
-            for (const [groupType, groupDirs] of groupedDirs) {
-                dirTyoe |= groupType;
-                await this.processDirectiveGroup(el, groupDirs, attrs, context, viewRef);
+                await this.processDirectiveByType(el, dirDef, attrs, context, viewRef);
             }
-    
+
+            // const groupedDirs = this.groupDirectivesByType(dirs);
+
+            // // 3. 处理每个指令组
+            // for (const [groupType, groupDirs] of groupedDirs) {
+            //     dirTyoe |= groupType;
+            //     await this.processDirectiveGroup(el, groupType, groupDirs, attrs, context, viewRef);
+            // }
+
             // 4. 处理元素属性（排除已处理的指令属性）
-            const processedAttrSelectors = new Set(dirs.flatMap(dir => 
+            const processedAttrSelectors = new Set(dirs.flatMap(dir =>
                 dir.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''))
             ));
             await this.processElement(
-                el, 
-                attrs.filter(a => !processedAttrSelectors.has(a.name)), 
-                context, 
-                viewRef, 
-                compMap, 
-                dirMap, 
+                el,
+                attrs.filter(a => !processedAttrSelectors.has(a.name)),
+                context,
+                viewRef,
+                compMap,
+                dirMap,
                 dirTyoe
             );
         } else {
             await this.processElement(el, attrs, context, viewRef, compMap, dirMap, dirTyoe);
         }
     }
-    
+
     /**
      * 按指令类型分组
      */
     private groupDirectivesByType(directives: DirectiveDef[]): Map<DirectiveType, DirectiveDef[]> {
         const groups = new Map<DirectiveType, DirectiveDef[]>();
-        
+
         directives.forEach(dir => {
             // 优先使用groupName
             const groupKey = dir.directiveType || DirectiveType.Normal;
-            
+
             if (!groups.has(groupKey)) {
                 groups.set(groupKey, []);
             }
-            
+
             groups.get(groupKey)!.push(dir);
         });
-        
+
         return groups;
     }
-    
+
     /**
      * 处理指令组
      */
-    private async processDirectiveGroup(el: RElement, dirs: DirectiveDef[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
-        // 处理条件指令组（v-if, v-else-if, v-else）
-        if (dirs[0]?.directiveType === DirectiveType.Conditional) {
-            await this.processConditionalDirectives(el, dirs, attrs, context, viewRef);
-        } 
-        // 处理列表指令（v-for）
-        else if (dirs[0]?.directiveType === DirectiveType.List) {
-            await this.processListDirectives(el, dirs, attrs, context, viewRef);
-        } 
-        // 处理其他指令
-        else {
-            for (const dirDef of dirs) {
-                await this.processDirective(el, dirDef, attrs, context, viewRef);
-            }
+    private async processDirectiveByType(el: RElement, dir: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+
+        switch (dir.directiveType) {
+            case DirectiveType.Conditional:
+                // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
+                await this.processConditionalDirectives(el, dir, attrs, context, viewRef);
+                break;
+            case DirectiveType.List:
+                // 处理列表指令（v-for, *for）
+                await this.processListDirectives(el, dir, attrs, context, viewRef);
+                break;
+
+            case DirectiveType.Structural:
+                // 处理结构指令（v-switch）, *switch）
+                await this.processStructuralDirectives(el, dir, attrs, context, viewRef);
+                break;
+
+            default:
+
+                await this.processDirective(el, dir, attrs, context, viewRef);
+                break;
         }
     }
-    
+
     /**
      * 处理条件指令组
      */
-    private async processConditionalDirectives(el: RElement, dirs: DirectiveDef[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
-        // 条件指令需要按顺序处理：v-if → v-else-if → v-else
-        const sortedConditionalDirs = [...dirs].sort((a, b) => {
-            const aIsIf = a.selector.includes('v-if') || a.selector.includes('*if');
-            const bIsIf = b.selector.includes('v-if') || b.selector.includes('*if');
-            const aIsElseIf = a.selector.includes('v-else-if') || a.selector.includes('*else-if');
-            const bIsElseIf = b.selector.includes('v-else-if') || b.selector.includes('*else-if');
-            const aIsElse = a.selector.includes('v-else') || a.selector.includes('*else');
-            const bIsElse = b.selector.includes('v-else') || b.selector.includes('*else');
-            
-            if (aIsIf && !bIsIf) return -1;
-            if (!aIsIf && bIsIf) return 1;
-            if (aIsElseIf && !bIsElseIf) return -1;
-            if (!aIsElseIf && bIsElseIf) return 1;
-            if (aIsElse && !bIsElse) return -1;
-            if (!aIsElse && bIsElse) return 1;
-            return 0;
-        });
-        
-        // 处理条件指令
-        for (const dirDef of sortedConditionalDirs) {
-            await this.processDirective(el, dirDef, attrs, context, viewRef);
+    private async processConditionalDirectives(el: RElement, dirDef: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+
+        const readerer = viewRef.environment.get(Renderer);
+        const container = readerer.createElement('conditional') as RElement;
+        const parent = readerer.parentNode(el);
+        if (parent) {
+            readerer.insertBefore(parent, container, el);
+            readerer.removeChild(parent, el);
         }
+
+        readerer.getAttributes(el).forEach(attr => {
+            el.removeAttribute(attr.name);
+            readerer.setAttribute(container, attr.name, attr.value)
+        });
+        const templateNodes = [el];
+
+        // 处理条件指令
+
+        await this.processDirective(container, dirDef, attrs, context, viewRef, templateNodes);
+
     }
-    
+
     /**
      * 处理列表指令
      */
-    private async processListDirectives(el: RElement, dirs: DirectiveDef[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
-        // 列表指令通常只有一个（v-for）
-        for (const dirDef of dirs) {
-            await this.processDirective(el, dirDef, attrs, context, viewRef);
+    private async processListDirectives(el: RElement, dirDef: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+        // 为列表指令提供模板处理能力
+        const readerer = viewRef.environment.get(Renderer);
+
+        const container = readerer.createElement('list');
+        const parent = readerer.parentNode(el);
+        if (parent) {
+            readerer.insertBefore(parent, container, el);
+            readerer.removeChild(parent, el);
         }
+
+        readerer.getAttributes(el).forEach(attr => {
+            el.removeAttribute(attr.name);
+            readerer.setAttribute(container, attr.name, attr.value)
+        })
+
+        const templateNodes = [el];
+
+        // 列表指令通常只有一个（v-for）
+
+        await this.processDirective(container, dirDef, attrs, context, viewRef, templateNodes);
+
+    }
+
+    /**
+     * 处理结构指令
+     */
+    private async processStructuralDirectives(el: RElement, dirDef: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+        // 为列表指令提供模板处理能力
+        const readerer = viewRef.environment.get(Renderer);
+
+        const container = readerer.createElement('struct') as RElement;
+        const parent = readerer.parentNode(el);
+        if (parent) {
+            readerer.insertBefore(parent, container, el);
+            readerer.removeChild(parent, el);
+        }
+
+        readerer.getAttributes(el).forEach(attr => {
+            el.removeAttribute(attr.name);
+            readerer.setAttribute(container, attr.name, attr.value)
+        })
+
+        const templateNodes = [el];
+
+
+        // 列表指令通常只有一个（v-for）
+        await this.processDirective(container, dirDef, attrs, context, viewRef, templateNodes);
+
     }
 
 
-     private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+    private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
         const elementRef = viewRef.environment.getElementRef(el);
         const componentRef = (componentDef as Factoriable).ƿfac?.(viewRef.environment, { elementRef });
 
@@ -344,22 +404,22 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         await componentRef.render();
     }
 
-    protected async processDirective(el: RNode, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
+    protected async processDirective(el: RNode, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, templateNodes?: RNode[]) {
         //提取指令名称和表达式
         const expr = attrs.find(a => a.name === directive.selector)?.value;
         const directiveName = directive.selector.startsWith('v-') ? directive.selector.slice(2) : directive.selector.slice(1);
 
         // 创建指令实例，并传入更多上下文信息
-        const directiveRef = this.createDirectiveRef(directive, el, viewRef);
+        const directiveRef = this.createDirectiveRef(directive, el, viewRef, templateNodes);
         if (!directiveRef) throw new Exception(`directive ${directiveName} has not declaration!`);
-        
+
         if (directiveRef) {
             viewRef.environment.attachDirective(directiveRef);
         }
-        
+
         const attributes = directive.attributes ?? [];
         const directiveInstance = directiveRef.instance;
-        
+
         // 设置指令值
         if (directiveInstance && typeof directiveInstance[directiveName] === 'function') {
             directiveInstance[directiveName](expr);
@@ -431,14 +491,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      * @returns {*}
      * @memberof AbstractTemplateCompiler
      */
-    protected createDirectiveRef(directive: DirectiveDef, node: RNode, viewRef: EmbeddedViewRef<any>): DirectiveRef<any> | null {
+    protected createDirectiveRef(directive: DirectiveDef, node: RNode, viewRef: EmbeddedViewRef<any>, templateNodes?: RNode[]): DirectiveRef<any> | null {
         // 实际应用中需要使用注入器创建指令实例
         // 这里简化处理
         try {
             // 从环境中获取必要的依赖
             const elementRef = viewRef.environment.getElementRef(node);
             // 创建指令实例并注入依赖
-            return (directive as Factoriable).ƿfac?.(viewRef.environment, { elementRef }) as DirectiveRef<any> ?? null;
+            return (directive as Factoriable).ƿfac?.(viewRef.environment, { elementRef, templateNodes }) as DirectiveRef<any> ?? null;
         } catch (err) {
             console.error('Failed to create directive instance:', err);
             return null;
@@ -596,7 +656,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         return args;
     }
-
     // 计算参数值 (字符串/数字/布尔值/变量引用)
     private evaluateArg(arg: string, context: any, viewRef: EmbeddedViewRef<any>): any {
         if (!arg) return undefined;

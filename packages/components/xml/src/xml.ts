@@ -15,6 +15,9 @@ export class XmlNode implements RNode {
         return this.parentNode instanceof XmlElement ? this.parentNode : null;
     }
 
+
+    attributes = new Map<string, RAttr>();
+
     constructor(
         readonly nodeType: number,
         public parentNode: XmlElement | null = null,
@@ -22,6 +25,33 @@ export class XmlNode implements RNode {
         public nextSibling: XmlNode | null = null,
     ) {
 
+    }
+
+    hasAttributeNS(namespace: string, localName: string): boolean {
+        return this.attributes.has(`${localName}:${namespace}`);
+    }
+
+    getAttributeNS(namespace: string | null, localName: string): string | null {
+        return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
+    }
+    setAttributeNS(namespace: string, name: string, value: string): void {
+        this.attributes.set(`${name}:${namespace}`, { name, namespace, value });
+    }
+    removeAttributeNS(namespace: string, localName: string): void {
+        this.attributes.delete(`${localName}:${namespace}`);
+    }
+
+    hasAttribute(name: string): boolean {
+        return this.attributes.has(name)
+    }
+    getAttribute(name: string): string | null {
+        return this.attributes.get(name)?.value ?? null
+    }
+    setAttribute(name: string, value: string): void {
+        this.attributes.set(name, { name, value });
+    }
+    removeAttribute(name: string): void {
+        this.attributes.delete(name)
     }
 
     removeChild(oldChild: XmlNode): XmlNode {
@@ -137,7 +167,6 @@ export class XmlElement extends XmlNode implements RElement {
     firstChild: RNode | null = null;
     style = new XmlCssStyleDeclaration();
     classList = new XmlDomTokenList();
-    attributes = new Map<string, RAttr>();
     constructor(
         readonly tagName: string,
         readonly className: string = '',
@@ -154,32 +183,7 @@ export class XmlElement extends XmlNode implements RElement {
         return this.childNodes.filter(r => r.nodeType === NodeType.Text && (r as XmlText).textContent).map(r => (r as XmlText).textContent).join(' ') ?? null;
     }
 
-    hasAttributeNS(namespace: string, localName: string): boolean {
-        return this.attributes.has(`${localName}:${namespace}`);
-    }
 
-    getAttributeNS(namespace: string | null, localName: string): string | null {
-        return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
-    }
-    setAttributeNS(namespace: string, name: string, value: string): void {
-        this.attributes.set(`${name}:${namespace}`, { name, namespace, value });
-    }
-    removeAttributeNS(namespace: string, localName: string): void {
-        this.attributes.delete(`${localName}:${namespace}`);
-    }
-
-    hasAttribute(name: string): boolean {
-        return this.attributes.has(name)
-    }
-    getAttribute(name: string): string | null {
-        return this.attributes.get(name)?.value ?? null
-    }
-    setAttribute(name: string, value: string): void {
-        this.attributes.set(name, { name, value });
-    }
-    removeAttribute(name: string): void {
-        this.attributes.delete(name)
-    }
 
     addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
         this.events.addListener(type, listener)

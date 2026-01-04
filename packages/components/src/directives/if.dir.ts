@@ -13,14 +13,22 @@ import { DirectiveType } from '../refs/directive';
 abstract class BaseIfDirective {
     protected _hasView = false;
     protected _siblingDirectives: BaseIfDirective[] = [];
+    protected _templateRef: TemplateRef<any>; // 模板引用
 
     constructor(
         protected viewContainer: ViewContainerRef,
-        protected templateRef: TemplateRef<any>,
-    ) { }
+        templateRef: TemplateRef<any>,
+    ) { 
+        this._templateRef = templateRef;
+    }
+
+    // 设置模板引用（从编译器传递）
+    set templateRef(templateRef: TemplateRef<any>) {
+        this._templateRef = templateRef;
+    }
 
     protected createView() {
-        this.viewContainer.createEmbeddedView(this.templateRef);
+        this.viewContainer.createEmbeddedView(this._templateRef);
         this._hasView = true;
         // 当当前指令显示时，隐藏所有兄弟指令
         this._siblingDirectives.forEach(dir => dir.clearView());
@@ -48,7 +56,6 @@ abstract class BaseIfDirective {
  */
 @Directive({
     selector: '[v-if],[*if]',
-    nodeType: NodeType.ElementContainer,
     directiveType: DirectiveType.Conditional,
     priority: 10
 })
@@ -71,7 +78,6 @@ export class VIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else-if],[*else-if]',
-    nodeType: NodeType.ElementContainer,
     directiveType: DirectiveType.Conditional,
     priority: 10
 })
@@ -94,7 +100,6 @@ export class VElseIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else],[*else]',
-    nodeType: NodeType.ElementContainer,
     directiveType: DirectiveType.Conditional,
     priority: 10
 })
@@ -110,4 +115,3 @@ export class VElseDirective extends BaseIfDirective {
         }
     }
 }
-

@@ -20,6 +20,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
     /**
      * Creates an instance of TemplateRefImpl.
+     * @param {RNode[]} rootNodes
      * @param {ElementRef} elementRef
      * @param {InvocationContext} context
      * @memberof TemplateRefImpl

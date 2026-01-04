@@ -36,7 +36,6 @@ export interface VForDirectiveMetadata {
  */
 @Directive({
     selector: '[v-for],[*for]',
-    nodeType: NodeType.Container,
     directiveType: DirectiveType.List,
     priority: 20
 })
@@ -45,11 +44,19 @@ export class VForDirective {
     private _prevValue: any = null;
     private _itemNames: string[] = []; // 保存循环变量名
     private _collectionExpr = ''; // 保存集合表达式
+    private _templateRef: TemplateRef<any>; // 模板引用
 
     constructor(
         private viewContainer: ViewContainerRef,
-        private templateRef: TemplateRef<any>,
-    ) { }
+        templateRef: TemplateRef<any>,
+    ) { 
+        this._templateRef = templateRef;
+    }
+
+    // 设置模板引用（从编译器传递）
+    set templateRef(templateRef: TemplateRef<any>) {
+        this._templateRef = templateRef;
+    }
 
     @Attribute()
     set for(expr: string) {
@@ -155,7 +162,7 @@ export class VForDirective {
     }
 
     private createView(context: any) {
-        const viewRef = this.viewContainer.createEmbeddedView(this.templateRef, context);
+        const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, context);
         this._viewRefs.push(viewRef);
     }
 

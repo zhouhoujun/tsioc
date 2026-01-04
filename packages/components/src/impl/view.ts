@@ -3,7 +3,7 @@ import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentDef, ComponentRef } from '../refs/component';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { NodeType, RNode } from '../renderer/Node';
-import { DirectiveDef, DirectiveRef } from '../refs/directive';
+import { DirectiveDef, DirectiveRef, DirectiveType } from '../refs/directive';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { EnvironmentContext } from '../refs/environment';
@@ -110,9 +110,9 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 
         const node = this.environment.get(Renderer).querySelector(this.rootNodes, sel);
         if (node) {
-            if (def) {
-                if (def.nodeType === NodeType.Container) {
-                    return this.environment.getComponentRefByNode(node) ?? this.environment.getDirectiveRefByNode(node) ?? null
+            if (def && def.directiveType) {
+                if (def.directiveType === DirectiveType.Component) {
+                    return this.environment.getComponentRefByNode(node) ?? null
                 }
                 return this.environment.getDirectiveRefByNode(node) ?? null;
             }
@@ -154,9 +154,9 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         }
         
         return nodes.map(node => {
-            if (def && def.nodeType) {
-                if (def.nodeType === NodeType.Container) {
-                    return this.environment.getComponentRefByNode(node) ?? this.environment.getDirectiveRefByNode(node) ?? null
+            if (def && def.directiveType) {
+                if (def.directiveType === DirectiveType.Component) {
+                    return this.environment.getComponentRefByNode(node) ?? null
                 }
                 return this.environment.getDirectiveRefByNode(node) ?? null;
             }
