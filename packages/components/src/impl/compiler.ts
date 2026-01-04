@@ -11,7 +11,6 @@ import { DIRECTIVES } from '../decorators/directive';
 import { DirectiveDef, DirectiveRef, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
-import { ComputedMetadata } from '../decorators/computed';
 
 
 
@@ -88,7 +87,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     }
 
 
-    private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, isContainer?: boolean) {
+    private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, nodeTyoe: NodeType) {
+        if (nodeTyoe & NodeType.Container) return;
         // 处理属性
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
@@ -123,7 +123,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         }
 
         // 递归处理子节点
-        if (!isContainer && el.childNodes.length > 0) {
+        if (!(nodeTyoe & NodeType.ElementContainer) && el.childNodes.length > 0) {
             await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap);
         }
     }
@@ -152,10 +152,10 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         }
 
         const attrs = this.renderer.getAttributes(el);
-        let isContainer = false;
+        let nodeTyoe: NodeType = NodeType.Element;
         const componentDef = compMap.get(el);
         if (componentDef) {
-            isContainer = true;
+            nodeTyoe = NodeType.Container;
             await this.processComponent(el, componentDef, attrs, context, viewRef);
         }
 
@@ -185,15 +185,18 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         // 优先处理指令组件
         if (dirs && dirs.length) {
+            // dirs.filter(r => r.nodeType).forEach(r => {
+            //     nodeTyoe |= r.nodeType!;
+            // });
             for (const dirDef of dirs) {
-                if (dirDef.nodeType && dirDef.nodeType & NodeType.Container) {
-                    isContainer = true;
+                if (dirDef.nodeType) {
+                    nodeTyoe |= dirDef.nodeType;
                 }
                 await this.processDirective(el, dirDef, attrs, context, viewRef);
             }
-            await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, isContainer);
+            await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, nodeTyoe);
         } else {
-            await this.processElement(el, attrs, context, viewRef, compMap, dirMap, isContainer);
+            await this.processElement(el, attrs, context, viewRef, compMap, dirMap, nodeTyoe);
         }
 
 
@@ -421,33 +424,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     // 修改 evaluateExpression 方法以正确处理模板上下文
     private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
         try {
-            // // 检查是否为计算属性访问
-            // const computed = this.getComputedProperty(expr, context);
-            // if (computed) {
-            //     const cacheKey = `${context.constructor.name}-${expr}`;
-            //     let cacheEntry = viewRef.computedCache.get(cacheKey);
-
-            //     if (!cacheEntry) {
-            //         // 创建新的缓存条目
-            //         cacheEntry = { value: undefined, deps: new Set() };
-            //         viewRef.computedCache.set(cacheKey, cacheEntry);
-            //     }
-
-            //     // 使用effect跟踪依赖并计算值
-            //     return this.effect.run(() => {
-            //         // 清除旧依赖
-            //         cacheEntry!.deps.clear();
-
-            //         // 计算新值
-            //         const value = this.evaluateComputedExpression(computed, expr, context, viewRef);
-            //         cacheEntry!.value = value;
-
-            //         // 收集新依赖（这里需要实际实现依赖收集逻辑）
-            //         this.trackDependencies(expr, context, cacheEntry!.deps);
-
-            //         return value;
-            //     });
-            // }
             const parts = expr.split('|').map(part => part.trim());
             if (parts.length <= 1) {
                 // 简单表达式求值
@@ -577,35 +553,4 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         return this.evaluateExpression(arg, context, viewRef);
     }
 
-    private getComputedProperty(expr: string, context: any): ComputedMetadata | undefined {
-        // 检查上下文对象是否有该计算属性的元数据
-        const propName = expr.trim();
-        const cDef = getDef(context) as ComponentDef | DirectiveDef;
-        return cDef?.computeds?.find(r=> r.propertyKey === propName);
-    }
-
-    private evaluateComputedExpression(computed: ComputedMetadata, expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
-        // 计算属性表达式求值
-        const compute = computed.compute;
-        if (typeof compute === 'function') {
-            return compute(context);
-        }
-        return new Function('ctx', `with(ctx){return ${computed.compute ?? expr}}`)(context);
-    }
-
-    private trackDependencies(expr: string, context: any, deps: Set<any>): void {
-        // 实现依赖跟踪逻辑
-        // 解析表达式，找出所有依赖的响应式属性
-        const dependencies = this.parseDependencies(expr);
-        dependencies.forEach(dep => {
-            deps.add(dep);
-        });
-    }
-
-    private parseDependencies(expr: string): string[] {
-        // 简单的依赖解析，实际实现可能需要更复杂的表达式解析
-        const propRegex = /([a-zA-Z_$][\w$]*)/g;
-        const matches = expr.match(propRegex) || [];
-        return [...new Set(matches)]; // 返回唯一的属性名
-    }
 }

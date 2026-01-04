@@ -58,7 +58,7 @@ export enum NodeType {
 
   // See: https://github.com/microsoft/TypeScript/issues/35875 why we can't refer to existing enum.
   AnyRNode = 0b11, // Text | Element
-  AnyContainer = 0b1100, // Container | ElementContainer
+  AnyContainer = 0b110000, // Container | ElementContainer
 }
 
 /**

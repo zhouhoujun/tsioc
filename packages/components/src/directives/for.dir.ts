@@ -35,7 +35,7 @@ export interface VForDirectiveMetadata {
  */
 @Directive({
     selector: '[v-for],[*for]',
-    nodeType: NodeType.AnyContainer
+    nodeType: NodeType.Container
 })
 export class VForDirective {
     private _viewRefs: any[] = [];
