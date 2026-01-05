@@ -397,45 +397,45 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const attributes = directive.attributes ?? [];
         const directiveInstance = directiveRef.instance;
 
-        // 解析组件属性绑定
-        attrs.forEach(({ name, value }) => {
-            if (name.startsWith('@')) {
-                // 事件绑定
-                const eventName = name.substring(1);
-                // 查找是否为输入属性
-                const inputDef = attributes.find(attr => attr.alias === eventName || attr.propertyKey === eventName);
-                if (inputDef) {
-                    // 解析绑定表达式并创建响应式依赖
-                    this.effect.run(() => {
-                        const handler = this.evaluateExpression(value, context, viewRef);
-                        // 绑定事件处理函数
-                        if (directiveInstance[inputDef.propertyKey] instanceof EventEmitter) {
-                            directiveInstance[inputDef.propertyKey].subscribe(handler);
-                        } else if (!directiveInstance[inputDef.propertyKey]) {
-                            directiveInstance[inputDef.propertyKey] = handler;
-                        }
-                    });
-                }
-            } else if (name.startsWith(':')) {
-                // 属性绑定
-                const propName = name.substring(1);
-                // 查找是否为输入属性
-                const inputDef = attributes.find(attr => attr.alias === propName || attr.propertyKey === propName);
-                if (inputDef) {
-                    this.effect.run(() => {
-                        const attValue = context[value];
-                        directiveInstance[inputDef.propertyKey] = attValue;
-                    });
-                }
-            } else if (selectors.includes(name) && value) {
-                // 设置指令值
-                this.effect.run(() => {
-                    const attValue = isString(value) ? context[value] ?? value : value;
-                    directiveInstance[name] = attValue;
-                });
+        attributes.forEach(a => {
+            const name = a.alias ?? a.propertyKey;
+            const propertyKey = a.propertyKey;
+            const matnames = [':', '@', '*', 'v-'].map(r => r + name);
+            const attr = attrs.find(r => matnames.includes(r.name));
+            if (!attr) return;
 
+            if (attr.name.startsWith('@')) {
+                // 解析绑定表达式并创建响应式依赖
+                this.effect.run(() => {
+                    const handler = this.evaluateExpression(attr.value, context, viewRef);
+                    // 绑定事件处理函数
+                    if (directiveInstance[propertyKey] instanceof EventEmitter) {
+                        directiveInstance[propertyKey].subscribe(handler);
+                    } else if (!directiveInstance[propertyKey]) {
+                        directiveInstance[propertyKey] = handler;
+                    }
+                });
+            } else if (attr.name.startsWith(':')) {
+                // 属性绑定
+                // 查找是否为输入属性
+                if (isString(attr.value)) {
+                    this.effect.run(() => {
+                        const attValue = context[attr.value] ?? attr.value;
+                        directiveInstance[propertyKey] = attValue;
+                    });
+                } else {
+                    directiveInstance[propertyKey] = attr.value;
+                }
+
+            } else if (attr.name.startsWith('v-') || attr.name.startsWith('*')) {
+                this.effect.run(() => {
+                    const attValue = context[attr.value] ?? attr.value;
+                    directiveInstance[propertyKey] = attValue;
+                });
             }
-        });
+
+        })
+
 
         // 调用指令的初始化方法
         if (directiveInstance.onInit) {

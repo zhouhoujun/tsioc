@@ -65,6 +65,7 @@ export class VForDirective {
         }
     }
 
+    @Attribute()
     set of(collection: any) {
         this._collection = collection;
         this.updateView();
