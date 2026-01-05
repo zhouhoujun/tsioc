@@ -1,5 +1,3 @@
-
-
 import { getDef, InvocationContext, isFunction, isNumber, Type } from '@tsdi/ioc';
 import { ViewContainerRef } from '../refs/container';
 import { ComponentDef, ComponentRef } from '../refs/component';
@@ -8,7 +6,7 @@ import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
 import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
-import { RNode } from '../renderer/Node';
+import { NodeType, RNode } from '../renderer/Node';
 import { EnvironmentContext } from '../refs/environment';
 
 /**
@@ -132,14 +130,34 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const viewNodes = viewRef.rootNodes;
         const nextSibling = this.getNextSibling(insertIndex);
 
-        if (nextSibling) {
-            viewNodes.forEach(node => {
-                nativeElement.insertBefore(node, nextSibling);
-            });
+        // 判断nativeElement是否为ElementContainer类型
+        const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
+
+        if (isElementContainer) {
+            // 对于ElementContainer，将视图插入到该节点前面
+            const parentNode = nativeElement.parentNode;
+            if (parentNode) {
+                if (nextSibling) {
+                    viewNodes.forEach(node => {
+                        parentNode.insertBefore(node, nextSibling);
+                    });
+                } else {
+                    viewNodes.forEach(node => {
+                        parentNode.insertBefore(node, nativeElement);
+                    });
+                }
+            }
         } else {
-            viewNodes.forEach(node => {
-                nativeElement.appendChild(node);
-            });
+            // 正常插入逻辑
+            if (nextSibling) {
+                viewNodes.forEach(node => {
+                    nativeElement.insertBefore(node, nextSibling);
+                });
+            } else {
+                viewNodes.forEach(node => {
+                    nativeElement.appendChild(node);
+                });
+            }
         }
 
         return viewRef;
@@ -170,22 +188,44 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const viewNodes = viewRef.rootNodes;
         const nextSibling = this.getNextSibling(newIndex);
 
+        // 判断nativeElement是否为ElementContainer类型
+        const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
+
         // Remove nodes first
         viewNodes.forEach(node => {
-            if (node.parentNode === nativeElement) {
-                nativeElement.removeChild(node);
+            if (node.parentNode === (isElementContainer ? nativeElement.parentNode : nativeElement)) {
+                if (isElementContainer && nativeElement.parentNode) {
+                    nativeElement.parentNode.removeChild(node);
+                } else {
+                    nativeElement.removeChild(node);
+                }
             }
         });
 
         // Insert nodes at new position
-        if (nextSibling) {
-            viewNodes.forEach(node => {
-                nativeElement.insertBefore(node, nextSibling);
-            });
+        if (isElementContainer) {
+            const parentNode = nativeElement.parentNode;
+            if (parentNode) {
+                if (nextSibling) {
+                    viewNodes.forEach(node => {
+                        parentNode.insertBefore(node, nextSibling);
+                    });
+                } else {
+                    viewNodes.forEach(node => {
+                        parentNode.insertBefore(node, nativeElement);
+                    });
+                }
+            }
         } else {
-            viewNodes.forEach(node => {
-                nativeElement.appendChild(node);
-            });
+            if (nextSibling) {
+                viewNodes.forEach(node => {
+                    nativeElement.insertBefore(node, nextSibling);
+                });
+            } else {
+                viewNodes.forEach(node => {
+                    nativeElement.appendChild(node);
+                });
+            }
         }
 
         return viewRef;
@@ -220,9 +260,16 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const viewNodes = viewRef.rootNodes;
         const nativeElement = this.element.nativeElement;
 
+        // 判断nativeElement是否为ElementContainer类型
+        const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
+
         // Remove DOM nodes
         viewNodes.forEach(node => {
-            this.renderer.removeChild(nativeElement, node);
+            if (isElementContainer && nativeElement.parentNode) {
+                this.renderer.removeChild(nativeElement.parentNode, node);
+            } else {
+                this.renderer.removeChild(nativeElement, node);
+            }
         });
 
         // Remove view from views array

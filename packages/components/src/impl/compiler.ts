@@ -12,7 +12,6 @@ import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable } from '../refs/
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
-import { TemplateRef } from '../refs/template';
 
 
 
@@ -107,9 +106,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
 
     private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, dirType: DirectiveType) {
-        // 结构指令（List、Conditional）不处理子节点，由指令自己处理
-        if (dirType & (DirectiveType.List | DirectiveType.Conditional)) return;
-
+        if (dirType & DirectiveType.List) return;
         // 处理属性
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
@@ -141,6 +138,9 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 });
             });
         }
+
+        // 结构指令（List、Conditional）不处理子节点，由指令自己处理
+        if (dirType & (DirectiveType.Structural | DirectiveType.Component | DirectiveType.Conditional)) return;
 
         // 递归处理子节点（非结构指令）
         if (el.childNodes.length > 0) {
@@ -247,7 +247,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private async processConditionalDirectives(el: RElement, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>): Promise<RNode> {
 
         const readerer = viewRef.environment.get(Renderer);
-        const container = readerer.createComment('conditional') as RElement;
+        const container = this.createContainer(readerer, dirDef.selector);
         const parent = readerer.parentNode(el);
         if (parent) {
             readerer.insertBefore(parent, container, el);
@@ -275,7 +275,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 为列表指令提供模板处理能力
         const readerer = viewRef.environment.get(Renderer);
 
-        const container = readerer.createComment('list') as RElement;
+        const container = this.createContainer(readerer, dirDef.selector) as RElement;
         const parent = readerer.parentNode(el);
         if (parent) {
             readerer.insertBefore(parent, container, el);
@@ -295,6 +295,13 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         return container;
 
+    }
+
+    private createContainer(readerer: Renderer, text?: string): RElement {
+        const container = readerer.createElement('v-container');
+        container.nodeType = NodeType.ElementContainer;
+        // if (text) container.textContent = text;
+        return container;
     }
 
     /**

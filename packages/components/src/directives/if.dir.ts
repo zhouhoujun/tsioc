@@ -58,7 +58,7 @@ abstract class BaseIfDirective {
     // 子类需要实现此方法来确定初始化时是否创建视图
     protected abstract shouldCreateViewOnInit(): boolean;
 
-    ngOnDestroy() {
+    onDestroy() {
         this.clearView();
     }
 }

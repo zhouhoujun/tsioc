@@ -187,7 +187,7 @@ export class VForDirective {
         this.updateView();
     }
 
-    ngOnDestroy() {
+    onDestroy() {
         this.clear();
     }
 }

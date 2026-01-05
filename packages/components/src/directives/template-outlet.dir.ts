@@ -70,7 +70,7 @@ export class TemplateOutletDirective {
         }
     }
 
-    ngOnDestroy() {
+    onDestroy() {
         // Clean up view when directive is destroyed
         if (this._viewRef) {
             this.viewContainer.clear();

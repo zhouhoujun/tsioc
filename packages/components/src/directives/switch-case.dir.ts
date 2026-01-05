@@ -22,6 +22,8 @@ export class SwitchDirective {
     private _caseDirectives: CaseDirective[] = [];
     private _defaultDirective: DefaultDirective | null = null;
 
+    @Attribute('*switch')
+    @Attribute('v-switch')
     set switch(value: any) {
         this._value = value;
         this.updateCases();
@@ -95,7 +97,7 @@ export class SwitchDirective {
         }
     }
 
-    ngOnDestroy() {
+    onDestroy() {
         // Clean up all registered case directives
         this._caseDirectives.forEach(caseDirective => {
             caseDirective.clearView();
@@ -139,7 +141,8 @@ export class CaseDirective {
         }
     }
 
-    @Attribute()
+    @Attribute('v-case')
+    @Attribute('*case')
     set case(value: any) {
         this._caseValue = value;
         if (this._switchDirective) {
@@ -183,7 +186,7 @@ export class CaseDirective {
         }
     }
 
-    ngOnDestroy() {
+    onDestroy() {
         if (this._switchDirective) {
             this._switchDirective.unregisterCase(this);
         }
@@ -265,7 +268,7 @@ export class DefaultDirective {
         }
     }
 
-    ngOnDestroy() {
+    onDestroy() {
         if (this._switchDirective) {
             this._switchDirective.unregisterDefault();
         }
