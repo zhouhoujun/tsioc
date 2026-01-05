@@ -4,7 +4,7 @@ import { Attribute, Component, OnDestroy, OnInit } from '@tsdi/components';
   selector: 'app-root',
   template: {
     div: {
-      h1:  '{{title}}',
+      h1: '{{title}}',
       button: { '@click': 'handleClick', '#text': 'Click me' },
       p: { ':class': '{active: isActive}', '#text': 'Status: {{status}}' }
     }
@@ -75,13 +75,13 @@ export class TextComponet {
   selector: 'app-example',
   template: {
     div: [
-      { 
-        h1:  '{{ title }}' 
+      {
+        h1: '{{ title }}'
       },
       { p: 'Count: {{ count }}' },
       { input: { 'v-model': 'value' } },
       { p: 'Value: {{ value }}' },
-      { button: { '@click': 'increment', '#text': 'Increment' } },
+      { button: { '@click': 'increment', textContent: 'Increment' } },
       { button: { '@click': 'clickWithData($event, item)', '#text': 'Increment' } },
       { p: 'Today: {{ today | date-format:\'yyyy-MM-dd\' }}' }
     ]
@@ -120,25 +120,5 @@ export class ExampleComponent implements OnInit, OnDestroy {
   onDestroy(): void {
     console.log('Component destroyed');
   }
-
-}
-
-
-@Component({
-  selector: 'app-comp2',
-  template: {
-    '#text': '123',
-    a: '123',
-    b: '456',
-    c: '789',
-    childNodes: [
-      { $tag: 'Text', a: '123' },
-      { $tag: 'Text', a: '456' },
-      { $tag: 'Text', a: '789' },
-      { $tag: 'Field', a: '123' },
-    ]
-  }
-})
-export class JsonTemplateComponent {
 
 }

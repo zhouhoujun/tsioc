@@ -42,10 +42,10 @@ export class JsonNode implements RNode {
     hasAttribute(name: string): boolean {
         return this.attributes.has(name)
     }
-    getAttribute(name: string): string | null {
+    getAttribute(name: string): any | null {
         return this.attributes.get(name)?.value ?? null
     }
-    setAttribute(name: string, value: string): void {
+    setAttribute(name: string, value: any): void {
         this.attributes.set(name, { name, value });
     }
     removeAttribute(name: string): void {
@@ -324,7 +324,10 @@ export class JsonRenderer implements Renderer {
 
 }
 const comment = '#comment';
-const textContent = '#text';
+const text = '#text';
+const textContent = 'textContent';
+const attributes = 'attributes';
+const children = 'children';
 const attrRegex = /^(@|#|:|\[|v-|\.)/;
 
 // XML模板解析器实现示例
@@ -371,30 +374,54 @@ export class JsonTemplateParser implements TemplateParser<Object | string> {
             // 设置属性
             for (const key of keys) {
                 const datan = jsonObj[key];
-                if (key == textContent) {
-                    // #text
-                    const txtNode = this.renderer.createText(jsonObj[textContent]);
-                    if (parent) txtNode.parentNode = parent;
-                    childNodes.push(txtNode);
-                } else if (key === comment) {
-                    // #comment
-                    const commentNode = this.renderer.createComment(jsonObj[comment]);
-                    if (parent) commentNode.parentNode = parent;
-                    childNodes.push(commentNode);
-                } else if (attrRegex.test(key)) {                                     
-                    //attrs
-                    if (parent) {
-                        parent.setAttribute(key.startsWith('.') ? key.slice(1) : key, datan);
-                    }
-                } else if (key) {
-                    //node tag
-                    const node = this.renderer.createElement(key);
-                    if (parent) node.parentNode = parent;
-                    const children = this.convertToNodes(datan, node);
-                    node.childNodes.push(...children);
-                    childNodes.push(node);
+                let node: JsonNode;
+                switch (key) {
+                    case text:
+                    case textContent:
+                        // #text
+                        node = this.renderer.createText(datan);
+                        if (parent) node.parentNode = parent;
+                        childNodes.push(node);
+                        break;
+                    case comment:
+                        // #comment
+                        node = this.renderer.createComment(datan);
+                        if (parent) node.parentNode = parent;
+                        childNodes.push(node);
+                        break;
+                    case attributes:
+                        if (parent) {
+                            Object.entries(datan).forEach(([name, value]) => {
+                                parent.setAttribute(name, value as any);
+                            })
+                        }
+                        break;
+                    case children:
+                        if (parent) {
+                            const nodes = this.convertToNodes(datan, parent);
+                            childNodes.push(...nodes);
+                        }
+                        break;
+
+                    default:
+                        if (attrRegex.test(key)) {
+                            //attrs
+                            if (parent) {
+                                parent.setAttribute(key.startsWith('.') ? key.slice(1) : key, datan);
+                            }
+                        } else if (key) {
+                            //node tag
+                            node = this.renderer.createElement(key);
+                            if (parent) node.parentNode = parent;
+                            const children = this.convertToNodes(datan, node as JsonElement);
+                            node.childNodes.push(...children);
+                            childNodes.push(node);
+
+                        }
+                        break;
 
                 }
+
             }
 
             return childNodes;
