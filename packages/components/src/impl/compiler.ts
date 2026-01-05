@@ -428,10 +428,11 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 }
 
             } else if (attr.name.startsWith('v-') || attr.name.startsWith('*')) {
-                this.effect.run(() => {
-                    const attValue = context[attr.value] ?? attr.value;
-                    directiveInstance[propertyKey] = attValue;
-                });
+                directiveInstance[propertyKey] = attr.value;
+                // this.effect.run(() => {
+                //     const attValue = context[attr.value] ?? attr.value;
+                //     directiveInstance[propertyKey] = attValue;
+                // });
             }
 
         })
