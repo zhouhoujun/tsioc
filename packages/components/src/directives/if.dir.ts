@@ -1,3 +1,4 @@
+import { Abstract } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
@@ -10,6 +11,7 @@ import { DirectiveType } from '../refs/directive';
  * 
  * @class BaseIfDirective
  */
+@Abstract()
 abstract class BaseIfDirective {
     protected _hasView = false;
     protected _siblingDirectives: BaseIfDirective[] = [];
@@ -23,7 +25,8 @@ abstract class BaseIfDirective {
     }
 
     // 设置模板引用（从编译器传递）
-    set templateRef(templateRef: TemplateRef<any>) {
+    @Attribute()
+    set template(templateRef: TemplateRef<any>) {
         this._templateRef = templateRef;
     }
 

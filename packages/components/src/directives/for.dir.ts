@@ -2,8 +2,9 @@ import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
-import { NodeType } from '../renderer/Node';
 import { DirectiveType } from '../refs/directive';
+import { ReactiveEffect } from '../ReactiveEffect';
+import { reactive } from '../impl/reactive';
 
 /**
  * VFor directive metadata.
@@ -41,20 +42,24 @@ export interface VForDirectiveMetadata {
 })
 export class VForDirective {
     private _viewRefs: any[] = [];
-    private _prevValue: any = null;
+    private _prevCollection: any = null;
     private _itemNames: string[] = []; // 保存循环变量名
-    private _collection: any = null; // 保存集合数据
+    private _collectionExpr = ''; // 保存集合表达式
     private _templateRef: TemplateRef<any>; // 模板引用
+    private _effect: ReactiveEffect; // 响应式副作用
+    private _context: any = null; // 模板上下文
 
     constructor(
         private viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
     ) { 
         this._templateRef = templateRef;
+        this._effect = viewContainer.environment.get(ReactiveEffect);
     }
 
     // 设置模板引用（从编译器传递）
-    set templateRef(templateRef: TemplateRef<any>) {
+    @Attribute()
+    set template(templateRef: TemplateRef<any>) {
         this._templateRef = templateRef;
     }
 
@@ -67,8 +72,17 @@ export class VForDirective {
 
     @Attribute()
     set of(collection: any) {
-        this._collection = collection;
-        this.updateView();
+        // 设置集合数据，但不立即更新视图
+        this._prevCollection = collection;
+        // 延迟更新，避免频繁重渲染
+        this.scheduleUpdate();
+    }
+
+    // 设置模板上下文
+    @Attribute()
+    set context(ctx: any) {
+        this._context = ctx;
+        this.scheduleUpdate();
     }
 
     private processForExpression(expr: string) {
@@ -76,7 +90,7 @@ export class VForDirective {
         const inMatch = expr.match(/^\s*((?:\([^)]+\)|[^)])+)\s+(?:in|of)\s+([^]+)$/);
         if (inMatch) {
             const [, itemPart, collectionPart] = inMatch;
-            const collectionExpr = collectionPart.trim();
+            this._collectionExpr = collectionPart.trim();
 
             // 解析循环变量名
             if (itemPart.trim().startsWith('(')) {
@@ -89,20 +103,31 @@ export class VForDirective {
                 // 处理格式如 item 的情况
                 this._itemNames = [itemPart.trim()];
             }
-            
-            // 立即设置集合数据
-            this._collection = collectionExpr;
-            this.updateView();
+
         }
     }
 
+    // 延迟更新，避免频繁重渲染
+    private scheduleUpdate() {
+        if (this._updateTimeout) {
+            clearTimeout(this._updateTimeout);
+        }
+        this._updateTimeout = setTimeout(() => {
+            this.updateView();
+        }, 0);
+    }
+
+    private _updateTimeout: any = null;
+
     private updateView() {
-        const collection = this._collection;
-        if (collection === this._prevValue) {
+        const collection = this._prevCollection;
+        
+        // 检查集合是否真的发生了变化
+        if (this.collectionEquals(collection, this._prevCollection)) {
             return;
         }
 
-        this._prevValue = collection;
+        this._prevCollection = collection;
         this.clear();
 
         if (!collection) {
@@ -128,6 +153,11 @@ export class VForDirective {
                 }
                 if (this._itemNames.length > 1) {
                     context[this._itemNames[1]] = i;
+                }
+
+                // 合并外部上下文
+                if (this._context) {
+                    Object.assign(context, this._context);
                 }
 
                 this.createView(context);
@@ -162,10 +192,43 @@ export class VForDirective {
                     context[this._itemNames[2]] = index;
                 }
 
+                // 合并外部上下文
+                if (this._context) {
+                    Object.assign(context, this._context);
+                }
+
                 this.createView(context);
                 index++;
             }
         }
+    }
+
+    // 深度比较两个集合是否相等
+    private collectionEquals(a: any, b: any): boolean {
+        if (a === b) return true;
+        if (a === null || b === null) return false;
+        if (typeof a !== typeof b) return false;
+
+        if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+
+        if (typeof a === 'object' && typeof b === 'object') {
+            const aKeys = Object.keys(a);
+            const bKeys = Object.keys(b);
+            if (aKeys.length !== bKeys.length) return false;
+            
+            for (const key of aKeys) {
+                if (a[key] !== b[key]) return false;
+            }
+            return true;
+        }
+
+        return false;
     }
 
     private createView(context: any) {
@@ -173,22 +236,41 @@ export class VForDirective {
             console.warn('VForDirective: templateRef is not set');
             return;
         }
-        const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, context);
+        
+        // 创建响应式上下文
+        const reactiveContext = reactive(context, this._effect);
+        
+        const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, reactiveContext);
         this._viewRefs.push(viewRef);
     }
 
     private clear() {
         this.viewContainer.clear();
-        this._viewRefs.forEach(view => view.destroy());
+        this._viewRefs.forEach(view => {
+            if (view && typeof view.destroy === 'function') {
+                view.destroy();
+            }
+        });
         this._viewRefs = [];
     }
 
     // 添加初始化方法，确保指令在创建后能正确渲染
     onInit() {
-        this.updateView();
+        // 延迟初始化，确保所有属性都已设置
+        setTimeout(() => {
+            this.updateView();
+        }, 0);
     }
 
     onDestroy() {
+        if (this._updateTimeout) {
+            clearTimeout(this._updateTimeout);
+        }
         this.clear();
+    }
+
+    // 响应式更新方法
+    onChanges() {
+        this.scheduleUpdate();
     }
 }

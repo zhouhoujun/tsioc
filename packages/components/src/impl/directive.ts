@@ -10,12 +10,9 @@ import { reactive } from './reactive';
 import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';
-import { TemplateCompiler } from '../template/compiler';
 import { ViewContainerRef } from '../refs/container';
-import { createViewContainerRef } from './container';
 import { TemplateRef } from '../refs/template';
 import { createTemplateRef } from './template';
-import { RNode } from '../renderer/Node';
 
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
@@ -86,9 +83,8 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
             const elementRef = options.elementRef;
             providers.push({ provide: ElementRef, useValue: elementRef });
             providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
-            if (options.templateNodes) {
-                providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
-            }
+            providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
+
         }
 
         return providers;

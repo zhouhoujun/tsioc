@@ -43,17 +43,9 @@ export class EnvironmentContext extends DefaultInvocationContext {
         this.setValue(EnvironmentState, this.state);
     }
 
-    getParentContext(): EnvironmentContext | null {
+    getParentEnviroment(): EnvironmentContext | null {
         return this._parent instanceof EnvironmentContext ? this._parent : null;
     }
-
-    // /**
-    //  * get computed cache.
-    //  */
-    // getComputed(key: string): Map<string, { value: any, deps: Set<any> }> {
-
-    // }
-
 
 
     /**
@@ -108,7 +100,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param componentType component type.
      */
     getComponentRef<T>(componentType: Type<T>): ComponentRef<T>[] {
-        const results: ComponentRef<T>[] = this.getParentContext()?.getComponentRef(componentType) ?? [];
+        const results: ComponentRef<T>[] = this.getParentEnviroment()?.getComponentRef(componentType) ?? [];
         this.state.componentRefs.forEach(ref => {
             if (ref.instance instanceof componentType) {
                 results.push(ref as ComponentRef<T>);
@@ -122,7 +114,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param node element.
      */
     getComponentRefByNode(node: RNode): ComponentRef<any> | null {
-        return this.state.componentRefs.get(node) ?? this.getParentContext()?.getComponentRefByNode(node) ?? null;
+        return this.state.componentRefs.get(node) ?? this.getParentEnviroment()?.getComponentRefByNode(node) ?? null;
     }
 
     /**
@@ -130,7 +122,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param componentType directive type.
      */
     getDirectiveRef<T>(componentType: Type<T>): DirectiveRef<T>[] {
-        const results: DirectiveRef<T>[] = this.getParentContext()?.getDirectiveRef(componentType) ?? [];
+        const results: DirectiveRef<T>[] = this.getParentEnviroment()?.getDirectiveRef(componentType) ?? [];
         this.state.directiveRefs.forEach(refs => {
             refs.forEach(ref => {
                 if (ref.instance instanceof componentType) {
@@ -147,7 +139,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      */
     getDirectiveRefByNode(node: RNode): DirectiveRef<any> | null {
         const refs = this.state.directiveRefs.get(node);
-        return refs && refs.length > 0 ? refs[0] : this.getParentContext()?.getDirectiveRefByNode(node) ?? null;
+        return refs && refs.length > 0 ? refs[0] : this.getParentEnviroment()?.getDirectiveRefByNode(node) ?? null;
     }
 
     /**
@@ -155,7 +147,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @param node template element.
      */
     getTemplateRef<T>(node: RNode): TemplateRef<T> | null {
-        return this.state.templateRefs.get(node) ?? this.getParentContext()?.getTemplateRef(node) ?? null;
+        return this.state.templateRefs.get(node) ?? this.getParentEnviroment()?.getTemplateRef(node) ?? null;
     }
 
     /**
@@ -170,7 +162,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
         if (!this.state.elementRefs.has(node)) {
             this.state.elementRefs.set(node, new ElementRef(node));
         }
-        return this.state.elementRefs.get(node) ?? this.getParentContext()?.getElementRef(node) ?? this.createElementRef(node);
+        return this.state.elementRefs.get(node) ?? this.getParentEnviroment()?.getElementRef(node) ?? this.createElementRef(node);
     }
 
     /**
@@ -183,7 +175,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      */
     getViewContainerRef<T extends RNode>(nodeOrRef: T | ElementRef<T>): ViewContainerRef<T> {
         const node = nodeOrRef instanceof ElementRef ? nodeOrRef.nativeElement : nodeOrRef;
-        return this.state.viewContainerRefs.get(node) ?? this.getParentContext()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
+        return this.state.viewContainerRefs.get(node) ?? this.getParentEnviroment()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
     }
 
     createElementRef<T extends RNode>(node: T): ElementRef<T> {

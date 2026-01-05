@@ -22,8 +22,7 @@ export class SwitchDirective {
     private _caseDirectives: CaseDirective[] = [];
     private _defaultDirective: DefaultDirective | null = null;
 
-    @Attribute('*switch')
-    @Attribute('v-switch')
+    @Attribute()
     set switch(value: any) {
         this._value = value;
         this.updateCases();
@@ -128,26 +127,32 @@ export class CaseDirective {
     private _hasView = false;
     private _caseValue: any;
     private _switchDirective: SwitchDirective | null = null;
+    private _template: TemplateRef<any>;
 
     constructor(
         private viewContainer: ViewContainerRef,
-        private templateRef: TemplateRef<any>,
+        templateRef: TemplateRef<any>,
         // Get parent switch directive
         @Optional() @Host() switchDirective?: SwitchDirective
     ) {
+        this._template = templateRef;
         if (switchDirective) {
             this._switchDirective = switchDirective;
             this._switchDirective.registerCase(this);
         }
     }
 
-    @Attribute('v-case')
-    @Attribute('*case')
+    @Attribute()
     set case(value: any) {
         this._caseValue = value;
         if (this._switchDirective) {
             this.updateView(this._switchDirective['_value']);
         }
+    }
+
+    @Attribute()
+    set template(templateRef: TemplateRef<any>) {
+        this._template = templateRef;
     }
 
     /**
@@ -166,11 +171,11 @@ export class CaseDirective {
     }
 
     private createView() {
-        if (!this.templateRef) {
+        if (!this._template) {
             console.warn('CaseDirective: templateRef is not set');
             return;
         }
-        this.viewContainer.createEmbeddedView(this.templateRef);
+        this.viewContainer.createEmbeddedView(this._template);
         this._hasView = true;
     }
 

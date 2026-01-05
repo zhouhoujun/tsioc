@@ -397,11 +397,15 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const attributes = directive.attributes ?? [];
         const directiveInstance = directiveRef.instance;
 
+        if (directive.dirType === DirectiveType.Conditional) {
+            directiveInstance.context = context;
+        }
+
         attributes.forEach(a => {
             const name = a.alias ?? a.propertyKey;
             const propertyKey = a.propertyKey;
-            const matnames = [':', '@', '*', 'v-'].map(r => r + name);
-            const attr = attrs.find(r => matnames.includes(r.name));
+            const matchNames = toMatchNames(name);
+            const attr = attrs.find(r => matchNames.includes(r.name));
             if (!attr) return;
 
             if (attr.name.startsWith('@')) {
@@ -428,11 +432,19 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 }
 
             } else if (attr.name.startsWith('v-') || attr.name.startsWith('*')) {
-                directiveInstance[propertyKey] = attr.value;
-                // this.effect.run(() => {
-                //     const attValue = context[attr.value] ?? attr.value;
-                //     directiveInstance[propertyKey] = attValue;
-                // });
+                // 指令表达式绑定 - 需要求值表达式以访问组件实例属性
+                if (isString(attr.value)) {
+                    if (directive.dirType === DirectiveType.List) {
+                        this.evaluateListExpression(directiveInstance, propertyKey, attr.value, context, viewRef);
+                    } else {
+                        this.effect.run(() => {
+                            const attValue = this.evaluateExpression(attr.value, context, viewRef);
+                            directiveInstance[propertyKey] = attValue;
+                        });
+                    }
+                } else {
+                    directiveInstance[propertyKey] = attr.value;
+                }
             }
 
         })
@@ -514,6 +526,43 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     }
 
 
+    protected evaluateListExpression(directiveInstance: any, propertyKey: string, expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
+        // 解析v-for表达式，支持"item in items"和"(item, index) in items"格式
+        const inMatch = expr.match(/^\s*((?:\([^)]+\)|[^)])+)\s+(?:in|of)\s+([^]+)$/);
+        let itemNames: string[] = [];
+        if (inMatch) {
+            const [, itemPart, collectionPart] = inMatch;
+            const collectionExpr = collectionPart.trim();
+
+            // 解析循环变量名
+            if (itemPart.trim().startsWith('(')) {
+                // 处理格式如 (item, index) 的情况
+                const innerMatch = itemPart.trim().match(/^\(\s*([^,]+)\s*(?:,\s*([^)]+))?\s*\)$/);
+                if (innerMatch) {
+                    itemNames = [innerMatch[1].trim(), innerMatch[2]?.trim() || ''].filter(Boolean);
+                }
+            } else {
+                // 处理格式如 item 的情况
+                itemNames = [itemPart.trim()];
+            }
+
+            directiveInstance[propertyKey] = expr;
+            // 设置v-for指令期望的属性
+            this.effect.run(() => {
+                const collection = this.evaluateExpression(collectionExpr, context, viewRef);
+
+                // 设置v-for指令期望的属性（而不是collection）
+                directiveInstance.for = itemNames[0]; // 主循环变量（如item）
+                directiveInstance.of = collection;     // 集合数据
+
+                // 如果有索引变量，也设置
+                if (itemNames.length > 1) {
+                    directiveInstance.index = itemNames[1]; // 索引变量（如index）
+                }
+            });
+
+        }
+    }
 
     // 解析管道表达式转换为函数调用
     private parsePipes(parts: string[]): string[] {
@@ -661,4 +710,19 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         return this.evaluateExpression(arg, context, viewRef);
     }
 
+}
+
+const attrPrefixes = [':', '@', '*', 'v-'];
+
+function toMatchNames(attrName: string): string[] {
+    const names: string[] = [];
+    const kebabName = camelToKebab(attrName);
+    for (const prefix of attrPrefixes) {
+        names.push(prefix + attrName);
+        names.push(prefix + kebabName);
+    }
+    return names;
+}
+function camelToKebab(str: string): string {
+    return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
