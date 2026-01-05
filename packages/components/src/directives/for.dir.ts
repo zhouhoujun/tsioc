@@ -36,7 +36,7 @@ export interface VForDirectiveMetadata {
  */
 @Directive({
     selector: '[v-for],[*for]',
-    directiveType: DirectiveType.List,
+    dirType: DirectiveType.List,
     priority: 20
 })
 export class VForDirective {

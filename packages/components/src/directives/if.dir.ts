@@ -56,7 +56,7 @@ abstract class BaseIfDirective {
  */
 @Directive({
     selector: '[v-if],[*if]',
-    directiveType: DirectiveType.Conditional,
+    dirType: DirectiveType.Conditional,
     priority: 10
 })
 export class VIfDirective extends BaseIfDirective {
@@ -78,7 +78,8 @@ export class VIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else-if],[*else-if]',
-    directiveType: DirectiveType.Conditional,
+    requires:['[v-if],[*if]'],
+    dirType: DirectiveType.Conditional,
     priority: 10
 })
 export class VElseIfDirective extends BaseIfDirective {
@@ -100,7 +101,8 @@ export class VElseIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else],[*else]',
-    directiveType: DirectiveType.Conditional,
+    requires:['[v-if],[*if]'],
+    dirType: DirectiveType.Conditional,
     priority: 10
 })
 export class VElseDirective extends BaseIfDirective {

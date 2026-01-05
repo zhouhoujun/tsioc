@@ -75,8 +75,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                     return (b.priority || 0) - (a.priority || 0);
                 }
                 // 再按指令类型排序
-                if (a.directiveType !== b.directiveType) {
-                    return (b.directiveType || 0) - (a.directiveType || 0);
+                if (a.dirType !== b.dirType) {
+                    return (b.dirType || 0) - (a.dirType || 0);
                 }
                 return 0;
             });
@@ -184,8 +184,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 优先处理指令组件
         if (dirs && dirs.length) {
             for (const dirDef of dirs) {
-                if (dirDef.directiveType) {
-                    dirTyoe |= dirDef.directiveType;
+                if (dirDef.dirType) {
+                    dirTyoe |= dirDef.dirType;
                 }
                 const selectors = dirDef.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
                 allSelectors.push(...selectors);
@@ -221,7 +221,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     private async processDirectiveByType(el: RElement, dir: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
 
-        switch (dir.directiveType) {
+        switch (dir.dirType) {
             case DirectiveType.Conditional:
                 // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
                 await this.processConditionalDirectives(el, dir, selectors, attrs, context, viewRef);

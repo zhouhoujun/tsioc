@@ -110,8 +110,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 
         const node = this.environment.get(Renderer).querySelector(this.rootNodes, sel);
         if (node) {
-            if (def && def.directiveType) {
-                if (def.directiveType === DirectiveType.Component) {
+            if (def && def.dirType) {
+                if (def.dirType === DirectiveType.Component) {
                     return this.environment.getComponentRefByNode(node) ?? null
                 }
                 return this.environment.getDirectiveRefByNode(node) ?? null;
@@ -154,8 +154,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         }
         
         return nodes.map(node => {
-            if (def && def.directiveType) {
-                if (def.directiveType === DirectiveType.Component) {
+            if (def && def.dirType) {
+                if (def.dirType === DirectiveType.Component) {
                     return this.environment.getComponentRefByNode(node) ?? null
                 }
                 return this.environment.getDirectiveRefByNode(node) ?? null;

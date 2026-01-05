@@ -2,11 +2,9 @@ import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions,
 import { AttributeMetadata } from '../decorators/atteribute';
 import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
-import { NodeType, RNode } from '../renderer/Node';
+import { RNode } from '../renderer/Node';
 import { EnvironmentContext } from './environment';
 import { ComputedMetadata } from '../decorators/computed';
-import { ViewContainerRef } from './container';
-import { TemplateRef } from './template';
 
 export const factoryKey = 'ƿfac';
 
@@ -47,12 +45,7 @@ export interface DirectiveDef<T = any> extends TypeDef<T> {
      * 指令类型
      * 默认：Normal
      */
-    directiveType?: DirectiveType;
-
-    /**
-     * 指令分组名称，用于将相关指令分组处理
-     */
-    groupName?: string;
+    dirType?: DirectiveType;
 
     /**
      * 指令依赖的其他指令选择器

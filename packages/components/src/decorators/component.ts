@@ -22,7 +22,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             (typeRef.type as AnnotationType)[noPointcut] = true;
             typeRef.assignAnnotation(ctx.define.metadata);
             const def = typeRef.getAnnotation<ComponentDef>() as ComponentDef;
-            def.directiveType = DirectiveType.Component;
+            def.dirType = DirectiveType.Component;
             if (!def.selector) def.selector = typeRef.className;
             const metadata = ctx.define.metadata;
             if (metadata.providers) {
