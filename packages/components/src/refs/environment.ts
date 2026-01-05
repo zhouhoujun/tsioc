@@ -4,6 +4,8 @@ import { TemplateRef } from './template';
 import { RNode } from '../renderer/Node';
 import { DirectiveRef } from './directive';
 import { ComponentRef } from './component';
+import { ViewContainerRef } from './container';
+import { createViewContainerRef } from '../impl/container';
 
 
 export class EnvironmentState {
@@ -13,6 +15,7 @@ export class EnvironmentState {
     readonly directiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
     readonly templateRefs: Map<RNode, TemplateRef<any>> = new Map();
     readonly elementRefs: Map<RNode, ElementRef<any>> = new Map();
+    readonly viewContainerRefs: Map<RNode, ViewContainerRef> = new Map();
     /** computed cache. */
     readonly computedCache: Map<string, { value: any, deps: Set<any> }> = new Map();
 
@@ -21,6 +24,7 @@ export class EnvironmentState {
         this.directiveRefs.clear();
         this.templateRefs.clear();
         this.computedCache.clear();
+        this.viewContainerRefs.clear();
     }
 
 }
@@ -169,10 +173,30 @@ export class EnvironmentContext extends DefaultInvocationContext {
         return this.state.elementRefs.get(node) ?? this.getParentContext()?.getElementRef(node) ?? this.createElementRef(node);
     }
 
+    /**
+     * get container ref.
+     *
+     * @template T
+     * @param {T} node
+     * @return {*}  {ElementRef<T>}
+     * @memberof EnvironmentContext
+     */
+    getViewContainerRef<T extends RNode>(nodeOrRef: T | ElementRef<T>): ViewContainerRef<T> {
+        const node = nodeOrRef instanceof ElementRef ? nodeOrRef.nativeElement : nodeOrRef;
+        return this.state.viewContainerRefs.get(node) ?? this.getParentContext()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
+    }
+
     createElementRef<T extends RNode>(node: T): ElementRef<T> {
         const eRef = new ElementRef(node);
         this.state.elementRefs.set(node, eRef);
         return eRef;
+    }
+
+    createViewContainerRef<T extends RNode>(node: T): ViewContainerRef<T> {
+        const containerRef = createViewContainerRef(this.getElementRef(node), this);
+        this.state.viewContainerRefs.set(node, containerRef);
+        return containerRef;
+
     }
 
 }

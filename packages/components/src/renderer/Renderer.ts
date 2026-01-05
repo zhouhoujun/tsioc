@@ -39,14 +39,14 @@ export abstract class Renderer {
    */
   abstract destroyNode?: ((node: RNode) => void) | null;
 
-  abstract appendChild(parent: RElement, newChild: RNode): void;
+  abstract appendChild(parent: RNode, newChild: RNode): void;
   abstract insertBefore(parent: RNode, newChild: RNode, refChild: RNode | null, isMove?: boolean): void;
-  abstract removeChild(parent: RElement | null, oldChild: RNode, isHostElement?: boolean): void;
+  abstract removeChild(parent: RNode | null, oldChild: RNode, isHostElement?: boolean): void;
 
   abstract querySelector(el: RNode | RNode[], selector: string): RNode | null;
   abstract querySelectorAll(el: RNode | RNode[], selector: string): RNode[] | null;
 
-  abstract parentNode(node: RNode): RElement | null;
+  abstract parentNode(node: RNode): RNode | null;
   abstract nextSibling(node: RNode): RNode | null;
 
   abstract setAttribute(

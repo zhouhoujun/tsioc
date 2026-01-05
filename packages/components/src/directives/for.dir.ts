@@ -43,7 +43,7 @@ export class VForDirective {
     private _viewRefs: any[] = [];
     private _prevValue: any = null;
     private _itemNames: string[] = []; // 保存循环变量名
-    private _collectionExpr = ''; // 保存集合表达式
+    private _collection: any = null; // 保存集合数据
     private _templateRef: TemplateRef<any>; // 模板引用
 
     constructor(
@@ -66,7 +66,8 @@ export class VForDirective {
     }
 
     set of(collection: any) {
-        this.updateView(collection);
+        this._collection = collection;
+        this.updateView();
     }
 
     private processForExpression(expr: string) {
@@ -74,7 +75,7 @@ export class VForDirective {
         const inMatch = expr.match(/^\s*((?:\([^)]+\)|[^)])+)\s+(?:in|of)\s+([^]+)$/);
         if (inMatch) {
             const [, itemPart, collectionPart] = inMatch;
-            this._collectionExpr = collectionPart.trim();
+            const collectionExpr = collectionPart.trim();
 
             // 解析循环变量名
             if (itemPart.trim().startsWith('(')) {
@@ -87,10 +88,15 @@ export class VForDirective {
                 // 处理格式如 item 的情况
                 this._itemNames = [itemPart.trim()];
             }
+            
+            // 立即设置集合数据
+            this._collection = collectionExpr;
+            this.updateView();
         }
     }
 
-    private updateView(collection: any) {
+    private updateView() {
+        const collection = this._collection;
         if (collection === this._prevValue) {
             return;
         }
@@ -98,7 +104,7 @@ export class VForDirective {
         this._prevValue = collection;
         this.clear();
 
-        if (!collection || typeof collection !== 'object') {
+        if (!collection) {
             return;
         }
 
@@ -162,6 +168,10 @@ export class VForDirective {
     }
 
     private createView(context: any) {
+        if (!this._templateRef) {
+            console.warn('VForDirective: templateRef is not set');
+            return;
+        }
         const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, context);
         this._viewRefs.push(viewRef);
     }
@@ -170,6 +180,11 @@ export class VForDirective {
         this.viewContainer.clear();
         this._viewRefs.forEach(view => view.destroy());
         this._viewRefs = [];
+    }
+
+    // 添加初始化方法，确保指令在创建后能正确渲染
+    onInit() {
+        this.updateView();
     }
 
     ngOnDestroy() {

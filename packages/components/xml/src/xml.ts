@@ -11,10 +11,10 @@ import { EventEmitter } from 'events';
 
 
 export class XmlNode implements RNode {
+
     get parentElement(): XmlElement | null {
         return this.parentNode instanceof XmlElement ? this.parentNode : null;
     }
-
 
     attributes = new Map<string, RAttr>();
 
@@ -83,7 +83,7 @@ export class XmlNode implements RNode {
                 getChildren: (el: XmlNode) => el.childNodes,
                 getName: (el: XmlElement) => el.tagName.toLowerCase(),
                 getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
-                getParent: (el: XmlNode) => el.parentElement,
+                getParent: (el: XmlNode) => el.parentNode,
                 removeSubsets: (nodes: XmlNode[]) => nodes,
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -100,7 +100,7 @@ export class XmlNode implements RNode {
                 getChildren: (el: XmlNode) => el.childNodes,
                 getName: (el: XmlElement) => el.tagName.toLowerCase(),
                 getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
-                getParent: (el: XmlNode) => el.parentElement,
+                getParent: (el: XmlNode) => el.parentNode,
                 removeSubsets: (nodes: XmlNode[]) => nodes,
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -254,7 +254,7 @@ export class XmlRenderer implements Renderer {
                 getChildren: (el: XmlNode) => el.childNodes,
                 getName: (el: XmlElement) => el.tagName.toLowerCase(),
                 getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
-                getParent: (el: XmlNode) => el.parentElement,
+                getParent: (el: XmlNode) => el.parentNode,
                 removeSubsets: (nodes: XmlNode[]) => nodes,
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -271,7 +271,7 @@ export class XmlRenderer implements Renderer {
                 getChildren: (el: XmlNode) => el.childNodes,
                 getName: (el: XmlElement) => el.tagName.toLowerCase(),
                 getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
-                getParent: (el: XmlNode) => el.parentElement,
+                getParent: (el: XmlNode) => el.parentNode,
                 removeSubsets: (nodes: XmlNode[]) => nodes,
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -281,8 +281,8 @@ export class XmlRenderer implements Renderer {
         });
     }
 
-    parentNode(node: XmlNode): XmlElement | null {
-        return node.parentElement
+    parentNode(node: XmlNode): XmlNode | null {
+        return node.parentNode
     }
     nextSibling(node: XmlNode): XmlNode | null {
         return node.nextSibling;
@@ -386,7 +386,7 @@ export class XmlTemplateParser implements TemplateParser {
                 }
             }
             // 提取标签名和属性
-            const tagName = keys.find(key => !key.startsWith('@_') && !key.startsWith('#') && !key.startsWith(':@')) ?? 'unkonw';
+            const tagName = keys.find(key => !key.startsWith('@_') && !key.startsWith('#') && !key.startsWith(':@') && !key.startsWith('v-')) ?? 'unkonw';
             const node = this.renderer.createElement(tagName);
 
             // 处理子节点
@@ -410,6 +410,9 @@ export class XmlTemplateParser implements TemplateParser {
                             node.setAttribute(attr, datan[attr]);
                         }
                     }
+                } else if (key.startsWith('v-')) {
+                    // 处理v-开头的指令属性
+                    node.setAttribute(key, datan);
                 } else {
                     childNodes.push(datan);
                 }

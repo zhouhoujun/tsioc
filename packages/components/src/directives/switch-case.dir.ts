@@ -56,6 +56,10 @@ export class SwitchDirective {
      */
     registerDefault(defaultDirective: DefaultDirective) {
         this._defaultDirective = defaultDirective;
+        // 立即更新默认视图状态
+        if (this._value !== undefined) {
+            this.updateCases();
+        }
     }
 
     /**
@@ -81,6 +85,13 @@ export class SwitchDirective {
         // Update default directive
         if (this._defaultDirective) {
             this._defaultDirective.updateView(!matchFound);
+        }
+    }
+
+    // 添加初始化方法，确保指令在创建后能正确渲染
+    onInit() {
+        if (this._value !== undefined) {
+            this.updateCases();
         }
     }
 
@@ -152,6 +163,10 @@ export class CaseDirective {
     }
 
     private createView() {
+        if (!this.templateRef) {
+            console.warn('CaseDirective: templateRef is not set');
+            return;
+        }
         this.viewContainer.createEmbeddedView(this.templateRef);
         this._hasView = true;
     }
@@ -159,6 +174,13 @@ export class CaseDirective {
     clearView() {
         this.viewContainer.clear();
         this._hasView = false;
+    }
+
+    // 添加初始化方法，确保指令在创建后能正确渲染
+    onInit() {
+        if (this._switchDirective && this._caseValue !== undefined) {
+            this.updateView(this._switchDirective['_value']);
+        }
     }
 
     ngOnDestroy() {
@@ -211,6 +233,10 @@ export class DefaultDirective {
     }
 
     private createView() {
+        if (!this.templateRef) {
+            console.warn('DefaultDirective: templateRef is not set');
+            return;
+        }
         this.viewContainer.createEmbeddedView(this.templateRef);
         this._hasView = true;
     }
@@ -218,6 +244,25 @@ export class DefaultDirective {
     clearView() {
         this.viewContainer.clear();
         this._hasView = false;
+    }
+
+    // 添加初始化方法，确保指令在创建后能正确渲染
+    onInit() {
+        if (this._switchDirective) {
+            // 初始化时检查是否需要显示默认视图
+            const switchValue = this._switchDirective['_value'];
+            if (switchValue !== undefined) {
+                let matchFound = false;
+                // 检查是否有匹配的case
+                const caseDirectives = this._switchDirective['_caseDirectives'];
+                if (caseDirectives) {
+                    matchFound = caseDirectives.some(caseDir => 
+                        caseDir['_caseValue'] === switchValue
+                    );
+                }
+                this.updateView(!matchFound);
+            }
+        }
     }
 
     ngOnDestroy() {

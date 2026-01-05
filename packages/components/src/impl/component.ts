@@ -114,8 +114,8 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         if (options?.elementRef) {
             const elementRef = options.elementRef;
             providers.push({ provide: ElementRef, useValue: elementRef });
-            providers.push({ provide: ViewContainerRef, useFactory: (ctx) => createViewContainerRef(elementRef, ctx), deps: [EnvironmentContext] });
-            providers.push({ provide: TemplateRef, useFactory: (ctx) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
+            providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
+            providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
         }
         return providers;
     }

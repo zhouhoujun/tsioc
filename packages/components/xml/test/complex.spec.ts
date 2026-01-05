@@ -76,7 +76,7 @@ export class ComplexTest {
         // 创建FieldComponent实例
         const complexRef = this.ctx.runners.getRef(ComplexComponent) as ComponentRef<ComplexComponent>;
 
-        const elementRef = complexRef.hostView.query('.swith-content') as ElementRef;
+        const elementRef = complexRef.hostView.query('.switch-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
         expect(elementRef.nativeElement.childNodes.length).toEqual(1);
         

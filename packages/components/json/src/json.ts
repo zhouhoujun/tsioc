@@ -81,7 +81,7 @@ export class JsonNode implements RNode {
                 getChildren: (el: JsonNode) => el.childNodes,
                 getName: (el: JsonElement) => el.tagName?.toLowerCase(),
                 getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
-                getParent: (el: JsonNode) => el.parentElement,
+                getParent: (el: JsonNode) => el.parentNode,
                 removeSubsets: (nodes: JsonNode[]) => nodes,
                 getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -98,7 +98,7 @@ export class JsonNode implements RNode {
                 getChildren: (el: JsonNode) => el.childNodes,
                 getName: (el: JsonElement) => el.tagName?.toLowerCase(),
                 getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
-                getParent: (el: JsonNode) => el.parentElement,
+                getParent: (el: JsonNode) => el.parentNode,
                 removeSubsets: (nodes: JsonNode[]) => nodes,
                 getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -250,7 +250,7 @@ export class JsonRenderer implements Renderer {
                 getChildren: (el: JsonNode) => el.childNodes,
                 getName: (el: JsonElement) => el.tagName?.toLowerCase(),
                 getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
-                getParent: (el: JsonNode) => el.parentElement,
+                getParent: (el: JsonNode) => el.parentNode,
                 removeSubsets: (nodes: JsonNode[]) => nodes,
                 getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -267,7 +267,7 @@ export class JsonRenderer implements Renderer {
                 getChildren: (el: JsonNode) => el.childNodes,
                 getName: (el: JsonElement) => el.tagName?.toLowerCase(),
                 getText: (el: JsonNode) => (el as JsonText).textContent ?? '',
-                getParent: (el: JsonNode) => el.parentElement,
+                getParent: (el: JsonNode) => el.parentNode,
                 removeSubsets: (nodes: JsonNode[]) => nodes,
                 getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
@@ -277,8 +277,8 @@ export class JsonRenderer implements Renderer {
         });
     }
 
-    parentNode(node: JsonNode): JsonElement | null {
-        return node.parentElement
+    parentNode(node: JsonNode): JsonNode | null {
+        return node.parentNode
     }
     nextSibling(node: JsonNode): JsonNode | null {
         return node.nextSibling;

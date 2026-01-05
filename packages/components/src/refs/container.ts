@@ -21,7 +21,7 @@ import { EmbeddedViewRef, ViewRef } from './view';
  * @publicApi
  */
 @Abstract()
-export abstract class ViewContainerRef {
+export abstract class ViewContainerRef<T = any> {
     /**
      * Anchor element that specifies the location of this container in the containing view.
      * Each view container can have only one anchor element, and each anchor element
@@ -35,7 +35,7 @@ export abstract class ViewContainerRef {
      *
      * <!-- TODO: rename to anchorElement -->
      */
-    abstract get element(): ElementRef;
+    abstract get element(): ElementRef<T>;
 
     /**
      * The environment for this view container.
