@@ -172,6 +172,10 @@ export class AppComponent2 implements OnInit {
         <p v-if="showConditional">This is conditional content</p>
         <p v-else>This is the alternate content</p>
       </div>
+      <div class="swith-content" v-switch='switchLable'>
+        <p v-case='Case 1'>This is case 1 content</p>
+        <p v-case='Case 2'>This is case 2 content</p>
+      </div>
       <button @click="toggleConditional">Toggle Content</button>
     </div>
   `
@@ -179,6 +183,7 @@ export class AppComponent2 implements OnInit {
 export class ComplexComponent implements OnInit {
   title = 'Complex Test Component';
   showConditional = true;
+  switchLable= 'Case 1';
   items = [
     { id: 1, name: 'Item 1', value: 'Value 1' },
     { id: 2, name: 'Item 2', value: 'Value 2' },

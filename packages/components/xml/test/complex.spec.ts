@@ -71,6 +71,18 @@ export class ComplexTest {
     }
 
 
+    @Test('should v-switch in ComplexComponent')
+    async testSwitch() {
+        // 创建FieldComponent实例
+        const complexRef = this.ctx.runners.getRef(ComplexComponent) as ComponentRef<ComplexComponent>;
+
+        const elementRef = complexRef.hostView.query('.swith-content') as ElementRef;
+        expect(elementRef.nativeElement).toBeDefined();
+        expect(elementRef.nativeElement.childNodes.length).toEqual(1);
+        
+        expect(elementRef.nativeElement.childNodes[0].childNodes[0].textContent).toEqual('This is case 1 content');
+    }
+
 
     @After()
     async afterClean() {
