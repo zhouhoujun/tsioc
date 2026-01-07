@@ -20,7 +20,6 @@ import { reactive } from '../impl/reactive';
 })
 export class VForDirective {
     private _viewRefs: any[] = [];
-    private _expr?: string;
     private _collection: any = null;
     private _prevCollection: any = null;
     private _itemNames: string[] = []; // 保存循环变量名
@@ -28,7 +27,6 @@ export class VForDirective {
     private _effect: ReactiveEffect; // 响应式副作用
     private _context: any = null; // 模板上下文
     private _trackByFn: (item: any, index: number) => any = (item, index) => index; // 跟踪函数
-    private _updateTimeout: any = null;
 
     constructor(
         private viewContainer: ViewContainerRef,
