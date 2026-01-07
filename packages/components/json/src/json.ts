@@ -19,7 +19,7 @@ export class JsonNode implements RNode {
 
     constructor(
         readonly nodeType: number,
-        public parentNode: JsonElement | null = null,
+        public parentNode: JsonNode | null = null,
         public childNodes: JsonNode[] = [],
         public nextSibling: JsonNode | null = null) {
 
@@ -57,11 +57,13 @@ export class JsonNode implements RNode {
         if (removed) {
             removed.parentNode = null;
             removed.nextSibling = null;
+            removed.parentNode = null;
         }
         return removed;
     }
 
     insertBefore(newChild: JsonNode, refChild: JsonNode | null, isViewRoot?: boolean): void {
+        newChild.parentNode = this;
         const index = refChild ? this.childNodes.indexOf(refChild) : 0;
         if (index !== -1) {
             this.childNodes.splice(index, 0, newChild);
@@ -70,6 +72,7 @@ export class JsonNode implements RNode {
         }
     }
     appendChild(newChild: JsonNode): JsonNode {
+        newChild.parentNode = this;
         this.childNodes.push(newChild);
         return this;
     }

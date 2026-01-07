@@ -274,4 +274,4 @@ export interface RTemplate extends RElement {
 }
 
 
-export type RParentNode = RElement | RTemplate;
+export type RParentNode = RNode | RTemplate;

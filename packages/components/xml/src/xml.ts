@@ -20,7 +20,7 @@ export class XmlNode implements RNode {
 
     constructor(
         readonly nodeType: number,
-        public parentNode: XmlElement | null = null,
+        public parentNode: XmlNode | null = null,
         public childNodes: XmlNode[] = [],
         public nextSibling: XmlNode | null = null,
     ) {
@@ -59,11 +59,13 @@ export class XmlNode implements RNode {
         if (removed) {
             removed.parentNode = null;
             removed.nextSibling = null;
+            removed.parentNode = null;
         }
         return removed;
     }
 
     insertBefore(newChild: XmlNode, refChild: XmlNode | null, isViewRoot?: boolean): void {
+        newChild.parentNode = this;
         const index = refChild ? this.childNodes.indexOf(refChild) : 0;
         if (index !== -1) {
             this.childNodes.splice(index, 0, newChild);
@@ -72,6 +74,7 @@ export class XmlNode implements RNode {
         }
     }
     appendChild(newChild: XmlNode): XmlNode {
+        newChild.parentNode = this;
         this.childNodes.push(newChild);
         return this;
     }
@@ -244,7 +247,7 @@ export class XmlRenderer implements Renderer {
     }
 
     removeChild(parent: XmlElement | null, oldChild: XmlNode, isHostElement?: boolean): void {
-        parent?.removeChild(oldChild)
+        parent?.removeChild(oldChild);
     }
 
     querySelector(node: XmlNode | XmlNode[], selector: string): XmlNode | null {

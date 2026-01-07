@@ -45,14 +45,14 @@ export class ComplexTest {
         expect(fieldComponent!.fullName).toEqual('lisi (admin)');
     }
 
-    @Test('should v-for contians 3 items in ComplexComponent')
+    @Test('should v-for contians 4 items in ComplexComponent')
     async testVFor() {
         // 创建FieldComponent实例
         const complexRef = this.ctx.runners.getRef(ComplexComponent) as ComponentRef<ComplexComponent>;
 
         const elementRef = complexRef.hostView.query('.dynamic-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
-        expect(elementRef.nativeElement.childNodes.length).toEqual(3);
+        expect(elementRef.nativeElement.childNodes.length).toEqual(4);
         
         expect(elementRef.nativeElement.childNodes[1].childNodes[0].textContent).toEqual('Item 2: Value 2');
     }
@@ -65,7 +65,7 @@ export class ComplexTest {
 
         const elementRef = complexRef.hostView.query('.conditional-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
-        expect(elementRef.nativeElement.childNodes.length).toEqual(1);
+        expect(elementRef.nativeElement.childNodes.length).toEqual(2);
         
         expect(elementRef.nativeElement.childNodes[0].childNodes[0].textContent).toEqual('This is conditional content');
     }

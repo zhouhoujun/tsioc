@@ -41,7 +41,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const components = environment.get(COMPONENTS) || [];
         const dirMap = new Map<RNode, DirectiveDef[]>();
         const compMap = new Map<RNode, ComponentDef>();
-        const readerer = environment.get(Renderer);
+        const readerer = this.renderer;
 
 
         components.forEach(r => {
@@ -182,6 +182,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const dirs = dirMap.get(node);
 
         const allSelectors: string[] = [];
+        const dattrs = new Set<string>();
         // 优先处理指令组件
         if (dirs && dirs.length) {
             for (const dirDef of dirs) {
@@ -190,22 +191,17 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 }
                 const selectors = dirDef.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
                 allSelectors.push(...selectors);
+                dirDef.attributes?.forEach(attrDef => {
+                    dattrs.add(attrDef.alias ?? attrDef.propertyKey);
+                });
                 el = await this.processDirectiveByType(el, dirDef, selectors, attrs, context, viewRef) as RElement;
             }
 
-            // const groupedDirs = this.groupDirectivesByType(dirs);
-
-            // // 3. 处理每个指令组
-            // for (const [groupType, groupDirs] of groupedDirs) {
-            //     dirTyoe |= groupType;
-            //     await this.processDirectiveGroup(el, groupType, groupDirs, attrs, context, viewRef);
-            // }
-
-            // 4. 处理元素属性（排除已处理的指令属性）
+            //处理元素属性（排除已处理的指令属性）
             const processedAttrSelectors = new Set(allSelectors);
             await this.processElement(
                 el,
-                attrs.filter(a => !processedAttrSelectors.has(a.name)),
+                attrs.filter(a => !(dattrs.has(a.name) || processedAttrSelectors.has(a.name))),
                 context,
                 viewRef,
                 compMap,
@@ -245,8 +241,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      * 处理条件指令组
      */
     private async processConditionalDirectives(el: RElement, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>): Promise<RNode> {
-
-        const readerer = viewRef.environment.get(Renderer);
+        const readerer = this.renderer;
         const container = this.createContainer(readerer, dirDef.selector);
         const parent = readerer.parentNode(el);
         if (parent) {
@@ -254,10 +249,17 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             readerer.removeChild(parent, el);
         }
 
-        readerer.getAttributes(el).forEach(attr => {
-            el.removeAttribute(attr.name);
+        attrs.forEach(attr => {
             readerer.setAttribute(container, attr.name, attr.value)
         });
+        dirDef.attributes?.forEach(attrDef => {
+            readerer.removeAttribute(container, attrDef.alias ?? attrDef.propertyKey);
+        });
+
+        selectors.forEach(selector => {
+            readerer.removeAttribute(container, selector);
+        });
+
         const templateNodes = [el];
 
         // 处理条件指令
@@ -273,7 +275,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     private async processListDirectives(el: RElement, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>): Promise<RNode> {
         // 为列表指令提供模板处理能力
-        const readerer = viewRef.environment.get(Renderer);
+        const readerer = this.renderer;
 
         const container = this.createContainer(readerer, dirDef.selector) as RElement;
         const parent = readerer.parentNode(el);
@@ -282,10 +284,17 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             readerer.removeChild(parent, el);
         }
 
-        readerer.getAttributes(el).forEach(attr => {
-            el.removeAttribute(attr.name);
+        attrs.forEach(attr => {
             readerer.setAttribute(container, attr.name, attr.value)
-        })
+        });
+
+        dirDef.attributes?.forEach(attrDef => {
+            readerer.removeAttribute(el, attrDef.alias ?? attrDef.propertyKey);
+        });
+
+        selectors.forEach(selector => {
+            readerer.removeAttribute(el, selector);
+        });
 
         const templateNodes = [el];
 
@@ -309,13 +318,12 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     private async processStructuralDirectives(el: RElement, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>): Promise<RNode> {
         // 为列表指令提供模板处理能力
-        const readerer = viewRef.environment.get(Renderer);
+        const readerer = this.renderer;
 
         const templateNodes = el.childNodes.splice(0);
 
         templateNodes.forEach(c => readerer.removeChild(el, c));
 
-        // 列表指令通常只有一个（v-for）
         await this.processDirective(el, dirDef, selectors, attrs, context, viewRef, templateNodes);
 
         return el;
