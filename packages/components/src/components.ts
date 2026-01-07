@@ -1,8 +1,8 @@
 import { Module, Runtime } from '@tsdi/ioc';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
-import { ReactiveEffect } from './ReactiveEffect';
-import { DefaultReactiveEffect } from './impl/effect';
+// import { ReactiveEffect } from './ReactiveEffect';
+// import { DefaultReactiveEffect } from './impl/effect';
 import { VForDirective } from './directives/for.dir';
 import { VElseDirective, VElseIfDirective, VIfDirective } from './directives/if.dir';
 import { DirectiveFactory } from './refs/directive';
@@ -22,7 +22,7 @@ import { TemplateOutletDirective } from './directives/template-outlet.dir';
     providers: [
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
-        { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
+        // { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
     ],
     exports: [
         VForDirective,

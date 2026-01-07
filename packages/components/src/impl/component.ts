@@ -2,7 +2,8 @@ import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
     Injector, Runtime, AbstractType, Provider, toProvider,
     InvokeOptions,
-    ResolveContext
+    ResolveContext,
+    InjectFlags
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
@@ -18,6 +19,7 @@ import { TemplateRef } from '../refs/template';
 import { RNode } from '../renderer/Node';
 import { createViewContainerRef } from './container';
 import { createTemplateRef } from './template';
+import { DefaultReactiveEffect } from './effect';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
@@ -121,7 +123,11 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
     }
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
-        return new EnvironmentContext(injector, options, typeRef.type);
+        const context = new EnvironmentContext(injector, options, typeRef.type);
+        if (!context.has(ReactiveEffect, InjectFlags.Self)) {
+            context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
+        }
+        return context;
     }
 
     override create<T>(type: AbstractType<T> | ClassRef<T>, options?: ComponentOptions): ComponentRef<T> {

@@ -551,47 +551,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     }
 
     private bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, viewRef: EmbeddedViewRef<any>) {
-        // 添加防抖机制，避免无限循环
-        let lastCollection: any = null;
-        let updateScheduled = false;
 
-        const updateCollection = () => {
-            if (updateScheduled) return;
-            updateScheduled = true;
-
-            this.effect.run(() => {
-                try {
-                    const collection = this.evaluateExpression(collectionExpr, context, viewRef);
-
-                    // 只有当集合真正发生变化时才赋值
-                    if (!this.isEqual(collection, lastCollection)) {
-                        directiveInstance[propertyKey] = collection;
-                        lastCollection = collection;
-                    }
-
-                    // 如果有索引变量，也设置（只设置一次）
-                    if (itemNames.length > 1 && !directiveInstance.trackBy) {
-                        directiveInstance.trackBy = itemNames[1]; // 索引变量（如index）
-                    }
-                } catch (error) {
-                    console.error('Error in bindIterableExpression:', error);
-                } finally {
-                    updateScheduled = false;
-                }
-            });
-        };
-
-        // 初始更新
-        updateCollection();
-
-        // 监听上下文变化，但使用防抖
-        const originalRun = this.effect.run;
-        this.effect.run = (fn: () => void) => {
-            const result = originalRun.call(this.effect, fn);
-            // 延迟执行更新，避免立即触发循环
-            setTimeout(updateCollection, 0);
-            return result;
-        };
+        // 设置v-for指令期望的属性（而不是collection）
+        directiveInstance._itemNames = itemNames; // 主循环变量（如item）
+        // 设置v-for指令期望的属性
+        this.effect.run(() => {
+            const collection = this.evaluateExpression(collectionExpr, context, viewRef);
+            directiveInstance[propertyKey] = collection;     // 集合数据
+        });
     }
 
     // 深度比较两个值是否相等

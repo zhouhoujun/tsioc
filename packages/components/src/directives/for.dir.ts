@@ -49,7 +49,7 @@ export class VForDirective {
     set for(value: any) {
         // 直接传入可迭代对象
         this._collection = value;
-        this.scheduleUpdate();
+        this.updateView();
 
     }
 
@@ -57,7 +57,7 @@ export class VForDirective {
     @Attribute()
     set context(ctx: any) {
         this._context = ctx;
-        this.scheduleUpdate();
+        this.updateView();
     }
 
     // 设置trackBy函数
@@ -93,18 +93,8 @@ export class VForDirective {
         };
     }
 
-    // 延迟更新，避免频繁重渲染
-    private scheduleUpdate() {
-        if (this._updateTimeout) {
-            clearTimeout(this._updateTimeout);
-        }
-        this._updateTimeout = setTimeout(() => {
-            this.updateView();
-        }, 0);
-    }
-
     private updateView() {
-        const collection = this._prevCollection;
+        const collection = this._collection;
 
         // 检查集合是否真的发生了变化
         if (this.collectionEquals(collection, this._prevCollection)) {
@@ -336,23 +326,16 @@ export class VForDirective {
         this._viewRefs = [];
     }
 
-    // 添加初始化方法，确保指令在创建后能正确渲染
     onInit() {
-        // 延迟初始化，确保所有属性都已设置
-        setTimeout(() => {
-            this.updateView();
-        }, 0);
+        this.updateView();
     }
 
     onDestroy() {
-        if (this._updateTimeout) {
-            clearTimeout(this._updateTimeout);
-        }
         this.clear();
     }
 
     // 响应式更新方法
     onChanges() {
-        this.scheduleUpdate();
+        this.updateView();
     }
 }

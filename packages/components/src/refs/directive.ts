@@ -97,6 +97,7 @@ export interface DirectiveOptions extends InvocationOptions {
      * 指令所在节点的上下文
      */
     context?: any;
+    scheduler?: (fn: Function) => void;
     /**
      * 视图引用
      */

@@ -2,7 +2,8 @@ import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
     Injector, Runtime, AbstractType, InvokeOptions,
     Provider,
-    ResolveContext
+    ResolveContext,
+    InjectFlags
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
@@ -13,6 +14,7 @@ import { EnvironmentContext } from '../refs/environment';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';
 import { createTemplateRef } from './template';
+import { DefaultReactiveEffect } from './effect';
 
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
@@ -91,7 +93,11 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
     }
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {
-        return new EnvironmentContext(injector, options, typeRef.type);
+        const context = new EnvironmentContext(injector, options, typeRef.type);
+        if (!context.has(ReactiveEffect, InjectFlags.Self)) {
+            context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
+        }
+        return context;
     }
 
     protected override createInstance<T>(typeRef: ClassRef<T>, context: EnvironmentContext, options: DirectiveOptions): DirectiveRef<T> {

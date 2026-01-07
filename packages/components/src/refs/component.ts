@@ -45,6 +45,7 @@ export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOpt
 export interface ComponentOptions extends TemplateCompilerOptions, InvocationOptions {
     compiler?: ProvdierOf<TemplateCompiler>;
     renderer?: ProvdierOf<Renderer>;
+    scheduler?: (fn: Function) => void;
     elementRef?: ElementRef;
 }
 
