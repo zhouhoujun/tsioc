@@ -19,7 +19,7 @@ export enum DirectiveType {
     /** 条件指令 */
     Conditional = 2,
     /** 列表指令 */
-    List = 4,
+    Iterable = 4,
 
     Component = 8,
 }

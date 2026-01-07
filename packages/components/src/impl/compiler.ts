@@ -106,7 +106,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
 
     private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, dirType: DirectiveType) {
-        if (dirType & DirectiveType.List) return;
+        if (dirType & DirectiveType.Iterable) return;
         // 处理属性
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
@@ -227,7 +227,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
                 return await this.processConditionalDirectives(el, dir, selectors, attrs, context, viewRef);
 
-            case DirectiveType.List:
+            case DirectiveType.Iterable:
                 // 处理列表指令（v-for, *for）
                 return await this.processListDirectives(el, dir, selectors, attrs, context, viewRef);
 
@@ -434,8 +434,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             } else if (attr.name.startsWith('v-') || attr.name.startsWith('*')) {
                 // 指令表达式绑定 - 需要求值表达式以访问组件实例属性
                 if (isString(attr.value)) {
-                    if (directive.dirType === DirectiveType.List) {
-                        this.evaluateListExpression(directiveInstance, propertyKey, attr.value, context, viewRef);
+                    if (directive.dirType === DirectiveType.Iterable) {
+                        this.evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, viewRef);
                     } else {
                         this.effect.run(() => {
                             const attValue = this.evaluateExpression(attr.value, context, viewRef);
@@ -526,43 +526,119 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     }
 
 
-    protected evaluateListExpression(directiveInstance: any, propertyKey: string, expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
-        // 解析v-for表达式，支持"item in items"和"(item, index) in items"格式
-        const inMatch = expr.match(/^\s*((?:\([^)]+\)|[^)])+)\s+(?:in|of)\s+([^]+)$/);
-        let itemNames: string[] = [];
-        if (inMatch) {
-            const [, itemPart, collectionPart] = inMatch;
-            const collectionExpr = collectionPart.trim();
+    protected evaluateIterableExpression(directiveInstance: any, propertyKey: string, expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
+        // 1. Vue风格: item in items
+        const vueStyle = expr.match(/^\s*((?:\([^)]+\)|[^)])+)\s+(?:in|of)\s+([^]+)$/);
+        let itemNames: string[];
+        let collectionExpr: string;
+        if (vueStyle) {
+            collectionExpr = vueStyle[2].trim();
+            itemNames = this.processVueStyleExpression(vueStyle[1]);
+            return this.bindIterableExpression(directiveInstance, propertyKey, itemNames, collectionExpr, context, viewRef);
+        }
 
-            // 解析循环变量名
-            if (itemPart.trim().startsWith('(')) {
-                // 处理格式如 (item, index) 的情况
-                const innerMatch = itemPart.trim().match(/^\(\s*([^,]+)\s*(?:,\s*([^)]+))?\s*\)$/);
-                if (innerMatch) {
-                    itemNames = [innerMatch[1].trim(), innerMatch[2]?.trim() || ''].filter(Boolean);
-                }
-            } else {
-                // 处理格式如 item 的情况
-                itemNames = [itemPart.trim()];
+        // 2. Angular风格: let item of items
+        const angularStyle = expr.match(/^\s*let\s+([^ ]+)\s+(?:of|in)\s+([^]+)(?:\s*;\s*([^ ]+)\s+as\s+([^ ]+))?$/);
+        if (angularStyle) {
+            collectionExpr = angularStyle[2].trim();
+            itemNames = [angularStyle[1].trim()];
+            if (angularStyle[3] && angularStyle[4]) {
+                itemNames.push(angularStyle[4].trim())
             }
+            return this.bindIterableExpression(directiveInstance, propertyKey, itemNames, collectionExpr, context, viewRef);
+        }
 
-            directiveInstance[propertyKey] = expr;
-            // 设置v-for指令期望的属性
+    }
+
+    private bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, viewRef: EmbeddedViewRef<any>) {
+        // 添加防抖机制，避免无限循环
+        let lastCollection: any = null;
+        let updateScheduled = false;
+
+        const updateCollection = () => {
+            if (updateScheduled) return;
+            updateScheduled = true;
+
             this.effect.run(() => {
-                const collection = this.evaluateExpression(collectionExpr, context, viewRef);
+                try {
+                    const collection = this.evaluateExpression(collectionExpr, context, viewRef);
 
-                // 设置v-for指令期望的属性（而不是collection）
-                directiveInstance.for = itemNames[0]; // 主循环变量（如item）
-                directiveInstance.of = collection;     // 集合数据
+                    // 只有当集合真正发生变化时才赋值
+                    if (!this.isEqual(collection, lastCollection)) {
+                        directiveInstance[propertyKey] = collection;
+                        lastCollection = collection;
+                    }
 
-                // 如果有索引变量，也设置
-                if (itemNames.length > 1) {
-                    directiveInstance.index = itemNames[1]; // 索引变量（如index）
+                    // 如果有索引变量，也设置（只设置一次）
+                    if (itemNames.length > 1 && !directiveInstance.trackBy) {
+                        directiveInstance.trackBy = itemNames[1]; // 索引变量（如index）
+                    }
+                } catch (error) {
+                    console.error('Error in bindIterableExpression:', error);
+                } finally {
+                    updateScheduled = false;
                 }
             });
+        };
 
-        }
+        // 初始更新
+        updateCollection();
+
+        // 监听上下文变化，但使用防抖
+        const originalRun = this.effect.run;
+        this.effect.run = (fn: () => void) => {
+            const result = originalRun.call(this.effect, fn);
+            // 延迟执行更新，避免立即触发循环
+            setTimeout(updateCollection, 0);
+            return result;
+        };
     }
+
+    // 深度比较两个值是否相等
+    private isEqual(a: any, b: any): boolean {
+        if (a === b) return true;
+        if (a === null || b === null) return false;
+        if (typeof a !== typeof b) return false;
+
+        if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (!this.isEqual(a[i], b[i])) return false;
+            }
+            return true;
+        }
+
+        if (typeof a === 'object' && typeof b === 'object') {
+            const aKeys = Object.keys(a);
+            const bKeys = Object.keys(b);
+            if (aKeys.length !== bKeys.length) return false;
+
+            for (const key of aKeys) {
+                if (!this.isEqual(a[key], b[key])) return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    // // Vue风格表达式处理: item in items 或 (item, index) in items
+    private processVueStyleExpression(itemPart: string,): string[] {
+        let names: string[];
+        if (itemPart.trim().startsWith('(')) {
+            // 处理格式如 (item, index) 的情况
+            const innerMatch = itemPart.trim().match(/^\(\s*([^,]+)\s*(?:,\s*([^)]+))?\s*\)$/);
+            if (innerMatch) {
+                names = [innerMatch[1].trim(), innerMatch[2]?.trim() || ''].filter(Boolean);
+            }
+            throw new Exception('iterable expression invaild.')
+        } else {
+            // 处理格式如 item 的情况
+            names = [itemPart.trim()];
+        }
+        return names;
+    }
+
 
     // 解析管道表达式转换为函数调用
     private parsePipes(parts: string[]): string[] {
