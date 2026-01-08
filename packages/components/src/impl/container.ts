@@ -125,6 +125,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         let insertIndex = index !== undefined ? index : this.views.length;
         insertIndex = Math.max(0, Math.min(insertIndex, this.views.length));
 
+        const nextSibling = this.getNextSibling(insertIndex)
         // Insert view into views array
         this.views.splice(insertIndex, 0, viewRef);
 
@@ -140,15 +141,12 @@ class ViewContainerRefImpl implements ViewContainerRef {
             const parentNode = nativeElement.parentNode;
             if (parentNode) {
                 // 找到正确的参考节点：ElementContainer前面的最后一个视图节点
-                const nextSibling = this.getNextSibling(insertIndex) ?? nativeElement;
                 // 插入视图节点到参考节点前面
                 viewNodes.forEach(node => {
-                    parentNode.insertBefore(node, nextSibling);
+                    parentNode.insertBefore(node, nextSibling ?? nativeElement);
                 });
             }
         } else {
-            // 正常插入逻辑
-            const nextSibling = this.getNextSibling(insertIndex);
             if (nextSibling) {
                 viewNodes.forEach(node => {
                     nativeElement.insertBefore(node, nextSibling);
@@ -177,6 +175,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
             return viewRef;
         }
 
+        const nextSibling = this.getNextSibling(newIndex) 
         // Remove view from old position
         this.views.splice(oldIndex, 1);
 
@@ -206,14 +205,12 @@ class ViewContainerRefImpl implements ViewContainerRef {
             const parentNode = nativeElement.parentNode;
             if (parentNode) {
                 // 找到正确的参考节点：ElementContainer前面的最后一个视图节点
-                const nextSibling = this.getNextSibling(newIndex) ?? nativeElement;
                 // 插入视图节点到参考节点前面
                 viewNodes.forEach(node => {
-                    parentNode.insertBefore(node, nextSibling);
+                    parentNode.insertBefore(node, nextSibling ?? nativeElement);
                 });
             }
         } else {
-            const nextSibling = this.getNextSibling(newIndex);
             if (nextSibling) {
                 viewNodes.forEach(node => {
                     nativeElement.insertBefore(node, nextSibling);
