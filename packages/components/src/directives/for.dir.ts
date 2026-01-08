@@ -4,7 +4,7 @@ import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { reactive } from '../impl/reactive';
+import { reactive } from '../reactive';
 
 /**
  * v-for directive component with enhanced iterator support and elegant variable naming.

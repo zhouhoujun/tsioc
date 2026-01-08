@@ -1,17 +1,30 @@
 import { hasOwn, isFunction, isObject } from '@tsdi/ioc';
-import { ReactiveEffect } from '../ReactiveEffect';
-import { ComputedMetadata } from '../decorators/computed';
+import { ReactiveEffect } from './ReactiveEffect';
+import { ComputedMetadata } from './decorators/computed';
+import { RNode } from './renderer/Node';
 
 export const isReactive = Symbol('__reactive');
 export const computedSymbol = Symbol('__computed');
+export const noReact = Symbol('__noneProxy');
 
 // 计算属性缓存和依赖追踪
 const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: Set<string | symbol> }>>();
 
-// // 获取对象的计算属性定义
-// function getComputedDef(target: any): ComputedMetadata[] | undefined {
-//     return getDef<DirectiveDef>(getType(target))?.computeds;
-// }
+// 检查是否为Node节点
+function isNode(target: any): target is RNode {
+    return target && typeof target === 'object' &&
+        ('nodeType' in target || 'parentNode' in target || 'childNodes' in target);
+}
+
+export function canReactive(target: any) {
+    // 如果target已经是响应式的，直接返回
+    if (!target || !isObject(target) || target[isReactive] || target[noReact]) {
+        return false
+    }
+    if (isNode(target)) return false;
+
+    return true;
+}
 
 
 // 检查当前是否在计算属性求值过程中
@@ -29,9 +42,9 @@ function isNative(target: any) {
 }
 
 export function reactive(target: any, effect: ReactiveEffect, computeds?: ComputedMetadata[]) {
-    // 如果target已经是响应式的，直接返回
-    if (!target || !isObject(target) || target[isReactive]) {
-        return target
+    // 直接返回，不进行代理
+    if (!canReactive(target)) {
+        return target;
     }
 
     // 创建代理
@@ -61,8 +74,7 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
                 if (isNative(target)) {
                     res = res.bind(target);
                 }
-            } else if (isObject(res) && !res[isReactive]) {
-                // 嵌套对象也进行响应式处理（懒代理）
+            } else if (canReactive(res)) {
                 return reactive(res, effect);
             }
 

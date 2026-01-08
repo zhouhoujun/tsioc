@@ -5,7 +5,7 @@ import { NodeType, RNode, RText, RElement, RAttr, RComment } from '../renderer/N
 import { ReactiveEffect } from '../ReactiveEffect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
-import { reactive } from './reactive';
+import { reactive } from '../reactive';
 import { EnvironmentContext } from '../refs/environment';
 
 /**

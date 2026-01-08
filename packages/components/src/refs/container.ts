@@ -3,6 +3,7 @@ import { ComponentDef, ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { EmbeddedViewRef, ViewRef } from './view';
+import { noReact } from '../reactive';
 
 
 /**
@@ -22,6 +23,8 @@ import { EmbeddedViewRef, ViewRef } from './view';
  */
 @Abstract()
 export abstract class ViewContainerRef<T = any> {
+    [noReact] = true;
+    
     /**
      * Anchor element that specifies the location of this container in the containing view.
      * Each view container can have only one anchor element, and each anchor element

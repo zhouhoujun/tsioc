@@ -8,6 +8,7 @@ import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
 import { NodeType, RNode } from '../renderer/Node';
 import { EnvironmentContext } from '../refs/environment';
+import { noReact } from '../reactive';
 
 /**
  * View container ref implement.
@@ -17,6 +18,8 @@ import { EnvironmentContext } from '../refs/environment';
  * @implements {ViewContainerRef}
  */
 class ViewContainerRefImpl implements ViewContainerRef {
+
+    [noReact] = true;
 
     /**
      * view list.
@@ -128,27 +131,24 @@ class ViewContainerRefImpl implements ViewContainerRef {
         // Insert DOM nodes
         const nativeElement = this.element.nativeElement;
         const viewNodes = viewRef.rootNodes;
-        const nextSibling = this.getNextSibling(insertIndex);
 
         // 判断nativeElement是否为ElementContainer类型
         const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
 
         if (isElementContainer) {
-            // 对于ElementContainer，将视图插入到该节点前面
+            // 对于ElementContainer，所有视图都插入到ElementContainer前面
             const parentNode = nativeElement.parentNode;
             if (parentNode) {
-                if (nextSibling) {
-                    viewNodes.forEach(node => {
-                        parentNode.insertBefore(node, nextSibling);
-                    });
-                } else {
-                    viewNodes.forEach(node => {
-                        parentNode.insertBefore(node, nativeElement);
-                    });
-                }
+                // 找到正确的参考节点：ElementContainer前面的最后一个视图节点
+                const nextSibling = this.getNextSibling(insertIndex) ?? nativeElement;
+                // 插入视图节点到参考节点前面
+                viewNodes.forEach(node => {
+                    parentNode.insertBefore(node, nextSibling);
+                });
             }
         } else {
             // 正常插入逻辑
+            const nextSibling = this.getNextSibling(insertIndex);
             if (nextSibling) {
                 viewNodes.forEach(node => {
                     nativeElement.insertBefore(node, nextSibling);
@@ -186,7 +186,6 @@ class ViewContainerRefImpl implements ViewContainerRef {
         // Move DOM nodes
         const nativeElement = this.element.nativeElement;
         const viewNodes = viewRef.rootNodes;
-        const nextSibling = this.getNextSibling(newIndex);
 
         // 判断nativeElement是否为ElementContainer类型
         const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
@@ -206,17 +205,15 @@ class ViewContainerRefImpl implements ViewContainerRef {
         if (isElementContainer) {
             const parentNode = nativeElement.parentNode;
             if (parentNode) {
-                if (nextSibling) {
-                    viewNodes.forEach(node => {
-                        parentNode.insertBefore(node, nextSibling);
-                    });
-                } else {
-                    viewNodes.forEach(node => {
-                        parentNode.insertBefore(node, nativeElement);
-                    });
-                }
+                // 找到正确的参考节点：ElementContainer前面的最后一个视图节点
+                const nextSibling = this.getNextSibling(newIndex) ?? nativeElement;
+                // 插入视图节点到参考节点前面
+                viewNodes.forEach(node => {
+                    parentNode.insertBefore(node, nextSibling);
+                });
             }
         } else {
+            const nextSibling = this.getNextSibling(newIndex);
             if (nextSibling) {
                 viewNodes.forEach(node => {
                     nativeElement.insertBefore(node, nextSibling);

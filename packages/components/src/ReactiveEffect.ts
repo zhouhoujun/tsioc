@@ -1,7 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
+import { noReact } from './reactive';
 
 @Abstract()
 export abstract class ReactiveEffect<T = any> {
+    [noReact] = true;
+    
     // 依赖收集
     abstract track(target: object, key: string | symbol): void;
     

@@ -8,7 +8,7 @@ import {
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
 import { TemplateCompiler } from '../template/compiler';
-import { reactive } from './reactive';
+import { reactive } from '../reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
 import { EnvironmentContext } from '../refs/environment';
 import { EmbeddedViewRef } from '../refs/view';

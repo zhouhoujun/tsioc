@@ -6,6 +6,7 @@ import { TemplateRef } from './template';
 import { ViewContainerRef } from './container';
 import { ElementRef } from './element';
 import { EnvironmentContext } from './environment';
+import { noReact } from '../reactive';
 
 
 
@@ -16,6 +17,9 @@ import { EnvironmentContext } from './environment';
  */
 @Abstract()
 export abstract class ViewRef<C = any> implements Destroyable {
+
+  [noReact] = true;
+
 
   /**
    * The context for this view, inherited from the anchor element.
@@ -96,6 +100,9 @@ export abstract class ViewRef<C = any> implements Destroyable {
  */
 @Abstract()
 export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
+
+  [noReact] = true;
+  
   
   /**
    * The root nodes for this embedded view.

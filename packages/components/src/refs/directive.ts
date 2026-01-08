@@ -5,6 +5,7 @@ import { ElementRef } from './element';
 import { RNode } from '../renderer/Node';
 import { EnvironmentContext } from './environment';
 import { ComputedMetadata } from '../decorators/computed';
+import { noReact } from '../reactive';
 
 export const factoryKey = 'ƿfac';
 
@@ -62,6 +63,9 @@ export interface Factoriable<T = any> {
  */
 @Abstract()
 export abstract class DirectiveRef<T> extends AbstractInvocation<T, DirectiveOptions, EnvironmentContext> {
+
+    [noReact] = true;
+    
     /**
      * The host view defined by the template
      * for this component instance.

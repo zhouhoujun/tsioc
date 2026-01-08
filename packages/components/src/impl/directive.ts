@@ -7,7 +7,7 @@ import {
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
-import { reactive } from './reactive';
+import { reactive } from '../reactive';
 import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';

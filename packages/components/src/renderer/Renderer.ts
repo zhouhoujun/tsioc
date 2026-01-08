@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { RAttr, RComment, RElement, RNode, RText } from './Node';
+import { noReact } from '../reactive';
 
 /**
  * Flags for renderer-specific style modifiers.
@@ -22,6 +23,8 @@ export enum RendererStyleFlags2 {
 
 @Abstract()
 export abstract class Renderer {
+  [noReact] = true;
+  
   abstract createComment(value: string): RComment;
   abstract createElement(name: string, namespace?: string | null): RElement;
   abstract createText(value: string): RText;

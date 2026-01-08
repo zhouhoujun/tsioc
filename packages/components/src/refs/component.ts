@@ -5,6 +5,7 @@ import { DirectiveDef, factoryKey } from './directive';
 import { EnvironmentContext } from './environment';
 import { ElementRef } from './element';
 import { Renderer } from '../renderer/Renderer';
+import { noReact } from '../reactive';
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
@@ -17,6 +18,8 @@ export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof fact
  */
 @Abstract()
 export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions, EnvironmentContext> {
+
+    [noReact] = true;
 
     /**
      * The host view defined by the template

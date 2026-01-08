@@ -1,7 +1,7 @@
-import { Abstract, Exception, getDef, isObject, isString } from '@tsdi/ioc';
+import { Abstract, Exception, isString } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
-import { ViewRef, EmbeddedViewRef } from '../refs/view';
+import { EmbeddedViewRef } from '../refs/view';
 import { createEmbeddedViewRef } from './view';
 import { TemplateParser } from '../template/parser';
 import { ComponentDef } from '../refs/component';
@@ -12,6 +12,7 @@ import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable } from '../refs/
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
+import { noReact } from '../reactive';
 
 
 
@@ -19,6 +20,8 @@ import { Renderer } from '../renderer/Renderer';
 export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler<T> {
 
     protected abstract get options(): TemplateCompilerOptions;
+
+    [noReact] = true;
 
     private _delimiter?: RegExp;
     protected get delimiter() {
@@ -569,33 +572,33 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         });
     }
 
-    // 深度比较两个值是否相等
-    private isEqual(a: any, b: any): boolean {
-        if (a === b) return true;
-        if (a === null || b === null) return false;
-        if (typeof a !== typeof b) return false;
+    // // 深度比较两个值是否相等
+    // private isEqual(a: any, b: any): boolean {
+    //     if (a === b) return true;
+    //     if (a === null || b === null) return false;
+    //     if (typeof a !== typeof b) return false;
 
-        if (Array.isArray(a) && Array.isArray(b)) {
-            if (a.length !== b.length) return false;
-            for (let i = 0; i < a.length; i++) {
-                if (!this.isEqual(a[i], b[i])) return false;
-            }
-            return true;
-        }
+    //     if (Array.isArray(a) && Array.isArray(b)) {
+    //         if (a.length !== b.length) return false;
+    //         for (let i = 0; i < a.length; i++) {
+    //             if (!this.isEqual(a[i], b[i])) return false;
+    //         }
+    //         return true;
+    //     }
 
-        if (typeof a === 'object' && typeof b === 'object') {
-            const aKeys = Object.keys(a);
-            const bKeys = Object.keys(b);
-            if (aKeys.length !== bKeys.length) return false;
+    //     if (typeof a === 'object' && typeof b === 'object') {
+    //         const aKeys = Object.keys(a);
+    //         const bKeys = Object.keys(b);
+    //         if (aKeys.length !== bKeys.length) return false;
 
-            for (const key of aKeys) {
-                if (!this.isEqual(a[key], b[key])) return false;
-            }
-            return true;
-        }
+    //         for (const key of aKeys) {
+    //             if (!this.isEqual(a[key], b[key])) return false;
+    //         }
+    //         return true;
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 
     // // Vue风格表达式处理: item in items 或 (item, index) in items
     private processVueStyleExpression(itemPart: string,): string[] {

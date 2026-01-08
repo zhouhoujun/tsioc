@@ -6,9 +6,13 @@ import { DirectiveRef } from './directive';
 import { ComponentRef } from './component';
 import { ViewContainerRef } from './container';
 import { createViewContainerRef } from '../impl/container';
+import { noReact } from '../reactive';
 
 
 export class EnvironmentState {
+
+    [noReact] = true;
+    
 
     // 私有属性用于存储引用映射
     readonly componentRefs: Map<RNode, ComponentRef<any>> = new Map();
@@ -34,6 +38,8 @@ export class EnvironmentState {
  */
 
 export class EnvironmentContext extends DefaultInvocationContext {
+    [noReact] = true;
+    
 
     // 私有属性用于存储引用映射
     private state = new EnvironmentState();

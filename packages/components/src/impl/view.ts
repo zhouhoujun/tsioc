@@ -8,6 +8,7 @@ import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
+import { noReact } from '../reactive';
 
 /**
  * Embedded view ref implement.
@@ -19,6 +20,9 @@ import { Renderer } from '../renderer/Renderer';
  * @template C
  */
 export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
+
+    [noReact] = true;
+    
     private _isDestroyed = false;
     private _destroyCallbacks: (() => void)[] = [];
 

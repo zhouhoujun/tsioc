@@ -4,7 +4,8 @@ import * as cssSelect from 'css-select';
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
-    TemplateCompiler, TemplateCompilerOptions
+    TemplateCompiler, TemplateCompilerOptions,
+    noReact
 } from '@tsdi/components';
 import { EventEmitter } from 'events';
 
@@ -208,6 +209,9 @@ export class XmlElement extends XmlNode implements RElement {
 
 @Injectable()
 export class XmlRenderer implements Renderer {
+
+    [noReact] = true;
+
 
     destroyNode?: ((node: RNode) => void) | null | undefined;
     // 创建XML注释节点

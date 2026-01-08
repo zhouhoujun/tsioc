@@ -1,3 +1,4 @@
+import { noReact } from "../reactive";
 
 /**
  * A wrapper around a native element inside of a View.
@@ -11,6 +12,8 @@
  * @publicApi
  */
 export class ElementRef<T = any> {
+    [noReact] = true;
+    
     /**
      * The underlying native element or `null` if direct access to native elements is not supported
      * (e.g. when the application runs in a web worker).

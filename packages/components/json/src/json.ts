@@ -2,7 +2,8 @@ import { deepClone, Inject, Injectable, InvocationContext, isArray, isString, la
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
-    TemplateCompiler, TemplateCompilerOptions
+    TemplateCompiler, TemplateCompilerOptions,
+    noReact
 } from '@tsdi/components';
 import * as cssSelect from 'css-select';
 import { EventEmitter } from 'events';
@@ -203,6 +204,9 @@ export class JsonElement extends JsonNode implements RElement {
 
 @Injectable()
 export class JsonRenderer implements Renderer {
+
+    [noReact] = true;
+    
 
     destroyNode?: ((node: RNode) => void) | null | undefined;
 

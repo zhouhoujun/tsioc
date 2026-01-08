@@ -1,6 +1,7 @@
 
 export * from './EventEmitter';
 export * from './ReactiveEffect';
+export * from './reactive';
 
 export * from './lifecycle';
 
@@ -29,7 +30,6 @@ export * from './decorators/computed';
 
 export * from './impl/compiler';
 export * from './impl/effect';
-export * from './impl/reactive';
 export { createTemplateRef } from './impl/template';
 
 export * from './components';
