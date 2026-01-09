@@ -5,7 +5,7 @@ import {
     ResolveContext,
     InjectFlags
 } from '@tsdi/ioc';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ReactiveEffect } from '../effect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
 import { reactive } from '../reactive';
 import { OnDestroy } from '../lifecycle';

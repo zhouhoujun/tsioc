@@ -3,7 +3,7 @@ import { ComponentDef, ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { EmbeddedViewRef, ViewRef } from './view';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 
 /**

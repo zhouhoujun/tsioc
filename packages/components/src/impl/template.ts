@@ -2,10 +2,10 @@ import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { NodeType, RNode, RText, RElement, RAttr, RComment } from '../renderer/Node';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
-import { noReact, reactive } from '../reactive';
+import { reactive } from '../reactive';
 import { EnvironmentContext } from '../refs/environment';
 
 /**

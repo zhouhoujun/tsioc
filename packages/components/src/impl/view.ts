@@ -1,5 +1,5 @@
 import { getDef, isString, Type } from '@tsdi/ioc';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ReactiveEffect, noReact } from '../effect';
 import { ComponentDef, ComponentRef } from '../refs/component';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { RNode } from '../renderer/Node';
@@ -8,7 +8,6 @@ import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
-import { noReact } from '../reactive';
 
 /**
  * Embedded view ref implement.

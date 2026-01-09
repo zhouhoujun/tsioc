@@ -1,5 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
-import { noReact } from './reactive';
+// import { noReact } from './reactive';
+
+export const noReact = Symbol('__noReact');
 
 @Abstract()
 export abstract class ReactiveEffect<T = any> {

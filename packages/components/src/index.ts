@@ -1,6 +1,6 @@
 
 export * from './EventEmitter';
-export * from './ReactiveEffect';
+export * from './effect';
 export * from './reactive';
 
 export * from './lifecycle';

@@ -5,7 +5,7 @@ import { DirectiveDef, factoryKey } from './directive';
 import { EnvironmentContext } from './environment';
 import { ElementRef } from './element';
 import { Renderer } from '../renderer/Renderer';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;

@@ -4,10 +4,9 @@ import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomT
 import { Abstract, Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, ProvdierOf, token } from '@tsdi/ioc';
 // import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ReactiveEffect, noReact } from '../effect';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
-import { noReact } from '../reactive';
 
 
 // @Injectable()

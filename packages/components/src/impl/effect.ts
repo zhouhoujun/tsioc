@@ -1,5 +1,4 @@
-import { noReact } from '../reactive';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ReactiveEffect, noReact } from '../effect';
 
 export class DefaultReactiveEffect implements ReactiveEffect {
     

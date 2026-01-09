@@ -1,4 +1,4 @@
-import { getDef, InvocationContext, isFunction, isNumber, Type } from '@tsdi/ioc';
+import { getDef, isFunction, isNumber, Type } from '@tsdi/ioc';
 import { ViewContainerRef } from '../refs/container';
 import { ComponentDef, ComponentRef } from '../refs/component';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
@@ -8,7 +8,7 @@ import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
 import { NodeType, RNode } from '../renderer/Node';
 import { EnvironmentContext } from '../refs/environment';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 /**
  * View container ref implement.

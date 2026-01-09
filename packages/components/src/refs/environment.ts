@@ -6,7 +6,7 @@ import { DirectiveRef } from './directive';
 import { ComponentRef } from './component';
 import { ViewContainerRef } from './container';
 import { createViewContainerRef } from '../impl/container';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 
 export class EnvironmentState {

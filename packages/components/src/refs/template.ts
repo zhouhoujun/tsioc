@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
 import { EnvironmentContext } from './environment';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 
 /**

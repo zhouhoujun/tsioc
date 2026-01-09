@@ -5,7 +5,7 @@ import { ElementRef } from './element';
 import { RNode } from '../renderer/Node';
 import { EnvironmentContext } from './environment';
 import { ComputedMetadata } from '../decorators/computed';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 export const factoryKey = 'ƿfac';
 

@@ -1,11 +1,10 @@
 import { hasOwn, isFunction, isObject } from '@tsdi/ioc';
-import { ReactiveEffect } from './ReactiveEffect';
+import { noReact, ReactiveEffect } from './effect';
 import { ComputedMetadata } from './decorators/computed';
 // import { RNode } from './renderer/Node';
 
 export const isReactive = Symbol('__reactive');
 export const computedSymbol = Symbol('__computed');
-export const noReact = Symbol('__noneProxy');
 
 // 计算属性缓存和依赖追踪
 const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: Set<string | symbol> }>>();

@@ -4,7 +4,7 @@ import { DirectiveRef } from './directive';
 import { TemplateRef } from './template';
 import { ElementRef } from './element';
 import { EnvironmentContext } from './environment';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 
 

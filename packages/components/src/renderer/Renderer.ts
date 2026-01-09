@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { RAttr, RComment, RElement, RNode, RText } from './Node';
-import { noReact } from '../reactive';
+import { noReact } from '../effect';
 
 /**
  * Flags for renderer-specific style modifiers.

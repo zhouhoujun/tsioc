@@ -5,7 +5,7 @@ import {
     ResolveContext,
     InjectFlags
 } from '@tsdi/ioc';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ReactiveEffect } from '../effect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
 import { TemplateCompiler } from '../template/compiler';
 import { reactive } from '../reactive';

@@ -1,4 +1,4 @@
-import { noReact } from "../reactive";
+import { noReact } from '../effect';
 
 /**
  * A wrapper around a native element inside of a View.

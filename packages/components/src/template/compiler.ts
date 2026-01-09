@@ -1,9 +1,8 @@
 import { Abstract } from '@tsdi/ioc';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ReactiveEffect, noReact } from '../effect';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { Renderer } from '../renderer/Renderer';
 import { EnvironmentContext } from '../refs/environment';
-import { noReact } from '../reactive';
 
 export interface TemplateCompilerOptions {
     delimiters?: [string, string];

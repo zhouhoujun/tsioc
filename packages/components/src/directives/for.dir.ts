@@ -3,7 +3,7 @@ import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ReactiveEffect } from '../effect';
 import { reactive } from '../reactive';
 
 /**
