@@ -7,7 +7,7 @@ import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
 import { isReactive, reactive } from '../reactive';
 import { EnvironmentContext } from '../refs/environment';
-import { TemplateCompiler } from '../template/compiler';
+// import { TemplateCompiler } from '../template/compiler';
 
 /**
  * Template ref implement.
