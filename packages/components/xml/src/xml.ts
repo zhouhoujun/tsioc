@@ -355,7 +355,8 @@ const htmlParsingOptions = {
 // XML模板解析器实现示例
 @Injectable()
 export class XmlTemplateParser implements TemplateParser {
-
+    [noReact] = true;
+    
     constructor(
         private renderer: XmlRenderer
     ) { }

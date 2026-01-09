@@ -3,6 +3,7 @@ import { noReact } from './reactive';
 
 @Abstract()
 export abstract class ReactiveEffect<T = any> {
+    
     [noReact] = true;
     
     // 依赖收集

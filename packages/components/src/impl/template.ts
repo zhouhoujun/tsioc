@@ -5,7 +5,7 @@ import { NodeType, RNode, RText, RElement, RAttr, RComment } from '../renderer/N
 import { ReactiveEffect } from '../ReactiveEffect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
-import { reactive } from '../reactive';
+import { noReact, reactive } from '../reactive';
 import { EnvironmentContext } from '../refs/environment';
 
 /**
@@ -17,6 +17,8 @@ import { EnvironmentContext } from '../refs/environment';
  * @template C
  */
 class TemplateRefImpl<C = any> implements TemplateRef<C> {
+
+    [noReact] = true;
 
     /**
      * Creates an instance of TemplateRefImpl.

@@ -1,7 +1,7 @@
 import { hasOwn, isFunction, isObject } from '@tsdi/ioc';
 import { ReactiveEffect } from './ReactiveEffect';
 import { ComputedMetadata } from './decorators/computed';
-import { RNode } from './renderer/Node';
+// import { RNode } from './renderer/Node';
 
 export const isReactive = Symbol('__reactive');
 export const computedSymbol = Symbol('__computed');
@@ -10,18 +10,18 @@ export const noReact = Symbol('__noneProxy');
 // 计算属性缓存和依赖追踪
 const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: Set<string | symbol> }>>();
 
-// 检查是否为Node节点
-function isNode(target: any): target is RNode {
-    return target && typeof target === 'object' &&
-        ('nodeType' in target || 'parentNode' in target || 'childNodes' in target);
-}
+// // 检查是否为Node节点
+// function isNode(target: any): target is RNode {
+//     return target && typeof target === 'object' &&
+//         ('nodeType' in target || 'parentNode' in target || 'childNodes' in target);
+// }
 
 export function canReactive(target: any) {
     // 如果target已经是响应式的，直接返回
     if (!target || !isObject(target) || target[isReactive] || target[noReact]) {
         return false
     }
-    if (isNode(target)) return false;
+    // if (isNode(target)) return false;
 
     return true;
 }

@@ -23,6 +23,7 @@ export enum RendererStyleFlags2 {
 
 @Abstract()
 export abstract class Renderer {
+  
   [noReact] = true;
   
   abstract createComment(value: string): RComment;

@@ -23,6 +23,7 @@ import { noReact } from '../reactive';
  */
 @Abstract()
 export abstract class ViewContainerRef<T = any> {
+   
     [noReact] = true;
     
     /**

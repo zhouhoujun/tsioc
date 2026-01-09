@@ -12,7 +12,6 @@ import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable } from '../refs/
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
-import { noReact } from '../reactive';
 
 
 
@@ -20,8 +19,6 @@ import { noReact } from '../reactive';
 export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler<T> {
 
     protected abstract get options(): TemplateCompilerOptions;
-
-    [noReact] = true;
 
     private _delimiter?: RegExp;
     protected get delimiter() {

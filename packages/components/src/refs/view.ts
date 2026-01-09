@@ -1,9 +1,7 @@
 import { Abstract, Destroyable, Type } from '@tsdi/ioc';
-import { RElement, RNode } from '../renderer/Node';
 import { ComponentRef } from './component';
 import { DirectiveRef } from './directive';
 import { TemplateRef } from './template';
-import { ViewContainerRef } from './container';
 import { ElementRef } from './element';
 import { EnvironmentContext } from './environment';
 import { noReact } from '../reactive';
@@ -100,10 +98,6 @@ export abstract class ViewRef<C = any> implements Destroyable {
  */
 @Abstract()
 export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
-
-  [noReact] = true;
-  
-  
   /**
    * The root nodes for this embedded view.
    */

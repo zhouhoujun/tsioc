@@ -7,6 +7,7 @@ import { AbstractTemplateCompiler } from './compiler';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
+import { noReact } from '../reactive';
 
 
 // @Injectable()
@@ -102,6 +103,8 @@ export abstract class HtmlRenderer extends Renderer {
 
 @Abstract()
 export abstract class HtmlTemplateParser implements TemplateParser {
+
+    [noReact] = true;
 
     constructor(
         protected renderer: HtmlRenderer

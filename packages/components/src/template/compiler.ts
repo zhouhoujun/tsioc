@@ -3,6 +3,7 @@ import { ReactiveEffect } from '../ReactiveEffect';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { Renderer } from '../renderer/Renderer';
 import { EnvironmentContext } from '../refs/environment';
+import { noReact } from '../reactive';
 
 export interface TemplateCompilerOptions {
     delimiters?: [string, string];
@@ -12,6 +13,8 @@ export interface TemplateCompilerOptions {
 
 @Abstract()
 export abstract class TemplateCompiler<T = string> {
+
+    [noReact] = true;
 
     abstract get effect(): ReactiveEffect;
 

@@ -2,6 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
 import { EnvironmentContext } from './environment';
+import { noReact } from '../reactive';
 
 
 /**
@@ -24,6 +25,8 @@ import { EnvironmentContext } from './environment';
  */
 @Abstract()
 export abstract class TemplateRef<C = any> {
+
+    [noReact] = true;
     /**
      * The anchor element in the parent view for this embedded view.
      *

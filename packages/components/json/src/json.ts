@@ -340,6 +340,8 @@ const attrRegex = /^(@|#|:|\[|v-|\.)/;
 // XML模板解析器实现示例
 @Injectable()
 export class JsonTemplateParser implements TemplateParser<Object | string> {
+    [noReact] = true;
+    
     constructor(
         private renderer: JsonRenderer
     ) { }

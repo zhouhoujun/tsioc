@@ -2,7 +2,7 @@ import { getDef, isString, Type } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentDef, ComponentRef } from '../refs/component';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
-import { NodeType, RNode } from '../renderer/Node';
+import { RNode } from '../renderer/Node';
 import { DirectiveDef, DirectiveRef, DirectiveType } from '../refs/directive';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
@@ -22,7 +22,7 @@ import { noReact } from '../reactive';
 export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 
     [noReact] = true;
-    
+
     private _isDestroyed = false;
     private _destroyCallbacks: (() => void)[] = [];
 

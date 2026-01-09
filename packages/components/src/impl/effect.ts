@@ -1,16 +1,16 @@
 import { noReact } from '../reactive';
 import { ReactiveEffect } from '../ReactiveEffect';
 
-export class DefaultReactiveEffect extends ReactiveEffect {
-    [noReact] = true;
+export class DefaultReactiveEffect implements ReactiveEffect {
     
     private depsMap = new WeakMap<any, Map<string | symbol, Set<Function>>>();
     private activeEffects = new Set<Function>();
     private scheduler?: (fn: Function) => void;
     private isActive = true;
 
+    [noReact] = true;
+
     constructor(options?: { scheduler?: (fn: Function) => void }) {
-        super();
         this.scheduler = options?.scheduler;
     }
 
