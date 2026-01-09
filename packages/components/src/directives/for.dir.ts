@@ -36,6 +36,10 @@ export class VForDirective {
         this._effect = viewContainer.environment.get(ReactiveEffect);
     }
 
+    set itemNames(names: string[]) {
+        this._itemNames = names;
+    }
+
     // 设置模板引用（从编译器传递）
     @Attribute()
     set template(templateRef: TemplateRef<any>) {

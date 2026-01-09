@@ -29,11 +29,18 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         return this._delimiter;
     }
 
-    async compile<C>(template: T, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>> {
+
+
+    compile<C>(template: T, context: C, environment: EnvironmentContext): EmbeddedViewRef<C> {
         // 使用模板解析器解析模板
         const nodes = environment.get(TemplateParser<T>).parse(template, environment);
+        return this.compileNodes(nodes, context, environment)
+    }
 
-        const viewRef = createEmbeddedViewRef(nodes, context, environment, this.effect);
+    compileNodes<C>(nodes: RNode[], context: C, environment: EnvironmentContext): EmbeddedViewRef<C> {
+
+
+        const viewRef = createEmbeddedViewRef(nodes, context, environment);
 
         const rootNodes = viewRef.rootNodes ?? [];
 
@@ -83,11 +90,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             dirMap.set(key, sortedDirs);
         })
 
-
-
-
         // 处理动态内容
-        await this.walkNodes(rootNodes, context, viewRef, compMap, dirMap);
+        this.walkNodes(rootNodes, context, viewRef, compMap, dirMap);
 
         return viewRef;
     }
@@ -105,7 +109,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     }
 
 
-    private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, dirType: DirectiveType) {
+    private processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, dirType: DirectiveType) {
         if (dirType & DirectiveType.Iterable) return;
         // 处理属性
         attrs.forEach(({ name, value }) => {
@@ -117,7 +121,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             } else if (name.startsWith(':')) {
                 // 属性绑定
                 const propName = name.substring(1);
-                this.effect.run(() => {
+                viewRef.effect.run(() => {
                     const attValue = this.evaluateExpression(value, context, viewRef);
                     el.setAttribute(propName, attValue);
                 });
@@ -131,7 +135,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 处理v-model双向绑定
         if (el.hasAttribute('v-model')) {
             const prop = el.getAttribute('v-model') as string;
-            this.effect.run(() => {
+            viewRef.effect.run(() => {
                 el.setAttribute('value', context[prop]);
                 el.addEventListener('input', () => {
                     context[prop] = el.getAttribute('value');
@@ -144,7 +148,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         // 递归处理子节点（非结构指令）
         if (el.childNodes.length > 0) {
-            await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap);
+            this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap);
         }
     }
 
@@ -351,7 +355,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 const inputDef = attributes.find(attr => attr.alias === eventName || attr.propertyKey === eventName);
                 if (inputDef) {
                     // 解析绑定表达式并创建响应式依赖
-                    this.effect.run(() => {
+                    viewRef.effect.run(() => {
                         const handler = this.evaluateExpression(value, context, viewRef);
                         // 绑定事件处理函数
                         if (componentRef.instance[inputDef.propertyKey] instanceof EventEmitter) {
@@ -367,7 +371,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 // 查找是否为输入属性
                 const inputDef = attributes.find(attr => attr.alias === propName || attr.propertyKey === propName);
                 if (inputDef) {
-                    this.effect.run(() => {
+                    viewRef.effect.run(() => {
                         const attValue = context[value];
                         // if (propName === 'class' || propName === 'style') {
                         //     this.handleSpecialAttribute(el, propName, attValue);
@@ -418,7 +422,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
             if (attr.name.startsWith('@')) {
                 // 解析绑定表达式并创建响应式依赖
-                this.effect.run(() => {
+                viewRef.effect.run(() => {
                     const handler = this.evaluateExpression(attr.value, context, viewRef);
                     // 绑定事件处理函数
                     if (directiveInstance[propertyKey] instanceof EventEmitter) {
@@ -431,7 +435,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 // 属性绑定
                 // 查找是否为输入属性
                 if (isString(attr.value)) {
-                    this.effect.run(() => {
+                    viewRef.effect.run(() => {
                         const attValue = context[attr.value] ?? attr.value;
                         directiveInstance[propertyKey] = attValue;
                     });
@@ -445,7 +449,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                     if (directive.dirType === DirectiveType.Iterable) {
                         this.evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, viewRef);
                     } else {
-                        this.effect.run(() => {
+                        viewRef.effect.run(() => {
                             const attValue = this.evaluateExpression(attr.value, context, viewRef);
                             directiveInstance[propertyKey] = attValue;
                         });
@@ -521,7 +525,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 为每个表达式创建响应式依赖
         segments.forEach(segment => {
             if (typeof segment !== 'string') {
-                this.effect.run(() => {
+                viewRef.effect.run(() => {
                     segment.value = this.evaluateExpression(segment.expr, context, viewRef);
                     // 只有在表达式值变化时才更新整个文本
                     const updatedText = segments.map(s =>
@@ -561,9 +565,9 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, viewRef: EmbeddedViewRef<any>) {
 
         // 设置v-for指令期望的属性（而不是collection）
-        directiveInstance._itemNames = itemNames; // 主循环变量（如item）
+        directiveInstance.itemNames = itemNames; // 主循环变量（如item）
         // 设置v-for指令期望的属性
-        this.effect.run(() => {
+        viewRef.effect.run(() => {
             const collection = this.evaluateExpression(collectionExpr, context, viewRef);
             directiveInstance[propertyKey] = collection;     // 集合数据
         });
@@ -661,7 +665,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         if (!match) {
             // 支持直接绑定上下文对象的方法 (如: @click="user.onClick")
             const propPath = expr.trim().split('.');
-            return this.effect.run(() => {
+            return viewRef.effect.run(() => {
                 const handler = propPath.reduce((obj, prop) => obj && obj[prop], context);
                 return handler.bind(context);
             });
@@ -670,7 +674,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const [, funcPath, argsStr] = match;
         const args = this.parseArguments(argsStr, context, viewRef);
 
-        return this.effect.run(() => {
+        return viewRef.effect.run(() => {
             // 解析函数路径 (支持嵌套对象，如: user.service.handleClick)
             let funcTarget: any;
             const func = funcPath.split('.').reduce((obj, prop) => {

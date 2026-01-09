@@ -341,7 +341,7 @@ const attrRegex = /^(@|#|:|\[|v-|\.)/;
 @Injectable()
 export class JsonTemplateParser implements TemplateParser<Object | string> {
     [noReact] = true;
-    
+
     constructor(
         private renderer: JsonRenderer
     ) { }
@@ -452,7 +452,6 @@ const jsonDefaultOptions = {
 export class JsonTemplateCompiler extends AbstractTemplateCompiler {
 
     constructor(
-        readonly effect: ReactiveEffect,
         readonly renderer: JsonRenderer,
         @Inject(JSON_COMPILER_OPTIONS, { defaultValue: jsonDefaultOptions }) protected options: TemplateCompilerOptions) {
         super()

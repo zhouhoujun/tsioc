@@ -4,7 +4,7 @@ import { DirectiveRef } from './directive';
 import { TemplateRef } from './template';
 import { ElementRef } from './element';
 import { EnvironmentContext } from './environment';
-import { noReact } from '../effect';
+import { noReact, ReactiveEffect } from '../effect';
 
 
 
@@ -102,6 +102,8 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
    * The root nodes for this embedded view.
    */
   abstract get rootNodes(): any[];
+
+  abstract get effect(): ReactiveEffect;
   /**
    * The environment context for this view.
    */

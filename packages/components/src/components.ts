@@ -1,7 +1,7 @@
 import { Module, Runtime } from '@tsdi/ioc';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
-// import { ReactiveEffect } from './ReactiveEffect';
+// import { ReactiveEffect } from './effect';
 // import { DefaultReactiveEffect } from './impl/effect';
 import { VForDirective } from './directives/for.dir';
 import { VElseDirective, VElseIfDirective, VIfDirective } from './directives/if.dir';

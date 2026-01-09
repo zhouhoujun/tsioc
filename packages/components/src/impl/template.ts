@@ -5,8 +5,9 @@ import { NodeType, RNode, RText, RElement, RAttr, RComment } from '../renderer/N
 import { noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
-import { reactive } from '../reactive';
+import { isReactive, reactive } from '../reactive';
 import { EnvironmentContext } from '../refs/environment';
+import { TemplateCompiler } from '../template/compiler';
 
 /**
  * Template ref implement.
@@ -50,15 +51,12 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         const rootNodes = renderer.cloneNode ? this.rootNodes.map(n => renderer.cloneNode!(n))
             : this.rootNodes.map(n => this.cloneNode(n, renderer));
 
-        // 创建响应式副作用
-        const effect = environment.get(ReactiveEffect);
-
         // 响应式处理上下文
-        context = reactive(context || {} as C, effect);
+        context = isReactive(context)? context: reactive(context || {} as C, environment.get(ReactiveEffect));
 
 
         // 创建嵌入式视图
-        const embeddedView = createEmbeddedViewRef<C>(rootNodes, context, environment, effect);
+        const embeddedView = createEmbeddedViewRef(rootNodes, context, environment); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
 
         return embeddedView;
     }

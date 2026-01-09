@@ -3,8 +3,7 @@ import { noReact, ReactiveEffect } from './effect';
 import { ComputedMetadata } from './decorators/computed';
 // import { RNode } from './renderer/Node';
 
-export const isReactive = Symbol('__reactive');
-export const computedSymbol = Symbol('__computed');
+const REACT_FlAG = Symbol('__REACT');
 
 // 计算属性缓存和依赖追踪
 const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: Set<string | symbol> }>>();
@@ -15,9 +14,13 @@ const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: 
 //         ('nodeType' in target || 'parentNode' in target || 'childNodes' in target);
 // }
 
+export function isReactive(target: any): boolean {
+    return isObject(target) && target[REACT_FlAG]
+}
+
 export function canReactive(target: any) {
     // 如果target已经是响应式的，直接返回
-    if (!target || !isObject(target) || target[isReactive] || target[noReact]) {
+    if (!target || !isObject(target) || target[REACT_FlAG] || target[noReact]) {
         return false
     }
     // if (isNode(target)) return false;
@@ -130,7 +133,7 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
         }
     });
 
-    proxy[isReactive] = true;
+    proxy[REACT_FlAG] = true;
 
     return proxy;
 }

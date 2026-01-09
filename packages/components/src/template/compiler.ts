@@ -1,8 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { ReactiveEffect, noReact } from '../effect';
+import { noReact } from '../effect';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { Renderer } from '../renderer/Renderer';
 import { EnvironmentContext } from '../refs/environment';
+import { RNode } from '../renderer/Node';
 
 export interface TemplateCompilerOptions {
     delimiters?: [string, string];
@@ -15,9 +16,9 @@ export abstract class TemplateCompiler<T = string> {
 
     [noReact] = true;
 
-    abstract get effect(): ReactiveEffect;
-
     abstract get renderer(): Renderer;
 
-    abstract compile<C>(template: T, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>>;
+    abstract compileNodes<C>(nodes: RNode[], context: C, environment: EnvironmentContext): EmbeddedViewRef<C>
+
+    abstract compile<C>(template: T, context: C, environment: EnvironmentContext): EmbeddedViewRef<C>;
 }

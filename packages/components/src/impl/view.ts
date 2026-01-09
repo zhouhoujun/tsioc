@@ -27,7 +27,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 
 
 
-    private effect: ReactiveEffect;
+    readonly effect: ReactiveEffect;
     // 添加计算属性缓存
     readonly computedCache = new Map<string, { value: any, deps: Set<any> }>();
 
@@ -45,7 +45,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         effect?: ReactiveEffect
     ) {
         this.effect = effect ?? environment.get(ReactiveEffect);
-        environment.setValue(EmbeddedViewRef, this);
+        // environment.setValue(EmbeddedViewRef, this);
         environment.onDestroy(this.destroy.bind(this));
     }
 

@@ -1,5 +1,4 @@
 import { Abstract } from '@tsdi/ioc';
-// import { noReact } from './reactive';
 
 export const noReact = Symbol('__noReact');
 

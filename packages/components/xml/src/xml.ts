@@ -2,7 +2,7 @@ import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWit
 import { XMLParser } from 'fast-xml-parser';
 import * as cssSelect from 'css-select';
 import {
-    TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
+    TemplateParser, AbstractTemplateCompiler, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
     TemplateCompiler, TemplateCompilerOptions,
     noReact
@@ -455,7 +455,6 @@ export const XML_COMPILER_OPTIONS = token<TemplateCompilerOptions>('XML_COMPILER
 export class XmlTemplateCompiler extends AbstractTemplateCompiler {
 
     constructor(
-        readonly effect: ReactiveEffect,
         readonly renderer: XmlRenderer,
         @Inject(XML_COMPILER_OPTIONS, { defaultValue: xmlDefaultOptions }) protected options: TemplateCompilerOptions) {
         super()
