@@ -54,14 +54,14 @@ export abstract class Renderer {
   abstract nextSibling(node: RNode): RNode | null;
 
   abstract setAttribute(
-    el: RElement,
+    el: RNode,
     name: string,
     value: string,
     namespace?: string | null,
   ): void;
-  abstract removeAttribute(el: RElement, name: string, namespace?: string | null): void;
+  abstract removeAttribute(el: RNode, name: string, namespace?: string | null): void;
 
-  abstract getAttributes(el: RElement): RAttr[];
+  abstract getAttributes(el: RNode): RAttr[];
 
   abstract addClass(el: RElement, name: string): void;
   abstract removeClass(el: RElement, name: string): void;

@@ -1,6 +1,6 @@
 import { Abstract, Exception, isString, remove } from '@tsdi/ioc';
 import { CompilerOptions, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { BIND_DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
+import { BIND_DIRECTIVES, BINDINGS, NodeType, RAttr, RComment, RElement, RNode, RText } from '../renderer/Node';
 import { EmbeddedViewRef } from '../refs/view';
 import { createEmbeddedViewRef } from './view';
 import { TemplateParser } from '../template/parser';
@@ -432,22 +432,24 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
     private createDirectiveRef(dir: DirectiveDef, target: RNode, environment: EnvironmentContext): any {
         const options: DirectiveOptions = {};
+        const selectors = dir.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
+        const attrs = this.renderer.getAttributes(target);
         switch (dir.dirType) {
             case DirectiveType.Conditional:
                 // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
-                this.processConditionalDirectives(target, dir, options);
-
-
+                this.processConditionalOptions(target, dir, selectors, attrs, options);
                 break;
 
             case DirectiveType.Iterable:
                 // 处理列表指令（v-for, *for）
+                this.processIterableOptions(target, dir, selectors, attrs, options);
                 break;
 
 
 
             case DirectiveType.Structural:
                 // 处理结构指令（v-switch）, *switch）
+                this.processStructuralOptions(target, dir, selectors, attrs, options);
                 break;
             default:
 
@@ -459,7 +461,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 处理条件指令组
      */
-    private async processConditionalDirectives(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
+    private processConditionalOptions(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
         const readerer = this.renderer;
         const container = this.createContainer(readerer, dirDef.selector);
         const parent = readerer.parentNode(el);
@@ -490,6 +492,53 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         options.elementRef = elementRef;
         options.templateRef = templateRef;
 
+    }
+
+    private processIterableOptions(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
+        const readerer = this.renderer;
+        const container = this.createContainer(readerer, dirDef.selector);
+
+        const parent = readerer.parentNode(el);
+        if (parent) {
+            readerer.insertBefore(parent, container, el);
+            readerer.removeChild(parent, el);
+        }
+
+        attrs.forEach(attr => {
+            readerer.setAttribute(container, attr.name, attr.value)
+        });
+        dirDef.attributes?.forEach(attrDef => {
+            readerer.removeAttribute(container, attrDef.alias ?? attrDef.propertyKey);
+        });
+
+        selectors.forEach(selector => {
+            readerer.removeAttribute(container, selector);
+        });
+
+        const templateNodes = [el];
+
+        const elementRef = new ElementRef(container);
+
+        // 处理列表指令;
+        const templateRef = createTemplateRef(templateNodes, elementRef);
+
+
+        options.elementRef = elementRef;
+        options.templateRef = templateRef;
+    }
+
+    private processStructuralOptions(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
+        const readerer = this.renderer;
+
+        const templateNodes = el.childNodes.splice(0);
+        dirDef.requires?.forEach(reqSelector => {
+            const reqEl = readerer.querySelector(el, reqSelector);
+            if (reqEl) {
+                templateNodes.push(reqEl);
+            }
+        });
+
+        templateNodes.forEach(c => readerer.removeChild(el, c));
     }
 
     /**

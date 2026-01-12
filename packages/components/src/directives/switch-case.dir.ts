@@ -15,6 +15,7 @@ import { DirectiveType } from '../refs/directive';
 @Directive({
     selector: '[v-switch],[*switch]',
     dirType: DirectiveType.Structural,
+    requires:['[v-case],[*case]','[v-default],[*default]'],
     priority: 20
 })
 export class SwitchDirective {
