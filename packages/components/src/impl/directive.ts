@@ -83,7 +83,7 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
             const elementRef = options.elementRef;
             providers.push({ provide: ElementRef, useValue: elementRef });
             providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
-            providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
+            // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
 
         }
 
@@ -92,9 +92,9 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {
         const context = new EnvironmentContext(injector, options);
-        if (!context.has(ReactiveEffect, InjectFlags.Self)) {
-            context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
-        }
+        // if (!context.has(ReactiveEffect, InjectFlags.Self)) {
+        //     context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
+        // }
         return context;
     }
 

@@ -110,7 +110,7 @@ export abstract class HtmlTemplateParser implements TemplateParser {
     ) { }
 
 
-    abstract parse(template: string, environment: InvocationContext): RNode[];
+    abstract parse(template: string): RNode[];
 
 }
 

@@ -25,7 +25,7 @@ export class JsonParserTest {
     @Test('can parse empty JSON object')
     async testParseEmptyObject() {
         const jsonTemplate = {};
-        const nodes = this.parser.parse(jsonTemplate, this.ctx);
+        const nodes = this.parser.parse(jsonTemplate);
         expect(nodes).toBeDefined();
         expect(nodes.length).toBe(0);
     }
@@ -37,7 +37,7 @@ export class JsonParserTest {
             p: 'Paragraph'
         };
 
-        const nodes = this.parser.parse(jsonTemplate, this.ctx);
+        const nodes = this.parser.parse(jsonTemplate);
         expect(nodes).toBeDefined();
         expect(nodes.length).toBe(2);
         expect(nodes[0].tagName).toBe('div');
@@ -58,7 +58,7 @@ export class JsonParserTest {
             }
         };
 
-        const nodes = this.parser.parse(jsonTemplate, this.ctx);
+        const nodes = this.parser.parse(jsonTemplate);
         expect(nodes).toBeDefined();
         expect(nodes.length).toBe(1);
 
@@ -88,7 +88,7 @@ export class JsonParserTest {
             }
         ];
 
-        const nodes = this.parser.parse(jsonTemplate, this.ctx);
+        const nodes = this.parser.parse(jsonTemplate);
         expect(nodes).toBeDefined();
         expect(nodes.length).toBe(3);
         expect(nodes[0].tagName).toBe('div');
@@ -113,7 +113,7 @@ export class JsonParserTest {
             }
         };
 
-        const nodes = this.parser.parse(jsonTemplate, this.ctx);
+        const nodes = this.parser.parse(jsonTemplate);
         expect(nodes).toBeDefined();
         expect(nodes.length).toBe(1);
 

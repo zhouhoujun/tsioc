@@ -1,4 +1,4 @@
-import { TemplateRef } from '../refs/template';
+import { BindingFactory, TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { NodeType, RNode, RText, RElement, RAttr, RComment } from '../renderer/Node';
@@ -7,6 +7,8 @@ import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
 import { isReactive, reactive } from '../reactive';
 import { EnvironmentContext } from '../refs/environment';
+import { DirectiveDef } from '../refs/directive';
+import { ComponentDef } from '../refs/component';
 // import { TemplateCompiler } from '../template/compiler';
 
 /**
@@ -31,7 +33,12 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     constructor(
         readonly rootNodes: RNode[],
         readonly elementRef: ElementRef,
-        private environment: EnvironmentContext
+        private options: {
+            bindingFactories: Map<RNode, BindingFactory<C>[]>,
+            directives?: Map<RNode, DirectiveDef<any>[]>;
+            components?: Map<RNode, ComponentDef>;
+            environment?: EnvironmentContext
+        }
     ) { }
 
     /**
@@ -43,17 +50,14 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * @returns The new embedded view object.
      */
     createEmbeddedView(context: C, environment?: EnvironmentContext): EmbeddedViewRef<C> {
-        environment = environment || this.environment;
+        environment = environment || this.options.environment!;
 
         const renderer = environment.get(Renderer);
+        // 响应式处理上下文
+        context = isReactive(context) ? context : reactive(context || {} as C, environment.get(ReactiveEffect));
 
         // 默认处理抽象节点
-        const rootNodes = renderer.cloneNode ? this.rootNodes.map(n => renderer.cloneNode!(n))
-            : this.rootNodes.map(n => this.cloneNode(n, renderer));
-
-        // 响应式处理上下文
-        context = isReactive(context)? context: reactive(context || {} as C, environment.get(ReactiveEffect));
-
+        const rootNodes = this.rootNodes.map(n => this.bindings(n, this.cloneNode(n, renderer), context, renderer, environment));
 
         // 创建嵌入式视图
         const embeddedView = createEmbeddedViewRef(rootNodes, context, environment); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
@@ -61,8 +65,25 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         return embeddedView;
     }
 
+    private bindings(node: RNode, newNode: RNode, context: C, renderer: Renderer, environment: EnvironmentContext): RNode {
+        const bindings = this.options.bindingFactories.get(node);
+        if (bindings) {
+            bindings.forEach(fn => {
+                fn.bind(newNode, context, environment);
+            });
+        }
+        if (node.childNodes?.length) {
+            node.childNodes.forEach(n => {
+                newNode.appendChild(n);
+                this.bindings(n, this.cloneNode(n, renderer), context, renderer, environment)
+            });
+        }
+        return newNode;
+    }
+
 
     private cloneNode(node: RNode, renderer: Renderer): RNode {
+        if (renderer?.cloneNode) return renderer.cloneNode(node);
         if (node.nodeType === NodeType.Text) {
             return renderer.createText((node as RText).textContent || '');
         } else if (node.nodeType === NodeType.Comment) {
@@ -90,6 +111,11 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     }
 }
 
-export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, environment: EnvironmentContext): TemplateRef<C> {
-    return new TemplateRefImpl<C>(rootNodes, elementRef, environment);
+export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, options: {
+    bindingFactories: Map<RNode, BindingFactory<C>[]>,
+    directives?: Map<RNode, DirectiveDef<any>[]>;
+    components?: Map<RNode, ComponentDef>;
+    environment?: EnvironmentContext
+}): TemplateRef<C> {
+    return new TemplateRefImpl<C>(rootNodes, elementRef, options);
 }

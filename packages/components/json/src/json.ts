@@ -206,7 +206,7 @@ export class JsonElement extends JsonNode implements RElement {
 export class JsonRenderer implements Renderer {
 
     [noReact] = true;
-    
+
 
     destroyNode?: ((node: RNode) => void) | null | undefined;
 
@@ -346,7 +346,7 @@ export class JsonTemplateParser implements TemplateParser<Object | string> {
         private renderer: JsonRenderer
     ) { }
 
-    parse(template: Object | string, environment: InvocationContext): JsonNode[] {
+    parse(template: Object | string): JsonNode[] {
         const jsonObj = isString(template) ? JSON.parse(template) : deepClone(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
@@ -452,6 +452,7 @@ const jsonDefaultOptions = {
 export class JsonTemplateCompiler extends AbstractTemplateCompiler {
 
     constructor(
+        readonly parser: JsonTemplateParser,
         readonly renderer: JsonRenderer,
         @Inject(JSON_COMPILER_OPTIONS, { defaultValue: jsonDefaultOptions }) protected options: TemplateCompilerOptions) {
         super()

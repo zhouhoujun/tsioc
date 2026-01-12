@@ -3,6 +3,7 @@ import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
 import { EnvironmentContext } from './environment';
 import { noReact } from '../effect';
+import { RNode } from '../renderer/Node';
 
 
 /**
@@ -50,4 +51,26 @@ export abstract class TemplateRef<C = any> {
      */
     abstract createEmbeddedView(context: C, environment?: EnvironmentContext): EmbeddedViewRef<C>;
 
+}
+
+
+
+/**
+ * 属性绑定工厂接口
+ */
+export interface BindingFactory<T = any> {
+    /**
+     * 绑定属性到目标元素
+     */
+    bind(target: RNode, context: T, environment: EnvironmentContext): void;
+
+    /**
+     * 解绑属性
+     */
+    unbind(target: RNode, environment: EnvironmentContext): void;
+
+    /**
+     * 更新绑定
+     */
+    update(context: T, environment: EnvironmentContext): void;
 }

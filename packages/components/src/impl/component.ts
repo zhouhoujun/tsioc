@@ -19,6 +19,8 @@ import { TemplateRef } from '../refs/template';
 import { RNode } from '../renderer/Node';
 import { createTemplateRef } from './template';
 import { DefaultReactiveEffect } from './effect';
+import { DIRECTIVES } from '../decorators/directive';
+import { COMPONENTS } from '../decorators/component';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
@@ -51,13 +53,17 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
 
-    async render(): Promise<void> {
+    async render(options?: { host?: RNode }): Promise<void> {
         const def = this.classRef.getAnnotation<ComponentDef>();
         if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
         const template = def.template || await fetchTemplate(def.templateUrl!);
         const compiler = this.context.get(TemplateCompiler);
         await (this.instance as OnInit).onInit?.();
-        this._hostView = await compiler.compile(template, this.instance, this.context);
+        const directives = this.context.get(DIRECTIVES) || [];
+        const components = this.context.get(COMPONENTS) || [];
+        const host = this.context.getElementRef(options?.host ?? this.context.get(Renderer).createElement(def.selector ?? this.classRef.className))
+        const templateRef = compiler.compile<T>(template, { host, directives, components });
+        this._hostView = templateRef.createEmbeddedView(this.instance, this.context);
         await (this.instance as AfterViewInit).onAfterViewInit?.();
     }
 
@@ -116,16 +122,16 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
             const elementRef = options.elementRef;
             providers.push({ provide: ElementRef, useValue: elementRef });
             providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
-            providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
+            // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
         }
         return providers;
     }
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
         const context = new EnvironmentContext(injector, options);
-        if (!context.has(ReactiveEffect, InjectFlags.Self)) {
-            context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
-        }
+        // if (!context.has(ReactiveEffect, InjectFlags.Self)) {
+        //     context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
+        // }
         return context;
     }
 

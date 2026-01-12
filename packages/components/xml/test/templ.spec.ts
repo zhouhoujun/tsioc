@@ -42,7 +42,7 @@ export class TemplateTest {
 
         // 测试简单模板解析
         const simpleTemplate = '<div>Hello World</div>';
-        const nodes = parser.parse(simpleTemplate, this.ctx);
+        const nodes = parser.parse(simpleTemplate);
 
         expect(nodes).toBeDefined();
         expect(nodes.length).toBeGreaterThan(0);
@@ -59,7 +59,7 @@ export class TemplateTest {
                 <li>Item 2</li>
             </ul>
         </div>`;
-        const complexNodes = parser.parse(complexTemplate, this.ctx);
+        const complexNodes = parser.parse(complexTemplate);
 
         expect(complexNodes).toBeDefined();
         expect(complexNodes.length).toBeGreaterThan(0);
@@ -161,7 +161,7 @@ export class TemplateTest {
             </ul>
         </div>`;
 
-        const nodes = parser.parse(template, this.ctx);
+        const nodes = parser.parse(template);
         const container = nodes[0] as XmlElement;
 
         // 测试基本选择器

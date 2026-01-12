@@ -102,7 +102,7 @@ export class C1Test {
         });
 
         // 解析JSON模板
-        const nodes = parser.parse(jsonTemplate, this.ctx);
+        const nodes = parser.parse(jsonTemplate);
 
         // 验证解析结果
         expect(nodes).toBeDefined();
