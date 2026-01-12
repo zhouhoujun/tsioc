@@ -1,6 +1,6 @@
-import { Abstract, Exception, isString } from '@tsdi/ioc';
+import { Abstract, Exception, isString, remove } from '@tsdi/ioc';
 import { CompilerOptions, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
+import { BIND_DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
 import { EmbeddedViewRef } from '../refs/view';
 import { createEmbeddedViewRef } from './view';
 import { TemplateParser } from '../template/parser';
@@ -8,12 +8,13 @@ import { ComponentDef } from '../refs/component';
 import { COMPONENTS } from '../decorators/component';
 import { EventEmitter } from '../EventEmitter';
 import { DIRECTIVES } from '../decorators/directive';
-import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable } from '../refs/directive';
+import { DirectiveDef, DirectiveOptions, DirectiveRef, DirectiveType, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
 import { BindingFactory, TemplateRef } from '../refs/template';
 import { ReactiveEffect } from '../effect';
+import { ElementRef } from '../refs/element';
 
 
 /**
@@ -61,20 +62,10 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      * 编译节点并返回完整的编译结果
      */
     compileNodesWithFactories<C>(nodes: RNode[], options: CompilerOptions): TemplateRef<C> {
-        const { host, directives, components } = options;
-        // 创建空的上下文和环境的模板引用        
-
-        // 创建编译结果
-        const compilationResult: TemplateCompilationResult<C> = {
-            bindingFactories: new Map(),
-            directives: new Map(),
-            components: new Map()
-        };
-
         // 创建绑定工厂
-        this.createBindingFactories(nodes, directives, components, compilationResult);
+        const [components, directives] = this.createBindingFactories(nodes, options.directives, options.components);
 
-        return createTemplateRef(nodes, host, compilationResult);
+        return createTemplateRef(nodes, options.host, { components, directives });
     }
 
     /**
@@ -83,9 +74,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private createBindingFactories<C>(
         nodes: RNode[],
         directives: DirectiveDef[],
-        components: ComponentDef[],
-        compilationResult: TemplateCompilationResult<C>
-    ): void {
+        components: ComponentDef[]
+    ): [Map<RNode, ComponentDef>, Map<RNode, DirectiveDef[]>] {
         const rootNodes = nodes;
         const dirMap = new Map<RNode, DirectiveDef[]>();
         const compMap = new Map<RNode, ComponentDef>();
@@ -99,7 +89,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                     throw new Exception('has dup component selector');
                 }
                 compMap.set(n, r);
-                compilationResult.components.set(n, r);
             });
         });
 
@@ -119,7 +108,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         });
 
         // 为每个节点创建绑定工厂
-        this.walkNodesForFactories(nodes, dirMap, compMap, compilationResult);
+        this.walkNodesForFactories(nodes, dirMap, compMap);
+        return [compMap, dirMap];
     }
 
     /**
@@ -128,8 +118,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private walkNodesForFactories<C>(
         nodes: RNode[],
         dirMap: Map<RNode, DirectiveDef[]>,
-        compMap: Map<RNode, ComponentDef>,
-        compilationResult: TemplateCompilationResult<C>
+        compMap: Map<RNode, ComponentDef>
     ): void {
         for (const node of nodes) {
             const factories: BindingFactory<C>[] = [];
@@ -143,12 +132,16 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             } else {
                 // 创建元素节点的绑定工厂
                 const element = node as RElement;
-                const elementFactories = this.createElementBindingFactories(element, dirMap, compMap, compilationResult);
+                const elementFactories = this.createElementBindingFactories(element, dirMap, compMap);
                 factories.push(...elementFactories);
             }
 
             if (factories.length > 0) {
-                compilationResult.bindingFactories.set(node, factories);
+                if (!node[BINDINGS]) {
+                    node[BINDINGS] = factories;
+                } else {
+                    node[BINDINGS].push(...factories);
+                }
             }
         }
     }
@@ -161,6 +154,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             return null;
         }
 
+        const textContent = node.textContent;
         return {
             bind: (target: RNode, context: any, environment: EnvironmentContext) => {
                 const textNode = target as RText;
@@ -168,12 +162,12 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                     textNode.textContent = updatedText;
                 }, environment);
             },
-            unbind: (target: RNode) => {
+            unbind: (target: RNode, environment: EnvironmentContext) => {
                 // 清理文本节点的绑定
                 const textNode = target as RText;
-                textNode.textContent = node.textContent; // 恢复原始文本
+                textNode.textContent = textContent; // 恢复原始文本
             },
-            update: (context: any) => {
+            update: (target: RNode, context: any, environment: EnvironmentContext) => {
                 // 文本节点的更新在 bind 方法中通过响应式处理
             }
         };
@@ -185,8 +179,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private createElementBindingFactories<C>(
         element: RElement,
         dirMap: Map<RNode, DirectiveDef[]>,
-        compMap: Map<RNode, ComponentDef>,
-        compilationResult: TemplateCompilationResult<C>
+        compMap: Map<RNode, ComponentDef>
     ): BindingFactory<C>[] {
         const factories: BindingFactory<C>[] = [];
         const attrs = this.renderer.getAttributes(element);
@@ -224,15 +217,16 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         const dirs = dirMap.get(element);
         if (dirs && dirs.length) {
+            element[BIND_DIRECTIVES] = dirs;
             dirs.forEach(dirDef => {
-                const directiveFactory = this.createDirectiveBindingFactory(element, dirDef, attrs, compilationResult);
+                const directiveFactory = this.createDirectiveBindingFactory(element, dirDef, attrs);
                 factories.push(directiveFactory);
             });
         }
 
         // 递归处理子节点
         if (element.childNodes.length > 0) {
-            this.walkNodesForFactories(element.childNodes, dirMap, compMap, compilationResult);
+            this.walkNodesForFactories(element.childNodes, dirMap, compMap);
         }
 
         return factories;
@@ -368,23 +362,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private createDirectiveBindingFactory<C>(
         element: RElement,
         directiveDef: DirectiveDef,
-        attrs: RAttr[],
-        compilationResult: TemplateCompilationResult<C>
+        attrs: RAttr[]
     ): BindingFactory<C> {
         return {
-            bind: async (target: RNode, context: any, environment: EnvironmentContext) => {
-                const el = target as RElement;
-                const elementRef = environment.getElementRef(el);
-                const directiveRef = (directiveDef as Factoriable).ƿfac?.(environment, { elementRef });
+            bind: (target: RNode, context: any, environment: EnvironmentContext) => {
+                const directiveRef = this.createDirectiveRef(directiveDef, target, environment);
 
                 if (directiveRef) {
                     environment.attachDirective(directiveRef);
-
-                    // 存储指令引用
-                    const existing = compilationResult.directives.get(el) || [];
-                    existing.push(directiveRef);
-                    compilationResult.directives.set(el, existing);
-
                     // 处理指令属性
                     this.processDirectiveAttributes(directiveRef, directiveDef, attrs, context, environment);
 
@@ -393,21 +378,18 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                     }
 
                     if (directiveRef.render) {
-                        await directiveRef.render();
+                        directiveRef.render();
                     }
                 }
             },
             unbind: (target: RNode, environment) => {
                 // 清理指令引用
-                const directives = compilationResult.directives.get(target);
-                directives?.forEach(dir => {
-                    // 清理指令资源
-                });
-                compilationResult.directives.delete(target);
+                const directives = target[BIND_DIRECTIVES];
+                remove(directives, directiveDef);
             },
-            update: (context: any, environment: EnvironmentContext) => {
+            update: (target: RNode, context: any, environment: EnvironmentContext) => {
                 // 指令属性更新
-                const directives = compilationResult.directives.get(element);
+                const directives = target[BIND_DIRECTIVES];
                 directives?.forEach(dir => {
                     this.processDirectiveAttributes(dir, directiveDef, attrs, context, environment);
                 });
@@ -446,6 +428,68 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 });
             }
         }
+    }
+
+    private createDirectiveRef(dir: DirectiveDef, target: RNode, environment: EnvironmentContext): any {
+        const options: DirectiveOptions = {};
+        switch (dir.dirType) {
+            case DirectiveType.Conditional:
+                // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
+                this.processConditionalDirectives(target, dir, options);
+
+
+                break;
+
+            case DirectiveType.Iterable:
+                // 处理列表指令（v-for, *for）
+                break;
+
+
+
+            case DirectiveType.Structural:
+                // 处理结构指令（v-switch）, *switch）
+                break;
+            default:
+
+                break;
+        }
+        return (dir as Factoriable).ƿfac?.(environment, options);
+    }
+
+    /**
+     * 处理条件指令组
+     */
+    private async processConditionalDirectives(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
+        const readerer = this.renderer;
+        const container = this.createContainer(readerer, dirDef.selector);
+        const parent = readerer.parentNode(el);
+        if (parent) {
+            readerer.insertBefore(parent, container, el);
+            readerer.removeChild(parent, el);
+        }
+
+        attrs.forEach(attr => {
+            readerer.setAttribute(container, attr.name, attr.value)
+        });
+        dirDef.attributes?.forEach(attrDef => {
+            readerer.removeAttribute(container, attrDef.alias ?? attrDef.propertyKey);
+        });
+
+        selectors.forEach(selector => {
+            readerer.removeAttribute(container, selector);
+        });
+
+        const templateNodes = [el];
+
+        const elementRef = new ElementRef(container);
+
+        // 处理条件指令;
+        const templateRef = createTemplateRef(templateNodes, elementRef);
+
+
+        options.elementRef = elementRef;
+        options.templateRef = templateRef;
+
     }
 
     /**

@@ -84,7 +84,10 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
             providers.push({ provide: ElementRef, useValue: elementRef });
             providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
             // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
+        }
 
+        if(options?.templateRef) {
+            providers.push({ provide: TemplateRef, useValue: options.templateRef });
         }
 
         return providers;

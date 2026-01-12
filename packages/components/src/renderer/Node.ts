@@ -1,3 +1,5 @@
+import { DirectiveDef } from "../refs/directive";
+import { BindingFactory } from "../refs/template";
 
 
 export enum NodeType {
@@ -61,6 +63,9 @@ export enum NodeType {
   AnyContainer = 0b110000, // Container | ElementContainer
 }
 
+export const BINDINGS = Symbol('__BINDINGS');
+export const BIND_DIRECTIVES = Symbol('__DIRECTIVES');
+
 /**
  * A node in the DOM tree.
  */
@@ -118,6 +123,16 @@ export interface RNode {
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/querySelectorAll)
    */
   querySelectorAll(selector: string): RNode[] | null;
+
+  /**
+   * The bindings of this node.
+   */
+  [BINDINGS]?: BindingFactory[];
+
+  /**
+   * The directives of this node.
+   */
+  [BIND_DIRECTIVES]?: DirectiveDef[];
 
 }
 

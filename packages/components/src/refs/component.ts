@@ -6,6 +6,7 @@ import { EnvironmentContext } from './environment';
 import { ElementRef } from './element';
 import { Renderer } from '../renderer/Renderer';
 import { noReact } from '../effect';
+import { RNode } from '../renderer/Node';
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
@@ -48,6 +49,7 @@ export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOpt
 export interface ComponentOptions extends TemplateCompilerOptions, InvocationOptions {
     compiler?: ProvdierOf<TemplateCompiler>;
     renderer?: ProvdierOf<Renderer>;
+    host?: RNode;
     scheduler?: (fn: Function) => void;
     elementRef?: ElementRef;
 }

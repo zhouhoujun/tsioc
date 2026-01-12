@@ -6,6 +6,7 @@ import { RNode } from '../renderer/Node';
 import { EnvironmentContext } from './environment';
 import { ComputedMetadata } from '../decorators/computed';
 import { noReact } from '../effect';
+import { TemplateRef } from './template';
 
 export const factoryKey = 'ƿfac';
 
@@ -65,7 +66,7 @@ export interface Factoriable<T = any> {
 export abstract class DirectiveRef<T> extends AbstractInvocation<T, DirectiveOptions, EnvironmentContext> {
 
     [noReact] = true;
-    
+
     /**
      * The host view defined by the template
      * for this component instance.
@@ -92,7 +93,8 @@ export abstract class DirectiveRef<T> extends AbstractInvocation<T, DirectiveOpt
 export interface DirectiveOptions extends InvocationOptions {
 
     elementRef?: ElementRef;
-    templateNodes?: RNode[];
+
+    templateRef?: TemplateRef<any>;
     /**
      * 指令所在节点的所有属性
      */

@@ -63,6 +63,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const components = this.context.get(COMPONENTS) || [];
         const host = this.context.getElementRef(options?.host ?? this.context.get(Renderer).createElement(def.selector ?? this.classRef.className))
         const templateRef = compiler.compile<T>(template, { host, directives, components });
+        this.context.setValue(TemplateRef, templateRef);
         this._hostView = templateRef.createEmbeddedView(this.instance, this.context);
         await (this.instance as AfterViewInit).onAfterViewInit?.();
     }
@@ -74,7 +75,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
     protected override process(option?: EnvironmentContext | InvokeOptions, resolveCtx?: ResolveContext) {
-        return this.render();
+        return this.render(this.options);
     }
 
     protected override createInstance(): T {

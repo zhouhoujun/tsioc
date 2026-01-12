@@ -1,7 +1,7 @@
 import { BindingFactory, TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
-import { NodeType, RNode, RText, RElement, RAttr, RComment } from '../renderer/Node';
+import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS, BIND_DIRECTIVES } from '../renderer/Node';
 import { noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
@@ -9,6 +9,7 @@ import { isReactive, reactive } from '../reactive';
 import { EnvironmentContext } from '../refs/environment';
 import { DirectiveDef } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
+import { Exception } from '@tsdi/ioc';
 // import { TemplateCompiler } from '../template/compiler';
 
 /**
@@ -33,8 +34,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     constructor(
         readonly rootNodes: RNode[],
         readonly elementRef: ElementRef,
-        private options: {
-            bindingFactories: Map<RNode, BindingFactory<C>[]>,
+        private options?: {
             directives?: Map<RNode, DirectiveDef<any>[]>;
             components?: Map<RNode, ComponentDef>;
             environment?: EnvironmentContext
@@ -50,7 +50,8 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * @returns The new embedded view object.
      */
     createEmbeddedView(context: C, environment?: EnvironmentContext): EmbeddedViewRef<C> {
-        environment = environment || this.options.environment!;
+        environment = environment || this.options?.environment;
+        if (!environment) throw new Exception('EnvironmentContext is required');
 
         const renderer = environment.get(Renderer);
         // 响应式处理上下文
@@ -66,12 +67,17 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     }
 
     private bindings(node: RNode, newNode: RNode, context: C, renderer: Renderer, environment: EnvironmentContext): RNode {
-        const bindings = this.options.bindingFactories.get(node);
+        const bindings  =  newNode[BINDINGS] = node[BINDINGS];
+        if(node[BIND_DIRECTIVES]) {
+            newNode[BIND_DIRECTIVES] = node[BIND_DIRECTIVES];
+        }
+
         if (bindings) {
             bindings.forEach(fn => {
                 fn.bind(newNode, context, environment);
             });
         }
+        
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
                 newNode.appendChild(n);
@@ -111,8 +117,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     }
 }
 
-export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, options: {
-    bindingFactories: Map<RNode, BindingFactory<C>[]>,
+export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, options?: {
     directives?: Map<RNode, DirectiveDef<any>[]>;
     components?: Map<RNode, ComponentDef>;
     environment?: EnvironmentContext

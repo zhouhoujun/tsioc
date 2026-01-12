@@ -72,5 +72,5 @@ export interface BindingFactory<T = any> {
     /**
      * 更新绑定
      */
-    update(context: T, environment: EnvironmentContext): void;
+    update(target: RNode, context: T, environment: EnvironmentContext): void;
 }
