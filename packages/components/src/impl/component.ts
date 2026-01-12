@@ -122,7 +122,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
     }
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
-        const context = new EnvironmentContext(injector, options, typeRef.type);
+        const context = new EnvironmentContext(injector, options);
         if (!context.has(ReactiveEffect, InjectFlags.Self)) {
             context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
         }

@@ -1,9 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, Runtime, AbstractType, InvokeOptions,
-    Provider,
-    ResolveContext,
-    InjectFlags
+    Injector, Runtime, AbstractType, InvokeOptions, Provider,
+    ResolveContext, InjectFlags
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
@@ -93,7 +91,7 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
     }
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {
-        const context = new EnvironmentContext(injector, options, typeRef.type);
+        const context = new EnvironmentContext(injector, options);
         if (!context.has(ReactiveEffect, InjectFlags.Self)) {
             context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
         }

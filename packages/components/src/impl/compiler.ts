@@ -91,7 +91,11 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         })
 
         // 处理动态内容
-        this.walkNodes(rootNodes, context, viewRef, compMap, dirMap);
+        this.walkNodes(rootNodes, context, viewRef, compMap, dirMap)
+            .catch(err => {
+                console.log(err);
+                throw err;
+            });
 
         return viewRef;
     }
