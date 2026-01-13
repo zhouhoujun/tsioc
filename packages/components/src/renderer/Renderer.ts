@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RAttr, RComment, RElement, RNode, RText } from './Node';
+import { NodeType, RAttr, RComment, RElement, RNode, RText } from './Node';
 import { noReact } from '../effect';
 
 /**
@@ -23,13 +23,14 @@ export enum RendererStyleFlags2 {
 
 @Abstract()
 export abstract class Renderer {
-  
+
   [noReact] = true;
-  
+
   abstract createComment(value: string): RComment;
   abstract createElement(name: string, namespace?: string | null): RElement;
   abstract createText(value: string): RText;
 
+  abstract getNodeType(node: RNode): NodeType;
   /**
    * clone node.
    * @param node node to clone.

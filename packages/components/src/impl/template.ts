@@ -58,7 +58,8 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         context = isReactive(context) ? context : reactive(context || {} as C, environment.get(ReactiveEffect));
 
         // 默认处理抽象节点
-        const rootNodes = this.rootNodes.map(n => this.bindings(n, this.cloneNode(n, renderer), context, renderer, environment));
+        const rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
+        rootNodes.forEach(node => this.bindings(node, context, environment));
 
         // 创建嵌入式视图
         const embeddedView = createEmbeddedViewRef(rootNodes, context, environment); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
@@ -66,33 +67,41 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         return embeddedView;
     }
 
-    private bindings(node: RNode, newNode: RNode, context: C, renderer: Renderer, environment: EnvironmentContext): RNode {
-        const bindings  =  newNode[BINDINGS] = node[BINDINGS];
-        if(node[BIND_DIRECTIVES]) {
-            newNode[BIND_DIRECTIVES] = node[BIND_DIRECTIVES];
-        }
+    private bindings(node: RNode, context: C, environment: EnvironmentContext): void {
+        const bindings = node[BINDINGS];
 
-        if (bindings) {
-            bindings.forEach(fn => {
-                fn.bind(newNode, context, environment);
-            });
-        }
-        
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
-                newNode.appendChild(n);
-                this.bindings(n, this.cloneNode(n, renderer), context, renderer, environment)
+                this.bindings(n, context, environment)
+            });
+        } 
+        
+        if (bindings?.length) {
+            bindings.forEach(fn => {
+                fn.bind(node, context, environment);
             });
         }
-        return newNode;
+
+    }
+
+    private clone(node: RNode, renderer: Renderer) {
+        const cloned = this.cloneNode(node, renderer);
+        cloned[BINDINGS] = node[BINDINGS]?.slice(0);
+        if (node.childNodes?.length) {
+            node.childNodes.forEach(n => {
+                cloned.appendChild(this.clone(n, renderer));
+            });
+        }
+        return cloned;
     }
 
 
     private cloneNode(node: RNode, renderer: Renderer): RNode {
         if (renderer?.cloneNode) return renderer.cloneNode(node);
-        if (node.nodeType === NodeType.Text) {
+        const nodeType = renderer.getNodeType(node);
+        if (nodeType === NodeType.Text) {
             return renderer.createText((node as RText).textContent || '');
-        } else if (node.nodeType === NodeType.Comment) {
+        } else if (nodeType === NodeType.Comment) {
             return renderer.createComment((node as RComment).textContent || '');
         }
         return this.cloneElementWithAttributes(node as RElement, renderer);

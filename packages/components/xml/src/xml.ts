@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 
 
 export class XmlNode implements RNode {
+    private events = new EventEmitter();
 
     get parentElement(): XmlElement | null {
         return this.parentNode instanceof XmlElement ? this.parentNode : null;
@@ -65,6 +66,17 @@ export class XmlNode implements RNode {
         return removed;
     }
 
+    replaceChild(node: XmlNode, child: XmlNode): XmlNode {
+        const index = this.childNodes.indexOf(node);
+        if (index !== -1) {
+            child.parentNode = this;
+            this.childNodes.splice(index, 1, child);
+            node.parentNode = null;
+        }
+        return child;
+
+    }
+
     insertBefore(newChild: XmlNode, refChild: XmlNode | null, isViewRoot?: boolean): void {
         newChild.parentNode = this;
         const index = refChild ? this.childNodes.indexOf(refChild) : 0;
@@ -113,6 +125,23 @@ export class XmlNode implements RNode {
             }
         });
     }
+
+    addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
+        this.events.addListener(type, listener)
+    }
+
+    dispatchEvent(event: Event): boolean {
+        return this.events.emit(event.type, event);
+    }
+
+    removeEventListener(type: string, listener?: EventListener, options?: boolean): void {
+        if (listener) {
+            this.events.removeListener(type, listener)
+        } else {
+            this.events.removeAllListeners(type);
+        }
+    }
+
 }
 
 export class XmlText extends XmlNode implements RText {
@@ -167,7 +196,6 @@ export class XmlDomTokenList implements RDomTokenList {
 }
 
 export class XmlElement extends XmlNode implements RElement {
-    private events = new EventEmitter();
     firstChild: RNode | null = null;
     style = new XmlCssStyleDeclaration();
     classList = new XmlDomTokenList();
@@ -189,16 +217,7 @@ export class XmlElement extends XmlNode implements RElement {
 
 
 
-    addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
-        this.events.addListener(type, listener)
-    }
-    removeEventListener(type: string, listener?: EventListener, options?: boolean): void {
-        if (listener) {
-            this.events.removeListener(type, listener)
-        } else {
-            this.events.removeAllListeners(type);
-        }
-    }
+
 
     setProperty(name: string, value: any): void {
         this.attributes.set(name, value);
@@ -212,6 +231,9 @@ export class XmlRenderer implements Renderer {
 
     [noReact] = true;
 
+    getNodeType(node: XmlNode): NodeType {
+        return node.nodeType;
+    }
 
     destroyNode?: ((node: RNode) => void) | null | undefined;
     // 创建XML注释节点
@@ -356,7 +378,7 @@ const htmlParsingOptions = {
 @Injectable()
 export class XmlTemplateParser implements TemplateParser {
     [noReact] = true;
-    
+
     constructor(
         private renderer: XmlRenderer
     ) { }

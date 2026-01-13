@@ -1,5 +1,5 @@
-import { DirectiveDef } from "../refs/directive";
-import { BindingFactory } from "../refs/template";
+import { DirectiveDef } from '../refs/directive';
+import { BindingFactory } from '../refs/template';
 
 
 export enum NodeType {
@@ -92,10 +92,17 @@ export interface RNode {
   childNodes: RNode[];
 
   /**
-   * Removes a child from the current node and returns the removed node
-   * @param oldChild the child node to remove
+   * The **`removeChild()`** method of the Node interface removes a child node from the DOM and returns the removed node.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/removeChild)
    */
-  removeChild(oldChild: RNode): RNode;
+  removeChild(child: RNode): RNode;
+  /**
+   * The **`replaceChild()`** method of the Node interface replaces a child node within the given (parent) node.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Node/replaceChild)
+   */
+  replaceChild(node: RNode, child: RNode): RNode;
 
   /**
    * Insert a child node.
@@ -123,6 +130,25 @@ export interface RNode {
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/querySelectorAll)
    */
   querySelectorAll(selector: string): RNode[] | null;
+
+  /**
+   * Adds an event listener to the element.
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener)
+   */
+  addEventListener(type: string, listener: EventListener, useCapture?: boolean): void;
+
+  /**
+   * The **`dispatchEvent()`** method of the EventTarget sends an Event to the object, (synchronously) invoking the affected event listeners in the appropriate order.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/EventTarget/dispatchEvent)
+   */
+  dispatchEvent(event: Event): boolean;
+
+  /**
+   * Removes an event listener from the element.
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener)
+   */
+  removeEventListener(type: string, listener?: EventListener, options?: boolean): void;
 
   /**
    * The bindings of this node.
@@ -216,14 +242,6 @@ export interface RElement extends RNode {
    * Removes the specified attribute namespace.
    */
   removeAttributeNS?(namespaceURI: string, localName: string): void;
-  /**
-   * Adds an event listener to the element.
-   */
-  addEventListener(type: string, listener: EventListener, useCapture?: boolean): void;
-  /**
-   * Removes an event listener from the element.
-   */
-  removeEventListener(type: string, listener?: EventListener, options?: boolean): void;
   /**
    * Sets the value of the specified property.
    */

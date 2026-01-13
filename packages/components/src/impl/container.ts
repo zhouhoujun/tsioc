@@ -29,6 +29,14 @@ class ViewContainerRefImpl implements ViewContainerRef {
      */
     private views: Array<ViewRef> = [];
 
+    private _isElementContainer?: boolean;
+    protected get isElementContainer(): boolean {
+        if (this._isElementContainer === undefined) {
+            this._isElementContainer = (this.renderer.getNodeType(this.element.nativeElement) & NodeType.ElementContainer) === NodeType.ElementContainer;
+        }
+        return this._isElementContainer;
+    }
+
     /**
      * Creates an instance of ViewContainerRefImpl.
      * @param {ElementRef} element
@@ -38,7 +46,10 @@ class ViewContainerRefImpl implements ViewContainerRef {
     constructor(
         readonly element: ElementRef,
         readonly environment: EnvironmentContext,
-    ) { }
+    ) {
+
+
+    }
 
     private _renderer?: Renderer;
     get renderer(): Renderer {
@@ -133,10 +144,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const nativeElement = this.element.nativeElement;
         const viewNodes = viewRef.rootNodes;
 
-        // 判断nativeElement是否为ElementContainer类型
-        const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
-
-        if (isElementContainer) {
+        if (this.isElementContainer) {
             // 对于ElementContainer，所有视图都插入到ElementContainer前面
             const parentNode = nativeElement.parentNode;
             if (parentNode) {
@@ -175,7 +183,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
             return viewRef;
         }
 
-        const nextSibling = this.getNextSibling(newIndex) 
+        const nextSibling = this.getNextSibling(newIndex)
         // Remove view from old position
         this.views.splice(oldIndex, 1);
 
@@ -186,13 +194,10 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const nativeElement = this.element.nativeElement;
         const viewNodes = viewRef.rootNodes;
 
-        // 判断nativeElement是否为ElementContainer类型
-        const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
-
         // Remove nodes first
         viewNodes.forEach(node => {
-            if (node.parentNode === (isElementContainer ? nativeElement.parentNode : nativeElement)) {
-                if (isElementContainer && nativeElement.parentNode) {
+            if (node.parentNode === (this.isElementContainer ? nativeElement.parentNode : nativeElement)) {
+                if (this.isElementContainer && nativeElement.parentNode) {
                     nativeElement.parentNode.removeChild(node);
                 } else {
                     nativeElement.removeChild(node);
@@ -201,7 +206,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         });
 
         // Insert nodes at new position
-        if (isElementContainer) {
+        if (this.isElementContainer) {
             const parentNode = nativeElement.parentNode;
             if (parentNode) {
                 // 找到正确的参考节点：ElementContainer前面的最后一个视图节点
@@ -254,12 +259,9 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const viewNodes = viewRef.rootNodes;
         const nativeElement = this.element.nativeElement;
 
-        // 判断nativeElement是否为ElementContainer类型
-        const isElementContainer = (nativeElement.nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
-
         // Remove DOM nodes
         viewNodes.forEach(node => {
-            if (isElementContainer && nativeElement.parentNode) {
+            if (this.isElementContainer && nativeElement.parentNode) {
                 this.renderer.removeChild(nativeElement.parentNode, node);
             } else {
                 this.renderer.removeChild(nativeElement, node);

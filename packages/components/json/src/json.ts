@@ -11,6 +11,7 @@ import { EventEmitter } from 'events';
 
 
 export class JsonNode implements RNode {
+    private events = new EventEmitter();
     tagName?: string;
     get parentElement(): JsonElement | null {
         return this.parentNode instanceof JsonElement ? this.parentNode : null;
@@ -63,6 +64,17 @@ export class JsonNode implements RNode {
         return removed;
     }
 
+    replaceChild(node: JsonNode, child: JsonNode): JsonNode {
+        const index = this.childNodes.indexOf(node);
+        if (index !== -1) {
+            child.parentNode = this;
+            this.childNodes.splice(index, 1, child);
+            node.parentNode = null;
+        }
+        return child;
+    }
+    
+
     insertBefore(newChild: JsonNode, refChild: JsonNode | null, isViewRoot?: boolean): void {
         newChild.parentNode = this;
         const index = refChild ? this.childNodes.indexOf(refChild) : 0;
@@ -110,6 +122,24 @@ export class JsonNode implements RNode {
                 isTag: (el: JsonNode): el is JsonElement => el.nodeType === NodeType.Element
             }
         });
+    }
+
+    
+
+    addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
+        this.events.addListener(type, listener)
+    }
+
+    dispatchEvent(event: Event): boolean {
+       return  this.events.emit(event.type, event);
+    }
+
+    removeEventListener(type: string, listener?: EventListener, options?: boolean): void {
+        if (listener) {
+            this.events.removeListener(type, listener)
+        } else {
+            this.events.removeAllListeners(type);
+        }
     }
 }
 
@@ -165,7 +195,6 @@ export class JDomTokenList implements RDomTokenList {
 }
 
 export class JsonElement extends JsonNode implements RElement {
-    private events = new EventEmitter();
     firstChild: RNode | null = null;
     style: RCssStyleDeclaration = new JCssStyleDeclaration();
     classList = new JDomTokenList();
@@ -184,18 +213,6 @@ export class JsonElement extends JsonNode implements RElement {
         return this.childNodes.filter(r => r.nodeType === NodeType.Text && (r as JsonText).textContent).map(r => (r as JsonText).textContent).join(' ') ?? null;
     }
 
-    addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
-        this.events.addListener(type, listener)
-    }
-
-    removeEventListener(type: string, listener?: EventListener, options?: boolean): void {
-        if (listener) {
-            this.events.removeListener(type, listener)
-        } else {
-            this.events.removeAllListeners(type);
-        }
-    }
-
     setProperty(name: string, value: any): void {
         this.attributes.set(name, value);
     }
@@ -207,6 +224,9 @@ export class JsonRenderer implements Renderer {
 
     [noReact] = true;
 
+    getNodeType(node: JsonNode): NodeType {
+        return node.nodeType as NodeType;
+    }
 
     destroyNode?: ((node: RNode) => void) | null | undefined;
 

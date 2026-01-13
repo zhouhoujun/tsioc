@@ -121,41 +121,39 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         compMap: Map<RNode, ComponentDef>
     ): void {
         for (const node of nodes) {
-            const factories: BindingFactory<C>[] = [];
+            node[BINDINGS] = [];
+            const nodeType = this.renderer.getNodeType(node);
 
-            if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
+            if (nodeType === NodeType.Text || nodeType === NodeType.Comment) {
                 // 创建文本节点的绑定工厂
-                const textFactory = this.createTextBindingFactory(node as RText);
-                if (textFactory) {
-                    factories.push(textFactory);
+                this.bindingTextFactory(node as RText);
+
+                const attrs = this.renderer.getAttributes(node);
+                if (attrs?.length) {
+                    this.bindingAtrrbuteFactories(node, attrs);
                 }
             } else {
                 // 创建元素节点的绑定工厂
-                const element = node as RElement;
-                const elementFactories = this.createElementBindingFactories(element, dirMap, compMap);
-                factories.push(...elementFactories);
+                this.bindingElementFactories(node as RElement, dirMap, compMap);
             }
 
-            if (factories.length > 0) {
-                if (!node[BINDINGS]) {
-                    node[BINDINGS] = factories;
-                } else {
-                    node[BINDINGS].push(...factories);
-                }
-            }
         }
+    }
+
+    private binding(node: RNode, factory: BindingFactory) {
+        node[BINDINGS]?.push(factory);
     }
 
     /**
      * 创建文本节点的绑定工厂
      */
-    private createTextBindingFactory(node: RText): BindingFactory<any> | null {
+    private bindingTextFactory(node: RText): void {
         if (!node.textContent || !this.delimiter.test(node.textContent)) {
-            return null;
+            return;
         }
 
         const textContent = node.textContent;
-        return {
+        this.binding(node, {
             bind: (target: RNode, context: any, environment: EnvironmentContext) => {
                 const textNode = target as RText;
                 this.evaluateDelimiterExpression(node.textContent!, context, (updatedText) => {
@@ -170,75 +168,68 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             update: (target: RNode, context: any, environment: EnvironmentContext) => {
                 // 文本节点的更新在 bind 方法中通过响应式处理
             }
-        };
+        });
+    }
+
+    protected bindingAtrrbuteFactories(element: RNode, attrs: RAttr[]) {
+        // 创建属性绑定工厂
+        attrs.forEach(({ name, value }) => {
+            if (name.startsWith('@')) {
+                // 事件绑定工厂
+                this.bindingEventFactory(element, name, value);
+            } else if (name.startsWith(':')) {
+                // 属性绑定工厂
+                this.bindingPropertyFactory(element, name, value);
+            } else if (this.delimiter.test(value)) {
+                // 插值表达式绑定工厂
+                this.bindingInterpolationFactory(element, name, value);
+            } else if (name === 'v-model') {
+                this.createModelBindingFactory(element, value);
+            }
+        });
     }
 
     /**
      * 创建元素节点的绑定工厂
      */
-    private createElementBindingFactories<C>(
+    protected bindingElementFactories<C>(
         element: RElement,
         dirMap: Map<RNode, DirectiveDef[]>,
         compMap: Map<RNode, ComponentDef>
-    ): BindingFactory<C>[] {
-        const factories: BindingFactory<C>[] = [];
+    ): void {
         const attrs = this.renderer.getAttributes(element);
 
         // 创建属性绑定工厂
-        attrs.forEach(({ name, value }) => {
-            if (name.startsWith('@')) {
-                // 事件绑定工厂
-                const eventFactory = this.createEventBindingFactory(element, name, value);
-                factories.push(eventFactory);
-            } else if (name.startsWith(':')) {
-                // 属性绑定工厂
-                const propFactory = this.createPropertyBindingFactory(element, name, value);
-                factories.push(propFactory);
-            } else if (this.delimiter.test(value)) {
-                // 插值表达式绑定工厂
-                const interpolationFactory = this.createInterpolationBindingFactory(element, name, value);
-                factories.push(interpolationFactory);
-            }
-        });
-
-        // 处理 v-model 双向绑定
-        if (element.hasAttribute('v-model')) {
-            const prop = element.getAttribute('v-model') as string;
-            const modelFactory = this.createModelBindingFactory(element, prop);
-            factories.push(modelFactory);
-        }
-
-        // 处理组件和指令
-        const componentDef = compMap.get(element);
-        if (componentDef) {
-            const componentFactory = this.createComponentBindingFactory(element, componentDef, attrs);
-            factories.push(componentFactory);
-        }
-
-        const dirs = dirMap.get(element);
-        if (dirs && dirs.length) {
-            element[BIND_DIRECTIVES] = dirs;
-            dirs.forEach(dirDef => {
-                const directiveFactory = this.createDirectiveBindingFactory(element, dirDef, attrs);
-                factories.push(directiveFactory);
-            });
-        }
+        this.bindingAtrrbuteFactories(element, attrs);
 
         // 递归处理子节点
         if (element.childNodes.length > 0) {
             this.walkNodesForFactories(element.childNodes, dirMap, compMap);
         }
 
-        return factories;
+        // 处理组件和指令
+        const componentDef = compMap.get(element);
+        if (componentDef) {
+            this.bindingComponentFactory(element, componentDef, attrs);
+        }
+
+        const dirs = dirMap.get(element);
+        if (dirs && dirs.length) {
+            element[BIND_DIRECTIVES] = dirs;
+            dirs.forEach(dirDef => {
+                this.bindingDirectiveFactory(element, dirDef, attrs);
+            });
+        }
+
     }
 
     /**
      * 创建事件绑定工厂
      */
-    private createEventBindingFactory(element: RElement, attrName: string, expr: string): BindingFactory<any> {
+    private bindingEventFactory(element: RNode, attrName: string, expr: string): void {
         const eventName = attrName.substring(1);
 
-        return {
+        this.binding(element, {
             bind: (target: RNode, context: any, environment: EnvironmentContext) => {
                 const el = target as RElement;
                 const handler = this.parseEventExpression(expr, context, environment);
@@ -251,16 +242,15 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             update: (context: any, environment) => {
                 // 事件绑定通常不需要更新
             }
-        };
+        });
     }
 
     /**
      * 创建属性绑定工厂
      */
-    private createPropertyBindingFactory(element: RElement, attrName: string, expr: string): BindingFactory<any> {
+    private bindingPropertyFactory(element: RNode, attrName: string, expr: string): void {
         const propName = attrName.substring(1);
-
-        return {
+        this.binding(element, {
             bind: (target: RNode, context: any, environment: EnvironmentContext) => {
                 const el = target as RElement;
                 const effect = environment.get(ReactiveEffect);
@@ -276,14 +266,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             update: (context: any, environment) => {
                 // 属性更新通过响应式 effect 处理
             }
-        };
+        });
     }
 
     /**
      * 创建插值表达式绑定工厂
      */
-    private createInterpolationBindingFactory(element: RElement, attrName: string, expr: string): BindingFactory<any> {
-        return {
+    private bindingInterpolationFactory(element: RNode, attrName: string, expr: string): void {
+        this.binding(element, {
             bind: (target: RNode, context: any, environment: EnvironmentContext) => {
                 const el = target as RElement;
                 this.evaluateDelimiterExpression(expr, context, (updatedText) => {
@@ -297,14 +287,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             update: (context: any, environment) => {
                 // 插值更新通过响应式 effect 处理
             }
-        };
+        });
     }
 
     /**
      * 创建双向绑定工厂
      */
-    private createModelBindingFactory(element: RElement, prop: string): BindingFactory<any> {
-        return {
+    private createModelBindingFactory(element: RNode, prop: string): void {
+        this.binding(element, {
             bind: (target: RNode, context: any, environment: EnvironmentContext) => {
                 const el = target as RElement;
                 const effect = environment.get(ReactiveEffect);
@@ -323,15 +313,16 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             update: (context: any, environment) => {
                 // 双向绑定通过响应式 effect 处理
             }
-        };
+        });
     }
 
     /**
      * 创建组件绑定工厂
      */
-    private createComponentBindingFactory(element: RElement, componentDef: ComponentDef, attrs: RAttr[]): BindingFactory<any> {
-        return {
+    private bindingComponentFactory(element: RElement, componentDef: ComponentDef, attrs: RAttr[]): void {
+        this.binding(element, {
             bind: async (target: RNode, context: any, environment: EnvironmentContext) => {
+                if (environment.destroyed) return;
                 const el = target as RElement;
                 const elementRef = environment.getElementRef(el);
                 const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
@@ -353,48 +344,35 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             update: (context: any, environment) => {
                 // 组件属性更新
             }
-        };
+        });
     }
 
     /**
      * 创建指令绑定工厂
      */
-    private createDirectiveBindingFactory<C>(
-        element: RElement,
-        directiveDef: DirectiveDef,
-        attrs: RAttr[]
-    ): BindingFactory<C> {
-        return {
-            bind: (target: RNode, context: any, environment: EnvironmentContext) => {
-                const directiveRef = this.createDirectiveRef(directiveDef, target, environment);
+    private bindingDirectiveFactory(element: RElement, directiveDef: DirectiveDef, attrs: RAttr[]): void {
+        const selectors = directiveDef.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
+        switch (directiveDef.dirType) {
+            case DirectiveType.Conditional:
+                // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
+                this.processConditionalBinding(element, directiveDef, selectors, attrs);
+                break;
 
-                if (directiveRef) {
-                    environment.attachDirective(directiveRef);
-                    // 处理指令属性
-                    this.processDirectiveAttributes(directiveRef, directiveDef, attrs, context, environment);
+            case DirectiveType.Iterable:
+                // 处理列表指令（v-for, *for）
+                this.processIterableBinding(element, directiveDef, selectors, attrs);
+                break;
 
-                    if (directiveRef.instance.onInit) {
-                        directiveRef.instance.onInit();
-                    }
 
-                    if (directiveRef.render) {
-                        directiveRef.render();
-                    }
-                }
-            },
-            unbind: (target: RNode, environment) => {
-                // 清理指令引用
-                const directives = target[BIND_DIRECTIVES];
-                remove(directives, directiveDef);
-            },
-            update: (target: RNode, context: any, environment: EnvironmentContext) => {
-                // 指令属性更新
-                const directives = target[BIND_DIRECTIVES];
-                directives?.forEach(dir => {
-                    this.processDirectiveAttributes(dir, directiveDef, attrs, context, environment);
-                });
-            }
-        };
+
+            case DirectiveType.Structural:
+                // 处理结构指令（v-switch）, *switch）
+                this.processStructuralBinding(element, directiveDef, selectors, attrs);
+                break;
+            default:
+                this.bindingDirective(element, directiveDef, selectors, attrs);
+                break;
+        }
     }
 
     /**
@@ -430,40 +408,80 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         }
     }
 
-    private createDirectiveRef(dir: DirectiveDef, target: RNode, environment: EnvironmentContext): any {
-        const options: DirectiveOptions = {};
-        const selectors = dir.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
-        const attrs = this.renderer.getAttributes(target);
-        switch (dir.dirType) {
-            case DirectiveType.Conditional:
-                // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
-                this.processConditionalOptions(target, dir, selectors, attrs, options);
-                break;
+    private bindingDirective(element: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], templateNodes?: RNode[]) {
 
-            case DirectiveType.Iterable:
-                // 处理列表指令（v-for, *for）
-                this.processIterableOptions(target, dir, selectors, attrs, options);
-                break;
+        this.binding(element, {
+            bind: (target: RNode, context: any, environment: EnvironmentContext) => {
+                
+                if (environment.destroyed) return;
+                const elementRef = new ElementRef(target);
 
+                // 处理条件指令;
+                const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { environment }) : undefined;
+                const directiveRef = (dirDef as Factoriable).ƿfac?.(environment, { templateRef, elementRef });
 
+                if (directiveRef) {
+                    environment.attachDirective(directiveRef);
+                    // 处理指令属性
+                    this.processDirectiveAttributes(directiveRef, dirDef, attrs, context, environment);
 
-            case DirectiveType.Structural:
-                // 处理结构指令（v-switch）, *switch）
-                this.processStructuralOptions(target, dir, selectors, attrs, options);
-                break;
-            default:
+                    if (directiveRef.instance.onInit) {
+                        directiveRef.instance.onInit();
+                    }
 
-                break;
-        }
-        return (dir as Factoriable).ƿfac?.(environment, options);
+                    if (directiveRef.render) {
+                        directiveRef.render();
+                    }
+                }
+            },
+            unbind: (target: RNode, environment) => {
+                // 清理指令引用
+                const directives = target[BIND_DIRECTIVES];
+                remove(directives, dirDef);
+            },
+            update: (target: RNode, context: any, environment: EnvironmentContext) => {
+                // 指令属性更新
+                const directives = target[BIND_DIRECTIVES];
+                directives?.forEach(dir => {
+                    this.processDirectiveAttributes(dir, dirDef, attrs, context, environment);
+                });
+            }
+        });
     }
 
     /**
      * 处理条件指令组
      */
-    private processConditionalOptions(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
+    private processConditionalBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[]): void {
         const readerer = this.renderer;
         const container = this.createContainer(readerer, dirDef.selector);
+        container[BINDINGS] = [];
+
+        const parent = readerer.parentNode(el);
+        if (parent) {
+            parent.replaceChild(el, container);
+        }
+
+        attrs.forEach(attr => {
+            readerer.setAttribute(container, attr.name, attr.value)
+        });
+        dirDef.attributes?.forEach(attrDef => {
+            readerer.removeAttribute(container, attrDef.alias ?? attrDef.propertyKey);
+        });
+
+        selectors.forEach(selector => {
+            readerer.removeAttribute(container, selector);
+        });
+
+        this.bindingDirective(container, dirDef, selectors, attrs, [el])
+
+    }
+
+    private processIterableBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[]): void {
+        const readerer = this.renderer;
+        const container = this.createContainer(readerer, dirDef.selector);
+        container[BINDINGS] = [];
+
         const parent = readerer.parentNode(el);
         if (parent) {
             readerer.insertBefore(parent, container, el);
@@ -481,53 +499,12 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             readerer.removeAttribute(container, selector);
         });
 
-        const templateNodes = [el];
+        this.bindingDirective(container, dirDef, selectors, attrs, [el])
 
-        const elementRef = new ElementRef(container);
-
-        // 处理条件指令;
-        const templateRef = createTemplateRef(templateNodes, elementRef);
-
-
-        options.elementRef = elementRef;
-        options.templateRef = templateRef;
 
     }
 
-    private processIterableOptions(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
-        const readerer = this.renderer;
-        const container = this.createContainer(readerer, dirDef.selector);
-
-        const parent = readerer.parentNode(el);
-        if (parent) {
-            readerer.insertBefore(parent, container, el);
-            readerer.removeChild(parent, el);
-        }
-
-        attrs.forEach(attr => {
-            readerer.setAttribute(container, attr.name, attr.value)
-        });
-        dirDef.attributes?.forEach(attrDef => {
-            readerer.removeAttribute(container, attrDef.alias ?? attrDef.propertyKey);
-        });
-
-        selectors.forEach(selector => {
-            readerer.removeAttribute(container, selector);
-        });
-
-        const templateNodes = [el];
-
-        const elementRef = new ElementRef(container);
-
-        // 处理列表指令;
-        const templateRef = createTemplateRef(templateNodes, elementRef);
-
-
-        options.elementRef = elementRef;
-        options.templateRef = templateRef;
-    }
-
-    private processStructuralOptions(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], options: DirectiveOptions): void {
+    private processStructuralBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[]): void {
         const readerer = this.renderer;
 
         const templateNodes = el.childNodes.splice(0);
@@ -539,6 +516,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         });
 
         templateNodes.forEach(c => readerer.removeChild(el, c));
+
+        this.bindingDirective(el, dirDef, selectors, attrs, templateNodes);
     }
 
     /**
