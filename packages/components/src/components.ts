@@ -22,7 +22,7 @@ import { TemplateOutletDirective } from './directives/template-outlet.dir';
     providers: [
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
-        { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
+        // { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
     ],
     exports: [
         VForDirective,

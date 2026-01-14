@@ -34,6 +34,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         options?: ComponentOptions) {
         super(_classRef, context, options);
         this._elementRef = options?.elementRef;
+        context.onDestroy(this);
     }
 
     get elementRef(): ElementRef<any> {
@@ -130,9 +131,9 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
         const context = new EnvironmentContext(injector, options);
-        // if (!context.has(ReactiveEffect, InjectFlags.Self)) {
-        //     context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
-        // }
+        if (!context.has(ReactiveEffect, InjectFlags.Self)) {
+            context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
+        }
         return context;
     }
 

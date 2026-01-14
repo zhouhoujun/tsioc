@@ -2,7 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
 import { EnvironmentContext } from './environment';
-import { noReact } from '../effect';
+import { noReact, ReactiveEffect } from '../effect';
 import { RNode } from '../renderer/Node';
 
 
@@ -55,6 +55,7 @@ export abstract class TemplateRef<C = any> {
 
 
 
+
 /**
  * 属性绑定工厂接口
  */
@@ -62,7 +63,7 @@ export interface BindingFactory<T = any> {
     /**
      * 绑定属性到目标元素
      */
-    bind(target: RNode, context: T, environment: EnvironmentContext): void;
+    bind(target: RNode, context: T, effect: ReactiveEffect, environment: EnvironmentContext): void;
 
     /**
      * 解绑属性
@@ -72,5 +73,5 @@ export interface BindingFactory<T = any> {
     /**
      * 更新绑定
      */
-    update(target: RNode, context: T, environment: EnvironmentContext): void;
+    update(target: RNode, context: T, effect: ReactiveEffect, environment: EnvironmentContext): void;
 }

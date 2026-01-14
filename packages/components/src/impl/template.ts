@@ -54,31 +54,31 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         if (!environment) throw new Exception('EnvironmentContext is required');
 
         const renderer = environment.get(Renderer);
+        const effect = environment.get(ReactiveEffect);
         // 响应式处理上下文
-        context = isReactive(context) ? context : reactive(context || {} as C, environment.get(ReactiveEffect));
+        context = isReactive(context) ? context : reactive(context || {} as C, effect);
 
         // 默认处理抽象节点
         const rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
-        rootNodes.forEach(node => this.bindings(node, context, environment));
+        rootNodes.forEach(node => this.bindings(node, context, effect, environment));
 
         // 创建嵌入式视图
-        const embeddedView = createEmbeddedViewRef(rootNodes, context, environment); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
+        const embeddedView = createEmbeddedViewRef(rootNodes, context, environment, effect); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
 
         return embeddedView;
     }
 
-    private bindings(node: RNode, context: C, environment: EnvironmentContext): void {
-        const bindings = node[BINDINGS];
-
+    private bindings(node: RNode, context: C, effect: ReactiveEffect, environment: EnvironmentContext): void {
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
-                this.bindings(n, context, environment)
+                this.bindings(n, context, effect, environment)
             });
-        } 
-        
+        }
+        const bindings = node[BINDINGS];
         if (bindings?.length) {
-            bindings.forEach(fn => {
-                fn.bind(node, context, environment);
+            bindings.forEach(factory => {
+                factory.bind(node, context, effect, environment);
+                environment.onDestroy(() => factory.unbind(node, environment))
             });
         }
 

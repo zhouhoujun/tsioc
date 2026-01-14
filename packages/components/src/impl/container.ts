@@ -48,7 +48,6 @@ class ViewContainerRefImpl implements ViewContainerRef {
         readonly environment: EnvironmentContext,
     ) {
 
-
     }
 
     private _renderer?: Renderer;

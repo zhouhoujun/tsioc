@@ -24,6 +24,7 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
         options: DirectiveOptions) {
         super(_classRef, context, options);
         this._elementRef = options.elementRef!
+        context.onDestroy(this);
     }
 
     get elementRef(): ElementRef {

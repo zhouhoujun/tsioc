@@ -45,8 +45,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         effect?: ReactiveEffect
     ) {
         this.effect = effect ?? environment.get(ReactiveEffect);
-        // environment.setValue(EmbeddedViewRef, this);
-        environment.onDestroy(this.destroy.bind(this));
+        environment.onDestroy(this);
     }
 
 
@@ -87,13 +86,12 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
      * register callback on destroy.
      * @param callback destroy callback
      */
-    onDestroy(callback: () => void): void {
-        if (this._isDestroyed) {
-            // 如果已销毁，立即执行回调
-            callback();
-        } else {
+    onDestroy(callback?: () => void): void {
+        if (callback) {
             this._destroyCallbacks.push(callback);
+            return;
         }
+        this.destroy();
     }
 
     query<T>(selector: Type<T>): ComponentRef<T> | DirectiveRef<T> | null;
@@ -155,7 +153,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         if (!nodes) {
             return [];
         }
-        
+
         return nodes.map(node => {
             if (def && def.dirType) {
                 if (def.dirType === DirectiveType.Component) {
@@ -173,7 +171,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 export function createEmbeddedViewRef<C>(
     rootNodes: RNode[],
     context: C,
-    environment: EnvironmentContext, effect?: ReactiveEffect) {
+    environment: EnvironmentContext,
+    effect?: ReactiveEffect) {
     return new EmbeddedViewRefImpl(rootNodes, context, environment, effect)
 
 }
