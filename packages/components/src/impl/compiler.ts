@@ -10,6 +10,7 @@ import { Renderer } from '../renderer/Renderer';
 import { BindingFactory, TemplateRef } from '../refs/template';
 import { ReactiveEffect } from '../effect';
 import { ElementRef } from '../refs/element';
+import e = require('express');
 
 
 /**
@@ -419,9 +420,9 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         }
     }
 
-    private bindingDirective(element: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], templateNodes?: RNode[]) {
+    private bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], templateNodes?: RNode[]) {
 
-        this.binding(element, {
+        this.binding(node, {
             bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
 
                 if (environment.destroyed) return;
@@ -434,7 +435,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 if (directiveRef) {
                     environment.attachDirective(directiveRef);
                     // 处理指令属性
-                    this.processDirectiveAttributes(directiveRef, dirDef, attrs, context, effect, environment);
+                    this.processDirectiveAttributes(directiveRef, dirDef, selectors, attrs, context, effect, environment);
 
                     if (directiveRef.instance.onInit) {
                         directiveRef.instance.onInit();
@@ -454,7 +455,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 // 指令属性更新
                 const directives = target[BIND_DIRECTIVES];
                 directives?.forEach(dir => {
-                    this.processDirectiveAttributes(dir, dirDef, attrs, context, effect, environment);
+                    this.processDirectiveAttributes(dir, dirDef, selectors, attrs, context, effect, environment);
                 });
             }
         });
@@ -481,7 +482,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         });
 
         selectors.forEach(selector => {
-            readerer.removeAttribute(container, selector);
+            readerer.removeAttribute(el, selector);
         });
 
         this.bindingDirective(container, dirDef, selectors, attrs, [el])
@@ -534,7 +535,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 处理指令属性
      */
-    private processDirectiveAttributes(directiveRef: any, directiveDef: DirectiveDef, attrs: RAttr[], context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext): void {
+    private processDirectiveAttributes(directiveRef: any, directiveDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext): void {
         const attributes = directiveDef.attributes ?? [];
         if (!attributes?.length) return;
 
@@ -546,7 +547,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             const matchNames = toMatchNames(name);
             const attr = attrs.find(r => matchNames.includes(r.name));
             if (!attr) {
-                if (a.propertyKey === 'context') {
+                if (directiveDef.dirType === DirectiveType.Conditional && a.propertyKey === 'context') {
                     directiveInstance[propertyKey] = context;
                 }
                 return;
@@ -571,7 +572,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 } else {
                     directiveInstance[propertyKey] = attr.value;
                 }
-            } else if (attr.name.startsWith('v-') || attr.name.startsWith('*')) {
+            } else if (selectors.includes(attr.name)) {
                 if (isString(attr.value)) {
                     if (directiveDef.dirType === DirectiveType.Iterable) {
                         this.evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, effect, environment);

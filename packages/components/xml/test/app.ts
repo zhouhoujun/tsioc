@@ -182,8 +182,8 @@ export class AppComponent2 implements OnInit {
 })
 export class ComplexComponent implements OnInit {
   title = 'Complex Test Component';
-  showConditional = true;
-  switchLable= 'Case 1';
+  showConditional = false;
+  switchLable= 'Case 2';
   items = [
     { id: 1, name: 'Item 1', value: 'Value 1' },
     { id: 2, name: 'Item 2', value: 'Value 2' },
