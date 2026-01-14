@@ -1,4 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
+import { Host, Optional, Self } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
@@ -15,13 +16,19 @@ import { DirectiveType } from '../refs/directive';
 abstract class BaseIfDirective {
     protected _hasView = false;
     protected _siblingDirectives: BaseIfDirective[] = [];
-    protected _templateRef: TemplateRef<any>; // 模板引用
+    protected _templateRef: TemplateRef<any>;
+    protected _parentIfDirective: BaseIfDirective | null = null;
 
     constructor(
         protected viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
+        @Optional() @Host() parentIfDirective?: BaseIfDirective
     ) { 
         this._templateRef = templateRef;
+        if (parentIfDirective) {
+            this._parentIfDirective = parentIfDirective;
+            this._parentIfDirective.registerSibling(this);
+        }
     }
 
     // 设置模板引用（从编译器传递）
@@ -63,6 +70,13 @@ abstract class BaseIfDirective {
 
     onDestroy() {
         this.clearView();
+        if (this._parentIfDirective) {
+            // 从父指令中移除自己
+            const index = this._parentIfDirective._siblingDirectives.indexOf(this);
+            if (index > -1) {
+                this._parentIfDirective._siblingDirectives.splice(index, 1);
+            }
+        }
     }
 }
 
@@ -79,6 +93,13 @@ abstract class BaseIfDirective {
 })
 export class VIfDirective extends BaseIfDirective {
     private _condition = false;
+
+    constructor(
+        viewContainer: ViewContainerRef,
+        templateRef: TemplateRef<any>
+    ) {
+        super(viewContainer, templateRef);
+    }
 
     @Attribute()
     set if(condition: boolean) {
@@ -110,6 +131,14 @@ export class VIfDirective extends BaseIfDirective {
 export class VElseIfDirective extends BaseIfDirective {
     private _condition = false;
 
+    constructor(
+        viewContainer: ViewContainerRef,
+        templateRef: TemplateRef<any>,
+        @Optional() @Host() parentIfDirective?: VIfDirective
+    ) {
+        super(viewContainer, templateRef, parentIfDirective);
+    }
+
     @Attribute()
     set elseIf(condition: boolean) {
         this._condition = condition;
@@ -139,6 +168,14 @@ export class VElseIfDirective extends BaseIfDirective {
 })
 export class VElseDirective extends BaseIfDirective {
     private _show = true;
+
+    constructor(
+        viewContainer: ViewContainerRef,
+        templateRef: TemplateRef<any>,
+        @Optional() @Host() parentIfDirective?: VIfDirective
+    ) {
+        super(viewContainer, templateRef, parentIfDirective);
+    }
 
     @Attribute()
     set else(show: boolean) {

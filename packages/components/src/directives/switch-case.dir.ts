@@ -15,7 +15,6 @@ import { DirectiveType } from '../refs/directive';
 @Directive({
     selector: '[v-switch],[*switch]',
     dirType: DirectiveType.Structural,
-    requires:['[v-case],[*case]','[v-default],[*default]'],
     priority: 20
 })
 export class SwitchDirective {
@@ -37,7 +36,9 @@ export class SwitchDirective {
         if (this._caseDirectives.indexOf(caseDirective) === -1) {
             this._caseDirectives.push(caseDirective);
             // Update the case view immediately after registration
-            caseDirective.updateView(this._value);
+            if (this._value !== undefined) {
+                caseDirective.updateView(this._value);
+            }
         }
     }
 
@@ -146,7 +147,7 @@ export class CaseDirective {
     @Attribute()
     set case(value: any) {
         this._caseValue = value;
-        if (this._switchDirective) {
+        if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
             this.updateView(this._switchDirective['_value']);
         }
     }
@@ -187,7 +188,7 @@ export class CaseDirective {
 
     // 添加初始化方法，确保指令在创建后能正确渲染
     onInit() {
-        if (this._switchDirective && this._caseValue !== undefined) {
+        if (this._switchDirective && this._caseValue !== undefined && this._switchDirective['_value'] !== undefined) {
             this.updateView(this._switchDirective['_value']);
         }
     }
@@ -215,18 +216,24 @@ export class CaseDirective {
 export class DefaultDirective {
     private _hasView = false;
     private _switchDirective: SwitchDirective | null = null;
+    private _template: TemplateRef<any>;
 
     constructor(
-        @Host() private viewContainer: ViewContainerRef,
-        @Host() private templateRef: TemplateRef<any>,
-        @Host() private elementRef: ElementRef,
+        private viewContainer: ViewContainerRef,
+        templateRef: TemplateRef<any>,
         // Get parent switch directive
-        @Self() @Host() switchDirective?: SwitchDirective
+        @Optional() @Host() switchDirective?: SwitchDirective
     ) {
+        this._template = templateRef;
         if (switchDirective) {
             this._switchDirective = switchDirective;
             this._switchDirective.registerDefault(this);
         }
+    }
+
+    @Attribute()
+    set template(templateRef: TemplateRef<any>) {
+        this._template = templateRef;
     }
 
     /**
@@ -242,11 +249,11 @@ export class DefaultDirective {
     }
 
     private createView() {
-        if (!this.templateRef) {
+        if (!this._template) {
             console.warn('DefaultDirective: templateRef is not set');
             return;
         }
-        this.viewContainer.createEmbeddedView(this.templateRef);
+        this.viewContainer.createEmbeddedView(this._template);
         this._hasView = true;
     }
 
@@ -257,20 +264,17 @@ export class DefaultDirective {
 
     // 添加初始化方法，确保指令在创建后能正确渲染
     onInit() {
-        if (this._switchDirective) {
+        if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
             // 初始化时检查是否需要显示默认视图
-            const switchValue = this._switchDirective['_value'];
-            if (switchValue !== undefined) {
-                let matchFound = false;
-                // 检查是否有匹配的case
-                const caseDirectives = this._switchDirective['_caseDirectives'];
-                if (caseDirectives) {
-                    matchFound = caseDirectives.some(caseDir => 
-                        caseDir['_caseValue'] === switchValue
-                    );
-                }
-                this.updateView(!matchFound);
+            let matchFound = false;
+            if (this._switchDirective['_caseDirectives']) {
+                this._switchDirective['_caseDirectives'].forEach((caseDirective: any) => {
+                    if (caseDirective._caseValue === this._switchDirective!['_value']) {
+                        matchFound = true;
+                    }
+                });
             }
+            this.updateView(!matchFound);
         }
     }
 
