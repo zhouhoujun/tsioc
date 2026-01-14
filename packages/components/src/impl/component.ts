@@ -17,7 +17,6 @@ import { Renderer } from '../renderer/Renderer';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';
 import { RNode } from '../renderer/Node';
-import { createTemplateRef } from './template';
 import { DefaultReactiveEffect } from './effect';
 import { DIRECTIVES } from '../decorators/directive';
 import { COMPONENTS } from '../decorators/component';

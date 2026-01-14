@@ -1,16 +1,16 @@
+import { Exception } from '@tsdi/ioc';
 import { BindingFactory, TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
-import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS, BIND_DIRECTIVES } from '../renderer/Node';
+import { EnvironmentContext } from '../refs/environment';
+import { DirectiveDef } from '../refs/directive';
+import { ComponentDef } from '../refs/component';
+import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS } from '../renderer/Node';
 import { noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
 import { isReactive, reactive } from '../reactive';
-import { EnvironmentContext } from '../refs/environment';
-import { DirectiveDef } from '../refs/directive';
-import { ComponentDef } from '../refs/component';
-import { Exception } from '@tsdi/ioc';
-// import { TemplateCompiler } from '../template/compiler';
+
 
 /**
  * Template ref implement.
@@ -69,11 +69,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     }
 
     private bindings(node: RNode, context: C, effect: ReactiveEffect, environment: EnvironmentContext): void {
-        if (node.childNodes?.length) {
-            node.childNodes.forEach(n => {
-                this.bindings(n, context, effect, environment)
-            });
-        }
+        
         const bindings = node[BINDINGS];
         if (bindings?.length) {
             bindings.forEach(factory => {
@@ -81,6 +77,13 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
                 environment.onDestroy(() => factory.unbind(node, environment))
             });
         }
+        
+        if (node.childNodes?.length) {
+            node.childNodes.forEach(n => {
+                this.bindings(n, context, effect, environment)
+            });
+        }
+        
 
     }
 
@@ -111,8 +114,9 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * 深度克隆元素及其所有属性
      */
     private cloneElementWithAttributes(element: RElement, renderer: Renderer): RElement {
-        const tagName = element.tagName && element.tagName.toLowerCase ? element.tagName.toLowerCase() : element.tagName;
+        const tagName = element.tagName
         const clonedElement = renderer.createElement(tagName);
+        clonedElement.nodeType = element.nodeType;
 
         // 克隆所有属性
         const attributes = renderer.getAttributes(element);

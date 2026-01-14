@@ -75,11 +75,11 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         this._destroyCallbacks.forEach(callback => callback());
         this._destroyCallbacks = [];
 
-        // 清理响应式副作用
-        if (this.effect) {
-            this.effect.stop();
-        }
-        this.environment.destroy();
+        // // 清理响应式副作用
+        // if (this.effect) {
+        //     this.effect.stop();
+        // }
+        // this.environment.destroy();
     }
 
     /**

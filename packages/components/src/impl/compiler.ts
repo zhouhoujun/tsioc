@@ -1,14 +1,9 @@
 import { Abstract, Exception, isString, remove } from '@tsdi/ioc';
 import { CompilerOptions, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { BIND_DIRECTIVES, BINDINGS, NodeType, RAttr, RComment, RElement, RNode, RText } from '../renderer/Node';
-import { EmbeddedViewRef } from '../refs/view';
-import { createEmbeddedViewRef } from './view';
-import { TemplateParser } from '../template/parser';
+import { BIND_DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
 import { ComponentDef } from '../refs/component';
-import { COMPONENTS } from '../decorators/component';
 import { EventEmitter } from '../EventEmitter';
-import { DIRECTIVES } from '../decorators/directive';
-import { DirectiveDef, DirectiveOptions, DirectiveRef, DirectiveType, Factoriable } from '../refs/directive';
+import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';

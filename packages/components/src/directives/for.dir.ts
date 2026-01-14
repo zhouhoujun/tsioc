@@ -5,6 +5,7 @@ import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
 import { ReactiveEffect } from '../effect';
 import { reactive } from '../reactive';
+import { ViewRef } from '../refs/view';
 
 /**
  * v-for directive component with enhanced iterator support and elegant variable naming.
@@ -19,7 +20,7 @@ import { reactive } from '../reactive';
     priority: 20
 })
 export class VForDirective {
-    private _viewRefs: any[] = [];
+    private _viewRefs: ViewRef<any>[] = [];
     private _collection: any = null;
     private _prevCollection: any = null;
     private _itemNames: string[] = []; // 保存循环变量名
@@ -235,7 +236,7 @@ export class VForDirective {
     // 通用的视图更新逻辑（支持trackBy）
     private updateViewsWithTrackBy(contexts: any[]) {
         const newViewRefs: any[] = [];
-        const oldViewRefs = new Map(this._viewRefs.map(ref => [this._trackByFn(ref.context, ref.index), ref]));
+        const oldViewRefs = new Map(this._viewRefs.map((ref, index) => [this._trackByFn(ref.context, index), ref]));
 
         // 设置$last和$count属性
         const totalCount = contexts.length;
