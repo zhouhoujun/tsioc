@@ -92,17 +92,17 @@ class ViewContainerRefImpl implements ViewContainerRef {
         return null;
     }
 
-    createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, index?: number): EmbeddedViewRef<C>;
-    createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, options?: {
+    createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, index?: number): EmbeddedViewRef<C>;
+    createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, options?: {
         index?: number,
         environment?: EnvironmentContext
     }): EmbeddedViewRef<C>;
-    createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, opts?: { index?: number } | number): EmbeddedViewRef<C> {
+    createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, opts?: { index?: number } | number): EmbeddedViewRef<C> {
         const options = (isNumber(opts) ? { index: opts } : opts) as {
             index?: number,
             environment?: EnvironmentContext
         };
-        const view = templateRef.createEmbeddedView(context!, options?.environment || this.environment);
+        const view = templateRef.createEmbeddedView(context, options?.environment || this.environment);
         const index = options?.index !== undefined ? options.index : this.views.length;
         this.insert(view, index);
         return view;

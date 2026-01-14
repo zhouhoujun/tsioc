@@ -368,7 +368,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const selectors = directiveDef.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
         switch (directiveDef.dirType) {
             case DirectiveType.Conditional:
-                // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else）
+                // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else, v-show, *show, v-case, *case）
                 this.processConditionalBinding(element, directiveDef, selectors, attrs);
                 break;
 
@@ -378,11 +378,10 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 break;
 
 
-
-            case DirectiveType.Structural:
-                // 处理结构指令（v-switch）, *switch）
-                this.processStructuralBinding(element, directiveDef, selectors, attrs);
-                break;
+            // case DirectiveType.Structural:
+            //     // 处理结构指令（v-switch）, *switch）
+            //     this.processStructuralBinding(element, directiveDef, selectors, attrs);
+            //     break;
             default:
                 this.bindingDirective(element, directiveDef, selectors, attrs);
                 break;
@@ -516,21 +515,21 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
     }
 
-    private processStructuralBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[]): void {
-        const readerer = this.renderer;
+    // private processStructuralBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[]): void {
+    //     const readerer = this.renderer;
 
-        const templateNodes = el.childNodes.splice(0);
-        dirDef.requires?.forEach(reqSelector => {
-            const reqEl = readerer.querySelector(el, reqSelector);
-            if (reqEl) {
-                templateNodes.push(reqEl);
-            }
-        });
+    //     const templateNodes = el.childNodes.splice(0);
+    //     dirDef.requires?.forEach(reqSelector => {
+    //         const reqEl = readerer.querySelector(el, reqSelector);
+    //         if (reqEl) {
+    //             templateNodes.push(reqEl);
+    //         }
+    //     });
 
-        templateNodes.forEach(c => readerer.removeChild(el, c));
+    //     templateNodes.forEach(c => readerer.removeChild(el, c));
 
-        this.bindingDirective(el, dirDef, selectors, attrs, templateNodes);
-    }
+    //     this.bindingDirective(el, dirDef, selectors, attrs, templateNodes);
+    // }
 
     /**
      * 处理指令属性
@@ -546,7 +545,12 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             const propertyKey = a.propertyKey;
             const matchNames = toMatchNames(name);
             const attr = attrs.find(r => matchNames.includes(r.name));
-            if (!attr) return;
+            if (!attr) {
+                if (a.propertyKey === 'context') {
+                    directiveInstance[propertyKey] = context;
+                }
+                return;
+            }
 
 
             if (attr.name.startsWith('@')) {

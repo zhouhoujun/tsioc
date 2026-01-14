@@ -173,8 +173,8 @@ export class AppComponent2 implements OnInit {
         <p v-else>This is the alternate content</p>
       </div>
       <div class="switch-content" v-switch='switchLable'>
-        <p v-case='Case 1'>This is case 1 content</p>
-        <p v-case='Case 2'>This is case 2 content</p>
+        <p v-case="'Case 1'">This is case 1 content</p>
+        <p v-case="'Case 2'">This is case 2 content</p>
       </div>
       <button @click="toggleConditional">Toggle Content</button>
     </div>

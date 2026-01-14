@@ -56,7 +56,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         const renderer = environment.get(Renderer);
         const effect = environment.get(ReactiveEffect);
         // 响应式处理上下文
-        context = isReactive(context) ? context : reactive(context || {} as C, effect);
+        context = isReactive(context) ? context : reactive(context, effect);
 
         // 默认处理抽象节点
         const rootNodes = this.rootNodes.map(n => this.clone(n, renderer));

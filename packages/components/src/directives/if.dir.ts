@@ -15,6 +15,7 @@ import { DirectiveType } from '../refs/directive';
 @Abstract()
 abstract class BaseIfDirective {
     protected _hasView = false;
+    private _context: any = null; // 模板上下文
     protected _siblingDirectives: BaseIfDirective[] = [];
     protected _templateRef: TemplateRef<any>;
     protected _parentIfDirective: BaseIfDirective | null = null;
@@ -31,10 +32,18 @@ abstract class BaseIfDirective {
         }
     }
 
+    // 设置模板上下文
+    @Attribute()
+    set context(ctx: any) {
+        this._context = ctx;
+        this.updateView();
+    }
+
     // 设置模板引用（从编译器传递）
     @Attribute()
     set template(templateRef: TemplateRef<any>) {
         this._templateRef = templateRef;
+        this.updateView();
     }
 
     protected createView() {
@@ -42,10 +51,17 @@ abstract class BaseIfDirective {
             console.warn('BaseIfDirective: templateRef is not set');
             return;
         }
-        this.viewContainer.createEmbeddedView(this._templateRef);
+        this.viewContainer.createEmbeddedView(this._templateRef, this._context);
         this._hasView = true;
         // 当当前指令显示时，隐藏所有兄弟指令
         this._siblingDirectives.forEach(dir => dir.clearView());
+    }
+
+    protected updateView() {
+        if (this._hasView) {
+            this.clearView();
+            this.createView();
+        }
     }
 
     protected clearView() {

@@ -16,8 +16,6 @@ export const factoryKey = 'ƿfac';
 export enum DirectiveType {
     /** 普通指令 */
     Normal = 0,
-    /** 结构指令 */
-    Structural = 1,
     /** 条件指令 */
     Conditional = 2,
     /** 列表指令 */

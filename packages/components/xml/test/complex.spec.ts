@@ -78,7 +78,7 @@ export class ComplexTest {
 
         const elementRef = complexRef.hostView.query('.switch-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
-        expect(elementRef.nativeElement.childNodes.length).toEqual(1);
+        expect(elementRef.nativeElement.childNodes.length).toEqual(3);
         
         expect(elementRef.nativeElement.childNodes[0].childNodes[0].textContent).toEqual('This is case 1 content');
     }
