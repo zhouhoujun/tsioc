@@ -2,7 +2,6 @@ import { createDecorator, AnnotationType, noPointcut, getModuleType, ActionType,
 import { ComponentFactory, ComponentOptions, ComponentRef } from '../refs/component';
 import { Attribute, AttributeMetadata } from './atteribute';
 import { DIRECTIVES } from './directive';
-// import { State, StateMetadata } from './state';
 import { ComponentDef } from '../refs/component';
 import { DirectiveType, Factoriable, factoryKey } from '../refs/directive';
 import { Computed, ComputedMetadata } from './computed';
@@ -16,6 +15,9 @@ export type ComponentDecorator = (options: Partial<ComponentDef>) => ClassDecora
 
 export const Component: ComponentDecorator = createDecorator<Partial<ComponentDef>>('Component', {
     actionType: ActionType.declaration | ActionType.component,
+    appendProps: (metadata) => {
+        metadata.static = false;
+    },
     def: {
         class: (ctx) => {
             const typeRef = ctx.classRef;

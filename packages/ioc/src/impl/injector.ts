@@ -11,10 +11,10 @@ import { ClassRef, getClassRef } from '../metadata/class';
 import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders, DependLike } from '../providers';
 import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
-import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
+import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY, STATICABLE } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { createDesignContext, createRuntimeContext } from '../lifescope/context';
-import { createResolveContext, getResolver, isParameter, Parameter, Parameters } from '../resolver';
+import { createResolveContext, getResolver, isParameter, Parameter, Parameters, ResolveContext } from '../resolver';
 import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
 import { DefaultRuntime } from './runtime';
@@ -167,7 +167,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
                 raise ?? this);
 
             if (!isNil(value) && value !== THROW_FLAGE) {
-                this.isStatic && this.records.set(token, createValueRecord(value));
+                if (this.isStatic && value[STATICABLE] !== false) this.records.set(token, createValueRecord(value));
                 return value;
             }
 
@@ -203,11 +203,11 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {AbstractType} targetType the parameter of type.
+     * @param {ResolveContext} context the resolve context.
      * 
      * @returns {T}
      */
-    resolve<T>(parameter: Parameter<T>, targetType?: AbstractType): T;
+    resolve<T>(parameter: Parameter<T>, context?: ResolveContext): T;
     /**
      * resolve token in context.
      * 
@@ -216,8 +216,12 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
      * @param flags InjectFalgs 
      */
     resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
-    resolve<T>(token: any, arg?: any): T {
-        return InjectUtil.resolve(this, token, arg);
+    resolve<T>(tokenOrParam: any, arg?: any): T {
+        if (isParameter(tokenOrParam)) {
+            return getResolver(this).resolve(tokenOrParam, arg ?? createResolveContext(this));
+        } else {
+            return getResolver(this).resolve({ provider: tokenOrParam, flags: arg } as Parameter, createResolveContext(this));
+        }
     }
 
     /**
@@ -386,11 +390,11 @@ export namespace InjectUtil {
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {AbstractType} targetType the parameter of type.
+     * @param {ResolveContext} context the resolve context
      * 
      * @returns {T}
      */
-    export function resolve<T>(injector: Injector, parameter: Parameter<T>, targetType?: AbstractType): T;
+    export function resolve<T>(injector: Injector, parameter: Parameter<T>, context?: ResolveContext): T;
     /**
      * resolve token instance with token and param provider.
      * 
@@ -447,9 +451,9 @@ export namespace InjectUtil {
      */
     export function resolve<T>(injector: Injector, token: Token<T>, ...providers: Provider[]): T;
     export function resolve<T>(injector: Injector, tokenOrParam: Token<T> | Parameter, ...args: any[]) {
-        if (!args.length || isUndefined(args[0]) || isNumber(args[0]) || isFunction(args[0])) {
+        if (!args.length || isUndefined(args[0]) || isNumber(args[0]) || isFunction(args[0] || args[0] instanceof ResolveContext)) {
             if (isParameter(tokenOrParam)) {
-                return getResolver(injector).resolve(tokenOrParam, createResolveContext(injector));
+                return getResolver(injector).resolve(tokenOrParam, args[0] ?? createResolveContext(injector));
             } else {
                 return getResolver(injector).resolve({ provider: tokenOrParam, flags: args[0] } as Parameter, createResolveContext(injector));
             }

@@ -230,17 +230,17 @@ export abstract class AbstractInvocation<T = any,
         return [context, destroy, payload]
     }
 
-    protected createInstance(): T {
+    protected createInstance(context?: ResolveContext): T {
         this.assertNotDestroyed();
         if (this.options?.instance) {
             return isFunction(this.options.instance) ? this.options.instance(this.context) : this.options.instance;
         }
-        return this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined);
+        return this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined, context);
     }
 
-    protected resolve<R>(token: Token<R>, flags?: InjectFlags): R {
+    protected resolve<R>(token: Token<R>, flags?: InjectFlags, context?: ResolveContext): R {
         this.assertNotDestroyed();
-        return this.context.resolve({ provider: token, flags, nullable: true } as Parameter)!
+        return this.context.resolve({ provider: token, flags, nullable: true } as Parameter, context)!
     }
 
     equals(target: Invocation): boolean {

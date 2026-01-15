@@ -21,6 +21,10 @@ export class SwitchDirective {
     private _caseDirectives: CaseDirective[] = [];
     private _defaultDirective: DefaultDirective | null = null;
 
+    constructor() {
+        console.log('create instance')
+    }
+
     @Attribute()
     set switch(value: any) {
         this._value = value;

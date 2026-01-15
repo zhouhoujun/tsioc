@@ -29,6 +29,9 @@ export interface Directive {
  */
 export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Directive', {
     actionType: ActionType.declaration | ActionType.directive,
+    appendProps: (metadata) => {
+        metadata.static = false;
+    },
     def: {
         class: (ctx) => {
             const typeRef = ctx.classRef;

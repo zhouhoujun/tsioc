@@ -1,7 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, Runtime, AbstractType, InvokeOptions, Provider,
-    ResolveContext, InjectFlags
+    Injector, Runtime, AbstractType, InvokeOptions, Provider, ResolveContext,
+    createResolveContext
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
@@ -11,9 +11,6 @@ import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';
 import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';
-import { createTemplateRef } from './template';
-import { DefaultReactiveEffect } from './effect';
-
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
 
@@ -50,7 +47,7 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
     }
 
     protected override createInstance(): T {
-        const instance = super.createInstance();
+        const instance = super.createInstance(createResolveContext(this.context, this._elementRef));
         const def = this.classRef.getAnnotation<DirectiveDef>();
         return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }

@@ -1,7 +1,7 @@
 import { InjectFlags, Token } from '../tokens';
 import { getTypeName } from '../metadata/type';
 import { deepForEach } from '../utils/lang';
-import { isArray, isFunction, isNumber } from '../utils/chk';
+import { isArray, isFunction, isNumber, isObject } from '../utils/chk';
 import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
@@ -101,6 +101,9 @@ export const LAZY = {};
 export const THROW_FLAGE = {};
 // export const Empty: any[] = [];
 export const CIRCULAR = {};
+
+export const STATICABLE = Symbol('STATICABLE');
+
 /**
  * 尝试解析令牌
  */
@@ -108,8 +111,12 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runti
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
-        if (isStatic && rd.value === LAZY && value != undefined && value != LAZY && value !== notFoundValue) {
-            rd.value = value;
+        if (value != undefined && value != LAZY && value !== notFoundValue) {
+            const stati = rd.value === LAZY;
+            if(isObject(value)) value[STATICABLE] = stati;
+            if (isStatic && stati) {
+                rd.value = value;
+            }
         }
         return value;
     } catch (e) {
@@ -167,7 +174,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
 
     // 返回默认值
     return notFoundValue;
-    
+
     // if (notFoundValue !== undefined) {
     //     return notFoundValue;
     // }

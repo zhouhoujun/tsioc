@@ -180,7 +180,6 @@ export class ClassRef<T = any> {
     invoke(method: string | symbol, injector: Injector, instance?: T, context?: ResolveContext): any;
     invoke(method: string | symbol, injector: Injector, instance?: T, argsOrContext?: any[] | ResolveContext): any {
         const type = this.type;
-        const inst: any = instance ?? injector.resolve(type);
         let args: any[] | undefined;
         let context: ResolveContext | undefined;
         if (isArray(argsOrContext)) {
@@ -188,6 +187,7 @@ export class ClassRef<T = any> {
         } else if (context instanceof ResolveContext) {
             context = argsOrContext;
         }
+        const inst: any = instance ?? injector.resolve({ type: type, propertyKey: ctorName, target: type }, context);
 
         if (!inst || !isFunction(inst[method])) {
             throw new Exception(`type: ${type} has no method ${method.toString()}.`)

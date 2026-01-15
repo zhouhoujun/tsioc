@@ -1,4 +1,4 @@
-import { Module, Runtime } from '@tsdi/ioc';
+import { isType, Module, ResolveInterceptorFn, Runtime } from '@tsdi/ioc';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
 import { ReactiveEffect } from './effect';
@@ -11,6 +11,9 @@ import { ClassDirective } from './directives/class';
 import { StyleDirective } from './directives/style';
 import { CaseDirective, SwitchDirective } from './directives/switch-case.dir';
 import { TemplateOutletDirective } from './directives/template-outlet.dir';
+
+
+
 
 /**
  * components module.

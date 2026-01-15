@@ -3,7 +3,7 @@ import { InjectFlags, Token, TokenOf } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector, InjectOperator, InjectorScope } from './injector';
-import { Parameter, ResolveInterceptorLike } from './resolver';
+import { Parameter, ResolveContext, ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
@@ -116,11 +116,11 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {AbstractType} targetType the parameter of type.
+     * @param {ResolveContext} context the resolve context.
      * 
      * @returns {T}
      */
-    abstract resolve<T>(parameter: Parameter<T>, targetType?: AbstractType): T;
+    abstract resolve<T>(parameter: Parameter<T>, context?: ResolveContext): T;
     /**
      * resolve token in context.
      * 

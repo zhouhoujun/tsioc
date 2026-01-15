@@ -1,4 +1,4 @@
-import { DefaultInvocationContext, Type } from '@tsdi/ioc';
+import { createResolveHandler, DefaultInvocationContext, invokeTail, isFunction, isResolved, isType, ResolveHandler, ResolveInterceptorFn, ResolveInterceptorLike, TargetInvokeArguments, token, Type } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { RNode } from '../renderer/Node';
@@ -12,7 +12,7 @@ import { noReact } from '../effect';
 export class EnvironmentState {
 
     [noReact] = true;
-    
+
 
     // 私有属性用于存储引用映射
     readonly componentRefs: Map<RNode, ComponentRef<any>> = new Map();
@@ -33,13 +33,41 @@ export class EnvironmentState {
 
 }
 
+export const NODES_RESOLVERS = token<ResolveInterceptorLike[]>('NODES_RESOLVERS');
+
+
+export const nodeResolveInterceptorFactory: () => ResolveInterceptorFn = () => {
+    let hanlder: ResolveHandler;
+    return (input, next, context) => {
+        const environment = context.getInjector() as EnvironmentContext;
+        const paramType = input.provider ?? input.type;
+        if (context.getPayload() instanceof ElementRef && environment instanceof EnvironmentContext && isFunction(paramType)) {
+            if (!hanlder) {
+                hanlder = createResolveHandler(environment.get(NODES_RESOLVERS) ?? []);
+            }
+
+            return invokeTail(() => hanlder.handle(input, context), (res) => {
+                if (isResolved(res)) return res;
+
+                return next(input, context)
+            })
+        }
+        return next(input, context);
+    }
+}
+
+
 /**
  * Environment context
  */
 
 export class EnvironmentContext extends DefaultInvocationContext {
     [noReact] = true;
-    
+
+    protected override initOptions(options: TargetInvokeArguments): void {
+        if (!options.resolvers) options.resolvers = [];
+        options.resolvers.push(nodeResolveInterceptorFactory())
+    }
 
     // 私有属性用于存储引用映射
     private state = new EnvironmentState();

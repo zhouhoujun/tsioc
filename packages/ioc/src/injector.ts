@@ -9,7 +9,7 @@ import { isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
-import { Parameter } from './resolver';
+import { Parameter, ResolveContext } from './resolver';
 
 /**
  * injector.
@@ -79,11 +79,11 @@ export abstract class Injector implements Destroyable, OnDestroy {
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {AbstractType} targetType the parameter of type.
+     * @param {ResolveContext} context the resolver context.
      * 
      * @returns {T}
      */
-    abstract resolve<T>(parameter: Parameter<T>, targetType?: AbstractType): T;
+    abstract resolve<T>(parameter: Parameter<T>, context?: ResolveContext): T;
     /**
      * resolve token in context.
      * 

@@ -1,9 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
     Injector, Runtime, AbstractType, Provider, toProvider,
-    InvokeOptions,
-    ResolveContext,
-    InjectFlags
+    InvokeOptions, ResolveContext, InjectFlags, createResolveContext
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
@@ -79,7 +77,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
     protected override createInstance(): T {
-        const instance = super.createInstance();
+        const instance = super.createInstance(createResolveContext(this.context, this._elementRef));
         const def = this.classRef.getAnnotation<ComponentDef>();
         return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }
