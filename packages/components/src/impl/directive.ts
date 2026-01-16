@@ -46,8 +46,8 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
 
     }
 
-    protected override createInstance(): T {
-        const instance = super.createInstance(createResolveContext(this.context, this._elementRef));
+    protected override createInstance(context?: ResolveContext): T {
+        const instance = super.createInstance(context ?? createResolveContext(this.context, this._elementRef));
         const def = this.classRef.getAnnotation<DirectiveDef>();
         return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }
@@ -77,16 +77,16 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
 
     protected override mergeProviders<T>(typeRef: ClassRef<T>, options?: DirectiveOptions): Provider[] {
         const providers = super.mergeProviders(typeRef, options);
-        if (options?.elementRef) {
-            const elementRef = options.elementRef;
-            providers.push({ provide: ElementRef, useValue: elementRef });
-            providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
-            // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
-        }
+        // if (options?.elementRef) {
+        //     const elementRef = options.elementRef;
+        //     providers.push({ provide: ElementRef, useValue: elementRef });
+        //     providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
+        //     // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
+        // }
 
-        if(options?.templateRef) {
-            providers.push({ provide: TemplateRef, useValue: options.templateRef });
-        }
+        // if(options?.templateRef) {
+        //     providers.push({ provide: TemplateRef, useValue: options.templateRef });
+        // }
 
         return providers;
     }

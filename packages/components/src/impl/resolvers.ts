@@ -1,5 +1,5 @@
-import { isExtends, AbstractType, ResolveInterceptorFn, isBaseOf, getDef } from '@tsdi/ioc';
-import { EnvironmentContext } from '../refs/environment';
+import { isExtends, AbstractType, ResolveInterceptorFn, isBaseOf, getDef, Provider } from '@tsdi/ioc';
+import { EnvironmentContext, NODES_RESOLVERS } from '../refs/environment';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { DirectiveRef } from '../refs/directive';
@@ -71,3 +71,12 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
 
     return next(input, context);
 }
+
+export const componentResolvers: Provider[] = [
+    { provide: NODES_RESOLVERS, useValue: elementRefResovler, multi: true },
+    { provide: NODES_RESOLVERS, useValue: templateRefResovler, multi: true },
+    { provide: NODES_RESOLVERS, useValue: directorRefResovler, multi: true },
+    { provide: NODES_RESOLVERS, useValue: componentRefResovler, multi: true },
+    { provide: NODES_RESOLVERS, useValue: viewContainerRefResovler, multi: true },
+    // { provide: NODES_RESOLVERS, useValue: directorResovler, multi: true },
+];

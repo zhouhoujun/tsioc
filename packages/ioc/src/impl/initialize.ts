@@ -153,9 +153,9 @@ export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
     if (!context.args) {
         const injector = context.raiseInjector;
         const resolver = getResolver(injector);
-        const rctx = context.as(ResolveContext).setInjector(injector);
-        const args = context.params ? resolveArgs(injector, context.params, resolver, rctx)
-            : resolveParameters(injector, input.getParameters(ctorName), resolver, rctx);
+        const rctx = context.has(ResolveContext) ? context.get(ResolveContext) : context.as(ResolveContext).setInjector(injector);
+        const args = context.params ? resolveArgs(injector, context.params, rctx, resolver)
+            : resolveParameters(injector, input.getParameters(ctorName), rctx, resolver);
         context.args = args;
 
         rctx.onDestroy();

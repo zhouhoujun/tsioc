@@ -67,10 +67,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {Injector} context invocation context. type of {@link Injector}, use to resolve with token.
+     * @param {ResolveContext} context resolve context. type of {@link Injector}, use to resolve with token.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, raise?: Injector): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: ResolveContext): T;
 
     /**
      * resolve parameter of targetType.
@@ -91,7 +91,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param token
      * @param flags InjectFalgs 
      */
-    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
+    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: ResolveContext): T;
     /**
      * injector has destoryed or not.
      */
@@ -449,7 +449,7 @@ export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
  */
 export type MethodType<T> = string | symbol | ((tag: T) => MethodFunc);
 
-export type RecordFactory<T = any> = (raise?: Injector, flags?: InjectFlags) => T;
+export type RecordFactory<T = any> = (context?: ResolveContext, flags?: InjectFlags) => T;
 
 /**
  * Injecor Record

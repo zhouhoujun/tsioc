@@ -97,9 +97,10 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+     * @param {ResolveContext} context resolve context.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: ResolveContext): T;
 
     /**
      * set value.
@@ -128,7 +129,7 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * @param token
      * @param flags InjectFalgs 
      */
-    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
+    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: ResolveContext): T;
     /**
      * context destroyed or not.
      * 

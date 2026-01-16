@@ -13,6 +13,7 @@ import { composeHandlers } from '../handlers/compose';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';
 import { createResolveContext, Parameter, ResolveContext, ResolveInterceptorLike } from '../resolver';
+import { ctorName } from '../metadata/define';
 
 /**
  * abstract invocation 
@@ -235,13 +236,13 @@ export abstract class AbstractInvocation<T = any,
         if (this.options?.instance) {
             return isFunction(this.options.instance) ? this.options.instance(this.context) : this.options.instance;
         }
-        return this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined, context);
+        return this.context.resolve({ type: this.type, propertyKey: ctorName, target: this.type, flags: this._isResolve ? InjectFlags.Resolve : undefined}, context);
     }
 
-    protected resolve<R>(token: Token<R>, flags?: InjectFlags, context?: ResolveContext): R {
-        this.assertNotDestroyed();
-        return this.context.resolve({ provider: token, flags, nullable: true } as Parameter, context)!
-    }
+    // protected resolve<R>(token: Token<R>, flags?: InjectFlags, context?: ResolveContext): R {
+    //     this.assertNotDestroyed();
+    //     return this.context.resolve({ provider: token, flags, nullable: true } as Parameter, context)!
+    // }
 
     equals(target: Invocation): boolean {
         if (!target || !this._classRef) return false;

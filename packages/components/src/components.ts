@@ -1,8 +1,8 @@
 import { isType, Module, ResolveInterceptorFn, Runtime } from '@tsdi/ioc';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
-import { ReactiveEffect } from './effect';
-import { DefaultReactiveEffect } from './impl/effect';
+// import { ReactiveEffect } from './effect';
+// import { DefaultReactiveEffect } from './impl/effect';
 import { VForDirective } from './directives/for.dir';
 import { VElseDirective, VElseIfDirective, VIfDirective } from './directives/if.dir';
 import { DirectiveFactory } from './refs/directive';
@@ -11,6 +11,7 @@ import { ClassDirective } from './directives/class';
 import { StyleDirective } from './directives/style';
 import { CaseDirective, SwitchDirective } from './directives/switch-case.dir';
 import { TemplateOutletDirective } from './directives/template-outlet.dir';
+import { componentResolvers } from './impl/resolvers';
 
 
 
@@ -25,6 +26,7 @@ import { TemplateOutletDirective } from './directives/template-outlet.dir';
     providers: [
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
+        componentResolvers
         // { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
     ],
     exports: [

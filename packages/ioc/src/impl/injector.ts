@@ -140,7 +140,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         return THROW_FLAGE;
     }
 
-    get<T>(token: Token<T>, notFoundValue?: any, flags: InjectFlags = InjectFlags.Default, raise?: Injector): T {
+    get<T>(token: Token<T>, notFoundValue?: any, flags: InjectFlags = InjectFlags.Default, context?: ResolveContext): T {
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
 
@@ -151,10 +151,10 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         }
         // 检查当前注入器记录
         const record = this.records.get(token);
-        if (record && !(flags & InjectFlags.SkipSelf)) {
-            const value = tryResolveToken(token, record, this, raise ?? this,
+        if (record && !(flags & (InjectFlags.SkipSelf | InjectFlags.Host))) {
+            const value = tryResolveToken(token, record, this,
                 notFoundValue,
-                flags, this.isStatic);
+                flags, context, this.isStatic);
             if (value !== THROW_FLAGE) return value;
         }
 
@@ -163,8 +163,8 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             const value = this._parent.get(
                 token,
                 notFoundValue,
-                flags & InjectFlags.NonSingleton,
-                raise ?? this);
+                (!(flags & InjectFlags.Host) ? flags : InjectFlags.Self) & InjectFlags.NonSingleton,
+                context);
 
             if (!isNil(value) && value !== THROW_FLAGE) {
                 if (this.isStatic && value[STATICABLE] !== false) this.records.set(token, createValueRecord(value));
@@ -173,15 +173,15 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
         }
 
-        return this.getFinal(token, flags)
-            ?? this.notFound(token, notFoundValue, flags);
+        return this.getFinal(token, flags, context)
+            ?? this.notFound(token, notFoundValue, flags, context);
     }
 
-    protected getFinal<T>(token: Token<T>, flags: InjectFlags): T | null | undefined {
+    protected getFinal<T>(token: Token<T>, flags: InjectFlags, context?: ResolveContext): T | null | undefined {
         return;
     }
 
-    protected notFound<T>(token: Token<T>, notFoundValue: any, flags: InjectFlags): T {
+    protected notFound<T>(token: Token<T>, notFoundValue: any, flags: InjectFlags, context?: ResolveContext): T {
         // 处理未找到的情况
         let value: T;
         if (!(flags & InjectFlags.Optional)) {
@@ -216,7 +216,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
      * @param flags InjectFalgs 
      */
     resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
-    resolve<T>(tokenOrParam: any, arg?: any): T {
+    resolve<T>(tokenOrParam: any, arg?: any, context?: ResolveContext): T {
         if (isParameter(tokenOrParam)) {
             return getResolver(this).resolve(tokenOrParam, arg ?? createResolveContext(this));
         } else {
@@ -445,6 +445,17 @@ export namespace InjectUtil {
      * 解析标记令牌的实例。
      *
      * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {ResolveContext} context resolve context type of {@link ResolveContext}, use to resolve with token.
+     * @returns {T}
+     */
+    export function resolve<T>(injector: Injector, token: Token<T>, context?: ResolveContext): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
      * @param {...Provider[]} providers the providers {@link Provider} to resolve with token.
      * @returns {T}
@@ -460,29 +471,33 @@ export namespace InjectUtil {
         }
         (injector as AbstractInjector).assertNotDestroyed?.();
         const token = tokenOrParam as Token;
-        let context: InvocationContext | undefined;
+        let context: ResolveContext | undefined;
         const isResolve = true;
         let isCtx = false;
         if (args.length === 1) {
             const arg1 = args[0];
-            if (INVOCATION_CONTEXT_IMPL.isContext(arg1)) {
+            if (arg1 instanceof ResolveContext) {
                 context = arg1;
                 isCtx = true;
+            }
+            if (INVOCATION_CONTEXT_IMPL.isContext(arg1)) {
+                context = createResolveContext(arg1);
+                isCtx = true;
             } else if (isArray(arg1)) {
-                context = arg1.length ? createInvocationContext(injector, { isResolve, providers: arg1 }) : undefined;
+                context = arg1.length ? createResolveContext(createInvocationContext(injector, { isResolve, providers: arg1 })) : undefined;
             } else if (arg1.provide) {
-                context = createInvocationContext(injector, { isResolve, providers: [arg1] });
+                context = createResolveContext(createInvocationContext(injector, { isResolve, providers: [arg1] }));
             } else if (hasContextOptions(arg1)) {
-                context = createInvocationContext(injector, { isResolve, ...arg1 });
+                context = createResolveContext(createInvocationContext(injector, { isResolve, ...arg1 }));
             }
         } else {
-            context = createInvocationContext(injector, { isResolve, providers: args });
+            context = createResolveContext(createInvocationContext(injector, { isResolve, providers: args }));
         }
 
-        const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : injector.get(token, null, InjectFlags.Resolve, context);
+        const result = injector.get(token, null, InjectFlags.Resolve, context);
 
-        if (context && !isCtx && !context.used) {
-            immediate(() => context!.destroy());
+        if (context && !isCtx) {
+            immediate(() => context!.onDestroy());
         }
         return result;
     }
@@ -841,7 +856,7 @@ function processProvider(injector: AbstractInjector, provider: StaticProvider | 
             let multiPdr = injector.getRecords().get(token);
             if (!multiPdr) {
                 multiPdr = createRecord(undefined, injector.isStatic, true);
-                multiPdr.factory = (raise) => resolveArgs(raise ?? injector, multiPdr!.multi);
+                multiPdr.factory = (raise) => resolveArgs(raise?.getInjector() ?? injector, multiPdr!.multi, raise);
                 injector.getRecords().set(token, multiPdr);
             }
             if (multiPdr.multi) {
@@ -899,13 +914,13 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
         if (isValueProvider(provider)) {
             return createValueRecord(provider.useValue);
         } else if (isFactoryProvider(provider)) {
-            factory = (raise) => provider.useFactory(...resolveArgs(raise ?? injector, provider.deps));
+            factory = (raise) => provider.useFactory(...resolveArgs(raise?.getInjector() ?? injector, provider.deps, raise));
         } else if (isExistingProvider(provider)) {
             factory = (raise, flags) => (raise ?? injector).get(provider.useExisting, undefined, flags);
         } else if (provider.provide) {
             if ((provider as ClassProvider<T>).useClass && !(provider as ClassProvider<T>).deps && injector.has((provider as ClassProvider<T>).useClass)) {
                 const type = (provider as ClassProvider<T>).useClass;
-                factory = (raise, flags) => raise?.get(type, null, flags) ?? injector.get(type, flags);
+                factory = (raise, flags) => raise?.getInjector()?.get(type, null, flags, raise) ?? injector.get(type, null, flags, raise);
             } else {
                 const classType = (provider as ClassProvider<T>).useClass ?? provider.provide;
                 return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide, provider.multi);
@@ -936,12 +951,13 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
     }
 
 
-    const factory = (raise?: Injector) => {
+    const factory = (raise?: ResolveContext) => {
         if (singleton && runtime.has(type)) {
             return runtime.get(type);
         }
 
-        const context = createRuntimeContext(injector, undefined, runtime, raise, multi, params);
+        const context = createRuntimeContext(injector, undefined, runtime, raise?.getInjector(), multi, params);
+        raise && context.set(ResolveContext, raise)
         const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
             runtime.set(type, instance, injector);

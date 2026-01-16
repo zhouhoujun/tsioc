@@ -76,8 +76,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         return this.render(this.options);
     }
 
-    protected override createInstance(): T {
-        const instance = super.createInstance(createResolveContext(this.context, this._elementRef));
+    protected override createInstance(context?: ResolveContext): T {
+        const instance = super.createInstance(context ?? createResolveContext(this.context, this._elementRef));
         const def = this.classRef.getAnnotation<ComponentDef>();
         return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }
@@ -117,12 +117,12 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         if (options?.renderer) {
             providers.push(toProvider(Renderer, options.renderer));
         }
-        if (options?.elementRef) {
-            const elementRef = options.elementRef;
-            providers.push({ provide: ElementRef, useValue: elementRef });
-            providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
-            // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
-        }
+        // if (options?.elementRef) {
+        //     const elementRef = options.elementRef;
+        //     providers.push({ provide: ElementRef, useValue: elementRef });
+        //     providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
+        //     // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
+        // }
         return providers;
     }
 

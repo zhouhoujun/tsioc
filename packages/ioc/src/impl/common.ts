@@ -5,10 +5,9 @@ import { isArray, isFunction, isNumber, isObject } from '../utils/chk';
 import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
-import { Runtime } from '../runtime';
 import { Provider, StaticProvider, DynamicProvider, Provide, DependLike } from '../providers';
 import { createResolveContext, getResolver, isParameter, Parameter, ResolveContext, Resolver } from '../resolver';
-import e = require('express');
+
 
 
 
@@ -30,7 +29,7 @@ function isRecord(target: any): target is InjectorRecord {
 }
 
 
-export function resolveParameters(injector: Injector, params?: Parameter[], resolver?: Resolver, context?: ResolveContext) {
+export function resolveParameters(injector: Injector, params?: Parameter[], context?: ResolveContext, resolver?: Resolver) {
     if (!params || !params.length) return [];
 
     context ??= createResolveContext(injector);
@@ -51,28 +50,28 @@ export function resolveParameters(injector: Injector, params?: Parameter[], reso
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
-export function resolveArgs(injector: Injector, deps?: DependLike[], resolver?: Resolver, context?: ResolveContext): any[] {
+export function resolveArgs(injector: Injector, deps?: DependLike[], context?: ResolveContext, resolver?: Resolver): any[] {
     if (!deps || !deps.length) return [];
+
+
 
     const args: any[] = [];
     for (const arg of deps) {
         if (isParameter(arg)) {
-            if (!context) {
-                context = createResolveContext(injector);
-            }
-            if (!resolver) {
+            if (!resolver) {    
+                context ??= createResolveContext(injector);
                 resolver = getResolver(injector);
             }
-            args.push(resolver.resolve(arg, context as ResolveContext));
+            args.push(resolver.resolve(arg, context!));
         } else {
-            args.push(resolveArg(injector, arg));
+            args.push(resolveArg(injector, arg, context));
         }
     }
 
     return args;
 }
 
-function resolveArg(injector: Injector, arg: DependLike): any {
+function resolveArg(injector: Injector, arg: DependLike, context?: ResolveContext): any {
     if (isArray(arg)) {
         let depFlags = InjectFlags.Default;
         const depToken = arg[0];
@@ -87,7 +86,7 @@ function resolveArg(injector: Injector, arg: DependLike): any {
         if (arg.value !== undefined && arg.value !== LAZY) {
             return arg.value;
         }
-        const value = arg.factory?.(injector) ?? null;
+        const value = arg.factory?.(context) ?? null;
         if (arg.value === LAZY) arg.value = value;
         return value;
     } else {
@@ -109,9 +108,9 @@ export const STATICABLE = Symbol('STATICABLE');
  * 尝试解析令牌
  */
 export function tryResolveToken(token: Token, rd: InjectorRecord, injector: Injector,
-    raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+    notFoundValue: any, flags: InjectFlags, context?: ResolveContext, isStatic?: boolean): any {
     try {
-        return resolveToken(token, rd, injector, raise, notFoundValue, flags);
+        return resolveToken(token, rd, injector, notFoundValue, flags, context);
     } catch (e) {
         if (rd) {
             rd.value = LAZY;
@@ -124,8 +123,8 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, injector: Inje
 /**
  * 解析令牌
  */
-export function resolveToken(token: Token, rd: InjectorRecord, injector: Injector, raise: Injector,
-    notFoundValue: any, flags: InjectFlags): any {
+export function resolveToken(token: Token, rd: InjectorRecord, injector: Injector,
+    notFoundValue: any, flags: InjectFlags, context?: ResolveContext): any {
     // if (rd.value === CIRCULAR) {
     //     throw new CircularDependencyException()
     // }
@@ -140,14 +139,14 @@ export function resolveToken(token: Token, rd: InjectorRecord, injector: Injecto
         const multi: any[] = []
         const parent = injector?.getParent();
         if (parent && !(flags & InjectFlags.Self)) {
-            const values = parent.get(token, null, flags, raise);
+            const values = parent.get(token, null, flags, context);
             if (values) {
                 multi.push(...values);
             }
         }
 
         if (rd.factory) { // 如果有工厂函数，执行并添加结果
-            const result = rd.factory(raise, flags);
+            const result = rd.factory(context, flags);
             multi.push(...result);
         }
 
@@ -157,7 +156,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, injector: Injecto
 
     // 执行工厂函数获取值
     if (rd.factory) {
-        const result = rd.factory(raise, flags);
+        const result = rd.factory(context, flags);
         const stati = rd.value === LAZY;
         if (isObject(result)) result[STATICABLE] = stati;
         // 如果是静态提供者，缓存结果

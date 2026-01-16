@@ -425,11 +425,11 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         this.binding(node, {
             bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
 
-                if (environment.destroyed) return;
-                const elementRef = new ElementRef(target);
-
+                // if (environment.destroyed) return;               
+                const elementRef =  environment.getElementRef(target);
                 // 处理条件指令;
                 const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { environment }) : undefined;
+                if(templateRef) environment.attachTemplate(templateRef);
                 const directiveRef = (dirDef as Factoriable).ƿfac?.(environment, { templateRef, elementRef });
 
                 if (directiveRef) {

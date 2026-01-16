@@ -61,11 +61,11 @@ export class DefaultResolver implements Resolver {
     }
 
     resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: ResolveContext): any[] {
-        return resolveArgs(injector, args, this, context)
+        return resolveArgs(injector, args, context, this)
     }
 
     resolveParams(injector: Injector, params: Parameter[], context?: ResolveContext): any[] {
-        return resolveParameters(injector, params, this, context)
+        return resolveParameters(injector, params, context, this)
     }
 
     protected missingException(missings: Partial<Parameter>[], type: AbstractType<any>, method: string): Exception {
@@ -138,9 +138,9 @@ export function createResolveHandler<TInput, TOutput = any, TContext extends Res
 
 
 
-function tryResolve(injector: Injector, token: Token, flags?: InjectFlags) {
+function tryResolve(injector: Injector, token: Token, flags?: InjectFlags, context?: ResolveContext) {
     if (injector.has(token, flags)) {
-        return injector.get(token, UNRESOLVED, flags)
+        return injector.get(token, UNRESOLVED, flags, context)
     }
     if (!isType(token) || getDef(token).abstract) {
         return UNRESOLVED;
@@ -148,7 +148,7 @@ function tryResolve(injector: Injector, token: Token, flags?: InjectFlags) {
     if (!injector.has(token)) {
         InjectUtil.register(injector, token);
     }
-    return injector.get(token, UNRESOLVED, flags);
+    return injector.get(token, UNRESOLVED, flags, context);
 }
 
 
@@ -160,13 +160,13 @@ export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Par
             (input, context) => {
                 const injector = context.getInjector();
                 if (input.provider && !input.multi) {
-                    const value = tryResolve(injector, input.provider, input.flags);
+                    const value = tryResolve(injector, input.provider, input.flags, context);
                     if (isResolved(value)) return value;
                 } else if (!input.multi && input.name && injector.has(input.name, input.flags)) {
                     const value = injector.get(input.name, UNRESOLVED, input.flags);
                     if (isResolved(value)) return value;
                 } else if (input.type) {
-                    const value = tryResolve(injector, input.type, input.flags);
+                    const value = tryResolve(injector, input.type, input.flags, context);
                     if (isResolved(value)) return value;
                 }
 
