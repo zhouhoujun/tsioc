@@ -152,7 +152,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         // 检查当前注入器记录
         const record = this.records.get(token);
         if (record && !(flags & InjectFlags.SkipSelf)) {
-            const value = tryResolveToken(token, record, runtime, this, raise ?? this,
+            const value = tryResolveToken(token, record, this, raise ?? this,
                 notFoundValue,
                 flags, this.isStatic);
             if (value !== THROW_FLAGE) return value;

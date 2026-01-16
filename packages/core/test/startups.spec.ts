@@ -1,7 +1,7 @@
 import { createInvocationContext, Injectable, Injector, lang, Module, Singleton, Static } from '@tsdi/ioc';
 import expect = require('expect');
 import { Application, ApplicationContext, Start } from '../src';
-import { ConfiguraionManger, Settings } from './demo';
+import { ConfiguraionManger, Settings, Settings2 } from './demo';
 
 @Injectable({ static: true })
 export class MyStartupService {
@@ -142,19 +142,35 @@ describe('app message queue', () => {
         expect(settings2.v).toEqual(1);
     })
 
-    it('bean provide cache in context', () => {
+    it('bean provide not cache in context', () => {
         const context = createInvocationContext(ctx);
         const settings = context.get(Settings) as Record<string, any>;
         expect(settings).toBeDefined();
         expect(settings.id).toEqual(3);
         expect(settings.v).toEqual(1);
         const settings2 = context.get(Settings) as Record<string, any>;
-        expect(settings2.id).toEqual(3);
+        expect(settings2.id).toEqual(4);
         expect(settings2.v).toEqual(1);
 
         
         const settings3 = ctx.get(Settings) as Record<string, any>;
-        expect(settings3.id).toEqual(4);
+        expect(settings3.id).toEqual(5);
+        expect(settings3.v).toEqual(1);
+    })
+
+    it('bean provide cache in context', () => {
+        const context = createInvocationContext(ctx);
+        const settings = context.get(Settings2) as Record<string, any>;
+        expect(settings).toBeDefined();
+        expect(settings.id).toEqual(1);
+        expect(settings.v).toEqual(1);
+        const settings2 = context.get(Settings2) as Record<string, any>;
+        expect(settings2.id).toEqual(1);
+        expect(settings2.v).toEqual(1);
+
+        
+        const settings3 = ctx.get(Settings2) as Record<string, any>;
+        expect(settings3.id).toEqual(1);
         expect(settings3.v).toEqual(1);
     })
 

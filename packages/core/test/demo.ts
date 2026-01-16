@@ -220,6 +220,11 @@ export abstract class Settings implements Record<string, any> {
 
 }
 
+@Abstract()
+export abstract class Settings2 implements Record<string, any> {
+
+}
+
 let id = 0;
 @Configuration()
 export class ConfiguraionManger {
@@ -229,6 +234,16 @@ export class ConfiguraionManger {
         id++;
         return {
             id,
+            v: 1
+        };
+    }
+
+    id2 = 0;
+    @Bean(Settings2)
+    settings2(): Settings2 {
+        this.id2++;
+        return {
+            id: this.id2,
             v: 1
         };
     }

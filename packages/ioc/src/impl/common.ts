@@ -8,6 +8,7 @@ import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { Provider, StaticProvider, DynamicProvider, Provide, DependLike } from '../providers';
 import { createResolveContext, getResolver, isParameter, Parameter, ResolveContext, Resolver } from '../resolver';
+import e = require('express');
 
 
 
@@ -100,27 +101,19 @@ function resolveArg(injector: Injector, arg: DependLike): any {
 export const LAZY = {};
 export const THROW_FLAGE = {};
 // export const Empty: any[] = [];
-export const CIRCULAR = {};
+// export const CIRCULAR = {};
 
 export const STATICABLE = Symbol('STATICABLE');
 
 /**
  * 尝试解析令牌
  */
-export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runtime, injector: Injector,
+export function tryResolveToken(token: Token, rd: InjectorRecord, injector: Injector,
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
-        const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
-        if (value != undefined && value != LAZY && value !== notFoundValue) {
-            const stati = rd.value === LAZY;
-            if(isObject(value)) value[STATICABLE] = stati;
-            if (isStatic && stati) {
-                rd.value = value;
-            }
-        }
-        return value;
+        return resolveToken(token, rd, injector, raise, notFoundValue, flags);
     } catch (e) {
-        if (rd && rd.value === CIRCULAR) {
+        if (rd) {
             rd.value = LAZY;
         }
         throw e;
@@ -131,11 +124,11 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runti
 /**
  * 解析令牌
  */
-export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
-    injector: Injector, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
-    if (rd.value === CIRCULAR) {
-        throw new CircularDependencyException()
-    }
+export function resolveToken(token: Token, rd: InjectorRecord, injector: Injector, raise: Injector,
+    notFoundValue: any, flags: InjectFlags): any {
+    // if (rd.value === CIRCULAR) {
+    //     throw new CircularDependencyException()
+    // }
     // 如果已有值且不是多提供者，直接返回
     if (!rd.multi && rd.value !== undefined && rd.value !== LAZY) {
         return rd.value;
@@ -153,11 +146,11 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
             }
         }
 
-        // 如果有工厂函数，执行并添加结果
-        if (rd.factory) {
+        if (rd.factory) { // 如果有工厂函数，执行并添加结果
             const result = rd.factory(raise, flags);
             multi.push(...result);
         }
+
 
         return multi;
     }
@@ -165,8 +158,10 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
     // 执行工厂函数获取值
     if (rd.factory) {
         const result = rd.factory(raise, flags);
+        const stati = rd.value === LAZY;
+        if (isObject(result)) result[STATICABLE] = stati;
         // 如果是静态提供者，缓存结果
-        if (rd.value === LAZY) {
+        if (stati) {
             rd.value = result;
         }
         return result;
@@ -174,12 +169,6 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
 
     // 返回默认值
     return notFoundValue;
-
-    // if (notFoundValue !== undefined) {
-    //     return notFoundValue;
-    // }
-
-    // throw new NullInjectorException(token);
 }
 
 

@@ -459,6 +459,7 @@ export interface InjectorRecord<T = any> {
      * 提供者的类型
      */
     type?: AbstractType<T>;
+
     /**
      * 工厂函数，用于创建实例
      */
@@ -473,6 +474,12 @@ export interface InjectorRecord<T = any> {
      * 多提供者的依赖数组
      */
     multi?: any[];
+
+    /**
+     * is static or not.
+     */
+    stati?: boolean;
+
     /**
      * cache expires.
      */
