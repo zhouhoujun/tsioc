@@ -126,8 +126,6 @@ describe('method exec test', () => {
     it('show exec with many params and invoke with string', () => {
         // container.register(Person);
         InjectUtil.register(container, MethodTest3);
-        // expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
-        // const typeRef = container.get(InvocationFactory).create(container.getInject().getTokenProvider('Test3'));
         const instace = container.get('Test3');
         const typeRef = container.get(InvocationFactory).create(getType(instace), { instace });
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');

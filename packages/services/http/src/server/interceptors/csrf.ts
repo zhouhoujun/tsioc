@@ -1,4 +1,4 @@
-import { Abstract, Inject, Injectable, Nullable, token } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, InjectUtil, Nullable, token } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { GET, HEAD, OPTIONS } from '@tsdi/common';
 import { ForbiddenException } from '@tsdi/common/transport';
@@ -83,7 +83,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, Interceptor<Rest
     }
 
     intercept(ctx: RestfulRequestContext, next: Handler<RestfulRequestContext, any>): Observable<any> {
-        ctx.getInject().inject({
+        InjectUtil.inject(ctx.getInjector(), {
             provide: CSRF,
             useFactory: () => {
                 const se = ctx.get(Session);
@@ -127,7 +127,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, Interceptor<Rest
 
     async invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
 
-        ctx.getInject().inject({
+        InjectUtil.inject(ctx.getInjector() ,{
             provide: CSRF,
             useFactory: () => {
                 const se = ctx.get(Session);

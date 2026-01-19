@@ -106,13 +106,13 @@ export function createDesignContext(injector: Injector, previous?: Context, runt
     return context;
 }
 
-export function createRuntimeContext(injector: Injector, previous?: Context, runtime?: Runtime, raise?: ResolveContext, multi?: boolean, params?: DependLike[]) {
+export function createRuntimeContext(injector: Injector, previous?: Context, runtime?: Runtime, resovleContext?: ResolveContext, multi?: boolean, params?: DependLike[]) {
     const context = new RuntimeContext(previous);
     context.set(INJECTOR, injector);
     if (!context.has(Runtime)) context.set(Runtime, runtime ?? injector.getRuntime());
 
-    context.set(RAISE_INJECTOR, raise?.getInjector() || injector);
-    raise && context.set(ResolveContext, raise);
+    context.set(RAISE_INJECTOR, resovleContext?.getInjector() || injector);
+    resovleContext && context.set(ResolveContext, resovleContext);
     if (multi) context.set(MUTIL, true);
     if (params) {
         context.set(CTOR_PARAMS, params);
