@@ -2,7 +2,7 @@ import { AbstractType } from './types';
 import { InjectFlags, Token, TokenOf } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { Injector, InjectOperator, InjectorScope } from './injector';
+import { Injector, InjectorScope } from './injector';
 import { Parameter, ResolveContext, ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
@@ -46,12 +46,6 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * get parent context.
      */
     abstract getParent(): TParent;
-    /**
-     * get inject operator.
-     * 
-     * 获取注入器操作器。
-     */
-    abstract getInject(): InjectOperator;
     /**
      * invocation target.
      */

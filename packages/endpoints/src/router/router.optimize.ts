@@ -1,6 +1,7 @@
 import {
     Type, composeHandlers, DecorDefine, Exception, getClassRef, HandlerFn, hasProps, Injector, Invocation,
-    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TokenOf, isToken
+    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TokenOf, isToken,
+    InjectUtil
 } from '@tsdi/ioc';
 import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext } from '@tsdi/common';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -213,7 +214,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else if (route.loadController) {
             const res = route.loadController();
             const controller = await (isObservable(res) ? lastValueFrom(res) : res);
-            this.injector.getInject().register(controller as Type);
+            InjectUtil.register(this.injector, controller as Type);
 
             const ctrRef = getClassRef(controller);
             const invocation = ctrRef.createInvocation(this.injector);
@@ -277,7 +278,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             let handler: RequestHandler;
             if (isToken(route.handler)) {
                 if (isType(route.handler) && !this.injector.has(route.handler)) {
-                    this.injector.getInject().register(route.handler);
+                    InjectUtil.register(this.injector, route.handler);
                 }
                 handler = this.injector.get(route.handler)
             } else {

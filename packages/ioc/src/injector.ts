@@ -43,12 +43,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     abstract getRuntime(): Runtime;
     /**
-     * get inject operator.
-     * 
-     * 获取注入器操作器。
-     */
-    abstract getInject(): InjectOperator;
-    /**
      * has register.
      * 
      * 标记令牌是否已注册。

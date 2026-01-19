@@ -1,7 +1,8 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
     Injector, Runtime, AbstractType, InvokeOptions, Provider, ResolveContext,
-    createResolveContext
+    createResolveContext,
+    InjectUtil
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
@@ -69,7 +70,7 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
         const def = typeRef.getAnnotation<DirectiveDef>();
         if (def.imports?.length) {
             injector = createInjector(options?.providers, injector);
-            injector.getInject().use(def.imports);
+            InjectUtil.use(injector, def.imports);
         }
         return injector;
     }

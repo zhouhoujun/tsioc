@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Injectable, Inject, getToken, ProvidedIn, Injector, InvocationFactory, createInjector } from '../src';
+import { Injectable, Inject, getToken, ProvidedIn, Injector, InvocationFactory, createInjector, InjectUtil } from '../src';
 
 
 @Injectable()
@@ -57,20 +57,20 @@ describe('resolve', () => {
 
 
     it('get service', () => {
-        const tsr = injector.getInject().resolve(TestService);
+        const tsr = InjectUtil.operator(injector).resolve(TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi');
     })
 
 
     it('get service with providers', () => {
-        const tsr = injector.getInject().resolve(TestService, { provide: DataProvider, useClass: CustomDataProvider });
+        const tsr = InjectUtil.operator(injector).resolve(TestService, { provide: DataProvider, useClass: CustomDataProvider });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })
 
     it('get service with providers in option', () => {
-        const tsr = injector.getInject().resolve(TestService, { providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
+        const tsr = InjectUtil.operator(injector).resolve(TestService, { providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })

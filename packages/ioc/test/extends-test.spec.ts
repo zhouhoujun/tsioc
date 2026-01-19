@@ -1,4 +1,4 @@
-import { createInjector, Injector } from '../src';
+import { createInjector, Injector, InjectUtil } from '../src';
 import * as mds from './extends-test';
 import { Person, Home } from './extends-test';
 import expect = require('expect');
@@ -8,7 +8,7 @@ describe('extends test', () => {
     
     before(async () => {
         injector = createInjector();
-        injector.getInject().use(mds);
+        InjectUtil.use(injector, mds);
     });
 
     it('should auto wried base class property', () => {

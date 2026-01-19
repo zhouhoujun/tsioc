@@ -1,4 +1,4 @@
-import { Autowired, Injectable, Param, Inject, Singleton, Container, getToken, createInjector } from '../src';
+import { Autowired, Injectable, Param, Inject, Singleton, Container, getToken, createInjector, InjectUtil } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
@@ -7,7 +7,7 @@ describe('custom register test', () => {
     let container: Container;
     beforeEach(async () => {
         container = createInjector();
-        container.getInject().setValue(Date, new Date());
+        InjectUtil.setValue(container, Date, new Date());
     });
 
     it('decorator toString is decorator name', () => {
@@ -20,7 +20,7 @@ describe('custom register test', () => {
     })
 
     it('should auto wried property', () => {
-        container.getInject().register(SimppleAutoWried);
+        InjectUtil.register(container, SimppleAutoWried);
         const instance = container.get(SimppleAutoWried);
         expect(instance).toBeDefined();
         expect(instance.dateProperty).toBeDefined();
@@ -28,7 +28,7 @@ describe('custom register test', () => {
     });
 
     it('should auto create constructor params', () => {
-        container.getInject().register(ClassRoom);
+        InjectUtil.register(container, ClassRoom);
         const instance = container.get(ClassRoom);
         expect(instance).toBeDefined();
         expect(instance.service).toBeDefined();
@@ -36,7 +36,7 @@ describe('custom register test', () => {
     });
 
     it('should auto create prop with spec @Autowired() class.', () => {
-        container.getInject().register(MClassRoom);
+        InjectUtil.register(container, MClassRoom);
         const instance = container.get(MClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
@@ -44,7 +44,7 @@ describe('custom register test', () => {
     });
 
     it('should auto create constructor params with spec @Param() class.', () => {
-        container.getInject().register(CollegeClassRoom);
+        InjectUtil.register(container, CollegeClassRoom);
         const instance = container.get(CollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
@@ -52,7 +52,8 @@ describe('custom register test', () => {
     });
 
     it('should auto create prop with spec @Inject() class.', () => {
-        container.getInject().register(MiddleSchoolStudent)
+        InjectUtil.operator(container)
+            .register(MiddleSchoolStudent)
             .register(InjMClassRoom);
         const instance = container.get(InjMClassRoom);
         expect(instance).toBeDefined();
@@ -61,7 +62,7 @@ describe('custom register test', () => {
     });
 
     it('should auto create constructor params with spec @Inject() class.', () => {
-        container.getInject().register(InjCollegeClassRoom);
+        InjectUtil.register(container, InjCollegeClassRoom);
         const instance = container.get(InjCollegeClassRoom);
         expect(instance).toBeDefined();
         expect(instance.leader).toBeDefined();
@@ -69,7 +70,7 @@ describe('custom register test', () => {
     });
 
     it('should auto create constructor params with spec @Inject() class with alias.', () => {
-        container.getInject().register(CollegeStudent)
+        InjectUtil.operator(container).register(CollegeStudent)
             .register(InjCollegeAliasClassRoom);
         const instance = container.get(InjCollegeAliasClassRoom);
         expect(instance).toBeDefined();
@@ -78,7 +79,7 @@ describe('custom register test', () => {
     });
 
     it('should provider implement sub class to abstract class', () => {
-        container.getInject()
+        InjectUtil.operator(container)
             .register(MiddleSchoolStudent)
             .register(CollegeStudent);
 
@@ -93,7 +94,7 @@ describe('custom register test', () => {
 
 
     it('should work with sting id to get class', () => {
-        container.getInject()
+        InjectUtil.operator(container)
             .register(MiddleSchoolStudent)
             .register(StingMClassRoom)
             .register(StringIdTest);
@@ -107,7 +108,7 @@ describe('custom register test', () => {
     });
 
     it('should work with Symbol id to get class', () => {
-        container.getInject()
+        InjectUtil.operator(container)
             .register(SymbolCollegeClassRoom)
             .register(MiddleSchoolStudent)
             .register(StingMClassRoom)

@@ -1,4 +1,4 @@
-import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, TypeDef, ModuleType } from '@tsdi/ioc';
+import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, TypeDef, ModuleType, Provider } from '@tsdi/ioc';
 import { AttributeMetadata } from '../decorators/atteribute';
 import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
@@ -29,7 +29,6 @@ export interface DirectiveDef<T = any> extends TypeDef<T> {
     selector: string;
     styles?: string[];
     styleUrls?: string[];
-    providers?: any[];
     // states?: StateMetadata[];
     attributes?: AttributeMetadata[];
     computeds?: ComputedMetadata[];

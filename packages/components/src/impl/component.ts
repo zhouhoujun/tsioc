@@ -1,7 +1,8 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
     Injector, Runtime, AbstractType, Provider, toProvider,
-    InvokeOptions, ResolveContext, InjectFlags, createResolveContext
+    InvokeOptions, ResolveContext, InjectFlags, createResolveContext,
+    InjectUtil
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
@@ -99,7 +100,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         const def = typeRef.getAnnotation<ComponentDef>();
         if (def.imports?.length) {
             injector = createInjector(options?.providers, injector);
-            injector.getInject().use(def.imports);
+            InjectUtil.use(injector, def.imports);
         }
         return injector;
     }

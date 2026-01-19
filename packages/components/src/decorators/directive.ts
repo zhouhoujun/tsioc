@@ -37,7 +37,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             const typeRef = ctx.classRef;
             (typeRef.type as AnnotationType)[noPointcut] = true;
             typeRef.assignAnnotation(ctx.define.metadata);
-            const def = typeRef.getAnnotation<DirectiveDef>() as DirectiveDef;
+            const def = typeRef.getAnnotation<DirectiveDef>() as DirectiveDef & Factoriable;
             if (!def.selector) def.selector = typeRef.className;
             def.selector = def.selector.split(',').map(r => {
                 r = r.trim();
@@ -51,24 +51,20 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             }).join(',');
             const metadata = ctx.define.metadata;
             if (metadata.providers) {
-                def.providers?.push(...metadata.providers);
+                def.providers.push(...metadata.providers);
             }
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
             // def.states = typeRef.getDefines(State).map(d => d as StateMetadata);
             def.attributes = typeRef.getDefines(Attribute).map(d => d.metadata as AttributeMetadata);
             def.computeds = typeRef.getDefines(Computed).map(d => d.metadata as ComputedMetadata);
-        }
-    },
-    design: {
-        afterAnnoation: (typeRef, ctx) => {
-            const injector = ctx.injector;
-            const def = typeRef.getAnnotation<DirectiveDef>() as DirectiveDef & Factoriable;
+
+            def.exportProviders.push({ provide: DIRECTIVES, useValue: def, multi: true });
             if (!def[factoryKey]) {
                 def[factoryKey] = (ctx: InvocationContext, options: DirectiveOptions) => {
                     return typeRef.createInvocation(ctx, options)
                 }
             }
-            injector.getInject().inject({ provide: DIRECTIVES, useValue: def, multi: true });
+
         }
     },
     factory: (injector) => {

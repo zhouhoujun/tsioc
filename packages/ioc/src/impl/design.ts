@@ -5,7 +5,7 @@ import { invokeTail } from '../handlers/compose';
 import { InjectorRecord } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/define';
 import { ClassRef } from '../metadata/class';
-import { AbstractInjector } from './injector';
+import { AbstractInjector, InjectUtil } from './injector';
 import { Runtime } from '../runtime';
 import { RuntimeHandler } from '../lifescope/handler';
 import { IocContext } from '../lifescope/context';
@@ -68,8 +68,8 @@ export function getDesignAfterAnnoationScope(runtime: Runtime): RuntimeHandler<C
 /**
  * property decorator scope.
  */
-const DESIGN_PROPERTY_SCOPE = new ContextToken<RuntimeHandler<ClassRef,any,  IocContext>>(() => null!);
-export function getDesignPropertyScope(runtime: Runtime): RuntimeHandler<ClassRef,any,  IocContext> {
+const DESIGN_PROPERTY_SCOPE = new ContextToken<RuntimeHandler<ClassRef, any, IocContext>>(() => null!);
+export function getDesignPropertyScope(runtime: Runtime): RuntimeHandler<ClassRef, any, IocContext> {
     let scope = runtime.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
         scope = new RuntimeHandler<ClassRef, any, IocContext>((input, context) => {
@@ -146,11 +146,20 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
     return next(input, context);
 }
 
+export const exportsInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
+    const { exportProviders } = input.getAnnotation();
+    if (exportProviders.length) {
+        InjectUtil.inject(context.injector, exportProviders);
+    }
+    return next(input, context);
+}
+
 export const DESIGN_INTERECPTORS = [
     autorunInterceptor,
     afterAnnoationInterceptor,
     afterMethodAnnoationInterceptor,
     afterPropertyAnnoationInterceptor,
     beforeAnnoactionInterceptor,
-    dependencyInterceptor
+    dependencyInterceptor,
+    exportsInterceptor,
 ] as InterceptorLike<ClassRef, InjectorRecord, Context>[];

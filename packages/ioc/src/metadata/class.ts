@@ -88,7 +88,11 @@ export class ClassRef<T = any> {
      * runnable defines.
      */
     get runnables(): RunableDefine[] {
-        return this.annotation.runnables!;
+        return this.annotation.runnables;
+    }
+
+    get exportProviders(): Provider[] {
+        return this.annotation.exportProviders;
     }
 
     private invocationFactory?: Resolve<InvocationFactory>;
@@ -138,6 +142,9 @@ export class ClassRef<T = any> {
         }
         if (!annotation.methodMetadatas) {
             annotation.methodMetadatas = new Map();
+        }
+        if (!annotation.exportProviders) {
+            annotation.exportProviders = [];
         }
 
         if (!annotation.provides) {

@@ -109,14 +109,6 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         return this._parent;
     }
 
-    getInject(): InjectOperator {
-        if (!this._operator) {
-            this.assertNotDestroyed();
-            this._operator = new DefaultInjectOperator(this);
-        }
-        return this._operator
-    }
-
     getRecords() {
         return this.records;
     }
@@ -369,8 +361,21 @@ function registerCores(container: Injector, platform: Runtime) {
 }
 
 
-
+/**
+ * Inject Util.
+ */
 export namespace InjectUtil {
+
+    /**
+     * get default inject operator.
+     * 
+     * 获取默认的注入操作器。
+     * @param injector 
+     */
+    export function operator(injector: Injector): InjectOperator {
+        return new DefaultInjectOperator(injector as AbstractInjector);
+    }
+
     /**
      * set gloabl singleton.
      * 

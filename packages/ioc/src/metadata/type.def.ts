@@ -16,19 +16,23 @@ export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
     /**
      * the type provide tokens
      */
-    provides?: Token[];
+    provides: Token[];
     /**
      * the providers for the type.
      */
-    providers?: Provider[];
+    providers: Provider[];
     /**
      * resolvers for the type
      */
-    resolvers?: TokenOf<ResolveInterceptorLike>[];
+    resolvers: TokenOf<ResolveInterceptorLike>[];
     /**
      * runnable defines.
      */
-    runnables?: RunableDefine[];
+    runnables: RunableDefine[];
+    /**
+     * exports.
+     */
+    exportProviders: Provider[];
 
     propMetadatas: Map<string | symbol, PropertyMetadata[]>;
     methodMetadatas: Map<string | symbol, {

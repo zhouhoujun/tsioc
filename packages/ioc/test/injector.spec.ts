@@ -1,4 +1,4 @@
-import { createInjector, DefaultEnvironmentInjector, DefaultInjector, Injectable, InjectFlags, Injector, InvocationFactory, isNumber, token } from '@tsdi/ioc';
+import { createInjector, DefaultEnvironmentInjector, Injectable, InjectFlags, Injector, InjectUtil, InvocationFactory, isNumber, token } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -65,11 +65,12 @@ describe('Injector test', () => {
     });
 
     it('use factory provider in injector', () => {
-        const p = inj.getInject().resolve(Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
+        const operator = InjectUtil.operator(inj);
+        const p = operator.resolve(Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
         expect(p).toBeInstanceOf(Person);
         expect(p.name).toEqual('zhangsan');
         expect(p.age).toEqual(30);
-        const p2 = inj.getInject().resolve(Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
+        const p2 = operator.resolve(Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
         expect(p === p2).toBeFalsy();
     });
 
