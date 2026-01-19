@@ -11,6 +11,9 @@ import { Exception } from './exception';
 import { Runtime } from './runtime';
 import { Parameter, ResolveContext } from './resolver';
 
+
+export const RECORDS = Symbol('RECORDS');
+
 /**
  * injector.
  * implements {@link Destroyable}
@@ -19,6 +22,17 @@ import { Parameter, ResolveContext } from './resolver';
  */
 @Abstract()
 export abstract class Injector implements Destroyable, OnDestroy {
+    /**
+     * 是否静态容器。
+     */
+    readonly isStatic?: boolean;
+
+    /**
+     * records of providers.
+     * 
+     * 容器提供者记录
+     */
+    abstract readonly [RECORDS]: Map<Token<any>, InjectorRecord>;
 
     /**
      * injector scope.
@@ -443,7 +457,7 @@ export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
  */
 export type MethodType<T> = string | symbol | ((tag: T) => MethodFunc);
 
-export type RecordFactory<T = any> = (context?: ResolveContext, flags?: InjectFlags) => T;
+export type RecordFactory<T = any> = (context?: ResolveContext, flags?: InjectFlags) => T | null;
 
 /**
  * Injecor Record

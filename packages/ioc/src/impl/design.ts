@@ -2,10 +2,10 @@ import { Context, ContextToken } from '../handlers/Context';
 import { HandlerFn } from '../handlers/handler';
 import { InterceptorLike } from '../handlers/interceptor';
 import { invokeTail } from '../handlers/compose';
-import { InjectorRecord } from '../injector';
+import { InjectorRecord, RECORDS } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/define';
 import { ClassRef } from '../metadata/class';
-import { AbstractInjector, InjectUtil } from './injector';
+import { InjectUtil } from './injector';
 import { Runtime } from '../runtime';
 import { RuntimeHandler } from '../lifescope/handler';
 import { IocContext } from '../lifescope/context';
@@ -120,7 +120,7 @@ export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, co
 
 export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     const type = input.type;
-    const injector = context.injector as AbstractInjector;
+    const injector = context.injector;
     const provide = context.provide;
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;
@@ -136,7 +136,7 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
 
     if (input.provides.length) {
         const factory = () => injector.get(type);
-        const records = injector.getRecords();
+        const records = injector[RECORDS];
         for (const pdr of input.provides) {
             if (provide != pdr && (context.isMutil ? !records.has(pdr) : true)) {
                 records.set(pdr, createRecord(factory, injector.isStatic))
@@ -149,7 +149,7 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
 export const exportsInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     const { exportProviders } = input.getAnnotation();
     if (exportProviders.length) {
-        InjectUtil.inject(context.injector, exportProviders);
+        InjectUtil.inject(context.injector, exportProviders);      
     }
     return next(input, context);
 }

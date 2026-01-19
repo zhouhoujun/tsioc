@@ -2,7 +2,7 @@ import { AbstractType } from './types';
 import { InjectFlags, Token, TokenOf } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { Injector, InjectorScope } from './injector';
+import { Injector, InjectorRecord, InjectorScope, RECORDS } from './injector';
 import { Parameter, ResolveContext, ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
@@ -24,6 +24,12 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * 容器范围
      */
     readonly scope?: InjectorScope;
+    /**
+     * records of providers.
+     * 
+     * 容器提供者记录
+     */
+    abstract readonly [RECORDS]: Map<Token<any>, InjectorRecord>;
     /**
      * init inject ready.
      */

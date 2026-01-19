@@ -4,7 +4,7 @@ import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, isUndefined } from '../utils/chk';
 import { getType, getTypeName, isType } from '../metadata/type';
-import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR, RECORDS } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, getClassRef } from '../metadata/class';
@@ -55,12 +55,19 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
     @nonEnumerable
     protected records: Map<Token, InjectorRecord>;
 
+    /**
+     * records of providers.
+     * 
+     * 容器提供者记录
+     */
+    readonly [RECORDS]: Map<Token<any>, InjectorRecord>;
+
     @nonEnumerable
     protected _parent: TParent | null;
 
     constructor(parent?: TParent, readonly scope?: InjectorScope, readonly isStatic?: boolean) {
         super()
-        this.records = new Map();
+        this.records = this[RECORDS] = new Map();
         this._parent = parent ?? null;
         this.initScope(scope);
         parent?.onDestroy(this);
@@ -108,11 +115,6 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
     getParent(): TParent | null {
         return this._parent;
     }
-
-    getRecords() {
-        return this.records;
-    }
-
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
@@ -282,16 +284,19 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
     }
 
 
-    assertNotDestroyed(): void {
-        if (this.destroyed) {
-            throw new Exception(`${getTypeName(this)} has already been destroyed.`)
-        }
+    protected assertNotDestroyed(): void {
+        assertNotDestroyed(this);
     }
-
 
 
 }
 
+
+export function assertNotDestroyed(injector: Injector): void {
+    if (injector.destroyed) {
+        throw new Exception(`${getTypeName(injector)} has already been destroyed.`)
+    }
+}
 
 /**
  * Environment Injector
@@ -474,7 +479,7 @@ export namespace InjectUtil {
                 return getResolver(injector).resolve({ provider: tokenOrParam, flags: args[0] } as Parameter, createResolveContext(injector));
             }
         }
-        (injector as AbstractInjector).assertNotDestroyed?.();
+        assertNotDestroyed(injector);
         const token = tokenOrParam as Token;
         let context: ResolveContext | undefined;
         const isResolve = true;
@@ -517,8 +522,8 @@ export namespace InjectUtil {
      * @param provider the value type.
      */
     export function setValue<T>(injector: Injector, token: Token<T>, value: T, type?: AbstractType<T> | undefined): void {
-        (injector as AbstractInjector).assertNotDestroyed();
-        const records = (injector as AbstractInjector).getRecords();
+        assertNotDestroyed(injector);
+        const records = injector[RECORDS];
         const isp = records.get(token);
         if (isp) {
             isp.value = value;
@@ -538,8 +543,8 @@ export namespace InjectUtil {
      * @returns {this}
      */
     export function cache<T>(injector: Injector, token: Token<T>, value: T, expires: number): void {
-        (injector as AbstractInjector).assertNotDestroyed();
-        const records = (injector as AbstractInjector).getRecords();
+        assertNotDestroyed(injector)
+        const records = injector[RECORDS];
         const pd = records.get(token);
         const ltop = Date.now();
         if (pd) {
@@ -570,8 +575,8 @@ export namespace InjectUtil {
      */
     export function inject(injector: Injector, ...providers: Provider[]): void;
     export function inject(injector: Injector, ...args: any[]): void {
-        (injector as AbstractInjector).assertNotDestroyed();
-        processProviders(injector as AbstractInjector, args);
+        assertNotDestroyed(injector);
+        processProviders(injector, args);
     }
 
     /**
@@ -590,7 +595,7 @@ export namespace InjectUtil {
     export function use(injector: Injector, ...modules: ModuleType[]): Type<any>[];
     export function use(injector: Injector, ...args: any[]): Type<any>[] {
         const types: Type<any>[] = [];
-        processUse(injector as AbstractInjector, args, types);
+        processUse(injector, args, types);
         return types
     }
 
@@ -611,7 +616,7 @@ export namespace InjectUtil {
      */
     export async function useAsync(injector: Injector, ...args: any[]): Promise<Type[]> {
         const types: Type<any>[] = [];
-        await processUse(injector as AbstractInjector, args, types);
+        await processUse(injector, args, types);
         return types;
     }
 
@@ -632,9 +637,9 @@ export namespace InjectUtil {
      */
     export function register(injector: Injector, ...types: (Type | RegisterOption)[]): void;
     export function register(injector: Injector, ...args: any[]): void {
-        (injector as AbstractInjector).assertNotDestroyed();
+        assertNotDestroyed(injector);
         deepForEach(args, t => {
-            processProvider(injector as AbstractInjector, t)
+            processProvider(injector, t)
         });
     }
 
@@ -647,12 +652,24 @@ export namespace InjectUtil {
      * @returns {this} this self.
      */
     export function unregister<T>(injector: Injector, token: Token<T>): void {
-        (injector as AbstractInjector).assertNotDestroyed();
-        const records = (injector as AbstractInjector).getRecords();
-        const isp = records?.get(token);
+        assertNotDestroyed(injector);
+        const records = injector[RECORDS];
+        const isp = records.get(token);
         if (isp) {
             records.delete(token);
-            if (isp.type) injector.getRuntime().clearTypeProvider(isp.type);
+            if (isp.type) {
+                const exportProviders = getDef(isp.type)?.exportProviders;
+                if (exportProviders?.length) {
+                    exportProviders.forEach(prd => {
+                        if ('provide' in prd) {
+                            records.delete(prd.provide);
+                        } else if (isFunction(prd)) {
+                            records.delete(prd);
+                        }
+                    });
+                }
+                injector.getRuntime().clearTypeProvider(isp.type);
+            }
             cleanObj(isp)
         }
     }
@@ -704,7 +721,7 @@ export namespace InjectUtil {
      */
     export function invoke<T, TR = any>(injector: AbstractInjector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
     export function invoke<T, TR = any>(injector: AbstractInjector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-        injector.assertNotDestroyed();
+        assertNotDestroyed(injector);
         let providers: Provider[] | undefined;
         let context: InvocationContext | undefined;
         let option: any;
@@ -837,7 +854,7 @@ export class DefaultInjectOperator implements InjectOperator {
     }
 }
 
-export function deferProcessProviders(injector: AbstractInjector, providers: Provider[] | undefined, defer: Defer<void>) {
+export function deferProcessProviders(injector: Injector, providers: Provider[] | undefined, defer: Defer<void>) {
     const ret = processProviders(injector, providers);
     if (ret) {
         ret.then(defer.resolve).catch(defer.reject);
@@ -846,23 +863,23 @@ export function deferProcessProviders(injector: AbstractInjector, providers: Pro
     }
 }
 
-export function processProviders(injector: AbstractInjector, providers: Provider[] | undefined) {
+export function processProviders(injector: Injector, providers: Provider[] | undefined) {
     if (!providers || !providers.length) return;
 
     return eachProvider(providers, p => processProvider(injector, p));
 }
 
-function processProvider(injector: AbstractInjector, provider: StaticProvider | DynamicProvider): void | Promise<void> {
+function processProvider(injector: Injector, provider: StaticProvider | DynamicProvider): void | Promise<void> {
 
     const token = isFunction(provider) ? provider : (provider as Provide<any>).provide;
     if (token) {
         const record = generateRecord(injector, provider as StaticProvider);
         if (!isFunction(provider) && (provider as MutilProvider).multi) {
-            let multiPdr = injector.getRecords().get(token);
+            let multiPdr = injector[RECORDS].get(token);
             if (!multiPdr) {
                 multiPdr = createRecord(undefined, injector.isStatic, true);
                 multiPdr.factory = (raise) => resolveArgs(raise?.getInjector() ?? injector, multiPdr!.multi, raise);
-                injector.getRecords().set(token, multiPdr);
+                injector[RECORDS].set(token, multiPdr);
             }
             if (multiPdr.multi) {
                 const multiOrder = (provider as MutilProvider).multiOrder;
@@ -873,7 +890,7 @@ function processProvider(injector: AbstractInjector, provider: StaticProvider | 
                 }
             }
         } else {
-            injector.getRecords().set(token, record);
+            injector[RECORDS].set(token, record);
         }
         if (record.onRegister) {
             record.onRegister();
@@ -910,7 +927,7 @@ function processProvider(injector: AbstractInjector, provider: StaticProvider | 
  * @param provider 提供者配置
  * @returns 优化后的提供者记录
  */
-export function generateRecord<T>(injector: AbstractInjector, provider: StaticProvider<T>): InjectorRecord<T> {
+export function generateRecord<T>(injector: Injector, provider: StaticProvider<T>): InjectorRecord<T> {
 
     if (isTypeProvider(provider)) {
         return generateTypeRecord(injector, getClassRef(provider));
@@ -940,7 +957,7 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
 
 
 
-export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: DependLike[], provide?: Token, multi?: boolean): InjectorRecord {
+export function generateTypeRecord(injector: Injector, typeRef: ClassRef, params?: DependLike[], provide?: Token, multi?: boolean): InjectorRecord {
 
     const { static: decStatic, providedIn, singleton } = typeRef.getAnnotation();
     const origin = injector;
@@ -973,11 +990,11 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
     let record: InjectorRecord;
     if (pdrId) {
         const pdRecord = createRecord(factory, isStatic);
-        if (provide) injector.getRecords().set(type, pdRecord);
+        if (provide) injector[RECORDS].set(type, pdRecord);
         record = createRecord(() => injector.get(type), isStatic);
     } else {
         record = createRecord(factory, isStatic);
-        if (provide) injector.getRecords().set(type, record);
+        if (provide) injector[RECORDS].set(type, record);
     }
 
     record.onRegister = () => {
@@ -988,16 +1005,16 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 
 }
 
-export function register(injector: AbstractInjector, typeRef: ClassRef) {
+export function register(injector: Injector, typeRef: ClassRef) {
     const record = generateTypeRecord(injector, typeRef);
-    injector.getRecords().set(typeRef.type, record);
+    injector[RECORDS].set(typeRef.type, record);
     if (record.onRegister) record.onRegister();
 
 }
 
 
 export function processInjectType(
-    injector: AbstractInjector,
+    injector: Injector,
     typeOrDef: AbstractType | ModuleWithProviders,
     dedupStack: AbstractType[],
     imported?: boolean,
@@ -1051,7 +1068,7 @@ export function processInjectType(
 }
 
 export function processInjectDeclarations(
-    injector: AbstractInjector,
+    injector: Injector,
     annotation: ModuleDef<any>,
     dedupStack: AbstractType[],
     declarations?: boolean,
@@ -1080,7 +1097,7 @@ export function processInjectDeclarations(
     if (dps.length) return Promise.all(dps) as Promise<any>;
 }
 
-export function processUse(injector: AbstractInjector, args: ModuleType[], types?: AbstractType[]) {
+export function processUse(injector: Injector, args: ModuleType[], types?: AbstractType[]) {
     const stk: AbstractType[] = [];
     return deepForEach(args, (ty: any) => {
         if (isType(ty) && getDef(ty)?.abstract !== true) {
