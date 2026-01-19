@@ -165,3 +165,54 @@ export function createResolveContext(injector: Injector, payload?: any, previous
 
 
 
+
+export class RunContext extends DefaultContext {
+
+    constructor(injector: Injector, contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
+        super(contextOrEntries, entries);
+        this.set(Injector, injector);
+    }
+
+    override has<T>(token: Token<T> | ContextToken<T>): boolean {
+        if(token instanceof ContextToken) return this.map.has(token);
+        return this.map.has(token) || this.getInjector().has(token);
+    }
+
+    getInjector() {
+        return this.get(Injector)
+    }
+
+    getPayload<T = any>(): T {
+        return this.get(PAYLOAD) as T;
+    }
+
+    setPayload<T>(payload: T) {
+        this.set(PAYLOAD, payload);
+        return this;
+    }
+
+    getRuntime(): Runtime {
+        return this.get(Runtime);
+    }
+
+    protected override getToken<T>(token: Token<T>) {
+        return this.map.get(token) ?? this.getFromInjector(token)
+    }
+
+    protected getFromInjector<T>(token: Token<T>) {
+        const value = this.getInjector().get(token);
+        this.set(token, value);
+        return value;
+    }
+
+
+}
+
+
+export function createRunContext(injector: Injector, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;
+export function createRunContext(injector: Injector, previous?: Context, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;
+export function createRunContext(injector: Injector, previous?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
+    const context = new RunContext(injector, previous ?? entries, entries);
+    return context;
+}
+
