@@ -1,4 +1,4 @@
-import { InjectFlags, Token } from '../tokens';
+import { InjectFlags, token, Token } from '../tokens';
 import { getTypeName } from '../metadata/type';
 import { deepForEach } from '../utils/lang';
 import { isArray, isFunction, isNumber, isObject } from '../utils/chk';
@@ -58,7 +58,7 @@ export function resolveArgs(injector: Injector, deps?: DependLike[], context?: R
     const args: any[] = [];
     for (const arg of deps) {
         if (isParameter(arg)) {
-            if (!resolver) {    
+            if (!resolver) {
                 context ??= createResolveContext(injector);
                 resolver = getResolver(injector);
             }
@@ -72,17 +72,7 @@ export function resolveArgs(injector: Injector, deps?: DependLike[], context?: R
 }
 
 function resolveArg(injector: Injector, arg: DependLike, context?: ResolveContext): any {
-    if (isArray(arg)) {
-        let depFlags = InjectFlags.Default;
-        const depToken = arg[0];
-        for (let j = 1; j < arg.length; j++) {
-            const d = arg[j];
-            if (isNumber(d)) {
-                depFlags |= d;
-            }
-        }
-        return injector.get(depToken, undefined, depFlags);
-    } else if (isRecord(arg)) {
+    if (isRecord(arg)) {
         if (arg.value !== undefined && arg.value !== LAZY) {
             return arg.value;
         }
@@ -90,8 +80,25 @@ function resolveArg(injector: Injector, arg: DependLike, context?: ResolveContex
         if (arg.value === LAZY) arg.value = value;
         return value;
     } else {
-        return injector.get(arg as Token);
+        let depFlags = InjectFlags.Default;
+        let depToken: Token
+        if (isArray(arg)) {
+            depToken = arg[0];
+            for (let j = 1; j < arg.length; j++) {
+                const d = arg[j];
+                if (isNumber(d)) {
+                    depFlags |= d;
+                }
+            }
+        } else {
+            depToken = arg as Token;
+        }
+        if(context?.has(token)) return context.get(token);
+        
+        return injector.get(depToken, undefined, depFlags);
+
     }
+
 }
 
 
