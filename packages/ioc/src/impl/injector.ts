@@ -953,11 +953,11 @@ export function generateRecord<T>(injector: Injector, provider: StaticProvider<T
         } else if (isFactoryProvider(provider)) {
             factory = (raise) => provider.useFactory(...resolveArgs(raise?.getInjector() ?? injector, provider.deps, raise));
         } else if (isExistingProvider(provider)) {
-            factory = (raise, flags) => (raise ?? injector).get(provider.useExisting, undefined, flags);
+            factory = (raise, flags) => (raise?.getInjector() ?? injector).get(provider.useExisting, undefined, flags);
         } else if (provider.provide) {
             if ((provider as ClassProvider<T>).useClass && !(provider as ClassProvider<T>).deps && injector.has((provider as ClassProvider<T>).useClass)) {
                 const type = (provider as ClassProvider<T>).useClass;
-                factory = (raise, flags) => raise?.getInjector()?.get(type, null, flags, raise) ?? injector.get(type, null, flags, raise);
+                factory = (raise, flags) => (raise?.getInjector() ?? injector).get(type, null, flags, raise);
             } else {
                 const classType = (provider as ClassProvider<T>).useClass ?? provider.provide;
                 return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide, provider.multi);
@@ -993,7 +993,7 @@ export function generateTypeRecord(injector: Injector, typeRef: ClassRef, params
             return runtime.get(type);
         }
 
-        const context = createRuntimeContext(injector, undefined, runtime, raise?.getInjector(), multi, params);
+        const context = createRuntimeContext(injector, undefined, runtime, raise, multi, params);
         raise && context.set(ResolveContext, raise)
         const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
