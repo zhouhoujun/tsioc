@@ -1,4 +1,4 @@
-import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvocationContext, InvokeOptions, AbstractInvocationFactory, InvocationOptions, ClassRef, Context, ResolveContext } from '@tsdi/ioc';
+import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvocationContext, InvokeOptions, AbstractInvocationFactory, InvocationOptions, ClassRef, Context, RunContext } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { Assert } from '../assert/assert';
@@ -174,7 +174,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
 
 
 export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
-    protected process(context?: InvocationContext | InvokeOptions, resolveCtx?: ResolveContext) {
+    protected process(context?: InvocationContext | InvokeOptions, resolveCtx?: RunContext) {
         return this.context.resolve(SuiteRunner).run();
     }
 }

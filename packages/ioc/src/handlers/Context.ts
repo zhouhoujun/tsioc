@@ -78,7 +78,7 @@ export abstract class Context {
     abstract onDestroy(): void;
 
 
-    abstract as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext;
+    // abstract as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext;
 }
 
 
@@ -183,24 +183,24 @@ export class DefaultContext extends Context {
         return this.map.has(token);
     }
 
-    /**
-     * Cast the context to the given type.
-     * @param type 
-     * @returns 
-     */
-    as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext {
-        if (type == this._type) {
-            this.setEntries(entries);
-            return this as any;
-        }
-        let context = this.get(type);
-        if (!context) {
-            context = new type(this);
-            this.set(type, context);
-            this.setEntries(entries);
-        }
-        return context;
-    }
+    // /**
+    //  * Cast the context to the given type.
+    //  * @param type 
+    //  * @returns 
+    //  */
+    // as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext {
+    //     if (type == this._type) {
+    //         this.setEntries(entries);
+    //         return this as any;
+    //     }
+    //     let context = this.get(type);
+    //     if (!context) {
+    //         context = new type(this);
+    //         this.set(type, context);
+    //         this.setEntries(entries);
+    //     }
+    //     return context;
+    // }
 
     private setEntries(entries?: Iterable<readonly [Token | ContextToken, any]>) {
         if (!entries) return;

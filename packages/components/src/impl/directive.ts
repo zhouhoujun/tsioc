@@ -1,7 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, Runtime, AbstractType, InvokeOptions, Provider, ResolveContext,
-    createResolveContext,
+    Injector, Runtime, AbstractType, InvokeOptions, Provider, RunContext,
+    createRunContext,
     InjectUtil
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
@@ -43,12 +43,12 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
         super.clean();
     }
 
-    protected process(option?: EnvironmentContext | InvokeOptions, resolveCtx?: ResolveContext) {
+    protected process(option?: EnvironmentContext | InvokeOptions, resolveCtx?: RunContext) {
 
     }
 
-    protected override createInstance(context?: ResolveContext): T {
-        const instance = super.createInstance(context ?? createResolveContext(this.context, this._elementRef));
+    protected override createInstance(context?: RunContext): T {
+        const instance = super.createInstance(context ?? createRunContext(this.context, this._elementRef));
         const def = this.classRef.getAnnotation<DirectiveDef>();
         return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }

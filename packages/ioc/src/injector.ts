@@ -9,7 +9,7 @@ import { isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
-import { Parameter, ResolveContext } from './resolver';
+import { Parameter, RunContext } from './resolver';
 
 
 export const RECORDS = Symbol('RECORDS');
@@ -75,10 +75,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {ResolveContext} context resolve context. type of {@link Injector}, use to resolve with token.
+     * @param {RunContext} context resolve context. type of {@link Injector}, use to resolve with token.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: ResolveContext): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: RunContext): T;
 
     /**
      * resolve parameter of targetType.
@@ -87,19 +87,19 @@ export abstract class Injector implements Destroyable, OnDestroy {
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {ResolveContext} context the resolver context.
+     * @param {RunContext} context the resolver context.
      * 
      * @returns {T}
      */
-    abstract resolve<T>(parameter: Parameter<T>, context?: ResolveContext): T;
+    abstract resolve<T>(parameter: Parameter<T>, context?: RunContext): T;
     /**
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
      * @param token
-     * @param {ResolveContext} context the resolver context.
+     * @param {RunContext} context the resolver context.
      */
-    abstract resolve<T>(token: Token<T>, context?: ResolveContext): T;
+    abstract resolve<T>(token: Token<T>, context?: RunContext): T;
     /**
      * resolve token in context.
      * 
@@ -107,7 +107,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param token
      * @param flags InjectFalgs 
      */
-    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: ResolveContext): T;
+    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: RunContext): T;
     /**
      * injector has destoryed or not.
      */
@@ -465,7 +465,7 @@ export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
  */
 export type MethodType<T> = string | symbol | ((tag: T) => MethodFunc);
 
-export type RecordFactory<T = any> = (context?: ResolveContext, flags?: InjectFlags) => T | null;
+export type RecordFactory<T = any> = (context?: RunContext, flags?: InjectFlags) => T | null;
 
 /**
  * Injecor Record

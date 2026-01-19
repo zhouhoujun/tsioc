@@ -12,7 +12,7 @@ import { immediate } from '../utils/lang';
 import { composeHandlers } from '../handlers/compose';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';
-import { createResolveContext, ResolveContext, ResolveInterceptorLike } from '../resolver';
+import { createRunContext, RunContext, ResolveInterceptorLike } from '../resolver';
 import { ctorName } from '../metadata/define';
 
 /**
@@ -77,10 +77,10 @@ export abstract class AbstractInvocation<T = any,
      */
     invoke(context: TC): TRes;
     /**
-     * Invoke the underlying operation using the given {@link ResolveContext}.
+     * Invoke the underlying operation using the given {@link RunContext}.
      * @param context the resolve context to use to invoke the operation
      */
-    invoke(context: ResolveContext): TRes;
+    invoke(context: RunContext): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param option invoke arguments.
@@ -98,11 +98,11 @@ export abstract class AbstractInvocation<T = any,
      */
     invoke(method: MethodType<T>, context?: TC): TRes;
     /**
-     * Invoke the underlying operation using the given {@link ResolveContext}.
+     * Invoke the underlying operation using the given {@link RunContext}.
      * @param method method name.
      * @param context the context to use to invoke the operation
      */
-    invoke(method: MethodType<T>, context?: ResolveContext): TRes;
+    invoke(method: MethodType<T>, context?: RunContext): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.
@@ -115,11 +115,11 @@ export abstract class AbstractInvocation<T = any,
      * @param args the arguments to use to invoke the operation
      */
     invoke(method: MethodType<T>, args?: any[]): TRes;
-    invoke(arg?: TC | ResolveContext | InvokeOptions | MethodType<T> | any[], optionOrArgs?: TC | ResolveContext | InvokeOptions | any[]): TRes {
+    invoke(arg?: TC | RunContext | InvokeOptions | MethodType<T> | any[], optionOrArgs?: TC | RunContext | InvokeOptions | any[]): TRes {
         this.assertNotDestroyed();
         let name: string | symbol | undefined;
         let args: any[] | undefined;
-        let rctx: ResolveContext | undefined;
+        let rctx: RunContext | undefined;
 
         let context: TC | InvokeOptions | undefined;
         if (isArray(arg)) {
@@ -128,12 +128,12 @@ export abstract class AbstractInvocation<T = any,
             name = isFunction(arg) ? this.classRef.getMethodName(arg) : arg;
             if (isArray(optionOrArgs)) {
                 args = optionOrArgs;
-            } else if (optionOrArgs instanceof ResolveContext) {
+            } else if (optionOrArgs instanceof RunContext) {
                 rctx = optionOrArgs;
             } else {
                 context = optionOrArgs;
             }
-        } else if (arg instanceof ResolveContext) {
+        } else if (arg instanceof RunContext) {
             rctx = arg;
         } else {
             context = arg;
@@ -150,14 +150,14 @@ export abstract class AbstractInvocation<T = any,
         return this.invokeMethod(name, context, args, rctx);
     }
 
-    protected abstract process(context?: TC | InvokeOptions, resolveCtx?: ResolveContext): any;
+    protected abstract process(context?: TC | InvokeOptions, resolveCtx?: RunContext): any;
 
-    protected invokeMethod(name: string | symbol, ctx?: TC | InvokeOptions, args?: any[], resolveCtx?: ResolveContext): any {
+    protected invokeMethod(name: string | symbol, ctx?: TC | InvokeOptions, args?: any[], resolveCtx?: RunContext): any {
 
         const [context, destroy, payload] = args ? [this.context] : this.createInvokeContext(name, ctx);
         const isNetRCtx = !resolveCtx;
         if (isNetRCtx) {
-            resolveCtx = createResolveContext(context, payload);
+            resolveCtx = createRunContext(context, payload);
         } else {
             resolveCtx!.setInjector(context);
         }
@@ -231,7 +231,7 @@ export abstract class AbstractInvocation<T = any,
         return [context, destroy, payload]
     }
 
-    protected createInstance(context?: ResolveContext): T {
+    protected createInstance(context?: RunContext): T {
         this.assertNotDestroyed();
         if (this.options?.instance) {
             return isFunction(this.options.instance) ? this.options.instance(this.context) : this.options.instance;
@@ -305,7 +305,7 @@ export class DefaultInvocation<T = any,
         super(_classRef, context, options);
     }
 
-    protected process(option?: TC | InvokeOptions, resolveCtx?: ResolveContext) {
+    protected process(option?: TC | InvokeOptions, resolveCtx?: RunContext) {
         const runnables = this.classRef.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {

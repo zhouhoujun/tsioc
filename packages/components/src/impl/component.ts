@@ -1,8 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
     Injector, Runtime, AbstractType, Provider, toProvider,
-    InvokeOptions, ResolveContext, InjectFlags, createResolveContext,
-    InjectUtil
+    InvokeOptions, RunContext, InjectFlags, createRunContext, InjectUtil
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
@@ -73,12 +72,12 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         this.hostView?.destroy();
     }
 
-    protected override process(option?: EnvironmentContext | InvokeOptions, resolveCtx?: ResolveContext) {
+    protected override process(option?: EnvironmentContext | InvokeOptions, resolveCtx?: RunContext) {
         return this.render(this.options);
     }
 
-    protected override createInstance(context?: ResolveContext): T {
-        const instance = super.createInstance(context ?? createResolveContext(this.context, this._elementRef));
+    protected override createInstance(context?: RunContext): T {
+        const instance = super.createInstance(context ?? createRunContext(this.context, this._elementRef));
         const def = this.classRef.getAnnotation<ComponentDef>();
         return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }

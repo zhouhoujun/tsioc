@@ -2,7 +2,7 @@ import { Context, DefaultContext, ContextToken } from '../handlers/Context';
 import { Injector } from '../injector';
 import { DecoratorFn } from '../metadata/define';
 import { DependLike } from '../providers';
-import { Parameters, Parameter, ResolveContext } from '../resolver';
+import { Parameters, Parameter, RunContext } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 
@@ -106,13 +106,13 @@ export function createDesignContext(injector: Injector, previous?: Context, runt
     return context;
 }
 
-export function createRuntimeContext(injector: Injector, previous?: Context, runtime?: Runtime, resovleContext?: ResolveContext, multi?: boolean, params?: DependLike[]) {
+export function createRuntimeContext(injector: Injector, previous?: Context, runtime?: Runtime, resovleContext?: RunContext, multi?: boolean, params?: DependLike[]) {
     const context = new RuntimeContext(previous);
     context.set(INJECTOR, injector);
     if (!context.has(Runtime)) context.set(Runtime, runtime ?? injector.getRuntime());
 
     context.set(RAISE_INJECTOR, resovleContext?.getInjector() || injector);
-    resovleContext && context.set(ResolveContext, resovleContext);
+    resovleContext && context.set(RunContext, resovleContext);
     if (multi) context.set(MUTIL, true);
     if (params) {
         context.set(CTOR_PARAMS, params);

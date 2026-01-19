@@ -6,7 +6,7 @@ import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
 import { Provider, StaticProvider, DynamicProvider, Provide, DependLike } from '../providers';
-import { createResolveContext, getResolver, isParameter, Parameter, ResolveContext, Resolver } from '../resolver';
+import { createRunContext, getResolver, isParameter, Parameter, RunContext, Resolver } from '../resolver';
 
 
 
@@ -29,10 +29,10 @@ function isRecord(target: any): target is InjectorRecord {
 }
 
 
-export function resolveParameters(injector: Injector, params?: Parameter[], context?: ResolveContext, resolver?: Resolver) {
+export function resolveParameters(injector: Injector, params?: Parameter[], context?: RunContext, resolver?: Resolver) {
     if (!params || !params.length) return [];
 
-    context ??= createResolveContext(injector);
+    context ??= createRunContext(injector);
 
     if (!resolver) {
         resolver = getResolver(injector);
@@ -40,7 +40,7 @@ export function resolveParameters(injector: Injector, params?: Parameter[], cont
 
     const args: any[] = [];
     for (let i = 0; i < params.length; i++) {
-        args.push(resolver.resolve(params[i], context as ResolveContext));
+        args.push(resolver.resolve(params[i], context as RunContext));
     }
 
     return args;
@@ -50,7 +50,7 @@ export function resolveParameters(injector: Injector, params?: Parameter[], cont
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
-export function resolveArgs(injector: Injector, deps?: DependLike[], context?: ResolveContext, resolver?: Resolver): any[] {
+export function resolveArgs(injector: Injector, deps?: DependLike[], context?: RunContext, resolver?: Resolver): any[] {
     if (!deps || !deps.length) return [];
 
 
@@ -59,7 +59,7 @@ export function resolveArgs(injector: Injector, deps?: DependLike[], context?: R
     for (const arg of deps) {
         if (isParameter(arg)) {
             if (!resolver) {
-                context ??= createResolveContext(injector);
+                context ??= createRunContext(injector);
                 resolver = getResolver(injector);
             }
             args.push(resolver.resolve(arg, context!));
@@ -71,7 +71,7 @@ export function resolveArgs(injector: Injector, deps?: DependLike[], context?: R
     return args;
 }
 
-function resolveArg(injector: Injector, arg: DependLike, context?: ResolveContext): any {
+function resolveArg(injector: Injector, arg: DependLike, context?: RunContext): any {
     if (isRecord(arg)) {
         if (arg.value !== undefined && arg.value !== LAZY) {
             return arg.value;
@@ -94,7 +94,7 @@ function resolveArg(injector: Injector, arg: DependLike, context?: ResolveContex
             depToken = arg as Token;
         }
         if(context?.has(token)) return context.get(token);
-        
+
         return injector.get(depToken, undefined, depFlags);
 
     }
@@ -115,7 +115,7 @@ export const STATICABLE = Symbol('STATICABLE');
  * 尝试解析令牌
  */
 export function tryResolveToken(token: Token, rd: InjectorRecord, injector: Injector,
-    notFoundValue: any, flags: InjectFlags, context?: ResolveContext, isStatic?: boolean): any {
+    notFoundValue: any, flags: InjectFlags, context?: RunContext, isStatic?: boolean): any {
     try {
         return resolveToken(token, rd, injector, notFoundValue, flags, context);
     } catch (e) {
@@ -131,7 +131,7 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, injector: Inje
  * 解析令牌
  */
 export function resolveToken(token: Token, rd: InjectorRecord, injector: Injector,
-    notFoundValue: any, flags: InjectFlags, context?: ResolveContext): any {
+    notFoundValue: any, flags: InjectFlags, context?: RunContext): any {
     // if (rd.value === CIRCULAR) {
     //     throw new CircularDependencyException()
     // }

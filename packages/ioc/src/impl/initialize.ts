@@ -12,7 +12,7 @@ import { InjectUtil } from './injector';
 import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArgs, resolveParameters } from './common';
-import { getResolver, ResolveContext } from '../resolver';
+import { createRunContext, getResolver, RunContext } from '../resolver';
 import { invokeTail } from '../handlers/compose';
 
 
@@ -109,7 +109,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
         // const rctx = context.as(ResolveContext)
         //     .setInjector(injector);
-        const rctx = context.has(ResolveContext) ? context.get(ResolveContext) : context.as(ResolveContext).setInjector(injector);
+        const rctx = context.has(RunContext) ? context.get(RunContext) :  context.as(RunContext).setInjector(injector);
 
         const resolver = getResolver(injector);
         input.eachPropertyProviders((metas, propertyKey) => {
@@ -154,7 +154,7 @@ export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
     if (!context.args) {
         const injector = context.raiseInjector;
         const resolver = getResolver(injector);
-        const rctx = context.has(ResolveContext) ? context.get(ResolveContext) : context.as(ResolveContext).setInjector(injector);
+        const rctx = context.has(RunContext) ? context.get(RunContext) :  createRunContext(injector, context); //context.as(RunContext).setInjector(injector);
         const args = context.params ? resolveArgs(injector, context.params, rctx, resolver)
             : resolveParameters(injector, input.getParameters(ctorName), rctx, resolver);
         context.args = args;

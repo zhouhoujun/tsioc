@@ -3,7 +3,7 @@ import { Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata } from './meta';
 import { InvocationOptions, InvokeOptions } from '../context';
 import { InjectFlags, Token, TokenOf } from '../tokens';
-import { getResolver, ResolveContext, ResolveInterceptorLike } from '../resolver';
+import { getResolver, RunContext, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign, getParentType } from '../utils/lang';
 import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
@@ -184,14 +184,14 @@ export class ClassRef<T = any> {
      * @param instance the method of instance 
      * @param context arguments resolve context.
      */
-    invoke(method: string | symbol, injector: Injector, instance?: T, context?: ResolveContext): any;
-    invoke(method: string | symbol, injector: Injector, instance?: T, argsOrContext?: any[] | ResolveContext): any {
+    invoke(method: string | symbol, injector: Injector, instance?: T, context?: RunContext): any;
+    invoke(method: string | symbol, injector: Injector, instance?: T, argsOrContext?: any[] | RunContext): any {
         const type = this.type;
         let args: any[] | undefined;
-        let context: ResolveContext | undefined;
+        let context: RunContext | undefined;
         if (isArray(argsOrContext)) {
             args = argsOrContext;
-        } else if (context instanceof ResolveContext) {
+        } else if (context instanceof RunContext) {
             context = argsOrContext;
         }
         const inst: any = instance ?? injector.resolve(type, context);
@@ -269,7 +269,7 @@ export class ClassRef<T = any> {
      * @param method invoke the method named with.
      * @param injector invocation injector.
      */
-    resolveArguments(method: string | symbol, injector: Injector, context?: ResolveContext): any[] {
+    resolveArguments(method: string | symbol, injector: Injector, context?: RunContext): any[] {
         const parameters = this.getParameters(method) ?? [];
         const args = getResolver(injector).resolveParams(injector, parameters, context);
         return args;

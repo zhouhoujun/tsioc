@@ -7,7 +7,7 @@ import { RuntimeHandler } from '../lifescope/handler';
 import { getTypeName, isType } from '../metadata/type';
 import { getDef } from '../metadata/type.def';
 import { ClassRef } from '../metadata/class';
-import { Parameter, ParameterLike, ResolveContext, ResolveHandler, Resolver } from '../resolver';
+import { Parameter, ParameterLike, RunContext, ResolveHandler, Resolver } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';
@@ -24,7 +24,7 @@ export class DefaultResolver implements Resolver {
         readonly handler: ResolveHandler
     ) { }
 
-    resolve<T>(parameter: Parameter<T>, context: ResolveContext): T {
+    resolve<T>(parameter: Parameter<T>, context: RunContext): T {
         const metaRvr = parameter.resolver;
         let handler = this.handler;
         if (metaRvr?.length) {
@@ -60,11 +60,11 @@ export class DefaultResolver implements Resolver {
         ) as T;
     }
 
-    resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: ResolveContext): any[] {
+    resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: RunContext): any[] {
         return resolveArgs(injector, args, context, this)
     }
 
-    resolveParams(injector: Injector, params: Parameter[], context?: ResolveContext): any[] {
+    resolveParams(injector: Injector, params: Parameter[], context?: RunContext): any[] {
         return resolveParameters(injector, params, context, this)
     }
 
@@ -132,13 +132,13 @@ export function isResolved(value: any) {
 // export function createResolveHandler(interceptors?: ResolveInterceptorLike[], backend?: ResolveHandlerLike | null): ResolveHandler {
 //     return new RuntimeHandler(backend ?? unResolve, interceptors) 
 // }
-export function createResolveHandler<TInput, TOutput = any, TContext extends ResolveContext = ResolveContext>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TOutput, TContext> {
+export function createResolveHandler<TInput, TOutput = any, TContext extends RunContext = RunContext>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TOutput, TContext> {
     return new RuntimeHandler<TInput, TOutput, TContext>(backend ?? unResolve, interceptors)
 }
 
 
 
-function tryResolve(injector: Injector, token: Token, flags?: InjectFlags, context?: ResolveContext) {
+function tryResolve(injector: Injector, token: Token, flags?: InjectFlags, context?: RunContext) {
     if(context?.has(token)) return context.get(token);
 
     if (injector.has(token, flags)) {
@@ -154,11 +154,11 @@ function tryResolve(injector: Injector, token: Token, flags?: InjectFlags, conte
 }
 
 
-const PARAMETER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler<Parameter, any, ResolveContext>>(() => null!);
-export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Parameter, any, ResolveContext> {
+const PARAMETER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler<Parameter, any, RunContext>>(() => null!);
+export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Parameter, any, RunContext> {
     let scope = runtime.get(PARAMETER_RESOLVE_HANDLER);
     if (!scope) {
-        scope = new RuntimeHandler<Parameter, any, ResolveContext>(
+        scope = new RuntimeHandler<Parameter, any, RunContext>(
             (input, context) => {
                 const injector = context.getInjector();
                 if (input.provider && !input.multi) {

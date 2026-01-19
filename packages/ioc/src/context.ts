@@ -3,7 +3,7 @@ import { InjectFlags, Token, TokenOf } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector, InjectorRecord, InjectorScope, RECORDS } from './injector';
-import { Parameter, ResolveContext, ResolveInterceptorLike } from './resolver';
+import { Parameter, RunContext, ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
@@ -97,10 +97,10 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {ResolveContext} context resolve context.
+     * @param {RunContext} context resolve context.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: ResolveContext): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: RunContext): T;
 
     /**
      * set value.
@@ -117,18 +117,18 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {ResolveContext} context the resolve context.
+     * @param {RunContext} context the resolve context.
      * 
      * @returns {T}
      */
-    abstract resolve<T>(parameter: Parameter<T>, context?: ResolveContext): T;/**
+    abstract resolve<T>(parameter: Parameter<T>, context?: RunContext): T;/**
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
      * @param token
      * @param {ResolveContext} context the resolver context.
      */
-    abstract resolve<T>(token: Token<T>, context?: ResolveContext): T;
+    abstract resolve<T>(token: Token<T>, context?: RunContext): T;
     /**
      * resolve token in context.
      * 
@@ -136,7 +136,7 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * @param token
      * @param flags InjectFalgs 
      */
-    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: ResolveContext): T;
+    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: RunContext): T;
     /**
      * context destroyed or not.
      * 

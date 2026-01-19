@@ -14,7 +14,7 @@ import { nonEnumerable } from '../metadata/decor';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY, STATICABLE } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { createDesignContext, createRuntimeContext } from '../lifescope/context';
-import { createResolveContext, getResolver, isParameter, Parameter, Parameters, ResolveContext } from '../resolver';
+import { createRunContext, getResolver, isParameter, Parameter, Parameters, RunContext } from '../resolver';
 import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
 import { DefaultRuntime } from './runtime';
@@ -134,7 +134,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         return THROW_FLAGE;
     }
 
-    get<T>(token: Token<T>, notFoundValue?: any, flags: InjectFlags = InjectFlags.Default, context?: ResolveContext): T {
+    get<T>(token: Token<T>, notFoundValue?: any, flags: InjectFlags = InjectFlags.Default, context?: RunContext): T {
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
 
@@ -171,11 +171,11 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             ?? this.notFound(token, notFoundValue, flags, context);
     }
 
-    protected getFinal<T>(token: Token<T>, flags: InjectFlags, context?: ResolveContext): T | null | undefined {
+    protected getFinal<T>(token: Token<T>, flags: InjectFlags, context?: RunContext): T | null | undefined {
         return;
     }
 
-    protected notFound<T>(token: Token<T>, notFoundValue: any, flags: InjectFlags, context?: ResolveContext): T {
+    protected notFound<T>(token: Token<T>, notFoundValue: any, flags: InjectFlags, context?: RunContext): T {
         // 处理未找到的情况
         let value: T;
         if (!(flags & InjectFlags.Optional)) {
@@ -197,31 +197,31 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {ResolveContext} context the resolve context.
+     * @param {RunContext} context the resolve context.
      * 
      * @returns {T}
      */
-    resolve<T>(parameter: Parameter<T>, context?: ResolveContext): T;
+    resolve<T>(parameter: Parameter<T>, context?: RunContext): T;
     /**
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
      * @param token
-     * @param {ResolveContext} context the resolver context.
+     * @param {RunContext} context the resolver context.
      */
-    resolve<T>(token: Token<T>, context?: ResolveContext): T;
+    resolve<T>(token: Token<T>, context?: RunContext): T;
     /**
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
      * @param token
      * @param flags InjectFalgs
-     * @param {ResolveContext} context the resolver context.
+     * @param {RunContext} context the resolver context.
      */
-    resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: ResolveContext): T;
-    resolve<T>(tokenOrParam: any, arg?: any, context?: ResolveContext): T {
+    resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: RunContext): T;
+    resolve<T>(tokenOrParam: any, arg?: any, context?: RunContext): T {
         if (isParameter(tokenOrParam)) {
-            return getResolver(this).resolve(tokenOrParam, arg ?? createResolveContext(this));
+            return getResolver(this).resolve(tokenOrParam, arg ?? createRunContext(this));
         } else {
             let flags: InjectFlags | undefined;
             if (isNumber(arg)) {
@@ -229,7 +229,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             } else {
                 context = arg;
             }
-            return getResolver(this).resolve({ provider: tokenOrParam, flags } as Parameter, context ?? createResolveContext(this));
+            return getResolver(this).resolve({ provider: tokenOrParam, flags } as Parameter, context ?? createRunContext(this));
         }
     }
 
@@ -415,11 +415,11 @@ export namespace InjectUtil {
      *
      * @template T
      * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
-     * @param {ResolveContext} context the resolve context
+     * @param {RunContext} context the resolve context
      * 
      * @returns {T}
      */
-    export function resolve<T>(injector: Injector, parameter: Parameter<T>, context?: ResolveContext): T;
+    export function resolve<T>(injector: Injector, parameter: Parameter<T>, context?: RunContext): T;
     /**
      * resolve token instance with token and param provider.
      * 
@@ -471,10 +471,10 @@ export namespace InjectUtil {
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {ResolveContext} context resolve context type of {@link ResolveContext}, use to resolve with token.
+     * @param {RunContext} context resolve context type of {@link RunContext}, use to resolve with token.
      * @returns {T}
      */
-    export function resolve<T>(injector: Injector, token: Token<T>, context?: ResolveContext): T;
+    export function resolve<T>(injector: Injector, token: Token<T>, context?: RunContext): T;
     /**
      * resolve token instance with token and param provider.
      * 
@@ -487,36 +487,36 @@ export namespace InjectUtil {
      */
     export function resolve<T>(injector: Injector, token: Token<T>, ...providers: Provider[]): T;
     export function resolve<T>(injector: Injector, tokenOrParam: Token<T> | Parameter, ...args: any[]) {
-        if (!args.length || isUndefined(args[0]) || isNumber(args[0]) || isFunction(args[0] || args[0] instanceof ResolveContext)) {
+        if (!args.length || isUndefined(args[0]) || isNumber(args[0]) || isFunction(args[0] || args[0] instanceof RunContext)) {
             if (isParameter(tokenOrParam)) {
-                return getResolver(injector).resolve(tokenOrParam, args[0] ?? createResolveContext(injector));
+                return getResolver(injector).resolve(tokenOrParam, args[0] ?? createRunContext(injector));
             } else {
-                return getResolver(injector).resolve({ provider: tokenOrParam, flags: args[0] } as Parameter, createResolveContext(injector));
+                return getResolver(injector).resolve({ provider: tokenOrParam, flags: args[0] } as Parameter, createRunContext(injector));
             }
         }
         assertNotDestroyed(injector);
         const token = tokenOrParam as Token;
-        let context: ResolveContext | undefined;
+        let context: RunContext | undefined;
         const isResolve = true;
         let isCtx = false;
         if (args.length === 1) {
             const arg1 = args[0];
-            if (arg1 instanceof ResolveContext) {
+            if (arg1 instanceof RunContext) {
                 context = arg1;
                 isCtx = true;
             }
             if (INVOCATION_CONTEXT_IMPL.isContext(arg1)) {
-                context = createResolveContext(arg1);
+                context = createRunContext(arg1);
                 isCtx = true;
             } else if (isArray(arg1)) {
-                context = arg1.length ? createResolveContext(createInvocationContext(injector, { isResolve, providers: arg1 })) : undefined;
+                context = arg1.length ? createRunContext(createInvocationContext(injector, { isResolve, providers: arg1 })) : undefined;
             } else if (arg1.provide) {
-                context = createResolveContext(createInvocationContext(injector, { isResolve, providers: [arg1] }));
+                context = createRunContext(createInvocationContext(injector, { isResolve, providers: [arg1] }));
             } else if (hasContextOptions(arg1)) {
-                context = createResolveContext(createInvocationContext(injector, { isResolve, ...arg1 }));
+                context = createRunContext(createInvocationContext(injector, { isResolve, ...arg1 }));
             }
         } else {
-            context = createResolveContext(createInvocationContext(injector, { isResolve, providers: args }));
+            context = createRunContext(createInvocationContext(injector, { isResolve, providers: args }));
         }
 
         const result = injector.get(token, null, InjectFlags.Resolve, context);
@@ -988,13 +988,13 @@ export function generateTypeRecord(injector: Injector, typeRef: ClassRef, params
     }
 
 
-    const factory = (raise?: ResolveContext) => {
+    const factory = (raise?: RunContext) => {
         if (singleton && runtime.has(type)) {
             return runtime.get(type);
         }
 
         const context = createRuntimeContext(injector, undefined, runtime, raise, multi, params);
-        raise && context.set(ResolveContext, raise)
+        raise && context.set(RunContext, raise)
         const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
             runtime.set(type, instance, injector);
