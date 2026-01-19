@@ -97,6 +97,14 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 
      * 解析上下文中标记指令的实例值
      * @param token
+     * @param {ResolveContext} context the resolver context.
+     */
+    abstract resolve<T>(token: Token<T>, context?: ResolveContext): T;
+    /**
+     * resolve token in context.
+     * 
+     * 解析上下文中标记指令的实例值
+     * @param token
      * @param flags InjectFalgs 
      */
     abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: ResolveContext): T;

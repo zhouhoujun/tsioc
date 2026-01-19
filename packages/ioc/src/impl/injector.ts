@@ -207,14 +207,29 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
      * 
      * 解析上下文中标记指令的实例值
      * @param token
-     * @param flags InjectFalgs 
+     * @param {ResolveContext} context the resolver context.
      */
-    resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
+    resolve<T>(token: Token<T>, context?: ResolveContext): T;
+    /**
+     * resolve token in context.
+     * 
+     * 解析上下文中标记指令的实例值
+     * @param token
+     * @param flags InjectFalgs
+     * @param {ResolveContext} context the resolver context.
+     */
+    resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: ResolveContext): T;
     resolve<T>(tokenOrParam: any, arg?: any, context?: ResolveContext): T {
         if (isParameter(tokenOrParam)) {
             return getResolver(this).resolve(tokenOrParam, arg ?? createResolveContext(this));
         } else {
-            return getResolver(this).resolve({ provider: tokenOrParam, flags: arg } as Parameter, createResolveContext(this));
+            let flags: InjectFlags | undefined;
+            if (isNumber(arg)) {
+                flags = arg
+            } else {
+                context = arg;
+            }
+            return getResolver(this).resolve({ provider: tokenOrParam, flags } as Parameter, context ?? createResolveContext(this));
         }
     }
 

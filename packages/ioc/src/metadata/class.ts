@@ -2,7 +2,7 @@ import { AbstractType } from '../types';
 import { Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata } from './meta';
 import { InvocationOptions, InvokeOptions } from '../context';
-import { Token, TokenOf } from '../tokens';
+import { InjectFlags, Token, TokenOf } from '../tokens';
 import { getResolver, ResolveContext, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign, getParentType } from '../utils/lang';
 import { isArray, isFunction, isString } from '../utils/chk';
@@ -194,7 +194,7 @@ export class ClassRef<T = any> {
         } else if (context instanceof ResolveContext) {
             context = argsOrContext;
         }
-        const inst: any = instance ?? injector.resolve({ type: type, propertyKey: ctorName, target: type }, context);
+        const inst: any = instance ?? injector.resolve(type, context);
 
         if (!inst || !isFunction(inst[method])) {
             throw new Exception(`type: ${type} has no method ${method.toString()}.`)
