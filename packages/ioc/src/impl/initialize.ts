@@ -109,7 +109,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
         // const rctx = context.as(ResolveContext)
         //     .setInjector(injector);
-        const rctx = context.has(RunContext) ? context.get(RunContext) :  context.as(RunContext).setInjector(injector);
+        const rctx = context.has(RunContext) ? context.get(RunContext) :  createRunContext(injector, context); // context.as(RunContext).setInjector(injector);
 
         const resolver = getResolver(injector);
         input.eachPropertyProviders((metas, propertyKey) => {

@@ -182,6 +182,10 @@ export class RunContext extends DefaultContext {
         return this.get(Injector)
     }
 
+    setInjector(injector: Injector): this {
+        return this.set(Injector, injector)
+    }
+
     getPayload<T = any>(): T {
         return this.get(PAYLOAD) as T;
     }

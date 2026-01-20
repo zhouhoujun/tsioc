@@ -988,13 +988,12 @@ export function generateTypeRecord(injector: Injector, typeRef: ClassRef, params
     }
 
 
-    const factory = (raise?: RunContext) => {
+    const factory = (runContext?: RunContext) => {
         if (singleton && runtime.has(type)) {
             return runtime.get(type);
         }
 
-        const context = createRuntimeContext(injector, undefined, runtime, raise, multi, params);
-        raise && context.set(RunContext, raise)
+        const context = createRuntimeContext(injector, undefined, runtime, runContext, multi, params);
         const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
             runtime.set(type, instance, injector);
