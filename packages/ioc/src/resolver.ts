@@ -168,13 +168,12 @@ const RUN_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) 
 
 export class RunContext extends DefaultContext {
 
-    constructor(injector: Injector, contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
+    constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
         super(contextOrEntries, entries);
-        this.set(Injector, injector);
     }
 
     override has<T>(token: Token<T> | ContextToken<T>): boolean {
-        if(token instanceof ContextToken) return this.map.has(token);
+        if (token instanceof ContextToken) return this.map.has(token);
         return this.map.has(token) || this.getInjector().has(token);
     }
 
@@ -220,7 +219,8 @@ export class RunContext extends DefaultContext {
 export function createRunContext(injector: Injector, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;
 export function createRunContext(injector: Injector, previous?: Context, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;
 export function createRunContext(injector: Injector, previous?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
-    const context = new RunContext(injector, previous ?? entries, entries);
+    const context = new RunContext(previous ?? entries, entries);
+    context.setInjector(injector);
     return context;
 }
 

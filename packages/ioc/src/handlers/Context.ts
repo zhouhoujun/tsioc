@@ -1,7 +1,6 @@
 import { getType } from '../metadata/type';
 import { Token } from '../tokens';
 import { Type } from '../types';
-import { isArray } from '../utils/chk';
 
 /**
  * context token.
@@ -78,7 +77,7 @@ export abstract class Context {
     abstract onDestroy(): void;
 
 
-    // abstract as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext;
+    abstract as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext;
 }
 
 
@@ -94,14 +93,14 @@ export class DefaultContext extends Context {
 
     constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
         super();
-        if (!contextOrEntries || isArray(contextOrEntries)) {
-            this.map = new Map(contextOrEntries);
-            this._canClear = true;
-        } else {
+        if(contextOrEntries instanceof Context) {
             this.map = contextOrEntries as Context;
             this.setEntries(entries);
             this._canClear = false;
             // this._tokens = new Set();
+        } else {
+            this.map = new Map(contextOrEntries);
+            this._canClear = true;
         }
         this._type = getType(this);
         this.set(this._type, this);
@@ -183,24 +182,24 @@ export class DefaultContext extends Context {
         return this.map.has(token);
     }
 
-    // /**
-    //  * Cast the context to the given type.
-    //  * @param type 
-    //  * @returns 
-    //  */
-    // as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext {
-    //     if (type == this._type) {
-    //         this.setEntries(entries);
-    //         return this as any;
-    //     }
-    //     let context = this.get(type);
-    //     if (!context) {
-    //         context = new type(this);
-    //         this.set(type, context);
-    //         this.setEntries(entries);
-    //     }
-    //     return context;
-    // }
+    /**
+     * Cast the context to the given type.
+     * @param type 
+     * @returns 
+     */
+    as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext {
+        if (type == this._type) {
+            this.setEntries(entries);
+            return this as any;
+        }
+        let context = this.get(type);
+        if (!context) {
+            context = new type(this);
+            this.set(type, context);
+            this.setEntries(entries);
+        }
+        return context;
+    }
 
     private setEntries(entries?: Iterable<readonly [Token | ContextToken, any]>) {
         if (!entries) return;
