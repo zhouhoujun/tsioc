@@ -1,5 +1,5 @@
 import { getType } from '../metadata/type';
-import { Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { Type } from '../types';
 
 /**
@@ -134,7 +134,7 @@ export class DefaultContext extends Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    get<T>(token: Token<T>): T;
+    get<T>(token: Token<T>, flags?: InjectFlags): T;
     /**
      * Retrieve the value associated with the given token.
      *
@@ -142,14 +142,14 @@ export class DefaultContext extends Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    get<T>(token: Token<T> | ContextToken<T>): T {
+    get<T>(token: Token<T> | ContextToken<T>, flags?: InjectFlags): T {
         if (token instanceof ContextToken) {
             return this.getContentToken(token)
         }
-        return this.getToken(token);
+        return this.getToken(token, flags);
     }
 
-    protected getToken<T>(token: Token<T>) {
+    protected getToken<T>(token: Token<T>, flags?: InjectFlags) {
         return this.map.get(token) ?? null;
     }
 

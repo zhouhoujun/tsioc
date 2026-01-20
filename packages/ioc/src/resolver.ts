@@ -172,10 +172,10 @@ export class RunContext extends DefaultContext {
         super(contextOrEntries, entries);
     }
 
-    override has<T>(token: Token<T> | ContextToken<T>): boolean {
-        if (token instanceof ContextToken) return this.map.has(token);
-        return this.map.has(token) || this.getInjector().has(token);
-    }
+    // override has<T>(token: Token<T> | ContextToken<T>): boolean {
+    //     if (token instanceof ContextToken) return this.map.has(token);
+    //     return this.map.has(token) || this.getInjector().has(token);
+    // }
 
     getInjector() {
         return this.get(Injector)
