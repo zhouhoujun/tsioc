@@ -133,10 +133,10 @@ export enum InjectFlags {
     //  */
     // HostOnly = 0b10000,
 
-    /**
-     * None Singleton
-     */
-    NonSingleton = 0b100000,
+    // /**
+    //  * None Singleton
+    //  */
+    // NonSingleton = 0b100000,
 
     /**
      * Resolve value with new Context.

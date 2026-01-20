@@ -1,7 +1,7 @@
 import { InjectFlags, token, Token } from '../tokens';
 import { getTypeName } from '../metadata/type';
 import { deepForEach } from '../utils/lang';
-import { isArray, isFunction, isNumber, isObject } from '../utils/chk';
+import { isArray, isFunction, isNumber } from '../utils/chk';
 import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
@@ -13,12 +13,12 @@ import { createRunContext, getResolver, isParameter, Parameter, RunContext, Reso
 
 
 
-export function createValueRecord<T = any>(value: T): InjectorRecord<T> {
-    return { value };
+export function createValueRecord<T = any>(value: T, stati?:  boolean): InjectorRecord<T> {
+    return { value, stati };
 }
 
 export function createRecord<T>(factory: RecordFactory<T> | undefined, isStatic?: boolean, multi?: boolean): InjectorRecord<T> {
-    return { factory, value: isStatic ? LAZY : undefined, multi: multi ? [] : undefined };
+    return { factory, stati: isStatic, value: isStatic ? LAZY : undefined, multi: multi ? [] : undefined };
 }
 
 
@@ -108,14 +108,13 @@ export const LAZY = {};
 export const THROW_FLAGE = {};
 // export const Empty: any[] = [];
 // export const CIRCULAR = {};
-
-export const STATICABLE = Symbol('STATICABLE');
+// export const STATICABLE = Symbol('STATICABLE');
 
 /**
  * 尝试解析令牌
  */
 export function tryResolveToken(token: Token, rd: InjectorRecord, injector: Injector,
-    notFoundValue: any, flags: InjectFlags, context?: RunContext, isStatic?: boolean): any {
+    notFoundValue: any, flags: InjectFlags, context?: RunContext): any {
     try {
         return resolveToken(token, rd, injector, notFoundValue, flags, context);
     } catch (e) {
@@ -164,10 +163,8 @@ export function resolveToken(token: Token, rd: InjectorRecord, injector: Injecto
     // 执行工厂函数获取值
     if (rd.factory) {
         const result = rd.factory(context, flags);
-        const stati = rd.value === LAZY;
-        if (isObject(result)) result[STATICABLE] = stati;
         // 如果是静态提供者，缓存结果
-        if (stati) {
+        if (injector.isStatic && rd.stati !== false) {
             rd.value = result;
         }
         return result;

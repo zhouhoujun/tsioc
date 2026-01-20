@@ -11,7 +11,7 @@ import { ClassRef, getClassRef } from '../metadata/class';
 import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders, DependLike } from '../providers';
 import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
-import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY, STATICABLE } from './common';
+import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { createDesignContext, createRuntimeContext } from '../lifescope/context';
 import { createRunContext, getResolver, isParameter, Parameter, Parameters, RunContext } from '../resolver';
@@ -118,7 +118,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().has(token)) return true;
+        if (this.getRuntime().has(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this._parent?.has(token, flags) === true
@@ -139,7 +139,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         const runtime = this.getRuntime();
 
         // 检查单例缓存
-        if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
+        if (runtime.has(token)) return runtime.get(token);
         if (notFoundValue === undefined) {
             notFoundValue = this.defaultNotFound();
         }
@@ -148,23 +148,30 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         if (record && !(flags & (InjectFlags.SkipSelf | InjectFlags.Host))) {
             const value = tryResolveToken(token, record, this,
                 notFoundValue,
-                flags, context, this.isStatic);
+                flags, context);
             if (value !== THROW_FLAGE) return value;
         }
 
         // 父注入器查找
         if (this._parent && !(flags & InjectFlags.Self)) {
-            const value = this._parent.get(
-                token,
-                notFoundValue,
-                (!(flags & InjectFlags.Host) ? flags : InjectFlags.Self) & InjectFlags.NonSingleton,
-                context);
-
-            if (!isNil(value) && value !== THROW_FLAGE) {
-                if (this.isStatic && value[STATICABLE] !== false) this.records.set(token, createValueRecord(value));
-                return value;
+            let injector: Injector | null = this._parent;
+            let pRecprd: InjectorRecord | undefined;
+            if (!(flags & InjectFlags.Host)) {
+                while (injector && !injector.destroyed) {
+                    pRecprd = injector[RECORDS].get(token);
+                    if (pRecprd) break;
+                    injector = injector.getParent();
+                }
+            } else {
+                pRecprd = injector[RECORDS].get(token);
             }
-
+            if (pRecprd) {
+                const value = tryResolveToken(token, pRecprd, injector!, notFoundValue, flags, context);
+                if (!isNil(value) && value !== THROW_FLAGE) {
+                    if (this.isStatic && pRecprd.stati !== false) this.records.set(token, createValueRecord(value, pRecprd.stati));
+                    return value;
+                }
+            }
         }
 
         return this.getFinal(token, flags, context)
