@@ -77,7 +77,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
     protected override createInstance(context?: RunContext): T {
-        const instance = super.createInstance(context ?? createRunContext(this.context, this._elementRef));
+        const instance = super.createInstance(context ?? createRunContext(this.context).setPayload(this._elementRef));
         const def = this.classRef.getAnnotation<ComponentDef>();
         return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
     }

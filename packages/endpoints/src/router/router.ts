@@ -1,4 +1,4 @@
-import { Abstract, HandlerLike, ProvidedInMetadata, AbstractType, TypeDef } from '@tsdi/ioc';
+import { Abstract, HandlerLike, ProvidedInMetadata, AbstractType, TypeDef, Provider } from '@tsdi/ioc';
 import { Pattern, PatternFormatter, RequestInterceptor, RequestHandler, Transport, RequestContext } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
@@ -129,8 +129,8 @@ export interface RouteMappingMetadata<T = any> extends RouteMappingOptions<T>, P
 /**
  * mapping type def.
  */
-export interface MappingDef<T = any> extends TypeDef<T>, RouteMappingMetadata<any> {
-    
+export interface MappingDef<T = any> extends TypeDef<T>, Omit<RouteMappingMetadata<any>, 'providers' | 'resolvers'> {
+
 }
 
 
