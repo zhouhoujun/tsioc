@@ -1,5 +1,6 @@
 import { Exception } from '../exception';
-import { Context, ContextToken } from '../handlers/Context';
+import { ContextToken } from '../handlers/Context';
+import { RunContext } from '../handlers/contexts';
 import { HandlerLike } from '../handlers/handler';
 import { InterceptorLike } from '../handlers/interceptor';
 import { Injector, InjectorRecord } from '../injector';
@@ -7,7 +8,7 @@ import { RuntimeHandler } from '../lifescope/handler';
 import { getTypeName, isType } from '../metadata/type';
 import { getDef } from '../metadata/type.def';
 import { ClassRef } from '../metadata/class';
-import { Parameter, ParameterLike, RunContext, ResolveHandler, Resolver } from '../resolver';
+import { Parameter, ParameterLike, ResolveHandler, Resolver } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';

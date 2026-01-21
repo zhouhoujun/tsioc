@@ -35,6 +35,7 @@ export * from './providers';
 
 // handlers
 export * from './handlers/Context';
+export * from './handlers/contexts';
 export * from './handlers/handler';
 export * from './handlers/interceptor';
 export * from './handlers/compose';

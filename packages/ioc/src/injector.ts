@@ -9,7 +9,8 @@ import { isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
-import { Parameter, RunContext } from './resolver';
+import { Parameter } from './resolver';
+import { RunContext } from './handlers/contexts';
 
 
 export const RECORDS = Symbol('RECORDS');

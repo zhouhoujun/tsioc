@@ -3,7 +3,7 @@ import { Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata } from './meta';
 import { InvocationOptions, InvokeOptions } from '../context';
 import { InjectFlags, Token, TokenOf } from '../tokens';
-import { getResolver, RunContext, ResolveInterceptorLike } from '../resolver';
+import { getResolver, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign, getParentType } from '../utils/lang';
 import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
@@ -13,6 +13,7 @@ import { Invocation, InvocationFactory } from '../invocation';
 import { getDef, proxyTag, TypeDef } from './type.def';
 import { getType, isPrimitive } from './type';
 import { ctorName, DecoratorFn, DecoratorType, DecorDefine, Decors, RunableDefine } from './define';
+import { RunContext } from '../handlers/contexts';
 
 
 /**

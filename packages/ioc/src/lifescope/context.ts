@@ -1,8 +1,9 @@
-import { Context, DefaultContext, ContextToken } from '../handlers/Context';
+import { Context, ContextToken } from '../handlers/Context';
+import { DefaultContext, RunContext } from '../handlers/contexts';
 import { Injector } from '../injector';
 import { DecoratorFn } from '../metadata/define';
 import { DependLike } from '../providers';
-import { Parameters, Parameter, RunContext } from '../resolver';
+import { Parameters, Parameter } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 

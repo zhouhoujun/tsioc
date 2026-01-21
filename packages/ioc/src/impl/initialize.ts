@@ -1,5 +1,6 @@
 import { Exception } from '../exception';
 import { ContextToken } from '../handlers/Context';
+import {createRunContext, RunContext } from '../handlers/contexts';
 import { HandlerFn } from '../handlers/handler';
 import { InterceptorFn, InterceptorLike } from '../handlers/interceptor';
 import { PropertyMetadata } from '../metadata/meta';
@@ -12,7 +13,7 @@ import { InjectUtil } from './injector';
 import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArgs, resolveParameters } from './common';
-import { createRunContext, getResolver, RunContext } from '../resolver';
+import { getResolver } from '../resolver';
 import { invokeTail } from '../handlers/compose';
 
 

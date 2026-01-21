@@ -1,4 +1,4 @@
-import { Abstract, ClassRef, Context, HandlerFn, IocContext } from '@tsdi/ioc';
+import { Abstract, ClassRef, HandlerFn, IocContext } from '@tsdi/ioc';
 
 
 @Abstract()

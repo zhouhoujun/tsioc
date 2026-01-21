@@ -3,12 +3,13 @@ import { InjectFlags, Token, TokenOf } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector, InjectorRecord, InjectorScope, RECORDS } from './injector';
-import { Parameter, RunContext, ResolveInterceptorLike } from './resolver';
+import { Parameter, ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
 import { hasItem } from './utils/lang';
 import { Runtime } from './runtime';
+import { RunContext } from './handlers/contexts';
 
 
 /**

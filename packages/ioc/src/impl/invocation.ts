@@ -12,7 +12,8 @@ import { immediate } from '../utils/lang';
 import { composeHandlers } from '../handlers/compose';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';
-import { createRunContext, RunContext, ResolveInterceptorLike } from '../resolver';
+import { ResolveInterceptorLike } from '../resolver';
+import {createRunContext, RunContext } from '../handlers/contexts';
 
 /**
  * abstract invocation 

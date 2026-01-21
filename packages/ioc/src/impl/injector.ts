@@ -14,11 +14,12 @@ import { nonEnumerable } from '../metadata/decor';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { createDesignContext, createRuntimeContext } from '../lifescope/context';
-import { createRunContext, getResolver, isParameter, Parameter, Parameters, RunContext } from '../resolver';
+import { getResolver, isParameter, Parameter } from '../resolver';
 import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
 import { DefaultRuntime } from './runtime';
 import { getDef, ModuleDef } from '../metadata/type.def';
+import {createRunContext, RunContext } from '../handlers/contexts';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];

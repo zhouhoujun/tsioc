@@ -6,7 +6,8 @@ import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
 import { Provider, StaticProvider, DynamicProvider, Provide, DependLike } from '../providers';
-import { createRunContext, getResolver, isParameter, Parameter, RunContext, Resolver } from '../resolver';
+import { getResolver, isParameter, Parameter, Resolver } from '../resolver';
+import { createRunContext, RunContext } from '../handlers/contexts';
 
 
 

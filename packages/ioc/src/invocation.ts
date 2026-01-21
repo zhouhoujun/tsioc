@@ -4,7 +4,7 @@ import { ClassRef } from './metadata/class';
 import { AbstractType } from './types';
 import { MethodType } from './injector';
 import { DestroyCallback } from './destroy';
-import { RunContext } from './resolver';
+import { RunContext } from './handlers/contexts';
 
 
 /**
