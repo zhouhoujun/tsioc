@@ -168,27 +168,6 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
         }
 
-        // if (this._parent && !(flags & InjectFlags.Self)) {
-        //     let injector: Injector | null = this._parent;
-        //     let pRecprd: InjectorRecord | undefined;
-        //     if (!(flags & InjectFlags.Host)) {
-        //         while (injector && !injector.destroyed) {
-        //             pRecprd = injector[RECORDS].get(token);
-        //             if (pRecprd) break;
-        //             injector = injector.getParent();
-        //         }
-        //     } else {
-        //         pRecprd = injector[RECORDS].get(token);
-        //     }
-        //     if (pRecprd) {
-        //         const value = tryResolveToken(token, pRecprd, injector!, notFoundValue, flags, context);
-        //         if (!isNil(value) && value !== THROW_FLAGE) {
-        //             if (this.isStatic && pRecprd.stati !== false) this.records.set(token, createValueRecord(value, pRecprd.stati));
-        //             return value;
-        //         }
-        //     }
-        // }
-
         return this.getFinal(token, flags, context)
             ?? this.notFound(token, notFoundValue, flags, context);
     }

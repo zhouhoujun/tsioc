@@ -5,7 +5,7 @@ import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
 } from './meta';
-import {  ctorName, DecorDefine, Decors,  ActionType,  DecorContext, DecoratorOption } from './define';
+import { ctorName, DecorDefine, Decors, ActionType, DecorContext, DecoratorOption } from './define';
 import { InvokeOptions } from '../context';
 import { RuntimeHandler } from '../lifescope/handler';
 import { TypeDef } from './type.def';
@@ -85,7 +85,7 @@ const decorCtorDesignParams = (ctx: DecorContext, next: DecorHandlerFn) => {
             const names = ctx.classRef.getParamNames(ctorName);
 
             const params = paramTypes.map((type, index) => {
-                return { type, name: names[index] }
+                return { type, name: names[index], target: ctx.classRef.type, propertyKey: ctorName }
             }) as ParameterMetadata[];
             let meta = ctx.classRef.getAnnotation().methodMetadatas.get(ctorName);
             if (!meta) {

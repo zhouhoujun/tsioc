@@ -14,6 +14,7 @@ import { Runtime } from '../runtime';
 import { Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
 import {createRunContext, RunContext } from '../handlers/contexts';
+import { ctorName } from '../metadata/define';
 
 /**
  * abstract invocation 
@@ -191,6 +192,7 @@ export abstract class AbstractInvocation<T = any,
     }
 
     getMethodContext(propertyKey: string | symbol): TC {
+        if(propertyKey === ctorName) return this.context;
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
             const opts = this.classRef.getMethodOptions(propertyKey);

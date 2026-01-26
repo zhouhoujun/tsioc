@@ -9,8 +9,6 @@ import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
 import { BindingFactory, TemplateRef } from '../refs/template';
 import { ReactiveEffect } from '../effect';
-import { ElementRef } from '../refs/element';
-import e = require('express');
 
 
 /**
