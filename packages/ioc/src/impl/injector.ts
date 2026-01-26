@@ -172,9 +172,9 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             ?? this.notFound(token, notFoundValue, flags, context);
     }
 
-    isStaticToken(token: Token): boolean|undefined {
+    isStaticToken(token: Token): boolean | undefined {
         const record = this.records.get(token);
-        if(isBoolean(record?.stati)) return record.stati;
+        if (isBoolean(record?.stati)) return record.stati;
         // if (record ) {
         //     if(isBoolean(record.stati)) return record.stati;
         //     if(record.factory) return this.isStatic === true;
@@ -237,7 +237,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             let flags: InjectFlags | undefined;
             if (isNumber(arg)) {
                 flags = arg
-            } else {
+            } else if (!context) {
                 context = arg;
             }
             return getResolver(this).resolve({ provider: tokenOrParam, flags } as Parameter, context ?? createRunContext(this));

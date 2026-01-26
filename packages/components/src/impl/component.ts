@@ -59,7 +59,10 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         await (this.instance as OnInit).onInit?.();
         const directives = this.context.get(DIRECTIVES) || [];
         const components = this.context.get(COMPONENTS) || [];
-        const host = this.context.getElementRef(options?.host ?? this.context.get(Renderer).createElement(def.selector ?? this.classRef.className))
+        if(!this._elementRef) {
+            this._elementRef =  this.context.getElementRef(options?.host ?? this.context.get(Renderer).createElement(def.selector ?? this.classRef.className));
+        }
+        const host = this._elementRef;
         const templateRef = compiler.compile<T>(template, { host, directives, components });
         this.context.setValue(TemplateRef, templateRef);
         this._hostView = templateRef.createEmbeddedView(this.instance, this.context);
