@@ -24,7 +24,7 @@ abstract class BaseIfDirective {
         protected viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
         @Optional() @Host() parentIfDirective?: BaseIfDirective
-    ) { 
+    ) {
         this._templateRef = templateRef;
         if (parentIfDirective) {
             this._parentIfDirective = parentIfDirective;
@@ -35,15 +35,18 @@ abstract class BaseIfDirective {
     // 设置模板上下文
     @Attribute()
     set context(ctx: any) {
+        const changed = this._context !== ctx;
         this._context = ctx;
-        this.updateView();
+        if (this._hasView && !changed) return;
+        if(changed) this.updateView();
     }
 
     // 设置模板引用（从编译器传递）
     @Attribute()
     set template(templateRef: TemplateRef<any>) {
+        const changed = this._templateRef !== templateRef;
         this._templateRef = templateRef;
-        this.updateView();
+        if(changed) this.updateView();
     }
 
     protected createView() {
@@ -119,6 +122,9 @@ export class VIfDirective extends BaseIfDirective {
 
     @Attribute()
     set if(condition: boolean) {
+        const changed = this._condition == condition;
+        if (this._hasView && !changed) return;
+
         this._condition = condition;
         if (condition && !this._hasView) {
             this.createView();
@@ -140,12 +146,12 @@ export class VIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else-if],[*else-if]',
-    requires:['[v-if],[*if]'],
+    requires: ['[v-if],[*if]'],
     dirType: DirectiveType.Conditional,
     priority: 10
 })
 export class VElseIfDirective extends BaseIfDirective {
-    private _condition = false;
+    private _condition?: boolean;
 
     constructor(
         viewContainer: ViewContainerRef,
@@ -157,6 +163,9 @@ export class VElseIfDirective extends BaseIfDirective {
 
     @Attribute()
     set elseIf(condition: boolean) {
+        const changed = this._condition == condition;
+        if (this._hasView && !changed) return;
+
         this._condition = condition;
         if (condition && !this._hasView) {
             this.createView();
@@ -166,7 +175,7 @@ export class VElseIfDirective extends BaseIfDirective {
     }
 
     protected shouldCreateViewOnInit(): boolean {
-        return this._condition;
+        return this._condition === true;
     }
 }
 
@@ -178,12 +187,12 @@ export class VElseIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else],[*else]',
-    requires:['[v-if],[*if]'],
+    requires: ['[v-if],[*if]'],
     dirType: DirectiveType.Conditional,
     priority: 10
 })
 export class VElseDirective extends BaseIfDirective {
-    private _show = true;
+    private _show?: boolean;
 
     constructor(
         viewContainer: ViewContainerRef,
@@ -195,6 +204,8 @@ export class VElseDirective extends BaseIfDirective {
 
     @Attribute()
     set else(show: boolean) {
+        const changed = this._show === show;
+        if (!changed) return;
         this._show = show;
         // v-else不需要条件表达式，总是尝试显示
         // 但需要确保前面的所有条件都不满足
@@ -206,6 +217,6 @@ export class VElseDirective extends BaseIfDirective {
     }
 
     protected shouldCreateViewOnInit(): boolean {
-        return this._show;
+        return this._show === true;
     }
 }

@@ -27,8 +27,9 @@ export class SwitchDirective {
 
     @Attribute()
     set switch(value: any) {
+        const changed = this._value == value;
         this._value = value;
-        this.updateCases();
+        if(changed) this.updateCases();
     }
 
     /**
