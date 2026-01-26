@@ -169,7 +169,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, injector: Injecto
     if (rd.factory) {
         const result = rd.factory(context, flags);
         // 如果是静态提供者，缓存结果
-        if (rd.stati === true || (injector.isStatic && rd.stati !== false)) {
+        if (rd.value === LAZY) {
             rd.value = result;
         }
         return result;

@@ -162,7 +162,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
                 context);
 
             if (!isNil(value) && value !== THROW_FLAGE) {
-                if (this.isStatic && this.isStaticToken(token)) this.records.set(token, createValueRecord(value));
+                if (this.isStatic && this.isStaticToken(token) !== false) this.records.set(token, createValueRecord(value));
                 return value;
             }
 
@@ -193,10 +193,14 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             ?? this.notFound(token, notFoundValue, flags, context);
     }
 
-    isStaticToken(token: Token): boolean {
+    isStaticToken(token: Token): boolean|undefined {
         const record = this.records.get(token);
-        if (record && isBoolean(record.stati)) return record.stati;
-        return (this.getParent() as any as AbstractInjector)?.isStaticToken?.(token) !== false;
+        if(isBoolean(record?.stati)) return record.stati;
+        // if (record ) {
+        //     if(isBoolean(record.stati)) return record.stati;
+        //     if(record.factory) return this.isStatic === true;
+        // }
+        return (this.getParent() as any as AbstractInjector)?.isStaticToken?.(token) ?? false;
     }
 
     protected getFinal<T>(token: Token<T>, flags: InjectFlags, context?: RunContext): T | null | undefined {
