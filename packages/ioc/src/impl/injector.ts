@@ -2,7 +2,7 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, immediate } from '../utils/lang';
-import { isNil, isFunction, isPromise, isArray, isNumber, isUndefined } from '../utils/chk';
+import { isNil, isFunction, isPromise, isArray, isNumber, isUndefined, isBoolean } from '../utils/chk';
 import { getType, getTypeName, isType } from '../metadata/type';
 import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR, RECORDS } from '../injector';
 import { Exception } from '../exception';
@@ -19,7 +19,7 @@ import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
 import { DefaultRuntime } from './runtime';
 import { getDef, ModuleDef } from '../metadata/type.def';
-import {createRunContext, RunContext } from '../handlers/contexts';
+import { createRunContext, RunContext } from '../handlers/contexts';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];
@@ -119,10 +119,10 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (this.getRuntime().has(token)) return true;
+        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().has(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
-            return this._parent?.has(token, flags) === true
+            return this._parent?.has(token, flags | InjectFlags.NonSingleton) === true
         }
         return this.hasFinal(token, flags)
     }
@@ -140,7 +140,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         const runtime = this.getRuntime();
 
         // 检查单例缓存
-        if (runtime.has(token)) return runtime.get(token);
+        if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
         if (notFoundValue === undefined) {
             notFoundValue = this.defaultNotFound();
         }
@@ -155,28 +155,48 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
         // 父注入器查找
         if (this._parent && !(flags & InjectFlags.Self)) {
-            let injector: Injector | null = this._parent;
-            let pRecprd: InjectorRecord | undefined;
-            if (!(flags & InjectFlags.Host)) {
-                while (injector && !injector.destroyed) {
-                    pRecprd = injector[RECORDS].get(token);
-                    if (pRecprd) break;
-                    injector = injector.getParent();
-                }
-            } else {
-                pRecprd = injector[RECORDS].get(token);
+            const value = this._parent.get(
+                token,
+                notFoundValue,
+                (!(flags & InjectFlags.Host) ? flags : InjectFlags.Self) & InjectFlags.NonSingleton,
+                context);
+
+            if (!isNil(value) && value !== THROW_FLAGE) {
+                if (this.isStatic && this.isStaticToken(token)) this.records.set(token, createValueRecord(value));
+                return value;
             }
-            if (pRecprd) {
-                const value = tryResolveToken(token, pRecprd, injector!, notFoundValue, flags, context);
-                if (!isNil(value) && value !== THROW_FLAGE) {
-                    if (this.isStatic && pRecprd.stati !== false) this.records.set(token, createValueRecord(value, pRecprd.stati));
-                    return value;
-                }
-            }
+
         }
+
+        // if (this._parent && !(flags & InjectFlags.Self)) {
+        //     let injector: Injector | null = this._parent;
+        //     let pRecprd: InjectorRecord | undefined;
+        //     if (!(flags & InjectFlags.Host)) {
+        //         while (injector && !injector.destroyed) {
+        //             pRecprd = injector[RECORDS].get(token);
+        //             if (pRecprd) break;
+        //             injector = injector.getParent();
+        //         }
+        //     } else {
+        //         pRecprd = injector[RECORDS].get(token);
+        //     }
+        //     if (pRecprd) {
+        //         const value = tryResolveToken(token, pRecprd, injector!, notFoundValue, flags, context);
+        //         if (!isNil(value) && value !== THROW_FLAGE) {
+        //             if (this.isStatic && pRecprd.stati !== false) this.records.set(token, createValueRecord(value, pRecprd.stati));
+        //             return value;
+        //         }
+        //     }
+        // }
 
         return this.getFinal(token, flags, context)
             ?? this.notFound(token, notFoundValue, flags, context);
+    }
+
+    isStaticToken(token: Token): boolean {
+        const record = this.records.get(token);
+        if (record && isBoolean(record.stati)) return record.stati;
+        return (this.getParent() as any as AbstractInjector)?.isStaticToken?.(token) !== false;
     }
 
     protected getFinal<T>(token: Token<T>, flags: InjectFlags, context?: RunContext): T | null | undefined {
@@ -900,7 +920,7 @@ function processProvider(injector: Injector, provider: StaticProvider | DynamicP
         if (!isFunction(provider) && (provider as MutilProvider).multi) {
             let multiPdr = injector[RECORDS].get(token);
             if (!multiPdr) {
-                multiPdr = createRecord(undefined, injector.isStatic, true);
+                multiPdr = createRecord(undefined, injector.isStatic, (provider as UseAsStatic).static, true);
                 multiPdr.factory = (raise) => resolveArgs(raise?.getInjector() ?? injector, multiPdr!.multi, raise);
                 injector[RECORDS].set(token, multiPdr);
             }
@@ -972,7 +992,7 @@ export function generateRecord<T>(injector: Injector, provider: StaticProvider<T
             }
         }
 
-        return createRecord(factory, (provider as UseAsStatic).static ?? injector.isStatic);
+        return createRecord(factory, injector.isStatic, (provider as UseAsStatic).static);
     }
 
 }
@@ -988,11 +1008,11 @@ export function generateTypeRecord(injector: Injector, typeRef: ClassRef, params
     if (providedIn) {
         injector = runtime.getInjector(providedIn, injector);
     }
-    const isStatic = decStatic ?? injector.isStatic;
+    const isStatic = injector.isStatic;
     const type = typeRef.type as Type;
     const pdrId = origin !== injector;
     if (pdrId && injector.has(typeRef.type)) {
-        return createRecord((raise, flags) => origin.get(type, undefined, flags), isStatic);
+        return createRecord((raise, flags) => origin.get(type, undefined, flags), isStatic, decStatic);
     }
 
 
@@ -1011,11 +1031,11 @@ export function generateTypeRecord(injector: Injector, typeRef: ClassRef, params
 
     let record: InjectorRecord;
     if (pdrId) {
-        const pdRecord = createRecord(factory, isStatic);
+        const pdRecord = createRecord(factory, isStatic, decStatic);
         if (provide) injector[RECORDS].set(type, pdRecord);
-        record = createRecord(() => injector.get(type), isStatic);
+        record = createRecord(() => injector.get(type), isStatic, decStatic);
     } else {
-        record = createRecord(factory, isStatic);
+        record = createRecord(factory, isStatic, decStatic);
         if (provide) injector[RECORDS].set(type, record);
     }
 

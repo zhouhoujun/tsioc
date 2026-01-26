@@ -1,7 +1,7 @@
 import { InjectFlags, token, Token } from '../tokens';
 import { getTypeName } from '../metadata/type';
 import { deepForEach } from '../utils/lang';
-import { isArray, isFunction, isNumber } from '../utils/chk';
+import { isArray, isBoolean, isFunction, isNumber } from '../utils/chk';
 import { isPlainObject } from '../utils/obj';
 import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
@@ -14,12 +14,16 @@ import { createRunContext, RunContext } from '../handlers/contexts';
 
 
 
-export function createValueRecord<T = any>(value: T, stati?:  boolean): InjectorRecord<T> {
-    return { value, stati };
+export function createValueRecord<T = any>(value: T): InjectorRecord<T> {
+    return { value };
 }
 
-export function createRecord<T>(factory: RecordFactory<T> | undefined, isStatic?: boolean, multi?: boolean): InjectorRecord<T> {
-    return { factory, stati: isStatic, value: isStatic ? LAZY : undefined, multi: multi ? [] : undefined };
+export function createRecord<T>(factory: RecordFactory<T> | undefined, injectStati?: boolean, tokenStati?: boolean, multi?: boolean,): InjectorRecord<T> {
+    const record: InjectorRecord = { factory, value: (tokenStati ?? injectStati) ? LAZY : undefined, multi: multi ? [] : undefined };
+    if (isBoolean(tokenStati)) {
+        record.stati = tokenStati;
+    }
+    return record;
 }
 
 
@@ -94,7 +98,7 @@ function resolveArg(injector: Injector, arg: DependLike, context?: RunContext): 
         } else {
             depToken = arg as Token;
         }
-        if(context?.has(token)) return context.get(token);
+        if (context?.has(token)) return context.get(token);
 
         return injector.get(depToken, undefined, depFlags);
 
@@ -165,7 +169,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, injector: Injecto
     if (rd.factory) {
         const result = rd.factory(context, flags);
         // 如果是静态提供者，缓存结果
-        if (injector.isStatic && rd.stati !== false) {
+        if (rd.stati === true || (injector.isStatic && rd.stati !== false)) {
             rd.value = result;
         }
         return result;

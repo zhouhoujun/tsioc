@@ -139,7 +139,7 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
         const records = injector[RECORDS];
         for (const pdr of input.provides) {
             if (provide != pdr && (context.isMutil ? !records.has(pdr) : true)) {
-                records.set(pdr, createRecord(factory, injector.isStatic))
+                records.set(pdr, createRecord(factory, injector.isStatic, input.getAnnotation().static))
             }
         }
     }

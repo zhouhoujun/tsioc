@@ -146,7 +146,8 @@ export enum InjectFlags {
     /**
      * Param provide with Request Context.
      */
-    Request = 0b10000000
+    Request = 0b10000000,
+    NonSingleton
 }
 
 
