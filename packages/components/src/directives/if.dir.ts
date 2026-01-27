@@ -1,10 +1,9 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, SkipSelf } from '@tsdi/ioc';
 import { Host, Optional } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
-import { NodeType } from '../renderer/Node';
 import { DirectiveType } from '../refs/directive';
 
 /**
@@ -23,7 +22,7 @@ abstract class BaseIfDirective {
     constructor(
         protected viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        @Optional() @Host() parentIfDirective?: BaseIfDirective
+        parentIfDirective?: BaseIfDirective
     ) {
         this._templateRef = templateRef;
         if (parentIfDirective) {
@@ -57,12 +56,12 @@ abstract class BaseIfDirective {
     protected updateAllViews() {
         // 清除所有兄弟指令的视图
         this._siblingDirectives.forEach(dir => dir.clearView());
-        
+
         // 清除当前指令的视图
         if (this._hasView) {
             this.clearView();
         }
-        
+
         // 检查并创建当前指令的视图
         if (this.shouldCreateView()) {
             this.createView();
@@ -88,7 +87,7 @@ abstract class BaseIfDirective {
     protected updateView() {
         // 当条件变化时，更新所有相关视图
         this.updateAllViews();
-        
+
         // 通知父级指令更新所有视图（处理嵌套情况）
         if (this._parentIfDirective) {
             this._parentIfDirective.updateAllViews();
@@ -182,7 +181,7 @@ export class VElseIfDirective extends BaseIfDirective {
     constructor(
         viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        @Optional() @Host() parentIfDirective?: BaseIfDirective
+        @SkipSelf() @Host() parentIfDirective: BaseIfDirective
     ) {
         super(viewContainer, templateRef, parentIfDirective);
     }
@@ -201,12 +200,12 @@ export class VElseIfDirective extends BaseIfDirective {
         if (this._condition !== true) {
             return false;
         }
-        
+
         // 检查父级指令是否满足条件
         if (this._parentIfDirective && this._parentIfDirective._hasView) {
             return false;
         }
-        
+
         // 检查所有前面的兄弟指令是否满足条件
         return !this._siblingDirectives.some(dir => dir._hasView);
     }
@@ -232,19 +231,19 @@ export class VElseDirective extends BaseIfDirective {
     constructor(
         viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        @Optional() @Host() parentIfDirective?: BaseIfDirective
+        @SkipSelf() @Host() parentIfDirective?: BaseIfDirective
     ) {
         super(viewContainer, templateRef, parentIfDirective);
     }
 
     protected shouldCreateView(): boolean {
         // v-else 只有在前面所有条件都不满足时才显示
-        
+
         // 检查父级指令是否满足条件
         if (this._parentIfDirective && this._parentIfDirective._hasView) {
             return false;
         }
-        
+
         // 检查所有前面的兄弟指令是否满足条件
         return !this._siblingDirectives.some(dir => dir._hasView);
     }

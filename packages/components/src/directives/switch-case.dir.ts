@@ -1,4 +1,4 @@
-import { Host, Optional, Self } from '@tsdi/ioc';
+import { Host, Optional, Self, SkipSelf } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
@@ -21,9 +21,7 @@ export class SwitchDirective {
     private _caseDirectives: CaseDirective[] = [];
     private _defaultDirective: DefaultDirective | null = null;
 
-    constructor() {
-        console.log('create instance')
-    }
+    constructor() { }
 
     @Attribute()
     set switch(value: any) {
@@ -140,7 +138,7 @@ export class CaseDirective {
         private viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
         // Get parent switch directive
-        @Optional() @Host() switchDirective?: SwitchDirective
+       @SkipSelf() @Host() switchDirective: SwitchDirective
     ) {
         this._template = templateRef;
         if (switchDirective) {
@@ -235,8 +233,7 @@ export class DefaultDirective {
     constructor(
         private viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        // Get parent switch directive
-        @Optional() @Host() switchDirective?: SwitchDirective
+        @SkipSelf() @Host() switchDirective: SwitchDirective
     ) {
         this._template = templateRef;
         if (switchDirective) {

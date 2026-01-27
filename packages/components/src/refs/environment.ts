@@ -1,12 +1,14 @@
-import { createResolveHandler, DefaultInvocationContext, invokeTail, isFunction, isResolved, isType, ResolveHandler, ResolveInterceptorFn, ResolveInterceptorLike, TargetInvokeArguments, token, Type } from '@tsdi/ioc';
+import { createResolveHandler, DefaultInvocationContext, getDef, InjectFlags, invokeTail, isFunction, isResolved, isString, isType, ResolveHandler, ResolveInterceptorFn, ResolveInterceptorLike, TargetInvokeArguments, token, Type } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { RNode } from '../renderer/Node';
-import { DirectiveRef } from './directive';
-import { ComponentRef } from './component';
+import { DirectiveDef, DirectiveRef, DirectiveType } from './directive';
+import { ComponentDef, ComponentRef } from './component';
 import { ViewContainerRef } from './container';
 import { createViewContainerRef } from '../impl/container';
 import { noReact } from '../effect';
+import { ViewRef } from './view';
+import { Renderer } from '../renderer/Renderer';
 
 
 export class EnvironmentState {
@@ -129,11 +131,74 @@ export class EnvironmentContext extends DefaultInvocationContext {
     }
 
 
+    query<T>(selector: Type<T>, el: RNode | RNode[]): ComponentRef<T> | DirectiveRef<T> | null;
+    query<C>(selector: string, el: RNode | RNode[]): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
+    query(selector: string | Type, el: RNode | RNode[]): any {
+        let sel: string;
+        let def: ComponentDef | DirectiveDef | undefined;
+        if (isString(selector)) {
+            sel = selector
+        } else {
+            def = getDef(selector) as ComponentDef | DirectiveDef;
+            sel = def.selector;
+        }
+        if (!sel) {
+            return null;
+        }
+
+        const node = this.get(Renderer).querySelector(el, sel);
+        if (node) {
+            if (def && def.dirType) {
+                if (def.dirType === DirectiveType.Component) {
+                    return this.getComponentRefByNode(node) ?? null
+                }
+                return this.getDirectiveRefByNode(node) ?? null;
+            }
+
+            return this.getTemplateRef(node) ?? this.getElementRef(node);
+        }
+
+        return null;
+    }
+
+
+    queryAll<T>(selector: Type<T>, el: RNode | RNode[]): Array<ComponentRef<T> | DirectiveRef<T>>;
+    queryAll<C>(selector: string, el: RNode | RNode[]): Array<ElementRef<C> | ViewRef<C> | TemplateRef<C>>;
+    queryAll(selector: string | Type, el: RNode | RNode[]): Array<any> {
+        let sel: string;
+        let def: ComponentDef | DirectiveDef | undefined;
+        if (isString(selector)) {
+            sel = selector
+        } else {
+            def = getDef(selector) as ComponentDef | DirectiveDef;
+            sel = def.selector;
+        }
+        if (!sel) {
+            return [];
+        }
+        const nodes = this.get(Renderer).querySelectorAll(el, sel);
+        if (!nodes) {
+            return [];
+        }
+
+        return nodes.map(node => {
+            if (def && def.dirType) {
+                if (def.dirType === DirectiveType.Component) {
+                    return this.getComponentRefByNode(node) ?? null
+                }
+                return this.getDirectiveRefByNode(node) ?? null;
+            }
+
+            return this.getTemplateRef(node) ?? this.getElementRef(node);
+        });
+    }
+
+
     /**
      * get component ref.
      * @param componentType component type.
      */
-    getComponentRef<T>(componentType: Type<T>): ComponentRef<T>[] {
+    getComponentRef<T>(componentType: Type<T>, flags = InjectFlags.Default): ComponentRef<T>[] {
         const results: ComponentRef<T>[] = this.getParentEnviroment()?.getComponentRef(componentType) ?? [];
         this.state.componentRefs.forEach(ref => {
             if (ref.instance instanceof componentType) {
@@ -147,19 +212,19 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * get component ref.
      * @param node element.
      */
-    getComponentRefByNode(node: RNode): ComponentRef<any> | null {
+    getComponentRefByNode(node: RNode, flags = InjectFlags.Default): ComponentRef<any> | null {
         return this.state.componentRefs.get(node) ?? this.getParentEnviroment()?.getComponentRefByNode(node) ?? null;
     }
 
     /**
      * get directive ref.
-     * @param componentType directive type.
+     * @param directorType directive type.
      */
-    getDirectiveRef<T>(componentType: Type<T>): DirectiveRef<T>[] {
-        const results: DirectiveRef<T>[] = this.getParentEnviroment()?.getDirectiveRef(componentType) ?? [];
+    getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): DirectiveRef<T>[] {
+        const results: DirectiveRef<T>[] = this.getParentEnviroment()?.getDirectiveRef(directorType) ?? [];
         this.state.directiveRefs.forEach(refs => {
             refs.forEach(ref => {
-                if (ref.instance instanceof componentType) {
+                if (ref.instance instanceof directorType) {
                     results.push(ref as DirectiveRef<T>);
                 }
             });
@@ -171,7 +236,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * get directive ref.
      * @param node element.
      */
-    getDirectiveRefByNode(node: RNode): DirectiveRef<any> | null {
+    getDirectiveRefByNode(node: RNode, flags = InjectFlags.Default): DirectiveRef<any> | null {
         const refs = this.state.directiveRefs.get(node);
         return refs && refs.length > 0 ? refs[0] : this.getParentEnviroment()?.getDirectiveRefByNode(node) ?? null;
     }
@@ -180,7 +245,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * get template ref.
      * @param node template element.
      */
-    getTemplateRef<T>(node: RNode): TemplateRef<T> | null {
+    getTemplateRef<T>(node: RNode, flags = InjectFlags.Default): TemplateRef<T> | null {
         return this.state.templateRefs.get(node) ?? this.getParentEnviroment()?.getTemplateRef(node) ?? null;
     }
 
@@ -192,10 +257,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @return {*}  {ElementRef<T>}
      * @memberof EnvironmentContext
      */
-    getElementRef<T extends RNode>(node: T): ElementRef<T> {
-        if (!this.state.elementRefs.has(node)) {
-            this.state.elementRefs.set(node, new ElementRef(node));
-        }
+    getElementRef<T extends RNode>(node: T, flags = InjectFlags.Default): ElementRef<T> {
         return this.state.elementRefs.get(node) ?? this.getParentEnviroment()?.getElementRef(node) ?? this.createElementRef(node);
     }
 
@@ -207,7 +269,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
      * @return {*}  {ElementRef<T>}
      * @memberof EnvironmentContext
      */
-    getViewContainerRef<T extends RNode>(nodeOrRef: T | ElementRef<T>): ViewContainerRef<T> {
+    getViewContainerRef<T extends RNode>(nodeOrRef: T | ElementRef<T>, flags = InjectFlags.Default): ViewContainerRef<T> {
         const node = nodeOrRef instanceof ElementRef ? nodeOrRef.nativeElement : nodeOrRef;
         return this.state.viewContainerRefs.get(node) ?? this.getParentEnviroment()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
     }

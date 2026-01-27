@@ -2,7 +2,6 @@ import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions,
 import { AttributeMetadata } from '../decorators/atteribute';
 import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
-import { RNode } from '../renderer/Node';
 import { EnvironmentContext } from './environment';
 import { ComputedMetadata } from '../decorators/computed';
 import { noReact } from '../effect';
