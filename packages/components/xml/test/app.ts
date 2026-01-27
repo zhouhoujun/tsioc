@@ -170,6 +170,7 @@ export class AppComponent2 implements OnInit {
       </div>
       <div class="conditional-content">
         <p v-if="showConditional">This is conditional content</p>
+        <p v-else-if="showConditional2">This is conditional2 content</p>
         <p v-else>This is the alternate content</p>
       </div>
       <div class="switch-content" v-switch='switchLable'>
@@ -183,6 +184,7 @@ export class AppComponent2 implements OnInit {
 export class ComplexComponent implements OnInit {
   title = 'Complex Test Component';
   showConditional = false;
+  showConditional2 = false;
   switchLable= 'Case 2';
   items = [
     { id: 1, name: 'Item 1', value: 'Value 1' },

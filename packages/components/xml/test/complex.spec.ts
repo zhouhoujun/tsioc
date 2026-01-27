@@ -53,7 +53,7 @@ export class ComplexTest {
         const elementRef = complexRef.hostView.query('.dynamic-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
         expect(elementRef.nativeElement.childNodes.length).toEqual(4);
-        
+
         expect(elementRef.nativeElement.childNodes[1].childNodes[0].textContent).toEqual('Item 2: Value 2');
     }
 
@@ -65,9 +65,18 @@ export class ComplexTest {
 
         const elementRef = complexRef.hostView.query('.conditional-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
-        expect(elementRef.nativeElement.childNodes.length).toEqual(3);
-        
-        expect(elementRef.nativeElement.childNodes[0].childNodes[2].textContent).toEqual('his is the alternate content');
+        expect(elementRef.nativeElement.childNodes.length).toEqual(4);
+
+        expect(elementRef.nativeElement.childNodes[2].childNodes[0].textContent).toEqual('This is the alternate content');
+
+        complexRef.instance.showConditional2 = true;
+
+        expect(elementRef.nativeElement.childNodes[1].textContent).toEqual('This is conditional2 content');
+
+        complexRef.instance.showConditional2 = false;
+        complexRef.instance.showConditional = true;
+        expect(elementRef.nativeElement.childNodes[0].textContent).toEqual('This is conditional content');
+
     }
 
 
@@ -79,7 +88,7 @@ export class ComplexTest {
         const elementRef = complexRef.hostView.query('.switch-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
         expect(elementRef.nativeElement.childNodes.length).toEqual(3);
-        
+
         expect(elementRef.nativeElement.childNodes[0].childNodes[0].textContent).toEqual('This is case 2 content');
     }
 

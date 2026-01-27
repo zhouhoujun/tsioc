@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Host, Optional, Self } from '@tsdi/ioc';
+import { Host, Optional } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
@@ -14,7 +14,7 @@ import { DirectiveType } from '../refs/directive';
  */
 @Abstract()
 abstract class BaseIfDirective {
-    protected _hasView = false;
+    public _hasView = false;
     private _context: any = null; // 模板上下文
     protected _siblingDirectives: BaseIfDirective[] = [];
     protected _templateRef: TemplateRef<any>;
@@ -37,8 +37,7 @@ abstract class BaseIfDirective {
     set context(ctx: any) {
         const changed = this._context !== ctx;
         this._context = ctx;
-        if (this._hasView && !changed) return;
-        if(changed) this.updateView();
+        if (changed) this.updateAllViews();
     }
 
     // 设置模板引用（从编译器传递）
@@ -46,7 +45,35 @@ abstract class BaseIfDirective {
     set template(templateRef: TemplateRef<any>) {
         const changed = this._templateRef !== templateRef;
         this._templateRef = templateRef;
-        if(changed) this.updateView();
+        if (changed) this.updateAllViews();
+    }
+
+    // 注册兄弟指令
+    protected registerSibling(directive: BaseIfDirective) {
+        this._siblingDirectives.push(directive);
+    }
+
+    // 更新所有相关视图（当前指令及其兄弟指令）
+    protected updateAllViews() {
+        // 清除所有兄弟指令的视图
+        this._siblingDirectives.forEach(dir => dir.clearView());
+        
+        // 清除当前指令的视图
+        if (this._hasView) {
+            this.clearView();
+        }
+        
+        // 检查并创建当前指令的视图
+        if (this.shouldCreateView()) {
+            this.createView();
+        } else {
+            // 如果当前指令不满足条件，检查所有兄弟指令
+            this._siblingDirectives.forEach(dir => {
+                if (!dir._hasView && dir.shouldCreateView()) {
+                    dir.createView();
+                }
+            });
+        }
     }
 
     protected createView() {
@@ -56,14 +83,15 @@ abstract class BaseIfDirective {
         }
         this.viewContainer.createEmbeddedView(this._templateRef, this._context);
         this._hasView = true;
-        // 当当前指令显示时，隐藏所有兄弟指令
-        this._siblingDirectives.forEach(dir => dir.clearView());
     }
 
     protected updateView() {
-        if (this._hasView) {
-            this.clearView();
-            this.createView();
+        // 当条件变化时，更新所有相关视图
+        this.updateAllViews();
+        
+        // 通知父级指令更新所有视图（处理嵌套情况）
+        if (this._parentIfDirective) {
+            this._parentIfDirective.updateAllViews();
         }
     }
 
@@ -72,20 +100,18 @@ abstract class BaseIfDirective {
         this._hasView = false;
     }
 
-    protected registerSibling(directive: BaseIfDirective) {
-        this._siblingDirectives.push(directive);
-    }
-
-    // 添加初始化方法，确保指令在创建后能正确渲染
-    onInit() {
-        // 初始化时检查是否需要创建视图
-        if (this.shouldCreateViewOnInit()) {
-            this.createView();
-        }
+    // 检查是否应该创建视图（子类可以重写）
+    protected shouldCreateView(): boolean {
+        return false;
     }
 
     // 子类需要实现此方法来确定初始化时是否创建视图
     protected abstract shouldCreateViewOnInit(): boolean;
+
+    onInit() {
+        // 初始化时更新所有视图
+        this.updateAllViews();
+    }
 
     onDestroy() {
         this.clearView();
@@ -122,15 +148,15 @@ export class VIfDirective extends BaseIfDirective {
 
     @Attribute()
     set if(condition: boolean) {
-        const changed = this._condition == condition;
-        if (this._hasView && !changed) return;
-
+        const changed = this._condition !== condition;
         this._condition = condition;
-        if (condition && !this._hasView) {
-            this.createView();
-        } else if (!condition && this._hasView) {
-            this.clearView();
+        if (changed) {
+            this.updateView();
         }
+    }
+
+    protected shouldCreateView(): boolean {
+        return this._condition;
     }
 
     protected shouldCreateViewOnInit(): boolean {
@@ -156,26 +182,37 @@ export class VElseIfDirective extends BaseIfDirective {
     constructor(
         viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        @Optional() @Host() parentIfDirective?: VIfDirective
+        @Optional() @Host() parentIfDirective?: BaseIfDirective
     ) {
         super(viewContainer, templateRef, parentIfDirective);
     }
 
     @Attribute()
     set elseIf(condition: boolean) {
-        const changed = this._condition == condition;
-        if (this._hasView && !changed) return;
-
+        const changed = this._condition !== condition;
         this._condition = condition;
-        if (condition && !this._hasView) {
-            this.createView();
-        } else if (!condition && this._hasView) {
-            this.clearView();
+        if (changed) {
+            this.updateView();
         }
     }
 
+    protected shouldCreateView(): boolean {
+        // v-else-if 只有在前面所有条件都不满足且自己条件为真时才显示
+        if (this._condition !== true) {
+            return false;
+        }
+        
+        // 检查父级指令是否满足条件
+        if (this._parentIfDirective && this._parentIfDirective._hasView) {
+            return false;
+        }
+        
+        // 检查所有前面的兄弟指令是否满足条件
+        return !this._siblingDirectives.some(dir => dir._hasView);
+    }
+
     protected shouldCreateViewOnInit(): boolean {
-        return this._condition === true;
+        return this.shouldCreateView();
     }
 }
 
@@ -187,36 +224,32 @@ export class VElseIfDirective extends BaseIfDirective {
  */
 @Directive({
     selector: '[v-else],[*else]',
-    requires: ['[v-if],[*if]'],
+    requires: ['[v-else-if],[*else-if]', '[v-if],[*if]'],
     dirType: DirectiveType.Conditional,
     priority: 10
 })
 export class VElseDirective extends BaseIfDirective {
-    private _show?: boolean;
-
     constructor(
         viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        @Optional() @Host() parentIfDirective?: VIfDirective
+        @Optional() @Host() parentIfDirective?: BaseIfDirective
     ) {
         super(viewContainer, templateRef, parentIfDirective);
     }
 
-    @Attribute()
-    set else(show: boolean) {
-        const changed = this._show === show;
-        if (!changed) return;
-        this._show = show;
-        // v-else不需要条件表达式，总是尝试显示
-        // 但需要确保前面的所有条件都不满足
-        if (show && !this._hasView) {
-            this.createView();
-        } else if (!show && this._hasView) {
-            this.clearView();
+    protected shouldCreateView(): boolean {
+        // v-else 只有在前面所有条件都不满足时才显示
+        
+        // 检查父级指令是否满足条件
+        if (this._parentIfDirective && this._parentIfDirective._hasView) {
+            return false;
         }
+        
+        // 检查所有前面的兄弟指令是否满足条件
+        return !this._siblingDirectives.some(dir => dir._hasView);
     }
 
     protected shouldCreateViewOnInit(): boolean {
-        return this._show === true;
+        return this.shouldCreateView();
     }
 }
