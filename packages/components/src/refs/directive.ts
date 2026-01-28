@@ -23,7 +23,7 @@ export enum DirectiveType {
     Component = 8,
 }
 
-export interface DirectiveDef<T = any> extends TypeDef<T> {
+export interface DirectiveDef<T = any> extends TypeDef<T>, Factoriable<T> {
     imports?: ModuleType[],
     selector: string;
     styles?: string[];
