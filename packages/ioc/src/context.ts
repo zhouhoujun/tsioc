@@ -10,6 +10,7 @@ import { Invocation } from './invocation';
 import { hasItem } from './utils/lang';
 import { Runtime } from './runtime';
 import { RunContext } from './handlers/contexts';
+import { isArray } from './utils/chk';
 
 
 /**
@@ -201,12 +202,6 @@ export type TokenValue<T = any> = [Token<T>, T];
  */
 export interface InvokeProviders {
     /**
-     * payload.
-     * 
-     * 调用接口的负载
-     */
-    payload?: any;
-    /**
      * token values.
      * 
      * 调用接口的标记值键值对
@@ -234,9 +229,11 @@ export interface InvokeProviders {
  */
 export interface InvokeOptions extends InvokeProviders {
     /**
-     * is resolve context or not.
+     * payload.
+     * 
+     * 调用接口的负载
      */
-    isResolve?: boolean;
+    payload?: any;
 }
 
 /**
@@ -253,6 +250,11 @@ export interface TargetInvokeArguments extends InvokeOptions {
      * named of invocation target propertyKey.
      */
     propertyKey?: string | symbol;
+
+    /**
+     * is resolve context or not.
+     */
+    isResolve?: boolean;
 }
 
 
@@ -286,7 +288,7 @@ export interface InvocationOptions<T = any> extends InvokeOptions {
 
 
 export function hasContextOptions(option?: InvokeOptions): boolean {
-    if (!option) return false;
-    return hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values);
+    if(!option) return false;
+    return isArray(option.providers ?? option.resolvers ?? option.values);
 }
 

@@ -13,7 +13,7 @@ import { composeHandlers } from '../handlers/compose';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
-import {createRunContext, RunContext } from '../handlers/contexts';
+import { createRunContext, RunContext } from '../handlers/contexts';
 import { ctorName } from '../metadata/define';
 
 /**
@@ -158,7 +158,8 @@ export abstract class AbstractInvocation<T = any,
         const [context, destroy, payload] = args ? [this.context] : this.createInvokeContext(name, ctx);
         const isNetRCtx = !resolveCtx;
         if (isNetRCtx) {
-            resolveCtx = createRunContext(context, payload);
+            resolveCtx = createRunContext(context);
+            if (payload) resolveCtx.setPayload(payload);
         } else {
             resolveCtx!.setInjector(context);
         }
@@ -192,13 +193,17 @@ export abstract class AbstractInvocation<T = any,
     }
 
     getMethodContext(propertyKey: string | symbol): TC {
-        if(propertyKey === ctorName) return this.context;
+        if (propertyKey === ctorName) return this.context;
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
             const opts = this.classRef.getMethodOptions(propertyKey);
-            ctx = this.createContext(this.context, opts);
-            this.context.onDestroy(ctx);
-            this._mthCtx.set(propertyKey, ctx);
+            if (hasContextOptions(opts)) {
+                ctx = this.createContext(this.context, opts);
+                this.context.onDestroy(ctx);
+                this._mthCtx.set(propertyKey, ctx);
+            } else {
+                this._mthCtx.set(propertyKey, null);
+            }
         }
         return ctx ?? this.context;
     }

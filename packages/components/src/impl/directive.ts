@@ -1,8 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, Runtime, AbstractType, InvokeOptions, Provider, RunContext,
-    createRunContext,
-    InjectUtil
+    Injector, Runtime, AbstractType, InvokeOptions, RunContext,
+    createRunContext, InjectUtil
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../effect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
@@ -10,8 +9,6 @@ import { reactive } from '../reactive';
 import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';
-import { ViewContainerRef } from '../refs/container';
-import { TemplateRef } from '../refs/template';
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
 
@@ -73,23 +70,6 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
             InjectUtil.use(injector, def.imports);
         }
         return injector;
-    }
-
-
-    protected override mergeProviders<T>(typeRef: ClassRef<T>, options?: DirectiveOptions): Provider[] {
-        const providers = super.mergeProviders(typeRef, options);
-        // if (options?.elementRef) {
-        //     const elementRef = options.elementRef;
-        //     providers.push({ provide: ElementRef, useValue: elementRef });
-        //     providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
-        //     // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef(options.templateNodes!, elementRef, ctx), deps: [EnvironmentContext] });
-        // }
-
-        // if(options?.templateRef) {
-        //     providers.push({ provide: TemplateRef, useValue: options.templateRef });
-        // }
-
-        return providers;
     }
 
     protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {

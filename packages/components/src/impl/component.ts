@@ -12,7 +12,6 @@ import { EnvironmentContext } from '../refs/environment';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
-import { ViewContainerRef } from '../refs/container';
 import { TemplateRef } from '../refs/template';
 import { RNode } from '../renderer/Node';
 import { DefaultReactiveEffect } from './effect';
@@ -120,12 +119,6 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         if (options?.renderer) {
             providers.push(toProvider(Renderer, options.renderer));
         }
-        // if (options?.elementRef) {
-        //     const elementRef = options.elementRef;
-        //     providers.push({ provide: ElementRef, useValue: elementRef });
-        //     providers.push({ provide: ViewContainerRef, useFactory: (ctx: EnvironmentContext) => ctx.getViewContainerRef(elementRef), deps: [EnvironmentContext] });
-        //     // providers.push({ provide: TemplateRef, useFactory: (ctx: EnvironmentContext) => createTemplateRef([elementRef.nativeElement as RNode], elementRef, ctx), deps: [EnvironmentContext] });
-        // }
         return providers;
     }
 

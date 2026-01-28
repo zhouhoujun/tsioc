@@ -1,12 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
 import { noReact } from '../effect';
-import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { Renderer } from '../renderer/Renderer';
-import { EnvironmentContext } from '../refs/environment';
 import { RNode } from '../renderer/Node';
-import { BindingFactory, TemplateRef } from '../refs/template';
+import { TemplateRef } from '../refs/template';
 import { TemplateParser } from './parser';
-import { DirectiveDef, DirectiveRef } from '../refs/directive';
+import { DirectiveDef } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
 import { ElementRef } from '../refs/element';
 
