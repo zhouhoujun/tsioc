@@ -180,9 +180,7 @@ export class XmlCssStyleDeclaration implements RCssStyleDeclaration {
 
 export class XmlDomTokenList implements RDomTokenList {
 
-    constructor(private tokens: string[] = []) {
-
-    }
+    constructor(private tokens: string[] = []) { }
 
     add(token: string): void {
         if (!this.tokens.includes(token)) {
@@ -215,12 +213,9 @@ export class XmlElement extends XmlNode implements RElement {
         return this.childNodes.filter(r => r.nodeType === NodeType.Text && (r as XmlText).textContent).map(r => (r as XmlText).textContent).join(' ') ?? null;
     }
 
-
-
-
-
     setProperty(name: string, value: any): void {
-        this.attributes.set(name, value);
+        // this.attributes.set(name, value);
+        this.style.setProperty(name, value);
     }
 
 }

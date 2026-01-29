@@ -130,7 +130,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
     }
 
 
-    query<T>(selector: Type<T>, el: RNode | RNode[]): ComponentRef<T> | DirectiveRef<T> | null;
+    query<T>(selector: Type<T>, el: RNode | RNode[], options?: {  }): ComponentRef<T> | DirectiveRef<T> | null;
     query<C>(selector: string, el: RNode | RNode[]): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
     query(selector: string | Type, el: RNode | RNode[]): any {
         let sel: string;

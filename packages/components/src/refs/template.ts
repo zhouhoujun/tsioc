@@ -70,8 +70,4 @@ export interface BindingFactory<T = any> {
      */
     unbind(target: RNode, environment: EnvironmentContext): void;
 
-    // /**
-    //  * 更新绑定
-    //  */
-    // update?(target: RNode, context: T, effect: ReactiveEffect, environment: EnvironmentContext): void;
 }

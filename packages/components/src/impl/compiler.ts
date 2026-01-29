@@ -383,11 +383,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 this.processIterableBinding(element, directiveDef, selectors, attrs);
                 break;
 
-
-            // case DirectiveType.Structural:
-            //     // 处理结构指令（v-switch）, *switch）
-            //     this.processStructuralBinding(element, directiveDef, selectors, attrs);
-            //     break;
             default:
                 this.bindingDirective(element, directiveDef, selectors, attrs);
                 break;
@@ -446,9 +441,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                         directiveRef.instance.onInit();
                     }
 
-                    // if (directiveRef.render) {
-                    //     directiveRef.render();
-                    // }
                 }
             },
             unbind: (target: RNode, environment) => {
@@ -511,24 +503,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         this.bindingDirective(container, dirDef, selectors, attrs, [el])
 
-
     }
-
-    // private processStructuralBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[]): void {
-    //     const readerer = this.renderer;
-
-    //     const templateNodes = el.childNodes.splice(0);
-    //     dirDef.requires?.forEach(reqSelector => {
-    //         const reqEl = readerer.querySelector(el, reqSelector);
-    //         if (reqEl) {
-    //             templateNodes.push(reqEl);
-    //         }
-    //     });
-
-    //     templateNodes.forEach(c => readerer.removeChild(el, c));
-
-    //     this.bindingDirective(el, dirDef, selectors, attrs, templateNodes);
-    // }
 
     /**
      * 处理指令属性
