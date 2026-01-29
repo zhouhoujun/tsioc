@@ -2,8 +2,8 @@ import { createResolveHandler, DefaultInvocationContext, getDef, InjectFlags, in
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { RNode } from '../renderer/Node';
-import { DirectiveDef, DirectiveOptions, DirectiveRef, DirectiveType } from './directive';
-import { ComponentDef, ComponentOptions, ComponentRef } from './component';
+import { DirectiveDef, DirectiveRef, DirectiveType } from './directive';
+import { ComponentDef, ComponentRef } from './component';
 import { ViewContainerRef } from './container';
 import { createViewContainerRef } from '../impl/container';
 import { noReact } from '../effect';
@@ -81,38 +81,6 @@ export class EnvironmentContext extends DefaultInvocationContext {
 
     getParentEnviroment(): EnvironmentContext | null {
         return this._parent instanceof EnvironmentContext ? this._parent : null;
-    }
-
-
-
-    createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: ComponentOptions): ComponentRef<C> {
-        const compDef = isFunction(componentType) ? getDef<ComponentDef>(componentType) : componentType;
-        const compRef = compDef.ƿFac?.(this, { ...options });
-        if (compRef && compRef.elementRef && compRef.elementRef.nativeElement) {
-            const el = compRef.elementRef.nativeElement;
-            if (!this.state.elementRefs.has(el)) {
-                this.state.elementRefs.set(el, compRef.elementRef);
-            }
-            this.state.componentRefs.set(compRef.elementRef.nativeElement, compRef);
-        }
-        return compRef!;
-    }
-
-    createDirective<C>(dirType: Type<C> | DirectiveDef<C>, options?: DirectiveOptions): DirectiveRef<C> {
-        const dirDef = isFunction(dirType) ? getDef<DirectiveDef>(dirType) : dirType;
-        const dirRef = dirDef.ƿfac?.(this, { ...options });
-          if (dirRef && dirRef.elementRef && dirRef.elementRef.nativeElement) {
-            const element = dirRef.elementRef.nativeElement;
-            if (!this.state.elementRefs.has(element)) {
-                this.state.elementRefs.set(element, dirRef.elementRef);
-            }
-            if (!this.state.directiveRefs.has(element)) {
-                this.state.directiveRefs.set(element, []);
-            }
-            this.state.directiveRefs.get(element)!.push(dirRef);
-        }
-        return dirRef!;
-
     }
 
     /**
@@ -305,17 +273,16 @@ export class EnvironmentContext extends DefaultInvocationContext {
         return this.state.viewContainerRefs.get(node) ?? this.getParentEnviroment()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
     }
 
-    createElementRef<T extends RNode>(node: T): ElementRef<T> {
+    protected createElementRef<T extends RNode>(node: T): ElementRef<T> {
         const eRef = new ElementRef(node);
         this.state.elementRefs.set(node, eRef);
         return eRef;
     }
 
-    createViewContainerRef<T extends RNode>(node: T): ViewContainerRef<T> {
+    protected createViewContainerRef<T extends RNode>(node: T): ViewContainerRef<T> {
         const containerRef = createViewContainerRef(this.getElementRef(node), this);
         this.state.viewContainerRefs.set(node, containerRef);
         return containerRef;
-
     }
 
 }

@@ -20,7 +20,7 @@ export enum NodeType {
   Comment = 8,
 
   /**
-   * The TNode contains information about an {@link LContainer} for embedded views.
+   * The TNode contains information about an {@link ViewContainerRef} for embedded views.
    */
   Container = 0b10000,
 
@@ -34,26 +34,11 @@ export enum NodeType {
    */
   Projection = 0b1000000,
 
-
   /**
-   * Special node type representing a placeholder for future `TNode` at this location.
-   *
-   * I18n translation blocks are created before the element nodes which they contain. (I18n blocks
-   * can span over many elements.) Because i18n `TNode`s (representing text) are created first they
-   * often may need to point to element `TNode`s which are not yet created. In such a case we create
-   * a `Placeholder` `TNode`. This allows the i18n to structurally link the `TNode`s together
-   * without knowing any information about the future nodes which will be at that location.
-   *
-   * On `firstCreatePass` When element instruction executes it will try to create a `TNode` at that
-   * location. Seeing a `Placeholder` `TNode` already there tells the system that it should reuse
-   * existing `TNode` (rather than create a new one) and just update the missing information.
+   * The TNode contains information about an {@link RTemplate} for embedded views.
    */
-  Placeholder = 0b10000000,
+  Template = 0b10000000,
 
-  /**
-   * The TNode contains information about a `@let` declaration.
-   */
-  LetDeclaration = 0b100000000,
 
   // Combined Types These should never be used for `TNode.type` only as a useful way to check
   // if `TNode.type` is one of several choices.

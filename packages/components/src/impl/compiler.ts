@@ -172,6 +172,35 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             this.bindingAtrrbuteFactories(node, attrs);
         }
     }
+
+    /**
+     * 创建文本节点的绑定工厂
+     */
+    private bindingTemplateFactory(element: RElement): void {
+        const childNodes = element.childNodes;
+        element.childNodes = [];
+        this.binding(element, {
+            bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
+                if (environment.destroyed) return;
+                const el = target as RElement;
+                const elementRef = environment.getElementRef(el);
+                const templateRef = createTemplateRef(childNodes, elementRef, { environment, context })
+
+                if (templateRef) {
+                    environment.attachTemplate(templateRef);
+                }
+            },
+            unbind: (target: RNode, environment) => {
+                // 清理组件引用
+            },
+            update: (context: any, environment) => {
+                // 组件属性更新
+            }
+        });
+
+
+    }
+
     /**
      * 创建元素节点的绑定工厂
      */
@@ -202,6 +231,10 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             dirs.forEach(dirDef => {
                 this.bindingDirectiveFactory(element, dirDef, attrs);
             });
+        }
+
+        if (element.nodeType === NodeType.Template) {
+            this.bindingTemplateFactory(element)
         }
 
     }
@@ -424,10 +457,10 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
 
                 // if (environment.destroyed) return;               
-                const elementRef =  environment.getElementRef(target);
+                const elementRef = environment.getElementRef(target);
                 // 处理条件指令;
                 const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { environment }) : undefined;
-                if(templateRef) environment.attachTemplate(templateRef);
+                if (templateRef) environment.attachTemplate(templateRef);
                 const directiveRef = (dirDef as Factoriable).ƿfac?.(environment, { templateRef, elementRef });
 
                 if (directiveRef) {
@@ -439,9 +472,9 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                         directiveRef.instance.onInit();
                     }
 
-                    if (directiveRef.render) {
-                        directiveRef.render();
-                    }
+                    // if (directiveRef.render) {
+                    //     directiveRef.render();
+                    // }
                 }
             },
             unbind: (target: RNode, environment) => {

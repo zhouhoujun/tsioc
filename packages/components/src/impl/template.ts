@@ -37,7 +37,8 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         private options?: {
             directives?: Map<RNode, DirectiveDef<any>[]>;
             components?: Map<RNode, ComponentDef>;
-            environment?: EnvironmentContext
+            environment?: EnvironmentContext;
+            context?: any
         }
     ) { }
 
@@ -54,7 +55,11 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         if (!environment) throw new Exception('EnvironmentContext is required');
 
         const renderer = environment.get(Renderer);
-        const effect = environment.get(ReactiveEffect);
+        const effect = environment.get(ReactiveEffect);    
+        
+        if (this.options?.context) {
+            Object.assign(context as any, this.options.context);
+        }
         // 响应式处理上下文
         context = isReactive(context) ? context : reactive(context, effect);
 
@@ -69,7 +74,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     }
 
     private bindings(node: RNode, context: C, effect: ReactiveEffect, environment: EnvironmentContext): void {
-        
+
         const bindings = node[BINDINGS];
         if (bindings?.length) {
             bindings.forEach(factory => {
@@ -77,13 +82,13 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
                 environment.onDestroy(() => factory.unbind(node, environment))
             });
         }
-        
+
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
                 this.bindings(n, context, effect, environment)
             });
         }
-        
+
 
     }
 
@@ -133,6 +138,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, options?: {
     directives?: Map<RNode, DirectiveDef<any>[]>;
     components?: Map<RNode, ComponentDef>;
+    context?: any;
     environment?: EnvironmentContext
 }): TemplateRef<C> {
     return new TemplateRefImpl<C>(rootNodes, elementRef, options);
