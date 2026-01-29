@@ -161,9 +161,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 // 清理文本节点的绑定
                 const textNode = target as RText;
                 textNode.textContent = expr; // 恢复原始文本
-            },
-            update: (target: RNode, context: any, effect, environment: EnvironmentContext) => {
-                // 文本节点的更新在 bind 方法中通过响应式处理
             }
         });
 
@@ -192,9 +189,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             },
             unbind: (target: RNode, environment) => {
                 // 清理组件引用
-            },
-            update: (context: any, environment) => {
-                // 组件属性更新
             }
         });
 
@@ -274,9 +268,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 const el = target as RElement;
                 el.setAttribute(attrName, expr);
                 // 移除事件监听器（需要存储引用）
-            },
-            update: (target: RNode, context: any, effect: ReactiveEffect<any>, environment) => {
-                // 事件绑定通常不需要更新
             }
         });
     }
@@ -297,14 +288,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             unbind: (target: RNode, environment) => {
                 const el = target as RElement;
                 el.removeAttribute(propName);
-            },
-            update: (target, context: any, effect, environment) => {
-                // 属性更新通过响应式 effect 处理
-                const el = target as RElement;
-                effect.run(() => {
-                    const attValue = this.evaluateExpression(expr, context, environment);
-                    el.setAttribute(propName, attValue);
-                });
             }
         });
     }
@@ -330,9 +313,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             unbind: (target: RNode, environment) => {
                 const el = target as RElement;
                 el.setAttribute(attrName, expr); // 恢复原始值
-            },
-            update: (context: any, effect: ReactiveEffect<any>, environment) => {
-                // 插值更新通过响应式 effect 处理
             }
         });
     }
@@ -355,9 +335,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 const el = target as RElement;
                 el.removeAttribute('value');
                 // 移除事件监听器
-            },
-            update: (context: any, effect, environment) => {
-                // 双向绑定通过响应式 effect 处理
             }
         });
     }
@@ -386,9 +363,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             },
             unbind: (target: RNode, environment) => {
                 // 清理组件引用
-            },
-            update: (context: any, environment) => {
-                // 组件属性更新
             }
         });
     }
@@ -481,13 +455,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
                 // 清理指令引用
                 const directives = target[BIND_DIRECTIVES];
                 remove(directives, dirDef);
-            },
-            update: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
-                // 指令属性更新
-                const directives = target[BIND_DIRECTIVES];
-                directives?.forEach(dir => {
-                    this.processDirectiveAttributes(dir, dirDef, selectors, attrs, context, effect, environment);
-                });
             }
         });
     }
