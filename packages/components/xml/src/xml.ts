@@ -1,11 +1,10 @@
-import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
+import { Inject, Injectable, isArray, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
 import * as cssSelect from 'css-select';
 import {
     TemplateParser, AbstractTemplateCompiler, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
-    TemplateCompiler, TemplateCompilerOptions,
-    noReact
+    TemplateCompiler, TemplateCompilerOptions, noReact
 } from '@tsdi/components';
 import { EventEmitter } from 'events';
 
@@ -230,7 +229,7 @@ export class XmlRenderer implements Renderer {
         return node.nodeType;
     }
 
-    destroyNode?: ((node: RNode) => void) | null | undefined;
+    destroyNode?: ((node: RNode) => void) | null;
     // 创建XML注释节点
     createComment(value: string): XmlComment {
         return new XmlComment(value);

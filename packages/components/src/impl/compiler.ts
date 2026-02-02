@@ -46,13 +46,6 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     }
 
     /**
-     * 编译模板并返回完整的编译结果，包含绑定工厂
-     */
-    compileNodes<C>(nodes: RNode[], options: CompilerOptions): TemplateRef<C> {
-        return this.compileNodesWithFactories<C>(nodes, options);
-    }
-
-    /**
      * 编译节点并返回完整的编译结果
      */
     compileNodesWithFactories<C>(nodes: RNode[], options: CompilerOptions): TemplateRef<C> {

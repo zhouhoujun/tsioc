@@ -1,7 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { noReact } from '../effect';
 import { Renderer } from '../renderer/Renderer';
-import { RNode } from '../renderer/Node';
 import { TemplateRef } from '../refs/template';
 import { TemplateParser } from './parser';
 import { DirectiveDef } from '../refs/directive';
@@ -27,8 +26,6 @@ export abstract class TemplateCompiler<T = string> {
 
     abstract get parser(): TemplateParser;
     abstract get renderer(): Renderer;
-
-    abstract compileNodes<C>(nodes: RNode[], options: CompilerOptions): TemplateRef<C>
 
     abstract compile<C>(template: T, options: CompilerOptions): TemplateRef<C>;
 }
