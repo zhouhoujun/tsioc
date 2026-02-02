@@ -53,21 +53,13 @@ export abstract class TemplateRef<C = any> {
 
 }
 
-
-
+/**
+ * 取消绑定
+ */
+export type Unbinding = () => void;
 
 /**
- * 属性绑定工厂接口
+ * 绑定上下文到目标元素
  */
-export interface BindingFactory<T = any> {
-    /**
-     * 绑定属性到目标元素
-     */
-    bind(target: RNode, context: T, effect: ReactiveEffect, environment: EnvironmentContext): void;
+export type Bindings<T = any> = (target: RNode, context: T, effect: ReactiveEffect, environment: EnvironmentContext) => Unbinding | void;
 
-    /**
-     * 解绑属性
-     */
-    unbind(target: RNode, environment: EnvironmentContext): void;
-
-}

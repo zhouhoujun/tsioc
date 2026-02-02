@@ -225,10 +225,6 @@ export class XmlRenderer implements Renderer {
 
     [noReact] = true;
 
-    getNodeType(node: XmlNode): NodeType {
-        return node.nodeType;
-    }
-
     destroyNode?: ((node: RNode) => void) | null;
     // 创建XML注释节点
     createComment(value: string): XmlComment {

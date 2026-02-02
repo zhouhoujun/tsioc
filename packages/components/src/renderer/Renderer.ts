@@ -29,8 +29,6 @@ export abstract class Renderer {
   abstract createComment(value: string): RComment;
   abstract createElement(name: string, namespace?: string | null): RElement;
   abstract createText(value: string): RText;
-
-  abstract getNodeType(node: RNode): NodeType;
   /**
    * clone node.
    * @param node node to clone.

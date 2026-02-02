@@ -1,5 +1,5 @@
 import { Exception } from '@tsdi/ioc';
-import { BindingFactory, TemplateRef } from '../refs/template';
+import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';
@@ -50,25 +50,28 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * @param environment EnvironmentContext to be used within the embedded view.
      * @returns The new embedded view object.
      */
-    createEmbeddedView(context: C, environment?: EnvironmentContext): EmbeddedViewRef<C> {
+    createEmbeddedView(context?: C, environment?: EnvironmentContext): EmbeddedViewRef<C> {
         environment = environment || this.options?.environment;
         if (!environment) throw new Exception('EnvironmentContext is required');
 
         const renderer = environment.get(Renderer);
         const effect = environment.get(ReactiveEffect);    
         
-        if (this.options?.context) {
-            Object.assign(context as any, this.options.context);
+        if (context) {
+            if(this.options?.context) Object.assign(context as any, this.options.context);
+        } else {
+            context = this.options?.context ?? {};
         }
+        
         // 响应式处理上下文
         context = isReactive(context) ? context : reactive(context, effect);
 
         // 默认处理抽象节点
         const rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
-        rootNodes.forEach(node => this.bindings(node, context, effect, environment));
+        rootNodes.forEach(node => this.bindings(node, context!, effect, environment));
 
         // 创建嵌入式视图
-        const embeddedView = createEmbeddedViewRef(rootNodes, context, environment, effect); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
+        const embeddedView = createEmbeddedViewRef(rootNodes, context!, environment, effect); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
 
         return embeddedView;
     }
@@ -77,9 +80,9 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
         const bindings = node[BINDINGS];
         if (bindings?.length) {
-            bindings.forEach(factory => {
-                factory.bind(node, context, effect, environment);
-                environment.onDestroy(() => factory.unbind(node, environment))
+            bindings.forEach(binding => {
+                const unbinding = binding(node, context, effect, environment);
+                unbinding && environment.onDestroy(unbinding);
             });
         }
 
@@ -106,10 +109,9 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
     private cloneNode(node: RNode, renderer: Renderer): RNode {
         if (renderer?.cloneNode) return renderer.cloneNode(node);
-        const nodeType = renderer.getNodeType(node);
-        if (nodeType === NodeType.Text) {
+        if (node.nodeType === NodeType.Text) {
             return renderer.createText((node as RText).textContent || '');
-        } else if (nodeType === NodeType.Comment) {
+        } else if (node.nodeType === NodeType.Comment) {
             return renderer.createComment((node as RComment).textContent || '');
         }
         return this.cloneElementWithAttributes(node as RElement, renderer);

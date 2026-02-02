@@ -7,7 +7,7 @@ import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
-import { BindingFactory, TemplateRef } from '../refs/template';
+import { Bindings, TemplateRef } from '../refs/template';
 import { ReactiveEffect } from '../effect';
 
 
@@ -15,7 +15,7 @@ import { ReactiveEffect } from '../effect';
  * 模板编译结果，包含 TemplateRef 和绑定工厂
  */
 export interface TemplateCompilationResult<C = any> {
-    bindingFactories: Map<RNode, BindingFactory<C>[]>;
+    bindingFactories: Map<RNode, Bindings<C>[]>;
     directives: Map<RNode, DirectiveDef<any>[]>;
     components: Map<RNode, ComponentDef>;
 }
@@ -109,9 +109,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     ): void {
         for (const node of nodes) {
             node[BINDINGS] = [];
-            const nodeType = this.renderer.getNodeType(node);
-
-            if (nodeType === NodeType.Text || nodeType === NodeType.Comment) {
+            if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 // 创建文本节点的绑定工厂
                 this.bindingTextFactory(node as RText, (node as RText).textContent);
             } else {
@@ -122,7 +120,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         }
     }
 
-    private binding(node: RNode, factory: BindingFactory) {
+    private binding(node: RNode, factory: Bindings) {
         node[BINDINGS]?.push(factory);
     }
 
@@ -143,18 +141,16 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const matches = this.matchDelimiter(expr);
         if (!matches?.length) return;
 
-        this.binding(node, {
-            bind: (target: RNode, context: any, effect, environment: EnvironmentContext) => {
-                const textNode = target as RText;
-                this.evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
-                    textNode.textContent = updatedText;
-                }, environment);
-            },
-            unbind: (target: RNode, environment: EnvironmentContext) => {
-                // 清理文本节点的绑定
-                const textNode = target as RText;
-                textNode.textContent = expr; // 恢复原始文本
+        this.binding(node, (target: RNode, context: any, effect, environment: EnvironmentContext) => {
+            const textNode = target as RText;
+            this.evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
+                textNode.textContent = updatedText;
+            }, environment);
+
+            return () => {
+                textNode.textContent = expr;
             }
+
         });
 
         const attrs = this.renderer.getAttributes(node);
@@ -169,19 +165,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private bindingTemplateFactory(element: RElement): void {
         const childNodes = element.childNodes;
         element.childNodes = [];
-        this.binding(element, {
-            bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
-                if (environment.destroyed) return;
-                const el = target as RElement;
-                const elementRef = environment.getElementRef(el);
-                const templateRef = createTemplateRef(childNodes, elementRef, { environment, context })
+        this.binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
+            if (environment.destroyed) return;
+            const el = target as RElement;
+            const elementRef = environment.getElementRef(el);
+            const templateRef = createTemplateRef(childNodes, elementRef, { environment })
 
-                if (templateRef) {
-                    environment.attachTemplate(templateRef);
-                }
-            },
-            unbind: (target: RNode, environment) => {
-                // 清理组件引用
+            if (templateRef) {
+                environment.attachTemplate(templateRef);
             }
         });
 
@@ -251,17 +242,15 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private bindingEventFactory(element: RNode, attrName: string, expr: string): void {
         const eventName = attrName.substring(1);
 
-        this.binding(element, {
-            bind: (target: RNode, context: any, effect, environment: EnvironmentContext) => {
-                const el = target as RElement;
-                const handler = this.parseEventExpression(expr, context, effect, environment);
-                el.addEventListener(eventName, handler);
-            },
-            unbind: (target: RNode, environment) => {
-                const el = target as RElement;
+        this.binding(element, (target, context, effect, environment) => {
+            const el = target as RElement;
+            const handler = this.parseEventExpression(expr, context, effect, environment);
+            el.addEventListener(eventName, handler);
+
+            return () => {
                 el.setAttribute(attrName, expr);
-                // 移除事件监听器（需要存储引用）
             }
+
         });
     }
 
@@ -270,18 +259,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     private bindingPropertyFactory(element: RNode, attrName: string, expr: string): void {
         const propName = attrName.substring(1);
-        this.binding(element, {
-            bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
-                const el = target as RElement;
-                effect.run(() => {
-                    const attValue = this.evaluateExpression(expr, context, environment);
-                    el.setAttribute(propName, attValue);
-                });
-            },
-            unbind: (target: RNode, environment) => {
-                const el = target as RElement;
-                el.removeAttribute(propName);
-            }
+        this.binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
+            const el = target as RElement;
+            if (!el.setProperty) return;
+            effect.run(() => {
+                const attValue = this.evaluateExpression(expr, context, environment);
+                el.setProperty!(propName, attValue);
+            });
+            return () => el.removeAttribute(propName);
         });
     }
 
@@ -296,17 +281,13 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const matches = this.matchDelimiter(expr);
         if (!matches?.length) return;
 
-        this.binding(element, {
-            bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
-                const el = target as RElement;
-                this.evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
-                    el.setAttribute(attrName, updatedText);
-                }, environment);
-            },
-            unbind: (target: RNode, environment) => {
-                const el = target as RElement;
-                el.setAttribute(attrName, expr); // 恢复原始值
-            }
+        this.binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
+            const el = target as RElement;
+            this.evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
+                el.setAttribute(attrName, updatedText);
+            }, environment);
+
+            return () => el.setAttribute(attrName, expr); // 恢复原始值
         });
     }
 
@@ -314,17 +295,16 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      * 创建双向绑定工厂
      */
     private createModelBindingFactory(element: RNode, prop: string): void {
-        this.binding(element, {
-            bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
-                const el = target as RElement;
-                effect.run(() => {
-                    el.setAttribute('value', context[prop]);
-                    el.addEventListener('input', () => {
-                        context[prop] = el.getAttribute('value');
-                    });
+        this.binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
+            const el = target as RElement;
+            effect.run(() => {
+                el.setAttribute('value', context[prop]);
+                el.addEventListener('input', () => {
+                    context[prop] = el.getAttribute('value');
                 });
-            },
-            unbind: (target: RNode, environment) => {
+            });
+
+            return () => {
                 const el = target as RElement;
                 el.removeAttribute('value');
                 // 移除事件监听器
@@ -336,27 +316,23 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      * 创建组件绑定工厂
      */
     private bindingComponentFactory(element: RElement, componentDef: ComponentDef, attrs: RAttr[]): void {
-        this.binding(element, {
-            bind: async (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
-                if (environment.destroyed) return;
-                const el = target as RElement;
-                const elementRef = environment.getElementRef(el);
-                const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
+        this.binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
+            if (environment.destroyed) return;
+            const el = target as RElement;
+            const elementRef = environment.getElementRef(el);
+            const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
 
-                if (componentRef) {
-                    environment.attachComponent(componentRef);
+            if (componentRef) {
+                environment.attachComponent(componentRef);
 
-                    // 处理组件属性绑定
-                    attrs.forEach(({ name, value }) => {
-                        this.processComponentAttribute(componentRef, name, value, context, effect, environment);
-                    });
+                // 处理组件属性绑定
+                attrs.forEach(({ name, value }) => {
+                    this.processComponentAttribute(componentRef, name, value, context, effect, environment);
+                });
 
-                    await componentRef.render();
-                }
-            },
-            unbind: (target: RNode, environment) => {
-                // 清理组件引用
+                componentRef.render();
             }
+
         });
     }
 
@@ -415,28 +391,27 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
     private bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], templateNodes?: RNode[]) {
 
-        this.binding(node, {
-            bind: (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
+        this.binding(node, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
 
-                // if (environment.destroyed) return;               
-                const elementRef = environment.getElementRef(target);
-                // 处理条件指令;
-                const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { environment }) : undefined;
-                if (templateRef) environment.attachTemplate(templateRef);
-                const directiveRef = (dirDef as Factoriable).ƿfac?.(environment, { templateRef, elementRef });
+            // if (environment.destroyed) return;               
+            const elementRef = environment.getElementRef(target);
+            // 处理条件指令;
+            const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { environment }) : undefined;
+            if (templateRef) environment.attachTemplate(templateRef);
+            const directiveRef = (dirDef as Factoriable).ƿfac?.(environment, { templateRef, elementRef });
 
-                if (directiveRef) {
-                    environment.attachDirective(directiveRef);
-                    // 处理指令属性
-                    this.processDirectiveAttributes(directiveRef, dirDef, selectors, attrs, context, effect, environment);
+            if (directiveRef) {
+                environment.attachDirective(directiveRef);
+                // 处理指令属性
+                this.processDirectiveAttributes(directiveRef, dirDef, selectors, attrs, context, effect, environment);
 
-                    if (directiveRef.instance.onInit) {
-                        directiveRef.instance.onInit();
-                    }
-
+                if (directiveRef.instance.onInit) {
+                    directiveRef.instance.onInit();
                 }
-            },
-            unbind: (target: RNode, environment) => {
+
+            }
+
+            return () => {
                 // 清理指令引用
                 const directives = target[BIND_DIRECTIVES];
                 remove(directives, dirDef);

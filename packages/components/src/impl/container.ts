@@ -32,7 +32,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
     private _isElementContainer?: boolean;
     protected get isElementContainer(): boolean {
         if (this._isElementContainer === undefined) {
-            this._isElementContainer = (this.renderer.getNodeType(this.element.nativeElement) & NodeType.ElementContainer) === NodeType.ElementContainer;
+            this._isElementContainer = ((this.element.nativeElement as RNode).nodeType & NodeType.ElementContainer) === NodeType.ElementContainer;
         }
         return this._isElementContainer;
     }

@@ -1,5 +1,5 @@
 import { DirectiveDef } from '../refs/directive';
-import { BindingFactory } from '../refs/template';
+import { Bindings } from '../refs/template';
 
 
 export enum NodeType {
@@ -138,7 +138,7 @@ export interface RNode {
   /**
    * The bindings of this node.
    */
-  [BINDINGS]?: BindingFactory[];
+  [BINDINGS]?: Bindings[];
 
   /**
    * The directives of this node.

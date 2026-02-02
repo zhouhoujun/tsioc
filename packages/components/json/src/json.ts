@@ -224,10 +224,6 @@ export class JsonRenderer implements Renderer {
 
     [noReact] = true;
 
-    getNodeType(node: JsonNode): NodeType {
-        return node.nodeType as NodeType;
-    }
-
     destroyNode?: ((node: RNode) => void) | null | undefined;
 
     // 创建Json注释节点
