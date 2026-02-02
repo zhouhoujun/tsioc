@@ -9,6 +9,7 @@ import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
 import { Bindings, TemplateRef } from '../refs/template';
 import { ReactiveEffect } from '../effect';
+import { reactive } from '../reactive';
 
 
 /**
@@ -169,7 +170,34 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             if (environment.destroyed) return;
             const el = target as RElement;
             const elementRef = environment.getElementRef(el);
-            const templateRef = createTemplateRef(childNodes, elementRef, { environment })
+            let ctx: any;
+
+            if (el.hasAttribute(':templateOutletContext')) {
+                ctx = reactive({}, effect);
+                const expr = el.getAttribute(':templateOutletContext')!;
+                effect.run(() => {
+                    const value = this.evaluateExpression(expr, context, environment);
+                    Object.assign(ctx, value);
+                })
+            } else {
+                const attrs = this.renderer.getAttributes(el);
+                const vals = attrs.filter(r => r.name.startsWith(':')).map(r => [r.name.slice(1), r.value]);
+
+                if (vals.length) {
+
+                    ctx = reactive({}, effect);
+                    effect.run(() => {
+                        vals.forEach(([name, expr]) => {
+                            const value = this.evaluateExpression(expr, context, environment);
+                            ctx[name] = value;
+                        });
+                    })
+                } else {
+                    ctx = undefined;
+                }
+            }
+
+            const templateRef = createTemplateRef(childNodes, elementRef, { environment, context: ctx })
 
             if (templateRef) {
                 environment.attachTemplate(templateRef);

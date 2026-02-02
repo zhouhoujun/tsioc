@@ -55,14 +55,16 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         if (!environment) throw new Exception('EnvironmentContext is required');
 
         const renderer = environment.get(Renderer);
-        const effect = environment.get(ReactiveEffect);    
-        
+        const effect = environment.get(ReactiveEffect);
+
         if (context) {
-            if(this.options?.context) Object.assign(context as any, this.options.context);
+            if (this.options?.context) {
+                context = Object.assign(context, this.options.context);
+            }
         } else {
             context = this.options?.context ?? {};
         }
-        
+
         // 响应式处理上下文
         context = isReactive(context) ? context : reactive(context, effect);
 
