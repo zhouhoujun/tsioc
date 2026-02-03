@@ -42,7 +42,7 @@ export class BytesFormatPipe implements PipeTransform<string> {
     }
 }
 
-const clrZReg = /\.?0+$/;
+const clrZReg = /\.0+$/;
 const bits = [
     1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
     1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
