@@ -112,10 +112,10 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             node[BINDINGS] = [];
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 // 创建文本节点的绑定工厂
-                this.bindingTextFactory(node as RText, (node as RText).textContent);
+                this.bindingText(node as RText, (node as RText).textContent);
             } else {
                 // 创建元素节点的绑定工厂
-                this.bindingElementFactories(node as RElement, dirMap, compMap);
+                this.bindingElement(node as RElement, dirMap, compMap);
             }
 
         }
@@ -134,7 +134,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 创建文本节点的绑定工厂
      */
-    private bindingTextFactory(node: RText, expr: string | null): void {
+    private bindingText(node: RText, expr: string | null): void {
         if (!expr) {
             return;
         }
@@ -156,14 +156,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         const attrs = this.renderer.getAttributes(node);
         if (attrs?.length) {
-            this.bindingAtrrbuteFactories(node, attrs);
+            this.bindingAtrrbutes(node, attrs);
         }
     }
 
     /**
      * 创建文本节点的绑定工厂
      */
-    private bindingTemplateFactory(element: RElement): void {
+    private bindingTemplate(element: RElement): void {
         const childNodes = element.childNodes;
         element.childNodes = [];
         this.binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
@@ -210,7 +210,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 创建元素节点的绑定工厂
      */
-    protected bindingElementFactories<C>(
+    protected bindingElement<C>(
         element: RElement,
         dirMap: Map<RNode, DirectiveDef[]>,
         compMap: Map<RNode, ComponentDef>
@@ -218,7 +218,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const attrs = this.renderer.getAttributes(element);
 
         // 创建属性绑定工厂
-        this.bindingAtrrbuteFactories(element, attrs);
+        this.bindingAtrrbutes(element, attrs);
 
         // 递归处理子节点
         if (element.childNodes.length > 0) {
@@ -240,20 +240,20 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         }
 
         if (element.nodeType === NodeType.Template) {
-            this.bindingTemplateFactory(element)
+            this.bindingTemplate(element)
         }
 
     }
 
-    protected bindingAtrrbuteFactories(element: RNode, attrs: RAttr[]) {
+    protected bindingAtrrbutes(element: RNode, attrs: RAttr[]) {
         // 创建属性绑定工厂
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
                 // 事件绑定工厂
-                this.bindingEventFactory(element, name, value);
+                this.bindingEvent(element, name, value);
             } else if (name.startsWith(':')) {
                 // 属性绑定工厂
-                this.bindingPropertyFactory(element, name, value);
+                this.bindingProperty(element, name, value);
             } else if (name === 'v-model') {
                 this.createModelBindingFactory(element, value);
             } else if (this.delimiter.test(value)) {
@@ -267,7 +267,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 创建事件绑定工厂
      */
-    private bindingEventFactory(element: RNode, attrName: string, expr: string): void {
+    private bindingEvent(element: RNode, attrName: string, expr: string): void {
         const eventName = attrName.substring(1);
 
         this.binding(element, (target, context, effect, environment) => {
@@ -285,7 +285,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 创建属性绑定工厂
      */
-    private bindingPropertyFactory(element: RNode, attrName: string, expr: string): void {
+    private bindingProperty(element: RNode, attrName: string, expr: string): void {
         const propName = attrName.substring(1);
         this.binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: EnvironmentContext) => {
             const el = target as RElement;
