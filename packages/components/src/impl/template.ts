@@ -110,7 +110,6 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
 
     private cloneNode(node: RNode, renderer: Renderer): RNode {
-        if (renderer?.cloneNode) return renderer.cloneNode(node);
         if (node.nodeType === NodeType.Text) {
             return renderer.createText((node as RText).textContent || '');
         } else if (node.nodeType === NodeType.Comment) {

@@ -30,12 +30,6 @@ export abstract class Renderer {
   abstract createElement(name: string, namespace?: string | null): RElement;
   abstract createText(value: string): RText;
   /**
-   * clone node.
-   * @param node node to clone.
-   * @returns cloned node.
-   */
-  abstract cloneNode?(node: RNode): RNode;
-  /**
    * This property is allowed to be null / undefined,
    * in which case the view engine won't call it.
    * This is used as a performance optimization for production mode.
