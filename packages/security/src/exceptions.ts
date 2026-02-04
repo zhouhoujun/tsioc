@@ -1,5 +1,5 @@
 import { getTypeName } from '@tsdi/ioc';
-import { MessageException, OutgoingMessage } from '@tsdi/common/transport';
+import { MessageException, OutgoingMessage } from '@tsdi/common';
 
 
 /**

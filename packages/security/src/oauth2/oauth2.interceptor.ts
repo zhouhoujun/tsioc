@@ -1,13 +1,13 @@
 import { Injectable } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
+import { RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { RestfulRequestContext } from '@tsdi/endpoints';
 import { Observable, defer, mergeMap } from 'rxjs';
 import { Authenticator } from '../Authenticator';
 import { OAuth2Options } from './oauth2.options';
 
 @Injectable()
-export class OAuth2Interceptor implements ApplicationInterceptor<RestfulRequestContext, any> {
-    intercept(input: RestfulRequestContext, next: ApplicationHandler, context?: any): Observable<any> {
+export class OAuth2Interceptor implements RequestInterceptor<RestfulRequestContext, any> {
+    intercept(input: RestfulRequestContext, next: RequestHandler, context?: any): Observable<any> {
         const options = input.get(OAuth2Options);
         
         // 检查是否是 OAuth 回调

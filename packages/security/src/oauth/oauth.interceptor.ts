@@ -1,6 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { UnauthorizedException } from '@tsdi/common/transport';
+import { RequestHandler, RequestInterceptor, UnauthorizedException } from '@tsdi/common';
 import { RestfulRequestContext } from '@tsdi/endpoints';
 import { Observable, from, throwError } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
@@ -8,9 +7,9 @@ import { Authenticator } from '../Authenticator';
 import { OAuthOption } from './oauth.options';
 
 @Injectable()
-export class OAuthInterceptor implements ApplicationInterceptor<RestfulRequestContext, any> {
+export class OAuthInterceptor implements RequestInterceptor<RestfulRequestContext, any> {
     
-    intercept(input: RestfulRequestContext, next: ApplicationHandler, context?: any): Observable<any> {
+    intercept(input: RestfulRequestContext, next: RequestHandler, context?: any): Observable<any> {
         const option = input.get(OAuthOption);
         const accessToken = this.getAccessToken(input);
 

@@ -1,12 +1,12 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext } from '@tsdi/endpoints';
+import { AbstractRequestContext } from '@tsdi/endpoints';
 import { OAuth2Options } from './oauth2.options';
 import { fetch } from 'cross-fetch';
 import { URLSearchParams } from 'url';
 
 @Injectable()
 export class OAuth2Service {
-    async handleCallback(ctx: RequestContext, options: OAuth2Options): Promise<any> {
+    async handleCallback(ctx: AbstractRequestContext, options: OAuth2Options): Promise<any> {
         const code = ctx.query.code;
         if (!code) {
             throw new Error('Authorization code not found');

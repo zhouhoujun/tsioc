@@ -1,7 +1,6 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { OutgoingMessage } from '@tsdi/common/transport';
-import { Middleware, RequestContext } from '@tsdi/endpoints';
+import { OutgoingMessage, RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { Middleware, AbstractRequestContext } from '@tsdi/endpoints';
 import { defer, finalize, mergeMap, Observable } from 'rxjs';
 
 
@@ -52,11 +51,11 @@ export class SessionManager {
 }
 
 @Injectable()
-export class SessionInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext, OutgoingMessage> {
+export class SessionInterceptor implements Middleware<AbstractRequestContext>, RequestInterceptor<AbstractRequestContext, OutgoingMessage> {
 
     constructor(private sessionManager: SessionManager) { }
 
-    intercept(input: RequestContext, next: ApplicationHandler, context?: any): Observable<any> {
+    intercept(input: AbstractRequestContext, next: RequestHandler, context?: any): Observable<any> {
 
         return defer(() => this.loadSession(input)).pipe(
             mergeMap(() => next.handle(input, context)),
@@ -66,7 +65,7 @@ export class SessionInterceptor implements Middleware<RequestContext>, Applicati
         )
     }
 
-    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: AbstractRequestContext, next: () => Promise<void>): Promise<void> {
         const session = await this.loadSession(ctx);
         try {
             await next();
@@ -77,7 +76,7 @@ export class SessionInterceptor implements Middleware<RequestContext>, Applicati
         }
     }
 
-    async loadSession(ctx: RequestContext) {
+    async loadSession(ctx: AbstractRequestContext) {
         let sessionId = ctx.request.cookies?.sessionId;
         let session: Session | null;
         if (sessionId) {
@@ -93,7 +92,7 @@ export class SessionInterceptor implements Middleware<RequestContext>, Applicati
             sessionId = await this.sessionManager.create(session);
             ctx.setHeader('cookie', `sessionId=${sessionId}`);
         }
-        ctx.setValue(Session, session);
+        ctx.set(Session, session);
         return session;
     }
 }

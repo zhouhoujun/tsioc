@@ -1,9 +1,7 @@
 import * as jwt from 'jsonwebtoken';
-
 import { Injectable, lang } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { Incoming, OutgoingMessage, UnauthorizedException } from '@tsdi/common/transport';
-import { RequestContext } from '@tsdi/endpoints';
+import { OutgoingMessage, RequestInterceptor, RequestHandler } from '@tsdi/common';
+import { AbstractRequestContext } from '@tsdi/endpoints';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { InvalidTokenException } from '../exceptions';
 import { Authenticator } from '../Authenticator';
@@ -13,9 +11,9 @@ import { JWTOption } from './jwt.config';
 
 
 @Injectable()
-export class JwtInterceptor implements ApplicationInterceptor<RequestContext, OutgoingMessage> {
+export class JwtInterceptor implements RequestInterceptor<AbstractRequestContext, OutgoingMessage> {
 
-    intercept(input: RequestContext, next: ApplicationHandler, context?: any): Observable<any> {
+    intercept(input: AbstractRequestContext, next: RequestHandler, context?: any): Observable<any> {
         const option = input.get(JWTOption);
         const token = this.getToken(input, option);
         if (!token) return throwError(() => new InvalidTokenException('no token'));
@@ -39,7 +37,7 @@ export class JwtInterceptor implements ApplicationInterceptor<RequestContext, Ou
         );
     }
 
-    getToken(ctx: RequestContext, option: JWTOption) {
+    getToken(ctx: AbstractRequestContext, option: JWTOption) {
         switch (option.tokenIn) {
             case 'header':
                 return parseAuthHeader(ctx.getHeader(option.tokenName))?.value;

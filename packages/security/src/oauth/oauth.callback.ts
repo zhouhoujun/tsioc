@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext, Controller, Get } from '@tsdi/endpoints';
+import { AbstractRequestContext, Controller, Get } from '@tsdi/endpoints';
 import { fetch } from 'cross-fetch';
 import { OAuthOption } from './oauth.options';
 
@@ -9,7 +9,7 @@ import { OAuthOption } from './oauth.options';
 export class OAuthCallback {
     
     @Get('/callback')
-    async handleCallback(ctx: RequestContext) {
+    async handleCallback(ctx: AbstractRequestContext) {
         const option = ctx.get(OAuthOption);
         const code = ctx.query.code;
 
