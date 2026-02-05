@@ -90,7 +90,7 @@ export function createPayloadResolveInterceptors(getPayload: (input: any, scope?
 
 
             if (parameter.multi) {
-                const value = getMutilResolveHanlder(context.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], context);
+                const value = getMutilResolveHanlder(context.getInjector().getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], context);
                 if (isResolved(value)) return value;
             } else {
                 return pipe.transform(payload, ...parameter.args || [])

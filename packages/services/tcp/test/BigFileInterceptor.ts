@@ -1,6 +1,5 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { RequestInterceptor, RequestHandler, RequestContext, ContentType, normalize } from '@tsdi/common';
-import { AbstractRequestContext } from '@tsdi/endpoints';
+import { RequestInterceptor, RequestHandler, RequestContext, ContentType, normalize, Incoming } from '@tsdi/common';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -11,15 +10,16 @@ import { join } from 'path';
 
 @Injectable()
 export class BigFileInterceptor implements RequestInterceptor {
-    intercept(input: AbstractRequestContext, next: RequestHandler<any, any>, context: RequestContext): Observable<any> {
+    intercept(input: Incoming, next: RequestHandler<any, any>, context: RequestContext): Observable<any> {
 
-        if (normalize(input.url) == 'content/big.json') {
-            return from(this.genedata(input))
+        if (normalize(input.path) == 'content/big.json') {
+
+            return from(this.genedata(context))
         }
         return next.handle(input, context);
     }
 
-    async genedata(input: AbstractRequestContext) {
+    async genedata(context: RequestContext) {
         const filename = join(__dirname, './public/big-temp.json');
         if (!fs.existsSync(filename)) {
             const defer = lang.defer();
@@ -39,9 +39,10 @@ export class BigFileInterceptor implements RequestInterceptor {
 
 
         const stats = await statify(filename);
-        input.length = stats.size;
-        input.type = ContentType.APPL_JSON;
-        input.body = fs.createReadStream(filename);
+        context.setContentLength(stats.size);
+        context.setContentType(ContentType.APPL_JSON);
+
+        return fs.createReadStream(filename);
 
     }
 

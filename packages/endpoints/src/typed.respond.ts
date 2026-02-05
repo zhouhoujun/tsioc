@@ -1,28 +1,28 @@
 import { Injectable } from '@tsdi/ioc';
 import { TypedRespond } from '@tsdi/core';
-import { OutgoingOpts } from '@tsdi/common';
+import { Incoming, OutgoingOpts, RequestContext } from '@tsdi/common';
 import { AbstractRequestContext } from './AbstractRequestContext';
 
 @Injectable()
 export class EndpointTypedRespond extends TypedRespond {
-    respond(ctx: AbstractRequestContext, value: any, response: 'body' | 'header' | 'response'): void {
+    respond(incoming: Incoming, value: any, response: 'body' | 'header' | 'response', context: AbstractRequestContext): void {
         if (response === 'body') {
-            ctx.body = value
+            context.body = value
         } else if (response === 'header') {
-            ctx.setHeader(value);
+            context.setHeader(value);
         } else if (response === 'response') {
             const { headers, body, payload, statusCode, status, statusMessage, statusText } = (value ?? {}) as OutgoingOpts;
             if (headers) {
-                ctx.setHeader(headers);
+                context.setHeader(headers);
             }
             if (body ?? payload) {
-                ctx.body = body ?? payload;
+                context.body = body ?? payload;
             }
             if (status ?? statusCode) {
-                ctx.status = status ?? statusCode;
+                context.status = status ?? statusCode;
             }
             if (statusMessage ?? statusText) {
-                ctx.statusMessage = statusMessage ?? statusText!;
+                context.statusMessage = statusMessage ?? statusText!;
             }
         }
     }

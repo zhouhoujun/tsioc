@@ -9,6 +9,8 @@ import { StreamAdapter } from './StreamAdapter';
 
 
 
+
+
 /**
  * Abstract outgoing factory.
  */
@@ -21,6 +23,7 @@ export abstract class AbstractOutgoingFactory<T extends OutgoingMessage = Outgoi
         payload?: any;
     }): WritableLike<T>
 }
+
 
 /**
  * Outgoing factory.

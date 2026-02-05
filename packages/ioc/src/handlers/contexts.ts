@@ -165,9 +165,6 @@ const PAYLOAD = new ContextToken<any>(() => null);
 const RUN_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) => void>(() => null!);
 // const RESOLVER_INJECTOR = new ContextToken<Injector>(() => null!);
 
-
-
-
 export class RunContext extends DefaultContext {
 
     constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
@@ -181,7 +178,7 @@ export class RunContext extends DefaultContext {
     setInjector(injector: Injector): this {
         return this.set(Injector, injector)
     }
-
+    
     getPayload<T = any>(): T {
         return this.get(PAYLOAD) as T;
     }
@@ -189,10 +186,6 @@ export class RunContext extends DefaultContext {
     setPayload<T>(payload: T) {
         this.set(PAYLOAD, payload);
         return this;
-    }
-
-    getRuntime(): Runtime {
-        return this.get(Runtime);
     }
 
     protected override getToken<T>(token: Token<T>) {
@@ -211,7 +204,6 @@ export class RunContext extends DefaultContext {
 
 
 }
-
 
 export function createRunContext(injector: Injector, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;
 export function createRunContext(injector: Injector, previous?: Context, entries?: Iterable<readonly [Token | ContextToken, any]>): RunContext;

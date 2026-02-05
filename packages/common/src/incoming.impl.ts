@@ -148,6 +148,9 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
 
     query: Record<string, any> | undefined;
 
+    get path() {
+        return this.pattern;
+    }
 
     constructor(init: IncomingOpts<T>) {
         this.id = init.id;
@@ -187,6 +190,9 @@ export class UrlIncoming<T = any> extends AbstractIncoming<T> implements Incomin
     url: string;
     method: string;
 
+    get path() {
+        return this.url;
+    }
 
     constructor(init: UrlIncomingOptions<T>) {
         super(init);
@@ -247,6 +253,10 @@ export class TopicIncoming<T = any> extends AbstractIncoming<T> implements Incom
 
     readonly topic: string;
     readonly responseTopic: string | undefined;
+
+    get path() {
+        return this.topic;
+    }
 
 
     constructor(init: TopicIncomingOptions<T>) {

@@ -12,7 +12,7 @@ import { Session } from './sessions/Session';
 import { ServiceConfig } from './server.options';
 
 /**
- * abstract request context.
+ * abstract request context for sevice side.
  * 
  * 请求上下文
  */
