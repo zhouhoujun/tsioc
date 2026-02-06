@@ -5,11 +5,10 @@ import { Observable, catchError, map, throwError } from 'rxjs';
 import { StatusAdapter } from './StatusAdapter';
 import { RequestInterceptor } from './interceptor';
 import { ReadableLike, WritableLike } from './stream';
-import { Incoming } from './incoming';
+import { Incoming, TopicIncoming, UrlIncoming } from './incoming';
 import { Outgoing } from './outgoing';
 import { RequestContext } from './context';
 import { RequestHandler } from './handler';
-import { TopicIncoming, UrlIncoming } from './incoming.impl';
 
 
 /**
