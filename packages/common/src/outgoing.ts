@@ -108,33 +108,39 @@ export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
 
 }
 
-/**
- * Client outgoing message
- */
-export interface ClientOutgoing<T = any> extends OutgoingMessage<T> {
-    id?: number | string;
 
-    url?: string;
-    method?: string;
+// /**
+//  * Client outgoing message
+//  */
+// export interface BaseClientOutgoing<T = any> extends OutgoingMessage<T> {
+//     id?: number | string;
 
-    params?: Record<string, any>;
+//     url?: string;
+//     method?: string;
 
-    query?: Record<string, any>;
+//     params?: Record<string, any>;
 
-    rawBody?: any;
+//     query?: Record<string, any>;
 
-    path?: any;
+//     rawBody?: any;
 
-}
-
-
-export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
-    url: string;
-}
+// }
 
 
-export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
-    topic: string;
-    responseTopic: string;
-}
+// export interface PatternClientOutgoing<T = any> extends BaseClientOutgoing<T> {
+//     pattern: string;
+// }
 
+
+// export interface UrlClientOutgoing<T = any> extends BaseClientOutgoing<T> {
+//     url: string;
+// }
+
+
+// export interface TopicClientOutgoing<T = any> extends BaseClientOutgoing<T> {
+//     topic: string;
+//     responseTopic: string;
+// }
+
+
+// export type ClientOutgoing<T = any> = PatternClientOutgoing<T> | UrlClientOutgoing<T> | TopicClientOutgoing<T>;

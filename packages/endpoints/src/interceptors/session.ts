@@ -1,8 +1,7 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { Incoming, ReadableLike, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
-import { AbstractRequestContext } from '../AbstractRequestContext';
-import { SESSION_OPTIONS, SessionOptions } from '../sessions/Session';
+import { Session, SESSION_OPTIONS, SessionOptions } from '../sessions/Session';
 
 
 
@@ -10,15 +9,15 @@ import { SESSION_OPTIONS, SessionOptions } from '../sessions/Session';
  * session.
  */
 @Injectable()
-export class SessionInterceptor implements RequestInterceptor<AbstractRequestContext> {
+export class SessionInterceptor implements RequestInterceptor<ReadableLike<Incoming>> {
 
     private options: SessionOptions;
     constructor(@Optional() @Inject(SESSION_OPTIONS) options?: SessionOptions) {
         this.options = options ?? defOpts;
     }
 
-    intercept(input: AbstractRequestContext, next: RequestHandler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
-        const session = input.session;
+    intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, any>, context: RequestContext): Observable<any> {
+        const session = context.get(Session);
         if (!session) {
             return next.handle(input, context);
         }

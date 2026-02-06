@@ -1,7 +1,7 @@
 import { Abstract, Injectable, isBoolean, isString } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
 import { Pattern } from './pattern';
-import { StatusIncoming } from './incoming';
+import { ClientIncoming } from './incoming';
 
 export interface StatusOptions<TStatus = any> {
     /**
@@ -205,7 +205,7 @@ export abstract class ResponseFactory<TStatus = null> {
      * create response.
      * @param options 
      */
-    abstract create<T>(options: StatusIncoming<T>): ResponseEvent<T, TStatus> | ErrorResponse<TStatus>;
+    abstract create<T>(options: ClientIncoming<T>): ResponseEvent<T, TStatus> | ErrorResponse<TStatus>;
 }
 
 @Injectable()

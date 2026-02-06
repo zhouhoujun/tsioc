@@ -213,7 +213,6 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
                 Injector
             ]
         },
-
         {
             provide: REGISTER_SERVICES,
             useFactory: (service) => {

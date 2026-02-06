@@ -1,5 +1,5 @@
 import { Injectable, lang } from '@tsdi/ioc';
-import { RequestInterceptor, RequestHandler, RequestContext, ContentType, normalize, Incoming } from '@tsdi/common';
+import { RequestInterceptor, RequestHandler, RequestContext, ContentType, normalize, UrlIncoming } from '@tsdi/common';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -10,9 +10,9 @@ import { join } from 'path';
 
 @Injectable()
 export class BigFileInterceptor implements RequestInterceptor {
-    intercept(input: Incoming, next: RequestHandler<any, any>, context: RequestContext): Observable<any> {
+    intercept(input: UrlIncoming, next: RequestHandler<any, any>, context: RequestContext): Observable<any> {
 
-        if (normalize(input.path) == 'content/big.json') {
+        if (normalize(input.url) == 'content/big.json') {
 
             return from(this.genedata(context))
         }

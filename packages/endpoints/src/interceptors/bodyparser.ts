@@ -1,13 +1,11 @@
 /* eslint-disable no-control-regex */
-import { Abstract, Injectable, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
+import { Abstract, Injectable, isArray, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
-import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter } from '@tsdi/common';
+import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, HeaderAdapter, MimeAdapter } from '@tsdi/common';
 import { IReadable, MimeTypes } from '@tsdi/common';
 import { isBuffer } from '@tsdi/common/transport';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
-import { AbstractRequestContext } from '../AbstractRequestContext';
-
 
 @Abstract()
 export class BodyparserOptions {
@@ -31,7 +29,7 @@ export class BodyparserOptions {
 }
 
 @Injectable()
-export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<Incoming>, WritableLike<Outgoing>, AbstractRequestContext> {
+export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext> {
 
     private options: {
         json: {
@@ -77,7 +75,7 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
             || isBuffer(input.body);
     }
 
-    intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, AbstractRequestContext>, context: AbstractRequestContext): Observable<any> {
+    intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<any> {
         const streamAdapter = context.get(StreamAdapter);
         if (!this.canHanlde(input, streamAdapter)) return next.handle(input, context);
         return from(this.parseBody(input, context))
@@ -90,34 +88,65 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
             )
     }
 
-    private parseBody(input: ReadableLike<Incoming>, context: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
+    private parseBody(input: ReadableLike<Incoming>, context: RequestContext): Promise<{ raw?: any, body?: any }> {
         const types = context.get(MimeTypes);
-        if (this.enableJson && context.is(types?.json ?? 'json')) {
-            return this.parseJson(context)
+        const headerAdapter = context.get(HeaderAdapter);
+        const mimeAdapter = context.get(MimeAdapter);
+
+        let encoding = headerAdapter.getContentEncoding(input);
+        const len = headerAdapter.getContentLength(input);
+        //no body
+        if (encoding && !len) {
+            return Promise.resolve({})
         }
-        if (this.enableForm && context.is(types?.form ?? 'form')) {
-            return this.parseForm(context)
+
+        encoding ??= identity;
+
+        const streamAdapter = context.get(StreamAdapter);
+
+        if (this.enableJson && this.is(types?.json ?? 'json', input, headerAdapter, mimeAdapter)) {
+            return this.parseJson(input, encoding, len, streamAdapter)
         }
-        if (this.enableText && context.is(types?.text ?? 'text')) {
-            return this.parseText(context)
+        if (this.enableForm && this.is(types?.form ?? 'form', input, headerAdapter, mimeAdapter)) {
+            return this.parseForm(input, encoding, len, streamAdapter)
         }
-        if (this.enableXml && context.is(types?.xml ?? 'xml')) {
-            return this.parseText(context)
+        if (this.enableText && this.is(types?.text ?? 'text', input, headerAdapter, mimeAdapter)) {
+            return this.parseText(input, encoding, len, streamAdapter)
+        }
+        if (this.enableXml && this.is(types?.xml ?? 'xml', input, headerAdapter, mimeAdapter)) {
+            return this.parseText(input, encoding, len, streamAdapter)
         }
 
         return Promise.resolve({})
     }
 
-    protected async parseJson(context: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = context.getContentLength();
-        const hdrcode = context.getContentEncoding() as string || identity;
+    private is(type: string | string[], input: ReadableLike<Incoming>, headerAdapter: HeaderAdapter, mimeAdapter: MimeAdapter): string | null | false {
+
+        const ctype = headerAdapter.getContentType(input);
+        if (!ctype) return false;
+        if (!mimeAdapter) {
+            const itype = isArray(type) ? type[0] : type;
+            if (ctype.indexOf(itype) >= 0 || itype.indexOf(ctype) >= 0) {
+                return itype;
+            }
+            return false;
+        }
+        const normaled = mimeAdapter.normalize(ctype);
+        if (!normaled) return false;
+
+        const types = isArray(type) ? type : [type];
+        return mimeAdapter.match(types, normaled)
+    }
+
+    protected async parseJson(input: ReadableLike<Incoming>, hdrcode: string, len: number, streamAdapter: StreamAdapter): Promise<{ raw?: any, body?: any }> {
+
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
         }
         const { limit, strict, encoding } = this.options.json;
 
-        const str = isBuffer(context.request.body)? context.request.body.toString() : await context.streamAdapter.rawbody(this.getStream(context, hdrcode), {
+        const str = isBuffer(input.body) ? input.body.toString() : await streamAdapter.rawbody(this.unzipify(input, streamAdapter, hdrcode), {
             encoding,
             limit,
             length
@@ -133,37 +162,34 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
         }
     }
 
-    private getStream(ctx: AbstractRequestContext, encoding: string): IReadable {
-        return this.unzipify(ctx, encoding);
-    }
 
-    protected unzipify(ctx: AbstractRequestContext, encoding: string) {
+    protected unzipify(input: ReadableLike<Incoming>, streamAdapter: StreamAdapter, encoding: string) {
         switch (encoding) {
             case 'gzip':
             case 'deflate':
                 break
             case 'identity':
-                if (ctx.streamAdapter.isReadable(ctx.request.body)) {
-                    return ctx.request.body
-                } else if (ctx.streamAdapter.isStream(ctx.request.body)) {
-                    return ctx.request.body.pipe(ctx.streamAdapter.createPassThrough());
+                if (streamAdapter.isReadable(input.body)) {
+                    return input.body
+                } else if (streamAdapter.isStream(input.body)) {
+                    return input.body.pipe(streamAdapter.createPassThrough());
                 }
 
-                if (ctx.streamAdapter.isReadable(ctx.request)) {
-                    return ctx.request
-                } else if (ctx.streamAdapter.isStream(ctx.request)) {
-                    return ctx.request.pipe(ctx.streamAdapter.createPassThrough());
+                if (streamAdapter.isReadable(input)) {
+                    return input
+                } else if (streamAdapter.isStream(input)) {
+                    return input.pipe(streamAdapter.createPassThrough());
                 }
                 throw new UnsupportedMediaTypeException('incoming message not support streamable');
             default:
                 throw new UnsupportedMediaTypeException('Unsupported Content-Encoding: ' + encoding);
         }
 
-        if (ctx.streamAdapter.isReadable(ctx.request.body) || ctx.streamAdapter.isStream(ctx.request.body)) {
-            return ctx.request.body.pipe(ctx.streamAdapter.createGunzip());
+        if (streamAdapter.isReadable(input.body) || streamAdapter.isStream(input.body)) {
+            return input.body.pipe(streamAdapter.createGunzip());
         }
-        if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
-            return ctx.request.pipe(ctx.streamAdapter.createGunzip());
+        if (streamAdapter.isReadable(input) || streamAdapter.isStream(input)) {
+            return input.pipe(streamAdapter.createGunzip());
         }
         throw new UnsupportedMediaTypeException('incoming message not support streamable');
     }
@@ -179,9 +205,7 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
         return JSON.parse(str)
     }
 
-    protected async parseForm(ctx: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.getContentLength();
-        const hdrcode = ctx.getContentEncoding() as string || identity;
+    protected async parseForm(input: ReadableLike<Incoming>, hdrcode: string, len: number, streamAdapter: StreamAdapter): Promise<{ raw?: any, body?: any }> {
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
@@ -193,7 +217,7 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
             qs = qslib
         }
 
-        const str = isBuffer(ctx.request.body)? ctx.request.body.toString() : await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
+        const str = isBuffer(input.body) ? input.body.toString() : await streamAdapter.rawbody(this.unzipify(input, streamAdapter, hdrcode), {
             encoding,
             limit,
             length
@@ -210,15 +234,13 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
         }
     }
 
-    protected async parseText(ctx: AbstractRequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.getContentLength();
-        const hdrcode = ctx.getContentEncoding() as string || identity;
+    protected async parseText(input: ReadableLike<Incoming>, hdrcode: string, len: number, streamAdapter: StreamAdapter): Promise<{ raw?: any, body?: any }> {
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
         }
         const { limit, encoding } = this.options.text;
-        const str = isBuffer(ctx.request.body)? ctx.request.body.toString() : await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
+        const str = isBuffer(input.body) ? input.body.toString() : await streamAdapter.rawbody(this.unzipify(input, streamAdapter, hdrcode), {
             encoding,
             limit,
             length

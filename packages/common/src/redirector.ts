@@ -4,10 +4,10 @@ import { AbstractRequest } from './request';
 import { RequestContext } from './context';
 import { RequestHandlerFn } from './handler';
 import { RequestInterceptorFn } from './interceptor';
-import { StatusIncoming } from './incoming';
+import { ClientIncoming } from './incoming';
 
 
-export abstract class Redirector<TReq extends AbstractRequest<any> = AbstractRequest<any>, TRes extends StatusIncoming = StatusIncoming> {
+export abstract class Redirector<TReq extends AbstractRequest<any> = AbstractRequest<any>, TRes extends ClientIncoming = ClientIncoming> {
     abstract need(res: TRes, context: RequestContext): boolean;
     abstract redirect(req: TReq, res: TRes, handler: RequestHandlerFn, context: RequestContext): Observable<TRes>;
 }

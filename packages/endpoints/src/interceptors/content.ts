@@ -1,6 +1,6 @@
 import { Abstract, Inject, Injectable, isDefined, Optional, token } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { FileAdapter, FindOptions, GET, HEAD, NotFoundException, RequestContext } from '@tsdi/common';
+import { FileAdapter, FindOptions, GET, HEAD, Incoming, NotFoundException, ReadableLike, RequestContext, TopicIncoming, UrlIncoming } from '@tsdi/common';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 
@@ -11,7 +11,7 @@ export const CONTENT_OPTIONS = token<ContentOptions>('CONTENT_OPTIONS');
  * static content resources.
  */
 @Injectable()
-export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
+export class ContentInterceptor implements Interceptor<ReadableLike<Incoming>> {
 
     private options: ContentOptions;
 
@@ -20,9 +20,10 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
     }
 
 
-    intercept(input: AbstractRequestContext, next: Handler<AbstractRequestContext, any>, context: AbstractRequestContext): Observable<any> {
+    intercept(input: ReadableLike<Incoming>, next: Handler<ReadableLike<Incoming>, any>, context: AbstractRequestContext): Observable<any> {
+        const path = input.path || (input as UrlIncoming).url || (input as TopicIncoming).topic || input.pattern;
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
-            || !input.originalUrl) {
+            || !path) {
             return next.handle(input, context);
         }
 
@@ -32,7 +33,7 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
             return next.handle(input, context)
                 .pipe(
                     mergeMap(async res => {
-                        const file = await this.find(input, fileAdapter, options)
+                        const file = await this.find(path, context, fileAdapter, options)
                         if (!file) {
                             return throwError(() => new NotFoundException())
                         }
@@ -40,7 +41,7 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
                     })
                 )
         } else {
-            return from(this.find(input, fileAdapter, options))
+            return from(this.find(path, context, fileAdapter, options))
                 .pipe(
                     mergeMap(file => {
                         if (!file) return next.handle(input, context)
@@ -50,10 +51,10 @@ export class ContentInterceptor implements Interceptor<AbstractRequestContext> {
         }
     }
 
-    protected find(ctx: AbstractRequestContext, fileAdapter: FileAdapter, options: ContentOptions) {
+    protected find(path: string, ctx: AbstractRequestContext, fileAdapter: FileAdapter, options: ContentOptions) {
         if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return Promise.resolve(null);
 
-        return fileAdapter.find(ctx.originalUrl, options);
+        return fileAdapter.find(path, options);
 
 
     }

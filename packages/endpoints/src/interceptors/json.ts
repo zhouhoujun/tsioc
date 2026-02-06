@@ -1,7 +1,7 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestInterceptor, ContentType } from '@tsdi/common';
+import { RequestContext, RequestHandler, RequestInterceptor, ContentType, ReadableLike, Incoming, StreamAdapter, HeaderAdapter, MimeAdapter } from '@tsdi/common';
 import { Observable, map } from 'rxjs';
-import { AbstractRequestContext } from '../AbstractRequestContext';
+import { AcceptsPriority } from '../accepts';
 
 
 @Abstract()
@@ -14,7 +14,7 @@ export abstract class JsonOptions {
 
 
 @Injectable()
-export class JsonInterceptor implements RequestInterceptor<AbstractRequestContext> {
+export class JsonInterceptor implements RequestInterceptor<ReadableLike<Incoming>> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
@@ -25,34 +25,39 @@ export class JsonInterceptor implements RequestInterceptor<AbstractRequestContex
         this.paramName = option?.param ?? '';
     }
 
-    intercept(input: AbstractRequestContext, next: RequestHandler<AbstractRequestContext, any>, context: RequestContext): Observable<any> {
+    intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, any>, context: RequestContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 map(res => {
-                    this.streamify(input);
-                    return res;
+                    return this.streamify(input, res, context);
                 })
             )
     }
 
-    protected streamify(ctx: AbstractRequestContext) {
-        const body = ctx.body;
-        const strm = ctx.streamAdapter.isStream(body);
-        const json = ctx.streamAdapter.isJson(body);
+    protected streamify(input: ReadableLike<Incoming>, res: any, context: RequestContext) {
+        const streamAdapter = context.get(StreamAdapter);
+        const strm = streamAdapter.isStream(res);
+        const json = streamAdapter.isJson(res);
 
         if (!json && !strm) {
             return;
         }
 
-        const pretty = this.pretty || hasOwn(ctx.query, this.paramName);
+        const acceptsPriority = context.get(AcceptsPriority);
 
-        if (strm && ctx.accepts('json')) {
-            ctx.contentType = ContentType.APPL_JSON;
+        const pretty = this.pretty || hasOwn(input.query, this.paramName);
+
+        if (strm && acceptsPriority.accepts(input, context.get(HeaderAdapter), context.get(MimeAdapter), 'json')) {
+            context.setContentType(ContentType.APPL_JSON);
+            // ctx.contentType = ContentType.APPL_JSON;
             // ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) 
             // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
+            return streamAdapter.jsonSreamify(res, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {
-            ctx.contentType = ContentType.APPL_JSON_UTF8;
-            ctx.body = JSON.stringify(body, null, this.spaces);
+            // ctx.contentType = ContentType.APPL_JSON_UTF8;
+            // ctx.body = JSON.stringify(body, null, this.spaces);
+            context.setContentType(ContentType.APPL_JSON_UTF8);
+            return JSON.stringify(res, null, this.spaces);
         }
     }
 }

@@ -3,13 +3,9 @@ import { Header, HeaderAccess } from './headers';
 /**
  * Incoming message
  */
-export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Header> extends HeaderAccess<THead> {
+export interface IncomingMessage<T = any, THead extends Header = Header> extends HeaderAccess<THead> {
 
     id?: number | string;
-    /**
-     * origin req message.
-     */
-    origin?: TMsg;
 
     pattern?: string;
 
@@ -24,10 +20,15 @@ export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Hea
 /**
  * Server incoming message
  */
-export interface Incoming<T = any, TMsg = any> extends IncomingMessage<T, TMsg> {
+export interface BaseIncoming<T = any, TMsg = any> extends IncomingMessage<T> {
+
+    /**
+     * origin req message.
+     */
+    req?: TMsg;
 
     method?: string;
-    
+
     cookies?: any;
 
     params?: Record<string, any>;
@@ -36,14 +37,40 @@ export interface Incoming<T = any, TMsg = any> extends IncomingMessage<T, TMsg> 
 
     rawBody?: any;
 
-    path?: any;
-
+    path?: string;
 }
 
 /**
- * incoming message with status
+ * pattern incoming
  */
-export interface StatusIncoming<T = any, TStatus = any, TMsg = any> extends IncomingMessage<T, TMsg> {
+export interface PatternIncoming<T = any, TMsg = any> extends BaseIncoming<T, TMsg> {
+    pattern: string;
+}
+
+/**
+ * url incoming
+ */
+export interface UrlIncoming<T = any, TMsg = any> extends BaseIncoming<T, TMsg> {
+    url: string;
+}
+
+/**
+ * topic incoming
+ */
+export interface TopicIncoming<T = any, TMsg = any> extends BaseIncoming<T, TMsg> {
+    topic: string;
+}
+
+/**
+ * Server incoming message
+ */
+export type Incoming<T = any, TMsg = any> = PatternIncoming<T, TMsg> | UrlIncoming<T, TMsg> | TopicIncoming<T, TMsg>;
+
+
+/**
+ * client incoming message with status
+ */
+export interface ClientIncoming<T = any, TStatus = any> extends IncomingMessage<T>{
     /**
      * event type
      */
@@ -58,6 +85,7 @@ export interface StatusIncoming<T = any, TStatus = any, TMsg = any> extends Inco
     statusText?: string;
 
     ok?: boolean;
+
     error?: any;
 
 }

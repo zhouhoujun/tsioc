@@ -1,4 +1,4 @@
-import { BaseUrlRequest, GET, RequestCloneOpts, UrlRequestOptions } from '@tsdi/common';
+import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions } from '@tsdi/common';
 
 export class TcpRequest<T> extends BaseUrlRequest<T, UrlRequestOptions> {
     clone(): TcpRequest<T>;

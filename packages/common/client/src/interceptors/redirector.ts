@@ -2,7 +2,7 @@
 import { ContextToken, ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
 import {
     HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader,
-    BadRequestException, RequestContext, HeaderAdapter, StatusIncoming,
+    BadRequestException, RequestContext, HeaderAdapter, ClientIncoming,
      RequestHandlerFn, Redirector, StatusAdapter, StreamAdapter
 } from '@tsdi/common';
 import { Observable, Observer, Subscription } from 'rxjs';
@@ -12,11 +12,11 @@ import { Observable, Observer, Subscription } from 'rxjs';
 @Injectable()
 export class UrlRedirector implements Redirector<UrlRequest> {
 
-    need(res: StatusIncoming, context: RequestContext): boolean {
+    need(res: ClientIncoming, context: RequestContext): boolean {
         return !!res.headers && context.get(StatusAdapter)?.isRedirect(res.status ?? res.statusCode) === true;
     }
 
-    redirect(req: UrlRequest<any>, res: StatusIncoming, handler: RequestHandlerFn, context: RequestContext): Observable<any> {
+    redirect(req: UrlRequest<any>, res: ClientIncoming, handler: RequestHandlerFn, context: RequestContext): Observable<any> {
         return new Observable((observer: Observer<any>) => {
             if (!req.url) return observer.error(new BadRequestException());
 

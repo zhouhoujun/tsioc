@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Provider, StaticProvider } from '@tsdi/ioc';
-import { Incoming, IncomingMessage, StatusIncoming } from './incoming';
+import { BaseIncoming, Incoming, IncomingMessage, ClientIncoming, TopicIncoming, UrlIncoming } from './incoming';
 import { HeaderMappings, HeadersLike } from './headers';
 import { ParameterCodec } from './params';
 import { IReadable, ReadableLike } from './stream';
@@ -29,8 +29,8 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
  * Client incoming factory.
  */
 @Abstract()
-export abstract class ClientIncomingFactory implements AbstractIncomingFactory<StatusIncoming> {
-    abstract create(options: ClientIncomingOpts): ReadableLike<StatusIncoming>;
+export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
+    abstract create(options: ClientIncomingOpts): ReadableLike<ClientIncoming>;
 }
 
 
@@ -129,7 +129,7 @@ export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions
  * Incoming base packet.
  */
 @Abstract()
-export abstract class AbstractIncoming<T> implements Incoming<T> {
+export abstract class AbstractIncoming<T> implements BaseIncoming<T> {
 
     readonly id?: any;
 
@@ -184,7 +184,7 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
 /**
  * Incoming packet.
  */
-export class UrlIncoming<T = any> extends AbstractIncoming<T> implements Incoming<T> {
+export class DefaultUrlIncoming<T = any> extends AbstractIncoming<T> implements UrlIncoming<T> {
 
 
     url: string;
@@ -240,7 +240,7 @@ export class UrlIncomingFactory implements IncomingFactory {
         if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseUrlIncoming(options);
         }
-        return new UrlIncoming(options);
+        return new DefaultUrlIncoming(options);
     }
 }
 
@@ -248,7 +248,7 @@ export class UrlIncomingFactory implements IncomingFactory {
 /**
  * Incoming packet.
  */
-export class TopicIncoming<T = any> extends AbstractIncoming<T> implements Incoming<T> {
+export class DefaultTopicIncoming<T = any> extends AbstractIncoming<T> implements TopicIncoming<T> {
 
 
     readonly topic: string;
@@ -301,7 +301,7 @@ export class TopicIncomingFactory implements IncomingFactory {
         if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseTopicIncoming(options);
         }
-        return new TopicIncoming(options);
+        return new DefaultTopicIncoming(options);
     }
 }
 
@@ -344,7 +344,7 @@ export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T
  * client incoming packet
  */
 @Abstract()
-export abstract class AbstractClientIncoming<T, TStatus = any> implements StatusIncoming<T, TStatus> {
+export abstract class AbstractClientIncoming<T, TStatus = any> implements ClientIncoming<T, TStatus> {
 
     readonly pattern?: string | undefined;
 
