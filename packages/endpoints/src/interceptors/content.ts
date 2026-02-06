@@ -21,7 +21,7 @@ export class ContentInterceptor implements Interceptor<ReadableLike<Incoming>> {
 
 
     intercept(input: ReadableLike<Incoming>, next: Handler<ReadableLike<Incoming>, any>, context: AbstractRequestContext): Observable<any> {
-        const path = input.path || (input as UrlIncoming).url || (input as TopicIncoming).topic || input.pattern;
+        const path = (input as UrlIncoming).url || (input as TopicIncoming).topic || input.pattern;
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
             || !path) {
             return next.handle(input, context);

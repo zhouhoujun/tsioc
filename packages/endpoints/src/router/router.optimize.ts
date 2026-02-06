@@ -3,7 +3,7 @@ import {
     isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TokenOf, isToken,
     InjectUtil
 } from '@tsdi/ioc';
-import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext } from '@tsdi/common';
+import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext, ReadableLike, Incoming, UrlIncoming, TopicIncoming, StatusAdapter } from '@tsdi/common';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { AbstractRequestContext } from '../AbstractRequestContext';
 import { AssetRoute, Route, ROUTES, Routes } from './route';
@@ -169,20 +169,22 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         };
     }
 
-    handle(ctx: AbstractRequestContext, context: RequestContext): Observable<any> {
-        return this.doHandle(ctx, context)
+    handle(req: ReadableLike<Incoming>, context: RequestContext): Observable<any> {
+        return this.doHandle(req, context)
     }
 
 
-    intercept(ctx: AbstractRequestContext, next: RequestHandler<AbstractRequestContext>, context: RequestContext): Observable<any> {
-        return this.doHandle(ctx, context, () => next.handle(ctx, context))
+    intercept(req: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>>, context: RequestContext): Observable<any> {
+        return this.doHandle(req, context, () => next.handle(req, context))
     }
 
-    doHandle(ctx: AbstractRequestContext, context: RequestContext, notFound?: () => Observable<any>): Observable<any> {
-        if (ctx.headersSent || (ctx.status && ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status))) return of(ctx);
+    doHandle(req: ReadableLike<Incoming>, context: RequestContext, notFound?: () => Observable<any>): Observable<any> {
+        const res = context.getResponse();
+        const statusAdapter = context.get(StatusAdapter);
+        if (res && (res.headersSent || (res.statusCode && statusAdapter && !statusAdapter.isNotFound(res.statusCode)))) return of(null);
 
         return defer(async () => {
-            const route = await this.getRoute(ctx);
+            const route = await this.getRoute(req, context);
             if (route && !route.handle) {
                 route.handle = this.parse(route);
             }
@@ -191,7 +193,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             mergeMap(route => {
 
                 if (route?.handle) {
-                    return route.handle(ctx, context);
+                    return route.handle(req, context);
                 }
 
                 if (notFound) return notFound();
@@ -291,8 +293,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         }
     }
 
-    async getRoute(ctx: AbstractRequestContext): Promise<Route | undefined> {
-        const url = ctx.url;
+    async getRoute(req: ReadableLike<Incoming>, context: RequestContext): Promise<Route | undefined> {
+        const url = (req as UrlIncoming).url ?? (req as TopicIncoming).topic ?? req.pattern!;
         if (this.assets.length && this.assets.some(r => (r.path && url.startsWith(r.path)) || (isRegExp(r.pattern) && r.pattern.test(url)))) {
             return;
         }
@@ -326,17 +328,17 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 Object.entries(route.pathParams).forEach(([v, k]) => {
                     params[v] = parts![k];
                 })
-                ctx.request.path = params;
+                req.paths = params;
             }
             return route;
         }
 
         if (this.microservice) {
-            const routes = trieRoute.filter(ctx.method);
+            const routes = trieRoute.filter(req.method);
             if (!routes.length) return;
             if (routes.length == 1) {
                 const route = routes[0];
-                if (route) this.initPaths(ctx, route, url, parts, ctx.method || '*')
+                if (route) this.initPaths(req, route, url, parts, req.method || '*')
                 return route;
             }
             if (routes.length > 1) {
@@ -345,7 +347,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 }
                 const handles = routes.map(route => {
                     return (input: AbstractRequestContext, context?: any) => {
-                        this.initPaths(input, route, url, parts, ctx.method);
+                        this.initPaths(input, route, url, parts, req.method);
                         if (!route.handle) {
                             route.handle = this.parse(route)!;
                         }
@@ -359,17 +361,17 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             }
         }
 
-        const route = trieRoute.find(ctx.method);
-        if (route) this.initPaths(ctx, route, url, parts, ctx.method || '*')
+        const route = trieRoute.find(req.method);
+        if (route) this.initPaths(req, route, url, parts, req.method || '*')
         return route;
     }
 
 
-    private initPaths(ctx: AbstractRequestContext, route: Route, url: string, parts?: string[], method?: string) {
+    private initPaths(req: ReadableLike<Incoming>, route: Route, url: string, parts?: string[], method?: string) {
         const params = method ? this.params.get(url)?.get(method) : undefined;
 
         if (params) {
-            ctx.request.path = params;
+            req.paths = params;
         } else if (route?.pathParams) {
             const params: Record<string, string> = {};
             if (!parts) {
@@ -378,7 +380,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             Object.entries(route.pathParams).forEach(([v, k]) => {
                 params[v] = parts![k];
             })
-            ctx.request.path = params;
+            req.paths = params;
             let paths = this.params.get(url);
             if (!paths) {
                 paths = new Map();

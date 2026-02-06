@@ -37,7 +37,7 @@ export interface BaseIncoming<T = any, TMsg = any> extends IncomingMessage<T> {
 
     rawBody?: any;
 
-    path?: string;
+    paths?: any;
 }
 
 /**

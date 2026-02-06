@@ -80,7 +80,7 @@ export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incomi
         //todo console log and other. need to refactor formater.
         const withColor = logger instanceof ConsoleLog;
         const start = this.formatter.htime.hrtime();
-        const path = (req as UrlIncoming)?.url ?? (req as TopicIncoming)?.topic ?? req.path ?? req.pattern;
+        const path = (req as UrlIncoming)?.url ?? (req as TopicIncoming)?.topic ?? req.pattern;
         logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method));
         return next.handle(req, context)
             .pipe(

@@ -148,7 +148,7 @@ export abstract class AbstractIncoming<T> implements BaseIncoming<T> {
 
     query: Record<string, any> | undefined;
 
-    get path() {
+    get paths() {
         return this.pattern;
     }
 
@@ -190,7 +190,7 @@ export class DefaultUrlIncoming<T = any> extends AbstractIncoming<T> implements 
     url: string;
     method: string;
 
-    get path() {
+    get paths() {
         return this.url;
     }
 
@@ -254,7 +254,7 @@ export class DefaultTopicIncoming<T = any> extends AbstractIncoming<T> implement
     readonly topic: string;
     readonly responseTopic: string | undefined;
 
-    get path() {
+    get paths() {
         return this.topic;
     }
 

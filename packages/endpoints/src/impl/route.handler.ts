@@ -34,10 +34,10 @@ export class RouteHandlerImpl<TInput extends AbstractRequestContext = AbstractRe
 export function pathInterceptor(invocation: Invocation, route: RouteOptions) {
 
     return (input: AbstractRequestContext, next: RequestHandlerFn<AbstractRequestContext>, ctx?: any) => {
-        if (route.paths && input.request.path) {
+        if (route.paths && input.request.paths) {
             if (Object.entries(route.paths).some(([key, value]) => {
                 const filters: any[] = invocation.context.get(value, []);
-                return !filters.length || !filters.includes(input.request.path[key])
+                return !filters.length || !filters.includes(input.request.paths[key])
 
             })) {
                 return throwError(() => new NotFoundException())
