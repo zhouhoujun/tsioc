@@ -188,6 +188,7 @@ async function packet(data: any, options: TransferOptions, context: RequestConte
         len = Buffer.byteLength(data);
     } else if (isString(data)) {
         data = data + delimiter!;
+        len = Buffer.byteLength(data);
     } else if (streamAdapter.isReadable(data)) {
         const packetLen = context.get(PACKET_LENGTH);
         const bufDt = Buffer.from(delimiter);
