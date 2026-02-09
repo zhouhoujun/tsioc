@@ -1,7 +1,6 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { RequestContext, RequestHandler, RequestInterceptor, ContentType, ReadableLike, Incoming, StreamAdapter, HeaderAdapter, MimeAdapter } from '@tsdi/common';
 import { Observable, map } from 'rxjs';
-import { AcceptsPriority } from '../accepts';
 
 
 @Abstract()
@@ -43,11 +42,9 @@ export class JsonInterceptor implements RequestInterceptor<ReadableLike<Incoming
             return;
         }
 
-        const acceptsPriority = context.get(AcceptsPriority);
-
         const pretty = this.pretty || hasOwn(input.query, this.paramName);
 
-        if (strm && acceptsPriority.accepts(input, context.get(HeaderAdapter), context.get(MimeAdapter), 'json')) {
+        if (strm && context.accepts('json')) {
             context.setContentType(ContentType.APPL_JSON);
             // ctx.contentType = ContentType.APPL_JSON;
             // ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) 

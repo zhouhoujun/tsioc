@@ -3,11 +3,10 @@ import { ParameterScope } from '@tsdi/core';
 import {
     HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess, InternalServerException, MessageException,
     RequestContext, Incoming, Outgoing, FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp, ContentType,
-    ReadableLike, WritableLike
+    ReadableLike, WritableLike, AcceptsPriority
 } from '@tsdi/common';
 import { isBuffer } from '@tsdi/common/transport';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
-import { AcceptsPriority } from './accepts';
 import { Session } from './sessions/Session';
 import { ServiceConfig } from './server.options';
 

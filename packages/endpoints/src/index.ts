@@ -13,7 +13,6 @@ export * from './AbstractRequestContext';
 export * from './ServiceHandler';
 export * from './RestfulRequestContext';
 
-export * from './accepts';
 
 export * from './results';
 

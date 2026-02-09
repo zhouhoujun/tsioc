@@ -1,8 +1,7 @@
-import { MimeAdapter, MimeDb, MimeTypes } from '@tsdi/common';
+import { MimeAdapter, MimeDb, MimeTypes, AcceptsPriority } from '@tsdi/common';
 import { Module } from '@tsdi/ioc';
 import { MimeAdapterImpl, MimeTypesImpl } from './impl/mime';
 import { BasicMimeDb } from './impl/mimedb';
-import { AcceptsPriority } from './accepts';
 import { AcceptsPriorityImpl } from './impl/accepts';
 
 @Module({

@@ -1,7 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { ContentType, encodeUrl, escapeHtml, HeaderAdapter, InternalServerException, MimeAdapter, NotSupportedException, RequestContext, StatusAdapter } from '@tsdi/common';
-import { RestfulRequestContext } from '../RestfulRequestContext';
-import { AcceptsPriority } from '../accepts';
+import { ContentType, encodeUrl, escapeHtml, NotSupportedException, RequestContext, StatusAdapter } from '@tsdi/common';
 
 
 /**
@@ -20,10 +18,7 @@ export class RedirectResult extends ResultValue {
         // return (ctx as RestfulRequestContext).redirect(this.url, this.alt)
 
         const statusAdapter = ctx.get(StatusAdapter);
-        const acceptsPriority = ctx.get(AcceptsPriority);
-        const headerAdapter = ctx.get(HeaderAdapter);
-        const mimeAdapter = ctx.get(MimeAdapter);
-        if (!statusAdapter || !acceptsPriority || !headerAdapter) throw new NotSupportedException();
+        if (!statusAdapter) throw new NotSupportedException();
 
         let url = this.url;
 
@@ -38,7 +33,7 @@ export class RedirectResult extends ResultValue {
 
 
         // html
-        if (acceptsPriority.accepts(ctx.getRequest(), headerAdapter, mimeAdapter, 'html')) {
+        if (ctx.accepts('html')) {
             url = escapeHtml(url);
             resp.type = ContentType.TEXT_HTML_UTF8;
             resp.body = `Redirecting to <a href="${url}">${url}</a>.`;
