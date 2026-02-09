@@ -135,6 +135,7 @@ export interface IStats<T = number> {
 export interface FileStats<T extends IStats> {
     filename: string;
     stats: T;
+    encodingExt?: string;
 }
 export interface FindOptions {
     root?: string | string[];

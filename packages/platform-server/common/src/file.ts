@@ -127,7 +127,8 @@ export class NodeFileAdapter extends FileAdapter {
 
         return {
             filename,
-            stats: stats as T
+            stats: stats as T,
+            encodingExt
         }
 
     }

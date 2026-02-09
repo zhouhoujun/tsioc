@@ -1,7 +1,6 @@
 import {
     Type, composeHandlers, DecorDefine, Exception, getClassRef, HandlerFn, hasProps, Injector, Invocation,
-    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TokenOf, isToken,
-    InjectUtil
+    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TokenOf, isToken, InjectUtil
 } from '@tsdi/ioc';
 import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext, ReadableLike, Incoming, UrlIncoming, TopicIncoming, StatusAdapter } from '@tsdi/common';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -181,7 +180,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     doHandle(req: ReadableLike<Incoming>, context: RequestContext, notFound?: () => Observable<any>): Observable<any> {
         const res = context.getResponse();
         const statusAdapter = context.get(StatusAdapter);
-        if (res && (res.headersSent || (res.statusCode && statusAdapter && !statusAdapter.isNotFound(res.statusCode)))) return of(null);
+        if (res.headersSent || (res.statusCode && statusAdapter && !statusAdapter.isNotFound(res.statusCode))) return of(null);
 
         return defer(async () => {
             const route = await this.getRoute(req, context);

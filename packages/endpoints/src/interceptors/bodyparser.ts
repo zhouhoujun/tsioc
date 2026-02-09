@@ -95,8 +95,9 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
 
         let encoding = headerAdapter.getContentEncoding(input);
         const len = headerAdapter.getContentLength(input);
+        const ctype = headerAdapter.getContentType(input);
         //no body
-        if (encoding && !len) {
+        if (!ctype || (encoding && !len)) {
             return Promise.resolve({})
         }
 
@@ -121,7 +122,6 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
     }
 
     private is(type: string | string[], input: ReadableLike<Incoming>, headerAdapter: HeaderAdapter, mimeAdapter: MimeAdapter): string | null | false {
-
         const ctype = headerAdapter.getContentType(input);
         if (!ctype) return false;
         if (!mimeAdapter) {

@@ -3,13 +3,13 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, ListenOpts, ListenService, InternalServerException, Transport, createRequestHandler, Events, UrlIncoming,
-    createRequestContext, RequestContext, TransferSide, NotFoundException, StatusAdapter, UrlOutgoingFactory
+    createRequestContext, RequestContext, TransferSide, NotFoundException, StatusAdapter, UrlOutgoingFactory,
+    OutgoingFactory
 } from '@tsdi/common';
 import { SOCKET } from '@tsdi/common/transport';
 import {
     BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES,
-    ServiceHandler, getServiceBackendToken, AbstractRequestContext,
-    SERV_OPTIONS
+    ServiceHandler, getServiceBackendToken, SERV_OPTIONS
 } from '@tsdi/endpoints';
 import { Subject, fromEvent, of, race, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
@@ -174,11 +174,11 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
 
     const providers: Provider[] = [
         TcpServer,
-        UrlOutgoingFactory,
+        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         asProvider({
             provide: backendToken,
             useValue: (req: UrlIncoming, context): any => {
-                const response = (context as AbstractRequestContext).response ?? context.get(UrlOutgoingFactory).create({ url: req.url });
+                const response = context.getResponse();
                 const statusAdapter = context.get(StatusAdapter);
                 response.error = new NotFoundException();
                 if (statusAdapter) {

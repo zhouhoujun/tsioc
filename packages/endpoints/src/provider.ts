@@ -6,6 +6,9 @@ import {
     provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike,
     RequestExceptionFilter, RequestExceptionHandlerFilter,
     RequestInterceptorFn,
+    UrlOutgoingFactory,
+    TopicOutgoingFactory,
+    PatternOutgoingFactory,
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -626,8 +629,11 @@ export function withTransfers(...selectors: TransferInterceptorFactory[]): Featu
     return (config) => {
         const token = getTransfersToken(config);
         const providers: Provider[] = [
-            UrlIncomingFactory,
-            TopicIncomingFactory,
+            // UrlIncomingFactory,
+            // TopicIncomingFactory,
+            PatternOutgoingFactory,
+            UrlOutgoingFactory,
+            TopicOutgoingFactory
         ];
         if (!selectors.length) {
             selectors.push(useSimpleJson());

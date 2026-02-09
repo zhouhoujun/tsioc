@@ -30,7 +30,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         readonly secure: boolean,
         readonly detailError: boolean
     ) {
-        super(injector);
+        super();
 
         this.originalUrl = request.pattern ? request.pattern : this.request.url;
         this._url = !this.URL.pathname || this.URL.pathname === '/' ? this.request.url : this.URL.pathname;
@@ -135,7 +135,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         readonly response: TResponse,
         readonly detailError: boolean
     ) {
-        super(injector);
+        super();
 
         this.originalUrl = this.url = normalize(request.pattern!);
         const searhIdx = this.url.indexOf('?');
@@ -188,7 +188,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         readonly response: TResponse,
         readonly detailError: boolean
     ) {
-        super(injector);
+        super();
 
         this.url = this.topic = normalize(request.topic);
         this.originalUrl = request.pattern ? normalize(request.pattern) : this.url;

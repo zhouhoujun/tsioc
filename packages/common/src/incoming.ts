@@ -59,6 +59,7 @@ export interface UrlIncoming<T = any, TMsg = any> extends BaseIncoming<T, TMsg> 
  */
 export interface TopicIncoming<T = any, TMsg = any> extends BaseIncoming<T, TMsg> {
     topic: string;
+    responseTopic?: string;
 }
 
 /**

@@ -2,7 +2,7 @@ import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
 import { defer, map, mergeMap } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
-import { RequestContext } from './context';
+import { REQUEST, RequestContext } from './context';
 import { StreamAdapter } from './StreamAdapter';
 
 export enum TransferSide {
@@ -125,7 +125,10 @@ export function useSimpleJson(options?: {
                     return reqdata;
                 })
                     .pipe(
-                        mergeMap(rjson => next(rjson, context)),
+                        mergeMap(rjson => {
+                            context.set(REQUEST, rjson);
+                            return next(rjson, context)
+                        }),
                         map(res => JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space))
                     )
             };

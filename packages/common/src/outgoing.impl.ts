@@ -181,6 +181,75 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
 
 }
 
+
+/**
+ * Pattern outgoing
+ */
+export class PatternOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, TStatus> {
+    readonly pattern: string;
+    constructor(init: OutgoingOpts & { pattern: string }) {
+        super(init)
+        this.pattern = init.pattern;
+    }
+
+    /**
+     * parse url outgoing to simple json.
+     * @param payloadKey payload key. default is 'body'.
+     * @returns 
+     */
+    toJson(payloadKey: 'body' | 'payload' = 'body'): Record<string, any> {
+        const json: Record<string, any> = {
+            pattern: this.pattern,
+            ok: this.ok,
+        };
+        if (this.id) {
+            json.id = this.id;
+        }
+        if (this.pattern) {
+            json.pattern = this.pattern;
+        }
+        if (this.headers.size) {
+            json.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.status)) {
+            json.status = this.status;
+        }
+        if (this.statusMessage) {
+            json.statusMessage = this.statusMessage;
+        }
+        if (!isNil(this.body)) {
+            json[payloadKey] = this.body;
+        }
+
+        return json;
+    }
+
+}
+
+export function parsePatternOutgoing(init: OutgoingOpts<IReadable> & { pattern: string }): PatternOutgoing<any> & IWritable {
+    const outgoing = (init.body ?? init.payload) as any;
+    outgoing.id = init.id;
+    outgoing.pattern = init.pattern;
+    outgoing.headers = new HeaderMappings(init.headers);
+    outgoing.status = init.status ?? init.statusCode;
+    outgoing.statusMessage = init.statusMessage ?? init.statusText;
+    return outgoing as (IWritable & PatternOutgoing<any>);
+}
+
+@Injectable()
+export class PatternOutgoingFactory implements OutgoingFactory {
+
+    constructor(private streamAdapter: StreamAdapter) { }
+    create(options: OutgoingOpts & { pattern: string }): WritableLike<PatternOutgoing> {
+        if (this.streamAdapter.isReadable(options.payload)) {
+            return parsePatternOutgoing(options);
+        }
+        return new PatternOutgoing(options);
+    }
+}
+
+
+
 /**
  * Url outgoing
  */

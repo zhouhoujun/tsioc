@@ -1,6 +1,6 @@
 import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, PAYLOAD_KEY, StreamAdapter } from '@tsdi/common';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, PAYLOAD_KEY, StreamAdapter, REQUEST, Incoming } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 
@@ -270,6 +270,7 @@ export abstract class AbstractClient<
         let context = options.context;
         if (!context) {
             context = this.createContext();
+            context.set(REQUEST, req as any);
             this.initContext(context, req);
         }
         // Start with an Observable.of() the initial request, and run the handler (which

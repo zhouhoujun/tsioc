@@ -1,4 +1,4 @@
-import { Context, ContextToken, Injector, Token, RunContext } from '@tsdi/ioc';
+import { Context, ContextToken, Injector, Token, RunContext, Exception } from '@tsdi/ioc';
 import { ContentType, HeadersLike } from './headers';
 import { Outgoing } from './outgoing';
 import { OutgoingFactory } from './outgoing.impl';
@@ -16,52 +16,21 @@ const CONTENT_ENCODING = new ContextToken<string | null>(() => null);
 
 // const PROTOCOL = new ContextToken<string | undefined>(() => undefined);
 
-const RESPONSE = new ContextToken<Outgoing<any, any> | null>(() => null);
+
+export const REQUEST = new ContextToken<Incoming<any, any> | null>(() => null);
+export const RESPONSE = new ContextToken<Outgoing<any, any> | null>(() => null);
 
 
 export class RequestContext extends RunContext {
 
-    setResponse(options: {
-        incoming?: Incoming;
-        id?: any;
-        socket?: any;
-        pattern?: string;
-        /**
-         * event type
-         */
-        type?: number;
-        status?: any;
-        statusMessage?: string;
-        statusCode?: any;
-        statusText?: string;
-        ok?: boolean;
-        error?: any;
-        headers?: HeadersLike;
-        payload?: any;
-    }) {
-        if (this.has(RESPONSE)) {
-            const responsed = this.get(RESPONSE) ?? this.createResponse(options);
-            if (options.headers) {
-                // responsed.setHeader(options.headers);
-            }
-            if ('payload' in options) {
-                responsed.body = options.payload;
-            }
-            if ('status' in options) {
-                responsed.statusCode = options.status;
-            } else if ('statusCode' in options) {
-                responsed.statusCode = options.statusCode;
-            }
-
-            if (options.statusMessage) {
-                responsed.statusMessage = options.statusMessage;
-            } else if (options.statusText) {
-                responsed.statusMessage = options.statusText;
-            }
-        } else {
-            this.set(RESPONSE, this.createResponse(options));
+    getRequest(): Incoming {
+        const req = this.get(REQUEST);
+        if(!req) {
+            throw new Exception('Request not init in context')
         }
+        return req;
     }
+
 
     protected createResponse(response: {
         incoming?: Incoming;
@@ -84,8 +53,14 @@ export class RequestContext extends RunContext {
         return this.get(OutgoingFactory).create(response);
     }
 
-    getResponse(): Outgoing<any, any> | null {
-        return this.get(RESPONSE);
+    getResponse(): Outgoing<any, any> {
+        let resp = this.get(RESPONSE);
+        if (!resp) {
+            resp = this.createResponse({ incoming: this.getRequest() });
+            this.set(RESPONSE, resp);
+        }
+
+        return resp
     }
 
 
