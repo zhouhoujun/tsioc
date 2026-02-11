@@ -19,7 +19,6 @@ import { SessionOptions } from './sessions/Session';
 import { FeatureOptions, ServiceConfig } from './server.options';
 import { DefaultExceptionHandlers } from './filters/exception.handlers';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware/middleware';
-import { RequestContextFactory } from './AbstractRequestContext';
 import { Vaildator } from './vaildator';
 import { mergeMap, of, throwError } from 'rxjs';
 
@@ -216,6 +215,10 @@ export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<Featur
         }
         if (opts.guards) {
             features.push(withGuards(...opts.guards)(config));
+        }
+
+        if(opts.vaildators) {
+            features.push(withVaildate(...opts.vaildators)(config));
         }
 
         if (opts.logger) {
