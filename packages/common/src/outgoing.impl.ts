@@ -392,6 +392,7 @@ export class TopicOutgoingFactory implements OutgoingFactory {
 
 export function provideOutgoings(): StaticProvider[] {
     return [
+        PatternOutgoingFactory,
         UrlOutgoingFactory,
         TopicOutgoingFactory
     ]

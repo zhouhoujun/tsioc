@@ -3,7 +3,7 @@ import { Application, ApplicationContext, PipeTransform } from '@tsdi/core';
 import { ErrorResponse, PacketLengthException, RequestExceptionHandlerFilter, Transport } from '@tsdi/common';
 import { useJsonPacket } from '@tsdi/common/transport';
 import { provideClient, withBodySerialize, withClientFilters, withClientTransfers, withResponseEvent } from '@tsdi/common/client';
-import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withInterceptors, withLogger, withRouter, withTransfers, withVaildate } from '@tsdi/endpoints';
+import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withInterceptors, withLogger, withResponseVaildate, withRouter, withTransfers } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
@@ -135,16 +135,16 @@ export class TcpService {
             withRouter(),
             withLogger(),
             withExceptionFilter(),
-            withVaildate({
-                resVaild(res, context) {
-                    const len = context.getContentLength() ?? 0;
-                    const maxSize = 1024 * 1024 * 10;
-                    if (len > maxSize) {
-                        const btpipe = context.get<PipeTransform>('bytes-format');
-                        throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
-                    }
-                },
-            }),
+            withResponseVaildate((res, context) => {
+                const len = context.getContentLength() ?? 0;
+                const maxSize = 1024 * 1024 * 10;
+                if (len > maxSize) {
+                    const btpipe = context.get<PipeTransform>('bytes-format');
+                    throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
+                }
+                return true
+            },
+            ),
             // withContextFactory(),
             withTransfers(
                 useJsonPacket({ maxSize: 1024 * 1024 * 10 }),

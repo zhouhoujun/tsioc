@@ -1,11 +1,14 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Token, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
-import { GuardLike } from '@tsdi/core';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toPromise, toProvider, toProviders, token } from '@tsdi/ioc';
+import { GuardLike, VaildatorLike } from '@tsdi/core';
 import {
     matchTransport, RequestInterceptorLike, TransferInterceptorFactory,
     useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
     provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike,
-    RequestExceptionFilter, RequestExceptionHandlerFilter,
-    RequestInterceptorFn, UrlOutgoingFactory, TopicOutgoingFactory, PatternOutgoingFactory,
+    RequestExceptionFilter, RequestExceptionHandlerFilter, RequestInterceptorFn,
+    Incoming, RequestContext,
+    BadRequestException,
+    InternalServerException,
+    Outgoing
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -13,14 +16,13 @@ import {
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { EndpointTypedRespond } from './typed.respond';
 import { SetupServices } from './SetupServices';
-import { getFiltersToken, getGuardsToken, getInterceptorsToken, getMiddlewaresToken, getRouterToken, getTransfersToken, getVaildatorsToken, RESPONSE } from './tokens';
+import { getFiltersToken, getGuardsToken, getInterceptorsToken, getMiddlewaresToken, getRequestVaildatorsToken, getResponseVaildatorsToken, getRouterToken, getTransfersToken } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { FeatureOptions, ServiceConfig } from './server.options';
 import { DefaultExceptionHandlers } from './filters/exception.handlers';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware/middleware';
-import { Vaildator } from './vaildator';
-import { mergeMap, of, throwError } from 'rxjs';
+import { defer, mergeMap, of, throwError } from 'rxjs';
 
 
 /**
@@ -217,8 +219,11 @@ export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<Featur
             features.push(withGuards(...opts.guards)(config));
         }
 
-        if(opts.vaildators) {
-            features.push(withVaildate(...opts.vaildators)(config));
+        if (opts.requestVaildators) {
+            features.push(withRequestVaildate(...opts.requestVaildators)(config));
+        }
+        if (opts.responseVaildators) {
+            features.push(withResponseVaildate(...opts.responseVaildators)(config));
         }
 
         if (opts.logger) {
@@ -538,7 +543,6 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
     }
 }
 
-
 /**
  * Adds one or more service interceptors to the configuration of the `Service`
  * instance.
@@ -547,9 +551,9 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
  * @see {@link provideService}
  * @publicApi
  */
-export function withVaildate(...vaildators: ProvdierOf<Vaildator>[]): FeatureFn<FeatureKind.Vaildate> {
+export function withRequestVaildate(...vaildators: ProvdierOf<VaildatorLike<Incoming, RequestContext>>[]): FeatureFn<FeatureKind.Vaildate> {
     return (config) => {
-        const token = getVaildatorsToken(config);
+        const token = getRequestVaildatorsToken(config);
         const intToken = getInterceptorsToken(config);
         return makeFeature(
             FeatureKind.Vaildate,
@@ -560,24 +564,70 @@ export function withVaildate(...vaildators: ProvdierOf<Vaildator>[]): FeatureFn<
                     useValue: ((req, next, context) => {
                         const vaildators = context.get(token);
                         if (vaildators?.length) {
-                            try {
-                                for (const vaildator of vaildators) {
-                                    vaildator.reqVaild?.(req, context);
+                            return defer(async () => {
+                                try {
+                                    for (const vaildator of vaildators) {
+                                        const vaild = await toPromise(isFunction(vaildator) ? vaildator(req, context) : vaildator.vaild(req, context));
+                                        if (!vaild) return false;
+                                    }
+                                } catch (err) {
+                                    return throwError(() => err)
                                 }
-                            } catch (err) {
-                                return throwError(() => err)
-                            }
+                                return true;
+                            })
+                                .pipe(
+                                    mergeMap(r => {
+                                        if (!r) return throwError(() => new BadRequestException());
+                                        return next(req, context)
+                                    })
+                                );
+
+                        }
+                        return next(req, context);
+                    }) as RequestInterceptorFn,
+                    multi: true
+                }
+            ],
+            config
+        );
+    }
+}
+
+/**
+ * Adds one or more service interceptors to the configuration of the `Service`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
+ * @publicApi
+ */
+export function withResponseVaildate(...vaildators: ProvdierOf<VaildatorLike<Outgoing, RequestContext>>[]): FeatureFn<FeatureKind.Vaildate> {
+    return (config) => {
+        const token = getResponseVaildatorsToken(config);
+        const intToken = getInterceptorsToken(config);
+        return makeFeature(
+            FeatureKind.Vaildate,
+            [
+                ...vaildators.map(v => toProvider(token, v, true)),
+                {
+                    provide: intToken,
+                    useValue: ((req, next, context) => {
+                        const vaildators = context.get(token);
+                        if (vaildators?.length) {
                             return next(req, context)
                                 .pipe(
-                                    mergeMap(res => {
+                                    mergeMap(async res => {
                                         try {
                                             for (const vaildator of vaildators) {
-                                                vaildator.resVaild?.(res, context);
+                                                const vaild = await toPromise(isFunction(vaildator) ? vaildator(req, context) : vaildator.vaild(req, context));
+                                                if (!vaild) {
+                                                    return throwError(() => new InternalServerException());
+                                                }
                                             }
                                         } catch (err) {
                                             return throwError(() => err)
                                         }
-                                        return of(res);
+                                        return res;
                                     })
                                 );
                         }
@@ -704,13 +754,7 @@ export function withControllers(controllers: Type[]): FeatureFn<FeatureKind.Cont
 export function withTransfers(...selectors: TransferInterceptorFactory[]): FeatureFn<FeatureKind.Transfer> {
     return (config) => {
         const token = getTransfersToken(config);
-        const providers: Provider[] = [
-            // UrlIncomingFactory,
-            // TopicIncomingFactory,
-            PatternOutgoingFactory,
-            UrlOutgoingFactory,
-            TopicOutgoingFactory
-        ];
+        const providers: Provider[] = [];
         if (!selectors.length) {
             selectors.push(useSimpleJson());
         }

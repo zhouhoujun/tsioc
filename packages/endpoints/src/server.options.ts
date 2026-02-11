@@ -1,15 +1,14 @@
-import { LoggerOptions, RequestExceptionFilter, RequestFilterLike, RequestInterceptorLike, RequestMethod, TransferConfig, TransferInterceptorFactory, TransferSide, TransportConfig } from '@tsdi/common';
+import { Incoming, LoggerOptions, Outgoing, RequestContext, RequestExceptionFilter, RequestFilterLike, RequestInterceptorLike, RequestMethod, TransferConfig, TransferInterceptorFactory, TransferSide, TransportConfig } from '@tsdi/common';
 import { ServiceHandlerOptions } from './ServiceHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
 import { RestfulRequestContext } from './RestfulRequestContext';
 import { SessionOptions } from './sessions/Session';
 import { ProvdierOf, Token, Type } from '@tsdi/ioc';
-import { GuardLike } from '@tsdi/core';
+import { GuardLike, VaildatorLike } from '@tsdi/core';
 import { BodyparserOptions, JsonOptions } from './interceptors';
 import { MiddlewareLike } from './middleware/middleware';
 import { RequestContextFactory } from './AbstractRequestContext';
-import { Vaildator } from './vaildator';
 
 export interface ProxyOpts {
     proxyIpHeader: string;
@@ -26,7 +25,8 @@ export interface FeatureOptions {
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     middlewares?: ProvdierOf<MiddlewareLike>[];
     guards?: ProvdierOf<GuardLike>[];
-    vaildators?: ProvdierOf<Vaildator>[];
+    requestVaildators?: ProvdierOf<VaildatorLike<Incoming, RequestContext>>[];
+    responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, RequestContext>>[];
     cors?: boolean | CorsOpts;
     session?: boolean | SessionOptions;
     csrf?: boolean | CsrfOps;

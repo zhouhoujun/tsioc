@@ -24,6 +24,7 @@ export * from './hrtime';
 export * from './handler';
 export * from './interceptor';
 export * from './guard';
+export * from './vaildator';
 export * from './execptions';
 
 export * from './uuid';

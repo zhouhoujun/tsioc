@@ -1,8 +1,8 @@
 import { Abstract, Token } from '@tsdi/ioc';
-import { ConfigableRequestHandler, RequestContext, RequestHandler, RequestHandlerOptions } from '@tsdi/common';
+import { VaildatorLike } from '@tsdi/core';
+import { ConfigableRequestHandler, Incoming, Outgoing, RequestContext, RequestHandler, RequestHandlerOptions } from '@tsdi/common';
 import { Router } from './router/router';
 import { MiddlewareLike } from './middleware/middleware';
-import { Vaildator } from './vaildator';
 
 
 
@@ -28,8 +28,9 @@ export abstract class ServiceHandler<TReq = any, TRes = any, TContext extends Re
  * 传输节点配置
  */
 export interface ServiceHandlerOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends RequestHandlerOptions<TReq, TRes, TContext> {
-
-    vaildatorsToken?: Token<Vaildator[]>;
+    
+    requestVaildatorsToken?: Token<VaildatorLike<Incoming, TContext>[]>;
+    responseVaildatorsToken?: Token<VaildatorLike<Outgoing, TContext>[]>;
     routerToken?: Token<Router>;
     middlewaresToken?: Token<MiddlewareLike[]>;
 }

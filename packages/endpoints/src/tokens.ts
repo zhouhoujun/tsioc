@@ -1,11 +1,10 @@
 import { getToken, Invocation, token, Token } from '@tsdi/ioc';
-import { GuardLike } from '@tsdi/core';
-import { Transport, RequestInterceptorLike, RequestHandlerLike, RequestFilterLike, Outgoing } from '@tsdi/common';
+import { GuardLike, VaildatorLike } from '@tsdi/core';
+import { Transport, RequestInterceptorLike, RequestHandlerLike, RequestFilterLike, Outgoing, Incoming, RequestContext } from '@tsdi/common';
 import { ServiceConfig } from './server.options';
 import { Router } from './router/router';
 import { ServiceHandler } from './ServiceHandler';
 import { MiddlewareLike } from './middleware/middleware';
-import { Vaildator } from './vaildator';
 
 
 export const RESPONSE = token<Outgoing>('RESPONSE');
@@ -30,12 +29,28 @@ export function getFiltersToken(config: ServiceConfig): Token<RequestFilterLike[
 }
 
 
-export function getVaildatorsToken(config: ServiceConfig): Token<Vaildator[]> {
-    if(!config.vaildatorsToken) {
-        config.vaildatorsToken = getToken<Vaildator[]>(`${Transport[config.transport].toUpperCase()}_VAILDATORS`, toMicroName(config.microservice));
+export function getRequestVaildatorsToken(config: ServiceConfig): Token<VaildatorLike<Incoming, RequestContext>[]> {
+    if(!config.requestVaildatorsToken) {
+        config.requestVaildatorsToken = getToken<VaildatorLike[]>(`${Transport[config.transport].toUpperCase()}_REQ_VAILDATORS`, toMicroName(config.microservice));
     }
-    return config.vaildatorsToken;
+    return config.requestVaildatorsToken;
 }
+
+export function getResponseVaildatorsToken(config: ServiceConfig): Token<VaildatorLike<Outgoing, RequestContext>[]> {
+    if(!config.responseVaildatorsToken) {
+        config.responseVaildatorsToken = getToken<VaildatorLike[]>(`${Transport[config.transport].toUpperCase()}_RES_VAILDATORS`, toMicroName(config.microservice));
+    }
+    return config.responseVaildatorsToken;
+}
+
+
+
+// export function getVaildatorsToken(config: ServiceConfig): Token<Vaildator[]> {
+//     if(!config.vaildatorsToken) {
+//         config.vaildatorsToken = getToken<Vaildator[]>(`${Transport[config.transport].toUpperCase()}_VAILDATORS`, toMicroName(config.microservice));
+//     }
+//     return config.vaildatorsToken;
+// }
 
 
 export function getInterceptorsToken(config: ServiceConfig): Token<RequestInterceptorLike[]> {

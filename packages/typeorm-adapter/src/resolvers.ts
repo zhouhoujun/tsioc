@@ -1,4 +1,4 @@
-import { Parameter, InvocationContext, AbstractType, lang, ArgumentException, isArray, Injectable, Handler } from '@tsdi/ioc';
+import { Parameter, AbstractType, lang, ArgumentException, isArray, Injectable, Handler, RunContext, getTypeName } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { MongoRepository, Repository, TreeRepository } from 'typeorm';
@@ -12,7 +12,7 @@ export class TypeormRepositoryArgumentResolver<TOutput = any> extends Repository
         super()
     }
 
-    canResolve(parameter: Parameter<any>, ctx: InvocationContext): boolean {
+    canResolve(parameter: Parameter<any>, ctx: RunContext): boolean {
         const { model, connection } = parameter as RepositoryMetadata;
 
         if (!parameter.type || !lang.isExtends(parameter.type, Repository)) {
@@ -20,22 +20,22 @@ export class TypeormRepositoryArgumentResolver<TOutput = any> extends Repository
         }
 
         if (!model || !this.adapter.getConnection(connection).hasMetadata(model)) {
-            throw new ArgumentException(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.targetType} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `)
+            throw new ArgumentException(`Autowired repository in${this.getLocal(parameter, ctx)}${ getTypeName(parameter.target)} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `)
         }
         return true
     }
 
-    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, InvocationContext>, ctx: InvocationContext): TOutput {
+    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, RunContext>, ctx: RunContext): TOutput {
         if (!this.canResolve(parameter, ctx)) return next.handle(parameter, ctx);
 
         const { model, type, connection } = parameter as RepositoryMetadata;
         return this.getRepository(model, type, connection) as TOutput;
     }
 
-    protected getLocal(parameter: Parameter<any>, ctx: InvocationContext) {
+    protected getLocal(parameter: Parameter<any>, ctx: RunContext) {
         let local: string;
         if (parameter.propertyKey && parameter.name) {
-            local = ` method ${ctx.propertyKey?.toString()} param ${parameter.name} of class `
+            local = ` method ${parameter.propertyKey?.toString()} param ${parameter.name} of class `
         } else if (parameter.propertyKey) {
             local = ` field ${parameter.propertyKey} of class `
         } else {
@@ -65,7 +65,7 @@ export class TypeormRepositoryArgumentResolver<TOutput = any> extends Repository
 @Injectable()
 export class TypeormTransactionResolver extends TransactionResolver {
 
-    intercept(parameter: Parameter, next: Handler<Parameter, InvocationContext>, ctx: InvocationContext) {
+    intercept(parameter: Parameter, next: Handler<Parameter, RunContext>, ctx: RunContext) {
         if (ctx instanceof JoinPoint && isArray(ctx.annotations) && ctx.annotations.length > 0
             && (parameter.provider as AbstractType<any> === TransactionManager || parameter.type as AbstractType<any> === TransactionManager)) {
             if (ctx.has(TransactionManager)) {

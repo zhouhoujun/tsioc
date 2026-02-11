@@ -46,6 +46,7 @@ export class TypeormAdapter {
     private mdlmap = new Map<AbstractType, DBPropertyMetadata[]>();
     protected getModelPropertyMetadata(type: AbstractType) {
         let props = this.mdlmap.get(type);
+        const target = type;
         if (!props) {
             props = [];
             getMetadataArgsStorage().columns
@@ -74,6 +75,7 @@ export class TypeormAdapter {
                         ...col.options,
                         propertyKey: col.propertyName,
                         dbtype,
+                        target,
                         type
                     })
                 });
@@ -100,6 +102,7 @@ export class TypeormAdapter {
                     //     relaModel = col.type.type as Type;
                     // }
                     props?.push({
+                        target,
                         propertyKey: col.propertyName,
                         provider: relaModel,
                         nullable: col.options.nullable,
@@ -131,7 +134,7 @@ export class TypeormAdapter {
             isModel: (type) => entities?.includes(type as Type),
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
             hasField: (parameter, ctx) => ctx.getPayload()?.body,
-            getFields: (parameter: TransportParameter, ctx: RunContext) => parameter.field ? ctx.request!.body[parameter.field] : ctx.request!.body,
+            getFields: (parameter: TransportParameter, ctx: RunContext) => parameter.field ? ctx.getPayload()!.body[parameter.field] : ctx.getPayload()!.body,
             fieldResolvers: [
                 (input, next, context) => {
                     if (input[0].dbtype === 'objectId') {
