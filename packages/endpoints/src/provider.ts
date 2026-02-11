@@ -1,14 +1,11 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, Token, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
-    matchTransport, RequestInterceptorLike, TopicIncomingFactory, TransferInterceptorFactory,
-    UrlIncomingFactory, useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
+    matchTransport, RequestInterceptorLike, TransferInterceptorFactory,
+    useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
     provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike,
     RequestExceptionFilter, RequestExceptionHandlerFilter,
-    RequestInterceptorFn,
-    UrlOutgoingFactory,
-    TopicOutgoingFactory,
-    PatternOutgoingFactory,
+    RequestInterceptorFn, UrlOutgoingFactory, TopicOutgoingFactory, PatternOutgoingFactory,
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -16,13 +13,15 @@ import {
 import { createRouteProviders, RouteOpts } from './router/router.providers';
 import { EndpointTypedRespond } from './typed.respond';
 import { SetupServices } from './SetupServices';
-import { getFiltersToken, getGuardsToken, getInterceptorsToken, getMiddlewaresToken, getRouterToken, getTransfersToken, RESPONSE } from './tokens';
+import { getFiltersToken, getGuardsToken, getInterceptorsToken, getMiddlewaresToken, getRouterToken, getTransfersToken, getVaildatorsToken, RESPONSE } from './tokens';
 import { MimeModule } from './mime.module';
 import { SessionOptions } from './sessions/Session';
 import { FeatureOptions, ServiceConfig } from './server.options';
 import { DefaultExceptionHandlers } from './filters/exception.handlers';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware/middleware';
 import { RequestContextFactory } from './AbstractRequestContext';
+import { Vaildator } from './vaildator';
+import { mergeMap, of, throwError } from 'rxjs';
 
 
 /**
@@ -33,12 +32,12 @@ import { RequestContextFactory } from './AbstractRequestContext';
 export enum FeatureKind {
     Configure,
     Transfer,
-    Context,
+    // Context,
     Logger,
     Exception,
     Filters,
+    GlobalInterceptors,
     Guards,
-    Interceptors,
     Csrf,
     Helmet,
     Cors,
@@ -47,6 +46,8 @@ export enum FeatureKind {
     Content,
     Json,
     Bodyparser,
+    Vaildate,
+    Interceptors,
     Middlewares,
     Router,
     Controller,
@@ -226,7 +227,7 @@ export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<Featur
             handlers: opts.exceptionHandlers
         })(config));
 
-        features.push(withContextFactory(opts.contextFactory)(config));
+        // features.push(withContextFactory(opts.contextFactory)(config));
 
         if (opts.session) {
             features.push(withSession(isBoolean(opts.session) ? undefined : opts.session)(config));
@@ -543,6 +544,78 @@ export function withRouter(options?: RouteOpts): FeatureFn<FeatureKind.Router> {
  * @see {@link provideService}
  * @publicApi
  */
+export function withVaildate(...vaildators: ProvdierOf<Vaildator>[]): FeatureFn<FeatureKind.Vaildate> {
+    return (config) => {
+        const token = getVaildatorsToken(config);
+        const intToken = getInterceptorsToken(config);
+        return makeFeature(
+            FeatureKind.Vaildate,
+            [
+                ...vaildators.map(v => toProvider(token, v, true)),
+                {
+                    provide: intToken,
+                    useValue: ((req, next, context) => {
+                        const vaildators = context.get(token);
+                        if (vaildators?.length) {
+                            try {
+                                for (const vaildator of vaildators) {
+                                    vaildator.reqVaild?.(req, context);
+                                }
+                            } catch (err) {
+                                return throwError(() => err)
+                            }
+                            return next(req, context)
+                                .pipe(
+                                    mergeMap(res => {
+                                        try {
+                                            for (const vaildator of vaildators) {
+                                                vaildator.resVaild?.(res, context);
+                                            }
+                                        } catch (err) {
+                                            return throwError(() => err)
+                                        }
+                                        return of(res);
+                                    })
+                                );
+                        }
+
+                        return next(req, context);
+                    }) as RequestInterceptorFn,
+                    multi: true
+                }
+            ],
+            config
+        );
+    }
+}
+
+/**
+ * Adds one or more interceptors after `Filters`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
+ * @publicApi
+ */
+export function withGlobalInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.GlobalInterceptors> {
+    return (config) => {
+        const token = getInterceptorsToken(config);
+        return makeFeature(
+            FeatureKind.GlobalInterceptors,
+            interceptors.map((u) => toProvider(token, u, true)),
+            config
+        );
+    }
+}
+
+/**
+ * Adds one or more service interceptors after `Vaildate`
+ * instance.
+ *
+ * @see {@link RequestInterceptorLike}
+ * @see {@link provideService}
+ * @publicApi
+ */
 export function withInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): FeatureFn<FeatureKind.Interceptors> {
     return (config) => {
         const token = getInterceptorsToken(config);
@@ -597,24 +670,24 @@ export function withControllers(controllers: Type[]): FeatureFn<FeatureKind.Cont
     }
 }
 
-export function withContextFactory(factoryToken?: Token<RequestContextFactory>): FeatureFn<FeatureKind.Context> {
-    return (config) => {
-        const token = getTransfersToken(config);
-        const transCfg: RequestInterceptorFn = (req, next, context) => {
-            const factory = context.get(factoryToken ?? RequestContextFactory);
-            return next(req, factory ? factory.create(context, req, context.get(SERV_OPTIONS), context.get(RESPONSE)) : context);
-        };
-        const providers = [
-            { provide: token, useValue: transCfg, multi: true }
-        ] as Provider[];
+// export function withContextFactory(factoryToken?: Token<RequestContextFactory>): FeatureFn<FeatureKind.Context> {
+//     return (config) => {
+//         const token = getTransfersToken(config);
+//         const transCfg: RequestInterceptorFn = (req, next, context) => {
+//             const factory = context.get(factoryToken ?? RequestContextFactory);
+//             return next(req, factory ? factory.create(context, req, context.get(SERV_OPTIONS), context.get(RESPONSE)) : context);
+//         };
+//         const providers = [
+//             { provide: token, useValue: transCfg, multi: true }
+//         ] as Provider[];
 
-        return makeFeature(
-            FeatureKind.Context,
-            providers,
-            config
-        );
-    }
-}
+//         return makeFeature(
+//             FeatureKind.Context,
+//             providers,
+//             config
+//         );
+//     }
+// }
 
 
 /**

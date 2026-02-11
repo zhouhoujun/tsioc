@@ -1,9 +1,10 @@
 import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
-import { defer, map, mergeMap } from 'rxjs';
+import { catchError, defer, map, mergeMap, of } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
 import { REQUEST, RequestContext } from './context';
 import { StreamAdapter } from './StreamAdapter';
+import { Logger } from '@tsdi/logger';
 
 export enum TransferSide {
     client = 1,
@@ -87,6 +88,18 @@ export type TransferFactoryOptions = StringTransferOptions | JsonTransferOptions
 
 
 export const PAYLOAD_KEY = new ContextToken<string>(() => 'body');
+
+
+export const useCatch: RequestInterceptorFn = (req, next, context) => {
+    return next(req, context)
+        .pipe(
+            catchError(err => {
+                const logger = context.get(Logger);
+                logger? logger.error(err) : console.error(err);
+                return of(null);
+            })
+        )
+}
 
 
 export function useSimpleJson(options?: {

@@ -5,6 +5,7 @@ import { ServiceConfig } from './server.options';
 import { Router } from './router/router';
 import { ServiceHandler } from './ServiceHandler';
 import { MiddlewareLike } from './middleware/middleware';
+import { Vaildator } from './vaildator';
 
 
 export const RESPONSE = token<Outgoing>('RESPONSE');
@@ -26,6 +27,14 @@ export function getFiltersToken(config: ServiceConfig): Token<RequestFilterLike[
         config.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_FILTERS`, toMicroName(config.microservice));
     }
     return config.filtersToken;
+}
+
+
+export function getVaildatorsToken(config: ServiceConfig): Token<Vaildator[]> {
+    if(!config.vaildatorsToken) {
+        config.vaildatorsToken = getToken<Vaildator[]>(`${Transport[config.transport].toUpperCase()}_VAILDATORS`, toMicroName(config.microservice));
+    }
+    return config.vaildatorsToken;
 }
 
 

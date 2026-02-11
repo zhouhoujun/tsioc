@@ -9,6 +9,7 @@ import { GuardLike } from '@tsdi/core';
 import { BodyparserOptions, JsonOptions } from './interceptors';
 import { MiddlewareLike } from './middleware/middleware';
 import { RequestContextFactory } from './AbstractRequestContext';
+import { Vaildator } from './vaildator';
 
 export interface ProxyOpts {
     proxyIpHeader: string;
@@ -25,6 +26,7 @@ export interface FeatureOptions {
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     middlewares?: ProvdierOf<MiddlewareLike>[];
     guards?: ProvdierOf<GuardLike>[];
+    vaildators?: ProvdierOf<Vaildator>[];
     cors?: boolean | CorsOpts;
     session?: boolean | SessionOptions;
     csrf?: boolean | CsrfOps;

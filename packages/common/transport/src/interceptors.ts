@@ -152,6 +152,13 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
 async function packetWithSize(data: any, options: TransferOptions, context: RequestContext): Promise<Buffer | string> {
     const streamAdapter = context.get(StreamAdapter);
     const size = options.size!;
+    const maxSize = options.maxSize;
+    const len = context.getContentLength() ?? 0;
+    if (maxSize && len >= maxSize) {
+        const btpipe = context.get<PipeTransform>('bytes-format');
+        throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
+    }
+
     let buffLen: Buffer;
     const delimiter = Buffer.from(options.delimiter!);
     const delimiterLen = Buffer.byteLength(delimiter as Uint8Array);
@@ -182,7 +189,13 @@ async function packet(data: any, options: TransferOptions, context: RequestConte
     const maxSize = options.maxSize;
     const delimiter = options.delimiter!;
     const streamAdapter = context.get(StreamAdapter);
-    let len = 0;
+
+    let len = context.getContentLength() ?? 0;
+    if (maxSize && len >= maxSize) {
+        const btpipe = context.get<PipeTransform>('bytes-format');
+        throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
+    }
+
     if (Buffer.isBuffer(data)) {
         data = Buffer.concat([data, Buffer.from(delimiter)] as Uint8Array[]);
         len = Buffer.byteLength(data);
@@ -198,7 +211,7 @@ async function packet(data: any, options: TransferOptions, context: RequestConte
 
     if (maxSize && len >= maxSize) {
         const btpipe = context.get<PipeTransform>('bytes-format');
-        throw new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(maxSize)}`);
+        throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
     }
     return data
 }

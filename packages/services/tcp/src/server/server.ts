@@ -104,9 +104,12 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         }
 
         if (!this.serv) throw new InternalServerException();
+        const context = this.context;
+        context.setValue(Logger, this.logger);
+        
         this.serv.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(Events.ERROR, (err) => this.logger.error(err));
-        const context = this.handler.context;
+
         if (this.serv instanceof tls.Server) {
             this.serv.on(Events.SECURE_CONNECTION, (socket) => {
                 this.handleMessage(socket);

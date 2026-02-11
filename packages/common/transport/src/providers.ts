@@ -1,4 +1,4 @@
-import { AbstractOutgoing, AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useSimpleJson } from '@tsdi/common';
+import { AbstractOutgoing, AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, useSimpleJson } from '@tsdi/common';
 import { delimiterPacket, delimiterUnpacket, packetIdMessage, socketMessage } from './interceptors';
 import { ProvdierOf, toProvider } from '@tsdi/ioc';
 import { PacketNumberIdGenerator } from './PacketId';
@@ -55,12 +55,14 @@ export function useJsonPacket(options: PacketOptions = {}): TransferInterceptorF
         }
 
         return isClient ? [
+            useCatch,
             packetIdMessage(config, options),
             useSimpleJson(options)(config) as RequestInterceptorFn,
             delimiterUnpacket(config, options),
             delimiterPacket(config, options),
             socketMessage(config, options)
         ] : [
+            useCatch,
             socketMessage(config, options),
             delimiterUnpacket(config, options),
             delimiterPacket(config, options),
