@@ -23,6 +23,7 @@ import { FeatureOptions, ServiceConfig } from './server.options';
 import { DefaultExceptionHandlers } from './filters/exception.handlers';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware/middleware';
 import { defer, mergeMap, of, throwError } from 'rxjs';
+import { FinallizeFilter } from './filters/finallize.fitler';
 
 
 /**
@@ -90,6 +91,7 @@ export function provideService(...features: FeatureLike<FeatureKind>[]): Provide
     const providers: Provider[] = [
         provideIncomings(),
         provideOutgoings(),
+        FinallizeFilter,
         RequestExceptionHandlerFilter,
         SetupServices,
         MimeModule,
@@ -332,12 +334,15 @@ export function withLogger(options?: LoggerOptions): FeatureFn<FeatureKind.Logge
  */
 export function withExceptionFilter(options?: {
     filter?: ProvdierOf<RequestExceptionFilter>;
+    finallize?: ProvdierOf<RequestExceptionFilter>;
     handlers?: Type[];
 }): FeatureFn<FeatureKind.Exception> {
     return (config) => {
         const token = getFiltersToken(config);
 
-        const providers: Provider[] = [];
+        const providers: Provider[] = [
+            options?.finallize ? toProvider(token, options.finallize, true) : { provide: token, useExisting: FinallizeFilter, multi: true }
+        ];
         if (options?.filter) {
             providers.push(toProvider(token, options.filter, true))
         } else {
