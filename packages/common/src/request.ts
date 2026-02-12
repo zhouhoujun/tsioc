@@ -452,7 +452,7 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
             json.headers = this.headers.getHeaders();
         }
         if (!isNil(this.body)) {
-            json[options?.payloadKey ?? 'body'] = this.body;
+            json[options?.payloadKey ?? 'payload'] = this.body;
         }
 
         return json;

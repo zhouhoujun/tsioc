@@ -60,6 +60,7 @@ export interface UrlIncoming<T = any, TMsg = any> extends BaseIncoming<T, TMsg> 
 export interface TopicIncoming<T = any, TMsg = any> extends BaseIncoming<T, TMsg> {
     topic: string;
     responseTopic?: string;
+    payload?: T | null;
 }
 
 /**
@@ -71,7 +72,7 @@ export type Incoming<T = any, TMsg = any> = PatternIncoming<T, TMsg> | UrlIncomi
 /**
  * client incoming message with status
  */
-export interface ClientIncoming<T = any, TStatus = any> extends IncomingMessage<T>{
+export interface ClientIncoming<T = any, TStatus = any> extends IncomingMessage<T> {
     /**
      * event type
      */

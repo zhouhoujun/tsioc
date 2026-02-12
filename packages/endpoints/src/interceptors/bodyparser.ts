@@ -2,7 +2,7 @@
 import { Abstract, Injectable, isArray, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
 import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, HeaderAdapter, MimeAdapter } from '@tsdi/common';
-import { IReadable, MimeTypes } from '@tsdi/common';
+import { MimeTypes } from '@tsdi/common';
 import { isBuffer } from '@tsdi/common/transport';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -80,9 +80,9 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
         if (!this.canHanlde(input, streamAdapter)) return next.handle(input, context);
         return from(this.parseBody(input, context))
             .pipe(
-                mergeMap(res => {
-                    input.body = res.body ?? {};
-                    if (isUndefined(input.rawBody)) input.rawBody = res.raw;
+                mergeMap(psd => {
+                    input.body = psd.body ?? {};
+                    if (isUndefined(input.rawBody)) input.rawBody = psd.raw;
                     return next.handle(input, context)
                 })
             )

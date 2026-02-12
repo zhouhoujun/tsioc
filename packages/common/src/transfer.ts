@@ -1,4 +1,4 @@
-import { ContextToken, ProvdierOf, Provider } from '@tsdi/ioc';
+import { ContextToken, isDefined, ProvdierOf, Provider } from '@tsdi/ioc';
 import { catchError, defer, map, mergeMap, of } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
@@ -95,7 +95,7 @@ export const useCatch: RequestInterceptorFn = (req, next, context) => {
         .pipe(
             catchError(err => {
                 const logger = context.get(Logger);
-                logger? logger.error(err) : console.error(err);
+                logger ? logger.error(err) : console.error(err);
                 return of(null);
             })
         )
@@ -123,7 +123,10 @@ export function useSimpleJson(options?: {
                         if (streamAdapter.isReadable(res)) {
                             res = await streamAdapter.read(res);
                         }
-                        return JSON.parse(res, options?.reviver);
+                        const incoming = JSON.parse(res, options?.reviver);
+                        if (isDefined(incoming?.payload)) incoming.body = incoming.payload;
+                        return incoming;
+
                     })
                 )
         }
@@ -134,8 +137,9 @@ export function useSimpleJson(options?: {
                     if (streamAdapter.isReadable(req)) {
                         req = await streamAdapter.read(req);
                     }
-                    const reqdata = JSON.parse(req, options?.reviver);
-                    return reqdata;
+                    const incoming = JSON.parse(req, options?.reviver);
+                    if (isDefined(incoming?.payload)) incoming.body = incoming.payload;
+                    return incoming;
                 })
                     .pipe(
                         mergeMap(rjson => {
