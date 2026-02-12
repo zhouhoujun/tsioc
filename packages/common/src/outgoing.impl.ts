@@ -214,6 +214,14 @@ export class PatternOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T,
         if (!isNil(this.status)) {
             json.status = this.status;
         }
+        if (!isNil(this.statusCode)) {
+            json.statusCode = this.statusCode;
+        }
+
+        if(!isNil(this.error)) {
+            json.error = this.error;
+        }
+
         if (this.statusMessage) {
             json.statusMessage = this.statusMessage;
         }
@@ -282,6 +290,14 @@ export class UrlOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, TSt
         if (!isNil(this.status)) {
             json.status = this.status;
         }
+        if (!isNil(this.statusCode)) {
+            json.statusCode = this.statusCode;
+        }
+
+        if(!isNil(this.error)) {
+            json.error = this.error;
+        }
+
         if (this.statusMessage) {
             json.statusMessage = this.statusMessage;
         }
@@ -352,6 +368,13 @@ export class TopicOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, T
         }
         if (!isNil(this.status)) {
             json.status = this.status;
+        }
+        if (!isNil(this.statusCode)) {
+            json.statusCode = this.statusCode;
+        }
+
+        if(!isNil(this.error)) {
+            json.error = this.error;
         }
         if (this.statusMessage) {
             json.statusMessage = this.statusMessage;
