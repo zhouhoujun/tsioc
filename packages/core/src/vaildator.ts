@@ -1,5 +1,10 @@
 import { HandleResult, RunContext } from '@tsdi/ioc';
 
+export interface ValidateResult {
+    status: boolean;
+    message?: string;
+}
+
 /**
  * Vaildator
  */
@@ -9,13 +14,13 @@ export interface Vaildator<T = any, TContext extends RunContext = RunContext> {
      * @param req 
      * @param context 
      */
-    vaild(input: T, context: TContext): HandleResult<boolean>;
+    vaild(input: T, context: TContext): HandleResult<ValidateResult>;
 }
 
 /**
  * hander vaild fn.
  */
-export type VaildatorFn<T = any, TContext extends RunContext = RunContext> = (input: T, contex: TContext) => HandleResult<boolean>;
+export type VaildatorFn<T = any, TContext extends RunContext = RunContext> = (input: T, contex: TContext) => HandleResult<ValidateResult>;
 
 /**
  * Vaildator Like.

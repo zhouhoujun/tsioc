@@ -140,9 +140,10 @@ export class TcpService {
                 const maxSize = 1024 * 1024 * 10;
                 if (len > maxSize) {
                     const btpipe = context.get<PipeTransform>('bytes-format');
-                    throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
+                    const message = `Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`;
+                    return { status: false, message };
                 }
-                return true
+                return { status: true }
             },
             ),
             // withContextFactory(),

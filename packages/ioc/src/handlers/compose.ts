@@ -112,18 +112,23 @@ export function invokeTail<T = any, TContext = any>(invoke: (input?: any, contex
 export function invokeTail<T = any, TContext = any>(invoke: (input: any, context: TContext) => T, tail: TailNext<any, TContext>, input: any, context: TContext): T;
 export function invokeTail<T = any, TContext = any>(invoke: (input: any, arg2: any, context: TContext) => T, tail: TailNext<any, TContext>, input: any, arg2: any, context: TContext): T;
 export function invokeTail<T = any, TContext = any>(invoke: (input?: any, arg2?: any, arg3?: any) => T, tail: TailNext<any, TContext>, input?: any, arg2?: any, arg3?: TContext): T {
+    let isSync = true;
     try {
         const res$ = invoke(input, arg2, arg3);
-        // if (!tail) return res$;
-
         if (isObservable(res$)) {
+            isSync = false;
             return processObservable(input, res$, tail, arg3 ?? arg2) as T;
         } else if (isPromise(res$)) {
+            isSync = false;
             return processPromise(input, res$, tail, arg3 ?? arg2) as T;
         }
         return processSync(input, res$, tail, arg3 ?? arg2);
     } catch (err) {
         return handleError(err, isFunction(tail) ? null : tail);
+    } finally {
+        if (isSync && !isFunction(tail) && isFunction(tail.finally)) {
+            tail.finally();
+        }
     }
 }
 
@@ -196,11 +201,7 @@ function processSync<T, TContext>(input: any, result: T, opter: TailNext<T>, con
         result = opter.next(result ?? input, context);
     }
 
-    if (opter.finally) {
-        opter.finally();
-    }
-
-    return result;
+    return result ?? input;
 }
 
 function handleError<T>(err: any, opter?: NextOpter<T> | null): T {
