@@ -124,7 +124,8 @@ export function invokeTail<T = any, TContext = any>(invoke: (input?: any, arg2?:
         }
         return processSync(input, res$, tail, arg3 ?? arg2);
     } catch (err) {
-        return handleError(err, isFunction(tail) ? null : tail);
+        if (isSync && !isFunction(tail) && isFunction(tail.error)) return handleError(err, tail);
+        throw err;
     } finally {
         if (isSync && !isFunction(tail) && isFunction(tail.finally)) {
             tail.finally();
@@ -204,11 +205,9 @@ function processSync<T, TContext>(input: any, result: T, opter: TailNext<T>, con
     return result ?? input;
 }
 
-function handleError<T>(err: any, opter?: NextOpter<T> | null): T {
-    if (opter?.error) {
-        const ct = opter.error(err);
-        if (isDefined(ct)) return ct;
-    }
+function handleError<T>(err: any, opter: NextOpter<T>): T {
+    const ct = opter.error?.(err);
+    if (isDefined(ct)) return ct;
     throw err;
 }
 

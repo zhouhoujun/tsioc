@@ -44,24 +44,11 @@ export abstract class RequestExceptionFilter<TInput = any, TOutput = any, TConte
                     return invokeTail(() => this.catchError(input, err, context), {
                         next: (res) => {
                             if (res instanceof Error || res instanceof Exception) {
-                                const err = res as Exception;
-                                const rep = context.getResponse();
-                                rep.error = err;
-                                rep.statusCode = (err as Exception).code;
-                                rep.statusMessage = (err as Exception).message;
-                                rep.body = (err as Exception).message;
-                                return rep;
+                                throw res;
                             }
                             return res;
                         },
-                        error: (err) => {
-                            const res = context.getResponse();
-                            res.error = err;
-                            res.statusCode = (err as Exception).code;
-                            res.statusMessage = (err as Exception).message;
-                            res.body = (err as Exception).message;
-                            return res;
-                        }
+                        error: (err) => null
                     })
                 })
             );
