@@ -156,11 +156,10 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
 export function createTemplateRef<C = any>(
     rootNodes: RNode[] | NodeFactory<C>,
-    elementRef: ElementRef, options?: {
-    directives?: Map<RNode, DirectiveDef<any>[]>;
-    components?: Map<RNode, ComponentDef>;
-    context?: any;
-    environment?: EnvironmentContext
-}): TemplateRef<C> {
+    elementRef: ElementRef,
+    options?: {
+        context?: any;
+        environment?: EnvironmentContext
+    }): TemplateRef<C> {
     return new TemplateRefImpl<C>(rootNodes, elementRef, options);
 }

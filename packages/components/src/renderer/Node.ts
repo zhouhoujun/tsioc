@@ -1,3 +1,4 @@
+import { ComponentDef } from '../refs/component';
 import { DirectiveDef } from '../refs/directive';
 import { Bindings } from '../refs/template';
 
@@ -49,7 +50,8 @@ export enum NodeType {
 }
 
 export const BINDINGS = Symbol('__BINDINGS');
-export const BIND_DIRECTIVES = Symbol('__DIRECTIVES');
+export const DIRECTIVES = Symbol('__DIRECTIVES');
+export const COMPONENTDEF = Symbol('__COMPONENTDEF');
 
 /**
  * A node in the DOM tree.
@@ -143,7 +145,9 @@ export interface RNode {
   /**
    * The directives of this node.
    */
-  [BIND_DIRECTIVES]?: DirectiveDef[];
+  [DIRECTIVES]?: DirectiveDef[];
+
+  [COMPONENTDEF]?: ComponentDef;
 
 }
 
