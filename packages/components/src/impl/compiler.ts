@@ -12,14 +12,6 @@ import { ReactiveEffect } from '../effect';
 import { reactive } from '../reactive';
 
 
-/**
- * 模板编译结果，包含 TemplateRef 和绑定工厂
- */
-export interface TemplateCompilationResult<C = any> {
-    bindingFactories: Map<RNode, Bindings<C>[]>;
-    directives: Map<RNode, DirectiveDef<any>[]>;
-    components: Map<RNode, ComponentDef>;
-}
 
 @Abstract()
 export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler<T> {
@@ -42,24 +34,347 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     compile<C>(template: T, options: CompilerOptions): TemplateRef<C> {
         const nodes = this.parser.parse(template);
-        return this.compileNodesWithFactories<C>(nodes, options);
 
+        const [components, directives] = this.generateNodeBindings(nodes, options.directives, options.components);
+
+        // 优化：将模板编译为 factory function
+        const factoryFunction = this.compileToFactoryFunction<C>(nodes, directives, components, options);
+
+        return createTemplateRef(factoryFunction, options.host, { components, directives });
     }
 
     /**
-     * 编译节点并返回完整的编译结果
+     * 将模板节点编译为 factory function
+     * @param nodes 模板节点
+     * @param directives 指令映射
+     * @param components 组件映射
+     * @param options 编译选项
+     * @returns factory function
      */
-    compileNodesWithFactories<C>(nodes: RNode[], options: CompilerOptions): TemplateRef<C> {
-        // 创建绑定工厂
-        const [components, directives] = this.createBindingFactories(nodes, options.directives, options.components);
+    private compileToFactoryFunction<C>(
+        nodes: RNode[],
+        directives: Map<RNode, DirectiveDef[]>,
+        components: Map<RNode, ComponentDef>,
+        options: CompilerOptions
+    ): (environment: EnvironmentContext,context: C, effect: ReactiveEffect) => RNode[] {
+        // 预处理指令和组件选择器映射
+        const dirSelectorMap = new Map<string, DirectiveDef[]>();
+        const compSelectorMap = new Map<string, ComponentDef>();
 
-        return createTemplateRef(nodes, options.host, { components, directives });
+        // 构建指令和组件的选择器映射
+        directives.forEach((dirs, node) => {
+            dirs.forEach(dir => {
+                const selector = dir.selector;
+                if (!dirSelectorMap.has(selector)) {
+                    dirSelectorMap.set(selector, []);
+                }
+                dirSelectorMap.get(selector)!.push(dir);
+            });
+        });
+
+        components.forEach((comp, node) => {
+            compSelectorMap.set(comp.selector, comp);
+        });
+
+        // 编译节点为创建函数
+        const compiledNodes = nodes.map(node => 
+            this.compileNodeToFactory(node, dirSelectorMap, compSelectorMap, options)
+        );
+
+        // 返回工厂函数
+        return (environment: EnvironmentContext, context: C, effect: ReactiveEffect)=> {
+            const renderer = environment.get(Renderer);
+            
+            // 执行编译好的节点创建函数
+            const rootNodes: RNode[] = [];
+            compiledNodes.forEach(createNode => {
+                const node = createNode(renderer, effect, environment, context);
+                if (node) {
+                    rootNodes.push(node);
+                }
+            });
+
+            return rootNodes;
+        };
+    }
+
+    /**
+     * 编译单个节点为工厂函数
+     * @param node 节点
+     * @param dirSelectorMap 指令选择器映射
+     * @param compSelectorMap 组件选择器映射
+     * @param options 编译选项
+     * @returns 节点工厂函数
+     */
+    private compileNodeToFactory(
+        node: RNode,
+        dirSelectorMap: Map<string, DirectiveDef[]>,
+        compSelectorMap: Map<string, ComponentDef>,
+        options: CompilerOptions
+    ): (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RNode | null {
+        if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
+            return this.compileTextToFactory(node as RText);
+        } else {
+            return this.compileElementToFactory(node as RElement, dirSelectorMap, compSelectorMap, options);
+        }
+    }
+
+    /**
+     * 编译文本节点为工厂函数
+     * @param node 文本节点
+     * @returns 文本节点工厂函数
+     */
+    private compileTextToFactory(node: RText): (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RText | null {
+        const text = node.textContent || '';
+        const bindings = node[BINDINGS] || [];
+        
+        // 如果没有绑定，直接返回静态文本节点创建函数
+        if (!bindings.length) {
+            return (renderer: Renderer) => {
+                return renderer.createText(text);
+            };
+        }
+
+        // 有绑定的文本节点，返回包含绑定逻辑的工厂函数
+        return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => {
+            const textNode = renderer.createText(text);
+            
+            // 应用绑定
+            bindings.forEach(binding => {
+                const unbinding = binding(textNode, context, effect, environment);
+                unbinding && environment.onDestroy(unbinding);
+            });
+            
+            return textNode;
+        };
+    }
+
+    /**
+     * 编译元素节点为工厂函数
+     * @param node 元素节点
+     * @param dirSelectorMap 指令选择器映射
+     * @param compSelectorMap 组件选择器映射
+     * @param options 编译选项
+     * @returns 元素节点工厂函数
+     */
+    private compileElementToFactory(
+        node: RElement,
+        dirSelectorMap: Map<string, DirectiveDef[]>,
+        compSelectorMap: Map<string, ComponentDef>,
+        options: CompilerOptions
+    ): (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RElement | null {
+        const tagName = node.tagName;
+        const attrs = this.renderer.getAttributes(node);
+        const bindings = node[BINDINGS] || [];
+        const directives = node[BIND_DIRECTIVES] || [];
+        
+        // 检查是否是组件
+        const componentDef = compSelectorMap.get(tagName);
+        if (componentDef) {
+            return this.compileComponentToFactory(node, componentDef, attrs, bindings);
+        }
+
+        // 检查是否是模板标签
+        const templateTag = this.options.templateTag || 'template';
+        if (tagName === templateTag) {
+            return this.compileTemplateToFactory(node, attrs, bindings, dirSelectorMap, compSelectorMap, options);
+        }
+
+        // 编译子节点
+        const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RNode | null> = [];
+        if (node.childNodes) {
+            for (const child of node.childNodes) {
+                const childFactory = this.compileNodeToFactory(child, dirSelectorMap, compSelectorMap, options);
+                childFactories.push(childFactory);
+            }
+        }
+
+        // 编译属性
+        const compiledAttrs = attrs.map(attr => this.compileAttributeToFactory(attr));
+
+        // 返回元素工厂函数
+        return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => {
+            // 创建元素
+            const element = renderer.createElement(tagName);
+
+            // 应用属性
+            compiledAttrs.forEach(applyAttr => {
+                applyAttr(element, renderer);
+            });
+
+            // 创建并添加子节点
+            childFactories.forEach(createChild => {
+                const child = createChild(renderer, effect, environment, context);
+                if (child) {
+                    renderer.appendChild(element, child);
+                }
+            });
+
+            // 应用绑定
+            bindings.forEach(binding => {
+                const unbinding = binding(element, context, effect, environment);
+                unbinding && environment.onDestroy(unbinding);
+            });
+
+            // 应用指令
+            directives.forEach(dirDef => {
+                this.applyDirectiveToElement(element, dirDef, attrs, effect, environment, context);
+            });
+
+            return element;
+        };
+    }
+
+    /**
+     * 编译属性为应用函数
+     * @param attr 属性
+     * @returns 属性应用函数
+     */
+    private compileAttributeToFactory(attr: RAttr): (element: RElement, renderer: Renderer) => void {
+        const { name, value, namespace } = attr;
+
+        // 静态属性直接返回设置函数
+        return (element: RElement, renderer: Renderer) => {
+            renderer.setAttribute(element, name, value, namespace);
+        };
+    }
+
+    /**
+     * 编译组件为工厂函数
+     * @param node 元素节点
+     * @param componentDef 组件定义
+     * @param attrs 属性列表
+     * @param bindings 绑定列表
+     * @returns 组件工厂函数
+     */
+    private compileComponentToFactory(
+        node: RElement,
+        componentDef: ComponentDef,
+        attrs: RAttr[],
+        bindings: any[]
+    ): (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext) => RElement | null {
+        const compiledAttrs = attrs.map(attr => this.compileAttributeToFactory(attr));
+
+        return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext) => {
+            // 创建元素
+            const element = renderer.createElement(node.tagName);
+            
+            // 应用属性
+            compiledAttrs.forEach(applyAttr => {
+                applyAttr(element, renderer);
+            });
+
+            // 创建组件实例
+            const elementRef = environment.getElementRef(element);
+            const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
+
+            if (!componentRef) return element;
+
+            // 应用绑定
+            bindings.forEach(binding => {
+                const unbinding = binding(element, null, effect, environment);
+                unbinding && environment.onDestroy(unbinding);
+            });
+
+            // 附加组件到环境
+            environment.attachComponent(componentRef);
+
+            // 渲染组件
+            componentRef.render();
+
+            return element;
+        };
+    }
+
+    /**
+     * 编译模板为工厂函数
+     * @param node 模板节点
+     * @param attrs 属性列表
+     * @param bindings 绑定列表
+     * @returns 模板工厂函数
+     */
+    private compileTemplateToFactory(
+        node: RElement,
+        attrs: RAttr[],
+        bindings: any[],
+        dirSelectorMap: Map<string, DirectiveDef[]>,
+        compSelectorMap: Map<string, ComponentDef>,
+        options: CompilerOptions
+    ): (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RElement | null {
+        const compiledAttrs = attrs.map(attr => this.compileAttributeToFactory(attr));
+        const childNodes = node.childNodes || [];
+        const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RNode | null> = [];
+        
+        // 编译子节点
+        for (const child of childNodes) {
+            const childFactory = this.compileNodeToFactory(child, dirSelectorMap, compSelectorMap, options);
+            childFactories.push(childFactory);
+        }
+
+        return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => {
+            // 创建元素
+            const element = renderer.createElement(node.tagName);
+            
+            // 应用属性
+            compiledAttrs.forEach(applyAttr => {
+                applyAttr(element, renderer);
+            });
+
+            // 创建并添加子节点
+            childFactories.forEach(createChild => {
+                const child = createChild(renderer, effect, environment, context);
+                if (child) {
+                    renderer.appendChild(element, child);
+                }
+            });
+
+            // 应用绑定
+            bindings.forEach(binding => {
+                const unbinding = binding(element, null, effect, environment);
+                unbinding && environment.onDestroy(unbinding);
+            });
+
+            return element;
+        };
+    }
+
+    /**
+     * 应用指令到元素
+     * @param element 元素
+     * @param directive 指令定义
+     * @param attrs 属性列表
+     * @param effect 响应式效果
+     * @param environment 环境上下文
+     */
+    private applyDirectiveToElement(
+        element: RElement,
+        directive: DirectiveDef,
+        attrs: RAttr[],
+        effect: ReactiveEffect,
+        environment: EnvironmentContext,
+        context: any
+    ): void {
+        const elementRef = environment.getElementRef(element);
+        const directiveRef = (directive as Factoriable).ƿfac?.(environment, { elementRef, context });
+
+        if (!directiveRef) return;
+
+        // 附加指令到环境
+        environment.attachDirective(directiveRef);
+
+        // 处理指令属性
+        this.processDirectiveAttributes(directiveRef, directive, [], attrs, null, effect, environment);
+
+        // 初始化指令
+        if (directiveRef.instance.onInit) {
+            directiveRef.instance.onInit();
+        }
     }
 
     /**
      * 创建可复用的属性绑定工厂
      */
-    private createBindingFactories<C>(
+    private generateNodeBindings<C>(
         nodes: RNode[],
         directives: DirectiveDef[],
         components: ComponentDef[]
@@ -96,14 +411,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         });
 
         // 为每个节点创建绑定工厂
-        this.walkNodesForFactories(nodes, dirMap, compMap);
+        this.walkNodesForBindings(nodes, dirMap, compMap);
         return [compMap, dirMap];
     }
 
     /**
      * 遍历节点创建绑定工厂
      */
-    private walkNodesForFactories<C>(
+    private walkNodesForBindings<C>(
         nodes: RNode[],
         dirMap: Map<RNode, DirectiveDef[]>,
         compMap: Map<RNode, ComponentDef>
@@ -222,7 +537,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
         // 递归处理子节点
         if (element.childNodes.length > 0) {
-            this.walkNodesForFactories(element.childNodes, dirMap, compMap);
+            this.walkNodesForBindings(element.childNodes, dirMap, compMap);
         }
 
         // 处理组件和指令

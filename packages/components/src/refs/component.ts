@@ -1,5 +1,5 @@
 import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, ProvdierOf } from '@tsdi/ioc';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { CompilerOptions, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { EmbeddedViewRef } from './view';
 import { DirectiveDef, factoryKey } from './directive';
 import { EnvironmentContext } from './environment';
@@ -7,11 +7,14 @@ import { ElementRef } from './element';
 import { Renderer } from '../renderer/Renderer';
 import { noReact } from '../effect';
 import { RNode } from '../renderer/Node';
+import { TemplateRef } from './template';
+
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
     templateUrl?: string;
     ƿFac?: (ctx: EnvironmentContext, options: ComponentOptions) => ComponentRef<T>;
+    ƿtempFac?: (options?: CompilerOptions) => TemplateRef<T>;
 }
 
 /**

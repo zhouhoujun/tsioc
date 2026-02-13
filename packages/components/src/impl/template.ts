@@ -24,6 +24,11 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
     [noReact] = true;
 
+    private _rootNodesFactory?: ((environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[]);
+    private _rootNodes?: RNode[];
+    get rootNodes(): RNode[] {
+        return this._rootNodes ?? [];
+    }
     /**
      * Creates an instance of TemplateRefImpl.
      * @param {RNode[]} rootNodes
@@ -32,7 +37,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * @memberof TemplateRefImpl
      */
     constructor(
-        readonly rootNodes: RNode[],
+        rootNodes: RNode[] | ((environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[]),
         readonly elementRef: ElementRef,
         private options?: {
             directives?: Map<RNode, DirectiveDef<any>[]>;
@@ -40,7 +45,13 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
             environment?: EnvironmentContext;
             context?: any
         }
-    ) { }
+    ) {
+        if (typeof rootNodes === 'function') {
+            this._rootNodesFactory = rootNodes;
+        } else {
+            this._rootNodes = rootNodes;
+        }
+    }
 
     /**
      * Instantiates an embedded view based on this template,
@@ -69,8 +80,13 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         context = isReactive(context) ? context : reactive(context, effect);
 
         // 默认处理抽象节点
-        const rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
-        rootNodes.forEach(node => this.bindings(node, context!, effect, environment));
+        let rootNodes: RNode[];
+        if (this._rootNodesFactory) {
+            rootNodes = this._rootNodesFactory(environment, context as C, effect);
+        } else {
+            rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
+            rootNodes.forEach(node => this.bindings(node, context!, effect, environment));
+        }
 
         // 创建嵌入式视图
         const embeddedView = createEmbeddedViewRef(rootNodes, context!, environment, effect); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
@@ -138,7 +154,9 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     }
 }
 
-export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, options?: {
+export function createTemplateRef<C = any>(
+    rootNodes: RNode[] | ((environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[]),
+    elementRef: ElementRef, options?: {
     directives?: Map<RNode, DirectiveDef<any>[]>;
     components?: Map<RNode, ComponentDef>;
     context?: any;
