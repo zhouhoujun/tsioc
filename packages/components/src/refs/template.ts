@@ -53,6 +53,8 @@ export abstract class TemplateRef<C = any> {
 
 }
 
+export type NodeFactory<C> = (environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[];
+
 export type TemplateFactory<C = any> = (host: ElementRef, environment?: EnvironmentContext) => TemplateRef<C>;
 
 /**

@@ -7,7 +7,7 @@ import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
-import { Bindings, TemplateRef, TemplateFactory } from '../refs/template';
+import { Bindings, NodeFactory, TemplateFactory } from '../refs/template';
 import { ReactiveEffect } from '../effect';
 import { reactive } from '../reactive';
 
@@ -30,17 +30,17 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
 
     /**
-     * 编译模板并返回 TemplateRef
+     * 编译模板并返回 TemplateFactory
      */
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const nodes = this.parser.parse(template);
 
         const [components, directives] = this.generateNodeBindings(nodes, options.directives, options.components);
 
-        // 优化：将模板编译为 factory function
-        const factoryFunction = this.compileToFactoryFunction<C>(nodes, directives, components, options);
+        // 将模板编译为 node factory
+        const factory = this.compileToFactory<C>(nodes, directives, components, options);
 
-        return (host, environment) => createTemplateRef<C>(factoryFunction, host, { components, directives, environment });
+        return (host, environment) => createTemplateRef<C>(factory, host, { components, directives, environment });
     }
 
     /**
@@ -51,12 +51,12 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      * @param options 编译选项
      * @returns factory function
      */
-    private compileToFactoryFunction<C>(
+    private compileToFactory<C>(
         nodes: RNode[],
         directives: Map<RNode, DirectiveDef[]>,
         components: Map<RNode, ComponentDef>,
         options: CompilerOptions
-    ): (environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[] {
+    ): NodeFactory<C> {
         // 预处理指令和组件选择器映射
         const dirSelectorMap = new Map<string, DirectiveDef[]>();
         const compSelectorMap = new Map<string, ComponentDef>();

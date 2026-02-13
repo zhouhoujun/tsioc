@@ -1,5 +1,5 @@
 import { Exception } from '@tsdi/ioc';
-import { TemplateRef } from '../refs/template';
+import { NodeFactory, TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';
@@ -24,7 +24,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
     [noReact] = true;
 
-    private _rootNodesFactory?: ((environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[]);
+    private _rootNodesFactory?: NodeFactory<C>;
     private _rootNodes?: RNode[];
     get rootNodes(): RNode[] {
         return this._rootNodes ?? [];
@@ -37,7 +37,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * @memberof TemplateRefImpl
      */
     constructor(
-        rootNodes: RNode[] | ((environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[]),
+        rootNodes: RNode[] | NodeFactory<C>,
         readonly elementRef: ElementRef,
         private options?: {
             directives?: Map<RNode, DirectiveDef<any>[]>;
@@ -155,7 +155,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 }
 
 export function createTemplateRef<C = any>(
-    rootNodes: RNode[] | ((environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[]),
+    rootNodes: RNode[] | NodeFactory<C>,
     elementRef: ElementRef, options?: {
     directives?: Map<RNode, DirectiveDef<any>[]>;
     components?: Map<RNode, ComponentDef>;
