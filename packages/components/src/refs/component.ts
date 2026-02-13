@@ -7,14 +7,14 @@ import { ElementRef } from './element';
 import { Renderer } from '../renderer/Renderer';
 import { noReact } from '../effect';
 import { RNode } from '../renderer/Node';
-import { TemplateRef } from './template';
+import { TemplateFactory } from './template';
 
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
     templateUrl?: string;
     ƿFac?: (ctx: EnvironmentContext, options: ComponentOptions) => ComponentRef<T>;
-    ƿtempFac?: (options?: CompilerOptions) => TemplateRef<T>;
+    ƿtempFac?: TemplateFactory<T>;
 }
 
 /**

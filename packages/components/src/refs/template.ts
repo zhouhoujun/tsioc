@@ -53,6 +53,8 @@ export abstract class TemplateRef<C = any> {
 
 }
 
+export type TemplateFactory<C = any> = (host: ElementRef, environment?: EnvironmentContext) => TemplateRef<C>;
+
 /**
  * 取消绑定
  */

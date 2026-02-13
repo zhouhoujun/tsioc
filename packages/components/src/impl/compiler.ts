@@ -7,7 +7,7 @@ import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
 import { EnvironmentContext } from '../refs/environment';
 import { Renderer } from '../renderer/Renderer';
-import { Bindings, TemplateRef } from '../refs/template';
+import { Bindings, TemplateRef, TemplateFactory } from '../refs/template';
 import { ReactiveEffect } from '../effect';
 import { reactive } from '../reactive';
 
@@ -32,7 +32,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     /**
      * 编译模板并返回 TemplateRef
      */
-    compile<C>(template: T, options: CompilerOptions): TemplateRef<C> {
+    compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const nodes = this.parser.parse(template);
 
         const [components, directives] = this.generateNodeBindings(nodes, options.directives, options.components);
@@ -40,7 +40,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 优化：将模板编译为 factory function
         const factoryFunction = this.compileToFactoryFunction<C>(nodes, directives, components, options);
 
-        return createTemplateRef(factoryFunction, options.host, { components, directives });
+        return (host, environment) => createTemplateRef<C>(factoryFunction, host, { components, directives, environment });
     }
 
     /**
@@ -56,7 +56,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         directives: Map<RNode, DirectiveDef[]>,
         components: Map<RNode, ComponentDef>,
         options: CompilerOptions
-    ): (environment: EnvironmentContext,context: C, effect: ReactiveEffect) => RNode[] {
+    ): (environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[] {
         // 预处理指令和组件选择器映射
         const dirSelectorMap = new Map<string, DirectiveDef[]>();
         const compSelectorMap = new Map<string, ComponentDef>();
@@ -77,14 +77,14 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         });
 
         // 编译节点为创建函数
-        const compiledNodes = nodes.map(node => 
+        const compiledNodes = nodes.map(node =>
             this.compileNodeToFactory(node, dirSelectorMap, compSelectorMap, options)
         );
 
         // 返回工厂函数
-        return (environment: EnvironmentContext, context: C, effect: ReactiveEffect)=> {
+        return (environment: EnvironmentContext, context: C, effect: ReactiveEffect) => {
             const renderer = environment.get(Renderer);
-            
+
             // 执行编译好的节点创建函数
             const rootNodes: RNode[] = [];
             compiledNodes.forEach(createNode => {
@@ -127,7 +127,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     private compileTextToFactory(node: RText): (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RText | null {
         const text = node.textContent || '';
         const bindings = node[BINDINGS] || [];
-        
+
         // 如果没有绑定，直接返回静态文本节点创建函数
         if (!bindings.length) {
             return (renderer: Renderer) => {
@@ -138,13 +138,13 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 有绑定的文本节点，返回包含绑定逻辑的工厂函数
         return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => {
             const textNode = renderer.createText(text);
-            
+
             // 应用绑定
             bindings.forEach(binding => {
                 const unbinding = binding(textNode, context, effect, environment);
                 unbinding && environment.onDestroy(unbinding);
             });
-            
+
             return textNode;
         };
     }
@@ -167,7 +167,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const attrs = this.renderer.getAttributes(node);
         const bindings = node[BINDINGS] || [];
         const directives = node[BIND_DIRECTIVES] || [];
-        
+
         // 检查是否是组件
         const componentDef = compSelectorMap.get(tagName);
         if (componentDef) {
@@ -258,7 +258,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext) => {
             // 创建元素
             const element = renderer.createElement(node.tagName);
-            
+
             // 应用属性
             compiledAttrs.forEach(applyAttr => {
                 applyAttr(element, renderer);
@@ -304,7 +304,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const compiledAttrs = attrs.map(attr => this.compileAttributeToFactory(attr));
         const childNodes = node.childNodes || [];
         const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => RNode | null> = [];
-        
+
         // 编译子节点
         for (const child of childNodes) {
             const childFactory = this.compileNodeToFactory(child, dirSelectorMap, compSelectorMap, options);
@@ -314,7 +314,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => {
             // 创建元素
             const element = renderer.createElement(node.tagName);
-            
+
             // 应用属性
             compiledAttrs.forEach(applyAttr => {
                 applyAttr(element, renderer);

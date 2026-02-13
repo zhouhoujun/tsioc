@@ -54,16 +54,20 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const def = this.classRef.getAnnotation<ComponentDef>();
         if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
 
-        const template = def.template || await fetchTemplate(def.templateUrl!);
-        const compiler = this.context.get(TemplateCompiler);
         await (this.instance as OnInit).onInit?.();
         const directives = this.context.get(DIRECTIVES) || [];
         const components = this.context.get(COMPONENTS) || [];
-        if(!this._elementRef) {
-            this._elementRef =  this.context.getElementRef(options?.host ?? this.context.get(Renderer).createElement(def.selector ?? this.classRef.className));
+        if (!this._elementRef) {
+            this._elementRef = this.context.getElementRef(options?.host ?? this.context.get(Renderer).createElement(def.selector ?? this.classRef.className));
+        }
+        
+        if (!def.ƿtempFac) {
+            const template = def.template || await fetchTemplate(def.templateUrl!);
+            const compiler = this.context.get(TemplateCompiler);
+            (def as any).ƿtempFac = compiler.compile<T>(template, { directives, components });
         }
         const host = this._elementRef;
-        const templateRef = compiler.compile<T>(template, { host, directives, components });
+        const templateRef =  def.ƿtempFac!(host, this.context);
         this.context.setValue(TemplateRef, templateRef);
         this._hostView = templateRef.createEmbeddedView(this.instance, this.context);
         await (this.instance as AfterViewInit).onAfterViewInit?.();
