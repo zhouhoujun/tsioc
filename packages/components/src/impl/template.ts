@@ -82,7 +82,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         // 默认处理抽象节点
         let rootNodes: RNode[];
         if (this._rootNodesFactory) {
-            rootNodes = this._rootNodesFactory(environment, context as C, effect);
+            rootNodes = this._rootNodesFactory(renderer, environment, context as C, effect);
         } else {
             rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
             rootNodes.forEach(node => this.bindings(node, context!, effect, environment));

@@ -4,6 +4,7 @@ import { EmbeddedViewRef } from './view';
 import { EnvironmentContext } from './environment';
 import { noReact, ReactiveEffect } from '../effect';
 import { RNode } from '../renderer/Node';
+import { Renderer } from '../renderer/Renderer';
 
 
 /**
@@ -53,7 +54,7 @@ export abstract class TemplateRef<C = any> {
 
 }
 
-export type NodeFactory<C> = (environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[];
+export type NodeFactory<C> = (renderer: Renderer, environment: EnvironmentContext, context: C, effect: ReactiveEffect) => RNode[];
 
 export type TemplateFactory<C = any> = (host: ElementRef, environment?: EnvironmentContext) => TemplateRef<C>;
 

@@ -29,6 +29,8 @@ export * from './decorators/atteribute';
 export * from './decorators/computed';
 
 export * from './impl/compiler';
+export * from './impl/compiler-fns';
+
 export * from './impl/effect';
 export { createTemplateRef } from './impl/template';
 
