@@ -37,12 +37,12 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 将模板编译为 node factory
         const factory = compileToFactory<C>(nodes, this.renderer, options, {
             delimiter: this.delimiter,
-            textToFactory: compileTextToFactory,
-            elementToFactory: compileElementToFactory,
-            attributeToFactory: compileAttributeToFactory,
-            componentToFactory: compileComponentToFactory,
-            templateToFactory: compileTemplateToFactory,
-            directiveToElement: applyDirectiveToElement,
+            textFactory: compileTextToFactory,
+            elementFactory: compileElementToFactory,
+            attributeFactory: compileAttributeToFactory,
+            componentFactory: compileComponentToFactory,
+            templateFactory: compileTemplateToFactory,
+            bindDirective: applyDirectiveToElement,
         });
 
         return (host, environment) => createTemplateRef<C>(factory, host, { environment });

@@ -17,12 +17,12 @@ export type Rendering<T extends RNode> = (renderer: Renderer, effect: ReactiveEf
 export interface RendererOptions {
     templateTag?: string;
     delimiter: RegExp;
-    textToFactory: (node: RText, options: CompilerOptions) => Rendering<RText>;
-    elementToFactory: (node: RElement, renderer: Renderer, options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>;
-    attributeToFactory: (attr: RAttr) => (element: RElement, renderer: Renderer) => void;
-    componentToFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[]) => Rendering<RElement>,
-    templateToFactory: (node: RElement, renderer: Renderer, attrs: RAttr[], bindings: any[], options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>,
-    directiveToElement: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, environment: EnvironmentContext, context: any, delimiter: RegExp) => void,
+    textFactory: (node: RText, options: CompilerOptions) => Rendering<RText>;
+    elementFactory: (node: RElement, renderer: Renderer, options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>;
+    attributeFactory: (attr: RAttr) => (element: RElement, renderer: Renderer) => void;
+    componentFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[]) => Rendering<RElement>,
+    templateFactory: (node: RElement, renderer: Renderer, attrs: RAttr[], bindings: any[], options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>,
+    bindDirective: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, environment: EnvironmentContext, context: any, delimiter: RegExp) => void,
 }
 
 /**
@@ -114,12 +114,12 @@ export function compileElementToFactory(
     // 检查是否是组件
     const componentDef = node[COMPONENTDEF];
     if (componentDef) {
-        return rendererOptions.componentToFactory(node, renderer, componentDef, attrs, bindings);
+        return rendererOptions.componentFactory(node, renderer, componentDef, attrs, bindings);
     }
 
     // 检查是否是模板标签
     if (tagName === rendererOptions.templateTag) {
-        return  rendererOptions.templateToFactory(node, renderer, attrs, bindings, options, rendererOptions);
+        return  rendererOptions.templateFactory(node, renderer, attrs, bindings, options, rendererOptions);
     }
 
     // 编译子节点
@@ -132,7 +132,7 @@ export function compileElementToFactory(
     }
 
     // 编译属性
-    const compiledAttrs = attrs.map(attr => rendererOptions.attributeToFactory(attr));
+    const compiledAttrs = attrs.map(attr => rendererOptions.attributeFactory(attr));
 
     // 返回元素工厂函数
     return (renderer: Renderer, effect: ReactiveEffect, environment: EnvironmentContext, context: any) => {
@@ -160,7 +160,7 @@ export function compileElementToFactory(
 
         // 应用指令
         directives.forEach(dirDef => {
-            rendererOptions.directiveToElement(element, dirDef, attrs, effect, environment, context, rendererOptions.delimiter);
+            rendererOptions.bindDirective(element, dirDef, attrs, effect, environment, context, rendererOptions.delimiter);
         });
 
         return element;
@@ -183,9 +183,9 @@ function compileNodeToFactory(
     rendererOptions: RendererOptions
 ): Rendering<RNode> {
     if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
-        return rendererOptions.textToFactory(node as RText, options);
+        return rendererOptions.textFactory(node as RText, options);
     } else {
-        return rendererOptions.elementToFactory(node as RElement, renderer, options, rendererOptions);
+        return rendererOptions.elementFactory(node as RElement, renderer, options, rendererOptions);
     }
 }
 
@@ -1063,7 +1063,7 @@ const angularForRegex = /^\s*let\s+([^ ]+)\s+(?:of|in)\s+([^]+)(?:\s*;\s*([^ ]+)
  * @param environment 环境上下文
  * @param delimiter 分隔符正则表达式
  */
-export function evaluateIterableExpression(directiveInstance: any, propertyKey: string, expr: string, context: any, effect: ReactiveEffect, environment: EnvironmentContext, delimiter: RegExp): any {
+function evaluateIterableExpression(directiveInstance: any, propertyKey: string, expr: string, context: any, effect: ReactiveEffect, environment: EnvironmentContext, delimiter: RegExp): any {
     // 1. Vue风格: item in items
     const vueStyle = expr.match(vueForRegex);
     let itemNames: string[];
@@ -1097,7 +1097,7 @@ export function evaluateIterableExpression(directiveInstance: any, propertyKey: 
  * @param environment 环境上下文
  * @param delimiter 分隔符正则表达式
  */
-export function bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, effect: ReactiveEffect, environment: EnvironmentContext, delimiter: RegExp) {
+function bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, effect: ReactiveEffect, environment: EnvironmentContext, delimiter: RegExp) {
     // 设置v-for指令期望的属性（而不是collection）
     directiveInstance.itemNames = itemNames; // 主循环变量（如item）
     // 设置v-for指令期望的属性
@@ -1113,7 +1113,7 @@ const vueInerMatch = /^\(\s*([^,]+)\s*(?:,\s*([^)]+))?\s*\)$/;
  * @param itemPart 项目部分
  * @returns 项目名称列表
  */
-export function processVueStyleExpression(itemPart: string): string[] {
+function processVueStyleExpression(itemPart: string): string[] {
     let names: string[];
     if (itemPart.trim().startsWith('(')) {
         // 处理格式如 (item, index) 的情况
@@ -1134,7 +1134,7 @@ export function processVueStyleExpression(itemPart: string): string[] {
  * @param parts 部分列表
  * @returns 解析结果
  */
-export function parsePipes(parts: string[]): string[] {
+function parsePipes(parts: string[]): string[] {
     let result = parts[0];
     const results: string[] = [];
     for (let i = 1; i < parts.length; i++) {
@@ -1156,7 +1156,7 @@ export function parsePipes(parts: string[]): string[] {
  * @param delimiter 分隔符正则表达式
  * @returns 参数列表
  */
-export function parseArguments(argsStr: string, context: any, environment: EnvironmentContext, delimiter: RegExp): any[] {
+function parseArguments(argsStr: string, context: any, environment: EnvironmentContext, delimiter: RegExp): any[] {
     if (!argsStr.trim()) return [];
 
     // 使用状态机解析参数，支持嵌套括号和引号
@@ -1201,7 +1201,7 @@ export function parseArguments(argsStr: string, context: any, environment: Envir
  * @param delimiter 分隔符正则表达式
  * @returns 参数值
  */
-export function evaluateArg(arg: string, context: any, environment: EnvironmentContext, delimiter: RegExp): any {
+function evaluateArg(arg: string, context: any, environment: EnvironmentContext, delimiter: RegExp): any {
     if (!arg) return undefined;
 
     // 字符串字面量
