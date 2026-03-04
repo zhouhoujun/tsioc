@@ -202,7 +202,6 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
  * for client only.
  */
 export const deatchPacketIdInterceptor: RequestInterceptorFn<any, IncomingMessage> = (input: any, next: RequestHandlerFn<any, IncomingMessage>, context: RequestContext) => {
-    // const transport = context.get(Transport) as AbstractTransport;
     if (!context.has(AbstractRequest)) return next(input, context);
 
     return next(input, context)
@@ -225,7 +224,6 @@ export const deatchPacketIdInterceptor: RequestInterceptorFn<any, IncomingMessag
  * @returns 
  */
 export const messageVaildateInterceptor: RequestInterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: RequestHandlerFn<OutgoingMessage, Packet>, context: RequestContext) => {
-    // const transport = context.get(Transport) as AbstractTransport;
     const headerAdapter = context.get(HeaderAdapter);
     const length = headerAdapter.getContentLength(input);
     const injector = context.getInjector();

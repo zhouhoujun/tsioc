@@ -77,6 +77,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
 
     protected override afterInit(): void {
         this.setValue(EnvironmentState, this.state);
+        this.onDestroy(()=> this.state.clear());
     }
 
     getParentEnviroment(): EnvironmentContext | null {

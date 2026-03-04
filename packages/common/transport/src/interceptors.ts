@@ -2,7 +2,7 @@
 import { ArgumentException, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    AbstractRequest, createRequestContext, Events, IDuplex, Packet, PACKET_ID,
+    AbstractRequest, createRequestContext, Events, IDuplex, Packet,
     PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn,
     RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket
 } from '@tsdi/common';
@@ -13,30 +13,22 @@ import { Socket } from './socket';
 
 export function packetIdMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
     return config.side === TransferSide.client ? (req, next, context) => {
-        let id: string | number;
+
         if (!req.id) {
-            id = req.id = context.get(PacketIdGenerator).getPacketId();
-        } else {
-            id = req.id;
+            req.id = context.get(PacketIdGenerator).getPacketId();
         }
-        context.set(PACKET_ID, id);
         return next(req, context)
             .pipe(
                 filter(res => {
-                    return res && res.id == id;
+                    return res && res.id == req.id;
                 }),
                 req.observe !== 'observe' ? take(1) : map(r => r)
             );
     } : (req, next, context) => {
-        let id: string | number;
-        if (req.id) {
-            id = req.id;
-            context.set(PACKET_ID, id);
-        }
         return next(req, context)
             .pipe(
                 map(res => {
-                    if (id && !res.id) res.id = id;
+                    if (req.id && !res.id) res.id = req.id;
                     return res;
                 })
             );

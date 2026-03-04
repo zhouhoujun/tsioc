@@ -93,61 +93,7 @@ export class DeviceController {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerCommonModule,
-        // provideClient([
-        //     {
-        //         transport: 'tcp',
-        //         microservice: false,
-        //         config: {
-        //             connectOpts: {
-        //                 port: 2000
-        //             },
-        //         }
-        //     },
-        //     {
-        //         transport: 'tcp',
-        //         client: 'micro-client',
-        //         microservice: true,
-        //         config: {
-        //             connectOpts: {
-        //                 port: 3000
-        //             }
-        //         }
-        //     }
-        // ]),
-        // provideService([
-        //     {
-        //         transport: 'tcp',
-        //         microservice: true,
-        //         config: {
-        //             detailError: false,
-        //             listenOpts: {
-        //                 port: 3000
-        //             }
-        //         }
-        //     },
-        //     {
-        //         transport: 'tcp',
-        //         microservice: false,
-        //         config: {
-        //             // timeout: 1000,
-        //             detailError: false,
-        //             listenOpts: {
-        //                 port: 2000
-        //             },
-        //             interceptors: [
-        //                 BigFileInterceptor,
-        //                 JsonInterceptor,
-        //                 ContentInterceptor,
-        //                 BodyparserInterceptor,
-        //                 { useExisting: getRouterToken('tcp', true) }
-        //             ]
-        //         },
-        //         providers: [
-        //             { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
-        //         ]
-        //     }
-        // ])
+        ServerCommonModule
     ],
     providers: [
         provideClient(
@@ -162,7 +108,7 @@ export class DeviceController {
                     }
                 },
                 {
-                    // name: 'tcp-client2',
+                    name: 'micclient',
                     microservice: true,
                     connectOpts: {
                         port: 3000
@@ -208,10 +154,12 @@ describe('TCP Server & TCP Client', () => {
     let injector: Injector;
 
     let client: TcpClient;
+    let micclient: TcpClient;
 
     before(async () => {
         ctx = await Application.run(TcpTestModule);
         client = ctx.get(TcpClient);
+        micclient = ctx.get('micclient');
     });
 
 
@@ -429,7 +377,7 @@ describe('TCP Server & TCP Client', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(micclient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);
@@ -440,7 +388,7 @@ describe('TCP Server & TCP Client', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(micclient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);

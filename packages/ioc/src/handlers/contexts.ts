@@ -1,6 +1,5 @@
 import { Injector } from '../injector';
 import { getType } from '../metadata/type';
-import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType, Type } from '../types';
 import { Context, ContextToken } from './Context';

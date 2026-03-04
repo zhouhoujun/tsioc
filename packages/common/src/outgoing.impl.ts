@@ -56,6 +56,7 @@ export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoin
  */
 export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
     id?: any;
+    incoming?: Incoming;
     pattern?: string;
     headers?: HeadersLike;
     payload?: T;
@@ -89,7 +90,7 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
 
     constructor(init: OutgoingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
         this.pattern = init.pattern;
-        this.id = init.id;
+        this.id = init.id ?? init.incoming?.id;
         this.headers = new HeaderMappings(init.headers);
         this._ok = init.ok != false;
         this.error = init.error;

@@ -54,32 +54,6 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerCommonModule,
-        // provideClient({
-        //     transport: 'tcp',
-        //     microservice: true,
-        //     config: {
-        //         transportOptions: {
-        //             maxSize: 1024 * 1024 * 20
-        //         },
-        //         connectOpts: {
-        //             port: 2000
-        //         },
-        //     }
-        // }),
-        // provideService({
-        //     transport: 'tcp',
-        //     microservice: true,
-        //     config: {
-        //         transportOptions: {
-        //             maxSize: 1024 * 1024 * 20
-        //         },
-        //         // timeout: 1000,
-        //         detailError: false,
-        //         listenOpts: {
-        //             port: 2000
-        //         }
-        //     }
-        // })
     ],
     providers: [
         provideClient(
