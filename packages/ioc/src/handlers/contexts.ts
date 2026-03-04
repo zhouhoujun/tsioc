@@ -2,6 +2,7 @@ import { Injector } from '../injector';
 import { getType } from '../metadata/type';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType, Type } from '../types';
+import { isNil } from '../utils/chk';
 import { Context, ContextToken } from './Context';
 
 
@@ -12,19 +13,18 @@ export class DefaultContext extends Context {
 
     private _type: Type;
     // private _tokens?: Set<Token | ContextToken>;
-    protected map: Map<Token | ContextToken, any> | Context;
-    private _canClear: boolean;
+    protected _parent?: Context;
+    protected map: Map<Token | ContextToken, any>;
 
     constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
         super();
-        if(contextOrEntries instanceof Context) {
-            this.map = contextOrEntries as Context;
-            this.setEntries(entries);
-            this._canClear = false;
+        if (contextOrEntries instanceof Context) {
+            // this.map = contextOrEntries as Context;
+            this._parent = contextOrEntries;
+            this.map = new Map(entries);
             // this._tokens = new Set();
         } else {
             this.map = new Map(contextOrEntries);
-            this._canClear = true;
         }
         this._type = getType(this);
         this.set(this._type, this);
@@ -70,7 +70,7 @@ export class DefaultContext extends Context {
         if (token instanceof ContextToken) {
             return this.getContentToken(token)
         }
-        return this.getToken(token, flags);
+        return this.getToken(token, flags) ?? (this._parent as DefaultContext)?.getToken?.(token, flags) as T ?? null;
     }
 
     protected getToken<T>(token: Token<T>, flags?: InjectFlags) {
@@ -79,6 +79,11 @@ export class DefaultContext extends Context {
 
     protected getContentToken<T>(token: ContextToken<T>) {
         if (!this.map.has(token)) {
+            const val = (this._parent as DefaultContext)?.getContentToken?.(token) as T;
+            if (!isNil(val)) {
+                // this.map.set(token, val);
+                return val;
+            }
             this.map.set(token, token.defaultValue());
         }
         return this.map.get(token) ?? null;
@@ -103,7 +108,7 @@ export class DefaultContext extends Context {
      * @returns True if the token exists, false otherwise.
      */
     has<T>(token: Token<T> | ContextToken<T>): boolean {
-        return this.map.has(token);
+        return this.map.has(token) || this._parent?.has(token) || false;
     }
 
     /**
@@ -112,32 +117,34 @@ export class DefaultContext extends Context {
      * @returns 
      */
     as<TContext extends Context>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext {
-        if (type == this._type) {
-            this.setEntries(entries);
-            return this as any;
-        }
+        // if (type == this._type) {
+        //     this.setEntries(entries);
+        //     return this as any;
+        // }
         let context = this.get(type);
         if (!context) {
-            context = new type(this);
-            this.set(type, context);
-            this.setEntries(entries);
+            context = new type(this, entries);
+            // this.set(type, context);
+            // this.setEntries(entries);
+        } else if (entries) {
+            for (const [k, v] of entries) {
+                context.set(k, v);
+            }
         }
         return context;
     }
 
-    private setEntries(entries?: Iterable<readonly [Token | ContextToken, any]>) {
-        if (!entries) return;
-        for (const [k, v] of entries) {
-            this.set(k, v);
-        }
-    }
+    // private setEntries(entries?: Iterable<readonly [Token | ContextToken, any]>) {
+    //     if (!entries) return;
+    //     for (const [k, v] of entries) {
+    //         this.set(k, v);
+    //     }
+    // }
 
     clear(): void {
-        if (this._canClear) {
-            this.map.clear();
-        } else {
-            this.map.delete(this._type);
-        }
+        this.map.clear();
+        // this.map.delete(this._type);
+
         // if (this._tokens) {
         //     for (const token of this._tokens) {
         //         this.map.delete(token);
@@ -177,7 +184,7 @@ export class RunContext extends DefaultContext {
     setInjector(injector: Injector): this {
         return this.set(Injector, injector)
     }
-    
+
     getPayload<T = any>(): T {
         return this.get(PAYLOAD) as T;
     }
