@@ -12,17 +12,14 @@ import { Context, ContextToken } from './Context';
 export class DefaultContext extends Context {
 
     private _type: Type;
-    // private _tokens?: Set<Token | ContextToken>;
     protected _parent?: Context;
     protected map: Map<Token | ContextToken, any>;
 
     constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
         super();
         if (contextOrEntries instanceof Context) {
-            // this.map = contextOrEntries as Context;
             this._parent = contextOrEntries;
             this.map = new Map(entries);
-            // this._tokens = new Set();
         } else {
             this.map = new Map(contextOrEntries);
         }
@@ -66,28 +63,33 @@ export class DefaultContext extends Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    get<T>(token: Token<T> | ContextToken<T>, flags?: InjectFlags): T {
-        if (token instanceof ContextToken) {
-            return this.getContentToken(token)
-        }
-        return this.getToken(token, flags) ?? (this._parent as DefaultContext)?.getToken?.(token, flags) as T ?? null;
-    }
-
-    protected getToken<T>(token: Token<T>, flags?: InjectFlags) {
-        return this.map.get(token) ?? null;
-    }
-
-    protected getContentToken<T>(token: ContextToken<T>) {
-        if (!this.map.has(token)) {
-            const val = (this._parent as DefaultContext)?.getContentToken?.(token) as T;
+    get<T>(token: Token<T> | ContextToken<T>, flags = InjectFlags.Default): T {
+        if (!(flags & (InjectFlags.SkipSelf | InjectFlags.Host))) {
+            if (this.map.has(token)) return this.map.get(token) as T;
+            const val = this.getTokenValue(token, flags);
             if (!isNil(val)) {
-                // this.map.set(token, val);
+                this.set(token, val);
                 return val;
             }
-            this.map.set(token, token.defaultValue());
         }
-        return this.map.get(token) ?? null;
+
+        if (this._parent && !(flags & InjectFlags.Self)) {
+            return this._parent.get(token, flags);
+        }
+
+        if (token instanceof ContextToken) {
+            const val = token.defaultValue();
+            this.set(token, val);
+            return val;
+        }
+        return null as T;
     }
+
+    protected getTokenValue<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags): T {
+        return null!;
+    }
+
+
 
     /**
      * Delete the value associated with the given token.
@@ -107,9 +109,16 @@ export class DefaultContext extends Context {
      *
      * @returns True if the token exists, false otherwise.
      */
-    has<T>(token: Token<T> | ContextToken<T>): boolean {
-        return this.map.has(token) || this._parent?.has(token) || false;
+    has<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags = InjectFlags.Default): boolean {
+        if (!(flags & InjectFlags.SkipSelf) && this.map.has(token)) return true;
+        if (this._parent && !(flags & InjectFlags.Self)) return this._parent.has(token, flags); 
+        return false;
     }
+
+    // protected hasTokenValue<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags): boolean {
+    //     return false;
+    // }
+
 
     /**
      * Cast the context to the given type.
@@ -117,15 +126,9 @@ export class DefaultContext extends Context {
      * @returns 
      */
     as<TContext extends Context>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext {
-        // if (type == this._type) {
-        //     this.setEntries(entries);
-        //     return this as any;
-        // }
         let context = this.get(type);
         if (!context) {
             context = new type(this, entries);
-            // this.set(type, context);
-            // this.setEntries(entries);
         } else if (entries) {
             for (const [k, v] of entries) {
                 context.set(k, v);
@@ -134,25 +137,8 @@ export class DefaultContext extends Context {
         return context;
     }
 
-    // private setEntries(entries?: Iterable<readonly [Token | ContextToken, any]>) {
-    //     if (!entries) return;
-    //     for (const [k, v] of entries) {
-    //         this.set(k, v);
-    //     }
-    // }
-
     clear(): void {
         this.map.clear();
-        // this.map.delete(this._type);
-
-        // if (this._tokens) {
-        //     for (const token of this._tokens) {
-        //         this.map.delete(token);
-        //     }
-        //     this._tokens.clear();
-        // } else {
-        //     this.map.clear();
-        // }
     }
 
     /**
@@ -161,7 +147,6 @@ export class DefaultContext extends Context {
     onDestroy(): void {
         this.clear();
         // this.map = null!;
-        // this._tokens = null!;
     }
 
 }
@@ -169,7 +154,6 @@ export class DefaultContext extends Context {
 
 const PAYLOAD = new ContextToken<any>(() => null);
 const RUN_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) => void>(() => null!);
-// const RESOLVER_INJECTOR = new ContextToken<Injector>(() => null!);
 
 export class RunContext extends DefaultContext {
 
@@ -194,14 +178,14 @@ export class RunContext extends DefaultContext {
         return this;
     }
 
-    protected override getToken<T>(token: Token<T>) {
-        return this.map.get(token) ?? this.getFromInjector(token)
-    }
+    // protected override hasTokenValue<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags): boolean {
+    //     if (token instanceof ContextToken) return false;
+    //     return this.getInjector().has(token, flags);
+    // }
 
-    protected getFromInjector<T>(token: Token<T>) {
-        const value = this.getInjector().get(token);
-        this.set(token, value);
-        return value;
+    override getTokenValue<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags): T {
+        if (token instanceof ContextToken) return null!;
+        return this.getInjector().get(token, null, flags)!;
     }
 
     getFailed(): (target: AbstractType, propertyKey: string) => void {

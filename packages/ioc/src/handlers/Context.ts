@@ -1,4 +1,4 @@
-import { Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { Type } from '../types';
 
 /**
@@ -27,7 +27,7 @@ export abstract class Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    abstract get<T>(token: ContextToken<T>): T;
+    abstract get<T>(token: ContextToken<T>, flags?: InjectFlags): T;
 
     /**
      * Retrieve the value associated with the given token.
@@ -36,7 +36,7 @@ export abstract class Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    abstract get<T>(token: Token<T>): T;
+    abstract get<T>(token: Token<T>, flags?: InjectFlags): T;
 
     /**
      * Retrieve the value associated with the given token.
@@ -45,7 +45,7 @@ export abstract class Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    abstract get<T>(token: Token<T> | ContextToken<T>): T;
+    abstract get<T>(token: Token<T> | ContextToken<T>, flags?: InjectFlags): T;
 
     /**
      * Delete the value associated with the given token.
@@ -63,7 +63,7 @@ export abstract class Context {
      *
      * @returns True if the token exists, false otherwise.
      */
-    abstract has<T>(token: Token<T> | ContextToken<T>): boolean;
+    abstract has<T>(token: Token<T> | ContextToken<T>, flags?: InjectFlags): boolean;
 
     /**
      * clear all value
