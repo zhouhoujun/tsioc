@@ -95,6 +95,10 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
         await promisify(this.connection.destroy, this.connection)(null!)
+            .finally(() => {
+                this.connection.removeAllListeners();
+                this.connection = null!;
+            })
             .catch(err => {
                 this.logger?.error(err);
                 return err;
