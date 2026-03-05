@@ -15,16 +15,29 @@ export class DefaultContext extends Context {
     protected _parent?: Context;
     protected map: Map<Token | ContextToken, any>;
 
-    constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
+    constructor(
+        contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>,
+        entries?: Iterable<readonly [Token | ContextToken, any]>,
+        inherit = true //?: boolean
+    ) {
         super();
         if (contextOrEntries instanceof Context) {
-            this._parent = contextOrEntries;
-            this.map = new Map(entries);
+            if (inherit) {
+                this._parent = contextOrEntries;
+                this.map = new Map(entries);
+            } else {
+                this.map = new Map((contextOrEntries as DefaultContext).map as Map<Token | ContextToken, any>);
+                if (entries) {
+                    for (const [k, v] of entries) {
+                        this.map.set(k, v);
+                    }
+                }
+            }
         } else {
             this.map = new Map(contextOrEntries);
         }
         this._type = getType(this);
-        this.set(this._type, this);
+        this.map.set(this._type, this);
     }
 
     /**
@@ -37,7 +50,6 @@ export class DefaultContext extends Context {
      */
     set<T>(token: Token<T> | ContextToken<T>, value: T) {
         this.map.set(token, value);
-        // this._tokens?.add(token);
         return this;
     }
     /**
@@ -111,7 +123,7 @@ export class DefaultContext extends Context {
      */
     has<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags = InjectFlags.Default): boolean {
         if (!(flags & InjectFlags.SkipSelf) && this.map.has(token)) return true;
-        if (this._parent && !(flags & InjectFlags.Self)) return this._parent.has(token, flags); 
+        if (this._parent && !(flags & InjectFlags.Self)) return this._parent.has(token, flags);
         return false;
     }
 
@@ -129,6 +141,7 @@ export class DefaultContext extends Context {
         let context = this.get(type);
         if (!context) {
             context = new type(this, entries);
+            this.set(type, context);
         } else if (entries) {
             for (const [k, v] of entries) {
                 context.set(k, v);
@@ -156,10 +169,6 @@ const PAYLOAD = new ContextToken<any>(() => null);
 const RUN_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) => void>(() => null!);
 
 export class RunContext extends DefaultContext {
-
-    constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
-        super(contextOrEntries, entries);
-    }
 
     getInjector() {
         return this.get(Injector)
