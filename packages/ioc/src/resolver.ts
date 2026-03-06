@@ -103,13 +103,13 @@ export abstract class Resolver {
      * @param context 
      */
     abstract resolveParams(injector: Injector, params?: Parameter[], context?: RunContext): any[];
-    /**
-     * resolver arguments
-     * @param injector 
-     * @param args 
-     * @param context 
-     */
-    abstract resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: RunContext): any[];
+    // /**
+    //  * resolver arguments
+    //  * @param injector 
+    //  * @param args 
+    //  * @param context 
+    //  */
+    // abstract resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: RunContext): any[];
 
 }
 

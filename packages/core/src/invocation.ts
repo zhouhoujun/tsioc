@@ -1,6 +1,5 @@
-import { Abstract, AbstractType, Invocation, ProvidedInMetadata, InvocationOptions, InvocationFactory } from '@tsdi/ioc';
+import { Abstract, Invocation, ProvidedInMetadata, InvocationOptions, InvocationFactory, Exception, Handler, RunContext } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
-import { Handler, RunContext } from './handler';
 
 
 /**
@@ -33,35 +32,6 @@ export abstract class InvocationHanlderFactory extends InvocationFactory {
 
 
 /**
- * Respond 
- */
-@Abstract()
-export abstract class Respond<TInput = any> {
-    /**
-     * respond with handled data.
-     * @param input endpoint input data.
-     * @param value handled returnning value
-     */
-    abstract respond<T>(input: TInput, value: T, context: RunContext): void;
-}
-
-/**
- * Respond adapter with response type.
- */
-@Abstract()
-export abstract class TypedRespond<TInput = any> {
-    /**
-     * respond with handled data.
-     * @param input input data.
-     * @param value handled returnning value
-     * @param responseType response type
-     */
-    abstract respond<T>(input: TInput, value: T, responseType: 'body' | 'header' | 'response', context: RunContext): void;
-}
-
-
-
-/**
  * Invocation handler options.
  * 
  * 终结点配置
@@ -79,9 +49,51 @@ export interface InvocationHandlerOptions<T = any> extends Omit<ConfigableHandle
      * endpoint order
      */
     order?: number;
+
     /**
      * endpoint handler response as.
      */
-    response?: 'body' | 'header' | 'response' | AbstractType<Respond<T>> | ((input: T, returnning: any, context: RunContext) => void);
+    response?: 'body' | 'header' | 'response' | Respond<T> | ((input: T, returnning: any, context: RunContext) => any);
 
+}
+
+/**
+ * Respond 
+ */
+@Abstract()
+export abstract class Respond<TInput = any, TOutput = any> {
+    /**
+     * respond with handled data.
+     * @param input endpoint input data.
+     * @param value handled returnning value
+     */
+    abstract respond<T>(input: TInput, value: T, context: RunContext): TOutput;
+}
+
+/**
+ * Respond 
+ */
+@Abstract()
+export abstract class ExceptionRespond<TInput = any, TOutput = any> {
+    /**
+     * respond with handled data.
+     * @param input endpoint input data.
+     * @param value handled returnning value
+     */
+    abstract respond<T>(input: TInput, exception: Exception, context: RunContext): TOutput;
+}
+
+
+/**
+ * Respond adapter with response type.
+ */
+@Abstract()
+export abstract class TypedRespond<TInput = any, TOutput = any> {
+    /**
+     * respond with handled data.
+     * @param input input data.
+     * @param value handled returnning value
+     * @param responseType response type
+     */
+    abstract respond<T>(input: TInput, value: T, responseType: 'body' | 'header' | 'response', context: RunContext): TOutput;
 }

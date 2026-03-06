@@ -15,7 +15,7 @@ import { RunContext } from './handlers/contexts';
 export type AsyncLike<T> = T | Promise<T> | Observable<T>;
 
 /**
- * Invocation invoker.
+ * Invocation.
  *
  * 用于执行操作调用的接口。
  */

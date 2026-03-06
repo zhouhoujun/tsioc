@@ -5,10 +5,7 @@ import {
     useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
     provideIncomings, provideOutgoings, TransportConfig, RequestFilterLike,
     RequestExceptionFilter, RequestExceptionHandlerFilter, RequestInterceptorFn,
-    Incoming, RequestContext,
-    BadRequestException,
-    InternalServerException,
-    Outgoing
+    Incoming, RequestContext, BadRequestException, InternalServerException, Outgoing
 } from '@tsdi/common';
 import {
     BodyparserInterceptor, ContentInterceptor, ContentOptions, JsonInterceptor, JsonOptions, BodyparserOptions, SessionInterceptor
@@ -721,25 +718,6 @@ export function withControllers(controllers: Type[]): FeatureFn<FeatureKind.Cont
         );
     }
 }
-
-// export function withContextFactory(factoryToken?: Token<RequestContextFactory>): FeatureFn<FeatureKind.Context> {
-//     return (config) => {
-//         const token = getTransfersToken(config);
-//         const transCfg: RequestInterceptorFn = (req, next, context) => {
-//             const factory = context.get(factoryToken ?? RequestContextFactory);
-//             return next(req, factory ? factory.create(context, req, context.get(SERV_OPTIONS), context.get(RESPONSE)) : context);
-//         };
-//         const providers = [
-//             { provide: token, useValue: transCfg, multi: true }
-//         ] as Provider[];
-
-//         return makeFeature(
-//             FeatureKind.Context,
-//             providers,
-//             config
-//         );
-//     }
-// }
 
 
 /**

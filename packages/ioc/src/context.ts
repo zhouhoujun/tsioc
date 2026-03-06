@@ -258,6 +258,7 @@ export interface TargetInvokeArguments extends InvokeOptions {
 }
 
 
+
 /**
  * InvocationOptions
  */
@@ -283,12 +284,12 @@ export interface InvocationOptions<T = any> extends InvokeOptions {
      * run when bootstrap or not.
      */
     bootstrap?: boolean;
+
 }
 
 
-
 export function hasContextOptions(option?: InvokeOptions): boolean {
-    if(!option) return false;
+    if (!option) return false;
     return isArray(option.providers ?? option.resolvers ?? option.values);
 }
 

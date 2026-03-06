@@ -61,9 +61,9 @@ export class DefaultResolver implements Resolver {
         ) as T;
     }
 
-    resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: RunContext): any[] {
-        return resolveArgs(injector, args, context, this)
-    }
+    // resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: RunContext): any[] {
+    //     return resolveArgs(injector, args, context, this)
+    // }
 
     resolveParams(injector: Injector, params: Parameter[], context?: RunContext): any[] {
         return resolveParameters(injector, params, context, this)

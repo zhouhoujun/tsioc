@@ -1,6 +1,6 @@
-import { Invocation, isFunction, isString, Type, invokeTails, RunContext, isNumber } from '@tsdi/ioc';
+import { Invocation, isFunction, isString, Type, invokeTails, RunContext, isNumber, isType } from '@tsdi/ioc';
 import { HandlerFn } from '../handler';
-import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
+import { InvocationHandlerOptions, InvocationHandler, TypedRespond, Respond } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 
@@ -69,22 +69,21 @@ export class DefaultInvocationHandler<
         if (isString(this.options.response)) {
             const trespond = this.context.get(TypedRespond);
             if (trespond) {
-                trespond.respond(input, res, this.options.response, context);
+                return trespond.respond(input, res, this.options.response, context);
             }
         } else if (this.options.response) {
-            const respond = this.context.get(this.options.response) ?? this.options.response;
-            if (isFunction(respond)) {
-                respond(input, res, context);
-            } else if (respond) {
-                (respond as Respond).respond(input, res, context);
+            if (isType(this.options.response)) {
+                const respodor = this.context.get<Respond>(this.options.response);
+                if (respodor) return respodor.respond(input, res, context);
+            } else if (isFunction(this.options.response)) {
+                return this.options.response(input, res, context)
             }
-        } else {
-            this.defaultRespond(input, res, context);
+            return res;
         }
         return res;
     }
 
-    protected defaultRespond(input: TInput, res: any, context: TContext): void { }
+    // protected defaultRespond(input: TInput, res: any, context: TContext): void { }
 
     equals(other: InvocationHandler): boolean {
         return this.invocation.type === other.invocation.type

@@ -20,11 +20,11 @@ export class RouteHandlerImpl<TInput extends AbstractRequestContext = AbstractRe
     }
 
 
-    protected override defaultRespond(ctx: TInput, res: any): void {
-        if (ctx instanceof AbstractRequestContext) {
-            ctx.body = res;
-        }
-    }
+    // protected override defaultRespond(ctx: TInput, res: any): void {
+    //     if (ctx instanceof AbstractRequestContext) {
+    //         ctx.body = res;
+    //     }
+    // }
 
     protected override forbiddenError(): Exception {
         return new ForbiddenException()

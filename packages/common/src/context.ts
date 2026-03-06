@@ -10,13 +10,6 @@ const CONTENT_LENGTH = new ContextToken<number | null>(() => null);
 const CONTENT_TYPE = new ContextToken<string | null>(() => ContentType.APPL_JSON);
 const CONTENT_ENCODING = new ContextToken<string | null>(() => null);
 
-// const STATUS = new ContextToken<string | number | null>(() => null);
-// const STATUS_MESSAGE = new ContextToken<string | null>(() => null);
-
-// const HEADER = new ContextToken<Record<string, string | string[] | undefined>>(() => ({}));
-
-// const PROTOCOL = new ContextToken<string | undefined>(() => undefined);
-
 
 export const REQUEST = new ContextToken<Incoming<any, any> | null>(() => null);
 export const RESPONSE = new ContextToken<Outgoing<any, any> | null>(() => null);
@@ -63,7 +56,6 @@ export class RequestContext extends RunContext {
 
         return resp
     }
-
 
     /**
      * get response content encoding.
