@@ -97,7 +97,7 @@ export class DefaultContext extends Context {
         return null as T;
     }
 
-    protected getTokenValue<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags): T {
+    protected getTokenValue<T>(_token: Token<T> | ContextToken<T>, _flags: InjectFlags): T {
         return null!;
     }
 
@@ -168,6 +168,16 @@ export class DefaultContext extends Context {
 const PAYLOAD = new ContextToken<any>(() => null);
 const RUN_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) => void>(() => null!);
 
+/**
+ * RunContext - Optimized context for runtime execution.
+ *
+ * Combines Context with Injector for efficient data passing during method invocation.
+ * Avoids creating full InvocationContext instances when only runtime data is needed.
+ *
+ * 运行时上下文 - 优化的运行时执行上下文。
+ * 结合 Context 和 Injector，在方法调用期间高效传递数据。
+ * 当只需要运行时数据时，避免创建完整的 InvocationContext 实例。
+ */
 export class RunContext extends DefaultContext {
 
     getInjector() {
@@ -186,11 +196,6 @@ export class RunContext extends DefaultContext {
         this.set(PAYLOAD, payload);
         return this;
     }
-
-    // protected override hasTokenValue<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags): boolean {
-    //     if (token instanceof ContextToken) return false;
-    //     return this.getInjector().has(token, flags);
-    // }
 
     override getTokenValue<T>(token: Token<T> | ContextToken<T>, flags: InjectFlags): T {
         if (token instanceof ContextToken) return null!;

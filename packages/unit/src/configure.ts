@@ -22,12 +22,12 @@ export class UnitTestConfigureService {
     @Startup()
     async configureService(ctx: ApplicationContext): Promise<void> {
         const config = ctx.get(UNITTESTCONFIGURE);
-        
+
         if (!ctx.has(Assert)) {
-            ctx.setValue(Assert, assert)
+            InjectUtil.setValue(ctx, Assert, assert)
         }
         if (!ctx.has(ExpectToken)) {
-            ctx.setValue(ExpectToken, expect)
+            InjectUtil.setValue(ctx, ExpectToken, expect)
         }
         const reps = ctx.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
         if (reps.length) {

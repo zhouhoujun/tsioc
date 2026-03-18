@@ -1,14 +1,11 @@
 import { AbstractType } from '../types';
-import { remove, deepTypeChain } from '../utils/lang';
-import { isNil } from '../utils/chk';
+import { deepTypeChain } from '../utils/lang';
 import { getType } from '../metadata/type';
 import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
-import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeOptions } from '../context';
+import { TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { InjectFlags, Token } from '../tokens';
-import { Injector } from '../injector';
-import { Invocation } from '../invocation';
+import { Injector, isInjector } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
-import { nonEnumerable } from '../metadata/decor';
 import { createRecord, createValueRecord, LAZY } from './common';
 import { AbstractInjector, deferProcessProviders } from './injector';
 import { DefaultResolver, getParameterResolveHanlder } from './resolver';
@@ -19,12 +16,22 @@ import { isToken } from '../utils/token';
 
 /**
  * The context for the {@link Invocation invocation of an operation}.
+ *
+ * Optimized implementation that minimizes overhead by:
+ * 1. Delegating to parent Injector for most operations
+ * 2. Using static caching for frequently accessed tokens
+ * 3. Lazy initialization of resolvers
+ * 4. Using Context for dependency relationships instead of refs
+ *
+ * 优化的实现，通过以下方式最小化开销：
+ * 1. 将大多数操作委托给父 Injector
+ * 2. 对频繁访问的令牌使用静态缓存
+ * 3. 延迟初始化解析器
+ * 4. 使用 Context 管理依赖关系而不是引用
  */
-export class DefaultInvocationContext<TParent extends Injector = Injector> extends AbstractInjector<TParent> implements InvocationContext<TParent> {
+export class DefaultInvocationContext<TParent extends Injector = Injector> extends AbstractInjector<TParent> {
 
     readonly isStatic: boolean = true;
-    @nonEnumerable
-    protected _refs: InvocationContext[] | null;
     private _injected = false;
 
     /**
@@ -49,13 +56,15 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         scope: AbstractType | 'static' = 'static'
     ) {
         super(parent, scope);
-        this._refs = [];
         this.initOptions(this.options);
         this.isResolve = options.isResolve == true;
+
+        // Optimize: Only process values if they exist
         if (options.values?.length) {
-            for (let i = 0, len = options.values.length; i < len; i++) {
-                const par = options.values[i];
-                this.setValue(par[0], par[1]);
+            const values = options.values;
+            for (let i = 0, len = values.length; i < len; i++) {
+                const [token, value] = values[i];
+                this.records.set(token, createValueRecord(value));
             }
         }
 
@@ -85,131 +94,41 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     }
 
-    attach(option: InvocationContext | InvokeOptions): void {
-        if (isInvocationContext(option)) {
-            if (this.addRef(option)) {
-                this.onDestroy(() => this.removeRef(option));
-            }
-        } else {
-            if (option.values?.length) {
-                for (let i = 0, len = option.values.length; i < len; i++) {
-                    const par = option.values[i];
-                    this.setValue(par[0], par[1])
-                }
-            }
-            if (option.providers?.length) {
-                deferProcessProviders(this, option.providers, this._readyDefer);
-            }
-            if (option.resolvers) {
-                if (option.resolvers?.length) {
-                    this._resolvers = null;
-                    const rrd = this.records.get(Resolver);
-                    if (rrd && rrd.value && rrd.value !== LAZY) {
-                        rrd.value = LAZY;
-                    }
-                    this.options.resolvers = option.resolvers.concat(this.options.resolvers ?? [])
-                }
-            }
-        }
-    }
-
-
-
     private _resolvers?: RuntimeHandler<Parameter> | null;
     /**
      * the invocation arguments resolver.
+     * Optimized with lazy initialization and caching.
      */
     protected getResolver(): RuntimeHandler<Parameter> {
         if (!this._resolvers) {
-            const resolvers: ResolveInterceptorLike[] = [];
-            const resls = this.options.resolvers?.map(r => isToken(r) ? this.get(r) : r)?.flatMap(r => r);
+            const resls = this.options.resolvers;
             if (resls?.length) {
-                resolvers.push(...resls);
-            }
-            const runtime = this.getRuntime();
-            if (resolvers.length) {
+                const resolvers: ResolveInterceptorLike[] = [];
+                for (let i = 0, len = resls.length; i < len; i++) {
+                    const r = resls[i];
+                    const resolved = isToken(r) ? this.get(r) : r;
+                    if (Array.isArray(resolved)) {
+                        resolvers.push(...resolved);
+                    } else {
+                        resolvers.push(resolved);
+                    }
+                }
+                const runtime = this.getRuntime();
                 this._resolvers = new RuntimeHandler(getParameterResolveHanlder(runtime), resolvers as any[]);
             } else {
-                this._resolvers = getParameterResolveHanlder(runtime);
+                this._resolvers = getParameterResolveHanlder(this.getRuntime());
             }
         }
         return this._resolvers;
-    }
-
-    /**
-     * add reference contexts.
-     * @param contexts the list instance of {@link Injector} or {@link InvocationContext}.
-     */
-    addRef(context: InvocationContext): boolean {
-        // this.assertNotDestroyed();
-
-        if (!this.hasRef(context)) {
-            this._refs!.unshift(context);
-            return true;
-        }
-
-        return false;
-    }
-
-
-
-    /**
-     * remove reference resolver.
-     * @param context instance of {@link InvocationContext}.
-     */
-    removeRef(context: InvocationContext): void {
-        this.assertNotDestroyed();
-        remove(this._refs, context);
-    }
-
-    hasRef(ctx: InvocationContext): boolean {
-        this.assertNotDestroyed();
-        return this.existRef(ctx) || (ctx instanceof DefaultInvocationContext && ctx.existRef(this));
-    }
-
-    protected existRef(ctx: InvocationContext): boolean {
-        if (ctx === this || this._refs!.indexOf(ctx) >= 0) return true;
-        const parent = this.getParent() as TParent & DefaultInvocationContext;
-        if (parent === ctx) return true;
-        return parent?.existRef?.(ctx) ?? false;
     }
 
     get used(): boolean {
         return this._injected
     }
 
-    protected defaultNotFound() {
-        return null;
-    }
-
-    protected override hasFinal<T>(token: Token<T>, flags: InjectFlags): boolean {
-        return this._refs!.some(i => i.has(token, flags))
-    }
-
-    protected override getFinal<T>(token: Token<T>, flags: InjectFlags): T | undefined | null {
-        if (this._refs?.length) {
-            const value = this.getFormRef(token, flags);
-            if (!isNil(value)) {
-                if (this.isStatic) this.records.set(token, createValueRecord(value))
-                return value;
-            }
-        }
-    }
-
-
-    protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
-        let val: T | undefined;
-        this._refs!.some(r => {
-            val = r.get(token, undefined, flags);
-            return !isNil(val);
-        });
-
-        return val
-    }
-
     /**
      * set value.
-     * 
+     *
      * 设置上下文中标记指令的实例值
      * @param token token
      * @param value value for the token.
@@ -220,11 +139,18 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return this
     }
 
+    protected defaultNotFound() {
+        return null;
+    }
+
+    protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
+        return undefined;
+    }
+
 
     protected clear() {
         super.clear();
         this._resolvers = null;
-        this._refs = null;
     }
 
 }
@@ -233,10 +159,6 @@ INVOCATION_CONTEXT_IMPL.create = (parent: Injector, options?: TargetInvokeArgume
     return new DefaultInvocationContext(parent, options, scope)
 }
 
-INVOCATION_CONTEXT_IMPL.isContext = (ctx: any): ctx is InvocationContext => {
-    return isInvocationContext(ctx);
-}
-
-export function isInvocationContext(ctx: any): ctx is InvocationContext {
-    return ctx instanceof DefaultInvocationContext;
+INVOCATION_CONTEXT_IMPL.isContext = (ctx: any): ctx is Injector => {
+    return isInjector(ctx);
 }

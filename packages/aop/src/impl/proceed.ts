@@ -333,17 +333,10 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer, runtime: RuntimeCo
         joinPoint.setValue(metadata.throwing, joinPoint.throwing)
     }
 
-    const context = advicer.aspect.context;
-    let added: boolean;
-    if (context) {
-        added = joinPoint.addRef(context)
-    } else {
-        added = false;
-    }
-
+    // Context lifecycle is managed by the aspect, no need for ref management
     return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), {
         finally: () => {
-            added && context && joinPoint.removeRef(context);
+            // Cleanup handled by aspect context lifecycle
         }
     });
 }

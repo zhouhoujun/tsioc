@@ -5,7 +5,7 @@ import { isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk
 import { getType } from '../metadata/type';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { ClassRef, getClassify } from '../metadata/class';
-import { Injector, MethodType } from '../injector';
+import { Injector, MethodType, RECORDS } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, TokenOf } from '../tokens';
 import { immediate } from '../utils/lang';
@@ -15,6 +15,8 @@ import { Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
 import { createRunContext, RunContext } from '../handlers/contexts';
 import { ctorName } from '../metadata/define';
+import { InjectUtil } from './injector';
+import { createValueRecord } from './common';
 
 /**
  * abstract invocation 
@@ -38,8 +40,9 @@ export abstract class AbstractInvocation<T = any,
         super();
         this._isResolve = hasContextOptions(options);
         this._mthCtx = new Map();
-        context.setValue(Invocation, this);
-        context.setValue(getType(this), this);
+        // Store invocation in context using records directly
+        context[RECORDS].set(Invocation, createValueRecord(this));
+        context[RECORDS].set(getType(this), createValueRecord(this));
         context.onDestroy(this);
     }
 
@@ -214,23 +217,22 @@ export abstract class AbstractInvocation<T = any,
         let context: TC;
         let destroy: Function | undefined;
         let payload: any | undefined;
-        if (INVOCATION_CONTEXT_IMPL.isContext(option)) {
-            context = option;
-            if (context.addRef(ctx)) {
-                destroy = () => {
-                    if (context.used || context.destroyed) return;
-                    context.removeRef(ctx);
-                }
-            }
 
+        if (INVOCATION_CONTEXT_IMPL.isContext(option)) {
+            // Use the provided context directly
+            context = option;
+            // No need for ref management - context lifecycle is managed by caller
         } else if (hasContextOptions(option)) {
+            // Create new context with options
             context = this.createContext(ctx, option);
             payload = option?.payload;
             destroy = () => {
-                if (context.used) return;
-                context.destroy()
+                if (!context.destroyed) {
+                    context.destroy()
+                }
             }
         } else {
+            // Use method context directly
             payload = option?.payload;
             context = ctx;
         }

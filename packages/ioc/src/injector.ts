@@ -76,7 +76,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {RunContext} context resolve context. type of {@link Injector}, use to resolve with token.
+     * @param {RunContext} context resolve context. type of {@link RunContext}, use to resolve with token.
      * @returns {T} token value.
      */
     abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: RunContext): T;
@@ -184,15 +184,15 @@ export interface InjectOperator {
     resolve<T>(token: Token<T>, option?: InvokeOptions): T;
     /**
      * resolve token instance with token and param provider.
-     * 
+     *
      * 解析标记令牌的实例。
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
+     * @param {Injector} context injector type of {@link Injector}, use to resolve with token.
      * @returns {T}
      */
-    resolve<T>(token: Token<T>, context?: InvocationContext): T;
+    resolve<T>(token: Token<T>, context?: Injector): T;
     /**
      * resolve token instance with token and param provider.
      * 

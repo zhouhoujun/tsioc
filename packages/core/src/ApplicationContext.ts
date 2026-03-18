@@ -1,6 +1,6 @@
 import {
     Provider, Injector, Abstract, AbstractType, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, token, ClassRef, Invocation, InvokeOptions
+    ModuleMetadata, ModuleDef, Token, token, ClassRef, Invocation, InvokeOptions, DestroyCallback
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { ApplicationRunners } from './ApplicationRunners';
@@ -13,13 +13,13 @@ import { ApplicationEvent } from './ApplicationEvent';
 
 /**
  * application context for global.
- * implements {@link Destroyable}.
- * 
+ * extends {@link Injector} and implements {@link Destroyable}.
+ *
  * 应用上下文环境
  */
 @Abstract()
 export abstract class ApplicationContext<T = object>
-    extends InvocationContext<ModuleRef<T>> implements ApplicationEventPublisher, Destroyable {
+    extends Injector implements ApplicationEventPublisher {
     /**
      * module instance.
      */
