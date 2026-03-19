@@ -64,47 +64,17 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
     readonly [RECORDS]: Map<Token<any>, InjectorRecord>;
 
     @nonEnumerable
-    protected _parent: TParent | null;
+    protected _parent: TParent;
 
-    constructor(parent?: TParent, readonly scope?: InjectorScope, readonly isStatic?: boolean) {
+    constructor(parent: TParent, readonly scope?: InjectorScope, readonly isStatic?: boolean) {
         super()
         this.records = this[RECORDS] = new Map();
-        this._parent = parent ?? null;
+        this._parent = parent;
         this.initScope(scope);
         parent?.onDestroy(this);
     }
 
     protected abstract initScope(scope?: InjectorScope): void;
-
-    // initScope(scope?: InjectorScope) {
-    //     const val = createValueRecord(this);
-    //     switch (scope) {
-    //         case 'platform':
-    //             platformAlias.forEach(tk => this.records.set(tk, val));
-    //             this._runtime = new DefaultRuntime(this);
-    //             registerCores(this, this._runtime);
-    //             break;
-    //         case 'root':
-    //             this._runtime = this._parent!.getRuntime();
-    //             this._runtime.register(this);
-    //             this._runtime.setInjector(scope, this);
-    //             rootAlias.forEach(tk => this.records.set(tk, val));
-    //             break;
-    //         case 'static':
-    //             this._runtime = this._parent!.getRuntime();
-    //             this._runtime.register(this);
-    //             break;
-    //         default:
-    //             this._runtime = this._parent!.getRuntime();
-    //             this._runtime.register(this);
-    //             if (scope) {
-    //                 this._runtime.setInjector(scope, this);
-    //                 SCOPE_PRODIDERS.length && processProviders(this, SCOPE_PRODIDERS);
-    //             }
-    //             (this.isStatic ? staticInjectAlias : injectAlias).forEach(tk => this.records.set(tk, val));
-    //             break;
-    //     }
-    // }
 
     get ready() {
         return this._readyDefer.promise
@@ -114,7 +84,7 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         return this._runtime!
     }
 
-    getParent(): TParent | null {
+    getParent(): TParent {
         return this._parent;
     }
 
@@ -307,7 +277,7 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         }
         this._runtime = null;
         this._operator = null;
-        this._parent = null;
+        this._parent = null!;
     }
 
 
@@ -330,7 +300,7 @@ export function assertNotDestroyed(injector: Injector): void {
  */
 export class DefaultEnvironmentInjector extends AbstractInjector implements EnvironmentInjector {
     constructor(providers?: Provider[]) {
-        super(undefined, 'platform');
+        super(null!, 'platform');
         deferProcessProviders(this, providers, this._readyDefer)
     }
 

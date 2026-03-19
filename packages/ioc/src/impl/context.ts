@@ -29,10 +29,9 @@ import { isToken } from '../utils/token';
  * 3. 延迟初始化解析器
  * 4. 使用 Context 管理依赖关系而不是引用
  */
-export class DefaultInvocationContext<TParent extends Injector = Injector> extends AbstractInjector<TParent> {
+export class ContextInjector<TParent extends Injector = Injector> extends AbstractInjector<TParent> {
 
     readonly isStatic: boolean = true;
-    private _injected = false;
 
     /**
      * invocation target type.
@@ -43,8 +42,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      * named of invocation method.
      */
     readonly propertyKey: string | symbol | undefined;
-
-    readonly isResolve: boolean;
 
     /**
      * get the invocation arguments resolver.
@@ -57,7 +54,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     ) {
         super(parent, scope);
         this.initOptions(this.options);
-        this.isResolve = options.isResolve == true;
 
         // Optimize: Only process values if they exist
         if (options.values?.length) {
@@ -91,10 +87,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     }
 
-    override getParent(): TParent {
-        return this._parent!;
-    }
-
     protected afterInit(): void {
 
     }
@@ -126,11 +118,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         }
         return this._resolvers;
     }
-
-    get used(): boolean {
-        return this._injected
-    }
-
     /**
      * set value.
      *
@@ -148,11 +135,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return null;
     }
 
-    protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
-        return undefined;
-    }
-
-
     protected clear() {
         super.clear();
         this._resolvers = null;
@@ -162,11 +144,11 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
 
 INJECT_IMPL.createByOptions = (parent, options, scope) => {
-    return new DefaultInvocationContext(parent, options, scope)
+    return new ContextInjector(parent, options, scope)
 }
 
 INVOCATION_CONTEXT_IMPL.create = (parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
-    return new DefaultInvocationContext(parent, options, scope)
+    return new ContextInjector(parent, options, scope)
 }
 
 INVOCATION_CONTEXT_IMPL.isContext = (ctx: any): ctx is Injector => {

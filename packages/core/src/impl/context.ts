@@ -1,4 +1,4 @@
-import { AbstractType, DefaultInvocationContext, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut, InjectUtil } from '@tsdi/ioc';
+import { AbstractType, ContextInjector, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut, InjectUtil } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
@@ -18,7 +18,7 @@ import { ApplicationContextRefreshEvent } from '../events';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class DefaultApplicationContext<T = any> extends DefaultInvocationContext<ModuleRef> implements ApplicationContext<T> {
+export class DefaultApplicationContext<T = any> extends ContextInjector<ModuleRef> implements ApplicationContext<T> {
 
     private _multicaster: ApplicationEventMulticaster;
     exit = true;

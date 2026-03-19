@@ -1,4 +1,4 @@
-import { createResolveHandler, DefaultInvocationContext, getDef, InjectFlags, invokeTail, isFunction, isResolved, isString, isType, ResolveHandler, ResolveInterceptorFn, ResolveInterceptorLike, TargetInvokeArguments, token, Type } from '@tsdi/ioc';
+import { createResolveHandler, ContextInjector, getDef, InjectFlags, invokeTail, isFunction, isResolved, isString, isType, ResolveHandler, ResolveInterceptorFn, ResolveInterceptorLike, TargetInvokeArguments, token, Type } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { RNode } from '../renderer/Node';
@@ -63,7 +63,7 @@ export const nodeResolveInterceptorFactory: () => ResolveInterceptorFn = () => {
  * Environment context
  */
 
-export class EnvironmentContext extends DefaultInvocationContext {
+export class EnvironmentContext extends ContextInjector {
     [noReact] = true;
 
     protected override initOptions(options: TargetInvokeArguments): void {
