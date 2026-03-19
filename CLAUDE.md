@@ -2,182 +2,154 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Repository Overview
 
-tsioc is a comprehensive TypeScript IoC (Inversion of Control) framework that provides dependency injection, aspect-oriented programming (AOP), and a modular application architecture. The framework is organized as a monorepo with multiple packages under `packages/`.
+`tsioc` is a TypeScript monorepo for a decorator-driven IoC and application framework. The core stack is:
 
-## Core Architecture
+- `@tsdi/ioc`: dependency injection container, tokens, metadata, runtime contexts, invocation/resolution pipeline
+- `@tsdi/aop`: AOP advice/interceptor layer built on top of IoC runtime handling
+- `@tsdi/core`: application/module bootstrap, routing abstractions, lifecycle, application context
+- platform and integration packages: HTTP endpoints, security, repository/transactions, TypeORM adapter, browser/server platforms
+- transport adapters under `packages/services/*`: protocol-specific integrations for AMQP, Kafka, MQTT, NATS, Redis, TCP, UDP, WS, etc.
 
-### Monorepo Structure
+The framework follows a Spring-like model in TypeScript: decorators define metadata, IoC resolves instances, AOP wraps invocation, and higher-level packages compose those primitives into application bootstrapping and transports.
 
-The project is organized into three main categories:
+## Common Commands
 
-1. **Core Framework Packages** (`packages/`):
-   - `ioc`: Core IoC container with dependency injection
-   - `aop`: Aspect-oriented programming support
-   - `core`: Application framework with module management
-   - `boot`: Bootstrap framework with configuration support
-   - `common`: Shared utilities and abstractions
-
-2. **Platform Packages**:
-   - `platform-server`: Node.js server platform
-   - `platform-browser`: Browser platform
-   - `endpoints`: HTTP endpoint handling and routing
-   - `repository`: Database repository pattern with transaction support
-   - `typeorm-adapter`: TypeORM integration
-
-3. **Service Transport Packages** (`packages/services/`):
-   - `http`, `amqp`, `coap`, `kafka`, `mqtt`, `nats`, `redis`, `tcp`, `udp`, `ws`
-   - Each provides protocol-specific transport implementations
-
-### Key Design Patterns
-
-- **Decorator-based Configuration**: Heavy use of TypeScript decorators (`@Injectable`, `@Module`, `@Controller`, `@Aspect`, etc.)
-- **Dependency Injection**: Automatic dependency resolution via constructor injection and property injection
-- **AOP Support**: Cross-cutting concerns via aspects with `@Before`, `@After`, `@Around` advice
-- **Module System**: Hierarchical module organization with imports/exports
-- **Repository Pattern**: Database access with `@Repository` and `@Transactional` decorators
-
-## Build System
-
-### Main Build Commands
+### Install dependencies
 
 ```bash
-# Build all packages
+npm install
+```
+
+### Build the whole monorepo
+
+```bash
 npm run build
+```
 
-# Build with version setting
+### Build with version replacement
+
+```bash
 npm run build -- --setvs=4.0.0-beta
+```
 
-# Build and deploy to npm
+### Build and publish dist packages
+
+```bash
 npm run build -- --deploy=true
 # or
 ./deploy.cmd
 ```
 
-### Package-Level Builds
-
-Each package has its own `taskfile.ts` that defines build configuration. To build a single package:
+### Build a single package
 
 ```bash
 cd packages/<package-name>
+npm run build
+# equivalent:
 ts-node -r tsconfig-paths/register taskfile.ts
 ```
 
-### Build System Architecture
+### Run tests for a single package
 
-- Uses `@tsdi/activities` workflow framework for build orchestration
-- Root `taskfile.ts` coordinates builds across all packages
-- Each package's `taskfile.ts` defines:
-  - Source/test file patterns
-  - Output directory (typically `../../dist/<package-name>`)
-  - Bundle configurations (ES5, ES2017, UMD, CommonJS)
-  - Annotation processing
-
-## Testing
-
-### Test Framework
-
-Tests use the `expect` assertion library (from Jest/Jasmine style) with Mocha-style `describe`/`it` blocks.
-
-### Running Tests
+Most packages expose:
 
 ```bash
-# Test using CLI (if @tsdi/cli is installed globally)
-tsdi test
-
-# Or use VS Code debug configuration for debugging tests
+cd packages/<package-name>
+npm test
 ```
 
-### Test File Locations
+For example:
 
-- Tests are located in `test/` directories within each package
-- Test files use `.spec.ts` extension
-- Example: `packages/ioc/test/method.spec.ts`
-
-## Development Workflow
-
-### TypeScript Configuration
-
-- **Target**: ES2020
-- **Module**: CommonJS
-- **Decorators**: Enabled (`experimentalDecorators`, `emitDecoratorMetadata`)
-- **Strict Mode**: Enabled with null checks
-- **Path Mapping**: `@tsdi/*` maps to `packages/*` and `packages/services/*`
-
-### Code Style
-
-- ESLint configured with TypeScript support
-- Relaxed rules for framework development (allows `any`, empty functions, etc.)
-- See `.eslintrc.js` for full configuration
-
-### Key Dependencies
-
-- `reflect-metadata`: Required for decorator metadata
-- `typeorm`: Database ORM integration
-- `rxjs`: Reactive programming support
-- Various transport libraries (amqplib, mqtt, kafkajs, nats, ioredis, ws, etc.)
-
-## Common Patterns
-
-### Creating a Module
-
-```typescript
-@Module({
-    imports: [OtherModule],
-    providers: [ServiceClass],
-    exports: [ServiceClass]
-})
-export class MyModule {}
+```bash
+cd packages/ioc && npm test
 ```
 
-### Dependency Injection
+### Run a single spec file
 
-```typescript
-@Injectable()
-export class MyService {
-    constructor(
-        private otherService: OtherService,
-        @Inject('token') private config: Config
-    ) {}
-}
+Package tests are launched through `unit.ts`, which calls `runTest('./test/**/*.ts', { baseURL: __dirname }, ConsoleReporter)`. To run one spec, invoke `runTest` directly from the package directory:
+
+```bash
+cd packages/ioc
+npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/unit'); const { ConsoleReporter } = require('@tsdi/unit-console'); runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
 ```
 
-### Controllers and Endpoints
+### Lint
 
-```typescript
-@Controller('/api/users')
-export class UserController {
-    @Get('/:id')
-    getUser(id: string) {
-        return this.userService.findById(id);
-    }
+There is a root ESLint config at `.eslintrc.js`, but no root `npm run lint` script is defined. If needed, run ESLint directly against the files you changed:
 
-    @Transactional()
-    @Post('/')
-    async createUser(user: User) {
-        return await this.userRepository.save(user);
-    }
-}
+```bash
+npx eslint "packages/**/*.ts"
 ```
 
-### AOP Aspects
+## Build and Test Structure
 
-```typescript
-@Aspect()
-export class LoggingAspect {
-    @Around('execution(*.start)')
-    logExecution(joinpoint: Joinpoint) {
-        console.log('Method starting...');
-        return joinpoint.proceed();
-    }
-}
-```
+- Root build entrypoint is [taskfile.ts](taskfile.ts). It iterates package folders and runs each package `taskfile.ts`.
+- Each package-level `taskfile.ts` defines:
+  - source glob
+  - test glob
+  - output directory under `dist/<package>`
+  - bundle formats (typically CommonJS plus ES targets and sometimes UMD)
+- Package tests are typically started from `unit.ts` in the package root, not from a generic root test runner.
+- Root `package.json` only defines `build`, `postinstall`, and `reinstall`; package-level `package.json` files often define their own `build` and `test` scripts.
 
-## Important Notes
+## Architecture Map
 
-- All classes using DI must have a class decorator (`@Injectable`, `@Module`, `@Controller`, etc.)
-- The framework automatically resolves and injects dependencies
-- Transaction management is AOP-based via `@Transactional` decorator
-- Each package builds to `dist/<package-name>` with multiple output formats
-- The framework supports both server-side (Node.js) and browser environments
+### 1. IoC layer (`packages/ioc`)
+
+This is the foundation of the repo.
+
+- `src/injector.ts`: abstract injector contract, provider registration, token resolution API, scope/lifecycle surface
+- `src/context.ts`: invocation/resolve options and context-related types; this area is central when changing how call context is propagated
+- `src/handlers/*`: runtime handler/interceptor/context pipeline primitives
+- `src/impl/*`: concrete injector, invocation, and initialization implementations
+- `src/metadata/*`: decorator metadata model (`@Injectable`, `@Module`, param/property decorators, class refs)
+- `src/providers.ts`, `src/resolver.ts`, `src/tokens.ts`: provider model, parameter resolution, token semantics
+
+If you are changing dependency resolution, invocation context, or performance of object creation/invocation, start in `packages/ioc` and then inspect downstream consumers in `aop` and `core`.
+
+### 2. AOP layer (`packages/aop`)
+
+`@tsdi/aop` builds on IoC runtime contexts and handlers.
+
+- Advisers/aspects match join points by method/property metadata and naming patterns.
+- Proceeding/proxy logic wraps instance methods and property access, then re-enters the IoC runtime pipeline.
+- Changes to IoC context objects or invocation APIs often require corresponding updates here, especially in proxy/proceed/joinpoint code.
+
+### 3. Application layer (`packages/core`)
+
+`@tsdi/core` turns IoC + AOP into an application framework.
+
+- `ApplicationContext` extends `Injector` and acts as the global application container.
+- Module loading, bootstrapping, route handling, and application events all depend on the IoC runtime contracts.
+- If injector/context abstractions change, inspect `ApplicationContext`, module loader/bootstrap code, and invocation handler options here.
+
+### 4. Integration packages
+
+Other packages are mostly adapters over the core runtime:
+
+- `endpoints`, `platform-server`, `platform-browser`: transport/platform concerns
+- `repository`, `typeorm-adapter`: persistence and transactions
+- `security`, `logger`, `swagger`, `components`: feature modules on top of core abstractions
+- `packages/services/*`: protocol adapters sharing the same container/module patterns
+
+## TypeScript and Module Conventions
+
+- TypeScript target is ES2020 with CommonJS modules.
+- Decorators and `emitDecoratorMetadata` are enabled and are fundamental to the framework design.
+- Root path aliases map `@tsdi/*` to both `packages/*` and `packages/services/*` via [tsconfig.json](tsconfig.json).
+- Strict mode is enabled, including `strictNullChecks` and `strictPropertyInitialization`.
+
+## Testing Conventions
+
+- Tests live in each package’s `test/` directory and usually use `*.spec.ts`.
+- The test style is Mocha-like `describe`/`it` with `expect` assertions.
+- `@tsdi/unit` provides the actual test bootstrap; package `unit.ts` files are thin wrappers.
+
+## Repository-Specific Notes
+
+- Many APIs are decorator-driven; when debugging behavior, inspect metadata/reflection code as well as runtime execution code.
+- Cross-package refactors frequently require synchronized changes in `packages/ioc`, `packages/aop`, and `packages/core`.
+- Build output is generated under `dist/`; avoid editing generated files.
+- The existing ESLint config is intentionally permissive for framework internals (`any`, empty functions, unused vars, namespaces are allowed in several cases).

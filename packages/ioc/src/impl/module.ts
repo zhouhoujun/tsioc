@@ -27,14 +27,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.initWithOptions(option);
     }
 
-    // protected override initScope(scope?: InjectorScope): void {
-    //     this._runtime = this._parent!.getRuntime();
-    //     this._runtime.register(this, scope);
-    //     const val = createValueRecord(this);
-    //     this.records.set(Injector, val);
-                
-    // }
-
     protected initWithOptions(option: ModuleOption) {
         const dedupStack: Type[] = [];
         const runtime = this.getRuntime();
