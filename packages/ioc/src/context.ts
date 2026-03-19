@@ -4,7 +4,6 @@ import { ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
 import { Injector } from './injector';
-import { hasItem } from './utils/lang';
 import { isArray } from './utils/chk';
 
 

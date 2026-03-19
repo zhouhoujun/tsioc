@@ -4,7 +4,7 @@ import { getType } from '../metadata/type';
 import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
 import { TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { InjectFlags, Token } from '../tokens';
-import { Injector, isInjector } from '../injector';
+import { INJECT_IMPL, Injector, InjectorScope, isInjector } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
 import { createRecord, createValueRecord, LAZY } from './common';
 import { AbstractInjector, deferProcessProviders } from './injector';
@@ -82,6 +82,11 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this.afterInit();
     }
 
+    protected override initScope(scope?: InjectorScope): void {
+        this._runtime = this._parent!.getRuntime();
+        this._runtime.register(this);
+    }
+
     protected initOptions(options: TargetInvokeArguments) {
 
     }
@@ -153,6 +158,11 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this._resolvers = null;
     }
 
+}
+
+
+INJECT_IMPL.createByOptions = (parent, options, scope) => {
+    return new DefaultInvocationContext(parent, options, scope)
 }
 
 INVOCATION_CONTEXT_IMPL.create = (parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {

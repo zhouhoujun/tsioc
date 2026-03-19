@@ -27,7 +27,7 @@ export const SCOPE_PRODIDERS: Provider[] = [];
 /**
  * Default Injector
  */
-export class AbstractInjector<TParent extends Injector = Injector> extends Injector {
+export abstract class AbstractInjector<TParent extends Injector = Injector> extends Injector {
     /**
      * none poincut for aop.
      * 
@@ -74,36 +74,37 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         parent?.onDestroy(this);
     }
 
+    protected abstract initScope(scope?: InjectorScope): void;
 
-    initScope(scope?: InjectorScope) {
-        const val = createValueRecord(this);
-        switch (scope) {
-            case 'platform':
-                platformAlias.forEach(tk => this.records.set(tk, val));
-                this._runtime = new DefaultRuntime(this);
-                registerCores(this, this._runtime);
-                break;
-            case 'root':
-                this._runtime = this._parent!.getRuntime();
-                this._runtime.register(this);
-                this._runtime.setInjector(scope, this);
-                rootAlias.forEach(tk => this.records.set(tk, val));
-                break;
-            case 'static':
-                this._runtime = this._parent!.getRuntime();
-                this._runtime.register(this);
-                break;
-            default:
-                this._runtime = this._parent!.getRuntime();
-                this._runtime.register(this);
-                if (scope) {
-                    this._runtime.setInjector(scope, this);
-                    SCOPE_PRODIDERS.length && processProviders(this, SCOPE_PRODIDERS);
-                }
-                (this.isStatic ? staticInjectAlias : injectAlias).forEach(tk => this.records.set(tk, val));
-                break;
-        }
-    }
+    // initScope(scope?: InjectorScope) {
+    //     const val = createValueRecord(this);
+    //     switch (scope) {
+    //         case 'platform':
+    //             platformAlias.forEach(tk => this.records.set(tk, val));
+    //             this._runtime = new DefaultRuntime(this);
+    //             registerCores(this, this._runtime);
+    //             break;
+    //         case 'root':
+    //             this._runtime = this._parent!.getRuntime();
+    //             this._runtime.register(this);
+    //             this._runtime.setInjector(scope, this);
+    //             rootAlias.forEach(tk => this.records.set(tk, val));
+    //             break;
+    //         case 'static':
+    //             this._runtime = this._parent!.getRuntime();
+    //             this._runtime.register(this);
+    //             break;
+    //         default:
+    //             this._runtime = this._parent!.getRuntime();
+    //             this._runtime.register(this);
+    //             if (scope) {
+    //                 this._runtime.setInjector(scope, this);
+    //                 SCOPE_PRODIDERS.length && processProviders(this, SCOPE_PRODIDERS);
+    //             }
+    //             (this.isStatic ? staticInjectAlias : injectAlias).forEach(tk => this.records.set(tk, val));
+    //             break;
+    //     }
+    // }
 
     get ready() {
         return this._readyDefer.promise
@@ -332,6 +333,16 @@ export class DefaultEnvironmentInjector extends AbstractInjector implements Envi
         super(undefined, 'platform');
         deferProcessProviders(this, providers, this._readyDefer)
     }
+
+    protected override initScope(scope?: InjectorScope): void {
+        const val = createValueRecord(this);
+        this.records.set(Injector, val);
+        this.records.set(EnvironmentInjector, val);
+        this.records.set(CONTAINER, val);
+        const runtime = this._runtime = new DefaultRuntime(this);
+        runtime.set(InvocationFactory, new DefaultInvocationFactory(runtime), this);
+    }
+
 }
 
 /**
@@ -339,18 +350,20 @@ export class DefaultEnvironmentInjector extends AbstractInjector implements Envi
  */
 export class StaticInjector extends AbstractInjector {
 
-    constructor(providers?: Provider[], parent?: Injector, scope?: InjectorScope) {
+    constructor(parent: Injector, providers?: Provider[], scope?: InjectorScope) {
         super(parent, scope ?? 'static', true);
         deferProcessProviders(this, providers, this._readyDefer)
     }
+
+    protected override initScope(scope?: InjectorScope): void {
+        this._runtime = this._parent!.getRuntime();
+        const val = createValueRecord(this);
+        this.records.set(Injector, val);
+        this.records.set(StaticInjector, val);
+        this._runtime.register(this, scope);
+        
+    }
 }
-
-
-const platformAlias = [Injector, EnvironmentInjector, CONTAINER];
-const rootAlias = [Injector, INJECTOR];
-const injectAlias = [Injector];
-const staticInjectAlias = [Injector, StaticInjector];
-
 
 
 
@@ -360,36 +373,44 @@ const staticInjectAlias = [Injector, StaticInjector];
  */
 export class DefaultInjector extends AbstractInjector {
 
-    constructor(providers?: Provider[], parent?: Injector, scope?: InjectorScope) {
-        super(parent, parent ? scope : 'platform')
+    constructor(parent: Injector, providers?: Provider[], scope?: Omit<InjectorScope, 'static' | 'platform'>, isStatic?: boolean) {
+        super(parent, scope as InjectorScope, isStatic)
         deferProcessProviders(this, providers, this._readyDefer)
     }
 
+    override initScope(scope?: InjectorScope): void {
+        this._runtime = this._parent!.getRuntime();
+
+        const val = createValueRecord(this);
+        this.records.set(Injector, val);
+        this._runtime.register(this, scope);
+        if (scope === 'root') {
+            this.records.set(INJECTOR, val);
+        } else if(scope) {
+            SCOPE_PRODIDERS.length && processProviders(this, SCOPE_PRODIDERS);
+        }
+    }
+
 }
 
 
 
-
-
-
-INJECT_IMPL.create = (providers?: Provider[], parent?: Injector, scope?: InjectorScope) => {
-    if (scope === 'static' || isFunction(scope)) {
-        return new StaticInjector(providers, parent, scope)
-    }
-    return parent ? new DefaultInjector(providers, parent!, scope) : new DefaultEnvironmentInjector(providers);
+INJECT_IMPL.createRoot = (providers?: Provider[]) => {
+    return new DefaultEnvironmentInjector(providers);
 };
+
+
+INJECT_IMPL.create = (parent: Injector, providers?: Provider[], scope?: InjectorScope) => {
+    if (scope === 'static' || isFunction(scope)) {
+        return new StaticInjector(parent, providers, scope)
+    }
+    return new DefaultInjector(parent, providers, scope)
+};
+
+
 
 INJECT_IMPL.isInjector = (target) => target instanceof AbstractInjector;
 
-/**
- * register core for root.
- *
- * @export
- * @param {IContainer} container
- */
-function registerCores(container: Injector, platform: Runtime) {
-    platform.set(InvocationFactory, new DefaultInvocationFactory(platform), container);
-}
 
 
 /**

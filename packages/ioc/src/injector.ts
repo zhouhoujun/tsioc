@@ -6,7 +6,7 @@ import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
-import { InvocationContext, InvokeOptions } from './context';
+import { InvocationContext, InvokeOptions, InvokeProviders } from './context';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
 import { Parameter } from './resolver';
@@ -362,34 +362,28 @@ export function isInjector(target: any): target is Injector {
  * create platform injector.
  * @param providers
 */
-export function createInjector(providers?: Provider[]): Injector;
+export function createInjector(providers?: Provider[]): EnvironmentInjector;
 /**
  * create injector.
- * @param providers 
  * @param parent 
+ * @param providers 
  * @param scope 
  */
-export function createInjector(parent: Injector, scope?: InjectorScope): Injector;
-/**
- * create injector.
- * @param providers 
- * @param parent 
- * @param scope 
- */
-export function createInjector(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
+export function createInjector(parent: Injector, providers?: Provider[], scope?: AbstractType | 'platform' | 'root' | 'static'): Injector;
 /**
  * create injector with option.
  * @param options 
  */
-export function createInjector(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
+export function createInjector(parent: Injector, options?: InvokeProviders, scope?: AbstractType | 'static'): Injector;
 export function createInjector(
-    options: Provider[] | Injector | { providers: Provider[], parent?: Injector, scope?: InjectorScope } | undefined,
-    parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
-    if (!options) {
-        options = []
+    parentOrPds?: Provider[] | Injector,
+    pdsOrOpts?: Provider[] | InvokeProviders,
+    scope?: InjectorScope): Injector {
+    if (!parentOrPds || isArray(parentOrPds)) {
+        return INJECT_IMPL.createRoot(parentOrPds);
     }
-    return isArray(options) ? INJECT_IMPL.create(options, parent as Injector, scope) :
-        (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))
+
+    return isArray(pdsOrOpts) ? INJECT_IMPL.create(parentOrPds, pdsOrOpts, scope as AbstractType | 'root' | 'static') : INJECT_IMPL.createByOptions(parentOrPds, pdsOrOpts, scope as AbstractType | 'static');
 }
 
 
@@ -398,13 +392,27 @@ export function createInjector(
  * injector factory implement.
  */
 export const INJECT_IMPL = {
+
+    createRoot(providers?: Provider[]): EnvironmentInjector {
+        throw new Exception('not implemented.')
+    },
     /**
      * create injector
-     * @param providers 
      * @param parent 
+     * @param providers 
      * @param scope 
      */
-    create(providers?: Provider[], parent?: Injector, scope?: InjectorScope): Injector {
+    create(parent: Injector, providers?: Provider[], scope?: AbstractType | 'root' | 'static'): Injector {
+        throw new Exception('not implemented.')
+    },
+
+    /**
+     * create injector
+     * @param parent
+     * @param options 
+     * @param scope 
+     */
+    createByOptions(parent: Injector, options?: InvokeProviders, scope?: AbstractType | 'static'): Injector {
         throw new Exception('not implemented.')
     },
 

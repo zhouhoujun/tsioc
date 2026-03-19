@@ -41,7 +41,7 @@ export abstract class Runtime implements OnDestroy {
      * @param token 
      * @param value 
      */
-    abstract register(injector: Injector): void;
+    abstract register(injector: Injector, scope?: InjectorScope): void;
     /**
      * set singleton value
      * @param token 
@@ -64,12 +64,12 @@ export abstract class Runtime implements OnDestroy {
      * @returns prodider type and the injector the type register in.
      */
     abstract getRegisterIn(token: Token): Injector | undefined;
-    /**
-     * set injector scope.
-     * @param scope 
-     * @param injector 
-     */
-    abstract setInjector(scope: InjectorScope, injector: Injector): void;
+    // /**
+    //  * set injector scope.
+    //  * @param scope 
+    //  * @param injector 
+    //  */
+    // abstract setInjector(scope: InjectorScope, injector: Injector): void;
     /**
      * get injector the type registered in.
      * @param scope

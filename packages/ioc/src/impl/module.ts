@@ -5,27 +5,35 @@ import { ModuleOption, ModuleRef } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { Type } from '../types';
 import { createValueRecord, mergePromise } from './common';
-import { AbstractInjector, processInjectType, processProviders, processUse } from './injector';
+import { DefaultInjector, processInjectType, processProviders, processUse } from './injector';
 import { ModuleDef } from '../metadata/type.def';
 
 
 /**
  * default modeuleRef implements {@link ModuleRef}
  */
-export class DefaultModuleRef<T = any> extends AbstractInjector implements ModuleRef<T> {
+export class DefaultModuleRef<T = any> extends DefaultInjector implements ModuleRef<T> {
     private _instance!: T;
     private _type: Type<T>;
     private _typeRefl: ClassRef<T>;
 
 
     constructor(moduleType: ClassRef<T>, parent: Injector, option: ModuleOption = {}) {
-        super(parent, option?.scope as InjectorScope ?? moduleType.type, (moduleType.getAnnotation().static || option.isStatic) !== false);
+        super(parent, undefined, option?.scope as InjectorScope ?? moduleType.type, (moduleType.getAnnotation().static || option.isStatic) !== false);
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type<T>;
 
         this.records.set(ModuleRef, createValueRecord(this));
         this.initWithOptions(option);
     }
+
+    // protected override initScope(scope?: InjectorScope): void {
+    //     this._runtime = this._parent!.getRuntime();
+    //     this._runtime.register(this, scope);
+    //     const val = createValueRecord(this);
+    //     this.records.set(Injector, val);
+                
+    // }
 
     protected initWithOptions(option: ModuleOption) {
         const dedupStack: Type[] = [];

@@ -69,11 +69,14 @@ export class DefaultRuntime extends DefaultContext implements Runtime {
         return this._design;
     }
 
-    register(injector: Injector): void {
+    register(injector: Injector, scope?: InjectorScope): void {
         const injectors = this.get(INJECTORS);
         if (injectors.indexOf(injector) < 0) {
             injectors.push(injector);
             injector.onDestroy(() => injectors.splice(injectors.indexOf(injector), 1));
+        }
+        if(scope) {
+            this.get(SCOPES).set(scope, injector);
         }
     }
 
@@ -105,11 +108,6 @@ export class DefaultRuntime extends DefaultContext implements Runtime {
             return value;
         }
         return this.map.get(token) ?? null;
-    }
-
-
-    setInjector(scope: InjectorScope, injector: Injector) {
-        this.get(SCOPES).set(scope, injector)
     }
 
     removeInjector(scope: InjectorScope): void {
