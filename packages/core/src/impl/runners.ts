@@ -144,14 +144,14 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     async run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
-            await toPromise(this._handler.handle(type, createRunContext(this.getRef(type as AbstractType)?.context ?? this.context)));
+            await toPromise(this._handler.handle(type, createRunContext(this.getRef(type as AbstractType)?.injector ?? this.context)));
         } else {
             await this.startup();
             await this.beforeRun();
             if (this._types?.length) {
                 await Promise.all(this._types
                     .filter(ty => this.getRef(ty)?.bootstrap !== false)
-                    .map((ty) => toPromise(this._handler.handle(ty, createRunContext(this.getRef(ty)?.context ?? this.context)))));
+                    .map((ty) => toPromise(this._handler.handle(ty, createRunContext(this.getRef(ty)?.injector ?? this.context)))));
             }
             await this.afterRun()
         }

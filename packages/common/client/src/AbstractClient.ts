@@ -17,7 +17,7 @@ export abstract class AbstractClient<
 > {
 
     protected get context(): InvocationContext {
-        return this.handler.context;
+        return this.handler.injector;
     }
     /**
      * client handler

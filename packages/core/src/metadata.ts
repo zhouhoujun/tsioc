@@ -190,7 +190,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
                 InjectUtil.provider(injector, {
                     provider: async (injector) => {
                         const invocation = typeRef.createInvocation(injector)
-                        await InjectUtil.useAsync(invocation.context, meta.imports!);
+                        await InjectUtil.useAsync(invocation.injector, meta.imports!);
                         injectBean(injector, typeRef, meta, invocation)
                     },
                 })
@@ -212,7 +212,7 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
     }
 
 
-    if (meta.providers) InjectUtil.inject(invocation.context, meta.providers);
+    if (meta.providers) InjectUtil.inject(invocation.injector, meta.providers);
 
     typeRef.getDefines(Bean)
         .forEach(d => {

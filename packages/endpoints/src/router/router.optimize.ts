@@ -99,7 +99,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 if (route.paths && route.handler instanceof RouteHandler) {
                     params = {};
                     const paths = route.paths;
-                    const context = route.handler.context;
+                    const context = route.handler.injector;
                     Object.keys(paths).forEach(n => {
                         params![n] = context.get(paths[n]);
                     })
@@ -144,7 +144,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             if (isRegExp(r.pattern)) return;
 
             if (r.paths && r.pathParams && r.handler instanceof RouteHandler) {
-                const context = r.handler.context;
+                const context = r.handler.injector;
                 Object.entries(r.paths).forEach(([key, val]) => {
                     const pathValues: any[] = context.get(val, []);
                     pathValues.forEach(p => {

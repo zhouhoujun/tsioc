@@ -50,7 +50,7 @@ export abstract class Server<TRequest = any, TResponse = any, TContext extends R
     extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
 
     get context() {
-        return this.handler.context
+        return this.handler.injector
     }
 
     /**

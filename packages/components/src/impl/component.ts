@@ -55,21 +55,21 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
 
         await (this.instance as OnInit).onInit?.();
-        const directives = this.context.get(DIRECTIVES) || [];
-        const components = this.context.get(COMPONENTS) || [];
+        const directives = this.injector.get(DIRECTIVES) || [];
+        const components = this.injector.get(COMPONENTS) || [];
         if (!this._elementRef) {
-            this._elementRef = this.context.getElementRef(options?.host ?? this.context.get(Renderer).createElement(def.selector ?? this.classRef.className));
+            this._elementRef = this.injector.getElementRef(options?.host ?? this.injector.get(Renderer).createElement(def.selector ?? this.classRef.className));
         }
         
         if (!def.ƿtempFac) {
             const template = def.template || await fetchTemplate(def.templateUrl!);
-            const compiler = this.context.get(TemplateCompiler);
+            const compiler = this.injector.get(TemplateCompiler);
             (def as any).ƿtempFac = compiler.compile<T>(template, { directives, components });
         }
         const host = this._elementRef;
-        const templateRef =  def.ƿtempFac!(host, this.context);
-        this.context.setValue(TemplateRef, templateRef);
-        this._hostView = templateRef.createEmbeddedView(this.instance, this.context);
+        const templateRef =  def.ƿtempFac!(host, this.injector);
+        this.injector.setValue(TemplateRef, templateRef);
+        this._hostView = templateRef.createEmbeddedView(this.instance, this.injector);
         await (this.instance as AfterViewInit).onAfterViewInit?.();
     }
 
@@ -84,9 +84,9 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
     protected override createInstance(context?: RunContext): T {
-        const instance = super.createInstance(context ?? createRunContext(this.context).setPayload(this._elementRef));
+        const instance = super.createInstance(context ?? createRunContext(this.injector).setPayload(this._elementRef));
         const def = this.classRef.getAnnotation<ComponentDef>();
-        return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
+        return reactive(instance, this.injector.get(ReactiveEffect), def.computeds);
     }
 
 }
@@ -127,7 +127,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         return providers;
     }
 
-    protected override createContext<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
+    protected override createInjector<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
         const context = new EnvironmentContext(injector, options);
         if (!context.has(ReactiveEffect, InjectFlags.Self)) {
             context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))

@@ -1,4 +1,4 @@
-import { createInvocationContext, Injectable, Injector, lang, Module, Singleton, Static } from '@tsdi/ioc';
+import { createInjector, Injectable, Injector, lang, Module, Singleton, Static } from '@tsdi/ioc';
 import expect = require('expect');
 import { Application, ApplicationContext, Start } from '../src';
 import { ConfiguraionManger, Settings, Settings2 } from './demo';
@@ -143,7 +143,7 @@ describe('app message queue', () => {
     })
 
     it('bean provide not cache in context', () => {
-        const context = createInvocationContext(ctx);
+        const context = createInjector(ctx);
         const settings = context.get(Settings) as Record<string, any>;
         expect(settings).toBeDefined();
         expect(settings.id).toEqual(3);
@@ -159,7 +159,7 @@ describe('app message queue', () => {
     })
 
     it('bean provide cache in context', () => {
-        const context = createInvocationContext(ctx);
+        const context = createInjector(ctx);
         const settings = context.get(Settings2) as Record<string, any>;
         expect(settings).toBeDefined();
         expect(settings.id).toEqual(1);

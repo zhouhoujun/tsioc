@@ -6,7 +6,7 @@ import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
-import { InvocationContext, InvokeOptions, InvokeProviders } from './context';
+import { InvokeOptions, InvokeProviders } from './context';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
 import { Parameter } from './resolver';
@@ -184,17 +184,6 @@ export interface InjectOperator {
     resolve<T>(token: Token<T>, option?: InvokeOptions): T;
     /**
      * resolve token instance with token and param provider.
-     *
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {Injector} context injector type of {@link Injector}, use to resolve with token.
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T>, context?: Injector): T;
-    /**
-     * resolve token instance with token and param provider.
      * 
      * 解析标记令牌的实例。
      *
@@ -343,7 +332,7 @@ export interface InjectOperator {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR} the returnning of invoked method.
      */
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: RunContext): TR;
 }
 
 /**

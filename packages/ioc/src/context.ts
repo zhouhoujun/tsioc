@@ -2,49 +2,9 @@ import { AbstractType } from './types';
 import { Token, TokenOf } from './tokens';
 import { ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
-import { Exception } from './exception';
 import { Injector } from './injector';
 import { isArray } from './utils/chk';
 
-
-/**
- * Type alias for InvocationContext - now just an Injector.
- *
- * InvocationContext 的类型别名 - 现在只是一个 Injector。
- *
- * @deprecated Use Injector directly instead
- */
-export type InvocationContext = Injector;
-
-
-/**
- * create invocation context.
- *
- * 创建调用上下文
- * @param parent
- * @param options
- * @returns
- */
-export function createInvocationContext(parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static'): Injector {
-    return INVOCATION_CONTEXT_IMPL.create(parent, options, scope)
-}
-
-/**
- * invocation context factory implement.
- */
-export const INVOCATION_CONTEXT_IMPL = {
-    /**
-     * create invocation context
-     * @param parent parent context or parent injector.
-     * @param options invocation options.
-     */
-    create(parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static'): Injector {
-        throw new Exception('not implemented.')
-    },
-    isContext(ctx: any): ctx is Injector {
-        throw new Exception('not implemented.')
-    }
-};
 
 /**
  * token value pair.
@@ -130,7 +90,7 @@ export interface InvocationOptions<T = any> extends InvokeOptions {
     /**
      * instance or instance factory of target type.
      */
-    instance?: T | ((context?: InvocationContext) => T);
+    instance?: T | ((injector?: Injector) => T);
     /**
     * the propertyKey method to invoke of this invocation.
     */

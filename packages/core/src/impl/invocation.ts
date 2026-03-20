@@ -17,7 +17,7 @@ export class DefaultInvocationHandler<
         readonly invocation: Invocation<T>,
         protected options: InvocationHandlerOptions<TInput>,
         readonly propertyKey?: string | symbol) {
-        super(propertyKey ? invocation.getMethodContext(propertyKey) : invocation.context, options)
+        super(propertyKey ? invocation.getMethodContext(propertyKey) : invocation.injector, options)
         this.limit = options.limit;
 
     }
@@ -67,13 +67,13 @@ export class DefaultInvocationHandler<
      */
     protected respondAs(input: TInput, res: any, context: TContext): TOutput {
         if (isString(this.options.response)) {
-            const trespond = this.context.get(TypedRespond);
+            const trespond = this.injector.get(TypedRespond);
             if (trespond) {
                 return trespond.respond(input, res, this.options.response, context);
             }
         } else if (this.options.response) {
             if (isType(this.options.response)) {
-                const respodor = this.context.get<Respond>(this.options.response);
+                const respodor = this.injector.get<Respond>(this.options.response);
                 if (respodor) return respodor.respond(input, res, context);
             } else if (isFunction(this.options.response)) {
                 return this.options.response(input, res, context)
@@ -87,7 +87,7 @@ export class DefaultInvocationHandler<
 
     equals(other: InvocationHandler): boolean {
         return this.invocation.type === other.invocation.type
-            && this.context === other.context
+            && this.injector === other.injector
             && this.options.response === (other as DefaultInvocationHandler).options.response
             && this.propertyKey === (other as DefaultInvocationHandler).propertyKey;
     }

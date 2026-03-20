@@ -1,6 +1,6 @@
 import {
     Injector, ProvdierOf, Type, toPromise, Exception, toProvider, AbstractType, getType, Token,
-    InvocationContext, createInvocationContext, ArgumentException, isArray, isFunction, composeInterceptors, chainFactory,
+    createInjector, ArgumentException, isArray, isFunction, composeInterceptors, chainFactory,
     some, InjectUtil, invokeTail, hasProps, composeHandlers, Provider
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -26,13 +26,13 @@ export class ConfigableHandler<
     private _guards?: GuardLike[] | null;
 
     get ready() {
-        return this.context.ready;
+        return this.injector.ready;
     }
 
     private _filterResolver?: FilterResolver;
     get filterResolver() {
         if (!this._filterResolver) {
-            this._filterResolver = this.context.get(FilterResolver);
+            this._filterResolver = this.injector.get(FilterResolver);
         }
         return this._filterResolver;
     }
@@ -40,7 +40,7 @@ export class ConfigableHandler<
     private _interceptorResolver?: InterceptorResolver;
     get interceptorResolver() {
         if (!this._interceptorResolver) {
-            this._interceptorResolver = this.context.get(InterceptorResolver);
+            this._interceptorResolver = this.injector.get(InterceptorResolver);
         }
         return this._interceptorResolver;
     }
@@ -48,7 +48,7 @@ export class ConfigableHandler<
 
 
     constructor(
-        readonly context: InvocationContext,
+        readonly injector: Injector,
         protected options: ConfigableHandlerOptions) {
         this.chains = new Map();
         this.initOptions(options);
@@ -56,7 +56,7 @@ export class ConfigableHandler<
     }
 
     protected onReady(): Promise<void> {
-        return this.context.ready;
+        return this.injector.ready;
     }
 
     protected initOptions(options: ConfigableHandlerOptions): void {
@@ -96,7 +96,7 @@ export class ConfigableHandler<
             this.resetBackend()
         }
         if (options.pipes) {
-            InjectUtil.inject(this.context, options.pipes);
+            InjectUtil.inject(this.injector, options.pipes);
         }
         if (options.guards) {
             this.regMulti(this.options.guardsToken!, options.guards);
@@ -253,7 +253,7 @@ export class ConfigableHandler<
     }
 
     protected generateBackendFn() {
-        const handlers = this.context.get(this.options.backendToken!);
+        const handlers = this.injector.get(this.options.backendToken!);
         if (!handlers?.length) throw new ArgumentException('no backend handler.');
         return composeHandlers(handlers);
 
@@ -263,7 +263,7 @@ export class ConfigableHandler<
      *  get filters. 
      */
     protected getFilters(): FilterLike<TInput, TOutput>[] {
-        return this.options.filtersToken ? this.context.get(this.options.filtersToken, []) : [];
+        return this.options.filtersToken ? this.injector.get(this.options.filtersToken, []) : [];
     }
 
     /**
@@ -271,7 +271,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getInterceptors(): InterceptorLike<TInput, TOutput>[] {
-        return this.context.get(this.options.interceptorsToken!, []);
+        return this.injector.get(this.options.interceptorsToken!, []);
     }
 
 
@@ -280,22 +280,22 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getGuards(): GuardLike[] | null {
-        return this.options.guardsToken ? this.context.get(this.options.guardsToken, null) : null;
+        return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
     }
 
     protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number) {
         const multi = true;
         if (isArray(providers)) {
-            InjectUtil.inject(this.context, providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
+            InjectUtil.inject(this.injector, providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
         } else {
-            InjectUtil.provider(this.context, toProvider(token, providers, { multi, multiOrder }));
+            InjectUtil.provider(this.injector, toProvider(token, providers, { multi, multiOrder }));
         }
     }
 
     protected clear() {
-        InjectUtil.unregister(this.context, this.options.interceptorsToken!);
-        InjectUtil.unregister(this.context, this.options.guardsToken!);
-        InjectUtil.unregister(this.context, this.options.filtersToken!);
+        InjectUtil.unregister(this.injector, this.options.interceptorsToken!);
+        InjectUtil.unregister(this.injector, this.options.guardsToken!);
+        InjectUtil.unregister(this.injector, this.options.filtersToken!);
         this.chain = undefined;
         this.backendFn = undefined;
         this.chains?.clear();
@@ -311,7 +311,7 @@ export class ConfigableHandler<
 /**
  * create configable hanlder with options
  */
-export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, options: ConfigableHandlerOptions<TInput>): ConfigableHandler<TInput, TOutput>;
+export function createHandler<TInput, TOutput>(context: Injector, options: ConfigableHandlerOptions<TInput>): ConfigableHandler<TInput, TOutput>;
 
 /**
  * create configable hanlder with param options
@@ -322,7 +322,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
  * @param filtersToken 
  */
 export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>(
-    context: Injector | InvocationContext,
+    context: Injector,
     backend: ProvdierOf<HandlerLike<TInput, TOutput>>,
     backendToken: Token<Handler<TInput, TOutput>[]>,
     interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
@@ -338,7 +338,7 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
     type?: Type
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(
-    context: Injector | InvocationContext,
+    context: Injector,
     arg: ConfigableHandlerOptions<TInput> | ProvdierOf<HandlerLike<TInput, TOutput>>,
     backendToken?: Token<Handler<TInput, TOutput>[]>,
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
@@ -371,7 +371,7 @@ export function createHandler<TInput, TOutput>(
         }
     }
     normalizeConfigableHandlerOptions(options);
-    return new Type(createInvocationContext(context, options, Type), options)
+    return new Type(createInjector(context, options, Type), options)
 }
 
 export function normalizeConfigableHandlerOptions(options: { providers?: Provider[], execptionHandlers?: Type<any> | Type[] | null }): void {

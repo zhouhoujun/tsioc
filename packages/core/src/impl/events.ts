@@ -133,7 +133,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
-        context ??= createRunContext(this.handler.context ?? this.injector);
+        context ??= createRunContext(this.handler.injector ?? this.injector);
         context.set(WITH_SELF, true);
         let res = await this.downward(event, context);
         if (res === false || !event.propagation) return false;

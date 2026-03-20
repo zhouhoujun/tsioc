@@ -45,9 +45,9 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
     }
 
     protected override createInstance(context?: RunContext): T {
-        const instance = super.createInstance(context ?? createRunContext(this.context).setPayload(this._elementRef));
+        const instance = super.createInstance(context ?? createRunContext(this.injector).setPayload(this._elementRef));
         const def = this.classRef.getAnnotation<DirectiveDef>();
-        return reactive(instance, this.context.get(ReactiveEffect), def.computeds);
+        return reactive(instance, this.injector.get(ReactiveEffect), def.computeds);
     }
 
 }
@@ -72,7 +72,7 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
         return injector;
     }
 
-    protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {
+    protected override createInjector<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {
         const context = new EnvironmentContext(injector, options);
         // if (!context.has(ReactiveEffect, InjectFlags.Self)) {
         //     context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))

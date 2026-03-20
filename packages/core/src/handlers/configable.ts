@@ -1,4 +1,4 @@
-import { ProvdierOf, StaticProvider, Type, Abstract, Token, InvokeProviders, InvocationContext, isPlainObject } from '@tsdi/ioc';
+import { ProvdierOf, StaticProvider, Type, Abstract, Token, InvokeProviders, isPlainObject, Injector } from '@tsdi/ioc';
 import { GuardLike } from '../guard';
 import { InterceptorLike } from '../interceptor';
 import { PipeTransform } from '../pipes/pipe';
@@ -41,7 +41,7 @@ export abstract class AbstractConfigableHandler<
     TOutput = any,
     TContext extends RunContext = RunContext> implements Handler<TInput, TOutput, TContext> {
 
-    abstract get context(): InvocationContext;
+    abstract get injector(): Injector;
 
     /**
      * append handler options.

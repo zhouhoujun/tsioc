@@ -1,8 +1,8 @@
 import { Observable } from 'rxjs';
-import { InvocationContext, InvocationOptions, InvokeOptions } from './context';
+import { InvocationOptions, InvokeOptions } from './context';
 import { ClassRef } from './metadata/class';
 import { AbstractType } from './types';
-import { MethodType } from './injector';
+import { Injector, MethodType } from './injector';
 import { DestroyCallback } from './destroy';
 import { RunContext } from './handlers/contexts';
 
@@ -19,7 +19,7 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  *
  * 用于执行操作调用的接口。
  */
-export abstract class Invocation<T = any, TRes = any, TC extends InvocationContext = InvocationContext> {
+export abstract class Invocation<T = any, TRes = any, TInj extends Injector = Injector> {
     /**
      * run when bootstrap or not
      */
@@ -42,29 +42,29 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
     abstract get instance(): T;
 
     /**
-     * `InvocationContext` of invocation invoker.
+     * `Injector` of invocation invoker.
      * 
      * 调用类方法的上下文环境
      */
-    abstract get context(): TC;
+    abstract get injector(): TInj;
 
-    abstract getMethodContext(propertyKey: string | symbol): TC;
+    abstract getMethodContext(propertyKey: string | symbol): TInj;
 
     /**
-     * Invoke the underlying operation using the class given {@link InvocationContext}.
+     * Invoke the underlying operation using the class given {@link Injector}.
      * @param context the context to use to invoke the operation
      */
     abstract invoke(): TRes;
     /**
-     * Invoke the underlying operation using the class given {@link InvocationContext}.
+     * Invoke the underlying operation using the class given {@link Injector}.
      * @param args the arguments to use to invoke the operation
      */
     abstract invoke(args: any[]): TRes;
     /**
-     * Invoke the underlying operation using the given {@link InvocationContext}.
+     * Invoke the underlying operation using the given {@link Injector}.
      * @param context the context to use to invoke the operation
      */
-    abstract invoke(context: TC): TRes;
+    abstract invoke(context?: TInj): TRes;
     /**
      * Invoke the underlying operation using the given {@link RunContext}.
      * @param context the context to use to invoke the operation
@@ -81,11 +81,11 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
      */
     abstract invoke(method: MethodType<T>): TRes;
     /**
-     * Invoke the underlying operation using the given {@link InvocationContext}.
+     * Invoke the underlying operation using the given {@link Injector}.
      * @param method method name.
      * @param context the context to use to invoke the operation
      */
-    abstract invoke(method: MethodType<T>, context?: TC): TRes;
+    abstract invoke(method: MethodType<T>, context?: TInj): TRes;
     /**
      * Invoke the underlying operation using the given {@link RunContext}.
      * @param method method name.

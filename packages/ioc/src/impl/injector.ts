@@ -4,12 +4,12 @@ import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, isUndefined, isBoolean } from '../utils/chk';
 import { getType, getTypeName, isType } from '../metadata/type';
-import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR, RECORDS } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR, RECORDS, createInjector } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, getClassRef } from '../metadata/class';
 import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders, DependLike } from '../providers';
-import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
+import { hasContextOptions, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -462,17 +462,6 @@ export namespace InjectUtil {
      *
      * @template T
      * @param {Token<T>} token the token to resolve.
-     * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
-     * @returns {T}
-     */
-    export function resolve<T>(injector: Injector, token: Token<T>, context?: InvocationContext): T;
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
      * @param {RunContext} context resolve context type of {@link RunContext}, use to resolve with token.
      * @returns {T}
      */
@@ -507,18 +496,19 @@ export namespace InjectUtil {
                 context = arg1;
                 isCtx = true;
             }
-            if (INVOCATION_CONTEXT_IMPL.isContext(arg1)) {
-                context = createRunContext(arg1);
-                isCtx = true;
-            } else if (isArray(arg1)) {
-                context = arg1.length ? createRunContext(createInvocationContext(injector, { isResolve, providers: arg1 })) : undefined;
+            // if (INVOCATION_CONTEXT_IMPL.isContext(arg1)) {
+            //     context = createRunContext(arg1);
+            //     isCtx = true;
+            // } 
+            else if (isArray(arg1)) {
+                context = arg1.length ? createRunContext(createInjector(injector, {  providers: arg1 })) : undefined;
             } else if (arg1.provide) {
-                context = createRunContext(createInvocationContext(injector, { isResolve, providers: [arg1] }));
+                context = createRunContext(createInjector(injector, { providers: [arg1] }));
             } else if (hasContextOptions(arg1)) {
-                context = createRunContext(createInvocationContext(injector, { isResolve, ...arg1 }));
+                context = createRunContext(createInjector(injector, { isResolve, ...arg1 }));
             }
         } else {
-            context = createRunContext(createInvocationContext(injector, { isResolve, providers: args }));
+            context = createRunContext(createInjector(injector, { providers: args }));
         }
 
         const result = injector.get(token, null, InjectFlags.Resolve, context);
@@ -702,7 +692,7 @@ export namespace InjectUtil {
      * @param {...Provider[]} providers ...params of {@link Provider}.
      * @returns {TR} the returnning of invoked method.
      */
-    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     /**
      * invoke method.
      *
@@ -714,7 +704,7 @@ export namespace InjectUtil {
      * @param {Provider[]} providers array of {@link Provider}.
      * @returns {TR} the returnning of invoked method.
      */
-    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     /**
      * invoke method.
      *
@@ -725,7 +715,7 @@ export namespace InjectUtil {
      * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
      * @returns {TR} the returnning of invoked method.
      */
-    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
+    export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
     /**
      * invoke method.
      * 
@@ -736,15 +726,15 @@ export namespace InjectUtil {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR} the returnning of invoked method.
      */
-    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    export function invoke<T, TR = any>(injector: AbstractInjector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+    export function invoke<T, TR = any>(injector: Injector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: RunContext): TR;
+    export function invoke<T, TR = any>(injector: Injector, target: T | Token<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         assertNotDestroyed(injector);
         let providers: Provider[] | undefined;
-        let context: InvocationContext | undefined;
+        let context: RunContext | undefined;
         let option: any;
         if (args.length === 1) {
             const arg0 = args[0];
-            if (INVOCATION_CONTEXT_IMPL.isContext(arg0)) {
+            if (arg0 instanceof RunContext) {
                 context = arg0;
                 providers = [];
             } else if (isArray(arg0)) {
@@ -763,7 +753,7 @@ export namespace InjectUtil {
 
         if (!context) {
             option = { ...option, providers };
-            context = createInvocationContext(injector, option);
+            injector =  createInjector(injector, option);
         }
         if (isTypeObject(target)) {
             targetClass = getType(target);
@@ -782,7 +772,7 @@ export namespace InjectUtil {
         }
         tgRefl = tgRefl ?? getClassRef(targetClass);
 
-        return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
+        return tgRefl.invoke(tgRefl.getMethodName(propertyKey), injector, instance, context)
 
     }
 }
@@ -855,7 +845,7 @@ export class DefaultInjectOperator implements InjectOperator {
 
 
     resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
-    resolve<T>(token: Token<T>, context?: InvocationContext): T;
+    resolve<T>(token: Token<T>, context?: RunContext): T;
     resolve<T>(token: Token<T>, providers?: Provider[]): T;
     resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     resolve<T>(token: Token<T>, ...args: any[]) {
@@ -864,7 +854,7 @@ export class DefaultInjectOperator implements InjectOperator {
 
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: RunContext): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         return InjectUtil.invoke(this.injector, target, propertyKey, ...args);

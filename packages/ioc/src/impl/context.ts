@@ -2,7 +2,7 @@ import { AbstractType } from '../types';
 import { deepTypeChain } from '../utils/lang';
 import { getType } from '../metadata/type';
 import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
-import { TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
+import { TargetInvokeArguments } from '../context';
 import { InjectFlags, Token } from '../tokens';
 import { INJECT_IMPL, Injector, InjectorScope, isInjector } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
@@ -145,12 +145,4 @@ export class ContextInjector<TParent extends Injector = Injector> extends Abstra
 
 INJECT_IMPL.createByOptions = (parent, options, scope) => {
     return new ContextInjector(parent, options, scope)
-}
-
-INVOCATION_CONTEXT_IMPL.create = (parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
-    return new ContextInjector(parent, options, scope)
-}
-
-INVOCATION_CONTEXT_IMPL.isContext = (ctx: any): ctx is Injector => {
-    return isInjector(ctx);
 }

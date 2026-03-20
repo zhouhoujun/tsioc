@@ -1,4 +1,4 @@
-import { Abstract, composeInterceptors, createInvocationContext, Exception, Handler, Injector, InterceptingHandler, InterceptorLike, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
+import { Abstract, composeInterceptors, createInjector, Exception, Handler, Injector, InterceptingHandler, InterceptorLike, InvokeProviders, ProvdierOf, StaticProvider, Token, toObservable, Type } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandler, GuardLike, normalizeConfigableHandlerOptions, PipeTransform } from '@tsdi/core';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { RequestContext } from './context';
@@ -171,7 +171,7 @@ export class DefaultRequestHandler<
     protected override generateInterceptorFn(fns: InterceptorLike[]): RequestInterceptorFn {
         const options = this.options as RequestHandlerOptions;
         if (options.side === TransferSide.server) {
-            const transfers = this.context.get(options.transfersToken!);
+            const transfers = this.injector.get(options.transfersToken!);
             fns.unshift(...transfers)
         }
         return composeInterceptors(fns);
@@ -181,7 +181,7 @@ export class DefaultRequestHandler<
         const handler = super.generateBackendFn() as RequestHandlerFn;
         const options = this.options as RequestHandlerOptions;
         if (options.side === TransferSide.client) {
-            const transfers = this.context.get(options.transfersToken!);
+            const transfers = this.injector.get(options.transfersToken!);
             if (transfers?.length) {
                 const interceptorFn = composeInterceptors(transfers) as RequestInterceptorFn;
                 return (req: TReq, context: RequestContext) => interceptorFn(req, handler, context);
@@ -210,6 +210,6 @@ export function createRequestHandler<TReq = any, TRes = any>(injector: Injector,
     normalizeConfigableHandlerOptions(options);
     options.enableTypeChain ??= true;
     const Type = options.handlerType ?? DefaultRequestHandler;
-    return new Type(createInvocationContext(injector, options, options.handlerType), options) as ConfigableRequestHandler<TReq, TRes>;
+    return new Type(createInjector(injector, options, options.handlerType), options) as ConfigableRequestHandler<TReq, TRes>;
 }
 
