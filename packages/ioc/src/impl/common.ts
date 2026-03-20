@@ -43,9 +43,9 @@ export function resolveParameters(injector: Injector, params?: Parameter[], cont
         resolver = getResolver(injector);
     }
 
-    const args: any[] = [];
+    const args = new Array(params.length);
     for (let i = 0; i < params.length; i++) {
-        args.push(resolver.resolve(params[i], context as RunContext));
+        args[i] = resolver.resolve(params[i], context as RunContext);
     }
 
     return args;
@@ -58,18 +58,19 @@ export function resolveParameters(injector: Injector, params?: Parameter[], cont
 export function resolveArgs(injector: Injector, deps?: DependLike[], context?: RunContext, resolver?: Resolver): any[] {
     if (!deps || !deps.length) return [];
 
+    let resolverRef = resolver;
+    if (!resolverRef) {
+        context ??= createRunContext(injector);
+        resolverRef = getResolver(injector);
+    }
 
-
-    const args: any[] = [];
+    const args = new Array(deps.length);
+    let idx = 0;
     for (const arg of deps) {
         if (isParameter(arg)) {
-            if (!resolver) {
-                context ??= createRunContext(injector);
-                resolver = getResolver(injector);
-            }
-            args.push(resolver.resolve(arg, context!));
+            args[idx++] = resolverRef.resolve(arg, context!);
         } else {
-            args.push(resolveArg(injector, arg, context));
+            args[idx++] = resolveArg(injector, arg, context);
         }
     }
 
