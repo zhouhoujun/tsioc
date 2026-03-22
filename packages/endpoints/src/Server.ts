@@ -1,4 +1,4 @@
-import { Abstract, InvocationContext, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
+import { Abstract, Injector, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
 import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, isHandlerOptions } from '@tsdi/core';
 import { RequestContext, RequestHandler, RequestInterceptorLike, Transport, RequestHandlerOptions } from '@tsdi/common';
 import { ServiceHandler } from './ServiceHandler';
@@ -12,9 +12,9 @@ import { Observable } from 'rxjs';
 export abstract class MicroService<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext> {
 
     /**
-     * context
+     * injector
      */
-    abstract get context(): InvocationContext;
+    abstract get injector(): Injector;
     /**
      * micro service handler
      */
@@ -23,7 +23,7 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
 
     @Runner()
     async start() {
-        if (this.context.ready) await this.context.ready;
+        if (this.injector.ready) await this.injector.ready;
         return await this.onStart()
     }
 
@@ -49,7 +49,7 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
 export abstract class Server<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
     extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
 
-    get context() {
+    get injector() {
         return this.handler.injector
     }
 

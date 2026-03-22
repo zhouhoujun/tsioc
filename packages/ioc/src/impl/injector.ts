@@ -215,6 +215,20 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         }
     }
 
+    
+    /**
+     * set value.
+     *
+     * 设置上下文中标记指令的实例值
+     * @param token token
+     * @param value value for the token.
+     */
+    setValue<T>(token: Token<T>, value: T) {
+        this.assertNotDestroyed();
+        this.records.set(token, createValueRecord(value));
+        return this
+    }
+
     /**
      * has destoryed or not.
      */

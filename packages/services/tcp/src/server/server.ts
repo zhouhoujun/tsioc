@@ -104,8 +104,8 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
         }
 
         if (!this.serv) throw new InternalServerException();
-        const context = this.context;
-        context.setValue(Logger, this.logger);
+        const injector = this.injector;
+        injector.setValue(Logger, this.logger);
 
         this.serv.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(Events.ERROR, (err) => this.logger.error(err));
@@ -122,7 +122,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
 
         if (!this.options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
-            await context.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, this.options.transport, this));
+            await injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, this.options.transport, this));
         }
 
         if (!bindServer) {
@@ -150,7 +150,7 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
     }
 
     private handleMessage(socket: tls.TLSSocket | net.Socket) {
-        this.handler.handle(socket, createRequestContext(this.context, [[SOCKET, socket]]))
+        this.handler.handle(socket, createRequestContext(this.injector, [[SOCKET, socket]]))
             .pipe(
                 takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1)))
             ).subscribe();

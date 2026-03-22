@@ -1,4 +1,4 @@
-import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Exception, Context, isNil, isString, Injector } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, PAYLOAD_KEY, StreamAdapter, REQUEST, Incoming } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
@@ -16,7 +16,7 @@ export abstract class AbstractClient<
     TReqOptions extends RequestOptions = RequestOptions
 > {
 
-    protected get context(): InvocationContext {
+    protected get injector(): Injector {
         return this.handler.injector;
     }
     /**
@@ -253,7 +253,7 @@ export abstract class AbstractClient<
         if (isNil(req)) {
             return throwError(() => new ArgumentException('Invalid message'))
         }
-        return defer(() => this.context.ready)
+        return defer(() => this.injector.ready)
             .pipe(
                 mergeMap(() => this.connect()),
                 catchError((err, caught) => {
@@ -322,7 +322,7 @@ export abstract class AbstractClient<
                     case 'stream':
                         return res$.pipe(map((res: Response<any>) => {
                             // Validate that the body is a ReadableStream.
-                            if (res.body !== null && !(this.context.get(StreamAdapter).isReadable(res.body))) {
+                            if (res.body !== null && !(this.injector.get(StreamAdapter).isReadable(res.body))) {
                                 throw new Exception('Response is not a ReadableStream.')
                             }
                             return res.body
@@ -350,7 +350,7 @@ export abstract class AbstractClient<
     }
 
     protected createContext(): RequestContext {
-        const context = createRequestContext(this.context);
+        const context = createRequestContext(this.injector);
         // context.setProtocol(this.getOptions().protocol);
         return context;
     }
@@ -406,7 +406,7 @@ export abstract class AbstractClient<
 
     @Shutdown()
     close(): Promise<void> {
-        this.context.onDestroy();
+        this.injector.onDestroy();
         return this.onShutdown();
     }
 

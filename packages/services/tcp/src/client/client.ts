@@ -88,7 +88,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         if (isString(pattern)) {
             return new TcpRequest(pattern, null, options, defaultMethod);
         } else {
-            return new TcpRequest(this.context.get(PatternFormatter).format(pattern), pattern, options, defaultMethod);
+            return new TcpRequest(this.injector.get(PatternFormatter).format(pattern), pattern, options, defaultMethod);
         }
     }
 

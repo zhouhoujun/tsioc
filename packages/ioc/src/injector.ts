@@ -50,7 +50,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 
      * 上级容器。
      */
-    abstract getParent(): Injector | null;
+    abstract getParent(): Injector;
     /**
      * get runtime.
      * 
@@ -109,6 +109,15 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param flags InjectFalgs 
      */
     abstract resolve<T>(token: Token<T>, falgs?: InjectFlags, context?: RunContext): T;
+
+    /**
+     * set value.
+     *
+     * 设置上下文中标记指令的实例值
+     * @param token token
+     * @param value value for the token.
+     */
+    abstract setValue<T>(token: Token<T>, value: T): this;
     /**
      * injector has destoryed or not.
      */
