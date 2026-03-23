@@ -37,40 +37,38 @@ function isRecord(target: any): target is InjectorRecord {
 export function resolveParameters(injector: Injector, params?: Parameter[], context?: RunContext, resolver?: Resolver) {
     if (!params || !params.length) return [];
 
-    context ??= createRunContext(injector);
+    if (!context) {
+        context = createRunContext(injector);
+    }
 
     if (!resolver) {
         resolver = getResolver(injector);
     }
 
-    const args = new Array(params.length);
-    for (let i = 0; i < params.length; i++) {
-        args[i] = resolver.resolve(params[i], context as RunContext);
+    const len = params.length;
+    const args = new Array(len);
+    for (let i = 0; i < len; i++) {
+        args[i] = resolver.resolve(params[i], context);
     }
 
     return args;
 }
 
 
-/**
- * 辅助函数：为工厂函数调用解析参数
- */
 export function resolveArgs(injector: Injector, deps?: DependLike[], context?: RunContext, resolver?: Resolver): any[] {
     if (!deps || !deps.length) return [];
 
-    let resolverRef = resolver;
-    if (!resolverRef) {
-        context ??= createRunContext(injector);
-        resolverRef = getResolver(injector);
-    }
+    let ctx = context ?? createRunContext(injector);
+    let resolverRef = resolver ?? getResolver(injector);
 
-    const args = new Array(deps.length);
-    let idx = 0;
-    for (const arg of deps) {
+    const len = deps.length;
+    const args = new Array(len);
+    for (let i = 0; i < len; i++) {
+        const arg = deps[i];
         if (isParameter(arg)) {
-            args[idx++] = resolverRef.resolve(arg, context!);
+            args[i] = resolverRef.resolve(arg, ctx);
         } else {
-            args[idx++] = resolveArg(injector, arg, context);
+            args[i] = resolveArg(injector, arg, ctx);
         }
     }
 
@@ -87,10 +85,11 @@ function resolveArg(injector: Injector, arg: DependLike, context?: RunContext): 
         return value;
     } else {
         let depFlags = InjectFlags.Default;
-        let depToken: Token
+        let depToken: Token;
         if (isArray(arg)) {
             depToken = arg[0];
-            for (let j = 1; j < arg.length; j++) {
+            const len = arg.length;
+            for (let j = 1; j < len; j++) {
                 const d = arg[j];
                 if (isNumber(d)) {
                     depFlags |= d;
@@ -99,12 +98,10 @@ function resolveArg(injector: Injector, arg: DependLike, context?: RunContext): 
         } else {
             depToken = arg as Token;
         }
-        if (context?.has(token)) return context.get(token);
+        if (context?.has(depToken)) return context.get(depToken);
 
         return injector.get(depToken, undefined, depFlags);
-
     }
-
 }
 
 
@@ -132,51 +129,41 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, injector: Inje
 }
 
 
-/**
- * 解析令牌
- */
 export function resolveToken(token: Token, rd: InjectorRecord, injector: Injector,
     notFoundValue: any, flags: InjectFlags, context?: RunContext): any {
-    // if (rd.value === CIRCULAR) {
-    //     throw new CircularDependencyException()
-    // }
-    // 如果已有值且不是多提供者，直接返回
-    if (!rd.multi && rd.value !== undefined && rd.value !== LAZY) {
+    const multi = rd.multi;
+    if (!multi && rd.value !== undefined && rd.value !== LAZY) {
         return rd.value;
     }
 
-    // 处理多提供者
-    if (rd.multi) {
-        // 获取父注入器中的值
-        const multi: any[] = []
+    if (multi) {
         const parent = injector?.getParent();
-        if (parent && !(flags & InjectFlags.Self)) {
-            const values = parent.get(token, null, flags, context);
+        const hasParent = parent && !(flags & InjectFlags.Self);
+        const values = hasParent ? parent.get(token, null, flags, context) : null;
+        const factory = rd.factory;
+        
+        if (values || factory) {
+            const result: any[] = [];
             if (values) {
-                multi.push(...values);
+                result.push(...values);
             }
+            if (factory) {
+                result.push(...factory(context, flags));
+            }
+            return result;
         }
-
-        if (rd.factory) { // 如果有工厂函数，执行并添加结果
-            const result = rd.factory(context, flags);
-            multi.push(...result);
-        }
-
-
         return multi;
     }
 
-    // 执行工厂函数获取值
-    if (rd.factory) {
-        const result = rd.factory(context, flags);
-        // 如果是静态提供者，缓存结果
+    const factory = rd.factory;
+    if (factory) {
+        const result = factory(context, flags);
         if (rd.value === LAZY) {
             rd.value = result;
         }
         return result;
     }
 
-    // 返回默认值
     return notFoundValue;
 }
 

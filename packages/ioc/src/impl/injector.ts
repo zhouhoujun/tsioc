@@ -107,21 +107,25 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
 
-        // 检查单例缓存
-        if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
+        if (!(flags & InjectFlags.NonSingleton)) {
+            const singleton = runtime.get(token);
+            if (singleton !== null) return singleton;
+        }
+
         if (notFoundValue === undefined) {
             notFoundValue = this.defaultNotFound();
         }
-        // 检查当前注入器记录
-        const record = this.records.get(token);
-        if (record && !(flags & (InjectFlags.SkipSelf | InjectFlags.Host))) {
-            const value = tryResolveToken(token, record, this,
-                notFoundValue,
-                flags, context);
-            if (value !== THROW_FLAGE) return value;
+
+        if (!(flags & (InjectFlags.SkipSelf | InjectFlags.Host))) {
+            const record = this.records.get(token);
+            if (record) {
+                const value = tryResolveToken(token, record, this,
+                    notFoundValue,
+                    flags, context);
+                if (value !== THROW_FLAGE) return value;
+            }
         }
 
-        // 父注入器查找
         if (this._parent && !(flags & InjectFlags.Self)) {
             const value = this._parent.get(
                 token,

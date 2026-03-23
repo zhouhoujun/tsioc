@@ -74,7 +74,7 @@ export type ParameterLike = Token | [Token, ...InjectFlags[]] | Parameter;
 export type Parameters = ParameterLike[] | null;
 
 export function isParameter(target: any): target is Parameter {
-    return isObject(target) && (target.provider || target.type || (target.name && target.propertyKey))
+    return target != null && typeof target === 'object' && (target.provider || target.type || (target.name && target.propertyKey));
 }
 
 export type ResolveHandler<TInput extends Parameter = Parameter, TOuptut = any> = Handler<TInput, TOuptut, RunContext>;

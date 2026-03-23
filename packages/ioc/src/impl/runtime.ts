@@ -94,20 +94,15 @@ export class DefaultRuntime extends DefaultContext implements Runtime {
         return this
     }
 
-    /**
-     * Retrieve the value associated with the given token.
-     *
-     * @param token The reference to an instance of `Token`.
-     *
-     * @returns The stored value or default if one is defined.
-     */
     override get<T>(token: Token<T> | ContextToken<T>): T {
-        if (token instanceof ContextToken && !this.map.has(token)) {
-            const value = token.defaultValue();
-            if (!isNil(value)) this.map.set(token, value);
-            return value;
+        const val = this.map.get(token);
+        if (val !== undefined) return val as T;
+        if (token instanceof ContextToken) {
+            const defVal = token.defaultValue();
+            if (!isNil(defVal)) this.map.set(token, defVal);
+            return defVal;
         }
-        return this.map.get(token) ?? null;
+        return null as T;
     }
 
     removeInjector(scope: InjectorScope): void {

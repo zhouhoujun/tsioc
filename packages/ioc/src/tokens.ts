@@ -42,46 +42,47 @@ export function token<T = any>(desc: string, providedIn?: AbstractType | 'root' 
     return new InjectToken<T>(desc, providedIn);
 }
 
-/**
- * token mappings.
- */
-const tokens = new Map<Token, Map<string, Token>>();
+const tokens = new Map<string, Token>();
+const tokenByAlias = new WeakMap<object, Map<string, Token>>();
 
-/**
- * get token with alias.
- * @param token token
- * @param alias the alias of token.
- */
+function getTokenKey(token: Token, alias: string): string {
+    if (typeof token === 'string') {
+        return `str:${token}:${alias}`;
+    }
+    if (token instanceof InjectToken) {
+        return `inj:${token.toString()}:${alias}`;
+    }
+    return `typ:${getTypeName(token)}:${alias}`;
+}
+
 export function getToken<T>(token: Token<T>, alias?: string): Token<T>;
-/**
- * get token with alias.
- * @param token token
- * @param alias the alias of token.
- */
 export function getToken<T>(token: Token, alias?: string): Token<T>;
-/**
- * get token with alias.
- * @param token token
- * @param alias the alias of token.
- */
 export function getToken(token: Token, alias?: string): Token<any> {
     if (!alias) return token;
 
-    let maps = tokens.get(token);
-    if (!maps) {
-        maps = new Map();
-        tokens.set(token, maps);
-    }
-    let atk = maps.get(alias);
-    if (!atk) {
-        if (token instanceof InjectToken) {
-            atk = token.to(alias);
-        } else {
-            const type = isString(token) ? token : getTypeName(token);
-            atk = new InjectToken(`${type}_${alias}`);
+    const key = getTokenKey(token, alias);
+    const cached = tokens.get(key);
+    if (cached) return cached;
+
+    let maps: Map<string, Token> | undefined;
+    if (typeof token !== 'string') {
+        maps = tokenByAlias.get(token as object);
+        if (!maps) {
+            maps = new Map();
+            tokenByAlias.set(token as object, maps);
         }
-        maps.set(alias, atk);
     }
+
+    let atk: Token;
+    if (token instanceof InjectToken) {
+        atk = token.to(alias);
+    } else {
+        const type = isString(token) ? token : getTypeName(token);
+        atk = new InjectToken(`${type}_${alias}`);
+    }
+
+    tokens.set(key, atk);
+    maps?.set(alias, atk);
 
     return atk;
 }

@@ -6,9 +6,6 @@ import { isNil } from '../utils/chk';
 import { Context, ContextToken } from '../context';
 
 
-/**
- * custom context.
- */
 export class DefaultContext extends Context {
 
     private _type: Type;
@@ -18,7 +15,7 @@ export class DefaultContext extends Context {
     constructor(
         contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>,
         entries?: Iterable<readonly [Token | ContextToken, any]>,
-        inherit = true //?: boolean
+        inherit = true
     ) {
         super();
         if (contextOrEntries instanceof Context) {
@@ -77,11 +74,12 @@ export class DefaultContext extends Context {
      */
     get<T>(token: Token<T> | ContextToken<T>, flags = InjectFlags.Default): T {
         if (!(flags & (InjectFlags.SkipSelf | InjectFlags.Host))) {
-            if (this.map.has(token)) return this.map.get(token) as T;
-            const val = this.getTokenValue(token, flags);
-            if (!isNil(val)) {
-                this.set(token, val);
-                return val;
+            const val = this.map.get(token);
+            if (val !== undefined || this.map.has(token)) return val as T;
+            const resolved = this.getTokenValue(token, flags);
+            if (!isNil(resolved)) {
+                this.set(token, resolved);
+                return resolved;
             }
         }
 
@@ -180,12 +178,20 @@ const RUN_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) 
  */
 export class RunContext extends DefaultContext {
 
+    private _injector?: Injector;
+
     getInjector() {
-        return this.get(Injector)
+        let inj = this._injector;
+        if (!inj) {
+            inj = this.get(Injector);
+            this._injector = inj;
+        }
+        return inj;
     }
 
     setInjector(injector: Injector): this {
-        return this.set(Injector, injector)
+        this._injector = injector;
+        return this.set(Injector, injector);
     }
 
     getPayload<T = any>(): T {
@@ -205,7 +211,6 @@ export class RunContext extends DefaultContext {
     getFailed(): (target: AbstractType, propertyKey: string) => void {
         return this.get(RUN_FAILED);
     }
-
 
 }
 

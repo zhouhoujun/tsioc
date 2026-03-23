@@ -569,12 +569,19 @@ export class ClassRef<T = any> {
     private descriptos!: Record<string | symbol, TypedPropertyDescriptor<any>>;
     getPropertyDescriptors(): Record<string | symbol, TypedPropertyDescriptor<any>> {
         if (!this.descriptos) {
-            const descriptos = this.parent ? { ...this.parent.getPropertyDescriptors() } : {};
-            forIn(Object.getOwnPropertyDescriptors(this.type.prototype), (d, n) => {
-                (d as DefineDescriptor).__name = n;
-                descriptos[n] = d
-            });
-            this.descriptos = descriptos
+            const descriptos: Record<string | symbol, TypedPropertyDescriptor<any>> = {};
+            if (this.parent) {
+                const parentDescs = this.parent.getPropertyDescriptors();
+                for (const n in parentDescs) {
+                    descriptos[n] = parentDescs[n];
+                }
+            }
+            const descs = Object.getOwnPropertyDescriptors(this.type.prototype);
+            for (const n in descs) {
+                (descs[n] as DefineDescriptor).__name = n;
+                descriptos[n] = descs[n];
+            }
+            this.descriptos = descriptos;
         }
         return this.descriptos
     }
@@ -601,16 +608,13 @@ function getParamNames(func: Function) {
 
 
 
-const CLASS_REF = Symbol('CLASS_REF');
-/**
- * get type class reflective {@link ClassRef}.
- * @param type type.
- */
+const CLASS_REF_CACHE = new WeakMap<AbstractType, ClassRef>();
+
 export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
     if (!type || isPrimitive(type)) return null!;
-    let tyRef = Reflect.getMetadata(CLASS_REF, type) as ClassRef;
+    let tyRef = CLASS_REF_CACHE.get(type);
 
-    if (tyRef?.type !== type) {
+    if (!tyRef || tyRef.type !== type) {
         let prRef = tyRef as ClassRef;
         if (!prRef) {
             const parentType = getParentType(type);
@@ -619,8 +623,7 @@ export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
             }
         }
         tyRef = new ClassRef(type, getDef(type), prRef);
-        Reflect.defineMetadata(CLASS_REF, tyRef, type);
-
+        CLASS_REF_CACHE.set(type, tyRef);
     }
     return tyRef;
 }

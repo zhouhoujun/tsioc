@@ -86,21 +86,18 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 }
 
 
-const TYEP_DEF = Symbol('TYEP_DEF');
-/**
- * get type def.
- * @param type class type.
- */
+const TYEP_DEF_CACHE = new WeakMap<AbstractType, Partial<TypeDef>>();
+
 export function getDef<T extends TypeDef>(type: AbstractType): Partial<T> {
-    let tagAnn = Reflect.getMetadata(TYEP_DEF, type) as Partial<T>;
-    if (tagAnn?.type !== type) {
+    let tagAnn = TYEP_DEF_CACHE.get(type) as Partial<T>;
+    if (!tagAnn) {
         tagAnn = (type as AnnotationType).ƿAnn?.() as Partial<T>;
-        if (tagAnn?.type !== type) {
+        if (!tagAnn || tagAnn.type !== type) {
             tagAnn = {
                 name: type.name,
                 type
             } as Partial<T>;
-            Reflect.defineMetadata(TYEP_DEF, tagAnn, type);
+            TYEP_DEF_CACHE.set(type, tagAnn);
         }
     }
     return tagAnn as T
