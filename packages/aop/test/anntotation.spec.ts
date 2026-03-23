@@ -140,14 +140,13 @@ describe('aop test', () => {
     })
 
     it('Aop anntotation test', () => {
-        const operator = InjectUtil.operator(container);
-        operator
-            .register(AnnotationAspect)
-            .register(CheckRightAspect)
-            .register(MethodTest3);
+        InjectUtil.register(container
+            , AnnotationAspect
+            , CheckRightAspect
+            , MethodTest3);
         const mt3 = container.get('Test3') as any;
         expect(mt3['around_constructor_After']).toBeTruthy();
-        expect(operator.invoke(mt3, 'sayHello')).toEqual('Mama, I love you.');
+        expect(InjectUtil.invoke(container, mt3, 'sayHello')).toEqual('Mama, I love you.');
         expect(mt3['around_sayHello_Before']).toBeTruthy();
         expect(mt3['around_sayHello_After']).toBeTruthy();
         expect(mt3['authdata']).toEqual('authdata');
@@ -155,20 +154,18 @@ describe('aop test', () => {
     });
 
     it('Aop ann with data', () => {
-        const operator = InjectUtil.operator(container);
-        operator
-            .register(AnnotationAspect)
-            .register(CheckRightAspect)
-            .register(MethodTest2);
-        expect(operator.invoke(MethodTest2, 'sayHello')).toEqual('Mama')
+        InjectUtil.register(container
+            , AnnotationAspect
+            , CheckRightAspect
+            , MethodTest2);
+        expect(InjectUtil.invoke(container, MethodTest2, 'sayHello')).toEqual('Mama')
 
     });
 
     it('Aop property change', () => {
-        const operator = InjectUtil.operator(container);
-        operator
-            .register(ChangedAspect)
-            .register(PersonComponet);
+        InjectUtil.register(container
+            , ChangedAspect
+            , PersonComponet);
         const comp = container.get(PersonComponet);
         comp.personFullName = 'name1';
         expect(comp.fulChange).toEqual({ oldValue: '', newValue: 'name1' });

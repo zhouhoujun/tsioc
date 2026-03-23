@@ -1,4 +1,4 @@
-import { InjectFlags, token, Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { getTypeName } from '../metadata/type';
 import { deepForEach } from '../utils/lang';
 import { isArray, isBoolean, isFunction, isNumber } from '../utils/chk';
@@ -58,8 +58,8 @@ export function resolveParameters(injector: Injector, params?: Parameter[], cont
 export function resolveArgs(injector: Injector, deps?: DependLike[], context?: RunContext, resolver?: Resolver): any[] {
     if (!deps || !deps.length) return [];
 
-    let ctx = context ?? createRunContext(injector);
-    let resolverRef = resolver ?? getResolver(injector);
+    const ctx = context ?? createRunContext(injector);
+    const resolverRef = resolver ?? getResolver(injector);
 
     const len = deps.length;
     const args = new Array(len);

@@ -102,9 +102,10 @@ export class Advisor implements OnDestroy {
 
 
     match(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): boolean {
+        if (!this.advices.size) return false;
         for (const r of this.advices.values()) {
-            for (const a of r) {
-                if (a.match(name, fullName, targetRef, target, options)) {
+            for (let i = 0, len = r.length; i < len; i++) {
+                if (r[i].match(name, fullName, targetRef, target, options)) {
                     return true;
                 }
             }
@@ -118,22 +119,24 @@ export class Advisor implements OnDestroy {
 
 
     hasPointcut(instance: object, typeRef: ClassRef, withConstructor?: boolean): boolean {
+        const className = typeRef?.className ?? getTypeName(instance);
         const names = Object.keys(instance);
-
-        const decorators = typeRef?.getPropertyDescriptors()
-        // match method or property.
+        const decorators = typeRef?.getPropertyDescriptors();
         if (decorators) {
             for (const name in decorators) {
-                if (!withConstructor || (withConstructor && name != ctorName)) {
+                if (name !== ctorName || withConstructor) {
                     names.push(name);
                 }
             }
         }
 
+        if (!this.advices.size) return false;
         for (const r of this.advices.values()) {
-            for (const name of names) {
-                for (const a of r) {
-                    if (a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })) {
+            for (let i = 0, len = names.length; i < len; i++) {
+                const name = names[i];
+                const fullName = `${className}.${name}`;
+                for (let j = 0, alen = r.length; j < alen; j++) {
+                    if (r[j].match(name, fullName, typeRef, instance, { way: 'root' })) {
                         return true;
                     }
                 }
@@ -143,11 +146,16 @@ export class Advisor implements OnDestroy {
     }
 
     protected getAdvicers(...types: AdviceTypes[]): Advicer[] {
-        if (types?.length === 1) return this.advices.get(types[0]) ?? [];
-        return types.reduce((pre, cur) => {
-            const advicers = this.advices.get(cur);
-            return advicers?.length ? pre.concat(advicers) : pre;
-        }, [] as Advicer[]);
+        if (!types?.length) return [];
+        if (types.length === 1) return this.advices.get(types[0]) ?? [];
+        const result: Advicer[] = [];
+        for (let i = 0, len = types.length; i < len; i++) {
+            const advicers = this.advices.get(types[i]);
+            if (advicers?.length) {
+                result.push(...advicers);
+            }
+        }
+        return result;
     }
 
     getProceeding(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions) {

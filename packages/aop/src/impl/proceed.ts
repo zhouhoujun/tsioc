@@ -68,15 +68,16 @@ export class ProceedingScope implements Proceeding {
 
     protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: Injector) {
         const descriptors = typeRef?.getPropertyDescriptors();
-
         const weekMap = new WeakMap();
+        const runtime = this.runtime;
         const proxy: any = new Proxy(instance, {
             get: (target, name, receiver) => {
-                if (name === ctorName || name === proxyTag) return Reflect.get(target, name, receiver);
-                const fullName = `${prefix}.${name.toString()}`;
+                if (name === ctorName || name === proxyTag) return target[name];
+                const nameStr = name.toString();
+                const fullName = `${prefix}.${nameStr}`;
 
                 if (advisor.match(name, fullName, rootRef, root, { way: 'host' })) {
-                    const result = Reflect.get(target, name, receiver);
+                    const result = target[name];
                     if (!isObject(result)) {
                         return result;
                     }
@@ -90,7 +91,7 @@ export class ProceedingScope implements Proceeding {
 
                 const descriptor = descriptors?.[name];
                 if (isFunction(descriptor?.value)) {
-                    const result = Reflect.get(target, name, receiver);
+                    const result = target[name];
                     let cachedFn = weekMap.get(result);
                     if (!cachedFn) {
                         if (advisor.match(name, fullName, rootRef, instance)) {
@@ -104,39 +105,39 @@ export class ProceedingScope implements Proceeding {
                 }
 
                 if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'get' })) {
-                    return Reflect.get(target, name, receiver);
+                    return target[name];
                 }
 
-                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.runtime, {
+                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, runtime, {
                     target: root,
                     parent,
                     args: [],
                     accessor: 'get',
                     originProxy: (j) => {
-                        const value = Reflect.get(target, name, receiver);
-                        return { value }
+                        return { value: target[name] };
                     },
                     next: (j) => j.returning.value
                 });
 
             },
             set: (target, name, newValue, receiver) => {
-                if (name === ctorName || name === proxyTag) return Reflect.set(target, name, receiver);
-                const fullName = `${prefix}.${name.toString()}`;
+                if (name === ctorName || name === proxyTag) return (target[name] = newValue) || true;
+                const nameStr = name.toString();
+                const fullName = `${prefix}.${nameStr}`;
 
                 if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'set' })) {
-                    return Reflect.set(target, name, newValue, receiver);
+                    return (target[name] = newValue) || true;
                 }
 
-                const oldValue = Reflect.get(target, name, receiver);
-                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.runtime, {
+                const oldValue = target[name];
+                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, runtime, {
                     target: root,
                     parent,
                     args: [],
                     accessor: 'set',
                     valueChange: { newValue, oldValue },
                     originProxy: (j) => {
-                        return Reflect.set(target, name, newValue, receiver);
+                        return (target[name] = newValue) || true;
                     }
                 });
             }

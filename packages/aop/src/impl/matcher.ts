@@ -21,55 +21,68 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (aspectMeta.matchFn == undefined) {
             aspectMeta.matchFn = aspectMeta.pointcut ? this.matchTypeFactory(aspectMeta) : null;
         }
+        
+        const without = aspectMeta.without;
+        const within = aspectMeta.within;
+        const annotation = aspectMeta.annotation;
+        const accessor = aspectMeta.accessor;
+        const matchFn = aspectMeta.matchFn;
+        const isSelf = aspectMeta.type;
+        
         return (name, fullName, targetRef, target, options?: MatchOptions) => {
-
-            if (aspectMeta.without) {
-                const outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
-                if (outs.some(t => (target && target instanceof t) || targetRef.isExtends(t))) {
-                    return false
-                }
-            }
-            if (aspectMeta.within) {
-                const ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
-                if (!ins.some(t => (target && target instanceof t) || targetRef.isExtends(t))) {
-                    if (!aspectMeta.annotation) {
-                        return false
+            if (without) {
+                const outs = isArray(without) ? without : [without];
+                for (let i = 0, len = outs.length; i < len; i++) {
+                    const t = outs[i];
+                    if ((target && target instanceof t) || targetRef.isExtends(t)) {
+                        return false;
                     }
                 }
             }
-            if (aspectMeta.annotation) {
-                const annotation = aspectMeta.annotation.toString();
-                const anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
+            if (within) {
+                const ins = isArray(within) ? within : [within];
+                let found = false;
+                for (let i = 0, len = ins.length; i < len; i++) {
+                    const t = ins[i];
+                    if ((target && target instanceof t) || targetRef.isExtends(t)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found && !annotation) {
+                    return false;
+                }
+            }
+            if (annotation) {
+                const annoStr = annotation.toString();
+                const anno = (annPreChkExp.test(annoStr) ? '' : '@') + annoStr;
                 if (!targetRef || !targetRef.hasDecor(anno)) {
-                    return false
+                    return false;
                 }
             }
             if (aspectMeta.target && aspectMeta.target !== target) {
                 return false;
             }
 
-            if (aspectMeta.accessor) {
-                if (!options?.way && !options?.accessor) {
+            if (accessor) {
+                const optAccessor = options?.accessor;
+                const optWay = options?.way;
+                if (!optWay && !optAccessor) {
                     return false;
                 }
-                if (options.accessor !== aspectMeta.accessor) {
-                    if (!options?.way && aspectMeta.accessor !== 'value') {
+                if (optAccessor !== accessor) {
+                    if (!optWay && accessor !== 'value') {
                         return false;
                     }
                 }
-            } else {
-                if (options?.accessor) {
-                    return false;
-                }
+            } else if (options?.accessor) {
+                return false;
             }
 
-            if (aspectMeta.type === targetRef?.type) {
+            if (isSelf === targetRef?.type) {
                 return this.matchAspectSelf(name, aspectMeta);
-            } else {
-                const matchFn = aspectMeta.matchFn;
-                return matchFn ? matchFn(name, fullName, targetRef, target, options) : false;
             }
-
+            return matchFn ? matchFn(name, fullName, targetRef, target, options) : false;
         }
     }
 
@@ -174,50 +187,39 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             exp = '*.*';
         }
 
-        // if (mthNameExp.test(exp)) {
-        //     // if is method name, will match aspect self only.
-        //     return fasleFn
-        // }
-
         if (tgMthChkExp.test(exp)) {
-            const paths = exp.split('.').filter(r => r);
+            const paths = exp.split('.');
             let root$: RegExp | undefined;
             let host$: RegExp | undefined;
-            if (paths.length > 2) {
-                let hostExp = paths.slice(0, paths.length - 1).join('.');
-                hostExp = hostExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                    .replace(replAny1, '\\\w+')
-                    .replace(replDot, '\\\.')
-                    .replace(replNav, '\\\/');
-                host$ = new RegExp('^' + hostExp + '$');
-            }
-            if (paths.length > 1) {
-                let rootExp = paths.slice(0, 2).join('.');
-                rootExp = rootExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                    .replace(replAny1, '\\\w+')
-                    .replace(replDot, '\\\.')
-                    .replace(replNav, '\\\/');
-                root$ = new RegExp('^' + rootExp);
-            }
-            let full = exp.substring(0);
-            full = full.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+            const full = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                 .replace(replAny1, '\\\w+')
                 .replace(replDot, '\\\.')
                 .replace(replNav, '\\\/');
-
             const matcher = new RegExp('^' + full + '$');
+            
+            if (paths.length > 2) {
+                const hostExp = paths.slice(0, -1).join('.').replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+').replace(replDot, '\\\.');
+                host$ = new RegExp('^' + hostExp + '$');
+            }
+            if (paths.length > 1) {
+                const rootExp = paths.slice(0, 2).join('.').replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+').replace(replDot, '\\\.');
+                root$ = new RegExp('^' + rootExp);
+            }
+            
+            const isAspect = exp.startsWith('*.*');
             return (name, fullName, targetRef, target, options?: MatchOptions) => {
-                if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
+                if (isAspect && targetRef.getAnnotation<AopDef>().aspect) {
                     return false;
                 }
-                if (options?.way) {
-                    if (options.way === 'root') {
-                        return root$ ? root$.test(fullName) : false;
-                    } else if (options.way === 'host') {
-                        return host$ ? host$.test(fullName) : false;
-                    }
+                const way = options?.way;
+                if (way === 'root') {
+                    return root$ ? root$.test(fullName) : false;
+                } else if (way === 'host') {
+                    return host$ ? host$.test(fullName) : false;
                 }
-                return matcher.test(fullName)
+                return matcher.test(fullName);
             }
         }
         return fasleFn
@@ -229,50 +231,37 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             exp = '*.*';
         }
 
-        // if (mthNameExp.test(exp)) {
-        //     // if is method name, will match aspect self only.
-        //     return fasleFn
-        // }
-
         if (tgPropChkExp.test(exp)) {
-            const paths = exp.split('.').filter(r => r);
+            const paths = exp.split('.');
             let root$: RegExp | undefined;
             let host$: RegExp | undefined;
+            const full = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                .replace(replAny1, '\\\w+').replace(replDot, '\\\.');
+            const matcher = new RegExp(full + '$');
+            
             if (paths.length > 2) {
-                let hostExp = paths.slice(0, paths.length - 1).join('.');
-                hostExp = hostExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                    .replace(replAny1, '\\\w+')
-                    .replace(replDot, '\\\.')
-                    .replace(replNav, '\\\/');
+                const hostExp = paths.slice(0, -1).join('.').replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+').replace(replDot, '\\\.');
                 host$ = new RegExp('^' + hostExp + '$');
             }
             if (paths.length > 1) {
-                let rootExp = paths.slice(0, 2).join('.');
-                rootExp = rootExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                    .replace(replAny1, '\\\w+')
-                    .replace(replDot, '\\\.')
-                    .replace(replNav, '\\\/');
+                const rootExp = paths.slice(0, 2).join('.').replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+').replace(replDot, '\\\.');
                 root$ = new RegExp('^' + rootExp);
             }
-            let full = exp.substring(0);
-            full = full.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
-                .replace(replAny1, '\\\w+')
-                .replace(replDot, '\\\.')
-                .replace(replNav, '\\\/');
-
-            const matcher = new RegExp(full + '$');
+            
+            const isAspect = exp.startsWith('*.*');
             return (name, fullName, targetRef, target, options?: MatchOptions) => {
-                if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
+                if (isAspect && targetRef.getAnnotation<AopDef>().aspect) {
                     return false;
                 }
-                if (options?.way) {
-                    if (options.way === 'root') {
-                        return root$ ? root$.test(fullName) : false;
-                    } else if (options.way === 'host') {
-                        return host$ ? host$.test(fullName) : false;
-                    }
+                const way = options?.way;
+                if (way === 'root') {
+                    return root$ ? root$.test(fullName) : false;
+                } else if (way === 'host') {
+                    return host$ ? host$.test(fullName) : false;
                 }
-                return matcher.test(fullName)
+                return matcher.test(fullName);
             }
         }
         return fasleFn
