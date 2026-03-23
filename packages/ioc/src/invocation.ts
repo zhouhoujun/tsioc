@@ -48,7 +48,11 @@ export abstract class Invocation<T = any, TRes = any, TInj extends Injector = In
      */
     abstract get injector(): TInj;
 
-    abstract getMethodContext(propertyKey: string | symbol): TInj;
+    /**
+     * get injector vai property.
+     * @param propertyKey 
+     */
+    abstract getInjector(propertyKey: string | symbol): TInj;
 
     /**
      * Invoke the underlying operation using the class given {@link Injector}.

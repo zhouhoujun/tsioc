@@ -15,7 +15,6 @@ import { Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
 import { createRunContext, RunContext } from '../handlers/contexts';
 import { ctorName } from '../metadata/define';
-import { AbstractInjector, InjectUtil } from './injector';
 import { createValueRecord } from './common';
 
 /**
@@ -193,17 +192,17 @@ export abstract class AbstractInvocation<T = any,
         return result;
     }
 
-    protected createContext(parent: Injector, options?: InvokeOptions): TInj {
+    protected createInjector(parent: Injector, options?: InvokeOptions): TInj {
         return createInjector(parent, options) as TInj;
     }
 
-    getMethodContext(propertyKey: string | symbol): TInj {
+    getInjector(propertyKey: string | symbol): TInj {
         if (propertyKey === ctorName) return this.injector;
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
             const opts = this.classRef.getMethodOptions(propertyKey);
             if (hasContextOptions(opts)) {
-                ctx = this.createContext(this.injector, opts);
+                ctx = this.createInjector(this.injector, opts);
                 this.injector.onDestroy(ctx);
                 this._mthCtx.set(propertyKey, ctx);
             } else {
@@ -215,18 +214,18 @@ export abstract class AbstractInvocation<T = any,
 
 
     protected createInvokeContext(propertyKey: string | symbol, options?: Injector | InvokeOptions): [TInj, Function | undefined, any] {
-        const ctx = this.getMethodContext(propertyKey);
+        const ctx = this.getInjector(propertyKey);
         let context: TInj;
         let destroy: Function | undefined;
         let payload: any | undefined;
 
         if (isInjector(options)) {
             // Use the provided context directly
-            context = options as any;
+            context = options as TInj;
             // No need for ref management - context lifecycle is managed by caller
         } else if (hasContextOptions(options)) {
             // Create new context with options
-            context = this.createContext(ctx, options);
+            context = this.createInjector(ctx, options);
             payload = options?.payload;
             destroy = () => {
                 if (!context.destroyed) {

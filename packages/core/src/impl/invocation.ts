@@ -17,7 +17,7 @@ export class DefaultInvocationHandler<
         readonly invocation: Invocation<T>,
         protected options: InvocationHandlerOptions<TInput>,
         readonly propertyKey?: string | symbol) {
-        super(propertyKey ? invocation.getMethodContext(propertyKey) : invocation.injector, options)
+        super(propertyKey ? invocation.getInjector(propertyKey) : invocation.injector, options)
         this.limit = options.limit;
 
     }
