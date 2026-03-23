@@ -6,7 +6,7 @@ import { Provider } from './providers';
 import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { RuntimeHandler } from './lifescope/handler';
-import { Context, ContextToken } from './handlers/Context';
+import { Context, ContextToken } from './context';
 
 /**
  * Runtime of {@link Injector}.

@@ -1,5 +1,5 @@
 import { Exception } from '../exception';
-import { ContextToken } from '../handlers/Context';
+import { ContextToken } from '../context';
 import { RunContext } from '../handlers/contexts';
 import { HandlerLike } from '../handlers/handler';
 import { InterceptorLike } from '../handlers/interceptor';

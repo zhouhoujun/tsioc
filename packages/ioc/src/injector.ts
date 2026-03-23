@@ -1,12 +1,11 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { AbstractType, Type } from './types';
-import { ClassProvider, DynamicProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, StaticProvider, ValueProvider } from './providers';
+import { AbstractType } from './types';
+import { ClassProvider, ExistingProvider, FactoryProvider, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags, token } from './tokens';
 import { Abstract } from './metadata/fac';
-import { ClassRef } from './metadata/class';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
-import { InvokeOptions, InvokeProviders } from './context';
+import { InvokeProviders } from './context';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
 import { Parameter } from './resolver';

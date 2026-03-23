@@ -2,7 +2,7 @@ import { AbstractType } from '../types';
 import { Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata } from './meta';
 import { InvocationOptions, InvokeOptions } from '../context';
-import { InjectFlags, Token, TokenOf } from '../tokens';
+import { Token, TokenOf } from '../tokens';
 import { getResolver, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign, getParentType } from '../utils/lang';
 import { isArray, isFunction, isString } from '../utils/chk';

@@ -495,12 +495,7 @@ export namespace InjectUtil {
             if (arg1 instanceof RunContext) {
                 context = arg1;
                 isCtx = true;
-            }
-            // if (INVOCATION_CONTEXT_IMPL.isContext(arg1)) {
-            //     context = createRunContext(arg1);
-            //     isCtx = true;
-            // } 
-            else if (isArray(arg1)) {
+            } else if (isArray(arg1)) {
                 context = arg1.length ? createRunContext(createInjector(injector, {  providers: arg1 })) : undefined;
             } else if (arg1.provide) {
                 context = createRunContext(createInjector(injector, { providers: [arg1] }));

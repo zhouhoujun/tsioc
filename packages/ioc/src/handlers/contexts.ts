@@ -3,7 +3,7 @@ import { getType } from '../metadata/type';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType, Type } from '../types';
 import { isNil } from '../utils/chk';
-import { Context, ContextToken } from './Context';
+import { Context, ContextToken } from '../context';
 
 
 /**

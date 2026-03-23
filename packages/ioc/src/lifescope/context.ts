@@ -1,4 +1,4 @@
-import { Context, ContextToken } from '../handlers/Context';
+import { Context, ContextToken } from '../context';
 import { DefaultContext, RunContext } from '../handlers/contexts';
 import { Injector } from '../injector';
 import { DecoratorFn } from '../metadata/define';

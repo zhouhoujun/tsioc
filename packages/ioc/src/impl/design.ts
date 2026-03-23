@@ -1,4 +1,4 @@
-import { Context, ContextToken } from '../handlers/Context';
+import { Context, ContextToken } from '../context';
 import { HandlerFn } from '../handlers/handler';
 import { InterceptorLike } from '../handlers/interceptor';
 import { invokeTail } from '../handlers/compose';

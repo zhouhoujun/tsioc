@@ -1,10 +1,89 @@
-import { AbstractType } from './types';
-import { Token, TokenOf } from './tokens';
+import { AbstractType, Type } from './types';
+import { InjectFlags, Token, TokenOf } from './tokens';
 import { ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Injector } from './injector';
 import { isArray } from './utils/chk';
-import { Context } from './handlers/Context';
+
+
+
+/**
+ * context token.
+ */
+export class ContextToken<T = any> {
+    constructor(readonly defaultValue: () => T) { }
+}
+
+export abstract class Context {
+
+    /**
+     * Store a value in the context. If a value is already present it will be overwritten.
+     *
+     * @param token The reference to an instance of `Token`.
+     * @param value The value to store.
+     *
+     * @returns A reference to itself for easy chaining.
+     */
+    abstract set<T>(token: Token<T> | ContextToken<T>, value: T): Context;
+
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    abstract get<T>(token: ContextToken<T>, flags?: InjectFlags): T;
+
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    abstract get<T>(token: Token<T>, flags?: InjectFlags): T;
+
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    abstract get<T>(token: Token<T> | ContextToken<T>, flags?: InjectFlags): T;
+
+    /**
+     * Delete the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns A reference to itself for easy chaining.
+     */
+    abstract delete<T>(token: Token<T> | ContextToken<T>): Context;
+
+    /**
+     * Checks for existence of a given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns True if the token exists, false otherwise.
+     */
+    abstract has<T>(token: Token<T> | ContextToken<T>, flags?: InjectFlags): boolean;
+
+    /**
+     * clear all value
+     */
+    abstract clear(): void;
+
+    /**
+     * Lifecycle hook called when the context is destroyed.
+     */
+    abstract onDestroy(): void;
+
+
+    abstract as<TContext extends Context>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext;
+}
 
 
 /**
@@ -104,29 +183,29 @@ export interface InvocationOptions<T = any> extends InvokeOptions {
 
 }
 
-/**
- * RunContext - Optimized context for runtime execution.
- *
- * Combines Context with Injector for efficient data passing during method invocation.
- * Avoids creating full InvocationContext instances when only runtime data is needed.
- *
- * 运行时上下文 - 优化的运行时执行上下文。
- * 结合 Context 和 Injector，在方法调用期间高效传递数据。
- * 当只需要运行时数据时，避免创建完整的 InvocationContext 实例。
- */
-export abstract class InvocationContext extends Context {
+// /**
+//  * RunContext - Optimized context for runtime execution.
+//  *
+//  * Combines Context with Injector for efficient data passing during method invocation.
+//  * Avoids creating full InvocationContext instances when only runtime data is needed.
+//  *
+//  * 运行时上下文 - 优化的运行时执行上下文。
+//  * 结合 Context 和 Injector，在方法调用期间高效传递数据。
+//  * 当只需要运行时数据时，避免创建完整的 InvocationContext 实例。
+//  */
+// export abstract class InvocationContext extends Context {
 
-    abstract getInjector(): Injector;
+//     abstract getInjector(): Injector;
 
-    abstract setInjector(injector: Injector): this;
+//     abstract setInjector(injector: Injector): this;
 
-    abstract getPayload<T = any>(): T;
+//     abstract getPayload<T = any>(): T;
 
-    abstract setPayload<T>(payload: T): this;
+//     abstract setPayload<T>(payload: T): this;
 
-    abstract onFailed(failed: (target: AbstractType, propertyKey: string) => void): this;
+//     abstract onFailed(failed: (target: AbstractType, propertyKey: string) => void): this;
 
-}
+// }
 
 export function hasContextOptions(option?: InvokeOptions): boolean {
     if (!option) return false;
