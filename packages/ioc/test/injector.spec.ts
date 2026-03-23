@@ -1,4 +1,4 @@
-import { createInjector, DefaultEnvironmentInjector, Injectable, InjectFlags, Injector, InjectUtil, InvocationFactory, isNumber, token } from '@tsdi/ioc';
+import { createInjector, createRunContext, DefaultEnvironmentInjector, Injectable, InjectFlags, Injector, InjectUtil, InvocationFactory, isNumber, token } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -65,12 +65,12 @@ describe('Injector test', () => {
     });
 
     it('use factory provider in injector', () => {
-        const operator = InjectUtil.operator(inj);
-        const p = operator.resolve(Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
+        // const operator = InjectUtil.operator(inj);
+        const p = InjectUtil.resolve(inj, Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
         expect(p).toBeInstanceOf(Person);
         expect(p.name).toEqual('zhangsan');
         expect(p.age).toEqual(30);
-        const p2 = operator.resolve(Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
+        const p2 = InjectUtil.resolve(inj, Person, { provide: 'name', useValue: 'zhangsan' }, { provide: 'age', useValue: 30 });
         expect(p === p2).toBeFalsy();
     });
 
@@ -88,7 +88,7 @@ describe('Injector test', () => {
 
     it('invoke', () => {
         const device = inj.get(DeviceA);
-        const typeRef = inj.get(InvocationFactory).create(PlcService, {instance: device.service});
+        const typeRef = inj.get(InvocationFactory).create(PlcService, { instance: device.service });
         const data = typeRef.invoke(plc => plc.read);
         // const data = inj.invoke(device.service, plc => plc.read);
         expect(isNumber(data)).toBeTruthy();

@@ -4,7 +4,7 @@ import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, isUndefined, isBoolean } from '../utils/chk';
 import { getType, getTypeName, isType } from '../metadata/type';
-import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR, RECORDS, createInjector } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, Injector, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory, CONTAINER, INJECTOR, RECORDS, createInjector } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, getClassRef } from '../metadata/class';
@@ -42,9 +42,6 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
 
     @nonEnumerable
     protected _runtime: Runtime | null = null;
-
-    @nonEnumerable
-    protected _operator: InjectOperator | null = null;
 
     protected _readyDefer = defer<void>();
     /**
@@ -290,7 +287,6 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
             !this._parent.destroyed && (this._parent as Destroyable).offDestroy?.(this)
         }
         this._runtime = null;
-        this._operator = null;
         this._parent = null!;
     }
 
@@ -401,16 +397,6 @@ INJECT_IMPL.isInjector = (target) => target instanceof AbstractInjector;
  * Inject Util.
  */
 export namespace InjectUtil {
-
-    /**
-     * get default inject operator.
-     * 
-     * 获取默认的注入操作器。
-     * @param injector 
-     */
-    export function operator(injector: Injector): InjectOperator {
-        return new DefaultInjectOperator(injector as AbstractInjector);
-    }
 
     /**
      * set gloabl singleton.
@@ -788,90 +774,6 @@ export namespace InjectUtil {
 
         return tgRefl.invoke(tgRefl.getMethodName(propertyKey), injector, instance, context)
 
-    }
-}
-
-
-
-export class DefaultInjectOperator implements InjectOperator {
-
-    @nonEnumerable
-    private injector: AbstractInjector;
-
-    constructor(injector: AbstractInjector) {
-        this.injector = injector;
-    }
-
-
-    setSingleton<T>(token: Token<T>, value: T): this {
-        InjectUtil.setSingleton(this.injector, token, value);
-        return this;
-    }
-
-    setValue<T>(token: Token<T>, value: T, type?: AbstractType<T> | undefined): this {
-        InjectUtil.setValue(this.injector, token, value, type);
-        return this
-    }
-    cache<T>(token: Token<T>, cache: T, expires: number): this {
-        InjectUtil.cache(this.injector, token, cache, expires);
-        return this
-    }
-
-    provider(provider: StaticProvider | DynamicProvider) {
-        InjectUtil.provider(this.injector, provider);
-        return this;
-    }
-
-    inject(providers: Provider | Provider[]): this;
-    inject(...providers: Provider[]): this;
-    inject(...args: any[]): this {
-        InjectUtil.inject(this.injector, ...args);
-        return this
-    }
-
-    use(modules: ModuleType[]): Type[];
-    use(...modules: ModuleType[]): Type[];
-    use(...args: any[]): Type[] {
-        const types: Type[] = [];
-        InjectUtil.use(this.injector, args, types);
-        return types
-    }
-
-
-    useAsync(modules: ModuleType[]): Promise<Type[]>;
-    useAsync(...modules: ModuleType[]): Promise<Type[]>;
-    useAsync(...args: any[]): Promise<Type[]> {
-        return InjectUtil.useAsync(this.injector, args);
-    }
-
-
-    register(types: (AbstractType | RegisterOption)[]): this;
-    register(...types: (AbstractType | RegisterOption)[]): this;
-    register(...args: any[]): this {
-        InjectUtil.register(this.injector, ...args);
-        return this
-    }
-
-    unregister<T>(token: Token<T>): this {
-        InjectUtil.unregister(this.injector, token);
-        return this
-    }
-
-
-    resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
-    resolve<T>(token: Token<T>, context?: RunContext): T;
-    resolve<T>(token: Token<T>, providers?: Provider[]): T;
-    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
-    resolve<T>(token: Token<T>, ...args: any[]) {
-        return InjectUtil.resolve(this.injector, token, ...args);
-    }
-
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: RunContext): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-        return InjectUtil.invoke(this.injector, target, propertyKey, ...args);
     }
 }
 

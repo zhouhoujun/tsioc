@@ -57,20 +57,20 @@ describe('resolve', () => {
 
 
     it('get service', () => {
-        const tsr = InjectUtil.operator(injector).resolve(TestService);
+        const tsr = InjectUtil.resolve(injector, TestService);
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi');
     })
 
 
     it('get service with providers', () => {
-        const tsr = InjectUtil.operator(injector).resolve(TestService, { provide: DataProvider, useClass: CustomDataProvider });
+        const tsr = InjectUtil.resolve(injector, TestService, { provide: DataProvider, useClass: CustomDataProvider });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })
 
     it('get service with providers in option', () => {
-        const tsr = InjectUtil.operator(injector).resolve(TestService, { providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
+        const tsr = InjectUtil.resolve(injector, TestService, { providers: [{ provide: DataProvider, useClass: CustomDataProvider }] });
         expect(tsr).toBeInstanceOf(TestService);
         expect(tsr.flash()).toEqual('hi custom');
     })
