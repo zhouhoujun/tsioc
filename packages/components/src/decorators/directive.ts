@@ -1,4 +1,4 @@
-import { createDecorator, ActionType, AnnotationType, getModuleType, noPointcut, token, InvocationContext } from '@tsdi/ioc';
+import { createDecorator, ActionType, AnnotationType, getModuleType, noPointcut, token, Injector } from '@tsdi/ioc';
 import { Attribute, AttributeMetadata } from './atteribute';
 import { DirectiveDef, DirectiveFactory, DirectiveOptions, Factoriable, factoryKey } from '../refs/directive';
 import { Computed, ComputedMetadata } from './computed';
@@ -60,7 +60,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
 
             def.exportProviders.push({ provide: DIRECTIVES, useValue: def, multi: true });
             if (!def[factoryKey]) {
-                def[factoryKey] = (ctx: InvocationContext, options: DirectiveOptions) => {
+                def[factoryKey] = (ctx: Injector, options: DirectiveOptions) => {
                     return typeRef.createInvocation(ctx, options)
                 }
             }

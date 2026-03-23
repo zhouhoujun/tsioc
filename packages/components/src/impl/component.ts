@@ -105,7 +105,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         // 注入Renderer
         const def = typeRef.getAnnotation<ComponentDef>();
         if (def.imports?.length) {
-            injector = createInjector(options?.providers, injector);
+            injector = createInjector(injector, options?.providers);
             InjectUtil.use(injector, def.imports);
         }
         return injector;

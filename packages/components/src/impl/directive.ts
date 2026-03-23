@@ -66,7 +66,7 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
         // 注入Renderer
         const def = typeRef.getAnnotation<DirectiveDef>();
         if (def.imports?.length) {
-            injector = createInjector(options?.providers, injector);
+            injector = createInjector(injector, options?.providers);
             InjectUtil.use(injector, def.imports);
         }
         return injector;

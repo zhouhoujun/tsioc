@@ -1,7 +1,7 @@
 // import { parseFragment, TreeAdapter, defaultTreeAdapter } from 'parse5';
 import { TemplateParser } from '../template/parser';
 import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList } from '../renderer/Node';
-import { Abstract, Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, ProvdierOf, token } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Injector, isArray, lang, Module, ModuleWithProviders, ProvdierOf, token } from '@tsdi/ioc';
 // import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
 import { ReactiveEffect, noReact } from '../effect';

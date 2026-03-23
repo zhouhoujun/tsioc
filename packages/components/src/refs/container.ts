@@ -1,4 +1,4 @@
-import { Abstract, InvocationContext, Type } from '@tsdi/ioc';
+import { Abstract, Injector, Type } from '@tsdi/ioc';
 import { ComponentDef, ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
@@ -44,7 +44,7 @@ export abstract class ViewContainerRef<T = any> {
     /**
      * The environment for this view container.
      */
-    abstract get environment(): InvocationContext;
+    abstract get environment(): Injector;
 
     /**
      * Destroys all views in this container.
@@ -79,7 +79,7 @@ export abstract class ViewContainerRef<T = any> {
      */
     abstract createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, options?: {
         index?: number,
-        environment?: InvocationContext
+        environment?: Injector
     }): EmbeddedViewRef<C>;
 
     /**
@@ -102,7 +102,7 @@ export abstract class ViewContainerRef<T = any> {
      * @param options An object that contains extra parameters:
      *  * index: the index at which to insert the new component's host view into this container.
      *           If not specified, appends the new view as the last entry.
-     *  * environment: an InvocationContext which will provide the component's environment.
+     *  * environment: an Injector which will provide the component's environment.
      *                 you should almost always provide this to ensure that all expected providers
      *                 are available for the component instantiation. This option is intended to
      *                 replace the `moduleRef` parameter.
@@ -111,7 +111,7 @@ export abstract class ViewContainerRef<T = any> {
      */
     abstract createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: {
         index?: number,
-        environment?: InvocationContext,
+        environment?: Injector,
     }): ComponentRef<C>;
 
     /**

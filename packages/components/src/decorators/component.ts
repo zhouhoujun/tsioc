@@ -1,4 +1,4 @@
-import { createDecorator, AnnotationType, noPointcut, getModuleType, ActionType, token, InvocationContext } from '@tsdi/ioc';
+import { createDecorator, AnnotationType, noPointcut, getModuleType, ActionType, token, Injector } from '@tsdi/ioc';
 import { ComponentFactory, ComponentOptions, ComponentRef } from '../refs/component';
 import { Attribute, AttributeMetadata } from './atteribute';
 import { DIRECTIVES } from './directive';
@@ -50,7 +50,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             }
 
             if (!def[factoryKey]) {
-                def[factoryKey] = (ctx: InvocationContext, options: ComponentOptions) => {
+                def[factoryKey] = (ctx: Injector, options: ComponentOptions) => {
                     return typeRef.createInvocation(ctx, options) as ComponentRef<any>
                 }
             }
