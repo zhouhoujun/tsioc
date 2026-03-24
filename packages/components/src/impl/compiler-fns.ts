@@ -3,7 +3,7 @@ import { CompilerOptions } from '../template/compiler';
 import { DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText, COMPONENTDEF } from '../renderer/Node';
 import { ComponentDef } from '../refs/component';
 import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
-import { NodeInjector } from '../refs/environment';
+import { NodeInjector } from '../refs/injector';
 import { Renderer } from '../renderer/Renderer';
 import { Bindings, NodeFactory } from '../refs/template';
 import { ReactiveEffect } from '../effect';
@@ -14,7 +14,7 @@ import { BaseIfDirective, VIfDirective, VElseIfDirective, VElseDirective, setupI
 import { SwitchDirective, CaseDirective, DefaultDirective, registerSwitchDirective, findSwitchDirective } from '../directives/switch-case.dir';
 
 
-export type Rendering<T extends RNode> = (renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector, context: any) => T | null;
+export type Rendering<T extends RNode> = (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => T | null;
 
 export interface RendererOptions {
     templateTag?: string;
@@ -24,7 +24,7 @@ export interface RendererOptions {
     attributeFactory: (attr: RAttr) => (element: RElement, renderer: Renderer) => void;
     componentFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[]) => Rendering<RElement>,
     templateFactory: (node: RElement, renderer: Renderer, attrs: RAttr[], bindings: any[], options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>,
-    bindDirective: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, environment: NodeInjector, context: any, delimiter: RegExp) => void,
+    bindDirective: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, injector: NodeInjector, context: any, delimiter: RegExp) => void,
 }
 
 /**
@@ -46,11 +46,11 @@ export function compileToFactory<C>(
     );
 
     // 返回工厂函数
-    return (renderer: Renderer, environment: NodeInjector, context: C, effect: ReactiveEffect) => {
+    return (renderer: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect) => {
         // 执行编译好的节点创建函数
         const rootNodes: RNode[] = [];
         compiledNodes.forEach(createNode => {
-            const node = createNode(renderer, effect, environment, context);
+            const node = createNode(renderer, effect, injector, context);
             if (node) {
                 rootNodes.push(node);
             }
@@ -77,13 +77,13 @@ export function compileTextToFactory(node: RText): Rendering<RText> {
     }
 
     // 有绑定的文本节点，返回包含绑定逻辑的工厂函数
-    return (renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector, context: any) => {
+    return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         const textNode = renderer.createText(text);
 
         // 应用绑定
         bindings.forEach(binding => {
-            const unbinding = binding(textNode, context, effect, environment);
-            unbinding && environment.onDestroy(unbinding);
+            const unbinding = binding(textNode, context, effect, injector);
+            unbinding && injector.onDestroy(unbinding);
         });
 
         return textNode;
@@ -125,7 +125,7 @@ export function compileElementToFactory(
     }
 
     // 编译子节点
-    const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector, context: any) => RNode | null> = [];
+    const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RNode | null> = [];
     if (node.childNodes) {
         for (const child of node.childNodes) {
             const childFactory = compileNodeToFactory(child, renderer, options, rendererOptions);
@@ -137,7 +137,7 @@ export function compileElementToFactory(
     const compiledAttrs = attrs.map(attr => rendererOptions.attributeFactory(attr));
 
     // 返回元素工厂函数
-    return (renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector, context: any) => {
+    return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(tagName);
         // Copy nodeType from original node to preserve ElementContainer flag
@@ -150,7 +150,7 @@ export function compileElementToFactory(
 
         // 创建并添加子节点
         childFactories.forEach(createChild => {
-            const child = createChild(renderer, effect, environment, context);
+            const child = createChild(renderer, effect, injector, context);
             if (child) {
                 renderer.appendChild(element, child);
             }
@@ -158,13 +158,13 @@ export function compileElementToFactory(
 
         // 应用绑定
         bindings.forEach(binding => {
-            const unbinding = binding(element, context, effect, environment);
-            unbinding && environment.onDestroy(unbinding);
+            const unbinding = binding(element, context, effect, injector);
+            unbinding && injector.onDestroy(unbinding);
         });
 
         // 应用指令
         directives.forEach(dirDef => {
-            rendererOptions.bindDirective(element, dirDef, attrs, effect, environment, context, rendererOptions.delimiter);
+            rendererOptions.bindDirective(element, dirDef, attrs, effect, injector, context, rendererOptions.delimiter);
         });
 
         return element;
@@ -221,10 +221,10 @@ export function compileComponentToFactory(
     componentDef: ComponentDef,
     attrs: RAttr[],
     bindings: any[]
-): (renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector) => RElement | null {
+): (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector) => RElement | null {
     const compiledAttrs = attrs.map(attr => compileAttributeToFactory(attr));
 
-    return (renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector) => {
+    return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector) => {
         // 创建元素
         const element = renderer.createElement(node.tagName);
 
@@ -234,8 +234,8 @@ export function compileComponentToFactory(
         });
 
         // 创建组件实例
-        const elementRef = environment.getElementRef(element);
-        const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
+        const elementRef = injector.getElementRef(element);
+        const componentRef = (componentDef as Factoriable).ƿfac?.(injector, { elementRef });
 
         if (!componentRef) return element;
 
@@ -251,12 +251,12 @@ export function compileComponentToFactory(
 
         // 应用绑定
         bindings.forEach(binding => {
-            const unbinding = binding(element, null, effect, environment);
-            unbinding && environment.onDestroy(unbinding);
+            const unbinding = binding(element, null, effect, injector);
+            unbinding && injector.onDestroy(unbinding);
         });
 
         // 附加组件到环境
-        environment.attachComponent(componentRef);
+        injector.attachComponent(componentRef);
 
         // 渲染组件
         componentRef.render();
@@ -281,10 +281,10 @@ export function compileTemplateToFactory(
     bindings: any[],
     options: CompilerOptions,
     rendererOptions: RendererOptions
-): (renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector, context: any) => RElement | null {
+): (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RElement | null {
     const compiledAttrs = attrs.map(attr => compileAttributeToFactory(attr));
     const childNodes = node.childNodes || [];
-    const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector, context: any) => RNode | null> = [];
+    const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RNode | null> = [];
 
     // 编译子节点
     for (const child of childNodes) {
@@ -292,7 +292,7 @@ export function compileTemplateToFactory(
         childFactories.push(childFactory);
     }
 
-    return (renderer: Renderer, effect: ReactiveEffect, environment: NodeInjector, context: any) => {
+    return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(node.tagName);
 
@@ -303,7 +303,7 @@ export function compileTemplateToFactory(
 
         // 创建并添加子节点
         childFactories.forEach(createChild => {
-            const child = createChild(renderer, effect, environment, context);
+            const child = createChild(renderer, effect, injector, context);
             if (child) {
                 renderer.appendChild(element, child);
             }
@@ -311,8 +311,8 @@ export function compileTemplateToFactory(
 
         // 应用绑定
         bindings.forEach(binding => {
-            const unbinding = binding(element, null, effect, environment);
-            unbinding && environment.onDestroy(unbinding);
+            const unbinding = binding(element, null, effect, injector);
+            unbinding && injector.onDestroy(unbinding);
         });
 
         return element;
@@ -325,7 +325,7 @@ export function compileTemplateToFactory(
  * @param directive 指令定义
  * @param attrs 属性列表
  * @param effect 响应式效果
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param context 上下文
  * @param processDirectiveAttributes 指令属性处理函数
  */
@@ -334,20 +334,20 @@ export function applyDirectiveToElement(
     directive: DirectiveDef,
     attrs: RAttr[],
     effect: ReactiveEffect,
-    environment: NodeInjector,
+    injector: NodeInjector,
     context: any,
     delimiter: RegExp
 ): void {
-    const elementRef = environment.getElementRef(element);
-    const directiveRef = (directive as Factoriable).ƿfac?.(environment, { elementRef, context });
+    const elementRef = injector.getElementRef(element);
+    const directiveRef = (directive as Factoriable).ƿfac?.(injector, { elementRef, context });
 
     if (!directiveRef) return;
 
     // 附加指令到环境
-    environment.attachDirective(directiveRef);
+    injector.attachDirective(directiveRef);
 
     // 处理指令属性
-    processDirectiveAttributes(directiveRef, directive, [], attrs, context, effect, environment, delimiter);
+    processDirectiveAttributes(directiveRef, directive, [], attrs, context, effect, injector, delimiter);
 
     // 初始化指令
     if (directiveRef.instance.onInit) {
@@ -466,11 +466,11 @@ export function bindingText(node: RText, expr: string | null, renderer: Renderer
     const matches = matchDelimiter(expr, delimiter);
     if (!matches?.length) return;
 
-    binding(node, (target: RNode, context: any, effect, environment: NodeInjector) => {
+    binding(node, (target: RNode, context: any, effect, injector: NodeInjector) => {
         const textNode = target as RText;
         evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
             textNode.textContent = updatedText;
-        }, environment, delimiter);
+        }, injector, delimiter);
 
         return () => {
             textNode.textContent = expr;
@@ -492,17 +492,17 @@ export function bindingText(node: RText, expr: string | null, renderer: Renderer
 export function bindingTemplate(element: RElement, renderer: Renderer, delimiter: RegExp): void {
     const childNodes = element.childNodes;
     element.childNodes = [];
-    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: NodeInjector) => {
-        if (environment.destroyed) return;
+    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
+        if (injector.destroyed) return;
         const el = target as RElement;
-        const elementRef = environment.getElementRef(el);
+        const elementRef = injector.getElementRef(el);
         let ctx: any;
 
         if (el.hasAttribute(':templateOutletContext')) {
             ctx = reactive({}, effect);
             const expr = el.getAttribute(':templateOutletContext')!;
             effect.run(() => {
-                const value = evaluateExpression(expr, context, environment, delimiter);
+                const value = evaluateExpression(expr, context, injector, delimiter);
                 Object.assign(ctx, value);
             })
         } else {
@@ -513,7 +513,7 @@ export function bindingTemplate(element: RElement, renderer: Renderer, delimiter
                 ctx = reactive({}, effect);
                 effect.run(() => {
                     vals.forEach(([name, expr]) => {
-                        const value = evaluateExpression(expr, context, environment, delimiter);
+                        const value = evaluateExpression(expr, context, injector, delimiter);
                         ctx[name] = value;
                     });
                 })
@@ -522,10 +522,10 @@ export function bindingTemplate(element: RElement, renderer: Renderer, delimiter
             }
         }
 
-        const templateRef = createTemplateRef(childNodes, elementRef, { environment, context: ctx })
+        const templateRef = createTemplateRef(childNodes, elementRef, { injector, context: ctx })
 
         if (templateRef) {
-            environment.attachTemplate(templateRef);
+            injector.attachTemplate(templateRef);
         }
     });
 }
@@ -606,9 +606,9 @@ export function bindingAtrrbutes(element: RNode, attrs: RAttr[], renderer: Rende
 export function bindingEvent(element: RNode, attrName: string, expr: string, renderer: Renderer, delimiter: RegExp): void {
     const eventName = attrName.substring(1);
 
-    binding(element, (target, context, effect, environment) => {
+    binding(element, (target, context, effect, injector) => {
         const el = target as RElement;
-        const handler = parseEventExpression(expr, context, effect, environment, delimiter);
+        const handler = parseEventExpression(expr, context, effect, injector, delimiter);
         el.addEventListener(eventName, handler);
 
         return () => {
@@ -627,11 +627,11 @@ export function bindingEvent(element: RNode, attrName: string, expr: string, ren
  */
 export function bindingProperty(element: RNode, attrName: string, expr: string, renderer: Renderer, delimiter: RegExp): void {
     const propName = attrName.substring(1);
-    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: NodeInjector) => {
+    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         const el = target as RElement;
         if (!el.setProperty) return;
         effect.run(() => {
-            const attValue = evaluateExpression(expr, context, environment, delimiter);
+            const attValue = evaluateExpression(expr, context, injector, delimiter);
             el.setProperty!(propName, attValue);
         });
         return () => el.removeAttribute(propName);
@@ -654,11 +654,11 @@ export function bindingInterpolationFactory(element: RNode, attrName: string, ex
     const matches = matchDelimiter(expr, delimiter);
     if (!matches?.length) return;
 
-    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: NodeInjector) => {
+    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         const el = target as RElement;
         evaluateDelimiterExpression(expr, context, effect, matches, (updatedText) => {
             el.setAttribute(attrName, updatedText);
-        }, environment, delimiter);
+        }, injector, delimiter);
 
         return () => el.setAttribute(attrName, expr); // 恢复原始值
     });
@@ -672,7 +672,7 @@ export function bindingInterpolationFactory(element: RNode, attrName: string, ex
  * @param delimiter 分隔符正则表达式
  */
 export function createModelBindingFactory(element: RNode, prop: string, renderer: Renderer, delimiter: RegExp): void {
-    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: NodeInjector) => {
+    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         const el = target as RElement;
         effect.run(() => {
             el.setAttribute('value', context[prop]);
@@ -698,18 +698,18 @@ export function createModelBindingFactory(element: RNode, prop: string, renderer
  * @param delimiter 分隔符正则表达式
  */
 export function bindingComponentFactory(element: RElement, componentDef: ComponentDef, attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
-    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: NodeInjector) => {
-        if (environment.destroyed) return;
+    binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
+        if (injector.destroyed) return;
         const el = target as RElement;
-        const elementRef = environment.getElementRef(el);
-        const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
+        const elementRef = injector.getElementRef(el);
+        const componentRef = (componentDef as Factoriable).ƿfac?.(injector, { elementRef });
 
         if (componentRef) {
-            environment.attachComponent(componentRef);
+            injector.attachComponent(componentRef);
 
             // 处理组件属性绑定
             attrs.forEach(({ name, value }) => {
-                processComponentAttribute(componentRef, name, value, context, effect, environment, delimiter);
+                processComponentAttribute(componentRef, name, value, context, effect, injector, delimiter);
             });
 
             componentRef.render();
@@ -758,10 +758,10 @@ export function bindingDirectiveFactory(element: RElement, directiveDef: Directi
  * @param expr 表达式
  * @param context 上下文
  * @param effect 响应式效果
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  */
-export function processComponentAttribute(componentRef: any, attrName: string, expr: string, context: any, effect: ReactiveEffect<any>, environment: NodeInjector, delimiter: RegExp): void {
+export function processComponentAttribute(componentRef: any, attrName: string, expr: string, context: any, effect: ReactiveEffect<any>, injector: NodeInjector, delimiter: RegExp): void {
     const attributes = componentRef.def?.attributes || [];
 
     if (attrName.startsWith('@')) {
@@ -769,7 +769,7 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
         const inputDef = attributes.find((attr: any) => attr.alias === eventName || attr.propertyKey === eventName);
         if (inputDef) {
             effect.run(() => {
-                const handler = evaluateExpression(expr, context, environment, delimiter);
+                const handler = evaluateExpression(expr, context, injector, delimiter);
                 if (componentRef.instance[inputDef.propertyKey] instanceof EventEmitter) {
                     componentRef.instance[inputDef.propertyKey].subscribe(handler);
                 } else if (!componentRef.instance[inputDef.propertyKey]) {
@@ -806,29 +806,29 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
  * @param parentNode 父节点引用
  */
 export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp, templateNodes?: RNode[], parentNode?: RNode | null) {
-    binding(node, (target: RNode, context: any, effect: ReactiveEffect<any>, environment: NodeInjector) => {
-        const elementRef = environment.getElementRef(target);
-        const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { environment }) : undefined;
-        if (templateRef) environment.attachTemplate(templateRef);
+    binding(node, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
+        const elementRef = injector.getElementRef(target);
+        const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { injector }) : undefined;
+        if (templateRef) injector.attachTemplate(templateRef);
         
-        const viewContainerRef = environment.getViewContainerRef(target);
+        const viewContainerRef = injector.getViewContainerRef(target);
         const options: any = { templateRef, elementRef, viewContainerRef };
         
         if (parentNode) {
-            environment.setParentNode(target, parentNode);
+            injector.setParentNode(target, parentNode);
         }
         
-        const directiveRef = (dirDef as Factoriable).ƿfac?.(environment, options);
+        const directiveRef = (dirDef as Factoriable).ƿfac?.(injector, options);
         // console.log('[bindingDirective] Directive created:', dirDef.selector, 'instance:', directiveRef?.instance?.constructor?.name);
 
         if (directiveRef && directiveRef.instance) {
-            environment.attachDirective(directiveRef);
+            injector.attachDirective(directiveRef);
             const instance = directiveRef.instance as any;
             // console.log('[bindingDirective] After attach, instance type:', instance?.constructor?.name);
             
             // Set essential properties first
-            if (instance.environment === undefined) {
-                instance.environment = environment;
+            if (instance.injector === undefined) {
+                instance.injector = injector;
             }
             if (instance.viewContainer === undefined && viewContainerRef) {
                 instance.viewContainer = viewContainerRef;
@@ -868,7 +868,7 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
             }
             
             // Process directive attributes (this may trigger for/if setters)
-            processDirectiveAttributes(directiveRef, dirDef, selectors, attrs, context, effect, environment, delimiter);
+            processDirectiveAttributes(directiveRef, dirDef, selectors, attrs, context, effect, injector, delimiter);
 
             // Initialize directive
             if (instance.onInit) {
@@ -957,10 +957,10 @@ export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selector
  * @param attrs 属性列表
  * @param context 上下文
  * @param effect 响应式效果
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  */
-export function processDirectiveAttributes(directiveRef: any, directiveDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, effect: ReactiveEffect<any>, environment: NodeInjector, delimiter: RegExp): void {
+export function processDirectiveAttributes(directiveRef: any, directiveDef: DirectiveDef, selectors: string[], attrs: RAttr[], context: any, effect: ReactiveEffect<any>, injector: NodeInjector, delimiter: RegExp): void {
     const attributes = directiveDef.attributes ?? [];
     if (!attributes?.length) return;
 
@@ -980,7 +980,7 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
 
         if (attr.name.startsWith('@')) {
             effect.run(() => {
-                const handler = evaluateExpression(attr.value, context, environment, delimiter);
+                const handler = evaluateExpression(attr.value, context, injector, delimiter);
                 if (directiveInstance[propertyKey] instanceof EventEmitter) {
                     directiveInstance[propertyKey].subscribe(handler);
                 } else if (!directiveInstance[propertyKey]) {
@@ -999,10 +999,10 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
         } else if (selectors.includes(attr.name)) {
             if (isString(attr.value)) {
                 if (directiveDef.dirType === DirectiveType.Iterable) {
-                    evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, effect, environment, delimiter);
+                    evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, effect, injector, delimiter);
                 } else {
                     effect.run(() => {
-                        const attValue = evaluateExpression(attr.value, context, environment, delimiter);
+                        const attValue = evaluateExpression(attr.value, context, injector, delimiter);
                         directiveInstance[propertyKey] = attValue;
                     });
                 }
@@ -1020,10 +1020,10 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
  * @param effect 响应式效果
  * @param matches 匹配结果
  * @param update 更新函数
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  */
-export function evaluateDelimiterExpression(text: string, context: any, effect: ReactiveEffect<any>, matches: RegExpExecArray[], update: (text: string) => void, environment: NodeInjector, delimiter: RegExp): void {
+export function evaluateDelimiterExpression(text: string, context: any, effect: ReactiveEffect<any>, matches: RegExpExecArray[], update: (text: string) => void, injector: NodeInjector, delimiter: RegExp): void {
     const segments: (string | { expr: string, value: any })[] = [];
     let lastIndex = 0;
 
@@ -1037,7 +1037,7 @@ export function evaluateDelimiterExpression(text: string, context: any, effect: 
     segments.forEach(segment => {
         if (typeof segment !== 'string') {
             effect.run(() => {
-                segment.value = evaluateExpression(segment.expr, context, environment, delimiter);
+                segment.value = evaluateExpression(segment.expr, context, injector, delimiter);
                 const updatedText = segments.map(s =>
                     typeof s === 'string' ? s : s.value
                 ).join('');
@@ -1051,11 +1051,11 @@ export function evaluateDelimiterExpression(text: string, context: any, effect: 
  * 使用环境上下文评估表达式
  * @param expr 表达式
  * @param context 上下文
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  * @returns 评估结果
  */
-export function evaluateExpression(expr: string, context: any, environment: NodeInjector, delimiter: RegExp): any {
+export function evaluateExpression(expr: string, context: any, injector: NodeInjector, delimiter: RegExp): any {
     try {
         const parts = expr.split('|').map(part => part.trim());
         if (parts.length <= 1) {
@@ -1063,7 +1063,7 @@ export function evaluateExpression(expr: string, context: any, environment: Node
         } else {
             const [expression, ...pipeNames] = parsePipes(parts);
             const pipes = pipeNames.reduce((obj, name) => {
-                obj[name] = environment.get(name);
+                obj[name] = injector.get(name);
                 return obj;
             }, {} as any);
             return new Function('ctx', 'pipes', `with(ctx){return ${expression}}`)(context, pipes);
@@ -1080,11 +1080,11 @@ const funcCallRegex = /^\s*([_$a-zA-Z\w.]+)\s*\(\s*(.*?)\s*\)\s*$/;
  * @param expr 表达式
  * @param context 上下文
  * @param effect 响应式效果
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  * @returns 事件监听器
  */
-export function parseEventExpression(expr: string, context: any, effect: ReactiveEffect, environment: NodeInjector, delimiter: RegExp): EventListener {
+export function parseEventExpression(expr: string, context: any, effect: ReactiveEffect, injector: NodeInjector, delimiter: RegExp): EventListener {
     const match = expr.match(funcCallRegex);
 
     if (!match) {
@@ -1096,7 +1096,7 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
     }
 
     const [, funcPath, argsStr] = match;
-    const args = parseArguments(argsStr, context, environment, delimiter);
+    const args = parseArguments(argsStr, context, injector, delimiter);
 
     return effect.run(() => {
         const func = funcPath.split('.').reduce((obj, prop) => obj && obj[prop], context);
@@ -1138,10 +1138,10 @@ const angularForRegex = /^\s*let\s+([^ ]+)\s+(?:of|in)\s+([^]+)(?:\s*;\s*([^ ]+)
  * @param expr 表达式
  * @param context 上下文
  * @param effect 响应式效果
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  */
-function evaluateIterableExpression(directiveInstance: any, propertyKey: string, expr: string, context: any, effect: ReactiveEffect, environment: NodeInjector, delimiter: RegExp): any {
+function evaluateIterableExpression(directiveInstance: any, propertyKey: string, expr: string, context: any, effect: ReactiveEffect, injector: NodeInjector, delimiter: RegExp): any {
     // 1. Vue风格: item in items
     const vueStyle = expr.match(vueForRegex);
     let itemNames: string[];
@@ -1149,7 +1149,7 @@ function evaluateIterableExpression(directiveInstance: any, propertyKey: string,
     if (vueStyle) {
         collectionExpr = vueStyle[2].trim();
         itemNames = processVueStyleExpression(vueStyle[1]);
-        return bindIterableExpression(directiveInstance, propertyKey, itemNames, collectionExpr, context, effect, environment, delimiter);
+        return bindIterableExpression(directiveInstance, propertyKey, itemNames, collectionExpr, context, effect, injector, delimiter);
     }
 
     // 2. Angular风格: let item of items
@@ -1160,7 +1160,7 @@ function evaluateIterableExpression(directiveInstance: any, propertyKey: string,
         if (angularStyle[3] && angularStyle[4]) {
             itemNames.push(angularStyle[4].trim())
         }
-        return bindIterableExpression(directiveInstance, propertyKey, itemNames, collectionExpr, context, effect, environment, delimiter);
+        return bindIterableExpression(directiveInstance, propertyKey, itemNames, collectionExpr, context, effect, injector, delimiter);
     }
 }
 
@@ -1172,15 +1172,15 @@ function evaluateIterableExpression(directiveInstance: any, propertyKey: string,
  * @param collectionExpr 集合表达式
  * @param context 上下文
  * @param effect 响应式效果
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  */
-function bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, effect: ReactiveEffect, environment: NodeInjector, delimiter: RegExp) {
+function bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, effect: ReactiveEffect, injector: NodeInjector, delimiter: RegExp) {
     // 设置v-for指令期望的属性（而不是collection）
     directiveInstance.itemNames = itemNames; // 主循环变量（如item）
     // 设置v-for指令期望的属性
     effect.run(() => {
-        const collection = evaluateExpression(collectionExpr, context, environment, delimiter);
+        const collection = evaluateExpression(collectionExpr, context, injector, delimiter);
         directiveInstance[propertyKey] = collection;     // 集合数据
     });
 }
@@ -1230,11 +1230,11 @@ function parsePipes(parts: string[]): string[] {
  * 解析参数列表，支持字符串、数字、布尔值和变量引用
  * @param argsStr 参数字符串
  * @param context 上下文
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  * @returns 参数列表
  */
-function parseArguments(argsStr: string, context: any, environment: NodeInjector, delimiter: RegExp): any[] {
+function parseArguments(argsStr: string, context: any, injector: NodeInjector, delimiter: RegExp): any[] {
     if (!argsStr.trim()) return [];
 
     // 使用状态机解析参数，支持嵌套括号和引号
@@ -1254,7 +1254,7 @@ function parseArguments(argsStr: string, context: any, environment: NodeInjector
             parenDepth--;
             currentArg += char;
         } else if (char === ',' && parenDepth === 0) {
-            args.push(evaluateArg(currentArg.trim(), context, environment, delimiter));
+            args.push(evaluateArg(currentArg.trim(), context, injector, delimiter));
             currentArg = '';
         } else if (char === '"' || char === '\'') {
             quoteChar = char;
@@ -1265,7 +1265,7 @@ function parseArguments(argsStr: string, context: any, environment: NodeInjector
     }
 
     if (currentArg.trim()) {
-        args.push(evaluateArg(currentArg.trim(), context, environment, delimiter));
+        args.push(evaluateArg(currentArg.trim(), context, injector, delimiter));
     }
 
     return args;
@@ -1275,11 +1275,11 @@ function parseArguments(argsStr: string, context: any, environment: NodeInjector
  * 计算参数值 (字符串/数字/布尔值/变量引用)
  * @param arg 参数
  * @param context 上下文
- * @param environment 环境上下文
+ * @param injector 环境上下文
  * @param delimiter 分隔符正则表达式
  * @returns 参数值
  */
-function evaluateArg(arg: string, context: any, environment: NodeInjector, delimiter: RegExp): any {
+function evaluateArg(arg: string, context: any, injector: NodeInjector, delimiter: RegExp): any {
     if (!arg) return undefined;
 
     // 字符串字面量
@@ -1303,7 +1303,7 @@ function evaluateArg(arg: string, context: any, environment: NodeInjector, delim
     if (arg == '$event') return arg;
 
     // 复杂表达式，委托给evaluateExpression处理
-    return evaluateExpression(arg, context, environment, delimiter);
+    return evaluateExpression(arg, context, injector, delimiter);
 }
 
 // 保留文件末尾的辅助函数

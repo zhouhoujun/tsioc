@@ -8,7 +8,7 @@ import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '
 import { reactive } from '../reactive';
 import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
-import { NodeInjector } from '../refs/environment';
+import { NodeInjector } from '../refs/injector';
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
 

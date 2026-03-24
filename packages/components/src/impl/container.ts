@@ -7,7 +7,7 @@ import { Renderer } from '../renderer/Renderer';
 import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
 import { NodeType, RNode } from '../renderer/Node';
-import { NodeInjector } from '../refs/environment';
+import { NodeInjector } from '../refs/injector';
 import { noReact, ReactiveEffect } from '../effect';
 
 /**
@@ -40,12 +40,12 @@ class ViewContainerRefImpl implements ViewContainerRef {
     /**
      * Creates an instance of ViewContainerRefImpl.
      * @param {ElementRef} element
-     * @param {NodeInjector} environment
+     * @param {NodeInjector} injector
      * @memberof ViewContainerRefImpl
      */
     constructor(
         readonly element: ElementRef,
-        readonly environment: NodeInjector,
+        readonly injector: NodeInjector,
     ) {
 
     }
@@ -53,7 +53,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
     private _renderer?: Renderer;
     get renderer(): Renderer {
         if (!this._renderer) {
-            this._renderer = this.environment.get(Renderer);
+            this._renderer = this.injector.get(Renderer);
         }
         return this._renderer;
     }
@@ -95,16 +95,16 @@ class ViewContainerRefImpl implements ViewContainerRef {
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, index?: number): EmbeddedViewRef<C>;
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, options?: {
         index?: number,
-        environment?: NodeInjector,
+        injector?: NodeInjector,
         effect?: ReactiveEffect
     }): EmbeddedViewRef<C>;
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, opts?: { index?: number } | number): EmbeddedViewRef<C> {
         const options = (isNumber(opts) ? { index: opts } : opts) as {
             index?: number,
-            environment?: NodeInjector,
+            injector?: NodeInjector,
             effect?: ReactiveEffect
         };
-        const view = templateRef.createEmbeddedView(context, options?.environment || this.environment, options?.effect);
+        const view = templateRef.createEmbeddedView(context, options?.injector || this.injector, options?.effect);
         const index = options?.index !== undefined ? options.index : this.views.length;
         this.insert(view, index);
         return view;
@@ -112,10 +112,10 @@ class ViewContainerRefImpl implements ViewContainerRef {
 
     createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: {
         index?: number,
-        environment?: NodeInjector,
+        injector?: NodeInjector,
     }): ComponentRef<C> {
         const def = isFunction(componentType) ? getDef(componentType) : componentType;
-        const componentRef = (def as Factoriable).ƿfac!(options?.environment || this.environment, {}) as ComponentRef<C>;
+        const componentRef = (def as Factoriable).ƿfac!(options?.injector || this.injector, {}) as ComponentRef<C>;
         const insertIndex = options?.index !== undefined ? options?.index : this.views.length;
         componentRef.render()
             .then(() => {
@@ -297,6 +297,6 @@ class ViewContainerRefImpl implements ViewContainerRef {
     }
 }
 
-export function createViewContainerRef(elementRef: ElementRef, environment: NodeInjector): ViewContainerRef {
-    return new ViewContainerRefImpl(elementRef, environment);
+export function createViewContainerRef(elementRef: ElementRef, injector: NodeInjector): ViewContainerRef {
+    return new ViewContainerRefImpl(elementRef, injector);
 }

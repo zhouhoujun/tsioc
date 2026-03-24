@@ -6,7 +6,7 @@ import { RNode } from '../renderer/Node';
 import { DirectiveRef } from '../refs/directive';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
-import { NodeInjector } from '../refs/environment';
+import { NodeInjector } from '../refs/injector';
 
 /**
  * Embedded view ref implement.
@@ -40,11 +40,11 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     constructor(
         readonly rootNodes: RNode[],
         readonly context: C,
-        readonly environment: NodeInjector,
+        readonly injector: NodeInjector,
         effect?: ReactiveEffect
     ) {
-        this.effect = effect ?? environment.get(ReactiveEffect);
-        environment.onDestroy(this);
+        this.effect = effect ?? injector.get(ReactiveEffect);
+        injector.onDestroy(this);
     }
 
 
@@ -78,7 +78,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         // if (this.effect) {
         //     this.effect.stop();
         // }
-        // this.environment.destroy();
+        // this.injector.destroy();
     }
 
     /**
@@ -96,14 +96,14 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     query<T>(selector: Type<T>): ComponentRef<T> | DirectiveRef<T> | null;
     query<C>(selector: string): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
     query(selector: string | Type): any {        
-       return this.environment.query(selector as any, this.rootNodes)
+       return this.injector.query(selector as any, this.rootNodes)
     }
 
 
     queryAll<T>(selector: Type<T>): Array<ComponentRef<T> | DirectiveRef<T>>;
     queryAll<C>(selector: string): Array<ElementRef<C> | ViewRef<C> | TemplateRef<C>>;
     queryAll(selector: string | Type): Array<any> {
-       return this.environment.queryAll(selector as any, this.rootNodes)
+       return this.injector.queryAll(selector as any, this.rootNodes)
     }
 
 }
@@ -111,8 +111,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 export function createEmbeddedViewRef<C>(
     rootNodes: RNode[],
     context: C,
-    environment: NodeInjector,
+    injector: NodeInjector,
     effect?: ReactiveEffect) {
-    return new EmbeddedViewRefImpl(rootNodes, context, environment, effect)
+    return new EmbeddedViewRefImpl(rootNodes, context, injector, effect)
 
 }

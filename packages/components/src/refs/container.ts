@@ -42,9 +42,9 @@ export abstract class ViewContainerRef<T = any> {
     abstract get element(): ElementRef<T>;
 
     /**
-     * The environment for this view container.
+     * The injector for this view container.
      */
-    abstract get environment(): Injector;
+    abstract get injector(): Injector;
 
     /**
      * Destroys all views in this container.
@@ -73,13 +73,13 @@ export abstract class ViewContainerRef<T = any> {
      * @param options Extra configuration for the created view. Includes:
      *  * index: The 0-based index at which to insert the new view into this container.
      *           If not specified, appends the new view as the last entry.
-     *  * environment: InvocationContext to be used within the embedded view.
+     *  * injector: InvocationContext to be used within the embedded view.
      *
      * @returns The `ViewRef` instance for the newly created view.
      */
     abstract createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, options?: {
         index?: number,
-        environment?: Injector
+        injector?: Injector
     }): EmbeddedViewRef<C>;
 
     /**
@@ -102,7 +102,7 @@ export abstract class ViewContainerRef<T = any> {
      * @param options An object that contains extra parameters:
      *  * index: the index at which to insert the new component's host view into this container.
      *           If not specified, appends the new view as the last entry.
-     *  * environment: an Injector which will provide the component's environment.
+     *  * injector: an Injector which will provide the component's injector.
      *                 you should almost always provide this to ensure that all expected providers
      *                 are available for the component instantiation. This option is intended to
      *                 replace the `moduleRef` parameter.
@@ -111,7 +111,7 @@ export abstract class ViewContainerRef<T = any> {
      */
     abstract createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: {
         index?: number,
-        environment?: Injector,
+        injector?: Injector,
     }): ComponentRef<C>;
 
     /**

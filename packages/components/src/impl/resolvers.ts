@@ -1,5 +1,5 @@
 import { AbstractType, ResolveInterceptorFn, isBaseOf, getDef, Provider, Type, isNumber, UNRESOLVED, InjectFlags } from '@tsdi/ioc';
-import { NodeInjector, NODES_RESOLVERS } from '../refs/environment';
+import { NodeInjector, NODES_RESOLVERS } from '../refs/injector';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { DirectiveDef, DirectiveRef, DirectiveType, Factoriable } from '../refs/directive';
@@ -20,12 +20,12 @@ export const elementRefResovler: ResolveInterceptorFn = (input, next, context) =
 export const templateRefResovler: ResolveInterceptorFn = (input, next, context) => {
     const paramType = (input.provider ?? input.type) as AbstractType;
     if (paramType === TemplateRef || isBaseOf(paramType, TemplateRef)) {
-        const environment = context.getInjector() as NodeInjector;
-        const elementRef = environment.getPayload() as ElementRef;
-        let templateRef = environment.getTemplateRef(elementRef.nativeElement, input.flags);
+        const injector = context.getInjector() as NodeInjector;
+        const elementRef = injector.getPayload() as ElementRef;
+        let templateRef = injector.getTemplateRef(elementRef.nativeElement, input.flags);
         
         if (!templateRef) {
-            templateRef = createAndAttachDirectiveForNode(environment, elementRef.nativeElement);
+            templateRef = createAndAttachDirectiveForNode(injector, elementRef.nativeElement);
         }
         
         return templateRef ?? UNRESOLVED;
@@ -37,9 +37,9 @@ export const templateRefResovler: ResolveInterceptorFn = (input, next, context) 
 export const directorRefResovler: ResolveInterceptorFn = (input, next, context) => {
     const paramType = (input.provider ?? input.type) as AbstractType;
     if (paramType === DirectiveRef || isBaseOf(paramType, DirectiveRef)) {
-        const environment = context.getInjector() as NodeInjector;
-        const elementRef = environment.getPayload() as ElementRef;
-        return environment.getDirectiveRefByNode(elementRef.nativeElement, input.flags) ?? UNRESOLVED;
+        const injector = context.getInjector() as NodeInjector;
+        const elementRef = injector.getPayload() as ElementRef;
+        return injector.getDirectiveRefByNode(elementRef.nativeElement, input.flags) ?? UNRESOLVED;
     }
 
     return next(input, context);
@@ -48,51 +48,51 @@ export const directorRefResovler: ResolveInterceptorFn = (input, next, context) 
 export const componentRefResovler: ResolveInterceptorFn = (input, next, context) => {
     const paramType = (input.provider ?? input.type) as AbstractType;
     if (paramType === ComponentRef || isBaseOf(paramType, ComponentRef)) {
-        const environment = context.getInjector() as NodeInjector;
-        const elementRef = environment.getPayload() as ElementRef;
-        return environment.getComponentRefByNode(elementRef.nativeElement, input.flags) ?? UNRESOLVED;
+        const injector = context.getInjector() as NodeInjector;
+        const elementRef = injector.getPayload() as ElementRef;
+        return injector.getComponentRefByNode(elementRef.nativeElement, input.flags) ?? UNRESOLVED;
     }
 
     return next(input, context);
 }
 
-function createAndAttachDirectiveForNode(environment: NodeInjector, node: any): TemplateRef<any> | null {
+function createAndAttachDirectiveForNode(injector: NodeInjector, node: any): TemplateRef<any> | null {
     const directives = node[DIRECTIVES] as DirectiveDef[] | undefined;
     if (!directives || directives.length === 0) {
-        return environment.getTemplateRef(node);
+        return injector.getTemplateRef(node);
     }
     
     for (const dirDef of directives) {
         if (dirDef.dirType === DirectiveType.Iterable || dirDef.dirType === DirectiveType.Conditional) {
-            let dirRef = environment.getDirectiveRefByNode(node);
+            let dirRef = injector.getDirectiveRefByNode(node);
             if (!dirRef) {
-                const elementRef = environment.getElementRef(node);
-                dirRef = (dirDef as Factoriable).ƿfac?.(environment, { elementRef });
+                const elementRef = injector.getElementRef(node);
+                dirRef = (dirDef as Factoriable).ƿfac?.(injector, { elementRef });
                 if (dirRef) {
-                    environment.attachDirective(dirRef);
+                    injector.attachDirective(dirRef);
                 }
             }
             if (dirRef) {
-                return environment.getTemplateRef(node);
+                return injector.getTemplateRef(node);
             }
         }
     }
     
-    return environment.getTemplateRef(node);
+    return injector.getTemplateRef(node);
 }
 
-function createAndAttachComponentForNode(environment: NodeInjector, node: any): ComponentRef<any> | null {
+function createAndAttachComponentForNode(injector: NodeInjector, node: any): ComponentRef<any> | null {
     const compDef = node[COMPONENTDEF] as ComponentDef | undefined;
     if (!compDef) {
         return null;
     }
     
-    let compRef = environment.getComponentRefByNode(node);
+    let compRef = injector.getComponentRefByNode(node);
     if (!compRef) {
-        const elementRef = environment.getElementRef(node);
-        compRef = (compDef as Factoriable).ƿfac?.(environment, { elementRef }) as ComponentRef<any>;
+        const elementRef = injector.getElementRef(node);
+        compRef = (compDef as Factoriable).ƿfac?.(injector, { elementRef }) as ComponentRef<any>;
         if (compRef) {
-            environment.attachComponent(compRef);
+            injector.attachComponent(compRef);
         }
     }
     return compRef;
@@ -101,15 +101,15 @@ function createAndAttachComponentForNode(environment: NodeInjector, node: any): 
 export const viewContainerRefResovler: ResolveInterceptorFn = (input, next, context) => {
     const paramType = (input.provider ?? input.type) as AbstractType;
     if (paramType === ViewContainerRef || isBaseOf(paramType, ViewContainerRef)) {
-        const environment = context.getInjector() as NodeInjector;
-        const elementRef = environment.getPayload() as ElementRef;
+        const injector = context.getInjector() as NodeInjector;
+        const elementRef = injector.getPayload() as ElementRef;
         
-        const containerRef = environment.getViewContainerRef(elementRef.nativeElement, input.flags);
+        const containerRef = injector.getViewContainerRef(elementRef.nativeElement, input.flags);
         if (containerRef) {
             return containerRef;
         }
         
-        return environment.createViewContainerRef(elementRef.nativeElement) ?? UNRESOLVED;
+        return injector.createViewContainerRef(elementRef.nativeElement) ?? UNRESOLVED;
     }
 
     return next(input, context);
@@ -120,8 +120,8 @@ export const hostDirectiveResovler: ResolveInterceptorFn = (input, next, context
     const paramType = (input.provider ?? input.type) as Type;
     
     if (input.flags && (input.flags & InjectFlags.Host)) {
-        const environment = context.getInjector() as NodeInjector;
-        const elementRef = environment.getPayload() as ElementRef;
+        const injector = context.getInjector() as NodeInjector;
+        const elementRef = injector.getPayload() as ElementRef;
         
         if (elementRef?.nativeElement) {
             const dirDef = getDef<DirectiveDef>(paramType);
@@ -131,7 +131,7 @@ export const hostDirectiveResovler: ResolveInterceptorFn = (input, next, context
                 const node = elementRef?.nativeElement;
 
                 const searchForDirective = (searchNode: any, depth = 0): any => {
-                    const dirRefsOnNode = environment.getDirectiveRefsByNode(searchNode);
+                    const dirRefsOnNode = injector.getDirectiveRefsByNode(searchNode);
                     // console.log('[hostDirectiveResovler] Searching in node:', (searchNode as any)?.tagName, 'dirRefs:', dirRefsOnNode?.map((r: any) => r?.instance?.constructor?.name));
                     if (dirRefsOnNode) {
                         for (const dirRef of dirRefsOnNode) {
@@ -157,7 +157,7 @@ export const hostDirectiveResovler: ResolveInterceptorFn = (input, next, context
                     return null;
                 };
 
-                const storedParent = environment.getParentNode(node);
+                const storedParent = injector.getParentNode(node);
                 // console.log('[hostDirectiveResovler] Searching for SwitchDirective, node tagName:', (node as any)?.tagName, 'storedParent:', (storedParent as any)?.tagName);
                 
                 // For v-case, search in the same container (storedParent) since v-switch is on the parent element
@@ -186,25 +186,25 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
     const dirDef = getDef<DirectiveDef>(paramType);
     const dirType = dirDef?.dirType;
     if (isNumber(dirType)) {
-        const environment = context.getInjector() as NodeInjector;
-        const renderer = environment.get(Renderer);
-        const elementRef = environment.getPayload() as ElementRef;
+        const injector = context.getInjector() as NodeInjector;
+        const renderer = injector.get(Renderer);
+        const elementRef = injector.getPayload() as ElementRef;
         
         if(dirType === DirectiveType.Component) {
-            const compRefs = environment.getComponentRef(paramType, input.flags);
+            const compRefs = injector.getComponentRef(paramType, input.flags);
             if (compRefs && compRefs.length > 0) {
                 return compRefs[0];
             }
-            let compRef = createAndAttachComponentForNode(environment, elementRef.nativeElement);
+            let compRef = createAndAttachComponentForNode(injector, elementRef.nativeElement);
             if (!compRef && dirDef.selector) {
                 const nodes = renderer.querySelectorAll(elementRef.nativeElement, dirDef.selector);
                 if (nodes && nodes.length > 0) {
-                    compRef = createAndAttachComponentForNode(environment, nodes[0]);
+                    compRef = createAndAttachComponentForNode(injector, nodes[0]);
                 }
             }
             return compRef ?? UNRESOLVED;
         }
-        const dirRefs = environment.getDirectiveRef(paramType, input.flags);
+        const dirRefs = injector.getDirectiveRef(paramType, input.flags);
         return dirRefs && dirRefs.length > 0 ? dirRefs[0] : UNRESOLVED;
     }
 
@@ -212,7 +212,7 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
 }
 
 export function resolveDirectiveFromNode(
-    environment: NodeInjector,
+    injector: NodeInjector,
     node: any,
     directiveType: Type
 ): DirectiveRef<any> | null {
@@ -223,12 +223,12 @@ export function resolveDirectiveFromNode(
     
     for (const dirDef of directives) {
         if (dirDef.type === directiveType) {
-            let dirRef = environment.getDirectiveRefByNode(node);
+            let dirRef = injector.getDirectiveRefByNode(node);
             if (!dirRef) {
-                const elementRef = environment.getElementRef(node);
-                dirRef = (dirDef as Factoriable).ƿfac?.(environment, { elementRef });
+                const elementRef = injector.getElementRef(node);
+                dirRef = (dirDef as Factoriable).ƿfac?.(injector, { elementRef });
                 if (dirRef) {
-                    environment.attachDirective(dirRef);
+                    injector.attachDirective(dirRef);
                 }
             }
             return dirRef;
@@ -238,7 +238,7 @@ export function resolveDirectiveFromNode(
 }
 
 export function resolveComponentFromNode(
-    environment: NodeInjector,
+    injector: NodeInjector,
     node: any,
     componentType: Type
 ): ComponentRef<any> | null {
@@ -247,12 +247,12 @@ export function resolveComponentFromNode(
         return null;
     }
     
-    let compRef = environment.getComponentRefByNode(node);
+    let compRef = injector.getComponentRefByNode(node);
     if (!compRef) {
-        const elementRef = environment.getElementRef(node);
-        compRef = (compDef as Factoriable).ƿfac?.(environment, { elementRef }) as ComponentRef<any>;
+        const elementRef = injector.getElementRef(node);
+        compRef = (compDef as Factoriable).ƿfac?.(injector, { elementRef }) as ComponentRef<any>;
         if (compRef) {
-            environment.attachComponent(compRef);
+            injector.attachComponent(compRef);
         }
     }
     return compRef;

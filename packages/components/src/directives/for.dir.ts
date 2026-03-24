@@ -34,7 +34,7 @@ export class VForDirective {
         templateRef: TemplateRef<any>,
     ) {
         this._templateRef = templateRef;
-        this._effect = viewContainer.environment.get(ReactiveEffect);
+        this._effect = viewContainer.injector.get(ReactiveEffect);
     }
 
     set itemNames(names: string[]) {

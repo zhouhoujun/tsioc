@@ -45,7 +45,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             bindDirective: applyDirectiveToElement,
         });
 
-        return (host, environment) => createTemplateRef<C>(factory, host, { environment });
+        return (host, injector) => createTemplateRef<C>(factory, host, { injector });
     }
 
 

@@ -2,7 +2,7 @@ import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions,
 import { AttributeMetadata } from '../decorators/atteribute';
 import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
-import { NodeInjector } from './environment';
+import { NodeInjector } from './injector';
 import { ComputedMetadata } from '../decorators/computed';
 import { noReact } from '../effect';
 import { TemplateRef } from './template';

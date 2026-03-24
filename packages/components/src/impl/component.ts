@@ -8,7 +8,7 @@ import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '
 import { TemplateCompiler } from '../template/compiler';
 import { reactive } from '../reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
-import { NodeInjector } from '../refs/environment';
+import { NodeInjector } from '../refs/injector';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';

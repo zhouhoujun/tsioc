@@ -1,7 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
-import { NodeInjector } from './environment';
+import { NodeInjector } from './injector';
 import { noReact, ReactiveEffect } from '../effect';
 import { RNode } from '../renderer/Node';
 import { Renderer } from '../renderer/Renderer';
@@ -47,17 +47,17 @@ export abstract class TemplateRef<C = any> {
      * and attaches it to the view container.
      * @param context The data-binding context of the embedded view, as declared
      * in the `<template>` usage.
-     * @param environment NodeInjector to be used within the embedded view.
+     * @param injector NodeInjector to be used within the embedded view.
      * @param effect ReactiveEffect to be used for the embedded view.
      * @returns The new embedded view object.
      */
-    abstract createEmbeddedView(context: C, environment?: NodeInjector, effect?: ReactiveEffect): EmbeddedViewRef<C>;
+    abstract createEmbeddedView(context: C, injector?: NodeInjector, effect?: ReactiveEffect): EmbeddedViewRef<C>;
 
 }
 
-export type NodeFactory<C> = (renderer: Renderer, environment: NodeInjector, context: C, effect: ReactiveEffect) => RNode[];
+export type NodeFactory<C> = (renderer: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect) => RNode[];
 
-export type TemplateFactory<C = any> = (host: ElementRef, environment?: NodeInjector) => TemplateRef<C>;
+export type TemplateFactory<C = any> = (host: ElementRef, injector?: NodeInjector) => TemplateRef<C>;
 
 /**
  * 取消绑定
@@ -67,5 +67,5 @@ export type Unbinding = () => void;
 /**
  * 绑定上下文到目标元素
  */
-export type Bindings<T = any> = (target: RNode, context: T, effect: ReactiveEffect, environment: NodeInjector) => Unbinding | void;
+export type Bindings<T = any> = (target: RNode, context: T, effect: ReactiveEffect, injector: NodeInjector) => Unbinding | void;
 

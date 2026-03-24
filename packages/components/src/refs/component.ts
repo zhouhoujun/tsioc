@@ -2,7 +2,7 @@ import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions,
 import { CompilerOptions, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { EmbeddedViewRef } from './view';
 import { DirectiveDef, factoryKey } from './directive';
-import { NodeInjector } from './environment';
+import { NodeInjector } from './injector';
 import { ElementRef } from './element';
 import { Renderer } from '../renderer/Renderer';
 import { noReact } from '../effect';

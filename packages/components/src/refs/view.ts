@@ -3,7 +3,7 @@ import { ComponentRef } from './component';
 import { DirectiveRef } from './directive';
 import { TemplateRef } from './template';
 import { ElementRef } from './element';
-import { NodeInjector } from './environment';
+import { NodeInjector } from './injector';
 import { noReact, ReactiveEffect } from '../effect';
 
 
@@ -105,9 +105,9 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
 
   abstract get effect(): ReactiveEffect;
   /**
-   * The environment context for this view.
+   * The injector context for this view.
    */
-  abstract get environment(): NodeInjector;
+  abstract get injector(): NodeInjector;
 
   // 添加计算属性缓存
   abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
