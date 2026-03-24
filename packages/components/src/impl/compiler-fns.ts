@@ -156,15 +156,19 @@ export function compileElementToFactory(
             }
         });
 
-        // 应用绑定
-        bindings.forEach(binding => {
-            const unbinding = binding(element, context, effect, injector);
-            unbinding && injector.onDestroy(unbinding);
-        });
-
-        // 应用指令
+        // 应用指令（在子节点添加后）
         directives.forEach(dirDef => {
             rendererOptions.bindDirective(element, dirDef, attrs, effect, injector, context, rendererOptions.delimiter);
+        });
+
+        // 延迟绑定执行到微任务，确保元素已被添加到父节点
+        // 这样 target.parentNode 在绑定执行时会被正确设置
+        const deferredBindings = [...bindings];
+        Promise.resolve().then(() => {
+            deferredBindings.forEach(binding => {
+                const unbinding = binding(element, context, effect, injector);
+                unbinding && injector.onDestroy(unbinding);
+            });
         });
 
         return element;
@@ -559,6 +563,8 @@ export function bindingElement<C>(
 
     const dirs = element[DIRECTIVES];
     if (dirs && dirs.length) {
+        // Sort directives by priority (higher priority first)
+        dirs.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
         element[DIRECTIVES] = dirs;
         dirs.forEach(dirDef => {
             bindingDirectiveFactory(element, dirDef, attrs, renderer, delimiter);
@@ -727,17 +733,20 @@ export function bindingComponentFactory(element: RElement, componentDef: Compone
  */
 export function bindingDirectiveFactory(element: RElement, directiveDef: DirectiveDef, attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
     const selectors = directiveDef.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
-    
-    // v-switch needs special handling - it should create a container like conditional directives
-    if (directiveDef.selector.includes('v-switch') || directiveDef.selector.includes('*switch')) {
-        processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter);
-        return;
-    }
-    
+
     switch (directiveDef.dirType) {
         case DirectiveType.Conditional:
             // 处理条件指令组（v-if, v-else-if, v-else, *if, *else-if, *else, v-show, *show, v-case, *case）
-            processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter);
+            // v-switch and v-case are structural directives that create containers
+            if (directiveDef.selector.includes('v-switch') || directiveDef.selector.includes('*switch')) {
+                // v-switch is not a structural directive - it just provides the switch value
+                bindingDirective(element, directiveDef, selectors, attrs, renderer, delimiter);
+            } else if (directiveDef.selector.includes('v-case') || directiveDef.selector.includes('*case')) {
+                // v-case is a structural directive that creates a container
+                processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter);
+            } else {
+                processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter);
+            }
             break;
 
         case DirectiveType.Iterable:
@@ -810,16 +819,19 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
         const elementRef = injector.getElementRef(target);
         const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { injector }) : undefined;
         if (templateRef) injector.attachTemplate(templateRef);
-        
+
         const viewContainerRef = injector.getViewContainerRef(target);
         const options: any = { templateRef, elementRef, viewContainerRef };
-        
-        if (parentNode) {
-            injector.setParentNode(target, parentNode);
+
+        // For structural directives, store the parent node for view insertion.
+        // IMPORTANT: Use target.parentNode (the cloned parent) instead of captured parentNode (template parent)
+        // This ensures views are inserted into the rendered DOM tree, not the template AST
+        const effectiveParent = target.parentNode || parentNode;
+        if (effectiveParent) {
+            injector.setParentNode(target, effectiveParent);
         }
-        
+
         const directiveRef = (dirDef as Factoriable).ƿfac?.(injector, options);
-        // console.log('[bindingDirective] Directive created:', dirDef.selector, 'instance:', directiveRef?.instance?.constructor?.name);
 
         if (directiveRef && directiveRef.instance) {
             injector.attachDirective(directiveRef);
@@ -844,27 +856,22 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
             
             // Setup if chain for conditional directives
             if (dirDef.dirType === DirectiveType.Conditional && instance instanceof BaseIfDirective) {
-                const parentEl = instance instanceof VIfDirective ? parentNode : (instance as any).parentNode;
-                setupIfChain(instance, parentEl ?? parentNode ?? null);
+                const parentEl = instance instanceof VIfDirective ? effectiveParent : (instance as any).parentNode;
+                setupIfChain(instance, parentEl ?? effectiveParent ?? null);
             }
-            
+
             // Setup switch directive
+            // v-switch is not a structural directive - register on the element itself
             if (instance instanceof SwitchDirective) {
-                registerSwitchDirective(instance, parentNode ?? null);
+                registerSwitchDirective(instance, target);
             }
-            
-            // Setup case/default directive - find switch directive
+
+            // Setup case/default directive - find switch directive in onInit instead of here
+            // because switch might not be registered yet due to element traversal order
             if (instance instanceof CaseDirective || instance instanceof DefaultDirective) {
-                (instance as any).parentNode = parentNode ?? null;
-                const switchDir = findSwitchDirective(parentNode ?? null);
-                if (switchDir) {
-                    (instance as any)._switchDirective = switchDir;
-                    if (instance instanceof CaseDirective) {
-                        switchDir.registerCase(instance);
-                    } else if (instance instanceof DefaultDirective) {
-                        switchDir.registerDefault(instance as DefaultDirective);
-                    }
-                }
+                (instance as any).parentNode = effectiveParent ?? null;
+                (instance as any)._switchLookupNode = effectiveParent ?? null;
+                // Switch lookup and registration will happen in onInit
             }
             
             // Process directive attributes (this may trigger for/if setters)
@@ -900,6 +907,18 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
     const parent = renderer.parentNode(el);
     if (parent) {
         parent.replaceChild(el, container);
+        // Transfer only element children (structural directive containers) from el to container
+        // Text nodes should stay with the original element as part of the template
+        if (el.childNodes?.length) {
+            const childNodes = [...el.childNodes];
+            childNodes.forEach(child => {
+                // Only transfer element nodes, not text/comment nodes
+                // This preserves the template structure while ensuring nested structural directives are properly parented
+                if (child.nodeType === 1 || child.nodeType === 32) { // Element or ElementContainer
+                    renderer.appendChild(container, child);
+                }
+            });
+        }
     }
 
     attrs.forEach(attr => {
@@ -1001,8 +1020,10 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
                 if (directiveDef.dirType === DirectiveType.Iterable) {
                     evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, effect, injector, delimiter);
                 } else {
+                    // Capture attr.value in a closure-safe way
+                    const attrValue = attr.value;
                     effect.run(() => {
-                        const attValue = evaluateExpression(attr.value, context, injector, delimiter);
+                        const attValue = evaluateExpression(attrValue, context, injector, delimiter);
                         directiveInstance[propertyKey] = attValue;
                     });
                 }

@@ -105,7 +105,7 @@ export class XmlNode implements RNode {
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
                 hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
-                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element || el.nodeType === NodeType.ElementContainer
             }
         });
     }
@@ -122,7 +122,7 @@ export class XmlNode implements RNode {
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
                 prevElementSibling: () => null,
                 hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
-                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element || el.nodeType === NodeType.ElementContainer
             }
         });
     }
@@ -222,7 +222,7 @@ export class XmlElement extends XmlNode implements RElement {
 }
 
 
-const xmlCssAdapter = {
+const htmlCssAdapter = {
     getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
     getChildren: (el: XmlNode) => el.childNodes,
     getName: (el: XmlElement) => el.tagName.toLowerCase(),
@@ -232,7 +232,7 @@ const xmlCssAdapter = {
     getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
     prevElementSibling: () => null,
     hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
-    isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+    isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element || el.nodeType === NodeType.ElementContainer
 };
 
 @Injectable()
@@ -242,12 +242,12 @@ export class XmlRenderer implements Renderer {
     [noReact] = true;
 
     destroyNode?: ((node: RNode) => void) | null;
-    // 创建XML注释节点
+    // 创建 XML 注释节点
     createComment(value: string): XmlComment {
         return new XmlComment(value);
     }
 
-    // 创建XML元素节点（支持命名空间）
+    // 创建 XML 元素节点（支持命名空间）
     createElement(name: string, namespace?: string | null): XmlElement {
         const element = new XmlElement(name);
         if (namespace) {
@@ -256,7 +256,7 @@ export class XmlRenderer implements Renderer {
         return element;
     }
 
-    // 创建XML文本节点
+    // 创建 XML 文本节点
     createText(value: string): XmlText {
         return new XmlText(value)
     }
@@ -284,20 +284,20 @@ export class XmlRenderer implements Renderer {
 
     querySelector(node: XmlNode | XmlNode[], selector: string): XmlNode | null {
         return cssSelect.selectOne<XmlNode, XmlElement>(selector, isArray(node) ? node : [node], {
-            adapter: xmlCssAdapter
+            adapter: htmlCssAdapter
         });
     }
 
     querySelectorAll(node: XmlNode | XmlNode[], selector: string): XmlNode[] | null {
         return cssSelect.selectAll<XmlNode, XmlElement>(selector, isArray(node) ? node : [node], {
-            adapter: xmlCssAdapter
+            adapter: htmlCssAdapter
         });
     }
 
     queryByAttribute(node: XmlNode | XmlNode[], attrName: string, attrValue?: string): XmlNode[] | null {
         const nodes = isArray(node) ? node : [node];
         const results: XmlNode[] = [];
-        
+
         const walk = (n: XmlNode[]) => {
             for (const el of n) {
                 if (el.nodeType === NodeType.Element) {
@@ -315,7 +315,7 @@ export class XmlRenderer implements Renderer {
                 }
             }
         };
-        
+
         walk(nodes);
         return results.length ? results : null;
     }
@@ -324,7 +324,7 @@ export class XmlRenderer implements Renderer {
         const nodes = isArray(node) ? node : [node];
         const results: XmlNode[] = [];
         const lowerTagName = tagName.toLowerCase();
-        
+
         const walk = (n: XmlNode[]) => {
             for (const el of n) {
                 if (el.nodeType === NodeType.Element) {
@@ -338,7 +338,7 @@ export class XmlRenderer implements Renderer {
                 }
             }
         };
-        
+
         walk(nodes);
         return results.length ? results : null;
     }
@@ -350,25 +350,25 @@ export class XmlRenderer implements Renderer {
     getAncestors(node: XmlNode): XmlNode[] {
         const ancestors: XmlNode[] = [];
         let parent = node.parentNode;
-        
+
         while (parent) {
             ancestors.push(parent);
             parent = parent.parentNode;
         }
-        
+
         return ancestors;
     }
 
     getDescendants(node: XmlNode): XmlNode[] {
         const descendants: XmlNode[] = [];
-        
+
         const walk = (n: XmlNode) => {
             for (const child of n.childNodes || []) {
                 descendants.push(child);
                 walk(child);
             }
         };
-        
+
         walk(node);
         return descendants;
     }
@@ -434,16 +434,20 @@ const htmlParsingOptions = {
     allowBooleanAttributes: true
 };
 
-// const htmlBuilderOptions = {
-//     ignoreAttributes: false,
-//     format: true,
-//     preserveOrder: true,
-//     suppressEmptyNode: true,
-//     unpairedTags: ["hr", "br", "link", "meta"],
-//     stopNodes: ["*.pre", "*.script"],
-// }
+const xmlCssAdapter = {
+    getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
+    getChildren: (el: XmlNode) => el.childNodes,
+    getName: (el: XmlElement) => el.tagName.toLowerCase(),
+    getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
+    getParent: (el: XmlNode) => el.parentNode,
+    removeSubsets: (nodes: XmlNode[]) => nodes,
+    getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+    prevElementSibling: () => null,
+    hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
+    isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element || el.nodeType === NodeType.ElementContainer
+};
 
-// XML模板解析器实现示例
+// XML 模板解析器实现示例
 @Injectable()
 export class XmlTemplateParser implements TemplateParser {
     [noReact] = true;
@@ -455,14 +459,15 @@ export class XmlTemplateParser implements TemplateParser {
     parse(template: string): XmlNode[] {
         const parser = new XMLParser(htmlParsingOptions);
         const jsonObj = parser.parse(template);
-        // 将JSON对象转换为虚拟DOM节点
+        // 将 JSON 对象转换为虚拟 DOM 节点
         return this.convertToNodes(jsonObj);
     }
 
 
 
+
     private convertToNodes(jsonObj: any): XmlNode[] {
-        // 实现JSON到节点的转换逻辑
+        // 实现 JSON 到节点的转换逻辑
         // Handle text nodes
         if (typeof jsonObj === 'string') {
             const textNode = this.renderer.createText(jsonObj);
@@ -505,12 +510,12 @@ export class XmlTemplateParser implements TemplateParser {
                         } else if (attr.startsWith('#')) {
                             node.setAttribute(attr.slice(1), datan[attr]);
                         } else {
-                            // 添加else分支处理普通指令属性
+                            // 添加 else 分支处理普通指令属性
                             node.setAttribute(attr, datan[attr]);
                         }
                     }
                 } else if (key.startsWith('v-')) {
-                    // 处理v-开头的指令属性
+                    // 处理 v-开头的指令属性
                     node.setAttribute(key, datan);
                 } else {
                     childNodes.push(datan);
@@ -536,6 +541,7 @@ export class XmlTemplateParser implements TemplateParser {
 }
 
 
+
 const xmlDefaultOptions = {
     delimiters: ['{{', '}}'],
 } as TemplateCompilerOptions;
@@ -552,6 +558,7 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
         super()
     }
 }
+
 
 
 @Module({

@@ -14,6 +14,10 @@ interface SwitchChain {
 
 const switchChains = new WeakMap<RNode, SwitchChain>();
 
+export function getSwitchChains(): WeakMap<RNode, SwitchChain> {
+    return switchChains;
+}
+
 function getOrCreateSwitchChain(parentNode: RNode): SwitchChain {
     let chain = switchChains.get(parentNode);
     if (!chain) {
@@ -23,9 +27,53 @@ function getOrCreateSwitchChain(parentNode: RNode): SwitchChain {
     return chain;
 }
 
+// Store pending cases/defaults that haven't found their switch yet
+const pendingCases = new WeakMap<RNode, CaseDirective[]>();
+const pendingDefaults = new WeakMap<RNode, DefaultDirective[]>();
+
+function addPendingCase(parentNode: RNode, caseDirective: CaseDirective) {
+    let cases = pendingCases.get(parentNode);
+    if (!cases) {
+        cases = [];
+        pendingCases.set(parentNode, cases);
+    }
+    cases.push(caseDirective);
+}
+
+function addPendingDefault(parentNode: RNode, defaultDirective: DefaultDirective) {
+    let defaults = pendingDefaults.get(parentNode);
+    if (!defaults) {
+        defaults = [];
+        pendingDefaults.set(parentNode, defaults);
+    }
+    defaults.push(defaultDirective);
+}
+
+function flushPendingCases(parentNode: RNode, switchDir: SwitchDirective) {
+    const cases = pendingCases.get(parentNode);
+    if (cases) {
+        cases.forEach(c => {
+            (c as any)._switchDirective = switchDir;
+            switchDir.registerCase(c);
+        });
+        pendingCases.delete(parentNode);
+    }
+}
+
+function flushPendingDefaults(parentNode: RNode, switchDir: SwitchDirective) {
+    const defaults = pendingDefaults.get(parentNode);
+    if (defaults) {
+        defaults.forEach(d => {
+            (d as any)._switchDirective = switchDir;
+            switchDir.registerDefault(d);
+        });
+        pendingDefaults.delete(parentNode);
+    }
+}
+
 @Directive({
     selector: '[v-switch],[*switch]',
-    priority: 20
+    priority: 30  // Higher priority than v-case (20) so switch is registered first
 })
 export class SwitchDirective {
     private _value: any;
@@ -94,6 +142,12 @@ export class SwitchDirective {
     }
 
     onInit() {
+        // Flush any pending cases/defaults that were registered before the switch
+        if (this.parentNode) {
+            flushPendingCases(this.parentNode, this);
+            flushPendingDefaults(this.parentNode, this);
+        }
+
         if (this._value !== undefined) {
             this.updateCases();
         }
@@ -114,13 +168,26 @@ export function registerSwitchDirective(directive: SwitchDirective, parentNode: 
     if (parentNode) {
         const chain = getOrCreateSwitchChain(parentNode);
         chain.switchDirective = directive;
+        // Flush any pending cases/defaults that were registered before the switch
+        flushPendingCases(parentNode, directive);
+        flushPendingDefaults(parentNode, directive);
     }
 }
 
 export function findSwitchDirective(parentNode: RNode | null): SwitchDirective | null {
     if (!parentNode) return null;
-    const chain = switchChains.get(parentNode);
-    return chain?.switchDirective ?? null;
+
+    // First check if current node has a switch chain
+    let current: RNode | null = parentNode;
+    while (current) {
+        const chain = switchChains.get(current);
+        if (chain?.switchDirective) {
+            return chain.switchDirective;
+        }
+        current = current.parentNode;
+    }
+
+    return null;
 }
 
 @Directive({
@@ -163,9 +230,12 @@ export class CaseDirective {
 
     updateView(switchValue: any): boolean {
         const isMatch = this._caseValue === switchValue;
+        console.log('[CaseDirective.updateView] caseValue:', this._caseValue, 'switchValue:', switchValue, 'isMatch:', isMatch);
         if (isMatch && !this._hasView) {
+            console.log('[CaseDirective.updateView] Creating view');
             this.createView();
         } else if (!isMatch && this._hasView) {
+            console.log('[CaseDirective.updateView] Clearing view');
             this.clearView();
         }
         return isMatch;
@@ -186,6 +256,18 @@ export class CaseDirective {
     }
 
     onInit() {
+        // Find and register with switch directive in onInit (after all switches are registered)
+        if (!this._switchDirective && (this as any)._switchLookupNode) {
+            const switchDir = findSwitchDirective((this as any)._switchLookupNode);
+            if (switchDir) {
+                (this as any)._switchDirective = switchDir;
+                switchDir.registerCase(this);
+            } else {
+                // Switch not found, add to pending and try again later
+                addPendingCase((this as any)._switchLookupNode, this);
+            }
+        }
+
         if (this._switchDirective) {
             if (this._caseValue !== undefined && this._switchDirective['_value'] !== undefined) {
                 this.updateView(this._switchDirective['_value']);
@@ -265,6 +347,15 @@ export class DefaultDirective {
     }
 
     onInit() {
+        // Find and register with switch directive in onInit (after all switches are registered)
+        if (!this._switchDirective && (this as any)._switchLookupNode) {
+            const switchDir = findSwitchDirective((this as any)._switchLookupNode);
+            if (switchDir) {
+                (this as any)._switchDirective = switchDir;
+                switchDir.registerDefault(this);
+            }
+        }
+
         if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
             this.updateView(this.canShowDefaultView());
         }

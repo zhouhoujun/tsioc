@@ -171,7 +171,9 @@ export class NodeInjector extends ContextInjector {
                 return this.getDirectiveRefByNode(node) ?? null;
             }
 
-            return this.getTemplateRef(node) ?? this.getElementRef(node);
+            // For CSS string selectors, prefer ElementRef over TemplateRef
+            // This matches expected behavior for element queries like '.switch-content'
+            return this.getElementRef(node) ?? this.getTemplateRef(node);
         }
 
         return null;
@@ -205,7 +207,8 @@ export class NodeInjector extends ContextInjector {
                 return this.getDirectiveRefByNode(node) ?? null;
             }
 
-            return this.getTemplateRef(node) ?? this.getElementRef(node);
+            // For CSS string selectors, prefer ElementRef over TemplateRef
+            return this.getElementRef(node) ?? this.getTemplateRef(node);
         });
     }
 

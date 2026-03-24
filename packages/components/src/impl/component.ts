@@ -56,6 +56,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
         await (this.instance as OnInit).onInit?.();
         const directives = this.injector.get(DIRECTIVES) || [];
+        // console.log('[Component.render] directives:', directives?.length, directives?.map((d: any) => d.type?.name));
         const components = this.injector.get(COMPONENTS) || [];
         if (!this._elementRef) {
             let renderer = this.injector.get(Renderer, null);

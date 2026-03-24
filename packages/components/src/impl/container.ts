@@ -137,7 +137,8 @@ class ViewContainerRefImpl implements ViewContainerRef {
         let insertIndex = index !== undefined ? index : this.views.length;
         insertIndex = Math.max(0, Math.min(insertIndex, this.views.length));
 
-        const nextSibling = this.getNextSibling(insertIndex)
+        // Get next sibling BEFORE adding the view to the array
+        const nextSibling = this.getNextSibling(insertIndex);
         // Insert view into views array
         this.views.splice(insertIndex, 0, viewRef);
 
@@ -146,13 +147,42 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const viewNodes = viewRef.rootNodes;
 
         if (this.isElementContainer) {
-            // 对于ElementContainer，所有视图都插入到ElementContainer前面
-            const parentNode = nativeElement.parentNode;
+            // For ElementContainer, views are inserted as siblings of the container (anchor)
+            // The container acts as an anchor point - views are inserted before it (or after previous views)
+            // First try injector.getParentNode, then try nativeElement.parentNode
+            let parentNode = this.injector.getParentNode(nativeElement);
+
+            // If stored parent is from template AST (not connected to rendered DOM),
+            // use the actual DOM parentNode instead
+            if (!parentNode) {
+                parentNode = nativeElement.parentNode;
+            }
+
             if (parentNode) {
-                // 先插入视图节点到参考节点前面
-                viewNodes.forEach(node => {
-                    parentNode.insertBefore(node, nextSibling ?? nativeElement);
-                });
+                if (nextSibling) {
+                    viewNodes.forEach(node => {
+                        parentNode.insertBefore(node, nextSibling);
+                    });
+                } else {
+                    if (insertIndex > 0) {
+                        const prevView = this.views[insertIndex - 1];
+                        const prevViewNodes = prevView.rootNodes;
+                        const lastPrevNode = prevViewNodes[prevViewNodes.length - 1];
+                        viewNodes.forEach(node => {
+                            if (lastPrevNode.nextSibling) {
+                                parentNode.insertBefore(node, lastPrevNode.nextSibling);
+                            } else {
+                                parentNode.insertBefore(node, nativeElement);
+                            }
+                        });
+                    } else {
+                        viewNodes.forEach(node => {
+                            parentNode.insertBefore(node, nativeElement);
+                        });
+                    }
+                }
+            } else {
+                console.error('[INSERT] No parentNode for ElementContainer, nativeElement:', nativeElement.tagName);
             }
         } else {
             if (nextSibling) {
@@ -183,7 +213,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
             return viewRef;
         }
 
-        const nextSibling = this.getNextSibling(newIndex)
+        const nextSibling = this.getNextSibling(newIndex);
         // Remove view from old position
         this.views.splice(oldIndex, 1);
 
@@ -193,27 +223,36 @@ class ViewContainerRefImpl implements ViewContainerRef {
         // Move DOM nodes
         const nativeElement = this.element.nativeElement;
         const viewNodes = viewRef.rootNodes;
+        // Use injector.getParentNode to get the correct parent for cloned templates
+        const parentNode = this.injector.getParentNode(nativeElement) || nativeElement.parentNode;
 
-        // Remove nodes first
-        viewNodes.forEach(node => {
-            if (node.parentNode === (this.isElementContainer ? nativeElement.parentNode : nativeElement)) {
-                if (this.isElementContainer && nativeElement.parentNode) {
-                    nativeElement.parentNode.removeChild(node);
-                } else {
+        // Remove nodes from their current position
+        if (this.isElementContainer && parentNode) {
+            viewNodes.forEach(node => {
+                if (node.parentNode === parentNode) {
+                    parentNode.removeChild(node);
+                }
+            });
+        } else {
+            viewNodes.forEach(node => {
+                if (node.parentNode === nativeElement) {
                     nativeElement.removeChild(node);
                 }
-            }
-        });
+            });
+        }
 
         // Insert nodes at new position
         if (this.isElementContainer) {
-            const parentNode = nativeElement.parentNode;
             if (parentNode) {
-                // 找到正确的参考节点：ElementContainer前面的最后一个视图节点
-                // 插入视图节点到参考节点前面
-                viewNodes.forEach(node => {
-                    parentNode.insertBefore(node, nextSibling ?? nativeElement);
-                });
+                if (nextSibling) {
+                    viewNodes.forEach(node => {
+                        parentNode.insertBefore(node, nextSibling);
+                    });
+                } else {
+                    viewNodes.forEach(node => {
+                        parentNode.insertBefore(node, nativeElement);
+                    });
+                }
             }
         } else {
             if (nextSibling) {
@@ -258,15 +297,23 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const viewRef = this.views[removeIndex];
         const viewNodes = viewRef.rootNodes;
         const nativeElement = this.element.nativeElement;
+        // Use injector.getParentNode to get the correct parent for cloned templates
+        const parentNode = this.injector.getParentNode(nativeElement) || nativeElement.parentNode;
 
         // Remove DOM nodes
-        viewNodes.forEach(node => {
-            if (this.isElementContainer && nativeElement.parentNode) {
-                this.renderer.removeChild(nativeElement.parentNode, node);
-            } else {
-                this.renderer.removeChild(nativeElement, node);
-            }
-        });
+        if (this.isElementContainer && parentNode) {
+            viewNodes.forEach(node => {
+                if (node.parentNode === parentNode) {
+                    this.renderer.removeChild(parentNode, node);
+                }
+            });
+        } else {
+            viewNodes.forEach(node => {
+                if (node.parentNode === nativeElement) {
+                    this.renderer.removeChild(nativeElement, node);
+                }
+            });
+        }
 
         // Remove view from views array
         this.views.splice(removeIndex, 1);
