@@ -2,7 +2,7 @@ import { Inject, Injectable, isArray, lang, Module, ModuleWithProviders, token }
 import { XMLParser } from 'fast-xml-parser';
 import * as cssSelect from 'css-select';
 import {
-    TemplateParser, AbstractTemplateCompiler, Renderer, RendererStyleFlags2,
+    TemplateParser, Renderer, RendererStyleFlags2, AbstractTemplateCompiler,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
     TemplateCompiler, TemplateCompilerOptions, noReact
 } from '@tsdi/components';
@@ -237,6 +237,7 @@ const xmlCssAdapter = {
 
 @Injectable()
 export class XmlRenderer implements Renderer {
+
 
     [noReact] = true;
 

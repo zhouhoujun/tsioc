@@ -1,6 +1,6 @@
 import { deepClone, Inject, Injectable, isArray, isString, lang, Module, ModuleWithProviders, token } from '@tsdi/ioc';
 import {
-    TemplateParser, AbstractTemplateCompiler, Renderer, RendererStyleFlags2,
+    TemplateParser, Renderer, RendererStyleFlags2, AbstractTemplateCompiler,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
     TemplateCompiler, TemplateCompilerOptions,
     noReact

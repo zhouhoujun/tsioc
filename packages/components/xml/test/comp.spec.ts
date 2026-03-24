@@ -20,6 +20,8 @@ export class CTest {
         });
     }
 
+
+
     @Test('can bind bootstrap component')
     async test1() {
         expect(this.ctx.runners.size).toEqual(1);

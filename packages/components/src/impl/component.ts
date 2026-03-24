@@ -58,7 +58,20 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const directives = this.injector.get(DIRECTIVES) || [];
         const components = this.injector.get(COMPONENTS) || [];
         if (!this._elementRef) {
-            this._elementRef = this.injector.getElementRef(options?.host ?? this.injector.get(Renderer).createElement(def.selector ?? this.classRef.className));
+            let renderer = this.injector.get(Renderer, null);
+            
+            if (!renderer) {
+                const templateCompiler = this.injector.get(TemplateCompiler, null);
+                if (templateCompiler && (templateCompiler as any).renderer) {
+                    renderer = (templateCompiler as any).renderer;
+                }
+            }
+            
+            if (!renderer) {
+                throw new Exception('Template module renderer not initialized. Verify TemplateModule is properly configured with deps.');
+            }
+            
+            this._elementRef = this.injector.getElementRef(renderer.createElement(def.selector ?? this.classRef.className));
         }
         
         if (!def.ƿtempFac) {
@@ -132,6 +145,14 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         if (!context.has(ReactiveEffect, InjectFlags.Self)) {
             context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
         }
+        
+        if (!context.has(Renderer) && injector.has(Renderer)) {
+            const parentRenderer = injector.get(Renderer);
+            if (parentRenderer) {
+                context.setValue(Renderer, parentRenderer);
+            }
+        }
+        
         return context;
     }
 
