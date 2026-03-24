@@ -40,7 +40,15 @@ const decorParamInject = (ctx: DecorContext, next: DecorHandlerFn) => {
         if (params) {
             const idx = ctx.define.parameterIndex || 0;
             const desgmeta = params[idx] || {};
+            const savedFlags = dmeta.flags;
             Object.assign(dmeta, desgmeta);
+            if (savedFlags !== undefined) {
+                if (dmeta.flags !== undefined) {
+                    dmeta.flags = savedFlags | dmeta.flags;
+                } else {
+                    dmeta.flags = savedFlags;
+                }
+            }
             params.splice(idx, 1, dmeta)
         }
     }

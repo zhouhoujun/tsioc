@@ -20,13 +20,15 @@ export class XmlNode implements RNode {
     attributes = new Map<string, RAttr>();
 
     constructor(
-        readonly nodeType: number,
+        nodeType: number,
         public parentNode: XmlNode | null = null,
         public childNodes: XmlNode[] = [],
         public nextSibling: XmlNode | null = null,
     ) {
-
+        this.nodeType = nodeType;
     }
+
+    nodeType: number;
 
     hasAttributeNS(namespace: string, localName: string): boolean {
         return this.attributes.has(`${localName}:${namespace}`);
@@ -220,6 +222,19 @@ export class XmlElement extends XmlNode implements RElement {
 }
 
 
+const xmlCssAdapter = {
+    getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
+    getChildren: (el: XmlNode) => el.childNodes,
+    getName: (el: XmlElement) => el.tagName.toLowerCase(),
+    getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
+    getParent: (el: XmlNode) => el.parentNode,
+    removeSubsets: (nodes: XmlNode[]) => nodes,
+    getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+    prevElementSibling: () => null,
+    hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
+    isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+};
+
 @Injectable()
 export class XmlRenderer implements Renderer {
 
@@ -268,36 +283,99 @@ export class XmlRenderer implements Renderer {
 
     querySelector(node: XmlNode | XmlNode[], selector: string): XmlNode | null {
         return cssSelect.selectOne<XmlNode, XmlElement>(selector, isArray(node) ? node : [node], {
-            adapter: {
-                getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
-                getChildren: (el: XmlNode) => el.childNodes,
-                getName: (el: XmlElement) => el.tagName.toLowerCase(),
-                getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
-                getParent: (el: XmlNode) => el.parentNode,
-                removeSubsets: (nodes: XmlNode[]) => nodes,
-                getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
-                prevElementSibling: () => null,
-                hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
-                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
-            }
+            adapter: xmlCssAdapter
         });
     }
 
     querySelectorAll(node: XmlNode | XmlNode[], selector: string): XmlNode[] | null {
         return cssSelect.selectAll<XmlNode, XmlElement>(selector, isArray(node) ? node : [node], {
-            adapter: {
-                getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
-                getChildren: (el: XmlNode) => el.childNodes,
-                getName: (el: XmlElement) => el.tagName.toLowerCase(),
-                getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
-                getParent: (el: XmlNode) => el.parentNode,
-                removeSubsets: (nodes: XmlNode[]) => nodes,
-                getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
-                prevElementSibling: () => null,
-                hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
-                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
-            }
+            adapter: xmlCssAdapter
         });
+    }
+
+    queryByAttribute(node: XmlNode | XmlNode[], attrName: string, attrValue?: string): XmlNode[] | null {
+        const nodes = isArray(node) ? node : [node];
+        const results: XmlNode[] = [];
+        
+        const walk = (n: XmlNode[]) => {
+            for (const el of n) {
+                if (el.nodeType === NodeType.Element) {
+                    const elem = el as XmlElement;
+                    if (attrValue !== undefined) {
+                        if (elem.getAttribute(attrName) === attrValue) {
+                            results.push(el);
+                        }
+                    } else if (elem.hasAttribute(attrName)) {
+                        results.push(el);
+                    }
+                }
+                if (el.childNodes?.length) {
+                    walk(el.childNodes);
+                }
+            }
+        };
+        
+        walk(nodes);
+        return results.length ? results : null;
+    }
+
+    queryByTagName(node: XmlNode | XmlNode[], tagName: string): XmlNode[] | null {
+        const nodes = isArray(node) ? node : [node];
+        const results: XmlNode[] = [];
+        const lowerTagName = tagName.toLowerCase();
+        
+        const walk = (n: XmlNode[]) => {
+            for (const el of n) {
+                if (el.nodeType === NodeType.Element) {
+                    const elem = el as XmlElement;
+                    if (elem.tagName.toLowerCase() === lowerTagName) {
+                        results.push(el);
+                    }
+                }
+                if (el.childNodes?.length) {
+                    walk(el.childNodes);
+                }
+            }
+        };
+        
+        walk(nodes);
+        return results.length ? results : null;
+    }
+
+    queryByComponent(node: XmlNode | XmlNode[], componentSelector: string): XmlNode[] | null {
+        return this.querySelectorAll(node, componentSelector);
+    }
+
+    getAncestors(node: XmlNode): XmlNode[] {
+        const ancestors: XmlNode[] = [];
+        let parent = node.parentNode;
+        
+        while (parent) {
+            ancestors.push(parent);
+            parent = parent.parentNode;
+        }
+        
+        return ancestors;
+    }
+
+    getDescendants(node: XmlNode): XmlNode[] {
+        const descendants: XmlNode[] = [];
+        
+        const walk = (n: XmlNode) => {
+            for (const child of n.childNodes || []) {
+                descendants.push(child);
+                walk(child);
+            }
+        };
+        
+        walk(node);
+        return descendants;
+    }
+
+    matchesSelector(node: XmlNode, selector: string): boolean {
+        const ancestors = this.getAncestors(node);
+        const matched = this.querySelector(ancestors, selector);
+        return matched === node;
     }
 
     parentNode(node: XmlNode): XmlNode | null {

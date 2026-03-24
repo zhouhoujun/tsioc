@@ -7,8 +7,8 @@ import { Renderer } from '../renderer/Renderer';
 import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
 import { NodeType, RNode } from '../renderer/Node';
-import { EnvironmentContext } from '../refs/environment';
-import { noReact } from '../effect';
+import { NodeInjector } from '../refs/environment';
+import { noReact, ReactiveEffect } from '../effect';
 
 /**
  * View container ref implement.
@@ -40,12 +40,12 @@ class ViewContainerRefImpl implements ViewContainerRef {
     /**
      * Creates an instance of ViewContainerRefImpl.
      * @param {ElementRef} element
-     * @param {EnvironmentContext} environment
+     * @param {NodeInjector} environment
      * @memberof ViewContainerRefImpl
      */
     constructor(
         readonly element: ElementRef,
-        readonly environment: EnvironmentContext,
+        readonly environment: NodeInjector,
     ) {
 
     }
@@ -95,14 +95,16 @@ class ViewContainerRefImpl implements ViewContainerRef {
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, index?: number): EmbeddedViewRef<C>;
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, options?: {
         index?: number,
-        environment?: EnvironmentContext
+        environment?: NodeInjector,
+        effect?: ReactiveEffect
     }): EmbeddedViewRef<C>;
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, opts?: { index?: number } | number): EmbeddedViewRef<C> {
         const options = (isNumber(opts) ? { index: opts } : opts) as {
             index?: number,
-            environment?: EnvironmentContext
+            environment?: NodeInjector,
+            effect?: ReactiveEffect
         };
-        const view = templateRef.createEmbeddedView(context, options?.environment || this.environment);
+        const view = templateRef.createEmbeddedView(context, options?.environment || this.environment, options?.effect);
         const index = options?.index !== undefined ? options.index : this.views.length;
         this.insert(view, index);
         return view;
@@ -110,7 +112,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
 
     createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: {
         index?: number,
-        environment?: EnvironmentContext,
+        environment?: NodeInjector,
     }): ComponentRef<C> {
         const def = isFunction(componentType) ? getDef(componentType) : componentType;
         const componentRef = (def as Factoriable).ƿfac!(options?.environment || this.environment, {}) as ComponentRef<C>;
@@ -147,8 +149,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
             // 对于ElementContainer，所有视图都插入到ElementContainer前面
             const parentNode = nativeElement.parentNode;
             if (parentNode) {
-                // 找到正确的参考节点：ElementContainer前面的最后一个视图节点
-                // 插入视图节点到参考节点前面
+                // 先插入视图节点到参考节点前面
                 viewNodes.forEach(node => {
                     parentNode.insertBefore(node, nextSibling ?? nativeElement);
                 });
@@ -296,6 +297,6 @@ class ViewContainerRefImpl implements ViewContainerRef {
     }
 }
 
-export function createViewContainerRef(elementRef: ElementRef, environment: EnvironmentContext): ViewContainerRef {
+export function createViewContainerRef(elementRef: ElementRef, environment: NodeInjector): ViewContainerRef {
     return new ViewContainerRefImpl(elementRef, environment);
 }

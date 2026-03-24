@@ -40,12 +40,16 @@ npm run build
 cd packages/<package-name>
 npm test
 
-# Run all tests for a specific package
+# Run tests for ioc package
 cd packages/ioc && npm test
 
 # Run a single spec file
 cd packages/ioc
 npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/unit'); const { ConsoleReporter } = require('@tsdi/unit-console'); runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
+
+# Run tests with debug output
+cd packages/<package-name>
+npx ts-node -r tsconfig-paths/register unit.ts
 ```
 
 ## Linting
@@ -72,7 +76,7 @@ npx eslint "packages/**/*.ts"
 - **Functions:** camelCase (`isArray`, `createInjector`, `getClassRef`)
 - **Type aliases:** PascalCase (`RecordFactory<T>`, `MethodType<T>`)
 - **Constants/Tokens:** PascalCase or SCREAMING_SNAKE_CASE for module-level constants
-- **Private members:** No underscore prefix convention; use `private` keyword
+- **Private members:** No underscore prefix; use `private` keyword
 - **Files:** kebab-case (`context.ts`, `injector.ts`, `class-ref.ts`)
 
 ### Imports
@@ -90,7 +94,7 @@ import { isArray } from './utils/chk';
 ### Type Annotations
 
 - Always use explicit types for function parameters and return types
-- Use `any` sparingly; the ESLint rules permit it but prefer specificity
+- Use `any` sparingly; ESLint allows it but prefer specificity
 - Use type guards and type predicates where applicable
 - Template generics: `<T>` or `<T = any>` with constraints when needed
 
@@ -102,10 +106,11 @@ export abstract class Injector implements Destroyable, OnDestroy {
 
 ### Decorator Usage
 
-- Decorators are fundamental to this framework
-- Use `@Abstract()` decorator for abstract base classes
-- Use `@Injectable()`, `@Module()`, `@Singleton()` for class metadata
-- Use `@Autowired()`, `@Inject()` for property/method injection
+Decorators are fundamental to this framework. Key decorators:
+
+- `@Abstract()` for abstract base classes
+- `@Injectable()`, `@Module()`, `@Singleton()` for class metadata
+- `@Autowired()`, `@Inject()` for property/method injection
 
 ```typescript
 @Abstract()
@@ -128,7 +133,7 @@ class PersonServiceImpl { }
 export class Exception extends Error {
     constructor(message: string, readonly code?: any) {
         super(message);
-        // ... error handling
+        // ... proper prototype chain handling
     }
 }
 
@@ -162,12 +167,17 @@ export abstract class Injector implements Destroyable, OnDestroy { }
 - Test files: `*.spec.ts` in package `test/` directory
 - Use Mocha-style `describe`/`it` blocks
 - Use `expect` assertions from the `expect` library
-- Group related tests in `describe` blocks
+- Use `beforeEach` for setup; group related tests in `describe` blocks
 
 ```typescript
 import expect from 'expect';
 
 describe('method exec test', () => {
+    let container: Container;
+    beforeEach(() => {
+        container = createInjector();
+    });
+
     it('show has prop metadata', () => {
         const refs = getClassRef(MethodTest2);
         expect(refs.hasMetadata(Inject, 'property')).toBeTruthy();
@@ -212,10 +222,10 @@ packages/<package-name>/
 ### ESLint Configuration
 
 The project uses a permissive ESLint config that allows:
-- `any` types
-- Empty functions
-- Unused variables
-- Namespaces
-- No-unused-vars, no-empty-interface
+- `any` types (`@typescript-eslint/no-explicit-any: off`)
+- Empty functions (`@typescript-eslint/no-empty-function: off`)
+- Unused variables (`@typescript-eslint/no-unused-vars: off`)
+- Namespaces (`@typescript-eslint/no-namespace: off`)
+- Empty interfaces (`@typescript-eslint/no-empty-interface: off`)
 
-These allowances are intentional for framework internals. Follow the existing patterns when editing code.
+These allowances are intentional for framework internals. Follow existing patterns when editing code.

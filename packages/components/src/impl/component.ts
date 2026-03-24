@@ -8,7 +8,7 @@ import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '
 import { TemplateCompiler } from '../template/compiler';
 import { reactive } from '../reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
-import { EnvironmentContext } from '../refs/environment';
+import { NodeInjector } from '../refs/environment';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
@@ -26,7 +26,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     private _elementRef?: ElementRef<any>;
     constructor(
         _classRef: ClassRef<T>,
-        context: EnvironmentContext,
+        context: NodeInjector,
         options?: ComponentOptions) {
         super(_classRef, context, options);
         this._elementRef = options?.elementRef;
@@ -79,7 +79,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         this.hostView?.destroy();
     }
 
-    protected override process(option?: EnvironmentContext | InvokeOptions, resolveCtx?: RunContext) {
+    protected override process(option?: NodeInjector | InvokeOptions, resolveCtx?: RunContext) {
         return this.render(this.options);
     }
 
@@ -111,7 +111,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         return injector;
     }
 
-    protected override createInstance<T>(typeRef: ClassRef<T>, context: EnvironmentContext, options?: ComponentOptions): ComponentRef<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: NodeInjector, options?: ComponentOptions): ComponentRef<T> {
         return new ComponentRefImpl(typeRef, context, options);
     }
 
@@ -127,8 +127,8 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         return providers;
     }
 
-    protected override createInjector<T>(typeRef: ClassRef<T>, injector: EnvironmentContext, options: ComponentOptions): EnvironmentContext {
-        const context = new EnvironmentContext(injector, options);
+    protected override createInjector<T>(typeRef: ClassRef<T>, injector: NodeInjector, options: ComponentOptions): NodeInjector {
+        const context = new NodeInjector(injector, options);
         if (!context.has(ReactiveEffect, InjectFlags.Self)) {
             context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
         }

@@ -2,7 +2,7 @@ import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions,
 import { AttributeMetadata } from '../decorators/atteribute';
 import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
-import { EnvironmentContext } from './environment';
+import { NodeInjector } from './environment';
 import { ComputedMetadata } from '../decorators/computed';
 import { noReact } from '../effect';
 import { TemplateRef } from './template';
@@ -52,14 +52,14 @@ export interface DirectiveDef<T = any> extends TypeDef<T>, Factoriable<T> {
 }
 
 export interface Factoriable<T = any> {
-    ƿfac?: (ctx: EnvironmentContext, options: DirectiveOptions) => T;
+    ƿfac?: (ctx: NodeInjector, options: DirectiveOptions) => T;
 }
 
 /**
  * DirectiveRef.
  */
 @Abstract()
-export abstract class DirectiveRef<T> extends AbstractInvocation<T, DirectiveOptions, EnvironmentContext> {
+export abstract class DirectiveRef<T> extends AbstractInvocation<T, DirectiveOptions, NodeInjector> {
 
     [noReact] = true;
 

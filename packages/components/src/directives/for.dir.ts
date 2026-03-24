@@ -50,6 +50,7 @@ export class VForDirective {
     // 增强的for属性，支持多种语法格式
     @Attribute()
     set for(value: any) {
+        // console.log('[VForDirective] for setter called, value:', value);
         // 直接传入可迭代对象
         this._collection = value;
         this.updateView();
@@ -97,9 +98,11 @@ export class VForDirective {
     }
 
     private updateView() {
+        // console.log('[VForDirective] updateView called, collection:', this._collection?.length);
         const collection = this._collection;
 
         // 检查集合是否真的发生了变化
+        // console.log('[VForDirective] collectionEquals:', this.collectionEquals(collection, this._prevCollection), 'prev:', this._prevCollection?.length);
         if (this.collectionEquals(collection, this._prevCollection)) {
             return;
         }
@@ -307,8 +310,9 @@ export class VForDirective {
     }
 
     private createView(context: any) {
+        // console.log('[VForDirective] createView called, templateRef:', !!this._templateRef);
         if (!this._templateRef) {
-            console.warn('VForDirective: templateRef is not set');
+            // console.warn('VForDirective: templateRef is not set');
             return null;
         }
 
@@ -316,6 +320,7 @@ export class VForDirective {
         const reactiveContext = reactive(context, this._effect);
 
         const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, reactiveContext);
+        // console.log('[VForDirective] createView created view');
         return viewRef;
     }
 

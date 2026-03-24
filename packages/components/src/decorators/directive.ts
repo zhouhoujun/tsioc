@@ -61,7 +61,12 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             def.exportProviders.push({ provide: DIRECTIVES, useValue: def, multi: true });
             if (!def[factoryKey]) {
                 def[factoryKey] = (ctx: Injector, options: DirectiveOptions) => {
-                    return typeRef.createInvocation(ctx, options)
+                    try {
+                        return typeRef.createInvocation(ctx, options)
+                    } catch (e) {
+                        console.error('Failed to create directive:', def.selector, e);
+                        return null;
+                    }
                 }
             }
 

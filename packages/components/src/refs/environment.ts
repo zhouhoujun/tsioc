@@ -9,31 +9,16 @@ import { createViewContainerRef } from '../impl/container';
 import { noReact } from '../effect';
 import { ViewRef } from './view';
 import { Renderer } from '../renderer/Renderer';
+import { 
+    elementRefResovler, 
+    templateRefResovler, 
+    directorRefResovler, 
+    componentRefResovler, 
+    viewContainerRefResovler,
+    hostDirectiveResovler,
+    directorResovler 
+} from '../impl/resolvers';
 
-
-export class EnvironmentState {
-
-    [noReact] = true;
-
-
-    // 私有属性用于存储引用映射
-    readonly componentRefs: Map<RNode, ComponentRef<any>> = new Map();
-    readonly directiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
-    readonly templateRefs: Map<RNode, TemplateRef<any>> = new Map();
-    readonly elementRefs: Map<RNode, ElementRef<any>> = new Map();
-    readonly viewContainerRefs: Map<RNode, ViewContainerRef> = new Map();
-    /** computed cache. */
-    readonly computedCache: Map<string, { value: any, deps: Set<any> }> = new Map();
-
-    clear() {
-        this.componentRefs.clear();
-        this.directiveRefs.clear();
-        this.templateRefs.clear();
-        this.computedCache.clear();
-        this.viewContainerRefs.clear();
-    }
-
-}
 
 export const NODES_RESOLVERS = token<ResolveInterceptorLike[]>('NODES_RESOLVERS');
 
@@ -41,11 +26,12 @@ export const NODES_RESOLVERS = token<ResolveInterceptorLike[]>('NODES_RESOLVERS'
 export const nodeResolveInterceptorFactory: () => ResolveInterceptorFn = () => {
     let hanlder: ResolveHandler;
     return (input, next, context) => {
-        const environment = context.getInjector() as EnvironmentContext;
+        const nodeInjector = context.getInjector() as NodeInjector;
         const paramType = input.provider ?? input.type;
-        if (context.getPayload() instanceof ElementRef && environment instanceof EnvironmentContext && isFunction(paramType)) {
+        const payload = nodeInjector.getPayload();
+        if (payload instanceof ElementRef && nodeInjector instanceof NodeInjector && isFunction(paramType)) {
             if (!hanlder) {
-                hanlder = createResolveHandler(environment.get(NODES_RESOLVERS) ?? []);
+                hanlder = createResolveHandler(nodeInjector.get(NODES_RESOLVERS) ?? []);
             }
 
             return invokeTail(() => hanlder.handle(input, context), (res) => {
@@ -60,73 +46,103 @@ export const nodeResolveInterceptorFactory: () => ResolveInterceptorFn = () => {
 
 
 /**
- * Environment context
+ * Node Injector - Context injector for template nodes
  */
 
-export class EnvironmentContext extends ContextInjector {
+export class NodeInjector extends ContextInjector {
     [noReact] = true;
+
+    private _payload: any;
+
+    static readonly allDirectiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
+
+    readonly componentRefs: Map<RNode, ComponentRef<any>> = new Map();
+    readonly directiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
+    readonly templateRefs: Map<RNode, TemplateRef<any>> = new Map();
+    readonly elementRefs: Map<RNode, ElementRef<any>> = new Map();
+    readonly viewContainerRefs: Map<RNode, ViewContainerRef> = new Map();
+    readonly computedCache: Map<string, { value: any, deps: Set<any> }> = new Map();
+    readonly parentNodes: Map<RNode, RNode> = new Map();
 
     protected override initOptions(options: TargetInvokeArguments): void {
         if (!options.resolvers) options.resolvers = [];
         options.resolvers.push(nodeResolveInterceptorFactory())
+        if (options.payload) {
+            this._payload = options.payload;
+        }
     }
 
-    // 私有属性用于存储引用映射
-    private state = new EnvironmentState();
+    setPayload(payload: any): this {
+        this._payload = payload;
+        return this;
+    }
 
+    getPayload<T = any>(): T {
+        return this._payload;
+    }
 
     protected override afterInit(): void {
-        this.setValue(EnvironmentState, this.state);
-        this.onDestroy(()=> this.state.clear());
+        this.setValue(NODES_RESOLVERS, [
+            elementRefResovler,
+            templateRefResovler,
+            directorRefResovler,
+            componentRefResovler,
+            viewContainerRefResovler,
+            hostDirectiveResovler,
+            directorResovler
+        ]);
+        this.onDestroy(() => this.clear());
     }
 
-    getParentEnviroment(): EnvironmentContext | null {
-        return this._parent instanceof EnvironmentContext ? this._parent : null;
+    clear(): void {
+        this.componentRefs.clear();
+        this.directiveRefs.clear();
+        this.templateRefs.clear();
+        this.computedCache.clear();
+        this.viewContainerRefs.clear();
+        this.parentNodes.clear();
     }
 
-    /**
-     * attach component ref to element.
-     * @param compRef view ref.
-     */
+    getParentInjector(): NodeInjector | null {
+        return this._parent instanceof NodeInjector ? this._parent : null;
+    }
+
     attachComponent<C>(compRef: ComponentRef<C>): void {
         if (compRef && compRef.elementRef && compRef.elementRef.nativeElement) {
             const el = compRef.elementRef.nativeElement;
-            if (!this.state.elementRefs.has(el)) {
-                this.state.elementRefs.set(el, compRef.elementRef);
+            if (!this.elementRefs.has(el)) {
+                this.elementRefs.set(el, compRef.elementRef);
             }
-            this.state.componentRefs.set(compRef.elementRef.nativeElement, compRef);
+            this.componentRefs.set(compRef.elementRef.nativeElement, compRef);
         }
     }
 
-    /**
-     * attach directive ref to element.
-     * @param dirRef view ref.
-     */
     attachDirective<C>(dirRef: DirectiveRef<C>): void {
         if (dirRef && dirRef.elementRef && dirRef.elementRef.nativeElement) {
             const element = dirRef.elementRef.nativeElement;
-            if (!this.state.elementRefs.has(element)) {
-                this.state.elementRefs.set(element, dirRef.elementRef);
+            // console.log('[attachDirective] Attaching directive to node:', (element as any)?.tagName, 'directive:', dirRef.instance?.constructor?.name);
+            if (!this.elementRefs.has(element)) {
+                this.elementRefs.set(element, dirRef.elementRef);
             }
-            if (!this.state.directiveRefs.has(element)) {
-                this.state.directiveRefs.set(element, []);
+            if (!this.directiveRefs.has(element)) {
+                this.directiveRefs.set(element, []);
             }
-            this.state.directiveRefs.get(element)!.push(dirRef);
+            this.directiveRefs.get(element)!.push(dirRef);
+            if (!NodeInjector.allDirectiveRefs.has(element)) {
+                NodeInjector.allDirectiveRefs.set(element, []);
+            }
+            NodeInjector.allDirectiveRefs.get(element)!.push(dirRef);
+            // console.log('[attachDirective] Directives on node:', Array.from(this.directiveRefs.entries()).map(([k, v]) => ((k as any)?.tagName || 'unknown') + ':' + v.map(d => d.instance?.constructor?.name).join(',')));
         }
     }
 
-    /**
-     * attach template ref to element.
-     * @param tempRef view ref.
-     * @param element element.
-     */
     attachTemplate<C>(tempRef: TemplateRef<C>): void {
         if (tempRef && tempRef.elementRef && tempRef.elementRef.nativeElement) {
             const el = tempRef.elementRef.nativeElement;
-            if (!this.state.elementRefs.has(el)) {
-                this.state.elementRefs.set(el, tempRef.elementRef);
+            if (!this.elementRefs.has(el)) {
+                this.elementRefs.set(el, tempRef.elementRef);
             }
-            this.state.templateRefs.set(el, tempRef);
+            this.templateRefs.set(el, tempRef);
         }
     }
 
@@ -194,13 +210,9 @@ export class EnvironmentContext extends ContextInjector {
     }
 
 
-    /**
-     * get component ref.
-     * @param componentType component type.
-     */
     getComponentRef<T>(componentType: Type<T>, flags = InjectFlags.Default): ComponentRef<T>[] {
-        const results: ComponentRef<T>[] = this.getParentEnviroment()?.getComponentRef(componentType) ?? [];
-        this.state.componentRefs.forEach(ref => {
+        const results: ComponentRef<T>[] = this.getParentInjector()?.getComponentRef(componentType) ?? [];
+        this.componentRefs.forEach(ref => {
             if (ref.instance instanceof componentType) {
                 results.push(ref as ComponentRef<T>);
             }
@@ -208,82 +220,75 @@ export class EnvironmentContext extends ContextInjector {
         return results;
     }
 
-    /**
-     * get component ref.
-     * @param node element.
-     */
     getComponentRefByNode(node: RNode, flags = InjectFlags.Default): ComponentRef<any> | null {
-        return this.state.componentRefs.get(node) ?? this.getParentEnviroment()?.getComponentRefByNode(node) ?? null;
+        return this.componentRefs.get(node) ?? this.getParentInjector()?.getComponentRefByNode(node) ?? null;
     }
 
-    /**
-     * get directive ref.
-     * @param directorType directive type.
-     */
     getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): DirectiveRef<T>[] {
-        const results: DirectiveRef<T>[] = this.getParentEnviroment()?.getDirectiveRef(directorType) ?? [];
-        this.state.directiveRefs.forEach(refs => {
+        const results: DirectiveRef<T>[] = this.getParentInjector()?.getDirectiveRef(directorType) ?? [];
+        this.directiveRefs.forEach(refs => {
             refs.forEach(ref => {
-                if (ref.instance instanceof directorType) {
-                    results.push(ref as DirectiveRef<T>);
+                try {
+                    if (ref.instance && ref.instance instanceof directorType) {
+                        results.push(ref as DirectiveRef<T>);
+                    }
+                } catch (e) {
+                    // Directive instantiation failed, skip it
                 }
             });
         });
         return results;
     }
 
-    /**
-     * get directive ref.
-     * @param node element.
-     */
     getDirectiveRefByNode(node: RNode, flags = InjectFlags.Default): DirectiveRef<any> | null {
-        const refs = this.state.directiveRefs.get(node);
-        return refs && refs.length > 0 ? refs[0] : this.getParentEnviroment()?.getDirectiveRefByNode(node) ?? null;
+        const refs = this.directiveRefs.get(node);
+        if (refs && refs.length > 0) return refs[0];
+        const staticRefs = NodeInjector.allDirectiveRefs.get(node);
+        if (staticRefs && staticRefs.length > 0) return staticRefs[0];
+        return this.getParentInjector()?.getDirectiveRefByNode(node) ?? null;
     }
 
-    /**
-     * get template ref.
-     * @param node template element.
-     */
+    getDirectiveRefsByNode(node: RNode): DirectiveRef<any>[] | null {
+        const refs = this.directiveRefs.get(node);
+        if (refs && refs.length > 0) return refs;
+        const staticRefs = NodeInjector.allDirectiveRefs.get(node);
+        if (staticRefs && staticRefs.length > 0) return staticRefs;
+        return this.getParentInjector()?.getDirectiveRefsByNode(node) ?? null;
+    }
+
     getTemplateRef<T>(node: RNode, flags = InjectFlags.Default): TemplateRef<T> | null {
-        return this.state.templateRefs.get(node) ?? this.getParentEnviroment()?.getTemplateRef(node) ?? null;
+        return this.templateRefs.get(node) ?? this.getParentInjector()?.getTemplateRef(node) ?? null;
     }
 
-    /**
-     * get element ref.
-     *
-     * @template T
-     * @param {T} node
-     * @return {*}  {ElementRef<T>}
-     * @memberof EnvironmentContext
-     */
     getElementRef<T extends RNode>(node: T, flags = InjectFlags.Default): ElementRef<T> {
-        return this.state.elementRefs.get(node) ?? this.getParentEnviroment()?.getElementRef(node) ?? this.createElementRef(node);
+        return this.elementRefs.get(node) ?? this.getParentInjector()?.getElementRef(node) ?? this.createElementRef(node);
     }
 
-    /**
-     * get container ref.
-     *
-     * @template T
-     * @param {T} node
-     * @return {*}  {ElementRef<T>}
-     * @memberof EnvironmentContext
-     */
     getViewContainerRef<T extends RNode>(nodeOrRef: T | ElementRef<T>, flags = InjectFlags.Default): ViewContainerRef<T> {
         const node = nodeOrRef instanceof ElementRef ? nodeOrRef.nativeElement : nodeOrRef;
-        return this.state.viewContainerRefs.get(node) ?? this.getParentEnviroment()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
+        return this.viewContainerRefs.get(node) ?? this.getParentInjector()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
     }
 
     protected createElementRef<T extends RNode>(node: T): ElementRef<T> {
         const eRef = new ElementRef(node);
-        this.state.elementRefs.set(node, eRef);
+        this.elementRefs.set(node, eRef);
         return eRef;
     }
 
-    protected createViewContainerRef<T extends RNode>(node: T): ViewContainerRef<T> {
+    createViewContainerRef<T extends RNode>(node: T): ViewContainerRef<T> {
         const containerRef = createViewContainerRef(this.getElementRef(node), this);
-        this.state.viewContainerRefs.set(node, containerRef);
+        this.viewContainerRefs.set(node, containerRef);
         return containerRef;
     }
 
+    setParentNode(node: RNode, parent: RNode): void {
+        this.parentNodes.set(node, parent);
+    }
+
+    getParentNode(node: RNode): RNode | null {
+        return this.parentNodes.get(node) ?? this.getParentInjector()?.getParentNode(node) ?? null;
+    }
+
 }
+
+export { NodeInjector as EnvironmentContext };

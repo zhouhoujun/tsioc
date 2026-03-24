@@ -11,6 +11,8 @@ import { ClassDirective } from './directives/class';
 import { StyleDirective } from './directives/style';
 import { CaseDirective, SwitchDirective } from './directives/switch-case.dir';
 import { TemplateOutletDirective } from './directives/template-outlet.dir';
+import { VShowDirective } from './directives/show.dir';
+import { VBindDirective, VOnDirective } from './directives/bind.dir';
 import { componentResolvers } from './impl/resolvers';
 
 
@@ -38,7 +40,10 @@ import { componentResolvers } from './impl/resolvers';
         StyleDirective,
         SwitchDirective,
         CaseDirective,
-        TemplateOutletDirective
+        TemplateOutletDirective,
+        VShowDirective,
+        VBindDirective,
+        VOnDirective
     ]
 })
 export class ComponentsModule {

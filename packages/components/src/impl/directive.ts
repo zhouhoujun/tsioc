@@ -8,14 +8,14 @@ import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '
 import { reactive } from '../reactive';
 import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
-import { EnvironmentContext } from '../refs/environment';
+import { NodeInjector } from '../refs/environment';
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
 
     private _elementRef: ElementRef;
     constructor(
         _classRef: ClassRef<T>,
-        context: EnvironmentContext,
+        context: NodeInjector,
         options: DirectiveOptions) {
         super(_classRef, context, options);
         this._elementRef = options.elementRef!
@@ -40,7 +40,7 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
         super.clean();
     }
 
-    protected process(option?: EnvironmentContext | InvokeOptions, resolveCtx?: RunContext) {
+    protected process(option?: NodeInjector | InvokeOptions, resolveCtx?: RunContext) {
 
     }
 
@@ -72,15 +72,22 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
         return injector;
     }
 
-    protected override createInjector<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {
-        const context = new EnvironmentContext(injector, options);
+    protected override createInjector<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): NodeInjector {
+        // console.log('[DirectiveFactoryImpl] createInjector options:', options, 'elementRef:', options?.elementRef);
+        const context = new NodeInjector(injector, options);
+        if (options.elementRef) {
+            context.setPayload(options.elementRef);
+            // console.log('[DirectiveFactoryImpl] Payload set');
+        } else {
+            // console.log('[DirectiveFactoryImpl] No elementRef in options');
+        }
         // if (!context.has(ReactiveEffect, InjectFlags.Self)) {
         //     context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
         // }
         return context;
     }
 
-    protected override createInstance<T>(typeRef: ClassRef<T>, context: EnvironmentContext, options: DirectiveOptions): DirectiveRef<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: NodeInjector, options: DirectiveOptions): DirectiveRef<T> {
         return new DirectiveRefImpl(typeRef, context, options);
     }
 

@@ -123,7 +123,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
     return `${obj?.toString()}`
 }
 
-const UNRESOLVED = {};
+export const UNRESOLVED = {};
 const unResolve = <TInput, TOutput = any, TContext = any>(input: TInput, context: TContext) => UNRESOLVED as TOutput;
 
 export function isResolved(value: any) {

@@ -2,7 +2,7 @@ import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions,
 import { CompilerOptions, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { EmbeddedViewRef } from './view';
 import { DirectiveDef, factoryKey } from './directive';
-import { EnvironmentContext } from './environment';
+import { NodeInjector } from './environment';
 import { ElementRef } from './element';
 import { Renderer } from '../renderer/Renderer';
 import { noReact } from '../effect';
@@ -13,7 +13,7 @@ import { TemplateFactory } from './template';
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
     templateUrl?: string;
-    ƿFac?: (ctx: EnvironmentContext, options: ComponentOptions) => ComponentRef<T>;
+    ƿFac?: (ctx: NodeInjector, options: ComponentOptions) => ComponentRef<T>;
     ƿtempFac?: TemplateFactory<T>;
 }
 
@@ -21,7 +21,7 @@ export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof fact
  * ComponentRef.
  */
 @Abstract()
-export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions, EnvironmentContext> {
+export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions, NodeInjector> {
 
     [noReact] = true;
 

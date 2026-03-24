@@ -1,99 +1,98 @@
-import { Host, Optional, Self, SkipSelf } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
-import { ElementRef } from '../refs/element';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
+import { RNode } from '../renderer/Node';
 
-/**
- * v-switch directive component.
- *
- * @export
- * @class SwitchDirective
- */
+interface SwitchChain {
+    switchDirective: SwitchDirective;
+    cases: CaseDirective[];
+    defaults: DefaultDirective[];
+    parentNode: RNode;
+}
+
+const switchChains = new WeakMap<RNode, SwitchChain>();
+
+function getOrCreateSwitchChain(parentNode: RNode): SwitchChain {
+    let chain = switchChains.get(parentNode);
+    if (!chain) {
+        chain = { switchDirective: null!, cases: [], defaults: [], parentNode };
+        switchChains.set(parentNode, chain);
+    }
+    return chain;
+}
+
 @Directive({
     selector: '[v-switch],[*switch]',
     priority: 20
 })
 export class SwitchDirective {
     private _value: any;
-    private _caseDirectives: CaseDirective[] = [];
-    private _defaultDirective: DefaultDirective | null = null;
+    public parentNode: RNode | null = null;
 
     constructor() { }
 
     @Attribute()
     set switch(value: any) {
-        const changed = this._value == value;
+        const changed = this._value != value;
         this._value = value;
-        if(changed) this.updateCases();
+        if (changed) this.updateCases();
     }
 
-    /**
-     * Register case directive to switch directive.
-     * @param caseDirective
-     */
     registerCase(caseDirective: CaseDirective) {
-        if (this._caseDirectives.indexOf(caseDirective) === -1) {
-            this._caseDirectives.push(caseDirective);
-            // Update the case view immediately after registration
+        const chain = getOrCreateSwitchChain(this.parentNode!);
+        if (chain.cases.indexOf(caseDirective) === -1) {
+            chain.cases.push(caseDirective);
             if (this._value !== undefined) {
                 caseDirective.updateView(this._value);
             }
         }
     }
 
-    /**
-     * Unregister case directive from switch directive.
-     * @param caseDirective
-     */
     unregisterCase(caseDirective: CaseDirective) {
-        const index = this._caseDirectives.indexOf(caseDirective);
+        if (!this.parentNode) return;
+        const chain = getOrCreateSwitchChain(this.parentNode);
+        const index = chain.cases.indexOf(caseDirective);
         if (index > -1) {
-            this._caseDirectives.splice(index, 1);
+            chain.cases.splice(index, 1);
         }
     }
 
-    /**
-     * Register default directive to switch directive.
-     * @param defaultDirective
-     */
     registerDefault(defaultDirective: DefaultDirective) {
-        this._defaultDirective = defaultDirective;
-        // 立即更新默认视图状态
+        if (!this.parentNode) return;
+        const chain = getOrCreateSwitchChain(this.parentNode);
+        chain.defaults.push(defaultDirective);
         if (this._value !== undefined) {
             this.updateCases();
         }
     }
 
-    /**
-     * Unregister default directive from switch directive.
-     */
-    unregisterDefault() {
-        this._defaultDirective = null;
+    unregisterDefault(defaultDirective: DefaultDirective) {
+        if (!this.parentNode) return;
+        const chain = getOrCreateSwitchChain(this.parentNode);
+        const index = chain.defaults.indexOf(defaultDirective);
+        if (index > -1) {
+            chain.defaults.splice(index, 1);
+        }
     }
 
-    /**
-     * Update all cases view according to current switch value.
-     */
     private updateCases() {
+        if (!this.parentNode) return;
         let matchFound = false;
 
-        this._caseDirectives.forEach(caseDirective => {
+        for (const caseDirective of getOrCreateSwitchChain(this.parentNode).cases) {
             const matched = caseDirective.updateView(this._value);
             if (matched) {
                 matchFound = true;
             }
-        });
+        }
 
-        // Update default directive
-        if (this._defaultDirective) {
-            this._defaultDirective.updateView(!matchFound);
+        for (const defaultDirective of getOrCreateSwitchChain(this.parentNode).defaults) {
+            defaultDirective.updateView(!matchFound);
         }
     }
 
-    // 添加初始化方法，确保指令在创建后能正确渲染
     onInit() {
         if (this._value !== undefined) {
             this.updateCases();
@@ -101,58 +100,52 @@ export class SwitchDirective {
     }
 
     onDestroy() {
-        // Clean up all registered case directives
-        this._caseDirectives.forEach(caseDirective => {
-            caseDirective.clearView();
-        });
-
-        if (this._defaultDirective) {
-            this._defaultDirective.clearView();
-        }
-
-        this._caseDirectives = [];
-        this._defaultDirective = null;
+        if (!this.parentNode) return;
+        const chain = getOrCreateSwitchChain(this.parentNode);
+        chain.cases.forEach(caseDirective => caseDirective.clearView());
+        chain.defaults.forEach(defaultDirective => defaultDirective.clearView());
+        chain.cases = [];
+        chain.defaults = [];
     }
 }
 
-/**
- * v-case directive component.
- *
- * @export
- * @class CaseDirective
- */
+export function registerSwitchDirective(directive: SwitchDirective, parentNode: RNode | null) {
+    directive.parentNode = parentNode;
+    if (parentNode) {
+        const chain = getOrCreateSwitchChain(parentNode);
+        chain.switchDirective = directive;
+    }
+}
+
+export function findSwitchDirective(parentNode: RNode | null): SwitchDirective | null {
+    if (!parentNode) return null;
+    const chain = switchChains.get(parentNode);
+    return chain?.switchDirective ?? null;
+}
+
 @Directive({
     selector: '[v-case],[*case]',
-    requires: ['[v-switch],[*switch]'],
     dirType: DirectiveType.Conditional,
     priority: 20
 })
 export class CaseDirective {
     private _hasView = false;
-    private _context: any = null; // 模板上下文
+    private _context: any = null;
     private _caseValue: any;
     private _switchDirective: SwitchDirective | null = null;
     private _template: TemplateRef<any>;
+    public parentNode: RNode | null = null;
 
     constructor(
         private viewContainer: ViewContainerRef,
-        templateRef: TemplateRef<any>,
-        // Get parent switch directive
-       @SkipSelf() @Host() switchDirective: SwitchDirective
+        templateRef: TemplateRef<any>
     ) {
         this._template = templateRef;
-        if (switchDirective) {
-            this._switchDirective = switchDirective;
-            this._switchDirective.registerCase(this);
-        }
     }
 
     @Attribute()
     set context(ctx: any) {
         this._context = ctx;
-        if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
-            this.updateView(this._switchDirective['_value']);
-        }
     }
 
     @Attribute()
@@ -168,11 +161,6 @@ export class CaseDirective {
         this._template = templateRef;
     }
 
-    /**
-     * Update view based on switch value.
-     * @param switchValue
-     * @returns whether the case matched
-     */
     updateView(switchValue: any): boolean {
         const isMatch = this._caseValue === switchValue;
         if (isMatch && !this._hasView) {
@@ -197,10 +185,11 @@ export class CaseDirective {
         this._hasView = false;
     }
 
-    // 添加初始化方法，确保指令在创建后能正确渲染
     onInit() {
-        if (this._switchDirective && this._caseValue !== undefined && this._switchDirective['_value'] !== undefined) {
-            this.updateView(this._switchDirective['_value']);
+        if (this._switchDirective) {
+            if (this._caseValue !== undefined && this._switchDirective['_value'] !== undefined) {
+                this.updateView(this._switchDirective['_value']);
+            }
         }
     }
 
@@ -212,41 +201,28 @@ export class CaseDirective {
     }
 }
 
-/**
- * v-default directive component.
- *
- * @export
- * @class DefaultDirective
- */
 @Directive({
     selector: '[v-default],[*default]',
-    requires: ['[v-switch],[*switch]'],
     dirType: DirectiveType.Conditional,
     priority: 20
 })
 export class DefaultDirective {
     private _hasView = false;
-    private _context: any = null; // 模板上下文
+    private _context: any = null;
     private _switchDirective: SwitchDirective | null = null;
     private _template: TemplateRef<any>;
+    public parentNode: RNode | null = null;
 
     constructor(
         private viewContainer: ViewContainerRef,
-        templateRef: TemplateRef<any>,
-        @SkipSelf() @Host() switchDirective: SwitchDirective
+        templateRef: TemplateRef<any>
     ) {
         this._template = templateRef;
-        if (switchDirective) {
-            this._switchDirective = switchDirective;
-            this._switchDirective.registerDefault(this);
-        }
     }
+
     @Attribute()
     set context(ctx: any) {
         this._context = ctx;
-        if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
-            this.updateView(this.canShowDefaultView(this._switchDirective));
-        }
     }
 
     @Attribute()
@@ -254,10 +230,6 @@ export class DefaultDirective {
         this._template = templateRef;
     }
 
-    /**
-     * Update default view when no case matched.
-     * @param shouldShow whether to show the default view
-     */
     updateView(shouldShow: boolean) {
         if (shouldShow && !this._hasView) {
             this.createView();
@@ -280,29 +252,27 @@ export class DefaultDirective {
         this._hasView = false;
     }
 
-    private canShowDefaultView(switchDirective: SwitchDirective): boolean {
-        let matchFound = false;
-        if (switchDirective['_caseDirectives']) {
-            switchDirective['_caseDirectives'].forEach((caseDirective: any) => {
-                if (caseDirective._caseValue === switchDirective!['_value']) {
-                    matchFound = true;
-                }
-            });
+    private canShowDefaultView(): boolean {
+        if (!this._switchDirective) return false;
+        const chain = switchChains.get(this._switchDirective.parentNode!);
+        if (!chain) return true;
+        for (const c of chain.cases) {
+            if (c['_caseValue'] === this._switchDirective['_value']) {
+                return false;
+            }
         }
-        return !matchFound;
-
+        return true;
     }
-    // 添加初始化方法，确保指令在创建后能正确渲染
+
     onInit() {
         if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
-            // 初始化时检查是否需要显示默认视图
-            this.updateView(this.canShowDefaultView(this._switchDirective));
+            this.updateView(this.canShowDefaultView());
         }
     }
 
     onDestroy() {
         if (this._switchDirective) {
-            this._switchDirective.unregisterDefault();
+            this._switchDirective.unregisterDefault(this);
         }
         this.clearView();
     }

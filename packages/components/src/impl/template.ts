@@ -2,7 +2,7 @@ import { Exception } from '@tsdi/ioc';
 import { NodeFactory, TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
-import { EnvironmentContext } from '../refs/environment';
+import { NodeInjector } from '../refs/environment';
 import { DirectiveDef } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
 import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS } from '../renderer/Node';
@@ -42,7 +42,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         private options?: {
             directives?: Map<RNode, DirectiveDef<any>[]>;
             components?: Map<RNode, ComponentDef>;
-            environment?: EnvironmentContext;
+            environment?: NodeInjector;
             context?: any
         }
     ) {
@@ -58,15 +58,15 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * and attaches it to the view container.
      * @param context The data-binding context of the embedded view, as declared
      * in the `<template>` usage.
-     * @param environment EnvironmentContext to be used within the embedded view.
+     * @param environment NodeInjector to be used within the embedded view.
      * @returns The new embedded view object.
      */
-    createEmbeddedView(context?: C, environment?: EnvironmentContext): EmbeddedViewRef<C> {
+    createEmbeddedView(context?: C, environment?: NodeInjector, effect?: ReactiveEffect): EmbeddedViewRef<C> {
         environment = environment || this.options?.environment;
-        if (!environment) throw new Exception('EnvironmentContext is required');
+        if (!environment) throw new Exception('NodeInjector is required');
 
         const renderer = environment.get(Renderer);
-        const effect = environment.get(ReactiveEffect);
+        effect = effect || environment.get(ReactiveEffect);
 
         if (context) {
             if (this.options?.context) {
@@ -89,12 +89,12 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         }
 
         // 创建嵌入式视图
-        const embeddedView = createEmbeddedViewRef(rootNodes, context!, environment, effect); //environment.get(TemplateCompiler).compileNodes<C>(rootNodes, context, environment);
+        const embeddedView = createEmbeddedViewRef(rootNodes, context!, environment, effect);
 
         return embeddedView;
     }
 
-    private bindings(node: RNode, context: C, effect: ReactiveEffect, environment: EnvironmentContext): void {
+    private bindings(node: RNode, context: C, effect: ReactiveEffect, environment: NodeInjector): void {
 
         const bindings = node[BINDINGS];
         if (bindings?.length) {
@@ -159,7 +159,7 @@ export function createTemplateRef<C = any>(
     elementRef: ElementRef,
     options?: {
         context?: any;
-        environment?: EnvironmentContext
+        environment?: NodeInjector
     }): TemplateRef<C> {
     return new TemplateRefImpl<C>(rootNodes, elementRef, options);
 }

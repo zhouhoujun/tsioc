@@ -475,7 +475,7 @@ export const Optional: Optional = createParamDecorator('Optional', {
     actionType: ActionType.inject,
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.Optional
+            meta.flags = meta.flags | InjectFlags.Optional
         } else {
             meta.flags = InjectFlags.Optional
         }
@@ -508,7 +508,7 @@ export interface Self {
 export const Self: Self = createParamDecorator('Self', {
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.Self
+            meta.flags = meta.flags | InjectFlags.Self
         } else {
             meta.flags = InjectFlags.Self
         }
@@ -548,9 +548,10 @@ export interface SkipSelf {
  * @publicApi
  */
 export const SkipSelf: SkipSelf = createParamDecorator('SkipSelf', {
+    actionType: ActionType.inject,
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.SkipSelf
+            meta.flags = meta.flags | InjectFlags.SkipSelf
         } else {
             meta.flags = InjectFlags.SkipSelf
         }
@@ -582,9 +583,10 @@ export interface Host {
  * @publicApi
  */
 export const Host: Host = createParamDecorator('Host', {
+    actionType: ActionType.inject,
     appendProps: (meta) => {
         if (meta.flags) {
-            meta.flags = meta.flags & InjectFlags.Host
+            meta.flags = meta.flags | InjectFlags.Host
         } else {
             meta.flags = InjectFlags.Host
         }

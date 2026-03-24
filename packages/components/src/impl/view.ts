@@ -6,7 +6,7 @@ import { RNode } from '../renderer/Node';
 import { DirectiveRef } from '../refs/directive';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
-import { EnvironmentContext } from '../refs/environment';
+import { NodeInjector } from '../refs/environment';
 
 /**
  * Embedded view ref implement.
@@ -40,7 +40,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     constructor(
         readonly rootNodes: RNode[],
         readonly context: C,
-        readonly environment: EnvironmentContext,
+        readonly environment: NodeInjector,
         effect?: ReactiveEffect
     ) {
         this.effect = effect ?? environment.get(ReactiveEffect);
@@ -111,7 +111,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 export function createEmbeddedViewRef<C>(
     rootNodes: RNode[],
     context: C,
-    environment: EnvironmentContext,
+    environment: NodeInjector,
     effect?: ReactiveEffect) {
     return new EmbeddedViewRefImpl(rootNodes, context, environment, effect)
 

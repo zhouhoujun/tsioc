@@ -18,7 +18,8 @@ export const Attribute: Attribute = createDecorator<AttributeMetadata>('Attribut
     ) => {
         return {
             alias,
-            required
+            required,
+            nullable: true
         };
     },
 })
