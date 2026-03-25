@@ -4,6 +4,7 @@ import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
 import { RNode } from '../renderer/Node';
+import { Host } from '@tsdi/ioc';
 
 interface SwitchChain {
     switchDirective: SwitchDirective;
@@ -192,22 +193,23 @@ export function findSwitchDirective(parentNode: RNode | null): SwitchDirective |
 
 @Directive({
     selector: '[v-case],[*case]',
-    dirType: DirectiveType.Conditional,
+    dirType: DirectiveType.Conditional,    
     priority: 20
 })
 export class CaseDirective {
     private _hasView = false;
     private _context: any = null;
     private _caseValue: any;
-    private _switchDirective: SwitchDirective | null = null;
     private _template: TemplateRef<any>;
-    public parentNode: RNode | null = null;
 
     constructor(
         private viewContainer: ViewContainerRef,
-        templateRef: TemplateRef<any>
+        templateRef: TemplateRef<any>,
+        @Host() private _switchDirective: SwitchDirective
     ) {
         this._template = templateRef;
+        // 注册到 SwitchDirective
+        _switchDirective.registerCase(this);
     }
 
     @Attribute()
@@ -230,12 +232,9 @@ export class CaseDirective {
 
     updateView(switchValue: any): boolean {
         const isMatch = this._caseValue === switchValue;
-        console.log('[CaseDirective.updateView] caseValue:', this._caseValue, 'switchValue:', switchValue, 'isMatch:', isMatch);
         if (isMatch && !this._hasView) {
-            console.log('[CaseDirective.updateView] Creating view');
             this.createView();
         } else if (!isMatch && this._hasView) {
-            console.log('[CaseDirective.updateView] Clearing view');
             this.clearView();
         }
         return isMatch;
@@ -243,7 +242,6 @@ export class CaseDirective {
 
     private createView() {
         if (!this._template) {
-            console.warn('CaseDirective: templateRef is not set');
             return;
         }
         this.viewContainer.createEmbeddedView(this._template, this._context);
@@ -253,26 +251,6 @@ export class CaseDirective {
     clearView() {
         this.viewContainer.clear();
         this._hasView = false;
-    }
-
-    onInit() {
-        // Find and register with switch directive in onInit (after all switches are registered)
-        if (!this._switchDirective && (this as any)._switchLookupNode) {
-            const switchDir = findSwitchDirective((this as any)._switchLookupNode);
-            if (switchDir) {
-                (this as any)._switchDirective = switchDir;
-                switchDir.registerCase(this);
-            } else {
-                // Switch not found, add to pending and try again later
-                addPendingCase((this as any)._switchLookupNode, this);
-            }
-        }
-
-        if (this._switchDirective) {
-            if (this._caseValue !== undefined && this._switchDirective['_value'] !== undefined) {
-                this.updateView(this._switchDirective['_value']);
-            }
-        }
     }
 
     onDestroy() {
@@ -291,15 +269,16 @@ export class CaseDirective {
 export class DefaultDirective {
     private _hasView = false;
     private _context: any = null;
-    private _switchDirective: SwitchDirective | null = null;
     private _template: TemplateRef<any>;
-    public parentNode: RNode | null = null;
 
     constructor(
         private viewContainer: ViewContainerRef,
-        templateRef: TemplateRef<any>
+        templateRef: TemplateRef<any>,
+        @Host() private _switchDirective: SwitchDirective
     ) {
         this._template = templateRef;
+        // 注册到 SwitchDirective
+        _switchDirective.registerDefault(this);
     }
 
     @Attribute()
@@ -322,7 +301,6 @@ export class DefaultDirective {
 
     private createView() {
         if (!this._template) {
-            console.warn('DefaultDirective: templateRef is not set');
             return;
         }
         this.viewContainer.createEmbeddedView(this._template, this._context);
@@ -344,21 +322,6 @@ export class DefaultDirective {
             }
         }
         return true;
-    }
-
-    onInit() {
-        // Find and register with switch directive in onInit (after all switches are registered)
-        if (!this._switchDirective && (this as any)._switchLookupNode) {
-            const switchDir = findSwitchDirective((this as any)._switchLookupNode);
-            if (switchDir) {
-                (this as any)._switchDirective = switchDir;
-                switchDir.registerDefault(this);
-            }
-        }
-
-        if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
-            this.updateView(this.canShowDefaultView());
-        }
     }
 
     onDestroy() {

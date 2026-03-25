@@ -211,7 +211,21 @@ export class XmlElement extends XmlNode implements RElement {
 
 
     get textContent(): string | null {
-        return this.childNodes.filter(r => r.nodeType === NodeType.Text && (r as XmlText).textContent).map(r => (r as XmlText).textContent).join(' ') ?? null;
+        // 递归获取所有后代文本节点的文本内容
+        const collectText = (nodes: XmlNode[]): string[] => {
+            const result: string[] = [];
+            for (const node of nodes) {
+                if (node.nodeType === NodeType.Text) {
+                    const text = (node as XmlText).textContent;
+                    if (text) result.push(text);
+                } else if (node.childNodes?.length) {
+                    result.push(...collectText(node.childNodes));
+                }
+            }
+            return result;
+        };
+        const texts = collectText(this.childNodes);
+        return texts.length > 0 ? texts.join('') : null;
     }
 
     setProperty(name: string, value: any): void {

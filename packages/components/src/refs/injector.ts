@@ -9,15 +9,6 @@ import { createViewContainerRef } from '../impl/container';
 import { noReact } from '../effect';
 import { ViewRef } from './view';
 import { Renderer } from '../renderer/Renderer';
-import { 
-    elementRefResovler, 
-    templateRefResovler, 
-    directorRefResovler, 
-    componentRefResovler, 
-    viewContainerRefResovler,
-    hostDirectiveResovler,
-    directorResovler 
-} from '../impl/resolvers';
 
 
 export const NODES_RESOLVERS = token<ResolveInterceptorLike[]>('NODES_RESOLVERS');
@@ -79,19 +70,6 @@ export class NodeInjector extends ContextInjector {
 
     getPayload<T = any>(): T {
         return this._payload;
-    }
-
-    protected override afterInit(): void {
-        this.setValue(NODES_RESOLVERS, [
-            elementRefResovler,
-            templateRefResovler,
-            directorRefResovler,
-            componentRefResovler,
-            viewContainerRefResovler,
-            hostDirectiveResovler,
-            directorResovler
-        ]);
-        this.onDestroy(() => this.clear());
     }
 
     clear(): void {

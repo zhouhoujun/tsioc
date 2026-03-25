@@ -163,13 +163,15 @@ export function compileElementToFactory(
 
         // 延迟绑定执行到微任务，确保元素已被添加到父节点
         // 这样 target.parentNode 在绑定执行时会被正确设置
-        const deferredBindings = [...bindings];
-        Promise.resolve().then(() => {
-            deferredBindings.forEach(binding => {
-                const unbinding = binding(element, context, effect, injector);
-                unbinding && injector.onDestroy(unbinding);
+        if (bindings.length > 0) {
+            const deferredBindings = [...bindings];
+            Promise.resolve().then(() => {
+                deferredBindings.forEach(binding => {
+                    const unbinding = binding(element, context, effect, injector);
+                    unbinding && injector.onDestroy(unbinding);
+                });
             });
-        });
+        }
 
         return element;
     };
@@ -350,12 +352,19 @@ export function applyDirectiveToElement(
     // 附加指令到环境
     injector.attachDirective(directiveRef);
 
+    const instance = directiveRef.instance;
+
+    // 注册 SwitchDirective 到 switchChains
+    if (instance instanceof SwitchDirective) {
+        registerSwitchDirective(instance, element);
+    }
+
     // 处理指令属性
     processDirectiveAttributes(directiveRef, directive, [], attrs, context, effect, injector, delimiter);
 
     // 初始化指令
-    if (directiveRef.instance.onInit) {
-        directiveRef.instance.onInit();
+    if (instance.onInit) {
+        instance.onInit();
     }
 }
 
@@ -823,10 +832,19 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
         const viewContainerRef = injector.getViewContainerRef(target);
         const options: any = { templateRef, elementRef, viewContainerRef };
 
-        // For structural directives, store the parent node for view insertion.
-        // IMPORTANT: Use target.parentNode (the cloned parent) instead of captured parentNode (template parent)
-        // This ensures views are inserted into the rendered DOM tree, not the template AST
-        const effectiveParent = target.parentNode || parentNode;
+        // 对于结构指令，确保使用正确的父节点引用
+        // 如果 target.parentNode 为空（子节点还未添加），使用编译时捕获的 parentNode
+        // 但如果 parentNode 是 AST 节点，需要从 injector 获取正确的渲染时父节点
+        let effectiveParent = target.parentNode || parentNode;
+
+        // 尝试从 injector 获取已注册的父节点（渲染时的元素）
+        if (!effectiveParent || (parentNode && effectiveParent === parentNode)) {
+            const renderedParent = injector.getParentNode?.(target);
+            if (renderedParent) {
+                effectiveParent = renderedParent;
+            }
+        }
+
         if (effectiveParent) {
             injector.setParentNode(target, effectiveParent);
         }
@@ -836,7 +854,6 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
         if (directiveRef && directiveRef.instance) {
             injector.attachDirective(directiveRef);
             const instance = directiveRef.instance as any;
-            // console.log('[bindingDirective] After attach, instance type:', instance?.constructor?.name);
             
             // Set essential properties first
             if (instance.injector === undefined) {

@@ -116,80 +116,20 @@ export const viewContainerRefResovler: ResolveInterceptorFn = (input, next, cont
 }
 
 
-export const hostDirectiveResovler: ResolveInterceptorFn = (input, next, context) => {
-    const paramType = (input.provider ?? input.type) as Type;
-    
-    if (input.flags && (input.flags & InjectFlags.Host)) {
-        const injector = context.getInjector() as NodeInjector;
-        const elementRef = injector.getPayload() as ElementRef;
-        
-        if (elementRef?.nativeElement) {
-            const dirDef = getDef<DirectiveDef>(paramType);
-            const dirType = dirDef?.dirType;
-
-            if (isNumber(dirType) || paramType.name === 'SwitchDirective') {
-                const node = elementRef?.nativeElement;
-
-                const searchForDirective = (searchNode: any, depth = 0): any => {
-                    const dirRefsOnNode = injector.getDirectiveRefsByNode(searchNode);
-                    // console.log('[hostDirectiveResovler] Searching in node:', (searchNode as any)?.tagName, 'dirRefs:', dirRefsOnNode?.map((r: any) => r?.instance?.constructor?.name));
-                    if (dirRefsOnNode) {
-                        for (const dirRef of dirRefsOnNode) {
-                            try {
-                                if (dirRef.instance instanceof paramType) {
-                                    // console.log('[hostDirectiveResovler] Found SwitchDirective:', dirRef.instance);
-                                    return dirRef.instance;
-                                }
-                            } catch (e) {
-                                // Directive instantiation failed, skip
-                            }
-                        }
-                    }
-                    
-                    if (searchNode.childNodes && depth < 10) {
-                        for (const child of searchNode.childNodes) {
-                            if (child !== node && child !== undefined) {
-                                const result = searchForDirective(child, depth + 1);
-                                if (result) return result;
-                            }
-                        }
-                    }
-                    return null;
-                };
-
-                const storedParent = injector.getParentNode(node);
-                // console.log('[hostDirectiveResovler] Searching for SwitchDirective, node tagName:', (node as any)?.tagName, 'storedParent:', (storedParent as any)?.tagName);
-                
-                // For v-case, search in the same container (storedParent) since v-switch is on the parent element
-                if (storedParent) {
-                    // console.log('[hostDirectiveResovler] Searching in storedParent');
-                    const result = searchForDirective(storedParent, 0);
-                    if (result) return result;
-                }
-
-                let hostNode = node.parentNode as typeof node;
-                while (hostNode) {
-                    // console.log('[hostDirectiveResovler] Searching in hostNode:', (hostNode as any)?.tagName);
-                    const result = searchForDirective(hostNode, 0);
-                    if (result) return result;
-                    hostNode = hostNode.parentNode as typeof node;
-                }
-            }
-        }
-    }
-
-    return next(input, context);
-}
-
 export const directorResovler: ResolveInterceptorFn = (input, next, context) => {
     const paramType = (input.provider ?? input.type) as Type;
     const dirDef = getDef<DirectiveDef>(paramType);
     const dirType = dirDef?.dirType;
     if (isNumber(dirType)) {
+        // 当 input.provider 被设置时，表示这是一个创建新实例的请求
+        // 此时应该继续到下一个解析器，而不是返回已存在的 DirectiveRef
+        if (input.provider) {
+            return next(input, context);
+        }
         const injector = context.getInjector() as NodeInjector;
         const renderer = injector.get(Renderer);
         const elementRef = injector.getPayload() as ElementRef;
-        
+
         if(dirType === DirectiveType.Component) {
             const compRefs = injector.getComponentRef(paramType, input.flags);
             if (compRefs && compRefs.length > 0) {
@@ -206,6 +146,23 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
         }
         const dirRefs = injector.getDirectiveRef(paramType, input.flags);
         return dirRefs && dirRefs.length > 0 ? dirRefs[0] : UNRESOLVED;
+    }
+
+    // 特殊处理 SwitchDirective：全局查找
+    // SwitchDirective 的 dirType 是 undefined，不是数字
+    if (dirDef && paramType.name === 'SwitchDirective') {
+        if (input.provider) {
+            return next(input, context);
+        }
+        // 遍历 allDirectiveRefs 全局查找 SwitchDirective 实例
+        for (const [elementNode, refs] of NodeInjector.allDirectiveRefs) {
+            for (const dirRef of refs) {
+                if (dirRef.instance && dirRef.instance.constructor === paramType) {
+                    return dirRef.instance;
+                }
+            }
+        }
+        return UNRESOLVED;
     }
 
     return next(input, context);
@@ -264,6 +221,5 @@ export const componentResolvers: Provider[] = [
     { provide: NODES_RESOLVERS, useValue: directorRefResovler, multi: true },
     { provide: NODES_RESOLVERS, useValue: componentRefResovler, multi: true },
     { provide: NODES_RESOLVERS, useValue: viewContainerRefResovler, multi: true },
-    { provide: NODES_RESOLVERS, useValue: hostDirectiveResovler, multi: true },
     { provide: NODES_RESOLVERS, useValue: directorResovler, multi: true },
 ];

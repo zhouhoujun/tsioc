@@ -85,11 +85,17 @@ export class ComplexTest {
         // 创建FieldComponent实例
         const complexRef = this.ctx.runners.getRef(ComplexComponent) as ComponentRef<ComplexComponent>;
 
+        // 等待微任务完成，确保 BINDINGS 被执行
+        await Promise.resolve();
+
         const elementRef = complexRef.hostView.query('.switch-content') as ElementRef;
         expect(elementRef.nativeElement).toBeDefined();
+        // v-switch creates v-container anchors, so we have 3 children:
+        // [0] v-container (anchor for case 1), [1] p element (matched case 2), [2] v-container (anchor for case 2)
         expect(elementRef.nativeElement.childNodes.length).toEqual(3);
 
-        expect(elementRef.nativeElement.childNodes[0].childNodes[0].textContent).toEqual('This is case 2 content');
+        // The matched content is in childNodes[1] (the p element), not in childNodes[0] (v-container)
+        expect(elementRef.nativeElement.childNodes[1].textContent).toEqual('This is case 2 content');
     }
 
 
