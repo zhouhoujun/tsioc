@@ -172,7 +172,9 @@ export class DefaultRequestHandler<
         const options = this.options as RequestHandlerOptions;
         if (options.side === TransferSide.server) {
             const transfers = this.injector.get(options.transfersToken!);
-            fns.unshift(...transfers)
+            if (transfers?.length) {
+                fns.unshift(...transfers)
+            }
         }
         return composeInterceptors(fns);
     }

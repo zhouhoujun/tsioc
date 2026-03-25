@@ -120,9 +120,18 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 }
 
 export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
-    option.transport = Transport.TCP;
-    option.side = TransferSide.client;
-    const config = option as TcpClientOptions;
+    const config = {
+        ...option,
+        connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
+        // Preserve token references set by feature functions
+        transfersToken: option.transfersToken,
+        interceptorsToken: option.interceptorsToken,
+        guardsToken: option.guardsToken,
+        filtersToken: option.filtersToken,
+        backendToken: option.backendToken
+    } as TcpClientOptions;
+    config.transport = Transport.TCP;
+    config.side = TransferSide.client;
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
@@ -137,7 +146,7 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
         {
             provide: hanlderToken,
             useFactory: (injector: Injector) => {
-                return createRequestHandler(injector, option)
+                return createRequestHandler(injector, config)
             },
             deps: [
                 Injector
@@ -145,10 +154,11 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
         },
         {
             provide: clientToken,
-            useClass: TcpClient,
+            useFactory: (handler: ClientHandler<TcpRequest<any>, ResponseEvent<any>>) => {
+                return new TcpClient(handler, config);
+            },
             deps: [
-                hanlderToken,
-                { value: option }
+                hanlderToken
             ]
         }
     ];
@@ -164,6 +174,8 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
 }
 
 export function withTcpClientTransport(...options: Partial<TcpClientOptions>[]): ClientTransportFeature[] {
-    return options.map(option => tcpClientTransportFacotry(option, options.length == 1 || option.asDefault));
+    return options.map((option, idx) => {
+        return tcpClientTransportFacotry(option, options.length == 1 || option.asDefault);
+    });
 }
 

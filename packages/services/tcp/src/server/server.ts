@@ -166,17 +166,27 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
 
 
 export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?: boolean): TransportFeature {
-    option.transport = Transport.TCP;
-    option.side = TransferSide.server;
+    const config = {
+        ...option,
+        listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
+        serverOpts: option.serverOpts ? { ...option.serverOpts } : undefined,
+        // Preserve token references set by feature functions
+        transfersToken: option.transfersToken,
+        interceptorsToken: option.interceptorsToken,
+        guardsToken: option.guardsToken,
+        filtersToken: option.filtersToken,
+        routerToken: option.routerToken,
+        backendToken: option.backendToken
+    } as TcpServOptions;
+    config.transport = Transport.TCP;
+    config.side = TransferSide.server;
 
-    const config = option as TcpServOptions;
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
-    config.providers ??= [];
+    config.providers = [...(config.providers ?? [])];
     config.providers.push({ provide: SERV_OPTIONS, useExisting: TCP_SERV_OPTIONS });
 
     const providers: Provider[] = [
-        TcpServer,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         asProvider({
             provide: backendToken,
@@ -200,11 +210,11 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
                     providers: [
                         {
                             provide: TCP_SERV_OPTIONS,
-                            useValue: option
+                            useValue: config
                         },
                         {
                             provide: ServiceHandler,
-                            useFactory: (injector: Injector) => createRequestHandler(injector, option),
+                            useFactory: (injector: Injector) => createRequestHandler(injector, config),
                             deps: [
                                 Injector
                             ]
@@ -221,8 +231,8 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
             useFactory: (service) => {
                 return {
                     service,
-                    bootstrap: option.bootstrap,
-                    microservice: option.microservice
+                    bootstrap: config.bootstrap,
+                    microservice: config.microservice
                 }
             },
             deps: [

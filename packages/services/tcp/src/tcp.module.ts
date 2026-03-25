@@ -1,5 +1,5 @@
 import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
-import { TransferSide, Transport } from '@tsdi/common';
+import { PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { CLIENT_CONFIGS, provideClientFromDi } from '@tsdi/common/client';
 import { provideServiceFromDi, SERVICE_CONFIGS } from '@tsdi/endpoints';
 
@@ -7,12 +7,15 @@ import { tcpTransportFactory } from './server/server';
 import { TcpServOptions } from './server/options';
 import { TcpClientOptions } from './client/options';
 import { tcpClientTransportFacotry } from './client/client';
+import { TcpPatternFormatter } from './pattern';
 
 
 
 @Module({
     providers: [
-        provideClientFromDi({ transport: Transport.TCP })
+        provideClientFromDi({ transport: Transport.TCP }),
+        TcpPatternFormatter,
+        { provide: PatternFormatter, useExisting: TcpPatternFormatter }
     ]
 })
 export class TcpClientModule {
@@ -34,7 +37,9 @@ export class TcpClientModule {
 
 @Module({
     providers: [
-        provideServiceFromDi({ transport: Transport.TCP })
+        provideServiceFromDi({ transport: Transport.TCP }),
+        TcpPatternFormatter,
+        { provide: PatternFormatter, useExisting: TcpPatternFormatter }
     ]
 })
 export class TcpModule {

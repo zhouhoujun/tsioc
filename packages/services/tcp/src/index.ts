@@ -7,4 +7,5 @@ export * from './server/options';
 export * from './server/handler';
 export * from './server/server';
 
+export * from './pattern';
 export * from './tcp.module';
