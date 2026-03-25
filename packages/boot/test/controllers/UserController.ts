@@ -1,7 +1,7 @@
 import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/endpoints';
 import { getTypeName } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logger';
-import { InternalServerException } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/common';
 import { Repository, Transactional } from '@tsdi/repository';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';

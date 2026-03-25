@@ -1,4 +1,4 @@
-import { InternalServerException } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/common';
 import { RequestParam, Controller, Post, Put, Get, Delete } from '@tsdi/endpoints';
 import { Log, Logger } from '@tsdi/logger';
 import { InjectRepository, Transactional } from '@tsdi/repository';

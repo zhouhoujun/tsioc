@@ -4,7 +4,6 @@ import { ServerModule } from '@tsdi/platform-server';
 import { HttpClientModule } from '@tsdi/common/http';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { ServerEndpointModule } from '@tsdi/platform-server/common';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { HttpModule } from '@tsdi/http';
 import { Connection } from 'typeorm';
@@ -12,8 +11,7 @@ import { Role, User } from './models/models';
 import { UserController } from './controllers/UserController';
 import { RoleController } from './controllers/RoleController';
 import { UserRepository } from './repositories/UserRepository';
-import { EndpointModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { provideService } from '@tsdi/endpoints';
 
 
 
@@ -49,21 +47,20 @@ export const option = {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
-        EndpointModule.register({
-            transport: 'http',
-            serverOpts: {
-                interceptors:[
-                    Content,
-                    Json,
-                    Bodyparser
-                ]
-            }
-        }),
+        // provideService({
+        //     // useTransport: WebTransport,
+        //     // transport: 'http',
+        //     // serverOpts: {
+        //     //     interceptors:[
+        //     //         Content,
+        //     //         Json,
+        //     //         Bodyparser
+        //     //     ]
+        //     // }
+        // }),
         TypeOrmModule.withConnection({
             ...option,
             entities: [
@@ -90,21 +87,19 @@ export class MockBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
-        EndpointModule.register({
-            transport: 'http',
-            serverOpts: {
-                interceptors:[
-                    Content,
-                    Json,
-                    Bodyparser
-                ]
-            }
-        }),
+        // EndpointModule.register({
+        //     transport: 'http',
+        //     serverOpts: {
+        //         interceptors:[
+        //             Content,
+        //             Json,
+        //             Bodyparser
+        //         ]
+        //     }
+        // }),
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
@@ -128,21 +123,19 @@ export class MockBootLoadTest {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
-        EndpointModule.register({
-            transport: 'http',
-            serverOpts: {
-                interceptors:[
-                    Content,
-                    Json,
-                    Bodyparser
-                ]
-            }
-        }),
+        // EndpointModule.register({
+        //     transport: 'http',
+        //     serverOpts: {
+        //         interceptors:[
+        //             Content,
+        //             Json,
+        //             Bodyparser
+        //         ]
+        //     }
+        // }),
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
