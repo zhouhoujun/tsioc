@@ -23,11 +23,11 @@ export const templateRefResovler: ResolveInterceptorFn = (input, next, context) 
         const injector = context.getInjector() as NodeInjector;
         const elementRef = injector.getPayload() as ElementRef;
         let templateRef = injector.getTemplateRef(elementRef.nativeElement, input.flags);
-        
+
         if (!templateRef) {
             templateRef = createAndAttachDirectiveForNode(injector, elementRef.nativeElement);
         }
-        
+
         return templateRef ?? UNRESOLVED;
     }
 
@@ -61,7 +61,7 @@ function createAndAttachDirectiveForNode(injector: NodeInjector, node: any): Tem
     if (!directives || directives.length === 0) {
         return injector.getTemplateRef(node);
     }
-    
+
     for (const dirDef of directives) {
         if (dirDef.dirType === DirectiveType.Iterable || dirDef.dirType === DirectiveType.Conditional) {
             let dirRef = injector.getDirectiveRefByNode(node);
@@ -77,7 +77,7 @@ function createAndAttachDirectiveForNode(injector: NodeInjector, node: any): Tem
             }
         }
     }
-    
+
     return injector.getTemplateRef(node);
 }
 
@@ -86,7 +86,7 @@ function createAndAttachComponentForNode(injector: NodeInjector, node: any): Com
     if (!compDef) {
         return null;
     }
-    
+
     let compRef = injector.getComponentRefByNode(node);
     if (!compRef) {
         const elementRef = injector.getElementRef(node);
@@ -103,12 +103,12 @@ export const viewContainerRefResovler: ResolveInterceptorFn = (input, next, cont
     if (paramType === ViewContainerRef || isBaseOf(paramType, ViewContainerRef)) {
         const injector = context.getInjector() as NodeInjector;
         const elementRef = injector.getPayload() as ElementRef;
-        
+
         const containerRef = injector.getViewContainerRef(elementRef.nativeElement, input.flags);
         if (containerRef) {
             return containerRef;
         }
-        
+
         return injector.createViewContainerRef(elementRef.nativeElement) ?? UNRESOLVED;
     }
 
@@ -126,11 +126,22 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
         if (input.provider) {
             return next(input, context);
         }
+        // if (dirType === DirectiveType.Switch) {
+        // 遍历 allDirectiveRefs 全局查找 SwitchDirective 实例
+        for (const [elementNode, refs] of NodeInjector.allDirectiveRefs) {
+            for (const dirRef of refs) {
+                if (dirRef.instance && dirRef.instance.constructor === paramType) {
+                    return dirRef.instance;
+                }
+            }
+        }
+        // return UNRESOLVED;
+        // }
         const injector = context.getInjector() as NodeInjector;
         const renderer = injector.get(Renderer);
         const elementRef = injector.getPayload() as ElementRef;
 
-        if(dirType === DirectiveType.Component) {
+        if (dirType === DirectiveType.Component) {
             const compRefs = injector.getComponentRef(paramType, input.flags);
             if (compRefs && compRefs.length > 0) {
                 return compRefs[0];
@@ -148,23 +159,6 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
         return dirRefs && dirRefs.length > 0 ? dirRefs[0] : UNRESOLVED;
     }
 
-    // 特殊处理 SwitchDirective：全局查找
-    // SwitchDirective 的 dirType 是 undefined，不是数字
-    if (dirDef && paramType.name === 'SwitchDirective') {
-        if (input.provider) {
-            return next(input, context);
-        }
-        // 遍历 allDirectiveRefs 全局查找 SwitchDirective 实例
-        for (const [elementNode, refs] of NodeInjector.allDirectiveRefs) {
-            for (const dirRef of refs) {
-                if (dirRef.instance && dirRef.instance.constructor === paramType) {
-                    return dirRef.instance;
-                }
-            }
-        }
-        return UNRESOLVED;
-    }
-
     return next(input, context);
 }
 
@@ -177,7 +171,7 @@ export function resolveDirectiveFromNode(
     if (!directives) {
         return null;
     }
-    
+
     for (const dirDef of directives) {
         if (dirDef.type === directiveType) {
             let dirRef = injector.getDirectiveRefByNode(node);
@@ -203,7 +197,7 @@ export function resolveComponentFromNode(
     if (!compDef || compDef.type !== componentType) {
         return null;
     }
-    
+
     let compRef = injector.getComponentRefByNode(node);
     if (!compRef) {
         const elementRef = injector.getElementRef(node);

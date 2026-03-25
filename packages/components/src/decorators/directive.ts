@@ -31,6 +31,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
     actionType: ActionType.declaration | ActionType.directive,
     appendProps: (metadata) => {
         metadata.static = false;
+        metadata.dirType = metadata.dirType || 0;
     },
     def: {
         class: (ctx) => {
