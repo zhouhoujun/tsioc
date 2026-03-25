@@ -144,7 +144,7 @@ export class NodeInjector extends ContextInjector {
     }
 
 
-    query<T>(selector: Type<T>, el: RNode | RNode[], options?: {  }): ComponentRef<T> | DirectiveRef<T> | null;
+    query<T>(selector: Type<T>, el: RNode | RNode[], options?: {}): ComponentRef<T> | DirectiveRef<T> | null;
     query<C>(selector: string, el: RNode | RNode[]): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
     query(selector: string | Type, el: RNode | RNode[]): any {
         let sel: string;
@@ -224,9 +224,9 @@ export class NodeInjector extends ContextInjector {
         return this.componentRefs.get(node) ?? this.getParentInjector()?.getComponentRefByNode(node) ?? null;
     }
 
-getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): DirectiveRef<T>[] {
+    getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): DirectiveRef<T>[] {
         const results: DirectiveRef<T>[] = [];
-        
+
         if (flags & InjectFlags.SkipSelf) {
             const parentResults = this.getParentInjector()?.getDirectiveRef(directorType, flags) ?? [];
             results.push(...parentResults);
@@ -242,7 +242,7 @@ getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): Directiv
                     }
                 });
             });
-            
+
             if (results.length === 0) {
                 const allRefs = this.allDirectiveRefs;
                 allRefs.forEach(refs => {
@@ -257,43 +257,110 @@ getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): Directiv
                     });
                 });
             }
-            
+
             if (!(flags & InjectFlags.Self)) {
                 const parentResults = this.getParentInjector()?.getDirectiveRef(directorType, flags) ?? [];
                 results.push(...parentResults);
             }
         }
-        
+
         return results;
     }
 
     getDirectiveRefByNode(node: RNode, flags = InjectFlags.Default): DirectiveRef<any> | null {
+        if (flags & InjectFlags.SkipSelf) {
+            return this.getParentInjector()?.getDirectiveRefByNode(node, flags) ?? null;
+        }
+
         const refs = this.directiveRefs.get(node);
         if (refs && refs.length > 0) return refs[0];
+
         const staticRefs = this.allDirectiveRefs.get(node);
         if (staticRefs && staticRefs.length > 0) return staticRefs[0];
-        return this.getParentInjector()?.getDirectiveRefByNode(node) ?? null;
+
+        if (!(flags & InjectFlags.Self)) {
+            return this.getParentInjector()?.getDirectiveRefByNode(node, flags) ?? null;
+        }
+
+        return null;
     }
 
-    getDirectiveRefsByNode(node: RNode): DirectiveRef<any>[] | null {
+    getDirectiveRefsByNode(node: RNode, flags = InjectFlags.Default): DirectiveRef<any>[] | null {
+        if (flags & InjectFlags.SkipSelf) {
+            return this.getParentInjector()?.getDirectiveRefsByNode(node, flags) ?? null;
+        }
+
         const refs = this.directiveRefs.get(node);
         if (refs && refs.length > 0) return refs;
+
         const staticRefs = this.allDirectiveRefs.get(node);
         if (staticRefs && staticRefs.length > 0) return staticRefs;
-        return this.getParentInjector()?.getDirectiveRefsByNode(node) ?? null;
+
+        if (!(flags & InjectFlags.Self)) {
+            return this.getParentInjector()?.getDirectiveRefsByNode(node, flags) ?? null;
+        }
+
+        return null;
     }
 
     getTemplateRef<T>(node: RNode, flags = InjectFlags.Default): TemplateRef<T> | null {
-        return this.templateRefs.get(node) ?? this.getParentInjector()?.getTemplateRef(node) ?? null;
+        if (flags & InjectFlags.SkipSelf) {
+            return this.getParentInjector()?.getTemplateRef(node, flags) ?? null;
+        }
+
+        const ref = this.templateRefs.get(node);
+        if (ref) return ref as TemplateRef<T>;
+
+        if (!(flags & InjectFlags.Self)) {
+            return this.getParentInjector()?.getTemplateRef(node, flags) ?? null;
+        }
+
+        return null;
     }
 
     getElementRef<T extends RNode>(node: T, flags = InjectFlags.Default): ElementRef<T> {
-        return this.elementRefs.get(node) ?? this.getParentInjector()?.getElementRef(node) ?? this.createElementRef(node);
+        if (flags & InjectFlags.SkipSelf) {
+            const parentRef = this.getParentInjector()?.getElementRef(node, flags);
+            if (parentRef) return parentRef as ElementRef<T>;
+        }
+
+        const ref = this.elementRefs.get(node);
+        if (ref) return ref as ElementRef<T>;
+
+        if (!(flags & InjectFlags.Self) && !(flags & InjectFlags.SkipSelf)) {
+            const parentRef = this.getParentInjector()?.getElementRef(node, flags);
+            if (parentRef) return parentRef as ElementRef<T>;
+        }
+
+        const eRef = new ElementRef(node);
+        this.elementRefs.set(node, eRef);
+        return eRef;
     }
 
     getViewContainerRef<T extends RNode>(nodeOrRef: T | ElementRef<T>, flags = InjectFlags.Default): ViewContainerRef<T> {
         const node = nodeOrRef instanceof ElementRef ? nodeOrRef.nativeElement : nodeOrRef;
-        return this.viewContainerRefs.get(node) ?? this.getParentInjector()?.getViewContainerRef(node) ?? this.createViewContainerRef(node);
+
+        if (flags & InjectFlags.SkipSelf) {
+            const parentRef = this.getParentInjector()?.getViewContainerRef(node, flags);
+            if (parentRef) return parentRef as ViewContainerRef<T>;
+        }
+
+        const ref = this.viewContainerRefs.get(node);
+        if (ref) return ref as ViewContainerRef<T>;
+
+        if (!(flags & InjectFlags.Self) && !(flags & InjectFlags.SkipSelf)) {
+            const parentRef = this.getParentInjector()?.getViewContainerRef(node, flags);
+            if (parentRef) return parentRef as ViewContainerRef<T>;
+        }
+
+        let elementRef = this.elementRefs.get(node);
+        if (!elementRef) {
+            elementRef = new ElementRef(node);
+            this.elementRefs.set(node, elementRef);
+        }
+        const containerRef = createViewContainerRef(elementRef, this);
+        this.viewContainerRefs.set(node, containerRef);
+        return containerRef;
     }
 
     protected createElementRef<T extends RNode>(node: T): ElementRef<T> {
@@ -303,7 +370,12 @@ getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): Directiv
     }
 
     createViewContainerRef<T extends RNode>(node: T): ViewContainerRef<T> {
-        const containerRef = createViewContainerRef(this.getElementRef(node), this);
+        let elementRef = this.elementRefs.get(node);
+        if (!elementRef) {
+            elementRef = new ElementRef(node);
+            this.elementRefs.set(node, elementRef);
+        }
+        const containerRef = createViewContainerRef(elementRef, this);
         this.viewContainerRefs.set(node, containerRef);
         return containerRef;
     }
