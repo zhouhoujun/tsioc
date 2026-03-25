@@ -1,5 +1,5 @@
-import { Type, Modules, Provider, StaticProviders, AbstractType } from '@tsdi/ioc';
-import { Application, ApplicationArguments, ApplicationContextFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
+import { Type, Modules, Provider, AbstractType, InjectUtil, Provide } from '@tsdi/ioc';
+import { Application, ApplicationContextFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
@@ -16,7 +16,7 @@ import { MvcModule } from './mvc/mvc.module';
  * @export
  * @class BootApplication
  */
-export class BootApplication<T = any, TArg = ApplicationArguments> extends Application<T, TArg> {
+export class BootApplication<T = any> extends Application<T> {
 
     constructor(target: Type<T> | BootApplicationOption<T>, loader?: ModuleLoader) {
         super(target, loader)
@@ -39,31 +39,31 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
         return [MvcModule];
     }
 
-    protected async prepareContext(ctx: BootApplicationContext<T, TArg>): Promise<void> {
-        const { baseURL, injector } = ctx;
+    protected async prepareContext(ctx: BootApplicationContext<T>): Promise<void> {
+        const root = ctx.getParent();
         const mgr = ctx.getConfigureManager();
         await mgr.load();
         const config = mgr.getConfig();
 
         const loader = this.loader;
         if (config.deps && config.deps.length) {
-            await loader.register(injector, config.deps)
+            await loader.register(root, config.deps)
         }
 
         if (config.providers && config.providers.length) {
-            injector.inject(config.providers)
+            InjectUtil.inject(root, config.providers)
         }
 
-        if (baseURL) {
-            config.baseURL = baseURL
+        if (ctx.baseURL) {
+            config.baseURL = ctx.baseURL
         } else if (config.baseURL) {
-            injector.setValue(PROCESS_ROOT, config.baseURL)
+            root.setValue(PROCESS_ROOT, config.baseURL)
         }
 
-        injector.setValue(ApplicationConfiguration, config);
+        ctx.setValue(ApplicationConfiguration, config);
 
         if (config.logConfig) {
-            await injector.import(LoggerModule.withOptions(config.logConfig, config.debug))
+            await InjectUtil.use(root, LoggerModule.withOptions(config.logConfig, config.debug))
         }
 
         await super.prepareContext(ctx)
@@ -76,7 +76,7 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
     * @param {BootApplicationOption<M>} target
     * @returns {Promise<ApplicationContext<M>>}
     */
-    static run<T, TArg extends ApplicationArguments>(target: BootApplicationOption<T, TArg>): Promise<BootApplicationContext<T, TArg>>
+    static run<T>(target: BootApplicationOption<T>): Promise<BootApplicationContext<T>>
     /**
      * run application.
      *
@@ -85,15 +85,15 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
      * @param {BootApplicationOption} [option]  application run depdences.
      * @returns {Promise<IBootContext>}
      */
-    static run<T, TArg extends ApplicationArguments>(target: AbstractType<T>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>>;
-    static run<T, TArg extends ApplicationArguments>(target: any, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>> {
-        return new BootApplication<T, TArg>(option ? { module: target, ...option } as BootApplicationOption<T, TArg> : target).run() as Promise<BootApplicationContext<T, TArg>>
+    static run<T>(target: AbstractType<T>, option?: BootEnvironmentOption): Promise<BootApplicationContext<T>>;
+    static run<T>(target: any, option?: BootEnvironmentOption): Promise<BootApplicationContext<T>> {
+        return new BootApplication<T>(option ? { module: target, ...option } as BootApplicationOption<T> : target).run() as Promise<BootApplicationContext<T>>
     }
 }
 
 const BOOT_DEFAULTA_PROVIDERS: Provider[] = [
     ConfigureFileLoader,
-    DEFAULTA_PROVIDERS.filter(p => (p as StaticProviders).provide !== ApplicationContextFactory),
+    DEFAULTA_PROVIDERS.filter(p => (p as Provide<any>).provide !== ApplicationContextFactory),
     { provide: ApplicationContextFactory, useClass: BootApplicationFactory }
 ];
 

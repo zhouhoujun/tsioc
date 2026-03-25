@@ -3,7 +3,7 @@ import { Abstract, Type, ModuleDef, ModuleMetadata, AbstractType } from '@tsdi/i
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 
 @Abstract()
-export abstract class BootApplicationContext<T = any, TArg = ApplicationArguments> extends ApplicationContext<T, TArg> {
+export abstract class BootApplicationContext<T = any> extends ApplicationContext<T> {
     /**
      * get application global configuration of type {@link Configuration}.
      */
@@ -26,7 +26,7 @@ export const BootContext = BootApplicationContext;
 /**
  * BootApplication Environment option.
  */
-export interface BootEnvironmentOption<TArg = any> extends EnvironmentOption<TArg> {
+export interface BootEnvironmentOption extends EnvironmentOption {
 
     /**
      * custom configures
@@ -39,7 +39,7 @@ export interface BootEnvironmentOption<TArg = any> extends EnvironmentOption<TAr
 /**
  * BootApplicationOption option.
  */
-export interface BootApplicationOption<T = any, TArg = any> extends BootEnvironmentOption<TArg> {
+export interface BootApplicationOption<T = any> extends BootEnvironmentOption {
     /**
      * target module type.
      *

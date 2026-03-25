@@ -4,10 +4,10 @@ import { ApplicationConfiguration, ConfigureManager } from '../configure/config'
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
 
 
-export class BootApplicationContextImpl<T = any, TArg = ApplicationArguments> extends DefaultApplicationContext<T, TArg> implements BootApplicationContext<T, TArg> {
+export class BootApplicationContextImpl<T = any> extends DefaultApplicationContext<T> implements BootApplicationContext<T> {
 
     
-    constructor(readonly injector: ModuleRef, options: BootEnvironmentOption<TArg> = {}) {
+    constructor(readonly injector: ModuleRef<T>, options: BootEnvironmentOption = {}) {
         super(injector, options);
 
         const mgr = this.getConfigureManager();
@@ -44,7 +44,7 @@ export class BootApplicationContextImpl<T = any, TArg = ApplicationArguments> ex
  */
 export class BootApplicationFactory extends ApplicationContextFactory {
 
-    create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: BootEnvironmentOption): BootApplicationContext<T, TArg> {
+    create<T = any>(root: ModuleRef<T>, option?: BootEnvironmentOption): BootApplicationContext<T> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
             root.setValue(PROCESS_ROOT, ann.baseURL)
@@ -52,8 +52,8 @@ export class BootApplicationFactory extends ApplicationContextFactory {
         if (!option) {
             option = {};
         }
-        if (!option.request) {
-            option.request = ApplicationArguments as ProvdierOf<TArg>;
+        if (!option.payload) {
+            option.payload = ApplicationArguments as ProvdierOf<T>;
         }
         const ctx = this.createInstance(root, option);
         return ctx
