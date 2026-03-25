@@ -45,7 +45,10 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
     }
 
     protected override createInstance(context?: RunContext): T {
-        const instance = super.createInstance(context ?? createRunContext(this.injector).setPayload(this._elementRef));
+        const ctx = context ?? createRunContext(this.injector);
+        ctx.setInjector(this.injector);
+        ctx.setPayload(this._elementRef);
+        const instance = super.createInstance(ctx);
         const def = this.classRef.getAnnotation<DirectiveDef>();
         return reactive(instance, this.injector.get(ReactiveEffect), def.computeds);
     }

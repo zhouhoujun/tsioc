@@ -45,7 +45,28 @@ export class NodeInjector extends ContextInjector {
 
     private _payload: any;
 
-    static readonly allDirectiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
+    private _allDirectiveRefs?: Map<RNode, DirectiveRef<any>[]>;
+
+    private get allDirectiveRefs(): Map<RNode, DirectiveRef<any>[]> {
+        if (!this._allDirectiveRefs) {
+            const root = this.getRootInjector();
+            if (root && root !== this) {
+                return root.allDirectiveRefs;
+            }
+            if (!this._allDirectiveRefs) {
+                this._allDirectiveRefs = new Map();
+            }
+        }
+        return this._allDirectiveRefs;
+    }
+
+    private getRootInjector(): NodeInjector | null {
+        let root: NodeInjector | null = this as NodeInjector;
+        while (root?.getParentInjector()) {
+            root = root.getParentInjector();
+        }
+        return root;
+    }
 
     readonly componentRefs: Map<RNode, ComponentRef<any>> = new Map();
     readonly directiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
@@ -98,7 +119,6 @@ export class NodeInjector extends ContextInjector {
     attachDirective<C>(dirRef: DirectiveRef<C>): void {
         if (dirRef && dirRef.elementRef && dirRef.elementRef.nativeElement) {
             const element = dirRef.elementRef.nativeElement;
-            // console.log('[attachDirective] Attaching directive to node:', (element as any)?.tagName, 'directive:', dirRef.instance?.constructor?.name);
             if (!this.elementRefs.has(element)) {
                 this.elementRefs.set(element, dirRef.elementRef);
             }
@@ -106,11 +126,10 @@ export class NodeInjector extends ContextInjector {
                 this.directiveRefs.set(element, []);
             }
             this.directiveRefs.get(element)!.push(dirRef);
-            if (!NodeInjector.allDirectiveRefs.has(element)) {
-                NodeInjector.allDirectiveRefs.set(element, []);
+            if (!this.allDirectiveRefs.has(element)) {
+                this.allDirectiveRefs.set(element, []);
             }
-            NodeInjector.allDirectiveRefs.get(element)!.push(dirRef);
-            // console.log('[attachDirective] Directives on node:', Array.from(this.directiveRefs.entries()).map(([k, v]) => ((k as any)?.tagName || 'unknown') + ':' + v.map(d => d.instance?.constructor?.name).join(',')));
+            this.allDirectiveRefs.get(element)!.push(dirRef);
         }
     }
 
@@ -205,26 +224,53 @@ export class NodeInjector extends ContextInjector {
         return this.componentRefs.get(node) ?? this.getParentInjector()?.getComponentRefByNode(node) ?? null;
     }
 
-    getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): DirectiveRef<T>[] {
-        const results: DirectiveRef<T>[] = this.getParentInjector()?.getDirectiveRef(directorType) ?? [];
-        this.directiveRefs.forEach(refs => {
-            refs.forEach(ref => {
-                try {
-                    if (ref.instance && ref.instance instanceof directorType) {
-                        results.push(ref as DirectiveRef<T>);
+getDirectiveRef<T>(directorType: Type<T>, flags = InjectFlags.Default): DirectiveRef<T>[] {
+        const results: DirectiveRef<T>[] = [];
+        
+        if (flags & InjectFlags.SkipSelf) {
+            const parentResults = this.getParentInjector()?.getDirectiveRef(directorType, flags) ?? [];
+            results.push(...parentResults);
+        } else {
+            this.directiveRefs.forEach(refs => {
+                refs.forEach(ref => {
+                    try {
+                        if (ref.instance && ref.instance instanceof directorType) {
+                            results.push(ref as DirectiveRef<T>);
+                        }
+                    } catch (e) {
+                        // skip
                     }
-                } catch (e) {
-                    // Directive instantiation failed, skip it
-                }
+                });
             });
-        });
+            
+            if (results.length === 0) {
+                const allRefs = this.allDirectiveRefs;
+                allRefs.forEach(refs => {
+                    refs.forEach(ref => {
+                        try {
+                            if (ref.instance && ref.instance instanceof directorType) {
+                                results.push(ref as DirectiveRef<T>);
+                            }
+                        } catch (e) {
+                            // skip
+                        }
+                    });
+                });
+            }
+            
+            if (!(flags & InjectFlags.Self)) {
+                const parentResults = this.getParentInjector()?.getDirectiveRef(directorType, flags) ?? [];
+                results.push(...parentResults);
+            }
+        }
+        
         return results;
     }
 
     getDirectiveRefByNode(node: RNode, flags = InjectFlags.Default): DirectiveRef<any> | null {
         const refs = this.directiveRefs.get(node);
         if (refs && refs.length > 0) return refs[0];
-        const staticRefs = NodeInjector.allDirectiveRefs.get(node);
+        const staticRefs = this.allDirectiveRefs.get(node);
         if (staticRefs && staticRefs.length > 0) return staticRefs[0];
         return this.getParentInjector()?.getDirectiveRefByNode(node) ?? null;
     }
@@ -232,7 +278,7 @@ export class NodeInjector extends ContextInjector {
     getDirectiveRefsByNode(node: RNode): DirectiveRef<any>[] | null {
         const refs = this.directiveRefs.get(node);
         if (refs && refs.length > 0) return refs;
-        const staticRefs = NodeInjector.allDirectiveRefs.get(node);
+        const staticRefs = this.allDirectiveRefs.get(node);
         if (staticRefs && staticRefs.length > 0) return staticRefs;
         return this.getParentInjector()?.getDirectiveRefsByNode(node) ?? null;
     }

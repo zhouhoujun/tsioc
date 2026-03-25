@@ -120,29 +120,33 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
     const paramType = (input.provider ?? input.type) as Type;
     const dirDef = getDef<DirectiveDef>(paramType);
     const dirType = dirDef?.dirType;
-    if (isNumber(dirType)) {
-        // 当 input.provider 被设置时，表示这是一个创建新实例的请求
-        // 此时应该继续到下一个解析器，而不是返回已存在的 DirectiveRef
+    
+    if (dirDef) {
         if (input.provider) {
             return next(input, context);
         }
-        // if (dirType === DirectiveType.Switch) {
-        // 遍历 allDirectiveRefs 全局查找 SwitchDirective 实例
-        for (const [elementNode, refs] of NodeInjector.allDirectiveRefs) {
-            for (const dirRef of refs) {
-                if (dirRef.instance && dirRef.instance.constructor === paramType) {
-                    return dirRef.instance;
-                }
-            }
-        }
-        // return UNRESOLVED;
-        // }
+        
         const injector = context.getInjector() as NodeInjector;
+        const flags = input.flags ?? InjectFlags.Default;
+        
+        if (dirType === DirectiveType.Conditional || dirType === DirectiveType.Iterable) {
+            const dirRefs = injector.getDirectiveRef(paramType, flags);
+            if (dirRefs && dirRefs.length > 0) {
+                return dirRefs[0].instance;
+            }
+            return UNRESOLVED;
+        }
+        
+        const dirRefs = injector.getDirectiveRef(paramType, flags);
+        if (dirRefs && dirRefs.length > 0) {
+            return dirRefs[0].instance; 
+        }
+        
         const renderer = injector.get(Renderer);
         const elementRef = injector.getPayload() as ElementRef;
 
         if (dirType === DirectiveType.Component) {
-            const compRefs = injector.getComponentRef(paramType, input.flags);
+            const compRefs = injector.getComponentRef(paramType, flags);
             if (compRefs && compRefs.length > 0) {
                 return compRefs[0];
             }
@@ -155,8 +159,7 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
             }
             return compRef ?? UNRESOLVED;
         }
-        const dirRefs = injector.getDirectiveRef(paramType, input.flags);
-        return dirRefs && dirRefs.length > 0 ? dirRefs[0] : UNRESOLVED;
+        return UNRESOLVED;
     }
 
     return next(input, context);
