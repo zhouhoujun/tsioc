@@ -4,6 +4,7 @@ import { WorkflowModule } from '@tsdi/activities';
 import { CompileActivity } from './CompileActivity';
 import { ComponentCompileActivity } from './ComponentCompileActivity';
 import { TestGenerateActivity } from './TestGenerateActivity';
+import { EsbuildCompileActivity } from './EsbuildCompileActivity';
 import { CompilerService } from './CompilerService';
 
 @Module({
@@ -17,12 +18,14 @@ import { CompilerService } from './CompilerService';
     declarations: [
         CompileActivity,
         ComponentCompileActivity,
-        TestGenerateActivity
+        TestGenerateActivity,
+        EsbuildCompileActivity
     ],
     exports: [
         CompileActivity,
         ComponentCompileActivity,
         TestGenerateActivity,
+        EsbuildCompileActivity,
         CompilerService
     ]
 })

@@ -1,7 +1,8 @@
 import expect = require('expect');
 import { 
     CompileActivity, ComponentCompileActivity, TestGenerateActivity,
-    CompilerService, CompileOptions, DiagnosticInfo
+    CompilerService, CompileOptions, DiagnosticInfo,
+    EsbuildCompileActivity, EsbuildCompileOptions, EsbuildCompileResult
 } from '../src';
 
 describe('Compiler', () => {
@@ -98,6 +99,151 @@ describe('Compiler', () => {
         });
     });
 
+    describe('EsbuildCompileActivity', () => {
+        it('should create instance', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity).toBeDefined();
+        });
+
+        it('should have default src pattern', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.src).toBe('src/**/*.ts');
+        });
+
+        it('should have default outDir', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.outDir).toBe('lib');
+        });
+
+        it('should have default target', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.target).toBe('es2020');
+        });
+
+        it('should have default format', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.format).toBe('cjs');
+        });
+
+        it('should have default platform', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.platform).toBe('node');
+        });
+
+        it('should have default bundle setting', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.bundle).toBe(false);
+        });
+
+        it('should have default minify setting', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.minify).toBe(false);
+        });
+
+        it('should have default sourcemap setting', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.sourcemap).toBe(true);
+        });
+
+        it('should have default declaration setting', () => {
+            const activity = new EsbuildCompileActivity();
+            expect(activity.declaration).toBe(true);
+        });
+
+        it('should accept custom options', () => {
+            const activity = new EsbuildCompileActivity();
+            activity.src = 'lib/**/*.ts';
+            activity.outDir = 'dist';
+            activity.target = 'es2017';
+            activity.format = 'esm';
+            activity.platform = 'browser';
+            activity.bundle = true;
+            activity.minify = true;
+            activity.entryPoint = 'src/index.ts';
+            activity.outfile = 'bundle.js';
+            activity.external = ['lodash', 'rxjs'];
+
+            expect(activity.src).toBe('lib/**/*.ts');
+            expect(activity.outDir).toBe('dist');
+            expect(activity.target).toBe('es2017');
+            expect(activity.format).toBe('esm');
+            expect(activity.platform).toBe('browser');
+            expect(activity.bundle).toBe(true);
+            expect(activity.minify).toBe(true);
+            expect(activity.entryPoint).toBe('src/index.ts');
+            expect(activity.outfile).toBe('bundle.js');
+            expect(activity.external).toEqual(['lodash', 'rxjs']);
+        });
+
+        it('should handle empty source', async () => {
+            const activity = new EsbuildCompileActivity();
+            activity.src = 'nonexistent/**/*.ts';
+            
+            const result = await activity.execute({});
+            
+            expect(result.success).toBe(true);
+            expect(result.data?.totalFiles).toBe(0);
+        });
+    });
+
+    describe('EsbuildCompileOptions', () => {
+        it('should support target option', () => {
+            const options: EsbuildCompileOptions = {
+                target: 'es2020'
+            };
+            expect(options.target).toBe('es2020');
+        });
+
+        it('should support format option', () => {
+            const options: EsbuildCompileOptions = {
+                format: 'esm'
+            };
+            expect(options.format).toBe('esm');
+        });
+
+        it('should support platform option', () => {
+            const options: EsbuildCompileOptions = {
+                platform: 'browser'
+            };
+            expect(options.platform).toBe('browser');
+        });
+
+        it('should support bundle option', () => {
+            const options: EsbuildCompileOptions = {
+                bundle: true
+            };
+            expect(options.bundle).toBe(true);
+        });
+
+        it('should support minify option', () => {
+            const options: EsbuildCompileOptions = {
+                minify: true
+            };
+            expect(options.minify).toBe(true);
+        });
+
+        it('should support sourcemap option', () => {
+            const options: EsbuildCompileOptions = {
+                sourcemap: true
+            };
+            expect(options.sourcemap).toBe(true);
+        });
+
+        it('should support external option', () => {
+            const options: EsbuildCompileOptions = {
+                external: ['lodash', 'rxjs']
+            };
+            expect(options.external).toEqual(['lodash', 'rxjs']);
+        });
+
+        it('should support define option', () => {
+            const options: EsbuildCompileOptions = {
+                define: { 'process.env.NODE_ENV': '"production"' }
+            };
+            expect(options.define).toEqual({ 'process.env.NODE_ENV': '"production"' });
+        });
+    });
+
     describe('CompilerService', () => {
         it('should create instance', () => {
             const service = new CompilerService();
@@ -117,6 +263,15 @@ describe('Compiler', () => {
             const service = new CompilerService();
             
             const result = await service.compileComponents('nonexistent/**/*.ts', {});
+            
+            expect(result.success).toBe(true);
+            expect(result.totalErrors).toBe(0);
+        });
+
+        it('should compile with esbuild', async () => {
+            const service = new CompilerService();
+            
+            const result = await service.compileWithEsbuild('nonexistent/**/*.ts', {});
             
             expect(result.success).toBe(true);
             expect(result.totalErrors).toBe(0);
@@ -142,6 +297,22 @@ describe('Compiler', () => {
             };
             
             const result = await service.compile('nonexistent/**/*.ts', options);
+            
+            expect(result.success).toBe(true);
+        });
+
+        it('should accept esbuild options', async () => {
+            const service = new CompilerService();
+            const options: EsbuildCompileOptions = {
+                target: 'es2020',
+                format: 'esm',
+                platform: 'browser',
+                bundle: true,
+                minify: true,
+                sourcemap: true
+            };
+            
+            const result = await service.compileWithEsbuild('nonexistent/**/*.ts', options);
             
             expect(result.success).toBe(true);
         });

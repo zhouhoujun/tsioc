@@ -1,7 +1,7 @@
 {
   "name": "@tsdi/compiler",
   "version": "6.0.0-beta7",
-  "description": "TypeScript and component compiler based on workflow activities",
+  "description": "TypeScript and component compiler based on workflow activities with esbuild support",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "test": "ts-node -r tsconfig-paths/register unit.ts"
@@ -9,6 +9,8 @@
   "keywords": [
     "compiler",
     "typescript",
+    "esbuild",
+    "bundler",
     "component",
     "workflow",
     "activity",
@@ -36,10 +38,12 @@
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
+    "esbuild": "^0.20.0",
     "typescript": "^5.0.0",
     "globby": "^11.0.0",
     "chalk": "^4.0.0",
-    "chokidar": "^3.4.0"
+    "chokidar": "^3.4.0",
+    "fs-extra": "^11.0.0"
   },
   "directories": {
     "lib": "lib",
