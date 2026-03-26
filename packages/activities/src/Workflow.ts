@@ -1,26 +1,11 @@
-import { Injectable, AbstractType } from '@tsdi/ioc';
+import { Injectable, AbstractType, Type, Provider } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './activities/Activity';
 
 export interface WorkflowDefinition {
-    /**
-     * 工作流名称
-     */
     name: string;
-    /**
-     * 工作流描述
-     */
     description?: string;
-    /**
-     * 工作流版本
-     */
     version?: string;    
-    /**
-     * 是否启用工作流历史记录
-     */
     enableHistory?: boolean;
-    /**
-     * 是否启用工作流监控
-     */
     enableMonitoring?: boolean;
     activities: AbstractType<Activity>[];
     transitions: WorkflowTransition[];
@@ -32,4 +17,37 @@ export interface WorkflowTransition {
     from: string;
     to: string;
     condition?: (context: ActivityContext) => boolean;
+}
+
+export interface WorkflowOptions {
+    baseURL?: string;
+    src?: string;
+    outDir?: string;
+    [key: string]: any;
+}
+
+export class Workflow {
+    
+    static async run<T>(module: Type<T>, options?: WorkflowOptions): Promise<void> {
+        const { Application } = await import('@tsdi/core');
+        
+        const appOptions: any = {};
+        if (options?.baseURL) {
+            appOptions.baseURL = options.baseURL;
+        }
+        
+        const providers: Provider[] = [];
+        if (options && Object.keys(options).length > 0) {
+            providers.push({
+                provide: 'COMPILER_OPTIONS',
+                useValue: options
+            });
+        }
+        
+        if (providers.length > 0) {
+            appOptions.providers = providers;
+        }
+        
+        await Application.run(module, appOptions);
+    }
 }
