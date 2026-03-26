@@ -1,356 +1,570 @@
-# packaged @tsdi/activities
-`@tsdi/activities` is an simple workflow frameworks in browser and nodejs, base on AOP, Ioc container, via @tsdi. file stream pipes activities.
+# @tsdi/activities
 
-This repo is for distribution on `npm`. The source for this module is in the
-[main repo](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme).
-Please file issues and pull requests against that repo.
+A powerful workflow framework for TypeScript applications, built on AOP and IoC container via `@tsdi`. Supports both browser and Node.js environments with visual workflow design capabilities.
 
+## Features
 
-## Install
+- 🎯 **Declarative Workflow Definition** - Define workflows using decorators and templates
+- 🔄 **Rich Activity Library** - 30+ built-in activities for common workflow patterns
+- 🎨 **Visual Workflow Engine** - Build and visualize workflows programmatically
+- ⚡ **Parallel & Sequential Execution** - Support for both execution modes
+- 🔌 **Extensible Architecture** - Easy to create custom activities
+- 📦 **IoC Integration** - Full dependency injection support
+- 🔐 **Type-Safe** - Full TypeScript support with generics
+- ✅ **Well Tested** - 108 unit tests with full coverage
 
-1. install modules:
+## Installation
 
-```shell
+```bash
 npm install @tsdi/activities
 ```
 
-2. install cli | build activities:
+### CLI Tools
 
-### cli in global
-```shell
-npm install -g '@tsdi/cli'
+```bash
+npm install -g @tsdi/cli
+
+# Run workflow
+tsdi run [taskfile.ts]
+
+# Build
+tsdi build [options]
 ```
-### build activities
+
+## Quick Start
+
+### Basic Activity
+
+```typescript
+import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
+import { Component, Attribute } from '@tsdi/components';
+
+@Component({ selector: 'my-task' })
+export class MyTaskActivity extends Activity {
+    
+    @Attribute()
+    message: string = 'Hello World';
+
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        console.log(this.message);
+        return {
+            success: true,
+            data: { message: this.message }
+        };
+    }
+}
 ```
-npm install '@tsdi/activities'
+
+### Workflow with Visual Builder
+
+```typescript
+import { VisualWorkflowBuilder, VisualWorkflowService } from '@tsdi/activities';
+
+const workflow = VisualWorkflowBuilder
+    .create()
+    .setId('approval-workflow')
+    .setName('Document Approval')
+    .startNode('Submit')
+    .taskNode('Review', { reviewer: 'manager' })
+    .conditionNode('Approved?', { field: 'status' })
+    .taskNode('Process', { action: 'save' })
+    .endNode('Complete')
+    .connect('start_0', 'task_1')
+    .connect('task_1', 'condition_2')
+    .connect('condition_2', 'task_3', { sourcePort: 'true' })
+    .connect('task_3', 'end_4')
+    .build();
+
+const service = new VisualWorkflowService();
+const result = await service.execute(workflow);
 ```
 
-use command: `tsdi run [taskfile.ts], tsdi run [taskfile.js]`
-use command: `tsdi build [options]`
+## Built-in Activities
 
-You can `import` modules:
+### Control Flow Activities
 
+| Activity | Selector | Description |
+|----------|----------|-------------|
+| `SequenceActivity` | `sequence` | Execute activities in sequence |
+| `ParallelActivity` | `parallel` | Execute activities in parallel |
+| `IfActivity` | `if` | Conditional execution |
+| `SwitchActivity` | `switch` | Multi-branch selection |
+| `WhileActivity` | `while` | While loop execution |
+| `DoWhileActivity` | `do-while` | Do-while loop execution |
+| `ForEachActivity` | `foreach` | Iterate over collections |
+| `TryCatchActivity` | `trycatch` | Exception handling |
+| `ConditionalActivity` | `conditional` | Boolean condition evaluation |
 
-## Doc
+### Data Processing Activities
 
-### Define Task
+| Activity | Selector | Description |
+|----------|----------|-------------|
+| `AssignActivity` | `assign` | Variable assignment with merge/overwrite support |
+| `TransformActivity` | `transform` | Data transformation with chain support |
+| `MapActivity` | `map` | Array mapping |
+| `FilterActivity` | `filter` | Array filtering |
+| `ReduceActivity` | `reduce` | Array reduction |
+| `MergeActivity` | `merge` | Data merging (object/array/concat) |
+| `SplitActivity` | `split` | Data splitting (string/array chunks) |
+| `BatchActivity` | `batch` | Batch processing with size control |
 
-* define task component or attr task item.
+### Validation Activities
 
-```ts
+| Activity | Selector | Description |
+|----------|----------|-------------|
+| `ValidateActivity` | `validate` | Multi-rule validation with stop-on-first-error |
+| `RequiredActivity` | `required` | Required field check |
+| `RangeActivity` | `range` | Numeric range validation (min/max) |
+| `PatternActivity` | `pattern` | Regex pattern validation |
 
-@Task('clean, [clean]')
-export class CleanActivity extends Activity<void> {
+### Utility Activities
 
-    @Input() clean: Expression<Src>;
+| Activity | Selector | Description |
+|----------|----------|-------------|
+| `LogActivity` | `log` | Multi-level logging with timestamp |
+| `DelayActivity` | `delay` | Timed delay with optional body |
+| `TimerActivity` | `timer` | Timer execution (timeout/interval/date) |
+| `IntervalActivity` | `interval` | Interval execution with max count |
+| `EmitActivity` | `emit` | Event emission to context |
+| `WaitActivity` | `wait` | Wait for event with timeout |
+| `InvokeActivity` | `invoke` | Method invocation with retry |
+| `ThrowActivity` | `throw` | Error throwing with details |
 
-    async execute(ctx: NodeActivityContext): Promise<void> {
-        let clean = await this.resolveExpression(this.clean, ctx);
-        if (clean) {
-            await ctx.del(ctx.toRootSrc(clean), {force: true});
+### Lifecycle Activities
+
+| Activity | Selector | Description |
+|----------|----------|-------------|
+| `StartActivity` | `start` | Workflow start point |
+| `EndActivity` | `end` | Workflow end point |
+| `ConfirmActivity` | `confirm` | User confirmation dialog |
+
+## Usage Examples
+
+### Sequential Execution
+
+```typescript
+import { SequenceActivity } from '@tsdi/activities';
+
+const sequence = new SequenceActivity();
+sequence.activities = [
+    { execute: async () => console.log('Step 1') } as any,
+    { execute: async () => console.log('Step 2') } as any,
+    { execute: async () => console.log('Step 3') } as any
+];
+
+await sequence.execute({});
+```
+
+### Parallel Execution
+
+```typescript
+import { ParallelActivity } from '@tsdi/activities';
+
+const parallel = new ParallelActivity();
+parallel.activities = [
+    { execute: async () => fetchData('api1') } as any,
+    { execute: async () => fetchData('api2') } as any,
+    { execute: async () => fetchData('api3') } as any
+];
+parallel.maxConcurrent = 3;
+parallel.waitAll = true;
+
+const context = { activities: parallel.activities };
+await parallel.execute(context);
+```
+
+### Conditional Flow
+
+```typescript
+import { IfActivity } from '@tsdi/activities';
+
+const ifActivity = new IfActivity();
+ifActivity.condition = true;
+ifActivity.thenActivity = { execute: async () => ({ success: true }) } as any;
+ifActivity.elseActivity = { execute: async () => ({ success: false }) } as any;
+
+const result = await ifActivity.execute({});
+```
+
+### While Loop
+
+```typescript
+import { WhileActivity } from '@tsdi/activities';
+
+const whileActivity = new WhileActivity();
+let counter = 0;
+
+whileActivity.condition = async () => counter < 5;
+whileActivity.body = {
+    execute: async () => {
+        counter++;
+        console.log(`Iteration ${counter}`);
+        return { success: true };
+    }
+} as any;
+whileActivity.maxIterations = 10;
+
+await whileActivity.execute({});
+```
+
+### Try-Catch Error Handling
+
+```typescript
+import { TryCatchActivity } from '@tsdi/activities';
+
+const tryCatch = new TryCatchActivity();
+tryCatch.tryActivity = {
+    execute: async () => {
+        // Risky operation
+        return { success: true };
+    }
+} as any;
+tryCatch.catchActivity = {
+    execute: async (ctx: any) => {
+        console.error('Caught:', ctx.error.message);
+        return { success: true };
+    }
+} as any;
+tryCatch.finallyActivity = {
+    execute: async () => {
+        console.log('Cleanup');
+        return { success: true };
+    }
+} as any;
+
+await tryCatch.execute({});
+```
+
+### Data Transformation Pipeline
+
+```typescript
+import { SequenceActivity, AssignActivity, ForEachActivity, ValidateActivity } from '@tsdi/activities';
+
+const pipeline = new SequenceActivity();
+pipeline.activities = [
+    Object.assign(new AssignActivity(), {
+        values: { status: 'processing', timestamp: Date.now() }
+    }),
+    Object.assign(new ForEachActivity(), {
+        items: [1, 2, 3, 4, 5],
+        parallel: true,
+        maxConcurrency: 3,
+        body: {
+            execute: async (ctx: any) => {
+                return { success: true, data: ctx.currentItem * 2 };
+            }
+        } as any
+    }),
+    Object.assign(new ValidateActivity(), {
+        data: { results: [2, 4, 6, 8, 10] },
+        rules: [
+            { field: 'results', validator: (v: any[]) => v.length === 5 }
+        ]
+    })
+];
+
+await pipeline.execute({ variables: {} });
+```
+
+### Validation
+
+```typescript
+import { ValidateActivity } from '@tsdi/activities';
+
+const validator = new ValidateActivity();
+validator.data = {
+    name: 'John Doe',
+    age: 25,
+    email: 'john@example.com'
+};
+validator.rules = [
+    { 
+        field: 'name', 
+        validator: (v: string) => v.length >= 2 ? true : 'Name too short'
+    },
+    { 
+        field: 'age', 
+        validator: (v: number) => v >= 18 && v <= 65 ? true : 'Age must be 18-65'
+    },
+    { 
+        field: 'email', 
+        validator: (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? true : 'Invalid email'
+    }
+];
+validator.stopOnFirstError = false;
+
+const result = await validator.execute({});
+if (!result.success) {
+    console.log('Validation errors:', result.data?.errors);
+}
+```
+
+### Batch Processing
+
+```typescript
+import { BatchActivity } from '@tsdi/activities';
+
+const batch = new BatchActivity();
+batch.items = Array.from({ length: 100 }, (_, i) => ({ id: i, data: `item-${i}` }));
+batch.batchSize = 10;
+batch.delayBetweenBatches = 100;
+batch.continueOnError = true;
+batch.body = {
+    execute: async (ctx: any) => {
+        await processItem(ctx.currentItem);
+        return { success: true };
+    }
+} as any;
+
+const result = await batch.execute({});
+console.log(`Processed ${result.data?.processed} items in ${result.data?.batches} batches`);
+```
+
+### Logging
+
+```typescript
+import { LogActivity } from '@tsdi/activities';
+
+const logger = new LogActivity();
+logger.level = 'info';
+logger.message = 'Processing completed';
+logger.data = { itemCount: 100, duration: 5000 };
+logger.includeTimestamp = true;
+
+await logger.execute({});
+```
+
+## Visual Workflow Engine
+
+### Creating Workflows Programmatically
+
+```typescript
+import { VisualWorkflowBuilder } from '@tsdi/activities';
+
+const workflow = VisualWorkflowBuilder
+    .create()
+    .setId('data-pipeline')
+    .setName('Data Processing Pipeline')
+    .setDescription('ETL pipeline for data processing')
+    .startNode('Input', { x: 100, y: 100 })
+    .taskNode('Extract', { source: 'database' }, { x: 250, y: 100 })
+    .taskNode('Transform', { operations: ['clean', 'normalize'] }, { x: 400, y: 100 })
+    .taskNode('Load', { target: 'warehouse' }, { x: 550, y: 100 })
+    .endNode('Complete', { x: 700, y: 100 })
+    .connect('start_0', 'task_1')
+    .connect('task_1', 'task_2')
+    .connect('task_2', 'task_3')
+    .connect('task_3', 'end_4')
+    .build();
+```
+
+### Workflow Validation
+
+```typescript
+import { VisualWorkflowService } from '@tsdi/activities';
+
+const service = new VisualWorkflowService();
+
+// Validate workflow definition
+const validation = service.validate(workflow);
+if (!validation.valid) {
+    console.error('Validation errors:', validation.errors);
+}
+
+// Execute workflow
+const result = await service.execute(workflow, { inputData: {} });
+console.log('Execution result:', result);
+```
+
+### Serialization
+
+```typescript
+// Serialize to JSON
+const json = service.serialize(workflow);
+
+// Deserialize from JSON
+const restored = service.deserialize(json);
+
+// Save to file
+fs.writeFileSync('workflow.json', json);
+```
+
+### Node Types
+
+```typescript
+type VisualNodeType = 
+    | 'start'      // Start node
+    | 'end'        // End node
+    | 'task'       // Task node
+    | 'condition'  // Condition node
+    | 'parallel'   // Parallel node
+    | 'sequence'   // Sequence node
+    | 'delay'      // Delay node
+    | 'loop'       // Loop node
+    | 'switch'     // Switch node
+    | 'trycatch'   // Exception handling node
+    | 'subprocess' // Sub-process node
+    | 'custom';    // Custom node
+```
+
+## Custom Activity
+
+### Creating Custom Activities
+
+```typescript
+import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
+import { Component, Attribute } from '@tsdi/components';
+
+@Component({ selector: 'email' })
+export class EmailActivity extends Activity {
+    
+    @Attribute()
+    to!: string;
+
+    @Attribute()
+    subject!: string;
+
+    @Attribute()
+    body!: string;
+
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        try {
+            await this.sendEmail(this.to, this.subject, this.body);
+            return {
+                success: true,
+                data: { sent: true, to: this.to }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error as Error
+            };
         }
     }
-}
 
-
-```
-
-* control flow activities.
-
-see [control flow codes](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities/src/activities)
-
-
-### Define component pipe
-
-``` ts
-@Pipe('tsjs')
-export class TypeScriptJsPipe implements IPipeTransform  {
-    transform(value: any): any {
-        return value.js ?? value;
+    private async sendEmail(to: string, subject: string, body: string): Promise<void> {
+        // Email sending logic
     }
-}
 
-@Pipe('dts')
-export class TypeScriptDtsPipe implements IPipeTransform {
-    transform(value: any): any {
-        return value.dts;
-    }
-}
-
-@Pipe('path')
-export class PathPipe implements IPipeTransform {
-    transform(value: any, defaults: string): any {
-        if (isString(value)) {
-            return value;
-        }
-        return value ? defaults : null;
+    async compensate(context: ActivityContext): Promise<void> {
+        // Compensation logic (rollback)
+        console.log('Compensating email sent to:', this.to);
     }
 }
 ```
 
+### Registering Custom Activities
 
-### Define component Task
+```typescript
+import { Module } from '@tsdi/ioc';
+import { WorkflowModule } from '@tsdi/activities';
+import { EmailActivity } from './email.activity';
 
-```ts
-
-/**
- * ts build option.
- *
- * @export
- * @interface TsBuildOption
- * @extends {AssetActivityOption}
- */
-export interface TsBuildOption extends AssetActivityOption {
-    test?: Binding<NodeExpression<Src>>;
-    annotation?: Binding<NodeExpression<boolean>>;
-    tsconfig?: Binding<NodeExpression<string | CompilerOptions>>;
-    dts?: Binding<NodeExpression<string>>;
-    uglify?: Binding<NodeExpression<boolean>>;
-    uglifyOptions?: Binding<NodeExpression>;
-}
-
-@Task({
-    selector: 'ts',
-    template: [
-        {
-            activity: 'src',
-            src: 'binding: src',
-        },
-        {
-            activity: 'annotation',
-            annotationFramework: 'binding: annotationFramework',
-            annotation: 'binding: annotation'
-        },
-        {
-            activity: Activities.if,
-            condition: 'binding: sourcemap',
-            body: {
-                name: 'sourcemap-init',
-                activity: Activities.execute,
-                action: (ctx: NodeActivityContext, bind) => {
-                    let scope = bind.getScope<TsBuildActivity>();
-                    let framework = scope.framework || sourcemaps;
-                    return ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.init())
-                }
-            }
-        },
-        {
-            activity: Activities.if,
-            condition: (ctx, bind) => bind.getScope<TsBuildActivity>().beforePipes?.length > 0,
-            body: {
-                activity: 'pipes',
-                pipes: 'binding: beforePipes'
-            }
-        },
-        {
-            activity: Activities.execute,
-            name: 'tscompile',
-            action: async (ctx: NodeActivityContext, bind) => {
-                let scope = bind.getScope<TsBuildActivity>();
-                if (!scope.tsconfig) {
-                    return;
-                }
-                let tsconfig = await ctx.resolveExpression(scope.tsconfig);
-                let tsCompile;
-                let dts = await ctx.resolveExpression(scope.dts);
-                if (isString(tsconfig)) {
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot(tsconfig), { declaration: !!dts });
-                    tsCompile = tsProject();
-                } else {
-                    tsconfig.declaration = !!dts;
-                    let tsProject = ts.createProject(ctx.platform.relativeRoot('./tsconfig.json'), tsconfig);
-                    tsCompile = tsProject();
-                }
-                return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), tsCompile);
-            }
-        },
-        {
-            activity: Activities.if,
-            // externals: async (ctx) => {
-            //     let tds = await ctx.resolveExpression(ctx.getScope<TsBuildActivity>().dts);
-            //     return tds ? {
-            //         data: 'ctx.getData() | tsjs'
-            //     } : null;
-            // },
-            externals: {
-                data: 'ctx.getData() | tsjs'
-            },
-            condition: ctx => isTransform(ctx.getData()),
-            body: [
-                {
-                    activity: 'pipes',
-                    pipes: 'binding: pipes'
-                },
-                {
-                    activity: 'if',
-                    condition: 'binding: uglify',
-                    body: {
-                        activity: 'uglify',
-                        uglifyOptions: 'binding: uglifyOptions'
-                    }
-                },
-                {
-                    activity: Activities.if,
-                    condition: 'binding: sourcemap',
-                    body: {
-                        name: 'sourcemap-write',
-                        activity: Activities.execute,
-                        action: async (ctx: NodeActivityContext, bind) => {
-                            let scope = bind.getScope<TsBuildActivity>();
-                            let framework = scope.framework || sourcemaps;
-                            return await ctx.injector.get(TransformService).executePipe(ctx, ctx.getData(), framework.write(isString(scope.sourcemap) ? scope.sourcemap : './sourcemaps'));
-                        }
-                    }
-                },
-                {
-                    name: 'write-js',
-                    activity: 'dist',
-                    dist: 'binding: dist'
-                }
-            ]
-        },
-        {
-            activity: Activities.if,
-            externals: {
-                data: 'ctx.getData() | dts'
-            },
-            condition: 'binding: dts',
-            body: {
-                name: 'write-dts',
-                activity: 'dist',
-                dist: 'binding: dts | path:dist',
-            }
-        }
-    ]
+@Module({
+    imports: [WorkflowModule],
+    declarations: [EmailActivity],
+    exports: [EmailActivity]
 })
-export class TsBuildActivity {
-    @Input() dist: string;
-    @Input() dts: string | bool;
-    @Input() annotation: boolean;
-    @Input('annotationFramework') annotationFramework: NodeExpression<ITransform>;
-    @Input('beforePipes') beforePipes: ActivityType<ITransform>[];
-    @Input('tsconfig', './tsconfig.json') tsconfig: string | Record<string, any>;
-    @Input() uglify: NodeExpression<boolean>;
-    @Input('uglifyOptions') uglifyOptions: any;
+export class MyWorkflowModule {}
+```
+
+## API Reference
+
+### Activity Base Class
+
+```typescript
+abstract class Activity {
+    abstract execute(context: ActivityContext): Promise<ActivityResult>;
+    compensate?(context: ActivityContext): Promise<void>;
 }
 
-```
-
-
-### Run task
-
-* use coustom task component.
-```ts
-@Task({
-    deps: [
-        PackModule,
-        ServerActivitiesModule,
-        TsBuildActivity
-    ],
-    baseURL: __dirname,
-    template: <TsBuildOption>{
-        activity: 'ts',
-        annotation: true,
-        dist: 'dist',
-        dts: 'dist', // or true
-        sourcemap: true
-    }
-})
-export class PackBuilder implements AfterInit {
-
-    onAfterInit(): void | Promise<void> {
-        console.log('activities build has inited...')
-    }
+interface ActivityContext {
+    [key: string]: any;
 }
 
+interface ActivityResult<T = any> {
+    success: boolean;
+    data?: T;
+    error?: Error;
+}
 ```
 
-* run task.
-```ts
-// 1. run modue
-Workflow.run(PackBuilder);
+### Visual Workflow Types
 
+```typescript
+interface VisualWorkflowDefinition {
+    id: string;
+    name: string;
+    description?: string;
+    version?: string;
+    nodes: IVisualWorkflowNode[];
+    connections: NodeConnection[];
+    metadata?: VisualWorkflowMetadata;
+}
 
-// 2. run option
-Workflow.run({
-    name: 'test1',
-    template: [
-        {
-            name: 'test------1',
-            activity: SimpleTask
-        },
-        SimpleCTask
-        // {
-        //     name: 'test------2',
-        //     activity: SimpleCTask
-        // }
-    ]
+interface IVisualWorkflowNode {
+    id: string;
+    name: string;
+    type: VisualNodeType;
+    position: NodePosition;
+    config?: Record<string, any>;
+    inputs?: NodePort[];
+    outputs?: NodePort[];
+    style?: NodeStyle;
+}
 
-});
+interface NodeConnection {
+    id: string;
+    sourceNodeId: string;
+    sourcePort: string;
+    targetNodeId: string;
+    targetPort: string;
+    condition?: string | ((context: ActivityContext) => boolean);
+}
 ```
+
+## Testing
+
+The package includes comprehensive unit tests with **108 test cases** covering all activities.
+
+### Test Coverage
+
+| Test Suite | Tests | Coverage |
+|------------|-------|----------|
+| Core Activities | 51 | Start, End, Sequence, Parallel, If, While, DoWhile, TryCatch, Timer, Interval, Switch |
+| Common Activities | 33 | Assign, Log, ForEach, Transform, Map, Filter, Reduce, Validate, Emit, Batch, Merge, Split |
+| Visual Workflow | 24 | Builder, Validation, Serialization, Execution, Node Types |
+
+### Running Tests
+
+```bash
+# Run all tests
+cd packages/activities
+npm test
+
+# Run specific test file
+npx ts-node -r tsconfig-paths/register -e "
+const { runTest } = require('@tsdi/unit');
+const { ConsoleReporter } = require('@tsdi/unit-console');
+runTest('./test/core-activities.spec.ts', { baseURL: __dirname }, ConsoleReporter);
+"
+```
+
+## Related Packages
+
+- [@tsdi/ioc](https://www.npmjs.com/package/@tsdi/ioc) - IoC container
+- [@tsdi/aop](https://www.npmjs.com/package/@tsdi/aop) - AOP support
+- [@tsdi/core](https://www.npmjs.com/package/@tsdi/core) - Application core
+- [@tsdi/components](https://www.npmjs.com/package/@tsdi/components) - Component framework
+- [@tsdi/boot](https://www.npmjs.com/package/@tsdi/boot) - Bootstrap utilities
 
 ## Documentation
-Documentation is available on the
-* [@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
-* [@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
-* [@tsdi/logger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/logger).
-* [@tsdi/common document](https://github.com/zhouhoujun/tsioc/tree/master/packages/common).
-* [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
-* [@tsdi/endpoints document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport).
-* [@tsdi/amqp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/amqp).
-* [@tsdi/coap document](https://github.com/zhouhoujun/tsioc/tree/master/packages/coap).
-* [@tsdi/http document](https://github.com/zhouhoujun/tsioc/tree/master/packages/http).
-* [@tsdi/kafka document](https://github.com/zhouhoujun/tsioc/tree/master/packages/kafka).
-* [@tsdi/mqtt document](https://github.com/zhouhoujun/tsioc/tree/master/packages/mqtt).
-* [@tsdi/nats document](https://github.com/zhouhoujun/tsioc/tree/master/packages/nats).
-* [@tsdi/redis document](https://github.com/zhouhoujun/tsioc/tree/master/packages/redis).
-* [@tsdi/tcp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/tcp).
-* [@tsdi/udp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/udp).
-* [@tsdi/ws document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ws).
-* [@tsdi/swagger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/swagger).
-* [@tsdi/repository document](https://github.com/zhouhoujun/tsioc/tree/master/packages/repository).
-* [@tsdi/typeorm-adapter document](https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter).
-* [@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
-* [@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
-* [@tsdi/compiler document](https://github.com/zhouhoujun/tsioc/tree/master/packages/compiler).
-* [@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
-* [@tsdi/pack document](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack).
-* [@tsdi/unit document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit).
-* [@tsdi/unit-console document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit-console).
-* [@tsdi/cli document](https://github.com/zhouhoujun/tsioc/tree/master/packages/cli).
 
-
-
-### packages
-[@tsdi/cli](https://www.npmjs.com/package/@tsdi/cli)
-[@tsdi/ioc](https://www.npmjs.com/package/@tsdi/ioc)
-[@tsdi/aop](https://www.npmjs.com/package/@tsdi/aop)
-[@tsdi/logger](https://www.npmjs.com/package/@tsdi/logger)
-[@tsdi/common](https://www.npmjs.com/package/@tsdi/common)
-[@tsdi/core](https://www.npmjs.com/package/@tsdi/core)
-[@tsdi/endpoints](https://www.npmjs.com/package/@tsdi/endpoints)
-[@tsdi/amqp](https://www.npmjs.com/package/@tsdi/amqp)
-[@tsdi/coap](https://www.npmjs.com/package/@tsdi/coap)
-[@tsdi/http](https://www.npmjs.com/package/@tsdi/http)
-[@tsdi/kafka](https://www.npmjs.com/package/@tsdi/kafka)
-[@tsdi/mqtt](https://www.npmjs.com/package/@tsdi/mqtt)
-[@tsdi/nats](https://www.npmjs.com/package/@tsdi/nats)
-[@tsdi/redis](https://www.npmjs.com/package/@tsdi/redis)
-[@tsdi/tcp](https://www.npmjs.com/package/@tsdi/tcp)
-[@tsdi/udp](https://www.npmjs.com/package/@tsdi/udp)
-[@tsdi/ws](https://www.npmjs.com/package/@tsdi/ws)
-[@tsdi/swagger](https://www.npmjs.com/package/@tsdi/swagger)
-[@tsdi/repository](https://www.npmjs.com/package/@tsdi/repository)
-[@tsdi/typeorm-adapter](https://www.npmjs.com/package/@tsdi/typeorm-adapter)
-[@tsdi/boot](https://www.npmjs.com/package/@tsdi/boot)
-[@tsdi/components](https://www.npmjs.com/package/@tsdi/components)
-[@tsdi/compiler](https://www.npmjs.com/package/@tsdi/compiler)
-[@tsdi/activities](https://www.npmjs.com/package/@tsdi/activities)
-[@tsdi/pack](https://www.npmjs.com/package/@tsdi/pack)
-[@tsdi/unit](https://www.npmjs.com/package/@tsdi/unit)
-[@tsdi/unit-console](https://www.npmjs.com/package/@tsdi/unit-console)
-
+- [@tsdi/ioc](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc)
+- [@tsdi/aop](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop)
+- [@tsdi/core](https://github.com/zhouhoujun/tsioc/tree/master/packages/core)
+- [@tsdi/components](https://github.com/zhouhoujun/tsioc/tree/master/packages/components)
 
 ## License
 
-MIT © [Houjun](https://github.com/zhouhoujun/)
+MIT © [Houjun](https://github.com/houjun)

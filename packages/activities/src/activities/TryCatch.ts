@@ -86,7 +86,7 @@ export class TryCatchActivity extends Activity {
 
             // 检查错误类型是否匹配
             const errorTypes = this.errorTypes;
-            const shouldCatch = errorTypes?.some(errorType => 
+            const shouldCatch = !errorTypes || errorTypes.length === 0 || errorTypes.some(errorType => 
                 caughtError instanceof errorType
             );
 

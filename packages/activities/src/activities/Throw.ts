@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
-import { Component } from '@tsdi/components';
+import { Component, Attribute } from '@tsdi/components';
 
 export interface ThrowActivityContext extends ActivityContext {
     /**
@@ -30,6 +30,9 @@ export interface ThrowActivityOptions {
 
 @Component({ selector: 'throw' })
 export class ThrowActivity extends Activity {
+
+    @Attribute()
+    options: ThrowActivityOptions = {};
 
     async execute(context: ThrowActivityContext): Promise<ActivityResult> {
         if (!context.error) {

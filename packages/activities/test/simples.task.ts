@@ -1,4 +1,4 @@
-import { Inject, isString, isFunction, Token, InvocationContext } from '@tsdi/ioc';
+import { Inject, isString, isFunction, Token, RunContext } from '@tsdi/ioc';
 import { AfterViewInit, Component, EventEmitter, OnInit } from '@tsdi/components';
 
 @Component({
@@ -33,7 +33,7 @@ export class LoadData implements OnInit {
 
     loaddata = new EventEmitter<any>();
 
-    constructor(private ctx: InvocationContext) {
+    constructor(private ctx: RunContext) {
 
     }
 

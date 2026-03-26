@@ -6,8 +6,12 @@ import { WorkflowService } from './services/workflow.service';
 import {
     ConfirmActivity, DelayActivity, DoWhileActivity, EndActivity, IntervalActivity,
     InvokeActivity, ParallelActivity, SequenceActivity, StartActivity, ThrowActivity, TimerActivity,
-    TryCatchActivity, WhileActivity
+    TryCatchActivity, WhileActivity,
+    AssignActivity, LogActivity, ForEachActivity, TransformActivity, MapActivity, FilterActivity,
+    ReduceActivity, ValidateActivity, RequiredActivity, RangeActivity, PatternActivity,
+    EmitActivity, WaitActivity, BatchActivity, MergeActivity, SplitActivity
 } from './activities';
+import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
 
 
 
@@ -23,7 +27,9 @@ import {
     ],
     providers: [
         WorkflowService,
-        RunAspect
+        RunAspect,
+        VisualWorkflowService,
+        VisualWorkflowBuilder
     ],
     declarations: [
         StartActivity,
@@ -38,7 +44,23 @@ import {
         SequenceActivity,
         ThrowActivity,
         TimerActivity,
-        TryCatchActivity
+        TryCatchActivity,
+        AssignActivity,
+        LogActivity,
+        ForEachActivity,
+        TransformActivity,
+        MapActivity,
+        FilterActivity,
+        ReduceActivity,
+        ValidateActivity,
+        RequiredActivity,
+        RangeActivity,
+        PatternActivity,
+        EmitActivity,
+        WaitActivity,
+        BatchActivity,
+        MergeActivity,
+        SplitActivity
     ],
     exports: [
         StartActivity,
@@ -53,7 +75,25 @@ import {
         SequenceActivity,
         ThrowActivity,
         TimerActivity,
-        TryCatchActivity
+        TryCatchActivity,
+        AssignActivity,
+        LogActivity,
+        ForEachActivity,
+        TransformActivity,
+        MapActivity,
+        FilterActivity,
+        ReduceActivity,
+        ValidateActivity,
+        RequiredActivity,
+        RangeActivity,
+        PatternActivity,
+        EmitActivity,
+        WaitActivity,
+        BatchActivity,
+        MergeActivity,
+        SplitActivity,
+        VisualWorkflowService,
+        VisualWorkflowBuilder
     ]
 })
 export class WorkflowModule {

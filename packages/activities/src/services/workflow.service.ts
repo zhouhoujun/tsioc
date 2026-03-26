@@ -1,6 +1,11 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Type } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 import { WorkflowDefinition } from '../Workflow';
+
+export interface ActivityRef<T = any> {
+    instance: T;
+    result?: ActivityResult;
+}
 
 export interface WorkflowExecutionContext extends ActivityContext {
     workflowId?: string;
@@ -13,6 +18,19 @@ export interface WorkflowExecutionContext extends ActivityContext {
 @Injectable()
 export class WorkflowService {
     private activeWorkflows: Map<string, WorkflowExecutionContext> = new Map();
+
+    async run<T>(activityType: Type<T>): Promise<ActivityRef<T>> {
+        const instance = new (activityType as any)();
+        
+        if (typeof (instance as any).onInit === 'function') {
+            (instance as any).onInit();
+        }
+        
+        return {
+            instance,
+            result: { success: true, data: instance }
+        };
+    }
 
     async startWorkflow<T extends ActivityContext>(
         workflowDefinition: new () => any,
