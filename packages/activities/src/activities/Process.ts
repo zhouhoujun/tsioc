@@ -1,7 +1,11 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-
+export interface ProcessActivityOptions {
+    batchSize?: number;
+    timeout?: number;
+    onProgress?: (progress: number, current: number, total: number) => void;
+}
 
 @Component({ selector: 'process' })
 export class ProcessActivity extends Activity {

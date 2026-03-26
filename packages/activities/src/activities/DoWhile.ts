@@ -1,6 +1,11 @@
 import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
+export interface DoWhileActivityOptions {
+    defaultMaxIterations?: number;
+    defaultInterval?: number;
+}
+
 export interface DoWhileActivityContext extends ActivityContext {
     /**
      * 循环条件

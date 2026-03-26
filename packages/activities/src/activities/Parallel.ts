@@ -2,6 +2,13 @@ import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { Attribute, Component } from '@tsdi/components';
 
+export interface ParallelActivityOptions {
+    activities?: Activity[];
+    maxConcurrent?: number;
+    waitAll?: boolean;
+    errorStrategy?: 'continue' | 'stop' | 'throw';
+}
+
 export interface ParallelActivityContext extends ActivityContext {
     /**
      * 要并行执行的活动列表

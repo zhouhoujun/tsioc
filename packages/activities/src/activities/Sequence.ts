@@ -1,6 +1,11 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
+export interface SequenceActivityOptions {
+    activities?: Activity[];
+    continueOnError?: boolean;
+    onError?: (error: Error) => Promise<ActivityResult>;
+}
 
 @Component({ selector: 'sequence' })
 export class SequenceActivity extends Activity {

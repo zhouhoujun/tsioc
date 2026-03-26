@@ -1,8 +1,12 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-
-
+export interface IntervalActivityOptions {
+    interval?: number;
+    body?: Activity;
+    maxExecutions?: number;
+    immediate?: boolean;
+}
 
 @Component({ selector: 'interval' })
 export class IntervalActivity extends Activity {

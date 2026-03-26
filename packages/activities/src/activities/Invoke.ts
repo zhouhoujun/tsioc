@@ -4,6 +4,13 @@ import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type InvokeFn = (context: ActivityContext, ...args: any[]) => Promise<any>;
 
+export interface InvokeActivityOptions {
+    target?: AbstractType | Invocation;
+    invoke?: string | InvokeFn;
+    maxAttempts?: number;
+    delay?: number;
+    backoff?: number;
+}
 
 @Component({ selector: 'invoke' })
 export class InvokeActivity extends Activity {

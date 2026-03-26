@@ -2,6 +2,12 @@ import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { CaseActivity } from './Case';
 
+export interface SwitchActivityOptions {
+    cases?: CaseActivity<any>[];
+    defaultActivity?: Activity;
+    errorHandler?: (error: Error) => Promise<ActivityResult>;
+    breakOnMatch?: boolean;
+}
 
 @Component({ selector: 'switch' })
 export class SwitchActivity<T> extends Activity {

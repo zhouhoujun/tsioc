@@ -1,7 +1,11 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-
+export interface CaseActivityOptions {
+    caseFlag?: any;
+    body?: Activity;
+    onError?: (context: ActivityContext) => Promise<ActivityResult>;
+}
 
 @Component({ selector: 'case' })
 export class CaseActivity<T> extends Activity {

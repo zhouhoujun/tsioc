@@ -1,6 +1,12 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
+export interface WhileActivityOptions {
+    condition?: (context: ActivityContext) => Promise<boolean>;
+    body?: Activity;
+    maxIterations?: number;
+    interval?: number;
+}
 
 // export interface WhileActivityContext extends ActivityContext {
 //     /**

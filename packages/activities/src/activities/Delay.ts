@@ -1,8 +1,10 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-
-
+export interface DelayActivityOptions {
+    duration?: number;
+    body?: Activity;
+}
 
 @Component({ selector: 'delay' })
 export class DelayActivity extends Activity {
