@@ -1,6 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
-import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { Attribute, Component } from '@tsdi/components';
+import { Activity, ActivityContext, ActivityResult } from './Activity';
+
 
 export interface ParallelActivityOptions {
     activities?: Activity[];

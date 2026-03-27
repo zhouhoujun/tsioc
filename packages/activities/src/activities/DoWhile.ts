@@ -1,5 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
+import { Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
+
 
 export interface DoWhileActivityOptions {
     defaultMaxIterations?: number;
@@ -40,7 +41,9 @@ export interface DoWhileActivityOptions {
     defaultInterval?: number;
 }
 
-@Injectable()
+@Component({
+    selector: 'dowhile'
+})
 export class DoWhileActivity implements Activity {
     name = 'do_while';
     private isRunning = false;

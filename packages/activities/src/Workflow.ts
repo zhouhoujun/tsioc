@@ -1,4 +1,5 @@
-import { Injectable, AbstractType, Type, Provider } from '@tsdi/ioc';
+import { AbstractType, Type, Provider } from '@tsdi/ioc';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { Activity, ActivityContext, ActivityResult } from './activities/Activity';
 
 export interface WorkflowDefinition {
@@ -28,8 +29,7 @@ export interface WorkflowOptions {
 
 export class Workflow {
     
-    static async run<T>(module: Type<T>, options?: WorkflowOptions): Promise<void> {
-        const { Application } = await import('@tsdi/core');
+    static async run<T>(module: Type<T>, options?: WorkflowOptions): Promise<ApplicationContext<T>> {
         
         const appOptions: any = {};
         if (options?.baseURL) {
@@ -48,6 +48,6 @@ export class Workflow {
             appOptions.providers = providers;
         }
         
-        await Application.run(module, appOptions);
+        return await Application.run(module, appOptions);
     }
 }

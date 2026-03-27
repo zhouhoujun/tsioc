@@ -1,4 +1,3 @@
-import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { Component, Attribute } from '@tsdi/components';
 

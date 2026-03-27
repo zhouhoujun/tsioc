@@ -8,59 +8,6 @@ export interface WhileActivityOptions {
     interval?: number;
 }
 
-// export interface WhileActivityContext extends ActivityContext {
-//     /**
-//      * 循环条件函数
-//      */
-//     condition: (context: ActivityContext) => Promise<boolean>;
-//     /**
-//      * 循环体活动
-//      */
-//     body: Activity;
-//     /**
-//      * 最大迭代次数
-//      */
-//     maxIterations?: number;
-//     /**
-//      * 迭代间隔（毫秒）
-//      */
-//     interval?: number;
-//     /**
-//      * 迭代回调函数
-//      */
-//     onIteration?: (iteration: number, result: ActivityResult) => void;
-//     /**
-//      * 错误处理函数
-//      */
-//     errorHandler?: (error: Error, iteration: number) => Promise<ActivityResult>;
-//     /**
-//      * 是否在错误时继续执行
-//      */
-//     continueOnError?: boolean;
-//     /**
-//      * 是否在条件不满足时抛出错误
-//      */
-//     throwOnConditionFalse?: boolean;
-// }
-
-// export interface WhileActivityOptions {
-//     /**
-//      * 默认最大迭代次数
-//      */
-//     defaultMaxIterations?: number;
-//     /**
-//      * 默认迭代间隔
-//      */
-//     defaultInterval?: number;
-//     /**
-//      * 默认是否在错误时继续执行
-//      */
-//     defaultContinueOnError?: boolean;
-//     /**
-//      * 默认是否在条件不满足时抛出错误
-//      */
-//     defaultThrowOnConditionFalse?: boolean;
-// }
 
 @Component({ selector: 'while' })
 export class WhileActivity extends Activity {
