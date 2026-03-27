@@ -52,7 +52,7 @@ export function omit(target: any, ...excludes: string[]): any {
  */
 export function pick(target: any, ...fields: string[]): any {
     const obj: any = {};
-    for (const fd in fields) {
+    for (const fd of fields) {
         const val = target[fd];
         if (!isNil(val)) {
             obj[fd] = val;
@@ -75,7 +75,7 @@ export function forIn(target: any, iterator: (item: any, idx?: any) => void | bo
     if (!target) return;
     if (isArray(target)) {
         for (let i = 0, len = target.length; i < len; i++) {
-            if (iterator(it, i) === false) {
+            if (iterator(target[i], i) === false) {
                 break
             }
         }

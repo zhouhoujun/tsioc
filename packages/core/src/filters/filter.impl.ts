@@ -38,7 +38,7 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
         const hds = this.maps.get(target);
         if (!hds) return this;
         const idx = hds.findIndex(h => h === interceptor || ((h as Interceptor).equals ? (h as Interceptor).equals!(interceptor) : false));
-        if (idx > 0) hds.splice(idx, 1);
+        if (idx >= 0) hds.splice(idx, 1);
         return this
     }
 }
@@ -79,7 +79,7 @@ export class DefaultFilterResolver implements FilterResolver {
         const hds = this.maps.get(target);
         if (!hds) return this;
         const idx = hds.findIndex(h => h === filter || ((h as Filter).equals ? (h as Filter).equals!(filter) : false));
-        if (idx > 0) hds.splice(idx, 1);
+        if (idx >= 0) hds.splice(idx, 1);
         return this
     }
 }
@@ -124,7 +124,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
         const hds = this.maps.get(filter);
         if (!hds) return this;
         const idx = hds.findIndex(h => (h as Handler).equals ? (h as Handler).equals?.(handler) : h === handler);
-        if (idx > 0) hds.splice(idx, 1);
+        if (idx >= 0) hds.splice(idx, 1);
         return this
     }
 }
