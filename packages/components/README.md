@@ -20,6 +20,59 @@ npm install @tsdi/components
 *  `@Output` Output decorator, use to define property or param as component output field or args.
 *  `@RefChild` RefChild decorator, use to select child element and inject to the property in component.
 *  `@Pipe` Pipe decorator, use to define class type as pipe transform.
+
+## @Directive decorator
+
+The `@Directive` decorator supports three types of selectors:
+
+### Attribute Selector
+```typescript
+@Directive({ selector: '[myAttr]' })
+class MyAttrDirective {}
+// or without brackets (auto-wrapped):
+@Directive({ selector: 'myAttr' })
+class MyAttrDirective {}
+```
+
+### Structural Directive
+```typescript
+@Directive({ selector: '*if', dirType: DirectiveType.Conditional })
+class IfDirective {}
+```
+
+### Custom Element Selector
+```typescript
+@Directive({ selector: 'my-button' })
+class MyButtonDirective {}
+// or with hyphen (recommended for custom elements)
+```
+
+### Selector Classification Rules
+- Starts with `*` → structural directive (auto-wrapped: `[*if]`)
+- Contains `[]` → attribute directive (stays as-is)
+- Contains `-` (hyphen) → custom element (stays as-is)
+- Plain text → attribute directive (auto-wrapped: `[plainText]`)
+- Common HTML elements (`button`, `input`, etc.) → custom element
+
+The `@Directive` decorator automatically exports to:
+- `DIRECTIVES` token: attribute and structural directives
+- `CUSTOM_ELEMENTS` token: custom element directives
+
+Custom elements are compiled into templates via `CompilerOptions.customElements`.
+
+## Exports
+
+```typescript
+// Decorators
+export { Component, Input, Output, RefChild, Pipe, Directive }
+
+// Tokens
+export { DIRECTIVES, CUSTOM_ELEMENTS, COMPONENTS }
+
+// Types
+export { ComponentDef, DirectiveDef, DirectiveType }
+```
+
 see [ activity build boot simple](https://github.com/zhouhoujun/tsioc/blob/master/packages/activities/taskfile.ts)
 
 

@@ -52,6 +52,7 @@ export enum NodeType {
 export const BINDINGS = Symbol('__BINDINGS');
 export const DIRECTIVES = Symbol('__DIRECTIVES');
 export const COMPONENTDEF = Symbol('__COMPONENTDEF');
+export const CUSTOM_ELEMENTS = Symbol('__CUSTOM_ELEMENTS');
 
 /**
  * A node in the DOM tree.
@@ -146,6 +147,11 @@ export interface RNode {
    * The directives of this node.
    */
   [DIRECTIVES]?: DirectiveDef[];
+
+  /**
+   * Custom element directives/components of this node.
+   */
+  [CUSTOM_ELEMENTS]?: DirectiveDef[];
 
   [COMPONENTDEF]?: ComponentDef;
 

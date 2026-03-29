@@ -15,7 +15,7 @@ import { Renderer } from '../renderer/Renderer';
 import { TemplateRef } from '../refs/template';
 import { RNode } from '../renderer/Node';
 import { DefaultReactiveEffect } from './effect';
-import { DIRECTIVES } from '../decorators/directive';
+import { DIRECTIVES, CUSTOM_ELEMENTS } from '../decorators/directive';
 import { COMPONENTS } from '../decorators/component';
 
 
@@ -56,6 +56,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
         await (this.instance as OnInit).onInit?.();
         const directives = this.injector.get(DIRECTIVES) || [];
+        const customElements = this.injector.get(CUSTOM_ELEMENTS) || [];
         // console.log('[Component.render] directives:', directives?.length, directives?.map((d: any) => d.type?.name));
         const components = this.injector.get(COMPONENTS) || [];
         if (!this._elementRef) {
@@ -78,7 +79,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         if (!def.ƿtempFac) {
             const template = def.template || await fetchTemplate(def.templateUrl!);
             const compiler = this.injector.get(TemplateCompiler);
-            (def as any).ƿtempFac = compiler.compile<T>(template, { directives, components });
+            (def as any).ƿtempFac = compiler.compile<T>(template, { directives, components, customElements });
         }
         const host = this._elementRef;
         const templateRef =  def.ƿtempFac!(host, this.injector);

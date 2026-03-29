@@ -1,6 +1,6 @@
 import { Exception, isString, remove } from '@tsdi/ioc';
 import { CompilerOptions } from '../template/compiler';
-import { DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText, COMPONENTDEF } from '../renderer/Node';
+import { DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText, COMPONENTDEF, CUSTOM_ELEMENTS } from '../renderer/Node';
 import { ComponentDef } from '../refs/component';
 import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
 import { NodeInjector } from '../refs/injector';
@@ -408,7 +408,8 @@ export function generateNodeBindings<C>(
     components: ComponentDef[],
     renderer: Renderer,
     delimiter: RegExp,
-    nodesForBindings: ((nodes: RNode[], renderer: Renderer, delimiter: RegExp) => void) = walkNodesForBindings<C>
+    nodesForBindings: ((nodes: RNode[], renderer: Renderer, delimiter: RegExp) => void) = walkNodesForBindings<C>,
+    customElements: DirectiveDef[] = []
 ): void {
     const rootNodes = nodes;
 
@@ -434,6 +435,22 @@ export function generateNodeBindings<C>(
                 dirs.push(r);
             } else {
                 n[DIRECTIVES] = [r];
+            }
+        });
+    });
+
+    // 收集自定义元素指令
+    customElements.forEach(cdef => {
+        const nodes = renderer.querySelectorAll(rootNodes, cdef.selector);
+        nodes?.forEach(n => {
+            if (n[COMPONENTDEF]?.type === cdef.type) {
+                return;
+            }
+            const custs = n[CUSTOM_ELEMENTS];
+            if (custs) {
+                custs.push(cdef);
+            } else {
+                n[CUSTOM_ELEMENTS] = [cdef];
             }
         });
     });

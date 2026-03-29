@@ -32,7 +32,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const nodes = this.parser.parse(template);
 
-        generateNodeBindings<C>(nodes, options.directives, options.components, this.renderer, this.delimiter);
+        generateNodeBindings<C>(nodes, options.directives, options.components, this.renderer, this.delimiter, undefined, options.customElements);
 
         // 将模板编译为 node factory
         const factory = compileToFactory<C>(nodes, this.renderer, options, {

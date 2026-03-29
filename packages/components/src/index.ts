@@ -25,6 +25,8 @@ export * from './template/compiler';
 
 
 export * from './decorators/component';
+export { Directive, Directive as DirectiveDecorator } from './decorators/directive';
+export { CUSTOM_ELEMENTS, DIRECTIVES } from './decorators/directive';
 export * from './decorators/atteribute';
 export * from './decorators/computed';
 

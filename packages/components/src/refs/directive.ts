@@ -26,6 +26,11 @@ export enum DirectiveType {
 export interface DirectiveDef<T = any> extends TypeDef<T>, Factoriable<T> {
     imports?: ModuleType[],
     selector: string;
+    /**
+     * 定义指令绑定的Element类型
+     * 用于指定自定义元素或扩展的HTML元素类型
+     */
+    element?: AbstractType<HTMLElement>;
     styles?: string[];
     styleUrls?: string[];
     // states?: StateMetadata[];

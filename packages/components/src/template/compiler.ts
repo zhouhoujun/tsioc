@@ -13,6 +13,7 @@ export interface TemplateCompilerOptions {
 }
 
 export interface CompilerOptions {
+    customElements?: DirectiveDef[];
     directives: DirectiveDef[];
     components: ComponentDef[];
 }
