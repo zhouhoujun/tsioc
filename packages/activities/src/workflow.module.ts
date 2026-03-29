@@ -63,6 +63,8 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
         SplitActivity
     ],
     exports: [
+        AopModule,
+        ComponentsModule,
         StartActivity,
         EndActivity,
         ConfirmActivity,

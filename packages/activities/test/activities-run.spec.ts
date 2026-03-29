@@ -2,51 +2,71 @@ import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { ApplicationContext } from '@tsdi/core';
 import { Module, Injectable, Injector } from '@tsdi/ioc';
-import { Workflow, WorkflowModule } from '../src';
-import { ComponentsModule } from '@tsdi/components';
+import { Component, ComponentsModule } from '@tsdi/components';
+import { Workflow, WorkflowModule, Activity, ActivityContext, ActivityResult } from '../src';
 
 
-@Injectable()
-class TestService {
-    getName() {
-        return 'test-service';
-    }
-}
-
-@Module({
-    providers: [TestService]
+@Component({
+    selector: 'hello-activity',
+    template: `
+        <div>{{message}}</div>
+    `
 })
-class TestActivityModule {
+class HelloActivity extends Activity {
+    name: string = 'World';
+
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        return {
+            success: true,
+            data: { message: `Hello ${this.name}!` }
+        };
+    }
 }
 
-@Suite('Activities.run test')
-export class ActivitiesRunTest {
+@Component({
+    selector: 'calc-activity',
+    template: `
+        <div>Calculator Activity</div>
+    `
+})
+class CalcActivity extends Activity {
+    a: number = 0;
+    b: number = 0;
+
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        return {
+            success: true,
+            data: { result: this.a + this.b }
+        };
+    }
+}
+
+@Suite('Workflow.run with Activity class directly')
+export class WorkflowActivityDirectTest {
     ctx!: ApplicationContext;
 
     @Before()
     async init() {
-        this.ctx = await Workflow.run(TestActivityModule, {
+        this.ctx = await Workflow.run(HelloActivity, {
+            template: 'xml'
         });
     }
 
-    @Test('should run activity with deps')
-    async testRunWithDeps() {
+    @Test('should bootstrap Activity directly')
+    async testBootstrap() {
         expect(this.ctx).toBeDefined();
     }
 
-    @Test('should have WorkflowModule loaded via platformDeps')
-    async testWorkflowModuleLoaded() {
-        const injector = this.ctx as any as Injector;
-        const hasWorkflow = injector.has(WorkflowModule);
-        expect(hasWorkflow).toBeTruthy();
+    @Test('should get HelloActivity via runners.getRef')
+    async testGetActivity() {
+        const ref = this.ctx.runners.getRef(HelloActivity);
+        expect(ref).toBeDefined();
     }
 
-    @Test('should have TestService available')
-    async testServiceAvailable() {
-        const injector = this.ctx as any as Injector;
-        const service = injector.get(TestService);
-        expect(service).toBeDefined();
-        expect(service.getName()).toBe('test-service');
+    @Test('should have HelloActivity properties')
+    async testActivityProps() {
+        const ref = this.ctx.runners.getRef(HelloActivity);
+        expect(ref.instance.name).toBe('World');
     }
 
     @After()
@@ -57,38 +77,26 @@ export class ActivitiesRunTest {
     }
 }
 
-@Suite('Workflow.run test')
-export class WorkflowRunTest {
+@Suite('Workflow.run with CalcActivity directly')
+export class WorkflowCalcActivityTest {
     ctx!: ApplicationContext;
 
     @Before()
     async init() {
-        const { Workflow } = await import('../src');
-        this.ctx = await Workflow.run(TestActivityModule, {
-            deps: [
-                ComponentsModule
-            ]
+        this.ctx = await Workflow.run(CalcActivity, {
+            template: 'xml'
         });
     }
 
-    @Test('should run workflow with auto-added WorkflowModule')
-    async testWorkflowRun() {
+    @Test('should bootstrap CalcActivity directly')
+    async testBootstrap() {
         expect(this.ctx).toBeDefined();
     }
 
-    @Test('should have WorkflowModule as platform dep')
-    async testPlatformDeps() {
-        const injector = this.ctx as any as Injector;
-        const hasWorkflow = injector.has(WorkflowModule);
-        expect(hasWorkflow).toBeTruthy();
-    }
-
-    @Test('should have TestService available in workflow')
-    async testServiceInWorkflow() {
-        const injector = this.ctx as any as Injector;
-        const service = injector.get(TestService);
-        expect(service).toBeDefined();
-        expect(service.getName()).toBe('test-service');
+    @Test('should get CalcActivity via runners.getRef')
+    async testGetActivity() {
+        const ref = this.ctx.runners.getRef(CalcActivity);
+        expect(ref).toBeDefined();
     }
 
     @After()
@@ -98,4 +106,3 @@ export class WorkflowRunTest {
         }
     }
 }
-

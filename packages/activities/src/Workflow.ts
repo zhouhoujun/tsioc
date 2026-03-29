@@ -1,4 +1,4 @@
-import { AbstractType, Type, Provider, Modules } from '@tsdi/ioc';
+import { AbstractType, Type, Provider, Modules, ModuleType } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Activity, ActivityContext, ActivityResult } from './activities/Activity';
 import { WorkflowModule } from './workflow.module';
@@ -21,10 +21,14 @@ export interface WorkflowTransition {
     condition?: (context: ActivityContext) => boolean;
 }
 
+export type TemplateType = 'xml' | 'json';
+
 export interface WorkflowOptions {
     baseURL?: string;
     src?: string;
     outDir?: string;
+    deps?: ModuleType[];
+    template?: TemplateType;
     [key: string]: any;
 }
 
@@ -49,8 +53,19 @@ export class Workflow {
             appOptions.providers = providers;
         }
 
-        // Auto-add WorkflowModule as platform dependency
-        appOptions.platformDeps = [WorkflowModule];
+        const platformDeps: ModuleType[] = [WorkflowModule];
+
+        const templateType = options?.template || 'xml';
+        
+        if (templateType === 'xml') {
+            const { XmlTemplateModule } = await import('@tsdi/components/xml');
+            platformDeps.push(XmlTemplateModule);
+        } else if (templateType === 'json') {
+            const { JsonTemplateModule } = await import('@tsdi/components/json');
+            platformDeps.push(JsonTemplateModule);
+        }
+
+        appOptions.platformDeps = platformDeps;
         
         return await Application.run(module, appOptions);
     }
