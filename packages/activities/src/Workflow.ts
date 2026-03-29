@@ -1,6 +1,7 @@
-import { AbstractType, Type, Provider } from '@tsdi/ioc';
+import { AbstractType, Type, Provider, Modules } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Activity, ActivityContext, ActivityResult } from './activities/Activity';
+import { WorkflowModule } from './workflow.module';
 
 export interface WorkflowDefinition {
     name: string;
@@ -47,6 +48,9 @@ export class Workflow {
         if (providers.length > 0) {
             appOptions.providers = providers;
         }
+
+        // Auto-add WorkflowModule as platform dependency
+        appOptions.platformDeps = [WorkflowModule];
         
         return await Application.run(module, appOptions);
     }
