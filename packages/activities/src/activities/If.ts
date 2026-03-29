@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { ConditionalActivity } from './Conditional';
 
@@ -10,7 +10,7 @@ export interface IfActivityOptions {
     defaultErrorHandler?: (error: Error) => Promise<ActivityResult>;
 }
 
-@Component({
+@Directive({
     selector: 'if'
 })
 export class IfActivity extends ConditionalActivity implements Activity {

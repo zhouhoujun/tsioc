@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface ProcessActivityOptions {
@@ -7,7 +7,7 @@ export interface ProcessActivityOptions {
     onProgress?: (progress: number, current: number, total: number) => void;
 }
 
-@Component({ selector: 'process' })
+@Directive({ selector: 'process' })
 export class ProcessActivity extends Activity {
 
     /**

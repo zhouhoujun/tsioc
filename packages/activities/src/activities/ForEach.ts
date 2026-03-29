@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface ForEachActivityContext extends ActivityContext {
@@ -7,7 +7,7 @@ export interface ForEachActivityContext extends ActivityContext {
     currentItem?: any;
 }
 
-@Component({ selector: 'foreach' })
+@Directive({ selector: 'foreach' })
 export class ForEachActivity extends Activity {
 
     @Attribute()

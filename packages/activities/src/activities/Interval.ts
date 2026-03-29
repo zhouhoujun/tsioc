@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface IntervalActivityOptions {
@@ -8,7 +8,7 @@ export interface IntervalActivityOptions {
     immediate?: boolean;
 }
 
-@Component({ selector: 'interval' })
+@Directive({ selector: 'interval' })
 export class IntervalActivity extends Activity {
 
     private isRunning = false;

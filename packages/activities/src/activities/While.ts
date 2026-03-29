@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface WhileActivityOptions {
@@ -9,7 +9,7 @@ export interface WhileActivityOptions {
 }
 
 
-@Component({ selector: 'while' })
+@Directive({ selector: 'while' })
 export class WhileActivity extends Activity {
     private isRunning = false;  // 添加运行状态标志
 

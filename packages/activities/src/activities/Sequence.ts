@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface SequenceActivityOptions {
@@ -7,7 +7,7 @@ export interface SequenceActivityOptions {
     onError?: (error: Error) => Promise<ActivityResult>;
 }
 
-@Component({ selector: 'sequence' })
+@Directive({ selector: 'sequence' })
 export class SequenceActivity extends Activity {
 
     /**

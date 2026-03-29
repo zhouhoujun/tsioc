@@ -1,5 +1,5 @@
 import { Activity, ActivityContext, ActivityResult } from './Activity';
-import { Component, Attribute } from '@tsdi/components';
+import { Directive, Attribute } from '@tsdi/components';
 
 
 
@@ -26,7 +26,7 @@ export interface ConfirmActivityOptions {
     cancelText?: string;
 }
 
-@Component({ selector: 'confirm' })
+@Directive({ selector: 'confirm' })
 export class ConfirmActivity extends Activity {
 
     @Attribute()

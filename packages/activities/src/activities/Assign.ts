@@ -1,11 +1,11 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface AssignActivityContext extends ActivityContext {
     variables?: Record<string, any>;
 }
 
-@Component({ selector: 'assign' })
+@Directive({ selector: 'assign' })
 export class AssignActivity extends Activity {
 
     @Attribute()

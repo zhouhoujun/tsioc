@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -44,7 +44,7 @@ export interface TryCatchActivityOptions {
     defaultRethrow?: boolean;
 }
 
-@Component({ selector: 'try_catch'})
+@Directive({ selector: 'try_catch'})
 export class TryCatchActivity extends Activity {
 
     /**

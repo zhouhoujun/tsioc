@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type EventHandler = (eventData: any, context: ActivityContext) => Promise<any> | any;
@@ -7,7 +7,7 @@ export interface EmitActivityContext extends ActivityContext {
     events?: Map<string, any[]>;
 }
 
-@Component({ selector: 'emit' })
+@Directive({ selector: 'emit' })
 export class EmitActivity extends Activity {
 
     @Attribute()
@@ -55,7 +55,7 @@ export class EmitActivity extends Activity {
     }
 }
 
-@Component({ selector: 'wait' })
+@Directive({ selector: 'wait' })
 export class WaitActivity extends Activity {
 
     @Attribute()
@@ -142,7 +142,7 @@ export class WaitActivity extends Activity {
     }
 }
 
-@Component({ selector: 'on' })
+@Directive({ selector: 'on' })
 export class OnActivity extends Activity {
 
     @Attribute()

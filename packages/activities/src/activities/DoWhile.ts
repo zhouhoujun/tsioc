@@ -1,4 +1,4 @@
-import { Component } from '@tsdi/components';
+import { Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -41,7 +41,7 @@ export interface DoWhileActivityOptions {
     defaultInterval?: number;
 }
 
-@Component({
+@Directive({
     selector: 'dowhile'
 })
 export class DoWhileActivity implements Activity {

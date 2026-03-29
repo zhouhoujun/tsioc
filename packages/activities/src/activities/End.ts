@@ -1,9 +1,9 @@
-import { Component } from '@tsdi/components';
+import { Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
 
-@Component({ selector: 'end'})
+@Directive({ selector: 'end'})
 export class EndActivity extends Activity {
     
     async execute(context: ActivityContext): Promise<ActivityResult> {

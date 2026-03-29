@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type ValidatorFunction = (value: any, context: ActivityContext) => boolean | string | Promise<boolean | string>;
@@ -14,7 +14,7 @@ export interface ValidateActivityContext extends ActivityContext {
     validationErrors?: Record<string, string[]>;
 }
 
-@Component({ selector: 'validate' })
+@Directive({ selector: 'validate' })
 export class ValidateActivity extends Activity {
 
     @Attribute()
@@ -77,7 +77,7 @@ export class ValidateActivity extends Activity {
     }
 }
 
-@Component({ selector: 'required' })
+@Directive({ selector: 'required' })
 export class RequiredActivity extends Activity {
 
     @Attribute()
@@ -101,7 +101,7 @@ export class RequiredActivity extends Activity {
     }
 }
 
-@Component({ selector: 'range' })
+@Directive({ selector: 'range' })
 export class RangeActivity extends Activity {
 
     @Attribute()
@@ -152,7 +152,7 @@ export class RangeActivity extends Activity {
     }
 }
 
-@Component({ selector: 'pattern' })
+@Directive({ selector: 'pattern' })
 export class PatternActivity extends Activity {
 
     @Attribute()

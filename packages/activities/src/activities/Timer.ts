@@ -1,4 +1,4 @@
-import { Component, Attribute } from '@tsdi/components';
+import { Directive, Attribute } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface TimerActivityOptions {
@@ -11,7 +11,7 @@ export interface TimerActivityOptions {
     body?: Activity;
 }
 
-@Component({ selector: 'timer' })
+@Directive({ selector: 'timer' })
 export class TimerActivity extends Activity {
 
     private timerId: any = null;

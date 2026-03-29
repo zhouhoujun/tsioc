@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface DelayActivityOptions {
@@ -6,7 +6,7 @@ export interface DelayActivityOptions {
     body?: Activity;
 }
 
-@Component({ selector: 'delay' })
+@Directive({ selector: 'delay' })
 export class DelayActivity extends Activity {
 
     /**

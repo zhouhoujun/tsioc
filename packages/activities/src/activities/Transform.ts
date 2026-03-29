@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type TransformFunction = (input: any, context: ActivityContext) => any;
@@ -7,7 +7,7 @@ export interface TransformActivityContext extends ActivityContext {
     input?: any;
 }
 
-@Component({ selector: 'transform' })
+@Directive({ selector: 'transform' })
 export class TransformActivity extends Activity {
 
     @Attribute()
@@ -56,7 +56,7 @@ export class TransformActivity extends Activity {
     }
 }
 
-@Component({ selector: 'map' })
+@Directive({ selector: 'map' })
 export class MapActivity extends Activity {
 
     @Attribute()
@@ -86,7 +86,7 @@ export class MapActivity extends Activity {
     }
 }
 
-@Component({ selector: 'filter' })
+@Directive({ selector: 'filter' })
 export class FilterActivity extends Activity {
 
     @Attribute()
@@ -116,7 +116,7 @@ export class FilterActivity extends Activity {
     }
 }
 
-@Component({ selector: 'reduce' })
+@Directive({ selector: 'reduce' })
 export class ReduceActivity extends Activity {
 
     @Attribute()

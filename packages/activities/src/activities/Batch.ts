@@ -1,11 +1,11 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface BatchActivityContext extends ActivityContext {
     batchResults?: any[];
 }
 
-@Component({ selector: 'batch' })
+@Directive({ selector: 'batch' })
 export class BatchActivity extends Activity {
 
     @Attribute()
@@ -122,7 +122,7 @@ export class BatchActivity extends Activity {
     }
 }
 
-@Component({ selector: 'merge' })
+@Directive({ selector: 'merge' })
 export class MergeActivity extends Activity {
 
     @Attribute()
@@ -203,7 +203,7 @@ export class MergeActivity extends Activity {
     }
 }
 
-@Component({ selector: 'split' })
+@Directive({ selector: 'split' })
 export class SplitActivity extends Activity {
 
     @Attribute()

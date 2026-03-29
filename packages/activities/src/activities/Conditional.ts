@@ -1,9 +1,9 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
 
-@Component({
+@Directive({
     selector: 'conditional'
 })
 export class ConditionalActivity extends Activity {

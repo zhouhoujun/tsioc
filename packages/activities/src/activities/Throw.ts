@@ -1,5 +1,5 @@
 import { Activity, ActivityContext, ActivityResult } from './Activity';
-import { Component, Attribute } from '@tsdi/components';
+import { Directive, Attribute } from '@tsdi/components';
 
 export interface ThrowActivityContext extends ActivityContext {
     /**
@@ -27,7 +27,7 @@ export interface ThrowActivityOptions {
     defaultErrorCode?: string | number;
 }
 
-@Component({ selector: 'throw' })
+@Directive({ selector: 'throw' })
 export class ThrowActivity extends Activity {
 
     @Attribute()

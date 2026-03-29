@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -12,7 +12,7 @@ export interface LogActivityContext extends ActivityContext {
     };
 }
 
-@Component({ selector: 'log' })
+@Directive({ selector: 'log' })
 export class LogActivity extends Activity {
 
     @Attribute()

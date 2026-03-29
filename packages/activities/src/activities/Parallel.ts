@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -43,7 +43,7 @@ export interface ParallelActivityOptions {
     defaultErrorStrategy?: 'continue' | 'stop' | 'throw';
 }
 
-@Component({ selector: 'parallel' })
+@Directive({ selector: 'parallel' })
 export class ParallelActivity extends Activity {
    
     /**

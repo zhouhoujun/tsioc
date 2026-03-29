@@ -1,5 +1,5 @@
 import { Invocation, isFunction, isString, AbstractType } from '@tsdi/ioc';
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type InvokeFn = (context: ActivityContext, ...args: any[]) => Promise<any>;
@@ -12,7 +12,7 @@ export interface InvokeActivityOptions {
     backoff?: number;
 }
 
-@Component({ selector: 'invoke' })
+@Directive({ selector: 'invoke' })
 export class InvokeActivity extends Activity {
 
 

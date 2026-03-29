@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { CaseActivity } from './Case';
 
@@ -9,7 +9,7 @@ export interface SwitchActivityOptions {
     breakOnMatch?: boolean;
 }
 
-@Component({ selector: 'switch' })
+@Directive({ selector: 'switch' })
 export class SwitchActivity<T> extends Activity {
 
 

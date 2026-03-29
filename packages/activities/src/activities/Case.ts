@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface CaseActivityOptions {
@@ -7,7 +7,7 @@ export interface CaseActivityOptions {
     onError?: (context: ActivityContext) => Promise<ActivityResult>;
 }
 
-@Component({ selector: 'case' })
+@Directive({ selector: 'case' })
 export class CaseActivity<T> extends Activity {
 
     @Attribute('case') caseFlag!: T;
