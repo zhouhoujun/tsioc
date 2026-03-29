@@ -1,5 +1,5 @@
-import { Injectable, Destroyable, OnDestroy, Injector, Inject, Optional } from '@tsdi/ioc';
-import { Module } from '@tsdi/ioc';
+import { Injectable, Destroyable, OnDestroy, Module, Inject, Optional } from '@tsdi/ioc';
+import { Runner } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
 import { WorkflowModule, ActivityContext } from '@tsdi/activities';
 import { CompileActivity } from './CompileActivity';
@@ -30,6 +30,7 @@ export class CompilerRunner implements OnDestroy {
         @Optional() @Inject('COMPILER_OPTIONS') private options?: CompilerOptions
     ) {}
 
+    @Runner()
     async run(): Promise<void> {
         const opts = this.options || {};
         const src = opts.src || 'src/**/*.ts';

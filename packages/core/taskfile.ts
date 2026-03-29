@@ -5,7 +5,7 @@ if (process.cwd() === __dirname) {
     Workflow.run(CompilerModule, {
         baseURL: __dirname,
         src: 'src/**/*.ts',
-        outDir: '../../dist/boot',
+        outDir: '../../dist/core',
         options: {
             target: 'es2020',
             module: 'commonjs',
