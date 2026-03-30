@@ -1,196 +1,104 @@
-import * as ts from 'typescript';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Attribute, Component, Directive } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 import * as globby from 'globby';
 import * as esbuild from 'esbuild';
-import { DiagnosticInfo, SourceFile } from './CompileActivity';
+import { DiagnosticInfo, SourceFile } from '../CompileActivity';
 
-/**
- * esbuild compile options
- */
-export interface EsbuildCompileOptions {
-    /** Compilation target: es5, es2015, es2016, es2017, es2018, es2019, es2020, es2021, es2022, esnext */
+export interface EsbuildBuildOptions {
     target?: string;
-    /** Output format: iife, cjs, esm */
     format?: 'iife' | 'cjs' | 'esm';
-    /** Platform: browser, node, neutral */
     platform?: 'browser' | 'node' | 'neutral';
-    /** Generate source maps */
     sourcemap?: boolean | 'linked' | 'external' | 'inline';
-    /** Minify output */
     minify?: boolean;
-    /** Generate declaration files (.d.ts) */
-    declaration?: boolean;
-    /** External dependencies to exclude from bundle */
-    external?: string[];
-    /** Define global constants */
-    define?: Record<string, string>;
-    /** Enable tree shaking */
-    treeShaking?: boolean;
-    /** Bundle mode - bundle all dependencies */
     bundle?: boolean;
-    /** Split chunks for code splitting */
     splitting?: boolean;
-    /** Output file name for bundle */
     outfile?: string;
-    /** Output directory for multiple files */
     outdir?: string;
-    /** Entry points for bundling */
-    entryPoints?: string[];
-    /** Metafile for analysis */
+    external?: string[];
+    define?: Record<string, string>;
     metafile?: boolean;
-    /** Banner to prepend */
-    banner?: string;
-    /** Footer to append */
-    footer?: string;
-    /** JSX mode */
-    jsx?: 'transform' | 'preserve' | 'automatic';
-    /** JSX factory function */
-    jsxFactory?: string;
-    /** JSX fragment function */
-    jsxFragment?: string;
-    /** Keep names for minification */
-    keepNames?: boolean;
-    /** Legal comments handling */
-    legalComments?: 'none' | 'inline' | 'eof' | 'linked' | 'external';
-    /** Main fields for resolution */
-    mainFields?: string[];
-    /** Conditions for resolution */
-    conditions?: string[];
-    /** Node modules directories */
-    nodePaths?: string[];
-    /** Plugins */
-    plugins?: any[];
-    /** Loader for file types */
-    loader?: Record<string, 'js' | 'jsx' | 'ts' | 'tsx' | 'css' | 'json' | 'text' | 'base64' | 'dataurl' | 'file' | 'binary' | 'copy' | 'empty'>;
 }
 
-/**
- * esbuild compile result
- */
-export interface EsbuildCompileResult {
+export interface EsbuildBuildResult {
     success: boolean;
     errors: DiagnosticInfo[];
     warnings: DiagnosticInfo[];
     outputFiles?: string[];
     metafile?: any;
     duration: number;
-    error?: Error;
 }
 
-/**
- * EsbuildCompileActivity - High-performance TypeScript compiler using esbuild
- * 
- * Features:
- * - 10-100x faster than tsc
- * - Built-in bundling support
- * - Tree shaking
- * - Minification
- * - Source maps
- * - Code splitting
- * - JSX/TSX support
- */
-@Directive({ selector: 'esbuild' })
-export class EsbuildCompileActivity extends Activity {
+@Directive({ selector: 'esbuild-build' })
+export class EsbuildBuildActivity extends Activity {
 
-    /** Source files pattern */
     @Attribute()
     src = 'src/**/*.ts';
 
-    /** Output directory */
     @Attribute()
     outDir = 'lib';
 
-    /** Entry point for bundling (e.g., 'src/index.ts') */
     @Attribute()
     entryPoint?: string;
 
-    /** Output file name for bundle (e.g., 'bundle.js') */
     @Attribute()
     outfile?: string;
 
-    /** Enable bundling mode */
     @Attribute()
     bundle = false;
 
-    /** Minify output */
     @Attribute()
     minify = false;
 
-    /** Generate source maps */
     @Attribute()
     sourcemap: boolean | 'linked' | 'external' | 'inline' = true;
 
-    /** Target environment */
     @Attribute()
-    target: string = 'es2020';
+    target = 'es2020';
 
-    /** Output format */
     @Attribute()
     format: 'iife' | 'cjs' | 'esm' = 'cjs';
 
-    /** Platform */
     @Attribute()
     platform: 'browser' | 'node' | 'neutral' = 'node';
 
-    /** Generate declaration files */
-    @Attribute()
-    declaration = true;
-
-    /** External dependencies */
     @Attribute()
     external: string[] = [];
 
-    /** Define constants */
     @Attribute()
     define: Record<string, string> = {};
 
-    /** Watch mode */
-    @Attribute()
-    watch = false;
-
-    /** Exclude patterns */
     @Attribute()
     exclude: string[] = ['node_modules', '**/*.spec.ts', '**/*.test.ts'];
 
-    /** Additional esbuild options */
     @Attribute()
-    options: EsbuildCompileOptions = {};
+    options: EsbuildBuildOptions = {};
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
         const startTime = Date.now();
-        
+
         try {
-            // Check if bundling mode
             if (this.bundle && this.entryPoint) {
                 const result = await this.bundleFiles();
                 return {
                     success: result.success,
-                    data: result,
-                    error: result.error
+                    data: { ...result, duration: Date.now() - startTime },
+                    error: result.success ? undefined : new Error(`${result.errors.length} build error(s)`)
                 };
             }
 
-            // Standard compilation mode
             const files = await this.getSourceFiles();
-            const results: EsbuildCompileResult[] = [];
+            const results: EsbuildBuildResult[] = [];
 
             for (const file of files) {
                 const result = await this.compileFile(file);
                 results.push(result);
             }
 
-            // Generate declarations if needed
-            if (this.declaration) {
-                await this.generateDeclarations();
-            }
-
             const success = results.every(r => r.success);
             const allErrors = results.flatMap(r => r.errors);
             const allWarnings = results.flatMap(r => r.warnings);
-            const duration = Date.now() - startTime;
 
             return {
                 success,
@@ -201,7 +109,7 @@ export class EsbuildCompileActivity extends Activity {
                     warningCount: allWarnings.length,
                     errors: allErrors,
                     warnings: allWarnings,
-                    duration
+                    duration: Date.now() - startTime
                 },
                 error: !success ? new Error(`${allErrors.length} file(s) failed to compile`) : undefined
             };
@@ -213,9 +121,6 @@ export class EsbuildCompileActivity extends Activity {
         }
     }
 
-    /**
-     * Get source files matching pattern
-     */
     private async getSourceFiles(): Promise<SourceFile[]> {
         const patterns = [this.src, ...this.exclude.map(e => `!${e}`)];
         const filePaths = await globby(patterns, { cwd: process.cwd() });
@@ -228,10 +133,7 @@ export class EsbuildCompileActivity extends Activity {
         }));
     }
 
-    /**
-     * Compile a single file using esbuild
-     */
-    private async compileFile(sourceFile: SourceFile): Promise<EsbuildCompileResult> {
+    private async compileFile(sourceFile: SourceFile): Promise<EsbuildBuildResult> {
         const startTime = Date.now();
         const outFile = path.join(this.outDir, sourceFile.fileName.replace(/\.ts$/, '.js'));
 
@@ -287,19 +189,15 @@ export class EsbuildCompileActivity extends Activity {
                     code: 0
                 }],
                 warnings: [],
-                duration: Date.now() - startTime,
-                error: error as Error
+                duration: Date.now() - startTime
             };
         }
     }
 
-    /**
-     * Bundle files into a single output
-     */
-    private async bundleFiles(): Promise<EsbuildCompileResult> {
+    private async bundleFiles(): Promise<EsbuildBuildResult> {
         const startTime = Date.now();
 
-        const outfile = this.outfile 
+        const outfile = this.outfile
             ? path.join(this.outDir, this.outfile)
             : path.join(this.outDir, 'bundle.js');
 
@@ -357,50 +255,8 @@ export class EsbuildCompileActivity extends Activity {
                     code: 0
                 }],
                 warnings: [],
-                duration: Date.now() - startTime,
-                error: error as Error
+                duration: Date.now() - startTime
             };
-        }
-    }
-
-    /**
-     * Generate TypeScript declaration files using tsc
-     */
-    private async generateDeclarations(): Promise<void> {
-        const files = await this.getSourceFiles();
-        
-        const compilerOptions: ts.CompilerOptions = {
-            target: ts.ScriptTarget.ES2020,
-            module: ts.ModuleKind.CommonJS,
-            declaration: true,
-            emitDeclarationOnly: true,
-            outDir: this.outDir,
-            declarationMap: this.sourcemap === true || this.sourcemap === 'linked',
-            skipLibCheck: true,
-            esModuleInterop: true,
-            experimentalDecorators: true,
-            emitDecoratorMetadata: true
-        };
-
-        const program = ts.createProgram(
-            files.map(f => f.filePath),
-            compilerOptions
-        );
-
-        const emitResult = program.emit();
-        
-        const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
-        
-        if (diagnostics.length > 0) {
-            const messages = diagnostics.map(d => {
-                const message = ts.flattenDiagnosticMessageText(d.messageText, '\n');
-                if (d.file) {
-                    const { line, character } = d.file.getLineAndCharacterOfPosition(d.start!);
-                    return `${d.file.fileName} (${line + 1},${character + 1}): ${message}`;
-                }
-                return message;
-            });
-            console.warn('Declaration generation warnings:', messages.join('\n'));
         }
     }
 }

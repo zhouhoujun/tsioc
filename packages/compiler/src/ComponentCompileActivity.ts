@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 import { CompileOptions, CompileResult, DiagnosticInfo, SourceFile } from './CompileActivity';
 
@@ -19,7 +19,7 @@ export interface ComponentCompileResult extends CompileResult {
     styles?: string[];
 }
 
-@Component({ selector: 'component-compile' })
+@Directive({ selector: 'component-compile' })
 export class ComponentCompileActivity extends Activity {
 
     @Attribute()

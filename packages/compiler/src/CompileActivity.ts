@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { Type, Injectable, token } from '@tsdi/ioc';
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 
 export interface CompileOptions {
@@ -43,7 +43,7 @@ export interface SourceFile {
 
 export const COMPILER_OPTIONS = token<CompileOptions>('COMPILER_OPTIONS');
 
-@Component({ selector: 'compile' })
+@Directive({ selector: 'compile' })
 export class CompileActivity extends Activity {
 
     @Attribute()

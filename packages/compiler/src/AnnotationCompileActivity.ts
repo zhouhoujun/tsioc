@@ -1,7 +1,7 @@
 import * as ts from 'typescript';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 import * as globby from 'globby';
 import { DiagnosticInfo, SourceFile } from './CompileActivity';
@@ -41,7 +41,7 @@ export interface FlatModuleIndex {
     metadata: Record<string, string>;
 }
 
-@Component({ selector: 'annotation-compile' })
+@Directive({ selector: 'annotation-compile' })
 export class AnnotationCompileActivity extends Activity {
 
     @Attribute()

@@ -1,8 +1,10 @@
 import expect = require('expect');
-import { 
+import {
     CompileActivity, ComponentCompileActivity, TestGenerateActivity,
-    CompilerService, CompileOptions, DiagnosticInfo,
-    EsbuildCompileActivity, EsbuildCompileOptions, EsbuildCompileResult
+    CompileOptions, DiagnosticInfo,
+    EsbuildCompileActivity, EsbuildCompileOptions, EsbuildCompileResult,
+    EsbuildComponentCompileActivity, EsbuildComponentCompileOptions,
+    ComponentCompileInfo, AngularOutputStyle
 } from '../src';
 
 describe('Compiler', () => {
@@ -244,80 +246,6 @@ describe('Compiler', () => {
         });
     });
 
-    describe('CompilerService', () => {
-        it('should create instance', () => {
-            const service = new CompilerService();
-            expect(service).toBeDefined();
-        });
-
-        it('should compile with default options', async () => {
-            const service = new CompilerService();
-            
-            const result = await service.compile('nonexistent/**/*.ts', {});
-            
-            expect(result.success).toBe(true);
-            expect(result.totalErrors).toBe(0);
-        });
-
-        it('should compile components with default options', async () => {
-            const service = new CompilerService();
-            
-            const result = await service.compileComponents('nonexistent/**/*.ts', {});
-            
-            expect(result.success).toBe(true);
-            expect(result.totalErrors).toBe(0);
-        });
-
-        it('should compile with esbuild', async () => {
-            const service = new CompilerService();
-            
-            const result = await service.compileWithEsbuild('nonexistent/**/*.ts', {});
-            
-            expect(result.success).toBe(true);
-            expect(result.totalErrors).toBe(0);
-        });
-
-        it('should report duration', async () => {
-            const service = new CompilerService();
-            
-            const result = await service.compile('nonexistent/**/*.ts');
-            
-            expect(result.duration).toBeDefined();
-            expect(result.duration).toBeGreaterThanOrEqual(0);
-        });
-
-        it('should accept compile options', async () => {
-            const service = new CompilerService();
-            const options: CompileOptions = {
-                target: 'es2017',
-                module: 'es2015',
-                declaration: true,
-                sourceMap: true,
-                strict: true
-            };
-            
-            const result = await service.compile('nonexistent/**/*.ts', options);
-            
-            expect(result.success).toBe(true);
-        });
-
-        it('should accept esbuild options', async () => {
-            const service = new CompilerService();
-            const options: EsbuildCompileOptions = {
-                target: 'es2020',
-                format: 'esm',
-                platform: 'browser',
-                bundle: true,
-                minify: true,
-                sourcemap: true
-            };
-            
-            const result = await service.compileWithEsbuild('nonexistent/**/*.ts', options);
-            
-            expect(result.success).toBe(true);
-        });
-    });
-
     describe('CompileOptions', () => {
         it('should support es5 target', () => {
             const options: CompileOptions = {
@@ -410,6 +338,197 @@ describe('Compiler', () => {
             };
             
             expect(diag.severity).toBe('info');
+        });
+    });
+
+    describe('EsbuildComponentCompileActivity', () => {
+        it('should create instance', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            expect(activity).toBeDefined();
+        });
+
+        it('should have default src pattern', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            expect(activity.src).toBe('src/**/*.ts');
+        });
+
+        it('should have default outDir', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            expect(activity.outDir).toBe('lib');
+        });
+
+        it('should have default outputStyle', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            expect(activity.outputStyle).toBe('esm2020');
+        });
+
+        it('should accept custom outputStyle', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            activity.outputStyle = 'esm2025';
+            expect(activity.outputStyle).toBe('esm2025');
+        });
+
+        it('should accept fesm2025 outputStyle', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            activity.outputStyle = 'fesm2025';
+            expect(activity.outputStyle).toBe('fesm2025');
+        });
+
+        it('should have generateMetadata default true', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            expect(activity.generateMetadata).toBe(true);
+        });
+
+        it('should accept custom options', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            activity.src = 'lib/**/*.ts';
+            activity.outDir = 'dist';
+            activity.outputStyle = 'fesm2025';
+            activity.generateMetadata = false;
+            activity.inlineStyles = true;
+            activity.inlineTemplate = true;
+
+            expect(activity.src).toBe('lib/**/*.ts');
+            expect(activity.outDir).toBe('dist');
+            expect(activity.outputStyle).toBe('fesm2025');
+            expect(activity.generateMetadata).toBe(false);
+            expect(activity.inlineStyles).toBe(true);
+            expect(activity.inlineTemplate).toBe(true);
+        });
+
+        it('should handle empty source', async () => {
+            const activity = new EsbuildComponentCompileActivity();
+            activity.src = 'nonexistent/**/*.ts';
+            
+            const result = await activity.execute({});
+            
+            expect(result.success).toBe(true);
+            expect(result.data?.totalFiles).toBe(0);
+        });
+    });
+
+    describe('EsbuildComponentCompileOptions', () => {
+        it('should support esm2020 output style', () => {
+            const options: EsbuildComponentCompileOptions = {
+                outDir: 'dist'
+            };
+            expect(options.outDir).toBe('dist');
+        });
+
+        it('should support target option', () => {
+            const options: EsbuildComponentCompileOptions = {
+                target: 'es2020'
+            };
+            expect(options.target).toBe('es2020');
+        });
+
+        it('should support format option', () => {
+            const options: EsbuildComponentCompileOptions = {
+                format: 'esm'
+            };
+            expect(options.format).toBe('esm');
+        });
+
+        it('should support bundle option', () => {
+            const options: EsbuildComponentCompileOptions = {
+                bundle: true
+            };
+            expect(options.bundle).toBe(true);
+        });
+
+        it('should support minify option', () => {
+            const options: EsbuildComponentCompileOptions = {
+                minify: true
+            };
+            expect(options.minify).toBe(true);
+        });
+
+        it('should support generateMetadata option', () => {
+            const options: EsbuildComponentCompileOptions = {
+                generateMetadata: false
+            };
+            expect(options.generateMetadata).toBe(false);
+        });
+
+        it('should support flatModuleOutFile option', () => {
+            const options: EsbuildComponentCompileOptions = {
+                flatModuleOutFile: 'index.metadata.json'
+            };
+            expect(options.flatModuleOutFile).toBe('index.metadata.json');
+        });
+    });
+
+    describe('ComponentCompileInfo', () => {
+        it('should create component info', () => {
+            const info: ComponentCompileInfo = {
+                name: 'MyComponent',
+                decoratorType: 'Component',
+                selector: 'app-my',
+                templateUrl: './my.component.html',
+                styleUrls: ['./my.component.css'],
+                inputs: ['title'],
+                outputs: ['change']
+            };
+            
+            expect(info.name).toBe('MyComponent');
+            expect(info.decoratorType).toBe('Component');
+            expect(info.selector).toBe('app-my');
+            expect(info.templateUrl).toBe('./my.component.html');
+            expect(info.styleUrls).toHaveLength(1);
+            expect(info.inputs).toContain('title');
+            expect(info.outputs).toContain('change');
+        });
+
+        it('should create directive info', () => {
+            const info: ComponentCompileInfo = {
+                name: 'MyDirective',
+                decoratorType: 'Directive',
+                selector: '[myAttr]'
+            };
+            
+            expect(info.decoratorType).toBe('Directive');
+            expect(info.selector).toBe('[myAttr]');
+        });
+
+        it('should create pipe info', () => {
+            const info: ComponentCompileInfo = {
+                name: 'MyPipe',
+                decoratorType: 'Pipe',
+                inputs: ['value']
+            };
+            
+            expect(info.decoratorType).toBe('Pipe');
+        });
+
+        it('should create service info', () => {
+            const info: ComponentCompileInfo = {
+                name: 'MyService',
+                decoratorType: 'Injectable'
+            };
+            
+            expect(info.decoratorType).toBe('Injectable');
+        });
+    });
+
+    describe('AngularOutputStyle', () => {
+        it('should create output style dirs for esm2020', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            (activity as any).outputStyle = 'esm2020';
+            const dirs = (activity as any).getAngularOutputDirs('dist');
+            
+            expect(dirs.esm).toBe('dist/esm2020');
+            expect(dirs.fesm).toBe('dist/fesm2020');
+            expect(dirs.dts).toBe('dist/esm2020');
+            expect(dirs.metadata).toBe('dist/esm2020');
+        });
+
+        it('should create output style dirs for fesm2025', () => {
+            const activity = new EsbuildComponentCompileActivity();
+            (activity as any).outputStyle = 'fesm2025';
+            const dirs = (activity as any).getAngularOutputDirs('dist');
+            
+            expect(dirs.esm).toBe('dist/esm2025');
+            expect(dirs.fesm).toBe('dist/fesm2025');
         });
     });
 });
