@@ -4,3 +4,6 @@ export * from './TestGenerateActivity';
 export * from './EsbuildCompileActivity';
 export * from './CompilerService';
 export * from './CompilerModule';
+export * from './AnnotationCompiler';
+export * from './MetadataCompiler';
+export * from './AnnotationCompileActivity';
