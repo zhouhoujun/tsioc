@@ -1,277 +1,506 @@
 import expect = require('expect');
 import * as ts from 'typescript';
-import { 
-    AnnotationCompiler, 
-    CompiledTypeDef,
-    createAnnotationCompiler 
-} from '../src/AnnotationCompiler';
-import { 
-    typeAnn, 
-    Annotation, 
-    AnnotationType,
-    getTypeName,
-    isType,
-    getDef
-} from '@tsdi/ioc';
+import * as path from 'path';
+import * as fs from 'fs';
+import {
+    MetadataGenerator,
+    ClassMetadata,
+    DecoratorMetadata,
+    MemberMetadata,
+    ModuleMetadata,
+    MetadataCompilerOptions
+} from '../src/activities/MetadataGenerator';
+import { AnnotationCompileActivity, AnnotationCompileOptions } from '../src/activities/AnnotationCompileActivity';
 
-describe('AnnotationCompiler IoC Integration', () => {
-    
-    describe('AnnotationCompiler', () => {
-        it('should create transformer factory', () => {
-            const compiler = new AnnotationCompiler();
+describe('MetadataGenerator', () => {
+    describe('constructor', () => {
+        it('should create MetadataGenerator with default options', () => {
+            const generator = new MetadataGenerator();
+            expect(generator).toBeDefined();
+        });
+
+        it('should accept custom options', () => {
+            const options: MetadataCompilerOptions = {
+                version: 5,
+                includeClassMetadata: false,
+                includeDecoratorArgs: false,
+                flattenDeclarations: false
+            };
+            const generator = new MetadataGenerator(options);
+            expect(generator).toBeDefined();
+        });
+    });
+
+    describe('compile', () => {
+        it('should extract class metadata from source file', () => {
+            const sourceCode = `
+                @Injectable()
+                class TestService {
+                    @Autowired()
+                    dependency: DependencyService;
+                    
+                    doWork(): void {}
+                }
+            `;
             
-            const program = ts.createProgram({
-                rootNames: [],
-                options: {
-                    target: ts.ScriptTarget.ES2020,
-                    module: ts.ModuleKind.CommonJS,
-                    experimentalDecorators: true,
-                    emitDecoratorMetadata: true
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata).toBeDefined();
+            expect(metadata.length).toBeGreaterThan(0);
+            expect(metadata[0].name).toBe('TestService');
+        });
+
+        it('should skip anonymous classes in compile (requires node.name)', () => {
+            const sourceCode = `class {}`;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata).toBeDefined();
+            expect(metadata.length).toBe(0);
+        });
+
+        it('should extract decorators', () => {
+            const sourceCode = `
+                @Injectable({ providedIn: 'root' })
+                class DecoratedService {}
+            `;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator({ includeDecoratorArgs: true });
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata[0].decorators).toBeDefined();
+            expect(metadata[0].decorators!.length).toBeGreaterThan(0);
+            expect(metadata[0].decorators![0].name).toBe('Injectable');
+        });
+
+        it('should extract constructor parameters', () => {
+            const sourceCode = `
+                class ServiceWithCtor {
+                    constructor(private logger: Logger, config: Config) {}
+                }
+            `;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata[0].members).toBeDefined();
+            expect(metadata[0].members!['__ctor__']).toBeDefined();
+            expect(metadata[0].members!['__ctor__'][0].parameters).toBeDefined();
+            expect(metadata[0].members!['__ctor__'][0].parameters!.length).toBe(2);
+        });
+
+        it('should extract method decorators', () => {
+            const sourceCode = `
+                class ServiceWithMethods {
+                    @Before('execution(* doWork)')
+                    doWork(): void {}
+                }
+            `;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata[0].members).toBeDefined();
+            expect(metadata[0].members!['doWork']).toBeDefined();
+            expect(metadata[0].members!['doWork'][0].decorators).toBeDefined();
+            expect(metadata[0].members!['doWork'][0].decorators![0].name).toBe('Before');
+        });
+    });
+
+    describe('compileAnnotation', () => {
+        it('should compile annotation from class declaration', () => {
+            const sourceCode = `
+                abstract class AbstractService {
+                    constructor(private logger: Logger) {}
+                    abstract doWork(): void;
+                }
+            `;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            let result: any = null;
+            
+            ts.forEachChild(sourceFile, (node) => {
+                if (ts.isClassDeclaration(node)) {
+                    result = generator.compileAnnotation(node, sourceFile);
                 }
             });
             
-            const factory = compiler.createTransformerFactory(program);
-            expect(factory).toBeDefined();
-            expect(typeof factory).toBe('function');
+            expect(result).toBeDefined();
+            expect(result.name).toBe('AbstractService');
+            expect(result.abstract).toBe(true);
+            expect(result.methods).toBeDefined();
+            expect(result.methods!['constructor']).toBeDefined();
         });
 
-        it('should create CompiledTypeDef structure', () => {
-            const typeDef: CompiledTypeDef = {
-                name: 'TestService',
-                type: {} as any,
-                compiled: true,
-                provides: ['TestToken'],
-                providers: [],
-                classDefs: [{
-                    decorType: 'class',
-                    decorator: 'Injectable',
-                    metadata: { providedIn: 'root' }
-                }],
-                propDefs: [],
-                methodDefs: [],
-                paramDefs: {}
+        it('should extract method parameters', () => {
+            const sourceCode = `
+                class MethodService {
+                    doSomething(arg1: string, arg2: number): boolean {
+                        return true;
+                    }
+                }
+            `;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            let result: any = null;
+            
+            ts.forEachChild(sourceFile, (node) => {
+                if (ts.isClassDeclaration(node)) {
+                    result = generator.compileAnnotation(node, sourceFile);
+                }
+            });
+            
+            expect(result.methods!['doSomething']).toBeDefined();
+            expect(result.methods!['doSomething'].params).toHaveLength(2);
+            expect(result.methods!['doSomething'].returnType).toBeDefined();
+        });
+    });
+
+    describe('writeMetadataFile', () => {
+        it('should write module metadata to file', () => {
+            const tempDir = path.join(__dirname, 'temp');
+            if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir, { recursive: true });
+            }
+            
+            const outputPath = path.join(tempDir, 'metadata.json');
+            const moduleMeta: ModuleMetadata = {
+                __symbolic: 'module',
+                version: 4,
+                metadata: {
+                    TestClass: {
+                        __symbolic: 'class',
+                        name: 'TestClass',
+                        decorators: [{ name: 'Injectable' }]
+                    }
+                },
+                origins: {
+                    TestClass: './test'
+                }
             };
             
-            expect(typeDef.name).toBe('TestService');
-            expect(typeDef.compiled).toBe(true);
-            expect(typeDef.provides).toContain('TestToken');
-            expect(typeDef.classDefs).toHaveLength(1);
+            const generator = new MetadataGenerator();
+            generator.writeMetadataFile(moduleMeta, outputPath);
+            
+            expect(fs.existsSync(outputPath)).toBe(true);
+            
+            const written = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
+            expect(written.__symbolic).toBe('module');
+            expect(written.metadata.TestClass).toBeDefined();
+            
+            fs.unlinkSync(outputPath);
+            fs.rmdirSync(tempDir);
         });
     });
 
-    describe('typeAnn constant', () => {
-        it('should export typeAnn as ƿAnn', () => {
-            expect(typeAnn).toBe('ƿAnn');
+    describe('decorator parsing', () => {
+        it('should parse simple decorator without arguments', () => {
+            const sourceCode = `@Injectable class SimpleDecorated {}`;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata[0].decorators).toHaveLength(1);
+            expect(metadata[0].decorators![0].name).toBe('Injectable');
+            expect(metadata[0].decorators![0].arguments).toBeUndefined();
         });
 
-        it('should be usable as method name', () => {
-            class TestClass {
-                static ƿAnn(): Annotation {
-                    return { name: 'TestClass', type: TestClass };
-                }
-            }
+        it('should parse decorator with object arguments', () => {
+            const sourceCode = `@Component({ selector: 'app-test', template: '<div></div>' }) class TestComp {}`;
             
-            const ann = (TestClass as AnnotationType).ƿAnn?.();
-            expect(ann).toBeDefined();
-            expect(ann?.name).toBe('TestClass');
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator({ includeDecoratorArgs: true });
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata[0].decorators![0].name).toBe('Component');
+            expect(metadata[0].decorators![0].arguments).toBeDefined();
+        });
+
+        it('should parse decorator with array arguments', () => {
+            const sourceCode = `@Providers([ServiceA, ServiceB]) class TestClass {}`;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator({ includeDecoratorArgs: true });
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            expect(metadata[0].decorators![0].name).toBe('Providers');
+            expect(metadata[0].decorators![0].arguments).toBeDefined();
         });
     });
 
-    describe('IoC container getDef', () => {
-        it('should retrieve annotation via getDef', () => {
-            class MyService {
-                static ƿAnn(): Partial<Annotation> {
-                    return { name: 'MyService', type: MyService };
+    describe('property decorators', () => {
+        it('should extract property decorators', () => {
+            const sourceCode = `
+                class PropertyClass {
+                    @Inject()
+                    private service: Service;
+                    
+                    @Autowired('optional')
+                    config: Config;
                 }
-            }
+            `;
             
-            const def = getDef(MyService);
-            expect(def).toBeDefined();
-            expect(def.name).toBe('MyService');
-            expect(def.type).toBe(MyService);
-        });
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
 
-        it('should fallback when no ƿAnn present', () => {
-            class NoAnnotationClass {}
+            const generator = new MetadataGenerator();
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
             
-            const def = getDef(NoAnnotationClass);
-            expect(def).toBeDefined();
-            expect(def.name).toBe('NoAnnotationClass');
+            expect(metadata[0].members!['service']).toBeDefined();
+            expect(metadata[0].members!['service'][0].decorators).toHaveLength(1);
+            expect(metadata[0].members!['service'][0].decorators![0].name).toBe('Inject');
+            
+            expect(metadata[0].members!['config']).toBeDefined();
+            expect(metadata[0].members!['config'][0].decorators![0].name).toBe('Autowired');
         });
     });
 
-    describe('getTypeName', () => {
-        it('should get type name from class with ƿAnn', () => {
-            class NamedService {
-                static ƿAnn(): Annotation {
-                    return { name: 'NamedService', type: NamedService };
+    describe('parameter decorators', () => {
+        it('should extract constructor parameter decorators', () => {
+            const sourceCode = `
+                class ParamClass {
+                    constructor(
+                        @Inject() service: Service,
+                        @Optional() config?: Config
+                    ) {}
                 }
-            }
+            `;
             
-            expect(getTypeName(NamedService)).toBe('NamedService');
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const generator = new MetadataGenerator();
+            const metadata = generator.compile(sourceFile, {} as ts.TypeChecker);
+            
+            const ctorParams = metadata[0].members!['__ctor__'][0].parameters;
+            expect(ctorParams).toHaveLength(2);
+            expect(ctorParams![0].decorators![0].name).toBe('Inject');
+            expect(ctorParams![1].optional).toBe(true);
+        });
+    });
+});
+
+describe('AnnotationCompileActivity', () => {
+    describe('constructor', () => {
+        it('should create AnnotationCompileActivity with default values', () => {
+            const activity = new AnnotationCompileActivity();
+            expect(activity).toBeDefined();
+            expect(activity.src).toBe('src/**/*.ts');
+            expect(activity.outDir).toBe('lib');
         });
 
-        it('should fallback to constructor name', () => {
-            class SimpleClass {}
-            expect(getTypeName(SimpleClass)).toBe('SimpleClass');
+        it('should accept custom attributes', () => {
+            const activity = Object.assign(new AnnotationCompileActivity(), {
+                src: 'custom/**/*.ts',
+                outDir: 'custom-out',
+                exclude: ['node_modules']
+            } as Partial<AnnotationCompileActivity>);
+            
+            expect(activity.src).toBe('custom/**/*.ts');
+            expect(activity.outDir).toBe('custom-out');
         });
     });
 
-    describe('isType', () => {
-        it('should recognize class with ƿAnn', () => {
-            class TypedService {
-                static ƿAnn(): Annotation {
-                    return { name: 'TypedService', type: TypedService };
-                }
-            }
-            expect(isType(TypedService)).toBe(true);
-        });
-    });
-
-    describe('Full annotation with decorator metadata', () => {
-        it('should include compiled flag', () => {
-            class CompiledService {
-                static ƿAnn(): CompiledTypeDef {
-                    return {
-                        name: 'CompiledService',
-                        type: CompiledService,
-                        compiled: true,
-                        provides: ['ServiceToken'],
-                        classDefs: [{
-                            decorType: 'class',
-                            decorator: 'Injectable'
-                        }],
-                        propDefs: [],
-                        methodDefs: [],
-                        paramDefs: {}
-                    };
-                }
+    describe('execute', () => {
+        it('should return success result with metadata', async () => {
+            const tempDir = path.join(__dirname, 'temp-anno-test');
+            const testFile = path.join(tempDir, 'test.ts');
+            
+            if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir, { recursive: true });
             }
             
-            const ann = (CompiledService as AnnotationType).ƿAnn?.() as CompiledTypeDef;
-            expect(ann?.compiled).toBe(true);
-            expect(ann?.provides).toContain('ServiceToken');
-        });
-
-        it('should support singleton flag', () => {
-            class SingletonService {
-                static ƿAnn(): CompiledTypeDef {
-                    return {
-                        name: 'SingletonService',
-                        type: SingletonService,
-                        compiled: true,
-                        singleton: true,
-                        classDefs: [{
-                            decorType: 'class',
-                            decorator: 'Singleton'
-                        }],
-                        propDefs: [],
-                        methodDefs: [],
-                        paramDefs: {}
-                    };
+            fs.writeFileSync(testFile, `
+                @Injectable()
+                class TestService {
+                    doWork(): void {}
                 }
-            }
+            `);
             
-            const ann = (SingletonService as AnnotationType).ƿAnn?.() as CompiledTypeDef;
-            expect(ann?.singleton).toBe(true);
-        });
-
-        it('should include method parameters', () => {
-            class ServiceWithParams {
-                static ƿAnn(): CompiledTypeDef {
-                    return {
-                        name: 'ServiceWithParams',
-                        type: ServiceWithParams,
-                        compiled: true,
-                        methods: {
-                            constructor: {
-                                params: [
-                                    { name: 'logger', type: Object as any },
-                                    { name: 'config', type: Object as any }
-                                ]
+            const activity = Object.assign(new AnnotationCompileActivity(), {
+                src: testFile,
+                outDir: path.join(tempDir, 'out'),
+                exclude: []
+            } as Partial<AnnotationCompileActivity>);
+            
+            const result = await activity.execute({} as any);
+            
+            expect(result.success).toBe(true);
+            expect(result.data).toBeDefined();
+            
+            // Cleanup
+            if (fs.existsSync(testFile)) {
+                fs.unlinkSync(testFile);
+            }
+            const outDir = path.join(tempDir, 'out');
+            if (fs.existsSync(outDir)) {
+                const rimraf = (dir: string) => {
+                    if (fs.existsSync(dir)) {
+                        const entries = fs.readdirSync(dir);
+                        for (const entry of entries) {
+                            const entryPath = path.join(dir, entry);
+                            if (fs.statSync(entryPath).isDirectory()) {
+                                rimraf(entryPath);
+                            } else {
+                                fs.unlinkSync(entryPath);
                             }
-                        },
-                        paramDefs: {
-                            constructor: [{
-                                decorType: 'parameter' as const,
-                                decorator: 'Inject',
-                                paramName: 'logger',
-                                paramType: 'Logger'
-                            }]
-                        },
-                        classDefs: [],
-                        propDefs: [],
-                        methodDefs: []
-                    };
-                }
+                        }
+                        fs.rmdirSync(dir);
+                    }
+                };
+                rimraf(outDir);
             }
-            
-            const ann = (ServiceWithParams as AnnotationType).ƿAnn?.() as CompiledTypeDef;
-            expect(ann?.methods?.constructor).toBeDefined();
-            expect((ann?.methods?.constructor as any)?.params).toHaveLength(2);
+            fs.rmdirSync(tempDir);
         });
 
-        it('should include property decorators', () => {
-            class ServiceWithProps {
-                static ƿAnn(): CompiledTypeDef {
-                    return {
-                        name: 'ServiceWithProps',
-                        type: ServiceWithProps,
-                        compiled: true,
-                        propDefs: [{
-                            decorType: 'property',
-                            decorator: 'Autowired',
-                            propertyKey: 'depService',
-                            type: 'DepService'
-                        }],
-                        classDefs: [],
-                        methodDefs: [],
-                        paramDefs: {}
-                    };
-                }
-            }
+        it('should return empty results for non-matching patterns', async () => {
+            const activity = Object.assign(new AnnotationCompileActivity(), {
+                src: '/nonexistent/**/*.ts',
+                outDir: '/nonexistent-out'
+            } as Partial<AnnotationCompileActivity>);
             
-            const ann = (ServiceWithProps as AnnotationType).ƿAnn?.() as CompiledTypeDef;
-            expect(ann?.propDefs).toHaveLength(1);
-            expect(ann?.propDefs?.[0].propertyKey).toBe('depService');
-        });
-
-        it('should support abstract classes', () => {
-            abstract class AbstractService {
-                static ƿAnn(): CompiledTypeDef {
-                    return {
-                        name: 'AbstractService',
-                        type: AbstractService,
-                        compiled: true,
-                        abstract: true,
-                        classDefs: [],
-                        propDefs: [],
-                        methodDefs: [],
-                        paramDefs: {}
-                    };
-                }
-            }
+            const result = await activity.execute({} as any);
             
-            const ann = (AbstractService as AnnotationType).ƿAnn?.() as CompiledTypeDef;
-            expect(ann?.abstract).toBe(true);
+            expect(result.success).toBe(true);
+            expect(result.data).toBeDefined();
+            expect(result.data?.totalFiles).toBe(0);
         });
     });
 
-    describe('CompiledTypeDef structure', () => {
-        it('should match Annotation interface', () => {
-            const typeDef: CompiledTypeDef = {
-                name: 'TestService',
-                type: class {} as any,
-                compiled: true,
-                abstract: false,
-                classDefs: [],
-                propDefs: [],
-                methodDefs: [],
-                paramDefs: {}
-            };
+    describe('processSourceFile', () => {
+        it('should count classes in source file', () => {
+            const sourceCode = `
+                class ClassOne {}
+                class ClassTwo {}
+                interface NotCounted {}
+            `;
             
-            const annotation: Annotation = typeDef;
-            expect(annotation.name).toBe('TestService');
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const activity = new AnnotationCompileActivity();
+            const count = activity['processSourceFile'](sourceFile);
+            
+            expect(count).toBe(2);
+        });
+
+        it('should not count anonymous classes', () => {
+            const sourceCode = `
+                class {}
+                class Named {}
+            `;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const activity = new AnnotationCompileActivity();
+            const count = activity['processSourceFile'](sourceFile);
+            
+            expect(count).toBe(1);
+        });
+    });
+
+    describe('transformSourceFile', () => {
+        it('should print source file content', () => {
+            const sourceCode = `class TestClass { method(): void {} }`;
+            
+            const sourceFile = ts.createSourceFile(
+                'test.ts',
+                sourceCode,
+                ts.ScriptTarget.Latest,
+                true
+            );
+
+            const activity = new AnnotationCompileActivity();
+            const result = activity['transformSourceFile'](sourceFile);
+            
+            expect(result).toContain('class TestClass');
         });
     });
 });

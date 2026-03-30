@@ -1,7 +1,8 @@
 import { AbstractType, Type, Provider, Modules, ModuleType } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
+import { Application, ApplicationContext, EnvironmentOption } from '@tsdi/core';
 import { Activity, ActivityContext, ActivityResult } from './activities/Activity';
 import { WorkflowModule } from './workflow.module';
+import { extend } from 'expect';
 
 export interface WorkflowDefinition {
     name: string;
@@ -23,12 +24,13 @@ export interface WorkflowTransition {
 
 export type TemplateType = 'xml' | 'json';
 
-export interface WorkflowOptions {
-    baseURL?: string;
-    src?: string;
-    outDir?: string;
-    deps?: ModuleType[];
+export interface WorkflowOptions extends EnvironmentOption {
     template?: TemplateType;
+    /**
+     * workflow component properties.
+     */
+    props?: Record<string, any>;
+    
     [key: string]: any;
 }
 
