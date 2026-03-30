@@ -34,10 +34,13 @@ export interface CompileResult {
 @Component({
     selector: 'compiler',
     template: `
-        <source-files [src]="src" (done)="onFiles($event)"></source-files>
-        <component-parse [src]="src" (done)="onParsed($event)"></component-parse>
-        <esbuild-build [src]="src" [outDir]="outDir" [outputStyle]="outputStyle" [target]="target"></esbuild-build>
-        <declaration-generate [src]="src" [outDir]="outDir"></declaration-generate>
+        <sequence>
+            <source-files [src]="src" (done)="onFiles($event)"></source-files>
+            <component-parse [src]="src" (done)="onParsed($event)"></component-parse>
+            <annotation-compile [src]="src" [outDir]="outDir"></annotation-compile>
+            <esbuild-build [src]="src" [outDir]="outDir" [outputStyle]="outputStyle" [target]="target"></esbuild-build>
+            <declaration-generate [src]="src" [outDir]="outDir"></declaration-generate>
+        </sequence>
     `
 })
 export class CompilerActivity extends SequenceActivity {

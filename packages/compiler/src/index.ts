@@ -3,4 +3,4 @@ export * from './activities';
 export * from './CompilerActivity';
 export * from './CompilerModule';
 export * from './AnnotationCompiler';
-export * from './MetadataCompiler';
+export * from './activities/MetadataGenerator';

@@ -6,7 +6,8 @@ import {
     SourceFilesActivity,
     EsbuildBuildActivity,
     ComponentParseActivity,
-    MetadataGenerateActivity
+    MetadataGenerateActivity,
+    AnnotationCompileActivity
 } from '../src';
 
 describe('Compiler', () => {
@@ -126,6 +127,22 @@ describe('Compiler', () => {
 
         it('should handle empty source', async () => {
             const ctx = await Workflow.run(MetadataGenerateActivity, {
+                src: 'nonexistent/**/*.ts'
+            });
+            expect(ctx).toBeDefined();
+        });
+    });
+
+    describe('AnnotationCompileActivity via Workflow.run', () => {
+        it('should compile annotations', async () => {
+            const ctx = await Workflow.run(AnnotationCompileActivity, {
+                src: 'src/**/*.ts'
+            });
+            expect(ctx).toBeDefined();
+        });
+
+        it('should handle empty source', async () => {
+            const ctx = await Workflow.run(AnnotationCompileActivity, {
                 src: 'nonexistent/**/*.ts'
             });
             expect(ctx).toBeDefined();

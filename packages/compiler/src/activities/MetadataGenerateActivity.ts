@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 import * as globby from 'globby';
-import { MetadataCompiler, ModuleMetadata, ClassMetadata } from '../MetadataCompiler';
+import { MetadataGenerator, ModuleMetadata, ClassMetadata } from './MetadataGenerator';
 import { ComponentCompileInfo } from './ComponentParseActivity';
 
 export interface MetadataGenerateOptions {
@@ -32,11 +32,11 @@ export class MetadataGenerateActivity extends Activity {
     @Attribute()
     componentInfos?: Map<string, ComponentCompileInfo>;
 
-    private metadataCompiler: MetadataCompiler;
+    private metadataCompiler: MetadataGenerator;
 
     constructor() {
         super();
-        this.metadataCompiler = new MetadataCompiler();
+        this.metadataCompiler = new MetadataGenerator();
     }
 
     async execute(context: ActivityContext): Promise<ActivityResult> {

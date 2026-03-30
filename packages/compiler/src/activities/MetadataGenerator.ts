@@ -54,7 +54,7 @@ export interface MetadataCompilerOptions {
     flattenDeclarations?: boolean;
 }
 
-export class MetadataCompiler {
+export class MetadataGenerator {
     private typeChecker: ts.TypeChecker | null = null;
     private program: ts.Program | null = null;
     private options: MetadataCompilerOptions;
