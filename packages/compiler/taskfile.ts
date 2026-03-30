@@ -1,6 +1,6 @@
 import { Workflow } from '@tsdi/activities';
-import { CompilerModule } from './src';
+import { CompilerActivity, CompilerModule } from './src';
 
 if (process.cwd() === __dirname) {
-    Workflow.run(CompilerModule);
+    Workflow.run(CompilerActivity);
 }

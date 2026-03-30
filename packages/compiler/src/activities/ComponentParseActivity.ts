@@ -1,7 +1,9 @@
 import * as ts from 'typescript';
+import * as path from 'path';
+import * as fs from 'fs';
 import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
-import { SourceFile } from '../CompileActivity';
+import * as globby from 'globby';
 
 export type DecoratorType = 'Component' | 'Directive' | 'Pipe' | 'Injectable' | 'Service' | 'Module';
 
@@ -41,10 +43,6 @@ export class ComponentParseActivity extends Activity {
     inlineTemplate = false;
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        const globby = require('globby');
-        const fs = require('fs');
-        const path = require('path');
-
         try {
             const patterns = [this.src, ...this.exclude.map(e => `!${e}`)];
             const filePaths = await globby(patterns);

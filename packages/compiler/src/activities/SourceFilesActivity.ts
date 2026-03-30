@@ -3,12 +3,14 @@ import * as fs from 'fs';
 import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
 import * as globby from 'globby';
-import { SourceFile } from '../CompileActivity';
 
-/**
- * Source files discovery activity.
- * Reusable activity for discovering source files via glob patterns.
- */
+export interface SourceFile {
+    fileName: string;
+    filePath: string;
+    content: string;
+    mtime?: number;
+}
+
 @Directive({ selector: 'source-files' })
 export class SourceFilesActivity extends Activity {
 
@@ -31,10 +33,7 @@ export class SourceFilesActivity extends Activity {
 
         return {
             success: true,
-            data: {
-                files,
-                count: files.length
-            }
+            data: { files, count: files.length }
         };
     }
 }

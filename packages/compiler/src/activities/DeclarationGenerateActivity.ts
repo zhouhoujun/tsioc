@@ -2,7 +2,8 @@ import * as ts from 'typescript';
 import * as path from 'path';
 import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
-import { DiagnosticInfo, SourceFile } from '../CompileActivity';
+import * as globby from 'globby';
+import { DiagnosticInfo } from './EsbuildBuildActivity';
 
 export interface DeclarationGenerateOptions {
     declaration?: boolean;
@@ -26,13 +27,11 @@ export class DeclarationGenerateActivity extends Activity {
     exclude: string[] = ['node_modules', '**/*.spec.ts', '**/*.test.ts'];
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        const globby = require('globby');
-
         try {
             const patterns = [this.src, ...this.exclude.map(e => `!${e}`)];
             const filePaths = await globby(patterns, { cwd: process.cwd() });
 
-            const files: SourceFile[] = filePaths.map((filePath: string) => ({
+            const files = filePaths.map((filePath: string) => ({
                 fileName: path.basename(filePath),
                 filePath: path.resolve(filePath),
                 content: '',

@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Attribute, Directive } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from '@tsdi/activities';
+import * as globby from 'globby';
 import { MetadataCompiler, ModuleMetadata, ClassMetadata } from '../MetadataCompiler';
 import { ComponentCompileInfo } from './ComponentParseActivity';
 
@@ -39,8 +40,6 @@ export class MetadataGenerateActivity extends Activity {
     }
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        const globby = require('globby');
-
         try {
             const patterns = [this.src, ...this.exclude.map(e => `!${e}`)];
             const filePaths = await globby(patterns, { cwd: process.cwd() });

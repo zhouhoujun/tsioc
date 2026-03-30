@@ -1,18 +1,13 @@
 import { Module } from '@tsdi/ioc';
 import { ComponentsModule } from '@tsdi/components';
 import { WorkflowModule } from '@tsdi/activities';
-import { CompileActivity } from './CompileActivity';
-import { ComponentCompileActivity } from './ComponentCompileActivity';
-import { TestGenerateActivity } from './TestGenerateActivity';
-import { EsbuildCompileActivity } from './EsbuildCompileActivity';
-import { AnnotationCompileActivity } from './AnnotationCompileActivity';
+import { CompilerActivity } from './CompilerActivity';
 import {
     SourceFilesActivity,
     EsbuildBuildActivity,
     DeclarationGenerateActivity,
     ComponentParseActivity,
-    MetadataGenerateActivity,
-    EsbuildComponentCompilerActivity
+    MetadataGenerateActivity
 } from './activities';
 
 @Module({
@@ -21,30 +16,20 @@ import {
         WorkflowModule
     ],
     declarations: [
-        CompileActivity,
-        ComponentCompileActivity,
-        TestGenerateActivity,
-        EsbuildCompileActivity,
-        AnnotationCompileActivity,
+        CompilerActivity,
         SourceFilesActivity,
         EsbuildBuildActivity,
         DeclarationGenerateActivity,
         ComponentParseActivity,
-        MetadataGenerateActivity,
-        EsbuildComponentCompilerActivity
+        MetadataGenerateActivity
     ],
     exports: [
-        CompileActivity,
-        ComponentCompileActivity,
-        TestGenerateActivity,
-        EsbuildCompileActivity,
-        AnnotationCompileActivity,
+        CompilerActivity,
         SourceFilesActivity,
         EsbuildBuildActivity,
         DeclarationGenerateActivity,
         ComponentParseActivity,
-        MetadataGenerateActivity,
-        EsbuildComponentCompilerActivity
+        MetadataGenerateActivity
     ]
 })
 export class CompilerModule {}
