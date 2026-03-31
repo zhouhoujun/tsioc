@@ -14,11 +14,12 @@ import { Workflow, WorkflowModule, Activity, ActivityContext, ActivityResult } f
 })
 class HelloActivity extends Activity {
     name: string = 'World';
+    message: string = `Hello ${this.name}!`;
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
         return {
             success: true,
-            data: { message: `Hello ${this.name}!` }
+            data: { message: this.message }
         };
     }
 }
