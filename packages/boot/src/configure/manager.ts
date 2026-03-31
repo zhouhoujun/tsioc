@@ -1,27 +1,17 @@
-import { ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
+import { ModuleLoader, ApplicationArguments } from '@tsdi/core';
 import { isUndefined, isString, lang, isMetadataObject, Injectable, Optional, Inject } from '@tsdi/ioc';
 import { ApplicationConfiguration, ConfigureLoader, ConfigureManager, ConfigureMerger, DEFAULT_CONFIG } from './config';
 
 
 
-/**
- * configure manager.
- *
- * @export
- * @class ConfigureManager
- */
 @Injectable(ConfigureManager)
 export class DefaultConfigureManager extends ConfigureManager {
 
     protected configs: (string | ApplicationConfiguration)[];
     protected config: ApplicationConfiguration | undefined;
 
-    /**
-     * Creates an instance of ConfigureManager.
-     * @param {string} [baseURL]
-     */
     constructor(
-        @Inject(PROCESS_ROOT, { nullable: true }) private baseURL: string,
+        @Inject(ApplicationArguments, { nullable: true }) private appArgs: ApplicationArguments,
         @Optional() private configLoader: ConfigureLoader,
         @Optional() private moduleLoader: ModuleLoader,
         @Optional() private configMerger: ConfigureMerger,
@@ -38,7 +28,6 @@ export class DefaultConfigureManager extends ConfigureManager {
             config = ''
         }
         if (this.configs.indexOf(config) >= 0) return this;
-        // clean cached config.
         this.config = undefined;
         this.configs.push(config);
 
@@ -76,13 +65,6 @@ export class DefaultConfigureManager extends ConfigureManager {
         })
     }
 
-    /**
-     * load config.
-     *
-     * @protected
-     * @param {string} src
-     * @returns {Promise<T>}
-     */
     protected async loadConfig(src: string): Promise<ApplicationConfiguration> {
         if (this.configLoader) {
             return await this.configLoader.load(src)

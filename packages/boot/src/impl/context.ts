@@ -1,5 +1,5 @@
 import { InvokeOptions, ModuleDef, ModuleRef, ProvdierOf } from '@tsdi/ioc';
-import { ApplicationArguments, ApplicationContextFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
+import { ApplicationArguments, ApplicationContextFactory, DefaultApplicationContext } from '@tsdi/core';
 import { ApplicationConfiguration, ConfigureManager } from '../configure/config';
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
 
@@ -16,39 +16,31 @@ export class BootApplicationContextImpl<T = any> extends DefaultApplicationConte
                 mgr.useConfiguration(cfg)
             })
         } else {
-            // load default config.
             mgr.useConfiguration()
         }
         
     }
-    /**
-     * configuration merge metadata config and all application config.
-     */
+    
     getConfiguration(): ApplicationConfiguration {
         return this.injector.get(ApplicationConfiguration)
     }
 
-    /**
-     * get configure manager.
-     *
-     * @returns {ConfigureManager}
-     */
     getConfigureManager(): ConfigureManager {
         return this.injector.get(ConfigureManager)
     }
 }
 
 
-/**
- * default application factory.
- */
 export class BootApplicationFactory extends ApplicationContextFactory {
 
     create<T = any>(root: ModuleRef<T>, option?: BootEnvironmentOption): BootApplicationContext<T> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
-        if (ann?.baseURL) {
-            root.setValue(PROCESS_ROOT, ann.baseURL)
+        const appArgs = root.get(ApplicationArguments, null);
+        
+        if (ann?.baseURL && appArgs) {
+            appArgs.mergeEnvironment({ baseURL: ann.baseURL });
         }
+        
         if (!option) {
             option = {};
         }

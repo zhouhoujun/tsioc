@@ -4,23 +4,16 @@ import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
-import { ApplicationContext, ApplicationContextFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
+import { ApplicationContext, ApplicationContextFactory, BootstrapOption, EnvironmentOption } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
 
 
 
 
-
-/**
- * application boot context.
- *
- * @export
- * @class BootContext
- * @extends {HandleContext}
- */
 export class DefaultApplicationContext<T = any> extends ContextInjector<ModuleRef> implements ApplicationContext<T> {
 
     private _multicaster: ApplicationEventMulticaster;
+    private _applicationArgs: ApplicationArguments | null = null;
     exit = true;
     readonly isStatic = false;
     private _runners: ApplicationRunners;
@@ -39,13 +32,16 @@ export class DefaultApplicationContext<T = any> extends ContextInjector<ModuleRe
         }
     }
 
-    getArguments() {
-        return this.get(ApplicationArguments);
+    getArguments(): ApplicationArguments {
+        if (!this._applicationArgs) {
+            this._applicationArgs = this.get(ApplicationArguments);
+        }
+        return this._applicationArgs!;
     }
 
 
     get baseURL(): string {
-        return this.get(PROCESS_ROOT)
+        return this.getArguments().baseURL;
     }
 
     get instance() {
@@ -78,9 +74,6 @@ export class DefaultApplicationContext<T = any> extends ContextInjector<ModuleRe
        await this.eventMulticaster.publishEvent(obj);
     }
 
-    /**
-     * refresh context.
-     */
     async refresh(): Promise<void> {
         this._multicaster.emit(new ApplicationContextRefreshEvent(this))
     }
@@ -96,26 +89,28 @@ export class DefaultApplicationContext<T = any> extends ContextInjector<ModuleRe
 
 }
 
-/**
- * default application factory.
- */
 export class DefaultApplicationContextFactory extends ApplicationContextFactory {
-    /**
-     * none poincut for aop.
-     */
     static [noPointcut] = true;
 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext<T> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
-        if (ann?.baseURL) {
-            InjectUtil.setValue(root, PROCESS_ROOT, ann.baseURL)
+        const appArgs = root.get(ApplicationArguments, null);
+        
+        if (ann?.baseURL && appArgs) {
+            appArgs.mergeEnvironment({ baseURL: ann.baseURL });
         }
+        
         if (!option) {
             option = {};
         }
         if (!option.args) {
-            option.args = root.get(ApplicationArguments, null);
+            option.args = appArgs;
         }
+        
+        if (option.baseURL && appArgs && !appArgs.baseURL) {
+            appArgs.mergeEnvironment({ baseURL: option.baseURL });
+        }
+        
         const ctx = this.createInstance(root, option);
         return ctx
     }
@@ -124,4 +119,3 @@ export class DefaultApplicationContextFactory extends ApplicationContextFactory 
         return new DefaultApplicationContext(inj, option)
     }
 }
-

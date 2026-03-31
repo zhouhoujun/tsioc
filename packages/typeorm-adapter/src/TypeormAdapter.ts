@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { AbstractType, isString, Injector, isNil, Static, isFunction, Inject, INJECTOR, Type, isType, InjectUtil, RunContext } from '@tsdi/ioc';
-import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose } from '@tsdi/core';
+import { Startup, PipeTransform, TransportParameter, ApplicationArguments, MODEL_RESOLVERS, ModuleLoader, Dispose } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
 import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository, EntityManager } from 'typeorm';
@@ -168,9 +168,11 @@ export class TypeormAdapter {
     protected async createConnection(options: ConnectionOptions, config: ConnectionOptions[]) {
 
         const loader = this.injector.get(ModuleLoader);
+        const appArgs = this.injector.get(ApplicationArguments, null);
+        const basePath = appArgs?.baseURL;
         if (options.entities?.some(m => isString(m))) {
             const entities: Type[] = options.entities.filter(e => !isString(e)) as Type[];
-            const models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath: this.injector.get(PROCESS_ROOT) });
+            const models = await loader.loadType({ files: options.entities?.filter(m => isString(m)), basePath });
             models.forEach(mdl => {
                 if (mdl && entities.indexOf(mdl) < 0) {
                     entities.push(mdl)
@@ -180,8 +182,7 @@ export class TypeormAdapter {
         }
 
         if (options.repositories && options.repositories.some(r => isString(r))) {
-            // preload repositories for typeorm.
-            options.repositories = await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath: this.injector.get(PROCESS_ROOT) })
+            options.repositories = await loader.loadType({ files: options.repositories.filter(r => isString(r)), basePath })
         }
 
         if (!options.name) {

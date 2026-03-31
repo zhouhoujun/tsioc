@@ -1,10 +1,10 @@
 import {
     Provider, Injector, Abstract, AbstractType, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    ModuleMetadata, ModuleDef, Token, token, ClassRef, Invocation, InvokeOptions, DestroyCallback
+    ModuleMetadata, ModuleDef, ClassRef, Invocation, InvokeOptions, DestroyCallback
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { ApplicationRunners } from './ApplicationRunners';
-import { ApplicationArguments } from './ApplicationArguments';
+import { ApplicationArguments, AppMode, AppPlatform } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
 import { InvocationHandlerOptions } from './invocation';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -15,70 +15,59 @@ import { ApplicationEvent } from './ApplicationEvent';
  * application context for global.
  * extends {@link Injector} and implements {@link Destroyable}.
  *
- * 应用上下文环境
+ * 应用上下文环境，继承自IOC容器Injector，实现Destroyable接口
+ * 提供应用程序运行时的上下文环境，包括模块实例、运行器、事件发布器等
  */
 @Abstract()
 export abstract class ApplicationContext<T = object>
     extends Injector implements ApplicationEventPublisher {
     /**
-     * module instance.
+     * 模块实例
      */
     abstract get instance(): T;
     /**
-     * boot base url.
-     *
-     * @type {string}
+     * 应用程序基础路径
      */
     abstract get baseURL(): string;
     /**
-     * application args of type {@link ApplicationArguments}.
-     *
-     * @type {ApplicationArguments}
+     * 获取应用程序参数/环境上下文
      */
     abstract getArguments(): ApplicationArguments;
     /**
-     * application runners.
-     *
-     * type of {@link ApplicationRunners}
+     * 应用程序运行器
      */
     abstract get runners(): ApplicationRunners;
     /**
-     * Application Event Multicaster
+     * 应用程序事件多播器
      */
     abstract get eventMulticaster(): ApplicationEventMulticaster;
     /**
-     * bootstrap type
-     * @param type bootstrap type.
-     * @param option bootstrap option.
+     * 启动引导类型
+     * @param type 引导类型
+     * @param option 引导选项
      */
     abstract bootstrap<C, TArg>(type: AbstractType<C> | ClassRef<C>, option?: BootstrapOption): Promise<Invocation<C>>;
     /**
-     * get logger.
-     * @param name 
+     * 获取日志器
+     * @param name 日志器名称
+     * @param adapter 日志适配器
      */
     abstract getLogger(name?: string, adapter?: string | AbstractType): Logger;
     /**
-     * Notify all <strong>matching</strong> listeners registered with this
-     * application of an application event. Events may be framework events
-     * (such as ContextRefreshedEvent) or application-specific events.
-     * <p>Such an event publication step is effectively a hand-off to the
-     * multicaster and does not imply synchronous/asynchronous execution
-     * or even immediate execution at all. Event listeners are encouraged
-     * to be as efficient as possible, individually using asynchronous
-     * execution for longer-running and potentially blocking operations.
-     * @param event the event to publish
+     * 发布应用程序事件
+     * @param event 事件对象
      */
     abstract publishEvent(event: ApplicationEvent | Object): Promise<void>;
     /**
-     * refresh context.
+     * 刷新上下文
      */
     abstract refresh(): Promise<void>;
     /**
-     * close application.
+     * 关闭应用程序
      */
     abstract close(): Promise<void>;
     /**
-     * destroy application
+     * 销毁应用程序
      */
     abstract destroy(): Promise<void>;
 
@@ -86,87 +75,121 @@ export abstract class ApplicationContext<T = object>
 
 /**
  * bootstrap option for {@link RunnableRef}.
+ * 引导选项，用于配置应用程序启动引导过程
  */
 export interface BootstrapOption extends InvocationHandlerOptions<any> {
 }
 
-
-/**
- * appliaction boot process root path.
- */
-export const PROCESS_ROOT: Token<string> = token<string>('PROCESS_ROOT');
-
 /**
  * Environment option.
+ * 应用程序环境配置选项，整合了模块选项、调用选项和环境参数
+ * 包含应用程序运行所需的所有配置信息
  */
 export interface EnvironmentOption extends ModuleOption, InvokeOptions {
     /**
-     * boot base url.
-     *
-     * @type {string}
+     * 应用程序基础路径
      */
     baseURL?: string;
     /**
-     * injector.
+     * 注入器实例
      */
     injector?: Injector;
     /**
-     * module loader
-     *
-     * @type {ModuleLoader}
+     * 模块加载器
      */
     loader?: ModuleLoader;
     /**
-     * application dependencies.
-     *
-     * @type {LoadType[]}
+     * 应用程序依赖模块
      */
     loads?: LoadType[];
     /**
-     * application arguments.
+     * 应用程序参数/环境上下文
      */
     args?: ApplicationArguments | null;
     /**
-     * application deps.
+     * 平台依赖模块
      */
     platformDeps?: Modules[];
     /**
-     * application providers.
+     * 平台服务提供者
      */
     platformProviders?: Provider[];
     /**
-     * Application runners invocation options.
+     * 运行器选项
      */
     runnersOptions?: InvocationHandlerOptions;
     /**
-     * Application events invocation options.
+     * 事件选项
      */
     eventsOptions?: InvocationHandlerOptions;
+    /**
+     * 应用程序名称
+     */
+    name?: string;
+    /**
+     * 应用程序版本
+     */
+    version?: string;
+    /**
+     * 应用程序运行模式 (development/production/test/staging)
+     */
+    mode?: AppMode;
+    /**
+     * 应用程序平台 (server/browser/node/web/mobile)
+     */
+    platform?: AppPlatform;
+    /**
+     * 当前工作目录
+     */
+    cwd?: string;
+    /**
+     * 主机名
+     */
+    hostname?: string;
+    /**
+     * 进程ID
+     */
+    pid?: number;
+    /**
+     * 用户语言环境
+     */
+    locale?: string;
+    /**
+     * 时区
+     */
+    timezone?: string;
+    /**
+     * 是否启用调试模式
+     */
+    debug?: boolean;
+    /**
+     * 日志级别
+     */
+    logLevel?: string;
 }
 
 /**
  * ApplicationOption option.
+ * 应用程序选项，继承自环境配置，包含目标模块定义
  */
 export interface ApplicationOption<T = object> extends EnvironmentOption {
     /**
-     * target module type.
-     *
-     * @type {Type}
+     * 目标模块类型
      */
     module: Type<T> | ModuleDef<T> | ModuleMetadata;
 }
 
-
 /**
  * application context factory, to create instance of {@link ApplicationContext}.
+ * 应用程序上下文工厂，用于创建ApplicationContext实例
  */
 @Abstract()
 export abstract class ApplicationContextFactory {
     /**
-     * create application context instance.
-     * @param root main module.
-     * @param option application option.
-     * @returns instance of {@link EnvironmentOption}
+     * 创建应用程序上下文实例
+     * @param root 主模块引用
+     * @param option 应用程序选项
+     * @returns 应用程序上下文实例
      */
     abstract create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext<T>;
 }

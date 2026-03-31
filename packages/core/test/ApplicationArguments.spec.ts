@@ -1,12 +1,9 @@
-import { ApplicationArguments, AppMode, AppPlatform, EnvironmentConfig } from '../src';
+import { ApplicationArguments, AppMode, AppPlatform } from '../src';
 import { Injectable, Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import expect = require('expect');
 
-/**
- * Mock ApplicationArguments for testing core interface
- */
 @Injectable()
 class MockApplicationArguments extends ApplicationArguments {
     private _argsSource: string[];
@@ -14,17 +11,17 @@ class MockApplicationArguments extends ApplicationArguments {
     private _cmds: string[];
     private _env: Record<string, any>;
     private _signls: string[];
-    private _config: EnvironmentConfig;
+    private _envOverride: Partial<ApplicationArguments>;
 
     constructor(
         env: Record<string, any> = {},
         args: string[] = [],
-        config: EnvironmentConfig = {}
+        envOverride: Partial<ApplicationArguments> = {}
     ) {
         super();
         this._argsSource = args;
         this._env = env;
-        this._config = config;
+        this._envOverride = envOverride;
         this._args = {};
         this._cmds = [];
         this._signls = ['SIGTERM', 'SIGINT'];
@@ -52,32 +49,32 @@ class MockApplicationArguments extends ApplicationArguments {
     get env(): Record<string, any> { return this._env; }
     get signls(): string[] { return this._signls; }
 
-    get name(): string { return this._config.name ?? this._env.APP_NAME ?? 'test-app'; }
-    get version(): string { return this._config.version ?? this._env.APP_VERSION ?? '1.0.0'; }
+    get name(): string { return this._envOverride.name ?? this._env.APP_NAME ?? 'test-app'; }
+    get version(): string { return this._envOverride.version ?? this._env.APP_VERSION ?? '1.0.0'; }
     get mode(): AppMode { 
-        const m = this._config.mode ?? this._env.NODE_ENV ?? 'development';
+        const m = this._envOverride.mode ?? this._env.NODE_ENV ?? 'development';
         if (m === 'prod' || m === 'production') return 'production';
         if (m === 'test' || m === 'testing') return 'test';
         if (m === 'staging' || m === 'stage') return 'staging';
         return 'development';
     }
-    get platform(): AppPlatform { return this._config.platform ?? 'node'; }
-    get cwd(): string { return this._config.cwd ?? '/test'; }
-    get hostname(): string { return this._config.hostname ?? 'localhost'; }
-    get pid(): number { return this._config.pid ?? 1; }
-    get locale(): string { return this._config.locale ?? 'en-US'; }
-    get timezone(): string { return this._config.timezone ?? 'UTC'; }
-    get debug(): boolean { return this._config.debug ?? this._env.DEBUG === 'true'; }
-    get logLevel(): string { return this._config.logLevel ?? 'info'; }
-    get baseURL(): string { return this._config.baseURL ?? '/test'; }
+    get platform(): AppPlatform { return this._envOverride.platform ?? 'node'; }
+    get cwd(): string { return this._envOverride.cwd ?? '/test'; }
+    get hostname(): string { return this._envOverride.hostname ?? 'localhost'; }
+    get pid(): number { return this._envOverride.pid ?? 1; }
+    get locale(): string { return this._envOverride.locale ?? 'en-US'; }
+    get timezone(): string { return this._envOverride.timezone ?? 'UTC'; }
+    get debug(): boolean { return this._envOverride.debug ?? this._env.DEBUG === 'true'; }
+    get logLevel(): string { return this._envOverride.logLevel ?? 'info'; }
+    get baseURL(): string { return this._envOverride.baseURL ?? '/test'; }
 
     reset(args: string[]): void {
         this._argsSource = args;
         this.parseArgs(args);
     }
 
-    mergeConfig(config: EnvironmentConfig): void {
-        this._config = { ...this._config, ...config };
+    mergeEnvironment(env: Partial<ApplicationArguments>): void {
+        this._envOverride = { ...this._envOverride, ...env };
     }
 }
 
@@ -286,7 +283,7 @@ describe('ApplicationArguments', () => {
             const args = new MockApplicationArguments({}, [], { name: 'initial', version: '1.0' });
             expect(args.name).toBe('initial');
             
-            args.mergeConfig({ name: 'updated', debug: true });
+            args.mergeEnvironment({ name: 'updated', debug: true });
             expect(args.name).toBe('updated');
             expect(args.version).toBe('1.0');
             expect(args.debug).toBe(true);

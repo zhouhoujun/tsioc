@@ -1,5 +1,5 @@
 import { Type, Modules, Provider, AbstractType, InjectUtil, Provide } from '@tsdi/ioc';
-import { Application, ApplicationContextFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
+import { Application, ApplicationContextFactory, DEFAULTA_PROVIDERS, ModuleLoader, ApplicationArguments } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
@@ -10,12 +10,6 @@ import { MvcModule } from './mvc/mvc.module';
 
 
 
-/**
- * boot application.
- *
- * @export
- * @class BootApplication
- */
 export class BootApplication<T = any> extends Application<T> {
 
     constructor(target: Type<T> | BootApplicationOption<T>, loader?: ModuleLoader) {
@@ -57,7 +51,10 @@ export class BootApplication<T = any> extends Application<T> {
         if (ctx.baseURL) {
             config.baseURL = ctx.baseURL
         } else if (config.baseURL) {
-            root.setValue(PROCESS_ROOT, config.baseURL)
+            const appArgs = root.get(ApplicationArguments, null);
+            if (appArgs) {
+                appArgs.mergeEnvironment({ baseURL: config.baseURL });
+            }
         }
 
         ctx.setValue(ApplicationConfiguration, config);
@@ -69,22 +66,7 @@ export class BootApplication<T = any> extends Application<T> {
         await super.prepareContext(ctx)
     }
 
-    /**
-    * run application.
-    *
-    * @static
-    * @param {BootApplicationOption<M>} target
-    * @returns {Promise<ApplicationContext<M>>}
-    */
     static run<T>(target: BootApplicationOption<T>): Promise<BootApplicationContext<T>>
-    /**
-     * run application.
-     *
-     * @static
-     * @param {AbstractType<T>} target
-     * @param {BootApplicationOption} [option]  application run depdences.
-     * @returns {Promise<IBootContext>}
-     */
     static run<T>(target: AbstractType<T>, option?: BootEnvironmentOption): Promise<BootApplicationContext<T>>;
     static run<T>(target: any, option?: BootEnvironmentOption): Promise<BootApplicationContext<T>> {
         return new BootApplication<T>(option ? { module: target, ...option } as BootApplicationOption<T> : target).run() as Promise<BootApplicationContext<T>>

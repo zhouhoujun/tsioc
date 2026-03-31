@@ -1,5 +1,5 @@
 import { isString } from '@tsdi/ioc';
-import { ApplicationArguments, AppMode, AppPlatform, EnvironmentConfig } from '@tsdi/core';
+import { ApplicationArguments, AppMode, AppPlatform } from '@tsdi/core';
 import * as os from 'os';
 
 
@@ -8,6 +8,8 @@ const isNum = /^\d+(.\d+)?$/;
 
 const DEFAULT_MODE: AppMode = 'development';
 const DEFAULT_PLATFORM: AppPlatform = 'server';
+
+type EnvironmentOverride = Partial<ApplicationArguments>;
 
 export class ServerApplicationArguments extends ApplicationArguments {
     private _signls: string[];
@@ -26,14 +28,14 @@ export class ServerApplicationArguments extends ApplicationArguments {
     private _debug!: boolean;
     private _logLevel!: string;
     private _baseURL!: string;
-    private _extraConfig!: EnvironmentConfig;
+    private _envOverride!: EnvironmentOverride;
 
     constructor(private _env: Record<string, string | undefined>, private _source: string[]) {
         super()
         this._args = this.toRecord(_source);
         this._env = this._env || {};
         this._signls = this.tryGetSignls();
-        this._extraConfig = {};
+        this._envOverride = {};
         this.initEnvironment();
     }
 
@@ -75,8 +77,6 @@ export class ServerApplicationArguments extends ApplicationArguments {
         if (debugEnv === 'false' || debugEnv === '0' || debugEnv === false) return false;
         return this._mode === 'development';
     }
-
-    // ==================== Original Properties ====================
     
     get env() {
         return this._env
@@ -95,58 +95,54 @@ export class ServerApplicationArguments extends ApplicationArguments {
     get signls(): string[] {
         return this._signls
     }
-
-    // ==================== New Environment Properties ====================
     
     get name(): string {
-        return this._extraConfig.name ?? this._name;
+        return this._envOverride.name ?? this._name;
     }
     
     get version(): string {
-        return this._extraConfig.version ?? this._version;
+        return this._envOverride.version ?? this._version;
     }
     
     get mode(): AppMode {
-        return this._extraConfig.mode ?? this._mode;
+        return this._envOverride.mode ?? this._mode;
     }
     
     get platform(): AppPlatform {
-        return this._extraConfig.platform ?? this._platform;
+        return this._envOverride.platform ?? this._platform;
     }
     
     get cwd(): string {
-        return this._extraConfig.cwd ?? this._cwd;
+        return this._envOverride.cwd ?? this._cwd;
     }
     
     get hostname(): string {
-        return this._extraConfig.hostname ?? this._hostname;
+        return this._envOverride.hostname ?? this._hostname;
     }
     
     get pid(): number {
-        return this._extraConfig.pid ?? this._pid;
+        return this._envOverride.pid ?? this._pid;
     }
     
     get locale(): string {
-        return this._extraConfig.locale ?? this._locale;
+        return this._envOverride.locale ?? this._locale;
     }
     
     get timezone(): string {
-        return this._extraConfig.timezone ?? this._timezone;
+        return this._envOverride.timezone ?? this._timezone;
     }
     
     get debug(): boolean {
-        return this._extraConfig.debug ?? this._debug;
+        return this._envOverride.debug ?? this._debug;
     }
     
     get logLevel(): string {
-        return this._extraConfig.logLevel ?? this._logLevel;
+        return this._envOverride.logLevel ?? this._logLevel;
     }
     
     get baseURL(): string {
-        return this._extraConfig.baseURL ?? this._baseURL;
+        return this._envOverride.baseURL ?? this._baseURL;
     }
-
-    // ==================== Methods ====================
 
     reset(args: string[]): void {
         this._source = args;
@@ -155,8 +151,8 @@ export class ServerApplicationArguments extends ApplicationArguments {
         this.initEnvironment();
     }
 
-    mergeConfig(config: EnvironmentConfig): void {
-        this._extraConfig = { ...this._extraConfig, ...config };
+    mergeEnvironment(env: Partial<ApplicationArguments>): void {
+        this._envOverride = { ...this._envOverride, ...env };
     }
 
     protected toRecord(args: string[]): Record<string, string | boolean | number> {

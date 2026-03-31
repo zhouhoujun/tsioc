@@ -2,14 +2,42 @@ import { isString, lang } from '@tsdi/ioc';
 import { LoggerManagers, LOG_CONFIGURES } from '@tsdi/logger';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
-import { ApplicationContext, Application, formatDate, PROCESS_ROOT } from '../src';
+import { ApplicationContext, Application, formatDate, ApplicationArguments, AppMode, AppPlatform } from '../src';
 import { logConfig, ServerMainModule } from './demo';
-// import * as log4js from 'log4js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { rm } from 'shelljs';
 
 const dir = __dirname;
+
+class TestApplicationArguments extends ApplicationArguments {
+    private _envOverride: Partial<ApplicationArguments> = {};
+    
+    get argsSource(): string[] { return []; }
+    get args(): Record<string, string> { return {}; }
+    get cmds(): string[] { return []; }
+    get env(): Record<string, any> { return {}; }
+    get signls(): string[] { return []; }
+    
+    get name(): string { return 'test-app'; }
+    get version(): string { return '1.0.0'; }
+    get mode(): AppMode { return 'development'; }
+    get platform(): AppPlatform { return 'server'; }
+    get cwd(): string { return this._envOverride.cwd ?? dir; }
+    get hostname(): string { return 'localhost'; }
+    get pid(): number { return process.pid; }
+    get locale(): string { return 'en-US'; }
+    get timezone(): string { return 'UTC'; }
+    get debug(): boolean { return true; }
+    get logLevel(): string { return 'debug'; }
+    get baseURL(): string { return this._envOverride.baseURL ?? dir; }
+    
+    reset(): void {}
+    mergeEnvironment(env: Partial<ApplicationArguments>): void {
+        this._envOverride = { ...this._envOverride, ...env };
+    }
+}
+
 @Suite()
 export class ServerBootTest {
 
@@ -22,13 +50,12 @@ export class ServerBootTest {
         this.ctx = await Application.run({
             module: ServerMainModule,
             providers: [
-                { provide: PROCESS_ROOT, useValue: dir },
+                { provide: ApplicationArguments, useClass: TestApplicationArguments },
                 { provide: LOG_CONFIGURES, useValue: logConfig, multi: true }
             ]
         });
         console.log(this.ctx.baseURL);
         this.logdir = path.join(this.ctx.baseURL, 'log');
-        // await del(this.logdir);
         rm('-rf', this.logdir);
         const now = new Date();
         this.logfile = path.join(this.ctx.baseURL, `log/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
@@ -61,7 +88,6 @@ export class ServerBootTest {
     @After()
     async after() {
         await this.ctx.close();
-        // await del(this.logdir);
         rm('-rf', this.logdir);
     }
 }
