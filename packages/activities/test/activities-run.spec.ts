@@ -48,7 +48,7 @@ export class WorkflowActivityDirectTest {
     @Before()
     async init() {
         this.ctx = await Workflow.run(HelloActivity, {
-            template: 'xml'
+            renderer: 'xml'
         });
     }
 
@@ -84,7 +84,7 @@ export class WorkflowCalcActivityTest {
     @Before()
     async init() {
         this.ctx = await Workflow.run(CalcActivity, {
-            template: 'xml'
+            renderer: 'xml'
         });
     }
 

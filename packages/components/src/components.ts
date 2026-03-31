@@ -1,4 +1,5 @@
-import { isType, Module, ResolveInterceptorFn, Runtime } from '@tsdi/ioc';
+import { isType, Module, ResolveInterceptorFn, Runtime, Type } from '@tsdi/ioc';
+import { ApplicationContext, bootstrapApplication, EnvironmentOption } from '@tsdi/core';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
 // import { ReactiveEffect } from './effect';
@@ -48,4 +49,38 @@ import { componentResolvers } from './impl/resolvers';
 })
 export class ComponentsModule {
 
+}
+
+export type RendererType = 'xml' | 'json';
+
+export interface ComponentBootOptions extends EnvironmentOption {
+    /**
+     * renderer type for workflow definition, default is 'xml'.
+     */
+    renderer?: RendererType;
+    /**
+     * workflow component properties.
+     */
+    props?: Record<string, any>;
+}
+
+export async function bootstrapComponent<T>(rootComponent: Type<T>, options?: ComponentBootOptions): Promise<ApplicationContext<T>>  {
+    const deps = options?.deps || [];
+    const rderType = options?.renderer || 'xml';
+    if (rderType === 'xml') {
+        const { XmlTemplateModule } = await import('@tsdi/components/xml');
+        deps.unshift(XmlTemplateModule);
+    } else if (rderType === 'json') {
+        const { JsonTemplateModule } = await import('@tsdi/components/json');
+        deps.unshift(JsonTemplateModule);
+    }
+
+    if (!deps.includes(ComponentsModule)) {
+        deps.unshift(ComponentsModule);
+    }
+
+    return await bootstrapApplication(rootComponent, {
+        ...options,
+        deps
+    });
 }

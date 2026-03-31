@@ -32,7 +32,7 @@ export abstract class ApplicationArguments implements Record<string, any> {
      * 
      * 应用程序启动环境变量
      */
-    abstract get env(): Record<string, string | undefined>;
+    abstract get env(): Record<string, any>;
 
     /**
      * process exit signls. 

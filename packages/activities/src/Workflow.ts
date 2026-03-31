@@ -1,8 +1,9 @@
 import { AbstractType, Type, Provider, Modules, ModuleType } from '@tsdi/ioc';
-import { Application, ApplicationContext, EnvironmentOption } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { bootstrapComponent, ComponentBootOptions } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './activities/Activity';
 import { WorkflowModule } from './workflow.module';
-import { extend } from 'expect';
+import { SequenceActivity } from './activities';
 
 export interface WorkflowDefinition {
     name: string;
@@ -22,53 +23,23 @@ export interface WorkflowTransition {
     condition?: (context: ActivityContext) => boolean;
 }
 
-export type TemplateType = 'xml' | 'json';
-
-export interface WorkflowOptions extends EnvironmentOption {
-    template?: TemplateType;
-    /**
-     * workflow component properties.
-     */
-    props?: Record<string, any>;
+export interface WorkflowOptions extends ComponentBootOptions {
     
     [key: string]: any;
 }
 
+
 export class Workflow {
     
-    static async run<T>(module: Type<T>, options?: WorkflowOptions): Promise<ApplicationContext<T>> {
-        
-        const appOptions: any = {};
-        if (options?.baseURL) {
-            appOptions.baseURL = options.baseURL;
-        }
-        
-        const providers: Provider[] = [];
-        if (options && Object.keys(options).length > 0) {
-            providers.push({
-                provide: 'COMPILER_OPTIONS',
-                useValue: options
-            });
-        }
-        
-        if (providers.length > 0) {
-            appOptions.providers = providers;
-        }
+    static runSequence(template: any, options?: WorkflowOptions): Promise<ApplicationContext<SequenceActivity>> {
+        return Workflow.run(SequenceActivity, options);
+    }
 
-        const platformDeps: ModuleType[] = [WorkflowModule];
-
-        const templateType = options?.template || 'xml';
+    static run<T>(module: Type<T>, options?: WorkflowOptions): Promise<ApplicationContext<T>> {
         
-        if (templateType === 'xml') {
-            const { XmlTemplateModule } = await import('@tsdi/components/xml');
-            platformDeps.push(XmlTemplateModule);
-        } else if (templateType === 'json') {
-            const { JsonTemplateModule } = await import('@tsdi/components/json');
-            platformDeps.push(JsonTemplateModule);
-        }
-
-        appOptions.platformDeps = platformDeps;
-        
-        return await Application.run(module, appOptions);
+        return bootstrapComponent(module, {
+            ...options,
+            deps: [WorkflowModule, ...(options?.deps || [])]
+        });
     }
 }
