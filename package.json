@@ -127,6 +127,7 @@
     "form-data": "^4.0.0",
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
+    "jsdom": "^29.0.1",
     "kafkajs": "^2.2.4",
     "koa-convert": "^2.0.0",
     "modbus-serial": "^8.0.5",
