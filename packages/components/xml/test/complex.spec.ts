@@ -1,9 +1,9 @@
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { ApplicationContext, Application, formatDate } from '@tsdi/core';
-import { ComponentsModule, ComponentRef, ElementRef } from '@tsdi/components';
+import { ComponentsModule, ComponentRef, ElementRef, NodeType } from '@tsdi/components';
 import { ComplexComponent, FieldComponet } from './app';
-import { XmlTemplateModule } from '../src';
+import { XmlTemplateModule, XmlRenderer, XmlTemplateParser, XmlElement, XmlNode, XmlText, XmlComment } from '../src';
 
 @Suite('XML computed Test')
 export class ComplexTest {
@@ -95,7 +95,7 @@ export class ComplexTest {
         expect(elementRef.nativeElement.childNodes.length).toEqual(3);
 
         // The matched content is in childNodes[1] (the p element), not in childNodes[0] (v-container)
-        expect(elementRef.nativeElement.childNodes[1].textContent).toEqual('This is case 2 content');
+        expect(elementRef.nativeElement.childNodes[1].textContent).toBe('This is case 2 content');
     }
 
 
@@ -104,4 +104,175 @@ export class ComplexTest {
         await this.ctx.close();
     }
 
+}
+
+
+
+@Suite('XML Query Selector Tests')
+export class XmlQuerySelectorTest {
+
+    renderer!: XmlRenderer;
+    parser!: XmlTemplateParser;
+
+    @Before()
+    async init() {
+        this.renderer = new XmlRenderer();
+        this.parser = new XmlTemplateParser(this.renderer);
+    }
+
+    @Test('should query nested elements')
+    testQueryNestedElements() {
+        const template = '<div><section><article><p>Content</p></article></section></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as XmlElement;
+
+        const article = root.querySelector('article');
+        expect(article).toBeDefined();
+        expect((article as XmlElement).tagName).toBe('article');
+
+        const p = root.querySelector('p');
+        expect(p).toBeDefined();
+    }
+
+    @Test('should query by class selector')
+    testQueryByClass() {
+        const template = '<div><span class="item">Item 1</span><span class="item">Item 2</span><span>Item 3</span></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as XmlElement;
+
+        const items = root.querySelectorAll('.item');
+        expect(items?.length).toBe(2);
+    }
+
+    @Test('should query by id selector')
+    testQueryById() {
+        const template = '<div><span id="header">Header</span><span id="footer">Footer</span></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as XmlElement;
+
+        const header = root.querySelector('#header');
+        expect(header).toBeDefined();
+
+        const footer = root.querySelector('#footer');
+        expect(footer).toBeDefined();
+    }
+
+    @Test('should query all matching elements')
+    testQueryAllElements() {
+        const template = '<div><p>Para 1</p><p>Para 2</p><p>Para 3</p></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as XmlElement;
+
+        const allPs = root.querySelectorAll('p');
+        expect(allPs?.length).toBe(3);
+    }
+
+    @Test('should return null for non-existent selector')
+    testQueryNonExistent() {
+        const template = '<div><span>Content</span></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as XmlElement;
+
+        const nonExistent = root.querySelector('p');
+        expect(nonExistent).toBeNull();
+    }
+
+    @Test('should query by attribute selector')
+    testQueryByAttribute() {
+        const template = '<div><input type="text"/><input type="password"/><input type="text"/></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as XmlElement;
+
+        const textInputs = root.querySelectorAll('[type=text]');
+        expect(textInputs?.length).toBe(2);
+    }
+
+    @After()
+    async clean() {
+    }
+}
+
+
+
+@Suite('XML Complex Template Parsing Tests')
+export class XmlComplexTemplateTest {
+
+    renderer!: XmlRenderer;
+    parser!: XmlTemplateParser;
+
+    @Before()
+    async init() {
+        this.renderer = new XmlRenderer();
+        this.parser = new XmlTemplateParser(this.renderer);
+    }
+
+    @Test('should parse deeply nested XML structure')
+    testDeepNesting() {
+        const template = '<div><section><article><p>Deeply nested content</p></article></section></div>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const div = nodes[0] as XmlElement;
+        expect(div.tagName).toBe('div');
+        expect(div.childNodes.length).toBe(1);
+
+        const section = div.childNodes[0] as XmlElement;
+        expect(section.tagName).toBe('section');
+        expect(section.childNodes.length).toBe(1);
+
+        const article = section.childNodes[0] as XmlElement;
+        expect(article.tagName).toBe('article');
+        expect(article.childNodes.length).toBe(1);
+
+        const p = article.childNodes[0] as XmlElement;
+        expect(p.tagName).toBe('p');
+    }
+
+    @Test('should parse multiple siblings at same level')
+    testMultipleSiblings() {
+        const template = '<div><h1>Title 1</h1><h2>Title 2</h2><h3>Title 3</h3><p>Paragraph</p></div>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const div = nodes[0] as XmlElement;
+        expect(div.childNodes.length).toBe(4);
+    }
+
+    @Test('should parse with mixed node types')
+    testMixedNodeTypes() {
+        const template = '<div>Regular element<!-- This is a comment --><span>Span content</span><p v-if="show">Conditional</p></div>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const div = nodes[0] as XmlElement;
+        expect(div.tagName).toBe('div');
+        expect(div.hasAttribute('v-if')).toBe(false);
+    }
+
+    @Test('should parse with namespace attributes')
+    testNamespaceAttributes() {
+        const template = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const svg = nodes[0] as XmlElement;
+        expect(svg.tagName).toBe('svg');
+        expect(svg.hasAttribute('xmlns')).toBe(true);
+    }
+
+    @Test('should parse HTML entities')
+    testHtmlEntities() {
+        const template = '<div>&lt;script&gt;alert(&quot;test&quot;)&lt;/script&gt;</div>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBeGreaterThan(0);
+    }
+
+    @After()
+    async clean() {
+    }
 }

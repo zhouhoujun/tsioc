@@ -25,6 +25,10 @@ export function canReactive(target: any) {
     }
     // if (isNode(target)) return false;
 
+    if (isNative(target)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -84,6 +88,10 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
         },
 
         set(target, key, value, receiver) {
+            if (key === REACT_FlAG) {
+                return true;
+            }
+
             const oldValue = target[key];
 
             // Reflect.set保证this指向正确
@@ -122,18 +130,15 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
             }
 
             return result;
-        },
-
-        // ...其他代理方法如has、ownKeys等
-        ownKeys(target) {
-            return Reflect.ownKeys(target);
-        },
-        has(target, key) {
-            return key in target || Reflect.has(target, key);
         }
     });
 
-    proxy[REACT_FlAG] = true;
+    Object.defineProperty(target, REACT_FlAG, {
+        value: true,
+        writable: true,
+        configurable: false,
+        enumerable: false
+    });
 
     return proxy;
 }

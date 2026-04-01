@@ -64,14 +64,14 @@ export class JsonNode implements RNode {
         return removed;
     }
 
-    replaceChild(node: JsonNode, child: JsonNode): JsonNode {
-        const index = this.childNodes.indexOf(node);
+    replaceChild(newChild: JsonNode, oldChild: JsonNode): JsonNode {
+        const index = this.childNodes.indexOf(oldChild);
         if (index !== -1) {
-            child.parentNode = this;
-            this.childNodes.splice(index, 1, child);
-            node.parentNode = null;
+            newChild.parentNode = this;
+            this.childNodes.splice(index, 1, newChild);
+            oldChild.parentNode = null;
         }
-        return child;
+        return oldChild;
     }
     
 
@@ -343,6 +343,10 @@ export class JsonRenderer implements Renderer {
     }
     setValue(node: JsonText | JsonComment, value: string): void {
         node.textContent = value;
+    }
+
+    click(node: JsonNode): void {
+        node.dispatchEvent(new Event('click'));
     }
 
 }

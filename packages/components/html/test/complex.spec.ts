@@ -1,10 +1,10 @@
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { ApplicationContext, Application } from '@tsdi/core';
-import { ComponentsModule, ComponentRef, ElementRef } from '@tsdi/components';
+import { ComponentsModule, ComponentRef, ElementRef, NodeType } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { ComplexComponent, FieldComponet } from './app';
-import { HtmlTemplateModule } from '../src';
+import { HtmlTemplateModule, HtmlRenderer, HtmlTemplateParser } from '../src';
 
 @Suite('HTML Complex Component Test')
 export class ComplexTest {
@@ -101,4 +101,163 @@ export class ComplexTest {
         await this.ctx.close();
     }
 
+}
+
+
+
+@Suite('HTML Query Selector Tests')
+export class HtmlQuerySelectorTest {
+
+    renderer!: HtmlRenderer;
+    parser!: HtmlTemplateParser;
+
+    @Before()
+    async init() {
+        this.renderer = new HtmlRenderer(null, null);
+        this.parser = new HtmlTemplateParser(this.renderer);
+    }
+
+    @Test('should query nested elements')
+    testQueryNestedElements() {
+        const template = '<div><section><article><p>Content</p></article></section></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as any;
+
+        const article = this.renderer.querySelector(root, 'article');
+        expect(article).toBeDefined();
+        expect((article as any).tagName.toLowerCase()).toBe('article');
+
+        const p = this.renderer.querySelector(root, 'p');
+        expect(p).toBeDefined();
+    }
+
+    @Test('should query by class selector')
+    testQueryByClass() {
+        const template = '<div><span class="item">Item 1</span><span class="item">Item 2</span><span>Item 3</span></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as any;
+
+        const items = this.renderer.querySelectorAll(root, '.item');
+        expect(items?.length).toBe(2);
+    }
+
+    @Test('should query by id selector')
+    testQueryById() {
+        const template = '<div><span id="header">Header</span><span id="footer">Footer</span></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as any;
+
+        const header = this.renderer.querySelector(root, '#header');
+        expect(header).toBeDefined();
+
+        const footer = this.renderer.querySelector(root, '#footer');
+        expect(footer).toBeDefined();
+    }
+
+    @Test('should query all matching elements')
+    testQueryAllElements() {
+        const template = '<div><p>Para 1</p><p>Para 2</p><p>Para 3</p></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as any;
+
+        const allPs = this.renderer.querySelectorAll(root, 'p');
+        expect(allPs?.length).toBe(3);
+    }
+
+    @Test('should return null for non-existent selector')
+    testQueryNonExistent() {
+        const template = '<div><span>Content</span></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as any;
+
+        const nonExistent = this.renderer.querySelector(root, 'p');
+        expect(nonExistent).toBeNull();
+    }
+
+    @Test('should query by attribute selector')
+    testQueryByAttribute() {
+        const template = '<div><input type="text"/><input type="password"/><input type="text"/></div>';
+        const nodes = this.parser.parse(template);
+        const root = nodes[0] as any;
+
+        const textInputs = this.renderer.queryByAttribute(root, 'type', 'text');
+        expect(textInputs?.length).toBe(2);
+    }
+
+    @After()
+    async clean() {
+    }
+}
+
+
+
+@Suite('HTML Complex Template Parsing Tests')
+export class HtmlComplexTemplateTest {
+
+    renderer!: HtmlRenderer;
+    parser!: HtmlTemplateParser;
+
+    @Before()
+    async init() {
+        this.renderer = new HtmlRenderer(null, null);
+        this.parser = new HtmlTemplateParser(this.renderer);
+    }
+
+    @Test('should parse deeply nested HTML structure')
+    testDeepNesting() {
+        const template = '<div><section><article><p>Deeply nested content</p></article></section></div>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const div = nodes[0] as any;
+        expect(div.tagName.toLowerCase()).toBe('div');
+        expect(div.childNodes.length).toBeGreaterThan(0);
+    }
+
+    @Test('should parse multiple siblings at same level')
+    testMultipleSiblings() {
+        const template = '<div><h1>Title 1</h1><h2>Title 2</h2><h3>Title 3</h3><p>Paragraph</p></div>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const div = nodes[0] as any;
+        expect(div.children.length).toBe(4);
+    }
+
+    @Test('should parse with mixed node types')
+    testMixedNodeTypes() {
+        const template = '<div>Regular element<!-- This is a comment --><span>Span content</span></div>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const div = nodes[0] as any;
+        expect(div.tagName.toLowerCase()).toBe('div');
+    }
+
+    @Test('should parse with namespace attributes')
+    testNamespaceAttributes() {
+        const template = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>';
+
+        const nodes = this.parser.parse(template);
+        expect(nodes.length).toBe(1);
+
+        const svg = nodes[0] as any;
+        expect(svg.tagName.toLowerCase()).toBe('svg');
+        expect(svg.getAttribute('xmlns')).toBe('http://www.w3.org/2000/svg');
+    }
+
+    @Test('should parse self-closing tags')
+    testSelfClosingTags() {
+        const template = '<div><br/><hr/><img src="test.png"/></div>';
+        const nodes = this.parser.parse(template);
+
+        expect(nodes.length).toBeGreaterThan(0);
+    }
+
+    @After()
+    async clean() {
+    }
 }

@@ -550,6 +550,65 @@ export class XmlRendererCoverageTest {
         expect(comment.textContent).toBe('updated comment');
     }
 
+    @Test('XmlRenderer: should handle click')
+    testRendererClick() {
+        const element = this.renderer.createElement('button');
+        let clicked = false;
+        element.addEventListener('click', () => { clicked = true; });
+
+        this.renderer.click(element);
+        expect(clicked).toBe(true);
+    }
+
+    @Test('XmlRenderer: should build complex DOM structure')
+    testBuildComplexDOM() {
+        const root = this.renderer.createElement('div');
+        root.setAttribute('class', 'container');
+
+        const header = this.renderer.createElement('header');
+        const h1 = this.renderer.createElement('h1');
+        h1.setAttribute('id', 'title');
+
+        const titleText = this.renderer.createText('Welcome');
+        this.renderer.appendChild(h1, titleText);
+        this.renderer.appendChild(header, h1);
+        this.renderer.appendChild(root, header);
+
+        const nav = this.renderer.createElement('nav');
+        nav.setAttribute('class', 'nav');
+        const ul = this.renderer.createElement('ul');
+
+        ['Home', 'About', 'Contact'].forEach(itemText => {
+            const li = this.renderer.createElement('li');
+            const text = this.renderer.createText(itemText);
+            this.renderer.appendChild(li, text);
+            this.renderer.appendChild(ul, li);
+        });
+
+        this.renderer.appendChild(nav, ul);
+        this.renderer.appendChild(root, nav);
+
+        expect(root.childNodes.length).toBe(2);
+        expect((root.querySelector('header h1') as XmlElement)?.getAttribute('id')).toBe('title');
+        expect(root.querySelectorAll('li')?.length).toBe(3);
+    }
+
+    @Test('XmlRenderer: should handle classList operations')
+    testClassListOperations() {
+        const element = this.renderer.createElement('div');
+
+        this.renderer.addClass(element, 'first');
+        this.renderer.addClass(element, 'second');
+        this.renderer.addClass(element, 'first');
+
+        element.classList.add('third');
+        expect(() => element.classList.add('third')).not.toThrow();
+
+        element.classList.remove('first');
+        element.classList.remove('third');
+        expect(() => element.classList.remove('non-existent')).not.toThrow();
+    }
+
     @After()
     async clean() {
     }
@@ -645,6 +704,210 @@ export class XmlTemplateParserCoverageTest {
         const template = '';
         const nodes = this.parser.parse(template);
         expect(Array.isArray(nodes)).toBe(true);
+    }
+
+    @Test('XmlTemplateParser: should parse multiple root elements')
+    testParseMultipleRootElements() {
+        const template = '<div>First</div><span>Second</span>';
+        const nodes = this.parser.parse(template);
+
+        expect(nodes.length).toBeGreaterThanOrEqual(1);
+    }
+
+    @Test('XmlTemplateParser: should parse with special characters')
+    testParseSpecialCharacters() {
+        const template = '<div>&lt;script&gt;alert("xss")&lt;/script&gt;</div>';
+        const nodes = this.parser.parse(template);
+
+        expect(nodes.length).toBeGreaterThan(0);
+        const div = nodes[0] as XmlElement;
+        expect(div.tagName).toBe('div');
+    }
+
+    @Test('XmlTemplateParser: should parse with numeric content')
+    testParseNumericContent() {
+        const template = '<span>12345</span>';
+        const nodes = this.parser.parse(template);
+
+        expect(nodes.length).toBeGreaterThan(0);
+    }
+
+    @Test('XmlTemplateParser: should parse deeply nested structure')
+    testParseDeeplyNested() {
+        const template = '<div><section><article><p>Content</p></article></section></div>';
+        const nodes = this.parser.parse(template);
+
+        const div = nodes[0] as XmlElement;
+        expect(div.tagName).toBe('div');
+        expect(div.childNodes.length).toBe(1);
+
+        const section = div.childNodes[0] as XmlElement;
+        expect(section.tagName).toBe('section');
+        expect(section.childNodes.length).toBe(1);
+
+        const article = section.childNodes[0] as XmlElement;
+        expect(article.tagName).toBe('article');
+    }
+
+    @Test('XmlTemplateParser: should handle self-closing tags')
+    testParseSelfClosingTags() {
+        const template = '<div><br/><hr/><img src="test.png"/></div>';
+        const nodes = this.parser.parse(template);
+
+        expect(nodes.length).toBeGreaterThan(0);
+    }
+
+    @Test('XmlNode: should handle replaceChild')
+    testXmlNodeReplaceChild() {
+        const parent = new XmlNode(NodeType.Element);
+        const child1 = new XmlText('child1');
+        const child2 = new XmlText('child2');
+        const newChild = new XmlText('new child');
+
+        parent.appendChild(child1);
+        parent.appendChild(child2);
+        expect(parent.childNodes.length).toBe(2);
+
+        const replaced = parent.replaceChild(newChild, child1);
+        expect(replaced).toBe(child1);
+        expect(parent.childNodes.length).toBe(2);
+        expect(parent.childNodes[0]).toBe(newChild);
+        expect(parent.childNodes[1]).toBe(child2);
+        expect(child1.parentNode).toBeNull();
+        expect(newChild.parentNode).toBe(parent);
+    }
+
+    @Test('XmlNode: should handle replaceChild with non-existent child')
+    testXmlNodeReplaceChildNonExistent() {
+        const parent = new XmlNode(NodeType.Element);
+        const child1 = new XmlText('child1');
+        const newChild = new XmlText('new child');
+        const nonExistent = new XmlText('non-existent');
+
+        parent.appendChild(child1);
+        const replaced = parent.replaceChild(newChild, nonExistent);
+        expect(replaced).toBe(nonExistent);
+        expect(parent.childNodes.length).toBe(1);
+        expect(parent.childNodes[0]).toBe(child1);
+    }
+
+    @Test('XmlNode: should handle removeChild for non-existent child')
+    testXmlNodeRemoveNonExistentChild() {
+        const parent = new XmlNode(NodeType.Element);
+        const child1 = new XmlText('child1');
+        const nonExistent = new XmlText('non-existent');
+
+        parent.appendChild(child1);
+        const removed = parent.removeChild(nonExistent);
+        expect(removed).toBeUndefined();
+        expect(parent.childNodes.length).toBe(1);
+    }
+
+    @Test('XmlNode: should handle insertBefore at beginning')
+    testXmlNodeInsertBeforeAtBeginning() {
+        const parent = new XmlNode(NodeType.Element);
+        const child1 = new XmlText('child1');
+        const child2 = new XmlText('child2');
+        const newChild = new XmlText('new child');
+
+        parent.appendChild(child1);
+        parent.appendChild(child2);
+
+        parent.insertBefore(newChild, child1);
+        expect(parent.childNodes[0]).toBe(newChild);
+        expect(parent.childNodes[1]).toBe(child1);
+        expect(parent.childNodes[2]).toBe(child2);
+    }
+
+    @After()
+    async clean() {
+    }
+}
+
+
+
+@Suite('XML Complex Event Handling Tests')
+export class XmlComplexEventTest {
+
+    renderer!: XmlRenderer;
+
+    @Before()
+    async init() {
+        this.renderer = new XmlRenderer();
+    }
+
+    @Test('should handle multiple event listeners')
+    testMultipleListeners() {
+        const node = this.renderer.createElement('button');
+        let clickCount = 0;
+
+        const listener1 = () => clickCount++;
+        const listener2 = () => clickCount += 10;
+
+        this.renderer.appendChild(node, this.renderer.createText('Click me'));
+
+        node.addEventListener('click', listener1);
+        node.addEventListener('click', listener2);
+
+        node.dispatchEvent(new Event('click'));
+
+        expect(clickCount).toBe(11);
+
+        node.removeEventListener('click', listener1);
+        node.dispatchEvent(new Event('click'));
+
+        expect(clickCount).toBe(21);
+    }
+
+    @Test('should handle removeAllListeners')
+    testRemoveAllListeners() {
+        const node = this.renderer.createElement('button');
+        let eventFired = false;
+
+        const listener = () => { eventFired = true; };
+
+        node.addEventListener('click', listener);
+        node.removeEventListener('click');
+
+        node.dispatchEvent(new Event('click'));
+        expect(eventFired).toBe(false);
+    }
+
+    @Test('should handle event bubbling simulation')
+    testEventBubbling() {
+        const parent = this.renderer.createElement('div');
+        const child = this.renderer.createElement('button');
+
+        let parentClickCount = 0;
+        let childClickCount = 0;
+
+        parent.addEventListener('click', () => parentClickCount++);
+        child.addEventListener('click', () => childClickCount++);
+
+        child.dispatchEvent(new Event('click'));
+
+        expect(childClickCount).toBe(1);
+        expect(parentClickCount).toBe(0);
+    }
+
+    @Test('should handle custom events')
+    testCustomEvents() {
+        const node = this.renderer.createElement('div');
+        let customEventFired = false;
+
+        node.addEventListener('custom', () => { customEventFired = true; });
+
+        node.dispatchEvent(new Event('custom'));
+        expect(customEventFired).toBe(true);
+    }
+
+    @Test('should handle event dispatch return value')
+    testEventDispatchReturn() {
+        const node = this.renderer.createElement('button');
+        node.addEventListener('test', () => {});
+
+        const result = node.dispatchEvent(new Event('test'));
+        expect(result).toBe(true);
     }
 
     @After()

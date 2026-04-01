@@ -59,9 +59,13 @@ export function renderStringify(value: any): string {
  * used for error messages.
  */
 export function stringifyForError(value: any): string {
-  if (typeof value === 'function') return value.name || value.toString();
+  if (typeof value === 'function') {
+    const name = value.name;
+    return (name && name !== 'fn') ? name : value.toString();
+  }
   if (typeof value === 'object' && value != null && typeof value.type === 'function') {
-    return value.type.name || value.type.toString();
+    const typeName = value.type.name;
+    return (typeName && typeName !== 'fn') ? typeName : value.type.toString();
   }
 
   return renderStringify(value);

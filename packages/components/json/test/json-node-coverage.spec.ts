@@ -79,6 +79,82 @@ export class JsonNodeCoverageTest {
         expect(child1.parentNode).toBeNull();
     }
 
+    @Test('JsonNode: should handle replaceChild')
+    testJsonNodeReplaceChild() {
+        const parent = new JsonNode(NodeType.Element);
+        const child1 = new JsonText('child1');
+        const child2 = new JsonText('child2');
+        const newChild = new JsonText('new child');
+
+        parent.appendChild(child1);
+        parent.appendChild(child2);
+        expect(parent.childNodes.length).toBe(2);
+
+        const replaced = parent.replaceChild(newChild, child1);
+        expect(replaced).toBe(child1);
+        expect(parent.childNodes.length).toBe(2);
+        expect(parent.childNodes[0]).toBe(newChild);
+        expect(parent.childNodes[1]).toBe(child2);
+        expect(child1.parentNode).toBeNull();
+        expect(newChild.parentNode).toBe(parent);
+    }
+
+    @Test('JsonNode: should handle replaceChild with non-existent child')
+    testJsonNodeReplaceChildNonExistent() {
+        const parent = new JsonNode(NodeType.Element);
+        const child1 = new JsonText('child1');
+        const newChild = new JsonText('new child');
+        const nonExistent = new JsonText('non-existent');
+
+        parent.appendChild(child1);
+        const replaced = parent.replaceChild(newChild, nonExistent);
+        expect(replaced).toBe(nonExistent);
+        expect(parent.childNodes.length).toBe(1);
+        expect(parent.childNodes[0]).toBe(child1);
+        expect(child1.parentNode).toBe(parent);
+    }
+
+    @Test('JsonNode: should handle removeChild for non-existent child')
+    testJsonNodeRemoveNonExistentChild() {
+        const parent = new JsonNode(NodeType.Element);
+        const child1 = new JsonText('child1');
+        const nonExistent = new JsonText('non-existent');
+
+        parent.appendChild(child1);
+        const removed = parent.removeChild(nonExistent);
+        expect(removed).toBeUndefined();
+        expect(parent.childNodes.length).toBe(1);
+    }
+
+    @Test('JsonNode: should handle insertBefore at beginning')
+    testJsonNodeInsertBeforeAtBeginning() {
+        const parent = new JsonNode(NodeType.Element);
+        const child1 = new JsonText('child1');
+        const child2 = new JsonText('child2');
+        const newChild = new JsonText('new child');
+
+        parent.appendChild(child1);
+        parent.appendChild(child2);
+
+        parent.insertBefore(newChild, child1);
+        expect(parent.childNodes[0]).toBe(newChild);
+        expect(parent.childNodes[1]).toBe(child1);
+        expect(parent.childNodes[2]).toBe(child2);
+    }
+
+    @Test('JsonNode: should handle insertBefore with null refChild')
+    testJsonNodeInsertBeforeNullRef() {
+        const parent = new JsonNode(NodeType.Element);
+        const child1 = new JsonText('child1');
+        const newChild = new JsonText('new child');
+
+        parent.appendChild(child1);
+
+        parent.insertBefore(newChild, null as any);
+        expect(parent.childNodes[0]).toBe(newChild);
+        expect(parent.childNodes[1]).toBe(child1);
+    }
+
     @Test('JsonNode: should handle parentElement')
     testJsonNodeParentElement() {
         const parent = new JsonElement('parent');
@@ -589,6 +665,72 @@ export class JsonTemplateParserCoverageTest {
         expect(nodes.length).toBeGreaterThan(0);
         const div = nodes[0] as JsonElement;
         expect(div.hasAttribute('v-if')).toBe(true);
+    }
+
+    @Test('JsonTemplateParser: should parse with attributes property')
+    testParseWithAttributesProperty() {
+        const jsonTemplate = {
+            'div': {
+                'attributes': {
+                    'id': 'test-id',
+                    'class': 'test-class'
+                },
+                'span': 'Content'
+            }
+        };
+        const nodes = this.parser.parse(jsonTemplate);
+        
+        expect(nodes.length).toBeGreaterThan(0);
+        const div = nodes[0] as JsonElement;
+        expect(div.getAttribute('id')).toBe('test-id');
+        expect(div.getAttribute('class')).toBe('test-class');
+    }
+
+    @Test('JsonTemplateParser: should parse @ prefixed attributes')
+    testParseWithAtPrefixedAttributes() {
+        const jsonTemplate = {
+            'div': {
+                '@click': 'handleClick',
+                'span': 'Click me'
+            }
+        };
+        const nodes = this.parser.parse(jsonTemplate);
+        
+        expect(nodes.length).toBeGreaterThan(0);
+        const div = nodes[0] as JsonElement;
+        expect(div.hasAttribute('@click')).toBe(true);
+        expect(div.getAttribute('@click')).toBe('handleClick');
+    }
+
+    @Test('JsonTemplateParser: should parse # prefixed text')
+    testParseWithHashPrefix() {
+        const jsonTemplate = {
+            'div': {
+                '#text': 'Direct text content'
+            }
+        };
+        const nodes = this.parser.parse(jsonTemplate);
+        
+        expect(nodes.length).toBeGreaterThan(0);
+        const div = nodes[0] as JsonElement;
+        expect(div.textContent).toContain('Direct text content');
+    }
+
+    @Test('JsonTemplateParser: should parse with mixed content')
+    testParseWithMixedContent() {
+        const jsonTemplate = [
+            { div: 'First div' },
+            { '#comment': 'Test comment' },
+            { span: 'Span content' },
+            { p: 'Paragraph' }
+        ];
+        const nodes = this.parser.parse(jsonTemplate);
+        
+        expect(nodes.length).toBe(4);
+        expect((nodes[0] as JsonElement).tagName).toBe('div');
+        expect((nodes[1] as JsonComment).nodeType).toBe(NodeType.Comment);
+        expect((nodes[2] as JsonElement).tagName).toBe('span');
+        expect((nodes[3] as JsonElement).tagName).toBe('p');
     }
 
     @After()
