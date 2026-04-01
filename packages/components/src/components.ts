@@ -51,7 +51,7 @@ export class ComponentsModule {
 
 }
 
-export type RendererType = 'xml' | 'json';
+export type RendererType = 'html' | 'xml' | 'json';
 
 export interface ComponentBootOptions extends EnvironmentOption {
     /**
@@ -67,7 +67,10 @@ export interface ComponentBootOptions extends EnvironmentOption {
 export async function bootstrapComponent<T>(rootComponent: Type<T>, options?: ComponentBootOptions): Promise<ApplicationContext<T>>  {
     const deps = options?.deps || [];
     const rderType = options?.renderer || 'xml';
-    if (rderType === 'xml') {
+    if (rderType === 'html') {
+        const { HtmlTemplateModule } = await import('@tsdi/components/html');
+        deps.unshift(HtmlTemplateModule);
+    } else if (rderType === 'xml') {
         const { XmlTemplateModule } = await import('@tsdi/components/xml');
         deps.unshift(XmlTemplateModule);
     } else if (rderType === 'json') {

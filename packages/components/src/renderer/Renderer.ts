@@ -332,4 +332,10 @@ export abstract class Renderer {
   abstract removeStyle(el: RElement, style: string, flags?: RendererStyleFlags2): void;
   abstract setProperty(el: RElement, name: string, value: any): void;
   abstract setValue(node: RText | RComment, value: string): void;
+
+  /**
+   * Triggers a click event on the node.
+   * @param node The node to click
+   */
+  abstract click(node: RNode): void;
 }

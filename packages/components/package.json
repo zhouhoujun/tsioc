@@ -33,13 +33,13 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {    
+  "dependencies": {
     "css-select": "^6.0.0",
-    "fast-xml-parser": "^5.2.3"
+    "fast-xml-parser": "^5.2.3",
+    "jsdom": "^29.0.1"
   },
   "directories": {
     "lib": "lib",
     "test": "test"
-  },
-  "devDependencies": {}
+  }
 }

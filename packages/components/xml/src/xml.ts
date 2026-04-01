@@ -11,7 +11,7 @@ import { EventEmitter } from 'events';
 
 
 export class XmlNode implements RNode {
-    private events = new EventEmitter();
+    readonly events = new EventEmitter();
 
     get parentElement(): XmlElement | null {
         return this.parentNode instanceof XmlElement ? this.parentNode : null;
@@ -434,6 +434,10 @@ export class XmlRenderer implements Renderer {
     }
     setValue(node: XmlText | XmlComment, value: string): void {
         node.textContent = value;
+    }
+
+    click(node: XmlNode): void {
+        node.events.emit('click');
     }
 
 }

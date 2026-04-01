@@ -140,8 +140,12 @@ export function compileElementToFactory(
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(tagName);
-        // Copy nodeType from original node to preserve ElementContainer flag
-        element.nodeType = node.nodeType;
+        // Copy nodeType from original node to preserve ElementContainer flag (only for virtual DOM)
+        try {
+            element.nodeType = node.nodeType;
+        } catch {
+            // Real DOM nodes have read-only nodeType, skip
+        }
 
         // 应用属性
         compiledAttrs.forEach(applyAttr => {
@@ -644,7 +648,11 @@ export function bindingEvent(element: RNode, attrName: string, expr: string, ren
         el.addEventListener(eventName, handler);
 
         return () => {
-            el.setAttribute(attrName, expr);
+            try {
+                el.setAttribute(attrName, expr);
+            } catch {
+                // Skip invalid attribute names for real DOM
+            }
         }
     });
 }

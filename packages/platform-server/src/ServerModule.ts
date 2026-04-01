@@ -1,6 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ApplicationArguments, ModuleLoader, HrtimeFormatter } from '@tsdi/core';
 import { HeaderFormater } from '@tsdi/logger';
+import { DOCUMENT, PLATFORM_ID, PLATFORM_SERVER_ID } from '@tsdi/common';
 import { runMainPath } from './toAbsolute';
 import { NodeModuleLoader } from './NodeModuleLoader';
 import { LogHeaderFormater } from './formater';
@@ -22,6 +23,16 @@ import { ServerHrtimeFormatter } from './hrtime';
         { provide: ModuleLoader, useValue: new NodeModuleLoader() },
         { provide: HrtimeFormatter, useClass: ServerHrtimeFormatter },
         { provide: HeaderFormater, useClass: LogHeaderFormater, asDefault: true },
+        { provide: PLATFORM_ID, useValue: PLATFORM_SERVER_ID },
+        {
+            provide: DOCUMENT,
+            useFactory: () => {
+                const { JSDOM } = require('jsdom');
+                const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+                return dom.window.document;
+            },
+            asDefault: true
+        },
         ApplicationExit
     ]
 })
