@@ -124,9 +124,14 @@ export function compileElementToFactory(
         return  rendererOptions.templateFactory(node, renderer, attrs, bindings, options, rendererOptions);
     }
 
-    // 编译子节点
+    // 检查是否有结构指令（v-for, v-if等）
+    const hasStructuralDirective = directives.some(d => 
+        d.dirType === DirectiveType.Iterable || d.dirType === DirectiveType.Conditional
+    );
+
+    // 编译子节点（如果没有结构指令）
     const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RNode | null> = [];
-    if (node.childNodes) {
+    if (node.childNodes && !hasStructuralDirective) {
         for (const child of node.childNodes) {
             const childFactory = compileNodeToFactory(child, renderer, options, rendererOptions);
             childFactories.push(childFactory);
@@ -580,8 +585,14 @@ export function bindingElement<C>(
     // 创建属性绑定工厂
     bindingAtrrbutes(element, attrs, renderer, delimiter);
 
-    // 递归处理子节点
-    if (element.childNodes.length > 0) {
+    // 检查是否有结构指令
+    const dirs = element[DIRECTIVES];
+    const hasStructuralDirective = dirs?.some(d => 
+        d.dirType === DirectiveType.Iterable || d.dirType === DirectiveType.Conditional
+    );
+
+    // 递归处理子节点（如果没有结构指令）
+    if (!hasStructuralDirective && element.childNodes.length > 0) {
         walkNodesForBindings(element.childNodes, renderer, delimiter);
     }
 
@@ -591,7 +602,6 @@ export function bindingElement<C>(
         bindingComponentFactory(element, componentDef, attrs, renderer, delimiter);
     }
 
-    const dirs = element[DIRECTIVES];
     if (dirs && dirs.length) {
         // Sort directives by priority (higher priority first)
         dirs.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
@@ -851,7 +861,7 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
 export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp, templateNodes?: RNode[], parentNode?: RNode | null) {
     binding(node, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         const elementRef = injector.getElementRef(target);
-        const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { injector }) : undefined;
+        const templateRef = templateNodes ? createTemplateRef(templateNodes, elementRef, { injector, context }) : undefined;
         if (templateRef) injector.attachTemplate(templateRef);
 
         const viewContainerRef = injector.getViewContainerRef(target);
@@ -948,15 +958,12 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
 
     const parent = renderer.parentNode(el);
     if (parent) {
-        parent.replaceChild(el, container);
-        // Transfer only element children (structural directive containers) from el to container
-        // Text nodes should stay with the original element as part of the template
+        renderer.insertBefore(parent, container, el);
+        renderer.removeChild(parent, el);
         if (el.childNodes?.length) {
             const childNodes = [...el.childNodes];
             childNodes.forEach(child => {
-                // Only transfer element nodes, not text/comment nodes
-                // This preserves the template structure while ensuring nested structural directives are properly parented
-                if (child.nodeType === 1 || child.nodeType === 32) { // Element or ElementContainer
+                if (child.nodeType === 1 || child.nodeType === 32) {
                     renderer.appendChild(container, child);
                 }
             });
@@ -973,6 +980,11 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
     selectors.forEach(selector => {
         renderer.removeAttribute(el, selector);
     });
+
+    const templateEl = el as RElement;
+    if (templateEl.childNodes?.length) {
+        walkNodesForBindings(templateEl.childNodes, renderer, delimiter);
+    }
 
     bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, [el], parent);
 }
@@ -1006,6 +1018,13 @@ export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selector
     selectors.forEach(selector => {
         renderer.removeAttribute(container, selector);
     });
+
+    // Walk child nodes of the template element for bindings
+    // This ensures expressions like {{ item.name }} inside v-for templates get their bindings
+    const templateEl = el as RElement;
+    if (templateEl.childNodes?.length) {
+        walkNodesForBindings(templateEl.childNodes, renderer, delimiter);
+    }
 
     bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, [el], parent);
 }
@@ -1187,10 +1206,14 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
  * @returns 容器元素
  */
 export function createContainer(renderer: Renderer, text?: string): RElement {
-    const container = renderer.createElement('v-container');
-    container.nodeType = NodeType.ElementContainer;
-    return container;
-}
+     const container = renderer.createElement('v-container');
+     try {
+         container.nodeType = NodeType.ElementContainer;
+     } catch {
+         // Real DOM nodes have read-only nodeType, skip
+     }
+     return container;
+ }
 
 const vueForRegex = /^\s*((?:\([^)]+\)|[^)])+)\s+(?:in|of)\s+([^]+)$/;
 const angularForRegex = /^\s*let\s+([^ ]+)\s+(?:of|in)\s+([^]+)(?:\s*;\s*([^ ]+)\s+as\s+([^ ]+))?$/;

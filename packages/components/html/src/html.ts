@@ -55,7 +55,12 @@ export class HtmlRenderer implements Renderer {
     }
 
     removeChild(parent: RNode | null, oldChild: RNode, isHostElement?: boolean): void {
-        (parent as unknown as Element | null)?.removeChild(oldChild as unknown as Node);
+        if (!parent) return;
+        try {
+            (parent as unknown as Element).removeChild(oldChild as unknown as Node);
+        } catch {
+            // Child may not be in parent, ignore
+        }
     }
 
     querySelector(node: RNode | RNode[], selector: string): RNode | null {
@@ -90,12 +95,8 @@ export class HtmlRenderer implements Renderer {
                     const found = el.querySelectorAll(selector);
                     results.push(...Array.from(found).map(e => e as unknown as RNode));
                 } catch {
-                    // Fallback to attribute query for non-standard selectors
-                    if (selector.startsWith('[') && selector.endsWith(']')) {
-                        const attrResults = this.queryByAttribute(n, selector.slice(1, -1));
-                        if (attrResults) results.push(...attrResults);
-                    } else if (selector.includes(',')) {
-                        // Handle multiple selectors like "[v-for],[*for]"
+                    // Handle multiple selectors like "[v-for],[*for]" first
+                    if (selector.includes(',')) {
                         const selectors = selector.split(',').map(s => s.trim());
                         for (const s of selectors) {
                             if (s.startsWith('[') && s.endsWith(']')) {
@@ -103,6 +104,10 @@ export class HtmlRenderer implements Renderer {
                                 if (attrResults) results.push(...attrResults);
                             }
                         }
+                    } else if (selector.startsWith('[') && selector.endsWith(']')) {
+                        // Single attribute selector
+                        const attrResults = this.queryByAttribute(n, selector.slice(1, -1));
+                        if (attrResults) results.push(...attrResults);
                     }
                 }
             }

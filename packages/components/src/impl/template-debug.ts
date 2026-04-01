@@ -11,17 +11,7 @@ import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
 import { isReactive, reactive } from '../reactive';
 
-
-/**
- * Template ref implement.
- *
- * @export
- * @class TemplateRefImpl
- * @implements {TemplateRef<C>}
- * @template C
- */
 class TemplateRefImpl<C = any> implements TemplateRef<C> {
-
     [noReact] = true;
 
     private _rootNodesFactory?: NodeFactory<C>;
@@ -29,13 +19,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     get rootNodes(): RNode[] {
         return this._rootNodes ?? [];
     }
-    /**
-     * Creates an instance of TemplateRefImpl.
-     * @param {RNode[]} rootNodes
-     * @param {ElementRef} elementRef
-     * @param {InvocationContext} context
-     * @memberof TemplateRefImpl
-     */
+
     constructor(
         rootNodes: RNode[] | NodeFactory<C>,
         readonly elementRef: ElementRef,
@@ -50,17 +34,19 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
             this._rootNodesFactory = rootNodes;
         } else {
             this._rootNodes = rootNodes;
+            console.log('[TemplateRefImpl] constructor: rootNodes count:', rootNodes.length);
+            rootNodes.forEach((n, i) => {
+                console.log(`  [${i}] nodeType:`, n.nodeType, 'tagName:', (n as any).tagName, 'BINDINGS:', n[BINDINGS]?.length);
+                if (n.childNodes?.length) {
+                    console.log(`  [${i}] childNodes:`, n.childNodes.length);
+                    n.childNodes.forEach((c, ci) => {
+                        console.log(`    [${ci}] childNodeType:`, c.nodeType, 'BINDINGS:', c[BINDINGS]?.length, 'textContent:', (c as any).textContent?.substring(0, 30));
+                    });
+                }
+            });
         }
     }
 
-    /**
-     * Instantiates an embedded view based on this template,
-     * and attaches it to the view container.
-     * @param context The data-binding context of the embedded view, as declared
-     * in the `<template>` usage.
-     * @param injector NodeInjector to be used within the embedded view.
-     * @returns The new embedded view object.
-     */
     createEmbeddedView(context?: C, injector?: NodeInjector, effect?: ReactiveEffect): EmbeddedViewRef<C> {
         injector = injector || this.options?.injector;
         if (!injector) throw new Exception('NodeInjector is required');
@@ -76,46 +62,51 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
             context = this.options?.context ?? {};
         }
 
-        // 响应式处理上下文
         context = isReactive(context) ? context : reactive(context, effect);
+        console.log('[TemplateRefImpl] createEmbeddedView: context keys:', Object.keys(context));
 
-        // 默认处理抽象节点
         let rootNodes: RNode[];
         if (this._rootNodesFactory) {
+            console.log('[TemplateRefImpl] Using _rootNodesFactory');
             rootNodes = this._rootNodesFactory(renderer, injector, context as C, effect);
         } else {
+            console.log('[TemplateRefImpl] Using clone and bindings');
             rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
-            rootNodes.forEach(node => this.bindings(node, context!, effect, injector));
+            console.log('[TemplateRefImpl] Cloned rootNodes:', rootNodes.length);
+            rootNodes.forEach((node, idx) => {
+                console.log(`[TemplateRefImpl] Calling bindings for root node [${idx}]`);
+                this.bindings(node, context!, effect, injector);
+            });
         }
 
-        // 创建嵌入式视图
         const embeddedView = createEmbeddedViewRef(rootNodes, context!, injector, effect);
-
         return embeddedView;
     }
 
     private bindings(node: RNode, context: C, effect: ReactiveEffect, injector: NodeInjector): void {
-
         const bindings = node[BINDINGS];
+        console.log('[TemplateRefImpl.bindings] BINDINGS count:', bindings?.length, 'context:', Object.keys(context));
         if (bindings?.length) {
-            bindings.forEach(binding => {
+            bindings.forEach((binding, idx) => {
+                console.log(`[TemplateRefImpl.bindings] Executing binding [${idx}]`);
                 const unbinding = binding(node, context, effect, injector);
                 unbinding && injector.onDestroy(unbinding);
             });
         }
 
         if (node.childNodes?.length) {
-            node.childNodes.forEach(n => {
-                this.bindings(n, context, effect, injector)
+            console.log('[TemplateRefImpl.bindings] Processing', node.childNodes.length, 'child nodes');
+            node.childNodes.forEach((n, idx) => {
+                console.log(`[TemplateRefImpl.bindings] Child [${idx}] nodeType:`, n.nodeType, 'BINDINGS:', n[BINDINGS]?.length);
+                this.bindings(n, context, effect, injector);
             });
         }
-
-
     }
 
     private clone(node: RNode, renderer: Renderer) {
         const cloned = this.cloneNode(node, renderer);
         cloned[BINDINGS] = node[BINDINGS]?.slice(0);
+        console.log('[TemplateRefImpl.clone] Cloned node, BINDINGS copied:', cloned[BINDINGS]?.length);
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
                 cloned.appendChild(this.clone(n, renderer));
@@ -123,7 +114,6 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         }
         return cloned;
     }
-
 
     private cloneNode(node: RNode, renderer: Renderer): RNode {
         if (node.nodeType === NodeType.Text) {
@@ -134,17 +124,12 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         return this.cloneElementWithAttributes(node as RElement, renderer);
     }
 
-    /**
-     * 深度克隆元素及其所有属性
-     */
     private cloneElementWithAttributes(element: RElement, renderer: Renderer): RElement {
-        const tagName = element.tagName
+        const tagName = element.tagName;
         const clonedElement = renderer.createElement(tagName);
         try {
             clonedElement.nodeType = element.nodeType;
-        } catch {
-            // Real DOM nodes have read-only nodeType, skip
-        }
+        } catch {}
 
         const attributes = renderer.getAttributes(element);
         if (attributes?.length) {

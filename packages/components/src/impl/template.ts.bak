@@ -140,12 +140,9 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     private cloneElementWithAttributes(element: RElement, renderer: Renderer): RElement {
         const tagName = element.tagName
         const clonedElement = renderer.createElement(tagName);
-        try {
-            clonedElement.nodeType = element.nodeType;
-        } catch {
-            // Real DOM nodes have read-only nodeType, skip
-        }
+        clonedElement.nodeType = element.nodeType;
 
+        // 克隆所有属性
         const attributes = renderer.getAttributes(element);
         if (attributes?.length) {
             attributes.forEach((attr: RAttr) => {
