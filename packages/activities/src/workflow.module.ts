@@ -10,7 +10,8 @@ import {
     TryCatchActivity, WhileActivity,
     AssignActivity, LogActivity, ForEachActivity, TransformActivity, MapActivity, FilterActivity,
     ReduceActivity, ValidateActivity, RequiredActivity, RangeActivity, PatternActivity,
-    EmitActivity, WaitActivity, BatchActivity, MergeActivity, SplitActivity
+    EmitActivity, WaitActivity, BatchActivity, MergeActivity, SplitActivity,
+    CodeActivity, SubProcessActivity, HttpRequestActivity
 } from './activities';
 import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
 
@@ -64,7 +65,10 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
         WaitActivity,
         BatchActivity,
         MergeActivity,
-        SplitActivity
+        SplitActivity,
+        CodeActivity,
+        SubProcessActivity,
+        HttpRequestActivity
     ],
     exports: [
         AopModule,
@@ -98,6 +102,9 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
         BatchActivity,
         MergeActivity,
         SplitActivity,
+        CodeActivity,
+        SubProcessActivity,
+        HttpRequestActivity,
         VisualWorkflowService,
         VisualWorkflowBuilder,
         ActivityInterceptorService,

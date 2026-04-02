@@ -24,3 +24,6 @@ export * from './Transform';
 export * from './Validate';
 export * from './Event';
 export * from './Batch';
+export * from './Code';
+export * from './SubProcess';
+export * from './HttpRequest';
