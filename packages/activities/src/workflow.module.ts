@@ -2,6 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { ComponentsModule } from '@tsdi/components';
 import { RunAspect } from './aop/RunAspect';
+import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
 import { WorkflowService } from './services/workflow.service';
 import {
     ConfirmActivity, DelayActivity, DoWhileActivity, EndActivity, IntervalActivity,
@@ -28,6 +29,9 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
     providers: [
         WorkflowService,
         RunAspect,
+        ActivityInterceptorService,
+        ActivityLogAspect,
+        ActivityDebugService,
         VisualWorkflowService,
         VisualWorkflowBuilder
     ],
@@ -95,7 +99,10 @@ import { VisualWorkflowService, VisualWorkflowBuilder } from './visual';
         MergeActivity,
         SplitActivity,
         VisualWorkflowService,
-        VisualWorkflowBuilder
+        VisualWorkflowBuilder,
+        ActivityInterceptorService,
+        ActivityLogAspect,
+        ActivityDebugService
     ]
 })
 export class WorkflowModule {

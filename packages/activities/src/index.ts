@@ -2,7 +2,7 @@
 
 
 // aop
-export * from './aop/RunAspect';
+export * from './aop';
 
 export * from './activities';
 export * from './workflow.module';
