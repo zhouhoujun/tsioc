@@ -10,7 +10,7 @@ import { HtmlTemplateModule } from '../src';
 })
 class MyButtonDirective {
     @Attribute() label = 'Click';
-    @Attribute() disabled = 'false';
+    @Attribute() disabled = false;
     clicked = false;
 
     handleClick() {
@@ -31,7 +31,7 @@ class MyIconDirective {
 })
 class MyCardDirective {
     @Attribute() title = '';
-    @Attribute() visible = 'true';
+    @Attribute() visible = true;
 }
 
 @Component({
