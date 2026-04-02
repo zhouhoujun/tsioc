@@ -19,7 +19,7 @@ export class RunAspect {
 
     }
 
-    @AfterReturning('execution(*.run)')
+    @AfterReturning('execution(*.execute(..))')
     afterRun(joinPoint: JoinPoint) {
 
         // const actRef = joinPoint.target as ActivityRef;
