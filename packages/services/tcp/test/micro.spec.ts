@@ -1,10 +1,10 @@
 import { Injectable, Module, isString, token } from '@tsdi/ioc';
 import { Application, ApplicationContext, PipeTransform } from '@tsdi/core';
-import { ErrorResponse, PacketLengthException, RequestExceptionHandlerFilter, Transport } from '@tsdi/common';
+import { ErrorResponse, PacketLengthException, RequestExceptionHandlerFilter, Transport, PatternFormatter } from '@tsdi/common';
 import { useJsonPacket } from '@tsdi/common/transport';
 import { provideClient, withBodySerialize, withClientFilters, withClientTransfers, withResponseEvent } from '@tsdi/common/client';
 import { Handle, Payload, provideService, RequestPath, Subscribe, withBodyparser, withContent, withExceptionFilter, withInterceptors, withLogger, withResponseVaildate, withRouter, withTransfers } from '@tsdi/endpoints';
-import { TCP_SERV_INTERCEPTORS, TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
+import { TCP_SERV_INTERCEPTORS, TcpClient, withTcpClientTransport, withTcpTransport, TcpPatternFormatter } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { LoggerModule } from '@tsdi/logger';
@@ -25,7 +25,7 @@ export class TcpService {
     }
 
 
-    @Handle({ cmd: 'xxx' })
+    @Handle({ cmd: 'xxx' }, Transport.TCP)
     async handleMessage(@Payload() message: string) {
         return message;
     }
@@ -56,6 +56,8 @@ export class TcpService {
         ServerCommonModule,
     ],
     providers: [
+        TcpPatternFormatter,
+        { provide: PatternFormatter, useExisting: TcpPatternFormatter },
         provideClient(
             // withClientFeatures({
             //     transfers: [
@@ -189,9 +191,11 @@ describe('TCP Micro Service', () => {
 
     it('cmd message', async () => {
         const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
+            observe: 'response',
             payload: {
                 message: 'ble'
-            }
+            },
+            responseType: 'text'
         })
             .pipe(
                 catchError((err, ct) => {
@@ -199,12 +203,13 @@ describe('TCP Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(isString(a)).toBeTruthy();
-        expect(a).toEqual('ble');
+        expect(a.ok).toBeTruthy();
+        expect(a.body).toEqual('ble');
     });
 
     it('sensor/message not found', async () => {
         const a = await lastValueFrom(client.send('sensor/message', {
+            observe: 'response',
             payload: {
                 message: 'ble'
             }
@@ -215,16 +220,17 @@ describe('TCP Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(ErrorResponse);
-        // expect(a.status).toEqual(404);
+        expect(a instanceof ErrorResponse).toBeTruthy();
         expect(a.statusText).toEqual('Not Found')
     });
 
     it('sensor/message/** message', async () => {
         const a = await lastValueFrom(client.send('sensor/message/update', {
+            observe: 'response',
             payload: {
                 message: 'ble'
-            }
+            },
+            responseType: 'text'
         })
             .pipe(
                 catchError((err, ct) => {
@@ -232,15 +238,17 @@ describe('TCP Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(isString(a)).toBeTruthy();
-        expect(a).toEqual('ble');
+        expect(a.ok).toBeTruthy();
+        expect(a.body).toEqual('ble');
     });
 
     it('Subscribe sensor message', async () => {
         const a = await lastValueFrom(client.send('sensor/sensor01/start', {
+            observe: 'response',
             payload: {
                 message: 'ble'
-            }
+            },
+            responseType: 'text'
         })
             .pipe(
                 catchError((err, ct) => {
@@ -248,12 +256,13 @@ describe('TCP Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(isString(a)).toBeTruthy();
-        expect(a).toEqual('ble');
+        expect(a.ok).toBeTruthy();
+        expect(a.body).toEqual('ble');
     });
 
     it('Subscribe sensor message not found', async () => {
         const a = await lastValueFrom(client.send('sensor/sensor03/start', {
+            observe: 'response',
             payload: {
                 message: 'ble'
             }
@@ -264,8 +273,7 @@ describe('TCP Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(ErrorResponse);
-        // expect(a.status).toEqual(404);        
+        expect(a instanceof ErrorResponse).toBeTruthy();
         expect(a.statusText).toEqual('Not Found')
     });
 

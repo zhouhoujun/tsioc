@@ -4,7 +4,9 @@
   "description": "Application tcp service. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "test": "ts-node -r tsconfig-paths/register unit.ts"
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:unit": "ts-node -r tsconfig-paths/register unit.ts --grep 'Unit'",
+    "test:coverage": "nyc ts-node -r tsconfig-paths/register unit.ts"
   },
   "keywords": [
     "boot",
@@ -40,5 +42,37 @@
     "lib": "lib",
     "test": "test"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "nyc": "^15.1.0",
+    "@types/node": "^20.0.0"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "test/**/*.ts",
+      "src/**/*.spec.ts"
+    ],
+    "extension": [
+      ".ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ],
+    "reporter": [
+      "text",
+      "text-summary",
+      "html",
+      "lcov"
+    ],
+    "sourceMap": true,
+    "instrument": true,
+    "watermarks": {
+      "lines": [80, 95],
+      "functions": [80, 95],
+      "branches": [80, 95],
+      "statements": [80, 95]
+    }
+  }
 }
