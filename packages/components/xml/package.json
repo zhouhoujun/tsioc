@@ -1,0 +1,44 @@
+{
+  "name": "@tsdi/components/xml",
+  "version": "6.0.0-beta7",
+  "description": "application components. base on AOP, Ioc container, via @tsdi/core .",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
+  },
+  "keywords": [
+    "components",
+    "boot",
+    "frameworks",
+    "Application",
+    "AOP",
+    "aop",
+    "tsdi",
+    "@tsdi",
+    "tsioc",
+    "ioc",
+    "IoC",
+    "type",
+    "container",
+    "dependency",
+    "injection"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "css-select": "^6.0.0",
+    "fast-xml-parser": "^5.2.3"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
+}
