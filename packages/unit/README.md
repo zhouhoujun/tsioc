@@ -155,6 +155,37 @@ tsdi test  //default load test/**/*.ts
 //or
 tsdi test test/**/*.ts
 
+// Run with browser environment
+tsdi test --browser
+
+// Run with node environment (default)
+tsdi test --node
+
+// Run with coverage
+tsdi test --coverage
+
+// Run with coverage (short form)
+tsdi test -c
+
+// Run with browser environment and coverage
+tsdi test --browser --coverage
+
+// Run with node environment and coverage
+tsdi test --node --coverage
+```
+
+### Programmatic API
+
+```typescript
+import { runTest } from '@tsdi/unit';
+
+runTest('test/**/*.ts', {
+    env: 'node',  // 'node' | 'browser' | 'auto'
+    coverage: {
+        enabled: true,
+        reporters: ['text', 'text-summary']
+    }
+});
 ```
 
 

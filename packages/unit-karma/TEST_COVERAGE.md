@@ -6,7 +6,84 @@
 **Execution Time:** ~75-180ms
 **Test Files:** 3
 
-## Running Tests with Coverage
+## Browser Code Coverage with karma-coverage
+
+This package supports Istanbul-style code coverage through karma-coverage integration.
+
+### karma-coverage Integration
+
+To enable code coverage in browser environment:
+
+1. Install karma-coverage and related packages:
+
+```bash
+npm install --save-dev karma-coverage istanbul-instrumenter-loader babel-plugin-istanbul
+```
+
+2. Configure karma.conf.js:
+
+```javascript
+module.exports = function(config) {
+  config.set({
+    frameworks: ['jasmine', 'karma-typescript'],
+    files: [
+      'src/**/*.ts',
+      'test/**/*.spec.ts'
+    ],
+    preprocessors: {
+      'src/**/*.ts': ['karma-coverage'],
+      'test/**/*.spec.ts': ['karma-typescript']
+    },
+    reporters: ['progress', 'coverage'],
+    coverageReporter: {
+      reporters: [
+        { type: 'html', dir: 'coverage' },
+        { type: 'lcov', dir: 'coverage' },
+        { type: 'text-summary' }
+      ]
+    }
+  });
+};
+```
+
+3. Configure Babel for instrumentation (babel.config.js):
+
+```javascript
+module.exports = {
+  plugins: [
+    ['istanbul', {
+      include: 'src/**/*.ts',
+      exclude: ['**/*.spec.ts', '**/*.test.ts']
+    }]
+  ]
+};
+```
+
+4. Run tests with coverage:
+
+```bash
+karma start karma.conf.js --coverage
+```
+
+### Coverage Data Format
+
+The coverage collector reads Istanbul format coverage data from `window.__coverage__`:
+
+```javascript
+window.__coverage__ = {
+  'path/to/file.ts': {
+    path: 'path/to/file.ts',
+    s: { /* statement coverage */ },
+    b: { /* branch coverage */ },
+    f: { /* function coverage */ },
+    fnMap: { /* function map */ },
+    statementMap: { /* statement map */ },
+    branchMap: { /* branch map */ }
+  }
+};
+```
+
+## Running Tests
 
 ### Using --coverage flag
 
