@@ -24,11 +24,13 @@ export class V8CoverageCollector extends CoverageCollector {
     private fileCoverages: Map<string, FileCoverageData> = new Map();
     private options: CoverageOptions;
     private coverageDir: string;
+    private rootPath: string;
 
-    constructor(@Optional() @Inject(UNITTESTCONFIGURE) config: UnitTestConfigure) {
+    constructor(@Optional() @Inject(UNITTESTCONFIGURE) config?: UnitTestConfigure) {
         super();
         this.options = config?.coverage || {};
         this.coverageDir = this.options.outputDir || path.join(process.cwd(), '.nyc_output');
+        this.rootPath = config?.baseURL || process.cwd();
     }
 
     async collect(): Promise<void> {
@@ -59,8 +61,8 @@ export class V8CoverageCollector extends CoverageCollector {
     private processCoverage(v8Result: V8CoverageResult): void {
         if (!v8Result?.result) return;
 
-        const includePatterns = this.options.include || ['src/**/*.ts', 'src/**/*.js'];
-        const excludePatterns = this.options.exclude || ['test/**/*.ts', '**/*.spec.ts', '**/*.test.ts', 'node_modules/**'];
+        const includePatterns = this.options.include || ['**/src/**/*.ts', '**/src/**/*.js'];
+        const excludePatterns = this.options.exclude || ['**/test/**', '**/*.spec.ts', '**/*.test.ts', '**/node_modules/**'];
 
         for (const script of v8Result.result) {
             if (!script.url || script.url.startsWith('node:') || script.url.includes('node_modules')) {
@@ -177,27 +179,61 @@ export class V8CoverageCollector extends CoverageCollector {
     }
 
     private matchesPatterns(filePath: string, include: string[], exclude: string[]): boolean {
-        const normalizedPath = path.normalize(filePath);
-        
+        const relativePath = this.getRelativePath(filePath);
+
         for (const pattern of exclude) {
-            if (this.matchPattern(normalizedPath, pattern)) return false;
+            if (this.matchGlob(relativePath, pattern)) return false;
         }
 
         for (const pattern of include) {
-            if (this.matchPattern(normalizedPath, pattern)) return true;
+            if (this.matchGlob(relativePath, pattern)) return true;
         }
 
         return false;
     }
 
-    private matchPattern(filePath: string, pattern: string): boolean {
-        const regexPattern = pattern
-            .replace(/\*\*/g, '.*')
-            .replace(/\*/g, '[^/]*')
-            .replace(/\./g, '\\.')
-            .replace(/\//g, '[/\\\\]');
+    private getRelativePath(filePath: string): string {
+        const normalized = path.normalize(filePath);
+        if (normalized.startsWith(this.rootPath)) {
+            return normalized.substring(this.rootPath.length).replace(/^[/\\]/, '');
+        }
+        return normalized;
+    }
+
+    private matchGlob(filePath: string, pattern: string): boolean {
+        const regex = this.globToRegex(pattern);
+        return new RegExp(regex, 'i').test(filePath);
+    }
+
+    private globToRegex(pattern: string): string {
+        const parts = pattern.split('**/');
+        let regex = '';
         
-        return new RegExp(regexPattern).test(filePath);
+        for (let i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                regex += '(?:[^/]+/)*';
+            }
+            regex += this.globPartToRegex(parts[i]);
+        }
+        
+        return regex + '$';
+    }
+    
+    private globPartToRegex(part: string): string {
+        let regex = '';
+        for (let i = 0; i < part.length; i++) {
+            const ch = part[i];
+            if (ch === '*') {
+                regex += '[^/]*';
+            } else if (ch === '?') {
+                regex += '[^/]';
+            } else if (ch === '.') {
+                regex += '\\.';
+            } else {
+                regex += ch;
+            }
+        }
+        return regex;
     }
 
     getSummary(): CoverageSummary {

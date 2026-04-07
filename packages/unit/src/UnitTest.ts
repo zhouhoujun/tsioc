@@ -66,11 +66,13 @@ export class UnitTest { }
 function parseCoverageFromArgs(): boolean {
     const args = process.argv.slice(2);
     
-    if (args.includes('--coverage') || args.includes('-c') || args.includes('--coverage=true')) {
-        return true;
-    }
+    const coverageEnabled = args.includes('--coverage') || args.includes('-c') || args.includes('--coverage=true');
+    const envCoverageEnabled = process.env.COVERAGE === '1' || process.env.COVERAGE === 'true';
     
-    if (process.env.COVERAGE === '1' || process.env.COVERAGE === 'true') {
+    if (coverageEnabled || envCoverageEnabled) {
+        if (!process.env.NODE_V8_COVERAGE) {
+            process.env.NODE_V8_COVERAGE = '.nyc_output';
+        }
         return true;
     }
     
@@ -128,16 +130,16 @@ export async function runTest(src: string | AbstractType | (string | AbstractTyp
        finalLoads.push(envModule.reporter);
    }
    
-   if (coverageEnabled && !config?.coverage?.enabled) {
-       finalConfig = {
-           ...config,
-           coverage: {
-               enabled: true,
-               reporters: ['text', 'text-summary'] as ('text' | 'text-summary')[],
-               include: ['src/**/*.ts'],
-               exclude: ['test/**/*.ts']
-           }
-       };
+       if (coverageEnabled && !config?.coverage?.enabled) {
+        finalConfig = {
+            ...config,
+            coverage: {
+                enabled: true,
+                reporters: ['text', 'text-summary'] as ('text' | 'text-summary')[],
+                include: ['**/src/**/*.ts'],
+                exclude: ['test/**/*.ts', '**/*.spec.ts', '**/*.test.ts', '**/node_modules/**']
+            }
+        };
        
        if (!process.env.NODE_V8_COVERAGE) {
            const coverageDir = config?.coverage?.outputDir || '.nyc_output';
