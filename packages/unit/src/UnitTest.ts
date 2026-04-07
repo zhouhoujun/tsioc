@@ -1,13 +1,14 @@
-import { Module, Provider, AbstractType } from '@tsdi/ioc';
+import { Module, Provider, AbstractType, Type, Token } from '@tsdi/ioc';
 import { Application, ApplicationArguments, AppMode, AppPlatform, LoadType } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
-import { UnitTestConfigure } from './UnitTestConfigure';
+import { UnitTestConfigure, CoverageOptions, TestEnvironment } from './UnitTestConfigure';
 import { UnitTestService } from './UnitTestService';
 import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
 import { SuiteRunner } from './runner/SuiteRunner';
+import { AbstractReporter, UNIT_REPORTES, RealtimeReporter } from './reports/Reporter';
 
 class UnitTestApplicationArguments extends ApplicationArguments {
     private _baseURL: string;
@@ -48,12 +49,12 @@ class UnitTestApplicationArguments extends ApplicationArguments {
       LoggerModule
    ],
    providers: [
-      UnitTestConfigureService,
-      RunAspect,
-      SuiteRunner,
-      OldTestRunner,
-      DefaultTestReport
-   ],
+       UnitTestConfigureService,
+       RunAspect,
+       SuiteRunner,
+       OldTestRunner,
+       DefaultTestReport
+    ],
    declarations:[
       UnitTestService
    ],
@@ -62,25 +63,109 @@ class UnitTestApplicationArguments extends ApplicationArguments {
 export class UnitTest { }
 
 
+function parseCoverageFromArgs(): boolean {
+    const args = process.argv.slice(2);
+    
+    if (args.includes('--coverage') || args.includes('-c') || args.includes('--coverage=true')) {
+        return true;
+    }
+    
+    if (process.env.COVERAGE === '1' || process.env.COVERAGE === 'true') {
+        return true;
+    }
+    
+    return false;
+}
+
+function detectEnvironment(): 'node' | 'browser' {
+    if (typeof window !== 'undefined' && typeof window.document !== 'undefined') {
+        return 'browser';
+    }
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+        return 'node';
+    }
+    return 'node';
+}
+
+async function loadEnvironmentModule(env: TestEnvironment): Promise<{ reporter?: Type; coverageReporter?: Type }> {
+    const actualEnv = env === 'auto' ? detectEnvironment() : env;
+    
+    if (actualEnv === 'node') {
+        try {
+            const module = await import('@tsdi/unit-console');
+            return {
+                reporter: module.ConsoleReporter,
+                coverageReporter: module.CoverageReporter
+            };
+        } catch (e) {
+            console.warn('Failed to load @tsdi/unit-console. Install it with: npm install @tsdi/unit-console');
+            return {};
+        }
+    } else {
+        try {
+            const module = await import('@tsdi/unit-karma');
+            return {
+                reporter: module.KarmaReporter,
+                coverageReporter: module.CoverageReporter
+            };
+        } catch (e) {
+            console.warn('Failed to load @tsdi/unit-karma. Install it with: npm install @tsdi/unit-karma');
+            return {};
+        }
+    }
+}
 
 export async function runTest(src: string | AbstractType | (string | AbstractType)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
+   const coverageEnabled = parseCoverageFromArgs();
+   const env = config?.env || 'auto';
+   
+   let finalConfig = config;
+   let finalLoads = [...loads];
+   
+   const envModule = await loadEnvironmentModule(env);
+   
+   if (envModule.reporter && !loads.some(l => l === envModule.reporter)) {
+       finalLoads.push(envModule.reporter);
+   }
+   
+   if (coverageEnabled && !config?.coverage?.enabled) {
+       finalConfig = {
+           ...config,
+           coverage: {
+               enabled: true,
+               reporters: ['text', 'text-summary'] as ('text' | 'text-summary')[],
+               include: ['src/**/*.ts'],
+               exclude: ['test/**/*.ts']
+           }
+       };
+       
+       if (!process.env.NODE_V8_COVERAGE) {
+           const coverageDir = config?.coverage?.outputDir || '.nyc_output';
+           process.env.NODE_V8_COVERAGE = coverageDir;
+       }
+       
+       if (envModule.coverageReporter && !loads.some(l => l === envModule.coverageReporter)) {
+           finalLoads.push(envModule.coverageReporter);
+       }
+   }
+
    const providers: Provider[] = [
       {
          provide: UNITTESTCONFIGURE,
-         useValue: { ...config, src }
+         useValue: { ...finalConfig, src }
       }
    ];
-   if (config?.baseURL) {
+   if (finalConfig?.baseURL) {
       providers.push({ 
          provide: ApplicationArguments, 
          useClass: UnitTestApplicationArguments,
          deps: [],
-         useFactory: () => new UnitTestApplicationArguments(config.baseURL!)
+         useFactory: () => new UnitTestApplicationArguments(finalConfig.baseURL!)
       });
    }
    await Application.run({
       module: UnitTest,
-      loads,
+      loads: finalLoads,
       providers
    })
 }

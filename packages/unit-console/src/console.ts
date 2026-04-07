@@ -2,7 +2,8 @@ import { Token, lang, Module } from '@tsdi/ioc';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLog4Module } from '@tsdi/platform-server/log4js';
-import * as chalk from 'chalk';
+
+const chalk = require('chalk');
 
 @Module({
     imports: [
@@ -48,11 +49,10 @@ export class ConsoleReporter extends RealtimeReporter {
                     failed++;
                     const derr = fails[d.describe] = fails[d.describe] || [];
                     derr.push(`\n    ${c.title}\n`);
-                    derr.push(chalk.red(c.error.stack))
+                    derr.push(chalk.red(c.error.stack || c.error.message))
                 } else {
                     successed++;
                 }
-                // reportStr = reportStr + '    ' + (c.error ? chalk.red('x') : chalk.green('√')) + ' ' + chalk.gray(c.title) + '\n';
             })
         });
 

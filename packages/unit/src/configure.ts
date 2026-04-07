@@ -1,21 +1,17 @@
 import { Injectable, lang, InjectUtil, Provider, token } from '@tsdi/ioc';
 import { Application, ApplicationContext, Start, Startup } from '@tsdi/core';
 import * as assert from 'assert';
-import * as expect from 'expect';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import { ExpectToken } from './assert/expects';
-import { AbstractReporter, UNIT_REPORTES } from './reports/Reporter';
+import { AbstractReporter, UNIT_REPORTES, Reporter } from './reports/Reporter';
+import { CoverageReporter } from './reports/CoverageReporter';
+
+const expect = require('expect');
 
 
 export const UNITTESTCONFIGURE = token<UnitTestConfigure>('UNITTESTCONFIGURE');
-/**
- * unit test configure register.
- *
- * @export
- * @class UnitTestConfigureRegister
- * @extends {ConfigureRegister}
- */
+
 @Injectable()
 export class UnitTestConfigureService {
 
@@ -27,7 +23,7 @@ export class UnitTestConfigureService {
             InjectUtil.setValue(ctx, Assert, assert)
         }
         if (!ctx.has(ExpectToken)) {
-            InjectUtil.setValue(ctx, ExpectToken, expect)
+            InjectUtil.setValue(ctx, ExpectToken, expect.default || expect)
         }
         const reps = ctx.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
         if (reps.length) {
@@ -36,5 +32,24 @@ export class UnitTestConfigureService {
         if (config.reporters && config.reporters.length) {
             InjectUtil.inject(ctx, config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as Provider)))
         }
+
+        if (config.coverage?.enabled) {
+            this.configureCoverageReporters(ctx, config);
+        }
+    }
+
+    protected configureCoverageReporters(ctx: ApplicationContext, config: UnitTestConfigure): void {
+        const reporters = ctx.get(UNIT_REPORTES, []);
+        const coverageOptions = config.coverage || { enabled: false };
+        
+        for (const reporter of reporters) {
+            if (this.isCoverageReporter(reporter)) {
+                reporter.setOptions(coverageOptions);
+            }
+        }
+    }
+
+    protected isCoverageReporter(reporter: any): reporter is CoverageReporter {
+        return reporter && typeof reporter.setOptions === 'function';
     }
 }

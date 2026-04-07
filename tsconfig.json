@@ -18,7 +18,7 @@
       "@tsdi/*": [
         "packages/*",
         "packages/services/*"
-      ],
+      ]
     },
     "lib": [
       "dom",
