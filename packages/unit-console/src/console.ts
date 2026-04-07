@@ -24,7 +24,7 @@ export class ConsoleReporter extends RealtimeReporter {
     }
 
     override renderCase(desc: ICaseDescribe): void {
-        console.log('    ', desc.error ? chalk.red('✗') : chalk.green('✓'), chalk.gray(desc.title), chalk.gray(` (${this.hrtime.format(desc.used, 3)})`))
+        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title), chalk.gray(` (${this.hrtime.format(desc.used, 3)})`))
     }
 
     override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {

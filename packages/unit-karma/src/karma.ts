@@ -29,7 +29,7 @@ export class KarmaReporter extends RealtimeReporter {
     }
 
     override renderCase(desc: ICaseDescribe): void {
-        const status = desc.error ? '✗' : '✓';
+        const status = desc.error ? 'x' : '√';
         const time = desc.used ? this.hrtime.format(desc.used, 3) : '0ms';
         console.log('    ', status, desc.title, `(${time})`);
         
