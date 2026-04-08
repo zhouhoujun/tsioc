@@ -29,6 +29,19 @@ export interface IstanbulCoverage {
     branchMap: { [key: string]: { loc: { start: { line: number; column: number }; end: { line: number; column: number } }; type: string; locations: { start: { line: number; column: number }; end: { line: number; column: number } }[] } };
 }
 
+interface CoverageStat {
+    total: number;
+    covered: number;
+    pct: number;
+}
+
+interface CoverageSummary {
+    lines: CoverageStat;
+    statements: CoverageStat;
+    functions: CoverageStat;
+    branches: CoverageStat;
+}
+
 @Module({
     imports: [
         ServerModule
@@ -91,26 +104,20 @@ export class CoverageReporter extends RealtimeReporter {
         }
     }
 
-    protected calculateSummary(): { lines: CoverageStat; statements: CoverageStat; functions: CoverageStat; branches: CoverageStat } {
+    protected calculateSummary(): CoverageSummary {
         let totalLines = 0, coveredLines = 0;
         let totalStatements = 0, coveredStatements = 0;
         let totalFunctions = 0, coveredFunctions = 0;
         let totalBranches = 0, coveredBranches = 0;
 
         for (const cov of this.coverageData) {
-            const statementLines = new Set<number>();
             for (const [key, count] of Object.entries(cov.statementMap)) {
-                if (cov.s[key] > 0) {
-                    statementLines.add(count.start.line);
-                }
                 totalStatements++;
                 if (cov.s[key] > 0) coveredStatements++;
             }
 
-            for (const [key, func] of Object.entries(cov.fnMap)) {
-                if (cov.f[key] > 0) {
-                    coveredFunctions++;
-                }
+            for (const [key] of Object.entries(cov.fnMap)) {
+                if (cov.f[key] > 0) coveredFunctions++;
                 totalFunctions++;
             }
 
@@ -140,10 +147,7 @@ export class CoverageReporter extends RealtimeReporter {
         };
     }
 
-    protected async renderReport(
-        type: CoverageReporterType,
-        summary: { lines: CoverageStat; statements: CoverageStat; functions: CoverageStat; branches: CoverageStat }
-    ): Promise<void> {
+    protected async renderReport(type: CoverageReporterType, summary: CoverageSummary): Promise<void> {
         switch (type) {
             case 'text':
                 this.renderTextReport(summary);
@@ -166,28 +170,135 @@ export class CoverageReporter extends RealtimeReporter {
         }
     }
 
+    private getColor(pct: number): string {
+        return pct >= 80 ? 'green' : pct >= 60 ? 'yellow' : 'red';
+    }
+
+    private colorPct(pct: number): string {
+        const color = this.getColor(pct);
+        return `<span class="cov-${color}">${pct.toFixed(1)}%</span>`;
+    }
+
+    private barChart(pct: number): string {
+        const filled = Math.round(pct / 5);
+        const color = this.getColor(pct);
+        return `<span class="cov-${color}">${'█'.repeat(filled)}</span><span class="cov-empty">${'░'.repeat(20 - filled)}</span>`;
+    }
+
     protected renderTextReport(summary: CoverageSummary): void {
-        console.log('\nCoverage Report:');
-        console.log('───────────────────────────────────────────────────');
-        console.log('              Covered     Total       Coverage');
-        console.log('───────────────────────────────────────────────────');
-        console.log(`Statements    ${String(summary.statements.covered).padStart(8)} ${String(summary.statements.total).padStart(8)} ${summary.statements.pct.toFixed(2)}%`);
-        console.log(`Branches      ${String(summary.branches.covered).padStart(8)} ${String(summary.branches.total).padStart(8)} ${summary.branches.pct.toFixed(2)}%`);
-        console.log(`Functions     ${String(summary.functions.covered).padStart(8)} ${String(summary.functions.total).padStart(8)} ${summary.functions.pct.toFixed(2)}%`);
-        console.log(`Lines        ${String(summary.lines.covered).padStart(8)} ${String(summary.lines.total).padStart(8)} ${summary.lines.pct.toFixed(2)}%`);
-        console.log('───────────────────────────────────────────────────');
+        const cellW = [12, 7, 7, 7, 7];
+        const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
+        const pad = (s: string, w: number) => s + ' '.repeat(w - s.length);
+
+        const top = '┌' + line + '┐';
+        const mid = '├' + line.replace(/┬/g, '┼') + '┤';
+        const bot = '└' + line.replace(/┬/g, '┴') + '┘';
+        const row = (cells: string[]) => '│' + cells.map((v, i) => ' ' + pad(v, cellW[i])).join(' │') + ' │';
+
+        const pct = (v: number) => {
+            const s = v.toFixed(1) + '%';
+            const color = this.getColor(v);
+            return `<span class="cov-${color}">${s}</span>`;
+        };
+
+        const fileCoverages = this.coverageData.map(cov => ({
+            path: cov.path,
+            coverage: this.calculateFileCoverage(cov)
+        })).sort((a, b) => a.coverage.lines.pct - b.coverage.lines.pct);
+
+        console.log('\n< Coverage Report >');
+        console.log(top);
+        console.log(row(['File', 'Stmts', 'Branch', 'Funcs', 'Lines']));
+        console.log(mid);
+
+        for (const { path: filePath, coverage } of fileCoverages) {
+            const name = filePath.split('/').pop() || filePath;
+            console.log(row([name,
+                pct(coverage.statements.pct),
+                pct(coverage.branches.pct),
+                pct(coverage.functions.pct),
+                pct(coverage.lines.pct)
+            ]));
+        }
+
+        console.log(mid);
+        console.log(row(['All files',
+            pct(summary.statements.pct),
+            pct(summary.branches.pct),
+            pct(summary.functions.pct),
+            pct(summary.lines.pct)
+        ]));
+        console.log(bot);
+        console.log(` Coverage: ${this.barChart(summary.lines.pct)} ${this.colorPct(summary.lines.pct)}`);
+        console.log(` ${this.coverageData.length} files\n`);
     }
 
     protected renderSummaryReport(summary: CoverageSummary): void {
-        console.log('\nCoverage Summary:');
-        console.log('───────────────────────────────────────────────────');
-        console.log('              Covered     Total       Coverage');
-        console.log('───────────────────────────────────────────────────');
-        console.log(`Statements    ${String(summary.statements.covered).padStart(8)} ${String(summary.statements.total).padStart(8)} ${summary.statements.pct.toFixed(2)}%`);
-        console.log(`Branches      ${String(summary.branches.covered).padStart(8)} ${String(summary.branches.total).padStart(8)} ${summary.branches.pct.toFixed(2)}%`);
-        console.log(`Functions     ${String(summary.functions.covered).padStart(8)} ${String(summary.functions.total).padStart(8)} ${summary.functions.pct.toFixed(2)}%`);
-        console.log(`Lines        ${String(summary.lines.covered).padStart(8)} ${String(summary.lines.total).padStart(8)} ${summary.lines.pct.toFixed(2)}%`);
-        console.log('───────────────────────────────────────────────────');
+        const cellW = [12, 7, 7, 7, 7];
+        const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
+        const pad = (s: string, w: number) => s + ' '.repeat(w - s.length);
+
+        const top = '┌' + line + '┐';
+        const mid = '├' + line.replace(/┬/g, '┼') + '┤';
+        const bot = '└' + line.replace(/┬/g, '┴') + '┘';
+        const row = (cells: string[]) => '│' + cells.map((v, i) => ' ' + pad(v, cellW[i])).join(' │') + ' │';
+
+        const pct = (v: number) => {
+            const s = v.toFixed(1) + '%';
+            const color = this.getColor(v);
+            return `<span class="cov-${color}">${s}</span>`;
+        };
+
+        console.log('\n< Coverage Summary >');
+        console.log(top);
+        console.log(row(['Type', 'Stmts', 'Branch', 'Funcs', 'Lines']));
+        console.log(mid);
+        console.log(row(['Total',
+            pct(summary.statements.pct),
+            pct(summary.branches.pct),
+            pct(summary.functions.pct),
+            pct(summary.lines.pct)
+        ]));
+        console.log(bot);
+        console.log(` Coverage: ${this.barChart(summary.lines.pct)} ${this.colorPct(summary.lines.pct)}`);
+        console.log(` ${this.coverageData.length} files\n`);
+    }
+
+    protected calculateFileCoverage(cov: IstanbulCoverage): CoverageSummary {
+        let totalStatements = 0, coveredStatements = 0;
+        let totalFunctions = 0, coveredFunctions = 0;
+        let totalBranches = 0, coveredBranches = 0;
+        let totalLines = 0, coveredLines = 0;
+
+        for (const [key] of Object.entries(cov.statementMap)) {
+            totalStatements++;
+            if (cov.s[key] > 0) coveredStatements++;
+        }
+
+        for (const [key] of Object.entries(cov.fnMap)) {
+            if (cov.f[key] > 0) coveredFunctions++;
+            totalFunctions++;
+        }
+
+        for (const [key, branches] of Object.entries(cov.branchMap)) {
+            const branchCounts = cov.b[key] || [];
+            for (let i = 0; i < branches.locations.length; i++) {
+                totalBranches++;
+                if (branchCounts[i] > 0) coveredBranches++;
+            }
+        }
+
+        for (const [key, count] of Object.entries(cov.statementMap)) {
+            totalLines++;
+            if (cov.s[key] > 0) coveredLines++;
+        }
+
+        return {
+            statements: { total: totalStatements, covered: coveredStatements, pct: totalStatements > 0 ? (coveredStatements / totalStatements) * 100 : 100 },
+            functions: { total: totalFunctions, covered: coveredFunctions, pct: totalFunctions > 0 ? (coveredFunctions / totalFunctions) * 100 : 100 },
+            branches: { total: totalBranches, covered: coveredBranches, pct: totalBranches > 0 ? (coveredBranches / totalBranches) * 100 : 100 },
+            lines: { total: totalLines, covered: coveredLines, pct: totalLines > 0 ? (coveredLines / totalLines) * 100 : 100 }
+        };
     }
 
     protected renderJsonReport(summary: CoverageSummary): void {
@@ -201,9 +312,7 @@ export class CoverageReporter extends RealtimeReporter {
             },
             files: this.coverageData.map(cov => ({
                 path: cov.path,
-                statements: Object.values(cov.s).reduce((a, b) => a + b, 0),
-                branches: Object.values(cov.b).flat().reduce((a, b) => a + b, 0),
-                functions: Object.values(cov.f).reduce((a, b) => a + b, 0)
+                coverage: this.calculateFileCoverage(cov)
             }))
         };
         console.log('\nCoverage JSON:');
@@ -212,20 +321,31 @@ export class CoverageReporter extends RealtimeReporter {
 
     protected async renderHtmlReport(summary: CoverageSummary): Promise<void> {
         const outputDir = this.options?.outputDir || 'coverage';
-        
+
         if (typeof window !== 'undefined' && window.document) {
             const coverageContainer = window.document.getElementById('coverage-report');
             if (coverageContainer) {
+                const pct = (v: number) => {
+                    const color = this.getColor(v);
+                    return `<span class="cov-${color}">${v.toFixed(1)}%</span>`;
+                };
+                const bar = this.barChart(summary.lines.pct);
+
                 coverageContainer.innerHTML = `
                     <div class="coverage-summary">
-                        <h2>Coverage Report</h2>
-                        <table>
-                            <tr><th>Type</th><th>Covered</th><th>Total</th><th>Coverage</th></tr>
-                            <tr><td>Statements</td><td>${summary.statements.covered}</td><td>${summary.statements.total}</td><td>${summary.statements.pct.toFixed(2)}%</td></tr>
-                            <tr><td>Branches</td><td>${summary.branches.covered}</td><td>${summary.branches.total}</td><td>${summary.branches.pct.toFixed(2)}%</td></tr>
-                            <tr><td>Functions</td><td>${summary.functions.covered}</td><td>${summary.functions.total}</td><td>${summary.functions.pct.toFixed(2)}%</td></tr>
-                            <tr><td>Lines</td><td>${summary.lines.covered}</td><td>${summary.lines.total}</td><td>${summary.lines.pct.toFixed(2)}%</td></tr>
+                        <h2>Coverage Summary</h2>
+                        <table class="coverage-table">
+                            <tr><th>Type</th><th>Stmts</th><th>Branch</th><th>Funcs</th><th>Lines</th></tr>
+                            <tr><td>Total</td>
+                                <td>${pct(summary.statements.pct)}</td>
+                                <td>${pct(summary.branches.pct)}</td>
+                                <td>${pct(summary.functions.pct)}</td>
+                                <td>${pct(summary.lines.pct)}</td>
+                            </tr>
                         </table>
+                        <div class="coverage-bar">
+                            Coverage: ${bar} ${this.colorPct(summary.lines.pct)}
+                        </div>
                     </div>
                 `;
             }
@@ -247,7 +367,7 @@ export class CoverageReporter extends RealtimeReporter {
     protected checkThreshold(summary: CoverageSummary): void {
         const threshold = this.options.threshold;
         if (!threshold) return;
-        
+
         const failedThresholds: string[] = [];
 
         if (threshold.lines && summary.lines.pct < threshold.lines) {
@@ -269,17 +389,4 @@ export class CoverageReporter extends RealtimeReporter {
             process.exit(1);
         }
     }
-}
-
-interface CoverageStat {
-    total: number;
-    covered: number;
-    pct: number;
-}
-
-interface CoverageSummary {
-    lines: CoverageStat;
-    statements: CoverageStat;
-    functions: CoverageStat;
-    branches: CoverageStat;
 }

@@ -17,7 +17,7 @@ export interface CoverageOptions {
     };
 }
 
-export type TestEnvironment = 'node' | 'browser' | 'auto';
+export type TestPlatform = 'node' | 'browser' | 'auto';
 
 export interface UnitTestOptions {
     configures?: (string | UnitTestConfigure)[];
@@ -28,6 +28,6 @@ export interface UnitTestConfigure {
     src?: string | AbstractType | (string | AbstractType)[];
     reporters?: AbstractType<TestReport>[];
     coverage?: CoverageOptions;
-    env?: TestEnvironment;
+    platform?: TestPlatform;
 }
 

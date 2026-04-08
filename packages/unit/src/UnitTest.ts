@@ -2,7 +2,7 @@ import { Module, Provider, AbstractType, Type, Token } from '@tsdi/ioc';
 import { Application, ApplicationArguments, AppMode, AppPlatform, LoadType } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
-import { UnitTestConfigure, CoverageOptions, TestEnvironment } from './UnitTestConfigure';
+import { UnitTestConfigure, CoverageOptions, TestPlatform } from './UnitTestConfigure';
 import { UnitTestService } from './UnitTestService';
 import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
@@ -89,7 +89,7 @@ function detectEnvironment(): 'node' | 'browser' {
     return 'node';
 }
 
-async function loadEnvironmentModule(env: TestEnvironment): Promise<{ reporter?: Type; coverageReporter?: Type }> {
+async function loadEnvironmentModule(env: TestPlatform): Promise<{ reporter?: Type; coverageReporter?: Type }> {
     const actualEnv = env === 'auto' ? detectEnvironment() : env;
 
     if (actualEnv === 'node') {
@@ -119,7 +119,7 @@ async function loadEnvironmentModule(env: TestEnvironment): Promise<{ reporter?:
 
 export async function runTest(src: string | AbstractType | (string | AbstractType)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
     const coverageEnabled = parseCoverageFromArgs() || config?.coverage?.enabled === true;
-    const env = config?.env || 'auto';
+    const env = config?.platform || 'auto';
 
     let finalConfig = config;
     let finalLoads = [...loads];
