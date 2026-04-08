@@ -45,7 +45,7 @@ export class KarmaReporter extends RealtimeReporter {
         const testCase = window.document.createElement('div');
         testCase.className = desc.error ? 'test-case failed' : 'test-case passed';
         testCase.innerHTML = `
-            <span class="status">${desc.error ? '✗' : '✓'}</span>
+            <span class="status">${desc.error ? 'x' : '√'}</span>
             <span class="title">${desc.title}</span>
             <span class="time">(${desc.used ? this.hrtime.format(desc.used, 3) : '0ms'})</span>
         `;
