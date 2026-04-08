@@ -4,7 +4,8 @@
   "description": "unit testing framework, base on AOP, Ioc container",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "test": "ts-node -r tsconfig-paths/register unit.ts"
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
   },
   "keywords": [
     "unit",

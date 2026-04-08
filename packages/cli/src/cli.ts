@@ -11,7 +11,7 @@ const packageConf = require(cliRoot + '/package.json');
 const processRoot = path.join(path.dirname(process.cwd()), path.basename(process.cwd()));
 process.env.INIT_CWD = processRoot;
 
-let cwdPackageConf:string|undefined = path.join(processRoot, '/package.json');
+let cwdPackageConf: string | undefined = path.join(processRoot, '/package.json');
 if (!fs.existsSync(cwdPackageConf)) {
     cwdPackageConf = undefined;
 }
@@ -173,6 +173,9 @@ program
     .description('run unit test.')
     .option('--config [string]', 'config file path.')
     .option('-b, --browser [bool]', 'test browser project or not.')
+    .option('-c, --coverage [bool]', 'enable coverage collection.')
+    .option('--coverage-dir [string]', 'coverage output directory (overrides NODE_V8_COVERAGE).')
+    .option('--node [bool]', 'test in node environment (default).')
     .option('--debug [bool]', 'enable debug log or not')
     .action((files, options) => {
         requireRegisters();
@@ -184,12 +187,8 @@ program
             }
         }
         const unit = requireCwd('@tsdi/unit');
-        let reporter;
-        if (options.browser) {
-            reporter = requireCwd('@tsdi/unit-karma');
-        } else {
-            reporter = requireCwd('@tsdi/unit-console').ConsoleReporter;
-        }
+
+
         let config;
         if (typeof options.config === 'string') {
             config = requireCwd(options.config);
@@ -199,7 +198,22 @@ program
         if (typeof options.debug === 'boolean') {
             config.debug = options.debug;
         }
-        unit.runTest(files, config, reporter);
+        if (options.browser) {
+            options.env = 'browser';
+        }
+        // Handle coverage options
+        const coverageEnabled = options.coverage === true || process.env.COVERAGE === '1' || process.env.COVERAGE === 'true';
+        if (coverageEnabled) {
+            config.coverage = config.coverage || {};
+            config.coverage.enabled = true;
+            // Set coverage output directory from CLI option or existing config
+            if (typeof options.coverageDir === 'string') {
+                config.coverage.outputDir = options.coverageDir;
+                // Override NODE_V8_COVERAGE environment variable
+                process.env.NODE_V8_COVERAGE = options.coverageDir;
+            }
+        }
+        unit.runTest(files, config);
     });
 
 
