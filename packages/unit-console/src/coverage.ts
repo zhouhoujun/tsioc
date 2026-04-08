@@ -119,19 +119,35 @@ export class CoverageReporter extends RealtimeReporter {
         const fileCoverages = this.coverageCollector.getAllFileCoverages();
         const files = Array.from(fileCoverages.entries());
 
-        const col = { file: 50, pct: 10 };
-        const cellW = [col.file, col.pct, col.pct, col.pct, col.pct];
+        const cellW = [50, 7, 7, 7, 7];
+        const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
+        const bd = chalk.cyan;
+        const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
+        const pad = (s: string, w: number) => s + ' '.repeat(w - strip(s).length);
 
-        const top = '┌' + cellW.map(w => '─'.repeat(w + 2)).join('┬') + '┐';
-        const sep = '├' + cellW.map(w => '─'.repeat(w + 2)).join('┼') + '┤';
-        const bot = '└' + cellW.map(w => '─'.repeat(w + 2)).join('┴') + '┘';
+        const top = bd('┌' + line + '┐');
+        const mid = bd('├' + line.replace(/┬/g, '┼').split('').map((c, i, arr) => 
+            c === '┬' ? (i > 0 && i < arr.length - 1 ? '┼' : '─') : c
+        ).join('') + '┤');
+        const bot = bd('└' + line.replace(/┬/g, '┴') + '┘');
+        const bar = (pct: number) => {
+            const filled = Math.round(pct / 5);
+            const color = pct >= 80 ? chalk.green : pct >= 60 ? chalk.yellow : chalk.red;
+            return color('█'.repeat(filled) + chalk.gray('░'.repeat(20 - filled)));
+        };
+        const pct = (v: number) => {
+            const s = v.toFixed(1) + '%';
+            return v >= 80 ? chalk.green(s) : v >= 60 ? chalk.yellow(s) : chalk.red(s);
+        };
+        const row = (cells: string[], isHeader = false) => {
+            const fn = isHeader ? (v: string) => chalk.bold(v) : (v: string) => v;
+            return bd('│') + cells.map((v, i) => ' ' + pad(fn(v as string), cellW[i])).join(bd(' │')) + bd(' │');
+        };
 
-        const row = (cells: string[]) => '│' + cells.map((v, i) => ' ' + v.padEnd(cellW[i]) + ' ').join('│') + '│';
-
-        console.log('\n ' + chalk.bold.cyan('Coverage Report') + ' ');
+        console.log('\n' + chalk.bold.cyan(' Coverage Report '));
         console.log(top);
-        console.log(row(['File', 'Stmts', 'Branch', 'Funcs', 'Lines']));
-        console.log(sep);
+        console.log(row(['File', 'Stmts', 'Branch', 'Funcs', 'Lines'], true));
+        console.log(mid);
 
         const sortedFiles = files
             .map(([p, f]) => ({ path: p, file: f, cov: f.summary.lines.percentage }))
@@ -139,27 +155,25 @@ export class CoverageReporter extends RealtimeReporter {
 
         for (const { path: filePath, file } of sortedFiles) {
             const relPath = this.getRelativePath(filePath);
-            const displayName = relPath.length > col.file ? '..' + relPath.slice(-col.file + 2) : relPath;
-            console.log(row([
-                displayName,
-                this.pctStr(file.summary.statements.percentage),
-                this.pctStr(file.summary.branches.percentage),
-                this.pctStr(file.summary.functions.percentage),
-                this.pctStr(file.summary.lines.percentage)
+            const name = relPath.length > cellW[0] ? '..' + relPath.slice(-cellW[0] + 2) : relPath;
+            console.log(row([name,
+                pct(file.summary.statements.percentage),
+                pct(file.summary.branches.percentage),
+                pct(file.summary.functions.percentage),
+                pct(file.summary.lines.percentage)
             ]));
         }
 
-        console.log(sep);
-        console.log(row([
-            'All files',
-            this.pctStr(summary.statements.percentage),
-            this.pctStr(summary.branches.percentage),
-            this.pctStr(summary.functions.percentage),
-            this.pctStr(summary.lines.percentage)
+        console.log(mid);
+        console.log(row(['All files',
+            pct(summary.statements.percentage),
+            pct(summary.branches.percentage),
+            pct(summary.functions.percentage),
+            pct(summary.lines.percentage)
         ]));
         console.log(bot);
-        console.log(' ' + chalk.gray(`${files.length} files total`));
-        console.log('');
+        console.log(' Coverage: ' + bar(summary.lines.percentage) + ' ' + pct(summary.lines.percentage));
+        console.log(chalk.gray(` ${files.length} files\n`));
     }
 
     protected renderSummaryReport(): void {
@@ -171,29 +185,44 @@ export class CoverageReporter extends RealtimeReporter {
         const summary = this.coverageCollector.getSummary();
         const files = this.coverageCollector.getAllFileCoverages().size;
 
-        const col = { name: 10, pct: 10 };
-        const cellW = [col.name, col.pct, col.pct, col.pct, col.pct];
+        const cellW = [12, 7, 7, 7, 7];
+        const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
+        const bd = chalk.cyan;
+        const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
+        const pad = (s: string, w: number) => s + ' '.repeat(w - strip(s).length);
 
-        const top = '┌' + cellW.map(w => '─'.repeat(w + 2)).join('┬') + '┐';
-        const sep = '├' + cellW.map(w => '─'.repeat(w + 2)).join('┼') + '┤';
-        const bot = '└' + cellW.map(w => '─'.repeat(w + 2)).join('┴') + '┘';
+        const top = bd('┌' + line + '┐');
+        const mid = bd('├' + line.replace(/┬/g, '┼').split('').map((c, i, arr) => 
+            c === '┬' ? (i > 0 && i < arr.length - 1 ? '┼' : '─') : c
+        ).join('') + '┤');
+        const bot = bd('└' + line.replace(/┬/g, '┴') + '┘');
+        const bar = (pct: number) => {
+            const filled = Math.round(pct / 5);
+            const color = pct >= 80 ? chalk.green : pct >= 60 ? chalk.yellow : chalk.red;
+            return color('█'.repeat(filled) + chalk.gray('░'.repeat(20 - filled)));
+        };
+        const pct = (v: number) => {
+            const s = v.toFixed(1) + '%';
+            return v >= 80 ? chalk.green(s) : v >= 60 ? chalk.yellow(s) : chalk.red(s);
+        };
+        const row = (cells: string[], isHeader = false) => {
+            const fn = isHeader ? (v: string) => chalk.bold(v) : (v: string) => v;
+            return bd('│') + cells.map((v, i) => ' ' + pad(fn(v as string), cellW[i])).join(bd(' │')) + bd(' │');
+        };
 
-        const row = (cells: string[]) => '│' + cells.map((v, i) => ' ' + v.padEnd(cellW[i]) + ' ').join('│') + '│';
-
-        console.log('\n ' + chalk.bold.cyan('Coverage Summary') + ' ');
+        console.log('\n' + chalk.bold.cyan(' Coverage Summary '));
         console.log(top);
-        console.log(row(['Type', 'Stmts', 'Branch', 'Funcs', 'Lines']));
-        console.log(sep);
-        console.log(row([
-            'Total',
-            this.pctStr(summary.statements.percentage),
-            this.pctStr(summary.branches.percentage),
-            this.pctStr(summary.functions.percentage),
-            this.pctStr(summary.lines.percentage)
+        console.log(row(['Type', 'Stmts', 'Branch', 'Funcs', 'Lines'], true));
+        console.log(mid);
+        console.log(row(['Total',
+            pct(summary.statements.percentage),
+            pct(summary.branches.percentage),
+            pct(summary.functions.percentage),
+            pct(summary.lines.percentage)
         ]));
         console.log(bot);
-        console.log(' ' + chalk.gray(`${files} files total`));
-        console.log('');
+        console.log(' Coverage: ' + bar(summary.lines.percentage) + ' ' + pct(summary.lines.percentage));
+        console.log(chalk.gray(` ${files} files\n`));
     }
 
     protected pctStr(pct: number): string {
