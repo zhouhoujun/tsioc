@@ -1,64 +1,50 @@
-import { Token, Module, Inject } from '@tsdi/ioc';
-import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
+import { Token, Module, Inject, Injector, Optional } from '@tsdi/ioc';
+import { SuiteDescribe, RealtimeReporter, ICaseDescribe, CoverageSummary, UnitTestConfigure } from '@tsdi/unit';
 import { ServerModule } from '@tsdi/platform-server';
 import { HrtimeFormatter } from '@tsdi/core';
+import * as path from 'path';
+import * as fs from 'fs';
+import { V8CoverageCollector, KarmaCoverageOptions } from './V8CoverageCollector';
+import { BrowserCoverageCollector, BrowserCoverageOptions } from './BrowserCoverageCollector';
 
 export type CoverageReporterType = 'text' | 'text-summary' | 'json' | 'html' | 'lcov' | 'cobertura';
 
-export interface CoverageOptions {
-    enabled?: boolean;
-    reporters?: CoverageReporterType[];
-    include?: string[];
-    exclude?: string[];
-    outputDir?: string;
-    threshold?: {
-        lines?: number;
-        functions?: number;
-        branches?: number;
-        statements?: number;
-    };
-}
+export { KarmaCoverageOptions as CoverageOptions, KarmaCoverageOptions };
 
-export interface IstanbulCoverage {
-    path: string;
-    s: { [key: string]: number };
-    b: { [key: string]: number[] };
-    f: { [key: string]: number };
-    fnMap: { [key: string]: { name: string; line: number; loc: { start: { line: number; column: number }; end: { line: number; column: number } } } };
-    statementMap: { [key: string]: { start: { line: number; column: number }; end: { line: number; column: number } } };
-    branchMap: { [key: string]: { loc: { start: { line: number; column: number }; end: { line: number; column: number } }; type: string; locations: { start: { line: number; column: number }; end: { line: number; column: number } }[] } };
-}
-
-interface CoverageStat {
-    total: number;
-    covered: number;
-    pct: number;
-}
-
-interface CoverageSummary {
-    lines: CoverageStat;
-    statements: CoverageStat;
-    functions: CoverageStat;
-    branches: CoverageStat;
+function isBrowserEnvironment(): boolean {
+    return typeof window !== 'undefined' && typeof window.document !== 'undefined';
 }
 
 @Module({
     imports: [
         ServerModule
+    ],
+    providers: [
+        V8CoverageCollector,
+        BrowserCoverageCollector
     ]
 })
 export class CoverageReporter extends RealtimeReporter {
 
-    constructor(@Inject() hrtime: HrtimeFormatter) {
+    private _options: KarmaCoverageOptions = {};
+
+    constructor(
+        @Inject() hrtime: HrtimeFormatter,
+        @Inject() private injector: Injector,
+        @Optional() private config?: UnitTestConfigure
+    ) {
         super();
         this.hrtime = hrtime;
     }
 
-    private options: CoverageOptions = {};
-    private coverageData: IstanbulCoverage[] = [];
+    private coverageCollector: V8CoverageCollector | BrowserCoverageCollector | null = null;
 
-    setOptions(options: CoverageOptions) {
-        this.options = options;
+    private get options(): KarmaCoverageOptions {
+        return this._options;
+    }
+
+    setOptions(options: KarmaCoverageOptions) {
+        this._options = options || {};
     }
 
     override track(error: Error): void {
@@ -72,100 +58,66 @@ export class CoverageReporter extends RealtimeReporter {
     override renderCase(desc: ICaseDescribe): void {
     }
 
-    collectCoverage(): void {
-        if (typeof window !== 'undefined' && (window as any).__coverage__) {
-            const cov = (window as any).__coverage__;
-            this.coverageData = Object.values(cov);
-        }
-    }
-
     override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
-        this.collectCoverage();
-
         if (!this.options?.enabled) {
             return;
         }
 
-        if (this.coverageData.length === 0) {
-            console.log('\nWarning: No coverage data collected. Make sure karma-coverage is configured.');
-            return;
+        this.selectCollector();
+        
+        if (this.coverageCollector) {
+            try {
+                if ('setOptions' in this.coverageCollector) {
+                    if (isBrowserEnvironment()) {
+                        (this.coverageCollector as BrowserCoverageCollector).setOptions(this.options);
+                    } else {
+                        (this.coverageCollector as V8CoverageCollector).setOptions(this.options, this.config?.baseURL);
+                    }
+                }
+                await this.coverageCollector.collect();
+            } catch (e) {
+                console.log('\nWarning: Could not collect coverage data.');
+            }
         }
-
-        const summary = this.calculateSummary();
 
         const reporters = this.options.reporters || ['text-summary'];
 
         for (const reporterType of reporters) {
-            await this.renderReport(reporterType, summary);
+            await this.renderReport(reporterType);
         }
 
-        if (this.options.threshold) {
-            this.checkThreshold(summary);
+        if (this.options.threshold && this.coverageCollector) {
+            this.checkThreshold(this.coverageCollector.getSummary());
         }
     }
 
-    protected calculateSummary(): CoverageSummary {
-        let totalLines = 0, coveredLines = 0;
-        let totalStatements = 0, coveredStatements = 0;
-        let totalFunctions = 0, coveredFunctions = 0;
-        let totalBranches = 0, coveredBranches = 0;
-
-        for (const cov of this.coverageData) {
-            for (const [key, count] of Object.entries(cov.statementMap)) {
-                totalStatements++;
-                if (cov.s[key] > 0) coveredStatements++;
-            }
-
-            for (const [key] of Object.entries(cov.fnMap)) {
-                if (cov.f[key] > 0) coveredFunctions++;
-                totalFunctions++;
-            }
-
-            for (const [key, branches] of Object.entries(cov.branchMap)) {
-                const branchCounts = cov.b[key] || [];
-                for (let i = 0; i < branches.locations.length; i++) {
-                    totalBranches++;
-                    if (branchCounts[i] > 0) coveredBranches++;
-                }
-            }
-
-            for (const [key, count] of Object.entries(cov.statementMap)) {
-                totalLines++;
-                if (count.start.line === count.end.line) {
-                    if (cov.s[key] > 0) coveredLines++;
-                } else {
-                    if (cov.s[key] > 0) coveredLines++;
-                }
-            }
+    private selectCollector(): void {
+        if (isBrowserEnvironment()) {
+            this.coverageCollector = this.injector.get(BrowserCoverageCollector);
+        } else {
+            this.coverageCollector = this.injector.get(V8CoverageCollector);
         }
-
-        return {
-            lines: { total: totalLines, covered: coveredLines, pct: totalLines > 0 ? (coveredLines / totalLines) * 100 : 100 },
-            statements: { total: totalStatements, covered: coveredStatements, pct: totalStatements > 0 ? (coveredStatements / totalStatements) * 100 : 100 },
-            functions: { total: totalFunctions, covered: coveredFunctions, pct: totalFunctions > 0 ? (coveredFunctions / totalFunctions) * 100 : 100 },
-            branches: { total: totalBranches, covered: coveredBranches, pct: totalBranches > 0 ? (coveredBranches / totalBranches) * 100 : 100 }
-        };
     }
 
-    protected async renderReport(type: CoverageReporterType, summary: CoverageSummary): Promise<void> {
+    protected async renderReport(type: CoverageReporterType): Promise<void> {
         switch (type) {
             case 'text':
-                this.renderTextReport(summary);
+                this.renderTextReport();
                 break;
             case 'text-summary':
-                this.renderSummaryReport(summary);
+                this.renderSummaryReport();
                 break;
             case 'json':
-                this.renderJsonReport(summary);
+                this.renderJsonReport();
                 break;
             case 'html':
-                await this.renderHtmlReport(summary);
+                await this.renderHtmlReport();
                 break;
             case 'lcov':
-                this.renderLcovReport(summary);
+                this.renderLcovReport();
                 break;
             case 'cobertura':
-                this.renderCoberturaReport(summary);
+                this.renderCoberturaReport();
                 break;
         }
     }
@@ -185,151 +137,134 @@ export class CoverageReporter extends RealtimeReporter {
         return `<span class="cov-${color}">${'█'.repeat(filled)}</span><span class="cov-empty">${'░'.repeat(20 - filled)}</span>`;
     }
 
-    protected renderTextReport(summary: CoverageSummary): void {
-        const cellW = [12, 7, 7, 7, 7];
+    protected renderTextReport(): void {
+        if (!this.coverageCollector) {
+            console.log('\nNo coverage data collected.');
+            return;
+        }
+
+        const summary = this.coverageCollector.getSummary();
+        const fileCoverages = this.coverageCollector.getAllFileCoverages();
+        const files = Array.from(fileCoverages.entries());
+
+        if (files.length === 0) {
+            console.log('\nNo files with coverage data.');
+            return;
+        }
+
+        const cellW = [50, 7, 7, 7, 7];
         const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
-        const pad = (s: string, w: number) => s + ' '.repeat(w - s.length);
+        const strip = (s: string) => s.replace(/<[^>]*>/g, '');
+        const pad = (s: string, w: number) => strip(s) + ' '.repeat(Math.max(0, w - strip(s).length));
 
         const top = '┌' + line + '┐';
         const mid = '├' + line.replace(/┬/g, '┼') + '┤';
         const bot = '└' + line.replace(/┬/g, '┴') + '┘';
         const row = (cells: string[]) => '│' + cells.map((v, i) => ' ' + pad(v, cellW[i])).join(' │') + ' │';
 
-        const pct = (v: number) => {
-            const s = v.toFixed(1) + '%';
-            const color = this.getColor(v);
-            return `<span class="cov-${color}">${s}</span>`;
-        };
-
-        const fileCoverages = this.coverageData.map(cov => ({
-            path: cov.path,
-            coverage: this.calculateFileCoverage(cov)
-        })).sort((a, b) => a.coverage.lines.pct - b.coverage.lines.pct);
+        const pct = (v: number) => this.colorPct(v);
 
         console.log('\n< Coverage Report >');
         console.log(top);
         console.log(row(['File', 'Stmts', 'Branch', 'Funcs', 'Lines']));
         console.log(mid);
 
-        for (const { path: filePath, coverage } of fileCoverages) {
-            const name = filePath.split('/').pop() || filePath;
+        const sortedFiles = files
+            .map(([p, f]) => ({ path: p, file: f, cov: f.summary.lines.percentage }))
+            .sort((a, b) => a.cov - b.cov);
+
+        for (const { path: filePath, file } of sortedFiles) {
+            const relPath = this.getRelativePath(filePath);
+            const name = relPath.length > cellW[0] ? '..' + relPath.slice(-cellW[0] + 2) : relPath;
             console.log(row([name,
-                pct(coverage.statements.pct),
-                pct(coverage.branches.pct),
-                pct(coverage.functions.pct),
-                pct(coverage.lines.pct)
+                pct(file.summary.statements.percentage),
+                pct(file.summary.branches.percentage),
+                pct(file.summary.functions.percentage),
+                pct(file.summary.lines.percentage)
             ]));
         }
 
         console.log(mid);
         console.log(row(['All files',
-            pct(summary.statements.pct),
-            pct(summary.branches.pct),
-            pct(summary.functions.pct),
-            pct(summary.lines.pct)
+            pct(summary.statements.percentage),
+            pct(summary.branches.percentage),
+            pct(summary.functions.percentage),
+            pct(summary.lines.percentage)
         ]));
         console.log(bot);
-        console.log(` Coverage: ${this.barChart(summary.lines.pct)} ${this.colorPct(summary.lines.pct)}`);
-        console.log(` ${this.coverageData.length} files\n`);
+        console.log(` Coverage: ${this.barChart(summary.lines.percentage)} ${this.colorPct(summary.lines.percentage)}`);
+        console.log(` ${files.length} files\n`);
     }
 
-    protected renderSummaryReport(summary: CoverageSummary): void {
+    protected renderSummaryReport(): void {
+        if (!this.coverageCollector) {
+            console.log('\nNo coverage data collected.');
+            return;
+        }
+
+        const summary = this.coverageCollector.getSummary();
+        const files = this.coverageCollector.getAllFileCoverages().size;
+
         const cellW = [12, 7, 7, 7, 7];
         const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
-        const pad = (s: string, w: number) => s + ' '.repeat(w - s.length);
+        const strip = (s: string) => s.replace(/<[^>]*>/g, '');
+        const pad = (s: string, w: number) => strip(s) + ' '.repeat(Math.max(0, w - strip(s).length));
 
         const top = '┌' + line + '┐';
         const mid = '├' + line.replace(/┬/g, '┼') + '┤';
         const bot = '└' + line.replace(/┬/g, '┴') + '┘';
         const row = (cells: string[]) => '│' + cells.map((v, i) => ' ' + pad(v, cellW[i])).join(' │') + ' │';
 
-        const pct = (v: number) => {
-            const s = v.toFixed(1) + '%';
-            const color = this.getColor(v);
-            return `<span class="cov-${color}">${s}</span>`;
-        };
+        const pct = (v: number) => this.colorPct(v);
 
         console.log('\n< Coverage Summary >');
         console.log(top);
         console.log(row(['Type', 'Stmts', 'Branch', 'Funcs', 'Lines']));
         console.log(mid);
         console.log(row(['Total',
-            pct(summary.statements.pct),
-            pct(summary.branches.pct),
-            pct(summary.functions.pct),
-            pct(summary.lines.pct)
+            pct(summary.statements.percentage),
+            pct(summary.branches.percentage),
+            pct(summary.functions.percentage),
+            pct(summary.lines.percentage)
         ]));
         console.log(bot);
-        console.log(` Coverage: ${this.barChart(summary.lines.pct)} ${this.colorPct(summary.lines.pct)}`);
-        console.log(` ${this.coverageData.length} files\n`);
+        console.log(` Coverage: ${this.barChart(summary.lines.percentage)} ${this.colorPct(summary.lines.percentage)}`);
+        console.log(` ${files} files\n`);
     }
 
-    protected calculateFileCoverage(cov: IstanbulCoverage): CoverageSummary {
-        let totalStatements = 0, coveredStatements = 0;
-        let totalFunctions = 0, coveredFunctions = 0;
-        let totalBranches = 0, coveredBranches = 0;
-        let totalLines = 0, coveredLines = 0;
+    protected renderJsonReport(): void {
+        if (!this.coverageCollector) return;
 
-        for (const [key] of Object.entries(cov.statementMap)) {
-            totalStatements++;
-            if (cov.s[key] > 0) coveredStatements++;
-        }
+        const summary = this.coverageCollector.getSummary();
+        const fileCoverages = this.coverageCollector.getAllFileCoverages();
 
-        for (const [key] of Object.entries(cov.fnMap)) {
-            if (cov.f[key] > 0) coveredFunctions++;
-            totalFunctions++;
-        }
-
-        for (const [key, branches] of Object.entries(cov.branchMap)) {
-            const branchCounts = cov.b[key] || [];
-            for (let i = 0; i < branches.locations.length; i++) {
-                totalBranches++;
-                if (branchCounts[i] > 0) coveredBranches++;
-            }
-        }
-
-        for (const [key, count] of Object.entries(cov.statementMap)) {
-            totalLines++;
-            if (cov.s[key] > 0) coveredLines++;
-        }
-
-        return {
-            statements: { total: totalStatements, covered: coveredStatements, pct: totalStatements > 0 ? (coveredStatements / totalStatements) * 100 : 100 },
-            functions: { total: totalFunctions, covered: coveredFunctions, pct: totalFunctions > 0 ? (coveredFunctions / totalFunctions) * 100 : 100 },
-            branches: { total: totalBranches, covered: coveredBranches, pct: totalBranches > 0 ? (coveredBranches / totalBranches) * 100 : 100 },
-            lines: { total: totalLines, covered: coveredLines, pct: totalLines > 0 ? (coveredLines / totalLines) * 100 : 100 }
-        };
-    }
-
-    protected renderJsonReport(summary: CoverageSummary): void {
         const report = {
             timestamp: new Date().toISOString(),
-            coverage: {
-                statements: summary.statements,
-                branches: summary.branches,
-                functions: summary.functions,
-                lines: summary.lines
-            },
-            files: this.coverageData.map(cov => ({
-                path: cov.path,
-                coverage: this.calculateFileCoverage(cov)
+            environment: isBrowserEnvironment() ? 'browser' : 'node',
+            total: summary,
+            files: Array.from(fileCoverages.entries()).map(([filePath, file]) => ({
+                path: filePath,
+                summary: file.summary
             }))
         };
         console.log('\nCoverage JSON:');
         console.log(JSON.stringify(report, null, 2));
     }
 
-    protected async renderHtmlReport(summary: CoverageSummary): Promise<void> {
+    protected async renderHtmlReport(): Promise<void> {
+        if (!this.coverageCollector) return;
+
+        const summary = this.coverageCollector.getSummary();
         const outputDir = this.options?.outputDir || 'coverage';
 
-        if (typeof window !== 'undefined' && window.document) {
+        if (isBrowserEnvironment() && window.document) {
             const coverageContainer = window.document.getElementById('coverage-report');
             if (coverageContainer) {
                 const pct = (v: number) => {
                     const color = this.getColor(v);
                     return `<span class="cov-${color}">${v.toFixed(1)}%</span>`;
                 };
-                const bar = this.barChart(summary.lines.pct);
+                const bar = this.barChart(summary.lines.percentage);
 
                 coverageContainer.innerHTML = `
                     <div class="coverage-summary">
@@ -337,14 +272,14 @@ export class CoverageReporter extends RealtimeReporter {
                         <table class="coverage-table">
                             <tr><th>Type</th><th>Stmts</th><th>Branch</th><th>Funcs</th><th>Lines</th></tr>
                             <tr><td>Total</td>
-                                <td>${pct(summary.statements.pct)}</td>
-                                <td>${pct(summary.branches.pct)}</td>
-                                <td>${pct(summary.functions.pct)}</td>
-                                <td>${pct(summary.lines.pct)}</td>
+                                <td>${pct(summary.statements.percentage)}</td>
+                                <td>${pct(summary.branches.percentage)}</td>
+                                <td>${pct(summary.functions.percentage)}</td>
+                                <td>${pct(summary.lines.percentage)}</td>
                             </tr>
                         </table>
                         <div class="coverage-bar">
-                            Coverage: ${bar} ${this.colorPct(summary.lines.pct)}
+                            Coverage: ${bar} ${this.colorPct(summary.lines.percentage)}
                         </div>
                     </div>
                 `;
@@ -354,14 +289,116 @@ export class CoverageReporter extends RealtimeReporter {
         }
     }
 
-    protected renderLcovReport(summary: CoverageSummary): void {
+    protected renderLcovReport(): void {
+        if (!this.coverageCollector) {
+            console.log('\nNo coverage data for LCOV report.');
+            return;
+        }
+
         const outputDir = this.options?.outputDir || 'coverage';
-        console.log(`\nLCOV coverage report would be generated in: ${outputDir}/lcov.info`);
+        const outputFile = path.join(outputDir, 'lcov.info');
+
+        try {
+            if (!fs.existsSync(outputDir)) {
+                fs.mkdirSync(outputDir, { recursive: true });
+            }
+
+            const fileCoverages = this.coverageCollector.getAllFileCoverages();
+            let lcov = 'TN:\n';
+
+            fileCoverages.forEach((fileData, filePath) => {
+                const relPath = this.getRelativePath(filePath);
+                lcov += `SF:${relPath}\n`;
+
+                fileData.functions.forEach((count, line) => {
+                    lcov += `FN:${line},${line}\n`;
+                });
+                fileData.functions.forEach((count, line) => {
+                    lcov += `FNDA:${count}:${line}\n`;
+                });
+                lcov += `FNF:${fileData.summary.functions.total}\n`;
+                lcov += `FNH:${fileData.summary.functions.covered}\n`;
+
+                fileData.branches.forEach((count, line) => {
+                    lcov += `BRDA:${line},0,0,${count > 0 ? '1' : '0'}\n`;
+                });
+                lcov += `BRF:${fileData.summary.branches.total}\n`;
+                lcov += `BRH:${fileData.summary.branches.covered}\n`;
+
+                fileData.lines.forEach((count, line) => {
+                    lcov += `DA:${line},${count > 0 ? 1 : 0}\n`;
+                });
+                lcov += `LF:${fileData.summary.lines.total}\n`;
+                lcov += `LH:${fileData.summary.lines.covered}\n`;
+
+                lcov += 'end_of_record\n';
+            });
+
+            fs.writeFileSync(outputFile, lcov);
+            console.log(`\nLCOV report generated: ${outputFile}`);
+        } catch (e) {
+            console.log(`\nFailed to generate LCOV report: ${e}`);
+        }
     }
 
-    protected renderCoberturaReport(summary: CoverageSummary): void {
+    protected renderCoberturaReport(): void {
+        if (!this.coverageCollector) {
+            console.log('\nNo coverage data for Cobertura report.');
+            return;
+        }
+
         const outputDir = this.options?.outputDir || 'coverage';
-        console.log(`\nCobertura XML coverage report would be generated in: ${outputDir}/cobertura.xml`);
+        const outputFile = path.join(outputDir, 'cobertura.xml');
+
+        try {
+            if (!fs.existsSync(outputDir)) {
+                fs.mkdirSync(outputDir, { recursive: true });
+            }
+
+            const summary = this.coverageCollector.getSummary();
+            const fileCoverages = this.coverageCollector.getAllFileCoverages();
+
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+            xml += '<coverage line-rate="0" lines-covered="0" lines-valid="0" ';
+            xml += 'branch-rate="0" branches-covered="0" branches-valid="0" ';
+            xml += `timestamp="${Date.now()}" version="6.0.31">\n`;
+            xml += '  <packages>\n';
+            xml += '    <package name="root" line-rate="0" branch-rate="0">\n';
+            xml += '      <classes>\n';
+
+            fileCoverages.forEach((fileData, filePath) => {
+                const relPath = this.getRelativePath(filePath);
+                const className = path.basename(relPath, path.extname(relPath));
+
+                xml += `        <class name="${className}" filename="${relPath}" `;
+                xml += `line-rate="${(fileData.summary.lines.percentage / 100).toFixed(2)}" `;
+                xml += `branch-rate="${(fileData.summary.branches.percentage / 100).toFixed(2)}">\n`;
+                xml += '          <methods>\n';
+
+                fileData.functions.forEach((count, line) => {
+                    xml += `            <method name="${line}" line-number="${line}" `;
+                    xml += `hits="${count}"/>\n`;
+                });
+                xml += '          </methods>\n';
+                xml += '          <lines>\n';
+
+                fileData.lines.forEach((count, line) => {
+                    xml += `            <line number="${line}" hits="${count > 0 ? 1 : 0}"/>\n`;
+                });
+                xml += '          </lines>\n';
+                xml += '        </class>\n';
+            });
+
+            xml += '      </classes>\n';
+            xml += '    </package>\n';
+            xml += '  </packages>\n';
+            xml += '</coverage>\n';
+
+            fs.writeFileSync(outputFile, xml);
+            console.log(`\nCobertura XML report generated: ${outputFile}`);
+        } catch (e) {
+            console.log(`\nFailed to generate Cobertura report: ${e}`);
+        }
     }
 
     protected checkThreshold(summary: CoverageSummary): void {
@@ -370,17 +407,17 @@ export class CoverageReporter extends RealtimeReporter {
 
         const failedThresholds: string[] = [];
 
-        if (threshold.lines && summary.lines.pct < threshold.lines) {
-            failedThresholds.push(`lines: ${summary.lines.pct.toFixed(2)}% < ${threshold.lines}%`);
+        if (threshold.lines && summary.lines.percentage < threshold.lines) {
+            failedThresholds.push(`lines: ${summary.lines.percentage.toFixed(2)}% < ${threshold.lines}%`);
         }
-        if (threshold.statements && summary.statements.pct < threshold.statements) {
-            failedThresholds.push(`statements: ${summary.statements.pct.toFixed(2)}% < ${threshold.statements}%`);
+        if (threshold.statements && summary.statements.percentage < threshold.statements) {
+            failedThresholds.push(`statements: ${summary.statements.percentage.toFixed(2)}% < ${threshold.statements}%`);
         }
-        if (threshold.functions && summary.functions.pct < threshold.functions) {
-            failedThresholds.push(`functions: ${summary.functions.pct.toFixed(2)}% < ${threshold.functions}%`);
+        if (threshold.functions && summary.functions.percentage < threshold.functions) {
+            failedThresholds.push(`functions: ${summary.functions.percentage.toFixed(2)}% < ${threshold.functions}%`);
         }
-        if (threshold.branches && summary.branches.pct < threshold.branches) {
-            failedThresholds.push(`branches: ${summary.branches.pct.toFixed(2)}% < ${threshold.branches}%`);
+        if (threshold.branches && summary.branches.percentage < threshold.branches) {
+            failedThresholds.push(`branches: ${summary.branches.percentage.toFixed(2)}% < ${threshold.branches}%`);
         }
 
         if (failedThresholds.length > 0) {
@@ -388,5 +425,13 @@ export class CoverageReporter extends RealtimeReporter {
             failedThresholds.forEach(msg => console.error(`  ${msg}`));
             process.exit(1);
         }
+    }
+
+    private getRelativePath(filePath: string): string {
+        const cwd = process.cwd();
+        if (filePath.startsWith(cwd)) {
+            return path.relative(cwd, filePath);
+        }
+        return filePath;
     }
 }

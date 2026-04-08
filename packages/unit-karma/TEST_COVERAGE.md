@@ -2,130 +2,37 @@
 
 ## Test Summary
 
-**Total Tests:** 38 passing
-**Execution Time:** ~75-180ms
-**Test Files:** 3
+**Total Tests:** 51 passing
+**Execution Time:** ~350ms
+**Test Files:** 4
 
-## Browser Code Coverage with karma-coverage
+## V8 Coverage Collection
 
-This package supports Istanbul-style code coverage through karma-coverage integration.
+This package now supports real code coverage statistics using Node.js V8 coverage API.
 
-### karma-coverage Integration
+### How It Works
 
-To enable code coverage in browser environment:
+1. **V8CoverageCollector** reads coverage data from `NODE_V8_COVERAGE` output files
+2. Coverage is collected when running tests with `NODE_V8_COVERAGE` environment variable
+3. Reports are generated in multiple formats: text, text-summary, JSON, HTML, LCOV, Cobertura
 
-1. Install karma-coverage and related packages:
-
-```bash
-npm install --save-dev karma-coverage istanbul-instrumenter-loader babel-plugin-istanbul
-```
-
-2. Configure karma.conf.js:
-
-```javascript
-module.exports = function(config) {
-  config.set({
-    frameworks: ['jasmine', 'karma-typescript'],
-    files: [
-      'src/**/*.ts',
-      'test/**/*.spec.ts'
-    ],
-    preprocessors: {
-      'src/**/*.ts': ['karma-coverage'],
-      'test/**/*.spec.ts': ['karma-typescript']
-    },
-    reporters: ['progress', 'coverage'],
-    coverageReporter: {
-      reporters: [
-        { type: 'html', dir: 'coverage' },
-        { type: 'lcov', dir: 'coverage' },
-        { type: 'text-summary' }
-      ]
-    }
-  });
-};
-```
-
-3. Configure Babel for instrumentation (babel.config.js):
-
-```javascript
-module.exports = {
-  plugins: [
-    ['istanbul', {
-      include: 'src/**/*.ts',
-      exclude: ['**/*.spec.ts', '**/*.test.ts']
-    }]
-  ]
-};
-```
-
-4. Run tests with coverage:
+### Usage
 
 ```bash
-karma start karma.conf.js --coverage
+# Run tests with coverage
+NODE_V8_COVERAGE=.nyc_output npm test -- -c
+
+# Or using the test:coverage script
+npm run test:coverage
 ```
 
-### Coverage Data Format
+### Coverage Report Output
 
-The coverage collector reads Istanbul format coverage data from `window.__coverage__`:
-
-```javascript
-window.__coverage__ = {
-  'path/to/file.ts': {
-    path: 'path/to/file.ts',
-    s: { /* statement coverage */ },
-    b: { /* branch coverage */ },
-    f: { /* function coverage */ },
-    fnMap: { /* function map */ },
-    statementMap: { /* statement map */ },
-    branchMap: { /* branch map */ }
-  }
-};
-```
-
-## Running Tests
-
-### Using --coverage flag
-
-```bash
-# Run tests with coverage reporting
-npm test -- --coverage
-
-# Or using ts-node directly
-npx ts-node -r tsconfig-paths/register unit.ts --coverage
-
-# Short form
-npx ts-node -r tsconfig-paths/register unit.ts -c
-```
-
-### Coverage Report Types
-
-The coverage reporter supports multiple output formats:
-
-- `text` - Detailed text report
-- `text-summary` - Summary only (default)
-- `json` - JSON format output
-- `html` - HTML report generation
-- `lcov` - LCOV format for CI integration
-- `cobertura` - Cobertura XML format
-
-### Coverage Options
-
-```typescript
-interface CoverageOptions {
-    enabled?: boolean;
-    reporters?: CoverageReporterType[];
-    include?: string[];
-    exclude?: string[];
-    outputDir?: string;
-    threshold?: {
-        lines?: number;
-        functions?: number;
-        branches?: number;
-        statements?: number;
-    };
-}
-```
+The coverage collector produces statistics for:
+- **Lines**: Percentage of code lines executed
+- **Statements**: Percentage of statements executed
+- **Functions**: Percentage of functions called
+- **Branches**: Percentage of branch paths covered
 
 ## Test Suites
 
@@ -167,7 +74,25 @@ Coverage reporting functionality:
 - ✅ `should calculate 100% coverage with all passing` - 100% coverage
 - ✅ `should calculate 0% coverage with all failing` - 0% coverage
 
-### 3. Browser Environment Tests (10 tests)
+### 3. V8CoverageCollector Test Suite (14 tests)
+
+V8 coverage collection functionality:
+
+- ✅ `should create V8CoverageCollector instance` - Instance creation validation
+- ✅ `should have collect method` - Collect method existence
+- ✅ `should have getSummary method` - Summary method existence
+- ✅ `should have getFileCoverage method` - File coverage method
+- ✅ `should have getAllFileCoverages method` - All files method
+- ✅ `should have isEnabled method` - Enabled check method
+- ✅ `should have clear method` - Clear data method
+- ✅ `should return empty summary when no coverage collected` - Empty state
+- ✅ `should return empty file coverages when no coverage collected` - Empty files
+- ✅ `should clear coverage data` - Clear functionality
+- ✅ `should return undefined for non-existent file` - Missing file handling
+- ✅ `should check isEnabled status` - Enabled status check
+- ✅ `should collect coverage without error` - Collection without errors
+
+### 4. Browser Environment Tests (10 tests)
 
 Browser-specific DOM rendering and environment handling:
 
@@ -206,34 +131,42 @@ The browser tests simulate a complete browser environment with:
   }
 ```
 
-## Coverage Areas
+## Coverage Implementation Details
 
-### ✅ Core Functionality
-- Reporter instantiation
-- Method existence and type validation
-- Error tracking and propagation
-- Console output formatting
+### V8CoverageCollector
 
-### ✅ Rendering Features
-- Suite rendering with descriptions
-- Case rendering with status indicators (✓/✗)
-- Time formatting with hrtime
-- Error stack trace display
+The `V8CoverageCollector` class:
+1. Reads V8 coverage data from JSON files in the coverage directory
+2. Parses function, statement, branch, and line coverage
+3. Filters files based on include/exclude patterns
+4. Calculates coverage percentages for each file and overall
 
-### ✅ Browser-Specific Features
-- Environment detection (`typeof window !== 'undefined'`)
-- DOM element creation and manipulation
-- Test results container rendering
-- Test summary container rendering
-- Graceful degradation when DOM unavailable
+### Coverage Options
 
-### ✅ Edge Cases
-- Empty test suites
-- Missing DOM containers
-- All passing tests
-- All failing tests
-- Multiple test suites
-- Mixed pass/fail results
+```typescript
+interface CoverageOptions {
+    enabled?: boolean;
+    reporters?: CoverageReporterType[];
+    include?: string[];      // Glob patterns to include
+    exclude?: string[];      // Glob patterns to exclude
+    outputDir?: string;      // Coverage output directory
+    threshold?: {            // Minimum coverage thresholds
+        lines?: number;
+        functions?: number;
+        branches?: number;
+        statements?: number;
+    };
+}
+```
+
+### Report Formats
+
+1. **text** - Detailed per-file coverage table
+2. **text-summary** - Summary only (lines/statements/functions/branches)
+3. **json** - JSON format for programmatic use
+4. **html** - HTML report (in browser) or file path (Node.js)
+5. **lcov** - LCOV format for tools like genhtml, lcov, etc.
+6. **cobertura** - Cobertura XML for Jenkins, SonarQube, etc.
 
 ## Running Tests
 
@@ -243,6 +176,9 @@ npm test
 
 # Run with verbose output
 npm run test
+
+# Run with coverage
+NODE_V8_COVERAGE=.nyc_output npm test -- -c
 
 # Build and run
 npm run build && npm test
@@ -268,14 +204,15 @@ npm run build && npm test
 
 ## Performance Metrics
 
-- **Average test time:** ~6.58ms per test
+- **Average test time:** ~7ms per test
 - **Suite setup time:** ~2ms
 - **Browser mock setup:** ~4ms
 - **Report rendering:** ~2-3ms
+- **Coverage collection:** ~300ms for ~190 files
 
 ## Next Steps
 
-1. Add integration tests with actual browser test runners (Karma, Jasmine)
+1. Add integration tests with actual coverage file verification
 2. Add visual regression tests for DOM output
 3. Add performance benchmarks for large test suites
-4. Add test coverage reporting (nyc/istanbul)
+4. Add CI/CD integration examples
