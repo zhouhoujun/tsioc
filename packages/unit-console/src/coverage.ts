@@ -121,7 +121,7 @@ export class CoverageReporter extends RealtimeReporter {
 
         const cellW = [50, 7, 7, 7, 7];
         const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
-        const bd = chalk.cyan;
+        const bd = chalk.gray.dim;
         const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
         const pad = (s: string, w: number) => s + ' '.repeat(w - strip(s).length);
 
@@ -144,7 +144,7 @@ export class CoverageReporter extends RealtimeReporter {
             return bd('│') + cells.map((v, i) => ' ' + pad(fn(v as string), cellW[i])).join(bd(' │')) + bd(' │');
         };
 
-        console.log('\n' + chalk.bold.cyan(' Coverage Report '));
+        console.log('\n' + chalk.cyan(' Coverage Report '));
         console.log(top);
         console.log(row(['File', 'Stmts', 'Branch', 'Funcs', 'Lines'], true));
         console.log(mid);
@@ -187,7 +187,7 @@ export class CoverageReporter extends RealtimeReporter {
 
         const cellW = [12, 7, 7, 7, 7];
         const line = cellW.map(w => '─'.repeat(w + 2)).join('┬');
-        const bd = chalk.cyan;
+        const bd = chalk.gray.dim;
         const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
         const pad = (s: string, w: number) => s + ' '.repeat(w - strip(s).length);
 
@@ -210,7 +210,7 @@ export class CoverageReporter extends RealtimeReporter {
             return bd('│') + cells.map((v, i) => ' ' + pad(fn(v as string), cellW[i])).join(bd(' │')) + bd(' │');
         };
 
-        console.log('\n' + chalk.bold.cyan(' Coverage Summary '));
+        console.log('\n' + chalk.cyan(' Coverage Summary '));
         console.log(top);
         console.log(row(['Type', 'Stmts', 'Branch', 'Funcs', 'Lines'], true));
         console.log(mid);
