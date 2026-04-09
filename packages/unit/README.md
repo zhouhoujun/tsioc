@@ -86,6 +86,84 @@ export class SuiteTest {
 
 ```
 
+### E2E Testing
+
+The Suite decorator supports E2E testing by adding a third boolean parameter:
+
+```ts
+import { Suite, Test, BeforeEach, AfterEach, Expect, ExpectToken } from '@tsdi/unit';
+
+@Suite('E2E Test Suite', 60000, true)
+export class E2ETestSuite {
+    @BeforeEach()
+    setup() {
+        // Setup before each scenario
+    }
+
+    @Test('E2E test case', 5000)
+    async testCase(@Inject(ExpectToken) expect: Expect) {
+        expect(true).toBe(true);
+    }
+
+    @AfterEach()
+    teardown() {
+        // Cleanup after each scenario
+    }
+}
+```
+
+**Parameters:**
+- `describe`: Suite description (string)
+- `timeout`: Suite timeout in milliseconds (number, optional)
+- `e2e`: Mark as E2E test suite (boolean, default: false)
+
+When `e2e: true`, the test suite runs with E2E runner supporting Given/When/Then step patterns.
+
+**Using Given/When/Then step decorators:**
+
+```ts
+import { Suite, Test, BeforeEach, AfterEach } from '@tsdi/unit';
+import { Given, When, Then, And } from '@tsdi/unit';
+
+@Suite('User Login E2E Tests', 60000, true)
+export class UserLoginE2ETest {
+
+    @Given('a registered user with valid credentials', 5000)
+    async setupUser() {
+        // Setup user data
+    }
+
+    @When('user enters username and password', 5000)
+    async enterCredentials() {
+        // Enter login credentials
+    }
+
+    @When('user clicks the login button', 5000)
+    async clickLogin() {
+        // Click login button
+    }
+
+    @Then('user should be redirected to dashboard', 5000)
+    async verifyRedirect() {
+        // Verify redirect to dashboard
+    }
+
+    @And('success message should be displayed', 5000)
+    async verifyMessage() {
+        // Verify success message
+    }
+}
+```
+
+**Step Decorators:**
+- `@Given(description, timeout)` - Given step
+- `@When(description, timeout)` - When step  
+- `@Then(description, timeout)` - Then step
+- `@And(description, timeout)` - And step
+- `@But(description, timeout)` - But step
+- `@BeforeScenario()` - Run before scenario (alias for @Before)
+- `@AfterScenario()` - Run after scenario (alias for @After)
+
 ### support old TDD BDD style unit test.
 * TDD-style interface:
 ```js

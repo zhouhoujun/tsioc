@@ -1,20 +1,14 @@
-import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvokeOptions, AbstractInvocationFactory, InvocationOptions, ClassRef, Context, RunContext, Injector } from '@tsdi/ioc';
+import { lang, Injectable, Invocation, AbstractType } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
-import { E2ERunner } from './E2ERunner';
+import { E2ESuiteDescribe, E2EStepMetadata } from '../e2e/E2EMetadata';
+import { Given, When, Then, And } from '../e2e/E2EMetadata';
 
-/**
- * Suite runner.
- *
- * @export
- * @class SuiteRunner
- * @implements {UnitRunner<T>}
- */
 @Injectable({ static: false })
-export class SuiteRunner<T = object> extends UnitRunner<T> {
+export class E2ERunner<T = object> extends UnitRunner<T> {
 
     constructor(readonly invocation: Invocation) {
         super();  
@@ -32,25 +26,66 @@ export class SuiteRunner<T = object> extends UnitRunner<T> {
         await this.runSuite(desc)
     }
 
-    /**
-     * get suite describe.
-     *
-     * @returns {SuiteDescribe}
-     */
-    getSuiteDescribe(): SuiteDescribe {
+    getSuiteDescribe(): E2ESuiteDescribe {
         const meta = this.invocation.classRef.getAnnotation() as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
         this.describe = meta.describe || this.invocation.classRef.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
-            cases: []
+            cases: [],
+            scenarioSteps: []
         }
     }
 
-    async runSuite(desc: SuiteDescribe): Promise<void> {
+    protected getScenarioSteps(): E2EStepMetadata[] {
+        const steps: E2EStepMetadata[] = [];
+        
+        const givens = this.invocation.classRef.getDefines<E2EStepMetadata>(Given);
+        givens.forEach(df => {
+            steps.push({
+                ...df.metadata,
+                stepType: 'Given',
+                method: df.propertyKey
+            });
+        });
+
+        const whens = this.invocation.classRef.getDefines<E2EStepMetadata>(When);
+        whens.forEach(df => {
+            steps.push({
+                ...df.metadata,
+                stepType: 'When',
+                method: df.propertyKey
+            });
+        });
+
+        const thens = this.invocation.classRef.getDefines<E2EStepMetadata>(Then);
+        thens.forEach(df => {
+            steps.push({
+                ...df.metadata,
+                stepType: 'Then',
+                method: df.propertyKey
+            });
+        });
+
+        const ands = this.invocation.classRef.getDefines<E2EStepMetadata>(And);
+        ands.forEach(df => {
+            steps.push({
+                ...df.metadata,
+                stepType: 'And',
+                method: df.propertyKey
+            });
+        });
+
+        return steps.sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+
+    async runSuite(desc: E2ESuiteDescribe): Promise<void> {
+        // Build scenario steps
+        desc.scenarioSteps = this.getScenarioSteps();
+        
         await this.runBefore(desc);
-        await this.runTest(desc);
+        await this.runScenario(desc);
         await this.runAfter(desc)
     }
 
@@ -92,7 +127,7 @@ export class SuiteRunner<T = object> extends UnitRunner<T> {
             befores.map(df => () => {
                 return this.runTimeout(
                     df.propertyKey,
-                    'sutie before ' + df.propertyKey,
+                    'suite before ' + df.propertyKey,
                     df.metadata.timeout)
             })).catch(err => {
                 this.runAfter(describe);
@@ -127,28 +162,57 @@ export class SuiteRunner<T = object> extends UnitRunner<T> {
             afters.map(df => () => {
                 return this.runTimeout(
                     df.propertyKey,
-                    'sutie after ' + df.propertyKey,
+                    'suite after ' + df.propertyKey,
                     df.metadata.timeout)
             }))
     }
 
-    async runTest(desc: SuiteDescribe) {
+    async runScenario(desc: E2ESuiteDescribe): Promise<void> {
         const tests = this.invocation.classRef.getDefines<TestCaseMetadata>(Test);
-        await lang.step(
-            tests.map(df => {
-                return {
-                    key: df.propertyKey,
-                    order: df.metadata.setp,
-                    timeout: df.metadata.timeout,
-                    title: df.metadata.title ?? df.propertyKey
-                } as ICaseDescribe;
-            })
-                .sort((a, b) => {
-                    return b.order! - a.order!
+        
+        if (tests && tests.length > 0) {
+            await lang.step(
+                tests.map(df => {
+                    return {
+                        key: df.propertyKey,
+                        order: df.metadata.setp,
+                        timeout: df.metadata.timeout,
+                        title: df.metadata.title ?? df.propertyKey
+                    } as ICaseDescribe;
                 })
-                .map(caseDesc => {
-                    return () => this.runCase(caseDesc)
-                }))
+                    .sort((a, b) => {
+                        return b.order! - a.order!
+                    })
+                    .map(caseDesc => {
+                        return () => this.runCase(caseDesc)
+                    }))
+        } else {
+            await this.runScenarioSteps(desc);
+        }
+    }
+
+    async runScenarioSteps(desc: E2ESuiteDescribe): Promise<void> {
+        const steps = desc.scenarioSteps || [];
+        
+        for (const step of steps) {
+            await this.runBeforeEach();
+            try {
+                await this.runTimeout(
+                    step.method as string,
+                    `${step.stepType}: ${step.description || step.keyword}`,
+                    step.timeout)
+            } catch (err) {
+                const errorStep: ICaseDescribe = {
+                    title: `${step.stepType}: ${step.description || step.keyword}`,
+                    key: step.method as string,
+                    error: err as Error
+                };
+                desc.cases.push(errorStep);
+                throw err;
+            } finally {
+                await this.runAfterEach();
+            }
+        }
     }
 
     async runCase(caseDesc: ICaseDescribe): Promise<ICaseDescribe> {
@@ -170,22 +234,4 @@ export class SuiteRunner<T = object> extends UnitRunner<T> {
         return caseDesc
     }
 
-}
-
-
-
-export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
-    protected process(context?: InvokeOptions, resolveCtx?: RunContext) {
-        const meta = this.classRef.getAnnotation() as SuiteMetadata;
-        if (meta?.e2e) {
-            return this.injector.resolve(E2ERunner).run();
-        }
-        return this.injector.resolve(SuiteRunner).run();
-    }
-}
-
-export class SuiteInvocationFactory extends AbstractInvocationFactory {
-    protected createInstance<T>(typeRef: ClassRef<T>, injector: Injector, options?: InvocationOptions<T>): Invocation<T> {
-        return new SuiteInvocation<T>(typeRef, injector, options);
-    }
 }

@@ -4,6 +4,7 @@ import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
 import { SuiteDef } from './metadata';
 import { UNITTESTCONFIGURE } from './configure';
+import { E2ERunner } from './runner/E2ERunner';
 
 
 /**
@@ -34,7 +35,12 @@ export class UnitTestService {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
-        await step(suites.filter(v => v && getDef<SuiteDef>(v)?.suite).map(s => () => ctx.bootstrap(s)));
-        await ctx.resolve(DefaultTestReport).report()
+
+        const unitSuites = suites.filter(v => v && getDef<SuiteDef>(v)?.suite);
+        const e2eSuites = suites.filter(v => v && getDef<SuiteDef>(v)?.e2e);
+
+        await step(unitSuites.map(s => () => ctx.bootstrap(s)));
+        await step(e2eSuites.map(s => () => ctx.bootstrap(s)));
+        await ctx.resolve(DefaultTestReport).report();
     }
 }

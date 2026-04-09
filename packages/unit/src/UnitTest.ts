@@ -9,6 +9,7 @@ import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
 import { SuiteRunner } from './runner/SuiteRunner';
+import { E2ERunner } from './runner/E2ERunner';
 
 class UnitTestApplicationArguments extends ApplicationArguments {
     private _baseURL: string;
@@ -53,6 +54,7 @@ class UnitTestApplicationArguments extends ApplicationArguments {
         UnitTestConfigureService,
         RunAspect,
         SuiteRunner,
+        E2ERunner,
         OldTestRunner,
         DefaultTestReport
     ],

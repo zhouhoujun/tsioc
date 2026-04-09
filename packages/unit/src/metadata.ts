@@ -20,6 +20,13 @@ export interface Suite {
      * @param {number} timeout suite timeout.
      */
     (describe: string, timeout: number): ClassDecorator;
+    /**
+     * suite decorator with describe, timeout and e2e flag.
+     * @param {string} describe suite describe.
+     * @param {number} timeout suite timeout.
+     * @param {boolean} e2e mark as e2e test suite.
+     */
+    (describe: string, timeout: number, e2e: boolean): ClassDecorator;
 
     /**
      * suite decorator with metadata.
@@ -39,7 +46,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
             ctx.classRef.assignAnnotation(ctx.define.metadata);
         }
     },
-    props: (describe: string, timeout?: number) => ({ describe, timeout}),
+    props: (describe: string, timeout?: number, e2e?: boolean) => ({ describe, timeout, e2e }),
     factory: (injector) => {
         return new SuiteInvocationFactory(injector.getRuntime())
     }
@@ -200,6 +207,7 @@ export const AfterEach: AfterEach = createTestDecorator<TestMetadata>('TestAfter
 
 export interface SuiteDef extends TypeDef {
     suite?: boolean;
+    e2e?: boolean;
 }
 
 /**
@@ -298,4 +306,11 @@ export interface SuiteMetadata extends AnnotationMetadata {
      */
     suite?: boolean;
 
+    /**
+     * Mark this as an E2E test suite.
+     * 标记为E2E测试套件
+     *
+     * @type {boolean}
+     */
+    e2e?: boolean;
 }

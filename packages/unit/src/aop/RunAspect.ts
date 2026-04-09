@@ -6,9 +6,11 @@ import { TestReport, SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from '../runner/Runner';
 import { SuiteRunner } from '../runner/SuiteRunner';
 import { OldTestRunner } from '../runner/OldTestRunner';
+import { E2ERunner } from '../runner/E2ERunner';
+import { E2ESuiteDescribe } from '../e2e/E2EMetadata';
 
 @Aspect({
-    within: [SuiteRunner, OldTestRunner],
+    within: [SuiteRunner, OldTestRunner, E2ERunner],
     singleton: true
 })
 export class RunAspect extends LogAspect {
@@ -44,14 +46,37 @@ export class RunAspect extends LogAspect {
     @Around('execution(*.runSuite)')
     logSuite(joinPoint: JoinPoint) {
         const runner = joinPoint.target as UnitRunner;
-        const desc = joinPoint.args?.[0] as SuiteDescribe;
+        const argDesc = joinPoint.args?.[0];
         switch (joinPoint.state) {
             case JoinpointState.Before:
-                this.getReport().addSuite(runner.type || desc.describe, desc);
+                let describe = 'Unknown';
+                let cases: ICaseDescribe[] = [];
+                let timeout: number | undefined;
+                let start: [number, number] | undefined;
+                let used: [number, number] | undefined;
+
+                if (argDesc) {
+                    describe = (argDesc as SuiteDescribe).describe || runner.type?.name || 'Unknown';
+                    cases = (argDesc as any).cases || [];
+                    timeout = argDesc.timeout;
+                    start = (argDesc as any).start;
+                    used = (argDesc as any).used;
+                } else {
+                    describe = runner.type?.name || 'Unknown';
+                }
+
+                const suiteDesc: SuiteDescribe = {
+                    describe,
+                    cases,
+                    timeout,
+                    start,
+                    used
+                };
+                this.getReport().addSuite(runner.type || describe, suiteDesc);
                 break;
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:
-                this.getReport().setSuiteCompleted(runner.type || desc.describe);
+                this.getReport().setSuiteCompleted(runner.type || (argDesc as any)?.describe);
                 break;
         }
     }
@@ -63,7 +88,7 @@ export class RunAspect extends LogAspect {
         const runner = joinPoint.target as SuiteRunner;
         switch (joinPoint.state) {
             case JoinpointState.Before:
-                this.getReport().addCase(runner.type || suiteDesc.describe, desc);
+                this.getReport().addCase(runner.type || (suiteDesc as SuiteDescribe)?.describe, desc);
                 break;
             case JoinpointState.AfterReturning:
             case JoinpointState.AfterThrowing:

@@ -18,6 +18,22 @@ export interface CoverageOptions {
     };
 }
 
+export interface E2EOptions {
+    enabled?: boolean;
+    baseURL?: string;
+    timeout?: number;
+    retries?: number;
+    headless?: boolean;
+    viewport?: {
+        width: number;
+        height: number;
+    };
+    screenshotOnFailure?: boolean;
+    videoOnFailure?: boolean;
+    tags?: string[];
+    parallel?: boolean;
+}
+
 export interface UnitTestOptions {
     configures?: (string | UnitTestConfigure)[];
 }
@@ -27,5 +43,6 @@ export interface UnitTestConfigure extends EnvironmentOption {
     src?: string | AbstractType | (string | AbstractType)[];
     reporters?: ProvdierOf<TestReport>[];
     coverage?: CoverageOptions;
+    e2e?: E2EOptions;
 }
 
