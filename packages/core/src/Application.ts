@@ -20,8 +20,6 @@ import { ApplicationArguments } from './ApplicationArguments';
  * @class Application
  */
 export class Application<T = any> {
-
-    private _loads?: AbstractType[];
     /**
      * root module ref.
      * 
@@ -141,10 +139,6 @@ export class Application<T = any> {
         return this.context.destroy();
     }
 
-    get loadTypes(): AbstractType[] {
-        return this._loads ?? []
-    }
-
     protected getDeps(): Modules[] {
         return [TransformModule]
     }
@@ -219,8 +213,8 @@ export class Application<T = any> {
             if (isFunction(target)) {
                 this.context = root.get(ApplicationContextFactory).create(root);
             } else {
-                if (target.loads?.length) {
-                    this._loads = await this.loader.register(this.root, target.loads);
+                if (target.loadTypes?.length) {
+                    await this.loader.register(this.root, target.loadTypes);
                 }
                 if (target.loadDeps?.length) {
                     await InjectUtil.useAsync(this.root, target.loadDeps);

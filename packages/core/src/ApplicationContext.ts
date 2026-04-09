@@ -102,7 +102,7 @@ export interface EnvironmentOption extends ModuleOption, InvokeOptions {
     /**
      * 应用程序依赖模块
      */
-    loads?: LoadType[];    
+    loadTypes?: LoadType[];    
     /**
      * load dependence. register after root module injector init.
      */
