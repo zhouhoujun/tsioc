@@ -1,6 +1,6 @@
 import { Token, Module, Inject } from '@tsdi/ioc';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
-import { ServerModule } from '@tsdi/platform-server';
+import { BrowserModule } from '@tsdi/platform-browser';
 import { HrtimeFormatter } from '@tsdi/core';
 
 /**
@@ -9,7 +9,7 @@ import { HrtimeFormatter } from '@tsdi/core';
  */
 @Module({
     imports: [
-        ServerModule
+        BrowserModule
     ]
 })
 export class KarmaReporter extends RealtimeReporter {

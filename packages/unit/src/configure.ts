@@ -4,8 +4,7 @@ import * as assert from 'assert';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { Assert } from './assert/assert';
 import { ExpectToken } from './assert/expects';
-import { AbstractReporter, UNIT_REPORTES, Reporter } from './reports/Reporter';
-import { CoverageReporter } from './reports/CoverageReporter';
+import { AbstractReporter, UNIT_REPORTES, CoverageReporter } from './reports/Reporter';
 
 const expect = require('expect');
 
@@ -25,10 +24,11 @@ export class UnitTestConfigureService {
         if (!ctx.has(ExpectToken)) {
             InjectUtil.setValue(ctx, ExpectToken, expect.default || expect)
         }
-        const reps = ctx.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
-        if (reps.length) {
-            InjectUtil.inject(ctx, reps.map(r => ({ provide: UNIT_REPORTES, useExisting: r, multi: true } as Provider)))
-        }
+        // const reps = ctx.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
+        // if (reps.length) {
+        //     InjectUtil.inject(ctx, reps.map(r => ({ provide: UNIT_REPORTES, useExisting: r, multi: true } as Provider)))
+        // }
+        
         if (config.reporters && config.reporters.length) {
             InjectUtil.inject(ctx, config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as Provider)))
         }
@@ -50,6 +50,6 @@ export class UnitTestConfigureService {
     }
 
     protected isCoverageReporter(reporter: any): reporter is CoverageReporter {
-        return reporter && typeof reporter.setOptions === 'function';
+        return reporter instanceof CoverageReporter
     }
 }

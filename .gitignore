@@ -19,4 +19,4 @@ simples/data
 big-temp.json
 **/*.apk
 **/coverage-*.json
-
+*.info

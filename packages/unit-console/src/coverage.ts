@@ -1,7 +1,5 @@
-import { Token, Module, Inject, Injector } from '@tsdi/ioc';
-import { SuiteDescribe, RealtimeReporter, ICaseDescribe, CoverageSummary, FileCoverageData, UNITTESTCONFIGURE, UnitTestConfigure } from '@tsdi/unit';
-import { ServerModule } from '@tsdi/platform-server';
-import { ServerLog4Module } from '@tsdi/platform-server/log4js';
+import { Token, Inject, Injector, Injectable } from '@tsdi/ioc';
+import { SuiteDescribe, RealtimeReporter, ICaseDescribe, CoverageSummary, UNITTESTCONFIGURE, UnitTestConfigure, CoverageReporter } from '@tsdi/unit';
 import { HrtimeFormatter } from '@tsdi/core';
 import * as path from 'path';
 import { V8CoverageCollector } from './V8CoverageCollector';
@@ -23,16 +21,8 @@ export interface CoverageOptions {
     };
 }
 
-@Module({
-    imports: [
-        ServerModule,
-        ServerLog4Module
-    ],
-    providers: [
-        V8CoverageCollector
-    ]
-})
-export class CoverageReporter extends RealtimeReporter {
+@Injectable()
+export class V8CoverageReporter extends CoverageReporter {
 
     constructor(
         @Inject() hrtime: HrtimeFormatter, 
@@ -60,11 +50,6 @@ export class CoverageReporter extends RealtimeReporter {
         throw error;
     }
 
-    override renderSuite(desc: SuiteDescribe): void {
-    }
-
-    override renderCase(desc: ICaseDescribe): void {
-    }
 
     override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
         if (!this.options?.enabled) {

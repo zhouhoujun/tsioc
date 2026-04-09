@@ -1,49 +1,39 @@
-import { Token, Module, Inject, Injector, Optional } from '@tsdi/ioc';
-import { SuiteDescribe, RealtimeReporter, ICaseDescribe, CoverageSummary, UnitTestConfigure } from '@tsdi/unit';
-import { ServerModule } from '@tsdi/platform-server';
+import { Token, Inject, Injector, Optional, Injectable } from '@tsdi/ioc';
+import { SuiteDescribe, ICaseDescribe, CoverageSummary, UnitTestConfigure, CoverageReporter } from '@tsdi/unit';
 import { HrtimeFormatter } from '@tsdi/core';
-import * as path from 'path';
-import * as fs from 'fs';
-import { V8CoverageCollector, KarmaCoverageOptions } from './V8CoverageCollector';
+import { FileAdapter } from '@tsdi/common';
 import { BrowserCoverageCollector, BrowserCoverageOptions } from './BrowserCoverageCollector';
 
 export type CoverageReporterType = 'text' | 'text-summary' | 'json' | 'html' | 'lcov' | 'cobertura';
 
-export { KarmaCoverageOptions as CoverageOptions, KarmaCoverageOptions };
+export { BrowserCoverageOptions as CoverageOptions, BrowserCoverageOptions };
 
 function isBrowserEnvironment(): boolean {
     return typeof window !== 'undefined' && typeof window.document !== 'undefined';
 }
 
-@Module({
-    imports: [
-        ServerModule
-    ],
-    providers: [
-        V8CoverageCollector,
-        BrowserCoverageCollector
-    ]
-})
-export class CoverageReporter extends RealtimeReporter {
+@Injectable()
+export class KarmaCoverageReporter extends CoverageReporter {
 
-    private _options: KarmaCoverageOptions = {};
+    private _options: BrowserCoverageOptions = {};
 
     constructor(
         @Inject() hrtime: HrtimeFormatter,
         @Inject() private injector: Injector,
+        @Optional() private fileAdapter?: FileAdapter,
         @Optional() private config?: UnitTestConfigure
     ) {
         super();
         this.hrtime = hrtime;
     }
 
-    private coverageCollector: V8CoverageCollector | BrowserCoverageCollector | null = null;
+    private coverageCollector: BrowserCoverageCollector | null = null;
 
-    private get options(): KarmaCoverageOptions {
+    private get options(): BrowserCoverageOptions {
         return this._options;
     }
 
-    setOptions(options: KarmaCoverageOptions) {
+    setOptions(options: BrowserCoverageOptions) {
         this._options = options || {};
     }
 
@@ -52,28 +42,16 @@ export class CoverageReporter extends RealtimeReporter {
         throw error;
     }
 
-    override renderSuite(desc: SuiteDescribe): void {
-    }
-
-    override renderCase(desc: ICaseDescribe): void {
-    }
-
     override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
         if (!this.options?.enabled) {
             return;
         }
 
-        this.selectCollector();
+        this.coverageCollector = this.injector.get(BrowserCoverageCollector);
         
         if (this.coverageCollector) {
             try {
-                if ('setOptions' in this.coverageCollector) {
-                    if (isBrowserEnvironment()) {
-                        (this.coverageCollector as BrowserCoverageCollector).setOptions(this.options);
-                    } else {
-                        (this.coverageCollector as V8CoverageCollector).setOptions(this.options, this.config?.baseURL);
-                    }
-                }
+                this.coverageCollector.setOptions(this.options);
                 await this.coverageCollector.collect();
             } catch (e) {
                 console.log('\nWarning: Could not collect coverage data.');
@@ -88,14 +66,6 @@ export class CoverageReporter extends RealtimeReporter {
 
         if (this.options.threshold && this.coverageCollector) {
             this.checkThreshold(this.coverageCollector.getSummary());
-        }
-    }
-
-    private selectCollector(): void {
-        if (isBrowserEnvironment()) {
-            this.coverageCollector = this.injector.get(BrowserCoverageCollector);
-        } else {
-            this.coverageCollector = this.injector.get(V8CoverageCollector);
         }
     }
 
@@ -295,12 +265,18 @@ export class CoverageReporter extends RealtimeReporter {
             return;
         }
 
+        if (!this.fileAdapter?.existsSync) {
+            console.log('\nLCOV report requires file system access (Node.js environment).');
+            return;
+        }
+
         const outputDir = this.options?.outputDir || 'coverage';
-        const outputFile = path.join(outputDir, 'lcov.info');
+        const outputFile = this.fileAdapter.join(outputDir, 'lcov.info');
 
         try {
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir, { recursive: true });
+            if (!this.fileAdapter?.existsSync(outputDir)) {
+                console.log('\nLCOV report can only be generated in Node.js environment with file system access.');
+                return;
             }
 
             const fileCoverages = this.coverageCollector.getAllFileCoverages();
@@ -334,8 +310,8 @@ export class CoverageReporter extends RealtimeReporter {
                 lcov += 'end_of_record\n';
             });
 
-            fs.writeFileSync(outputFile, lcov);
-            console.log(`\nLCOV report generated: ${outputFile}`);
+            console.log('\nLCOV data generated (file write not supported in browser):');
+            console.log(lcov.substring(0, 500) + (lcov.length > 500 ? '...' : ''));
         } catch (e) {
             console.log(`\nFailed to generate LCOV report: ${e}`);
         }
@@ -347,12 +323,18 @@ export class CoverageReporter extends RealtimeReporter {
             return;
         }
 
+        if (!this.fileAdapter?.existsSync) {
+            console.log('\nCobertura report requires file system access (Node.js environment).');
+            return;
+        }
+
         const outputDir = this.options?.outputDir || 'coverage';
-        const outputFile = path.join(outputDir, 'cobertura.xml');
+        const outputFile = this.fileAdapter.join(outputDir, 'cobertura.xml');
 
         try {
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir, { recursive: true });
+            if (!this.fileAdapter?.existsSync(outputDir)) {
+                console.log('\nCobertura report can only be generated in Node.js environment with file system access.');
+                return;
             }
 
             const summary = this.coverageCollector.getSummary();
@@ -368,7 +350,7 @@ export class CoverageReporter extends RealtimeReporter {
 
             fileCoverages.forEach((fileData, filePath) => {
                 const relPath = this.getRelativePath(filePath);
-                const className = path.basename(relPath, path.extname(relPath));
+                const className = this.getBaseName(relPath);
 
                 xml += `        <class name="${className}" filename="${relPath}" `;
                 xml += `line-rate="${(fileData.summary.lines.percentage / 100).toFixed(2)}" `;
@@ -394,8 +376,8 @@ export class CoverageReporter extends RealtimeReporter {
             xml += '  </packages>\n';
             xml += '</coverage>\n';
 
-            fs.writeFileSync(outputFile, xml);
-            console.log(`\nCobertura XML report generated: ${outputFile}`);
+            console.log('\nCobertura XML data generated (file write not supported in browser):');
+            console.log(xml.substring(0, 500) + (xml.length > 500 ? '...' : ''));
         } catch (e) {
             console.log(`\nFailed to generate Cobertura report: ${e}`);
         }
@@ -428,10 +410,25 @@ export class CoverageReporter extends RealtimeReporter {
     }
 
     private getRelativePath(filePath: string): string {
-        const cwd = process.cwd();
-        if (filePath.startsWith(cwd)) {
-            return path.relative(cwd, filePath);
+        try {
+            const cwd = process.cwd();
+            if (filePath.startsWith(cwd) && this.fileAdapter) {
+                return this.fileAdapter.normalize(this.fileAdapter.join(filePath.replace(cwd, '')));
+            }
+        } catch {
+            // Browser environment
         }
         return filePath;
+    }
+
+    private getBaseName(filePath: string): string {
+        if (this.fileAdapter) {
+            const ext = this.fileAdapter.extname(filePath);
+            if (ext) {
+                return filePath.slice(0, -ext.length - 1);
+            }
+        }
+        const parts = filePath.split('/');
+        return parts[parts.length - 1];
     }
 }

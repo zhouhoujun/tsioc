@@ -2,28 +2,28 @@
 
 ## Test Summary
 
-**Total Tests:** 51 passing
+**Total Tests:** 51+ passing
 **Execution Time:** ~350ms
 **Test Files:** 4
 
-## V8 Coverage Collection
+## Browser Coverage Collection
 
-This package now supports real code coverage statistics using Node.js V8 coverage API.
+This package supports code coverage statistics for browser environments using Istanbul instrumentation.
 
 ### How It Works
 
-1. **V8CoverageCollector** reads coverage data from `NODE_V8_COVERAGE` output files
-2. Coverage is collected when running tests with `NODE_V8_COVERAGE` environment variable
+1. **BrowserCoverageCollector** reads coverage data from `window.__coverage__` global variable
+2. Coverage is collected from Istanbul-instrumented code in the browser
 3. Reports are generated in multiple formats: text, text-summary, JSON, HTML, LCOV, Cobertura
 
 ### Usage
 
 ```bash
-# Run tests with coverage
-NODE_V8_COVERAGE=.nyc_output npm test -- -c
+# Run tests with coverage (browser environment)
+npm test -- -c
 
-# Or using the test:coverage script
-npm run test:coverage
+# Run all tests
+npm test
 ```
 
 ### Coverage Report Output
@@ -74,23 +74,21 @@ Coverage reporting functionality:
 - ✅ `should calculate 100% coverage with all passing` - 100% coverage
 - ✅ `should calculate 0% coverage with all failing` - 0% coverage
 
-### 3. V8CoverageCollector Test Suite (14 tests)
+### 3. BrowserCoverageCollector Test Suite (11 tests)
 
-V8 coverage collection functionality:
+Browser coverage collection functionality:
 
-- ✅ `should create V8CoverageCollector instance` - Instance creation validation
+- ✅ `should create BrowserCoverageCollector instance` - Instance creation validation
 - ✅ `should have collect method` - Collect method existence
 - ✅ `should have getSummary method` - Summary method existence
-- ✅ `should have getFileCoverage method` - File coverage method
-- ✅ `should have getAllFileCoverages method` - All files method
+- ✅ `should have setOptions method` - Options configuration
 - ✅ `should have isEnabled method` - Enabled check method
 - ✅ `should have clear method` - Clear data method
-- ✅ `should return empty summary when no coverage collected` - Empty state
-- ✅ `should return empty file coverages when no coverage collected` - Empty files
+- ✅ `should return empty summary when no coverage` - Empty state
+- ✅ `should return empty file coverages when no coverage` - Empty files
 - ✅ `should clear coverage data` - Clear functionality
-- ✅ `should return undefined for non-existent file` - Missing file handling
 - ✅ `should check isEnabled status` - Enabled status check
-- ✅ `should collect coverage without error` - Collection without errors
+- ✅ `should set options correctly` - Options setting
 
 ### 4. Browser Environment Tests (10 tests)
 
@@ -113,7 +111,7 @@ The browser tests simulate a complete browser environment with:
 
 ### Mock Objects
 ```typescript
-- window: { document: MockDocument }
+- window: { document: MockDocument, __coverage__: any }
 - document: {
     getElementById(id): MockElement | null,
     createElement(tag): MockElement
@@ -133,10 +131,10 @@ The browser tests simulate a complete browser environment with:
 
 ## Coverage Implementation Details
 
-### V8CoverageCollector
+### BrowserCoverageCollector
 
-The `V8CoverageCollector` class:
-1. Reads V8 coverage data from JSON files in the coverage directory
+The `BrowserCoverageCollector` class:
+1. Reads Istanbul coverage data from `window.__coverage__` global variable
 2. Parses function, statement, branch, and line coverage
 3. Filters files based on include/exclude patterns
 4. Calculates coverage percentages for each file and overall
@@ -156,6 +154,7 @@ interface CoverageOptions {
         branches?: number;
         statements?: number;
     };
+    global?: string;         // Custom global variable name (default: '__coverage__')
 }
 ```
 
@@ -176,9 +175,6 @@ npm test
 
 # Run with verbose output
 npm run test
-
-# Run with coverage
-NODE_V8_COVERAGE=.nyc_output npm test -- -c
 
 # Build and run
 npm run build && npm test
@@ -208,7 +204,6 @@ npm run build && npm test
 - **Suite setup time:** ~2ms
 - **Browser mock setup:** ~4ms
 - **Report rendering:** ~2-3ms
-- **Coverage collection:** ~300ms for ~190 files
 
 ## Next Steps
 

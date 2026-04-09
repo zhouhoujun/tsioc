@@ -1,6 +1,7 @@
 import { Token, Abstract, token, Inject } from '@tsdi/ioc';
 import { SuiteDescribe, ICaseDescribe } from './interface';
 import { HrtimeFormatter } from '@tsdi/core';
+import { CoverageOptions } from '../UnitTestConfigure';
 
 
 /**
@@ -48,6 +49,13 @@ export abstract class AbstractReporter {
      * @param error 
      */
     abstract track(error: Error): void;
+}
+
+
+@Abstract()
+export abstract class CoverageReporter extends AbstractReporter {
+
+    abstract setOptions(options: CoverageOptions): void;
 }
 
 /**

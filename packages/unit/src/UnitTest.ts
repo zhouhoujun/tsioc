@@ -1,14 +1,13 @@
-import { Module, Provider, AbstractType, Type, Token } from '@tsdi/ioc';
+import { Module, Provider, AbstractType, Type, Token, ModuleWithProviders } from '@tsdi/ioc';
 import { Application, ApplicationArguments, AppMode, AppPlatform, LoadType } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
-import { UnitTestConfigure, CoverageOptions, TestPlatform } from './UnitTestConfigure';
+import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestService } from './UnitTestService';
 import { RunAspect } from './aop/RunAspect';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
 import { SuiteRunner } from './runner/SuiteRunner';
-import { AbstractReporter, UNIT_REPORTES, RealtimeReporter } from './reports/Reporter';
 
 class UnitTestApplicationArguments extends ApplicationArguments {
     private _baseURL: string;
@@ -89,46 +88,38 @@ function detectEnvironment(): 'node' | 'browser' {
     return 'node';
 }
 
-async function loadEnvironmentModule(env: TestPlatform): Promise<{ reporter?: Type; coverageReporter?: Type }> {
-    const actualEnv = env === 'auto' ? detectEnvironment() : env;
+async function loadEnvironmentModule(env?: AppPlatform, coverageEnabled?: boolean): Promise<(Type | ModuleWithProviders)[]> {
+    const actualEnv = env ?? detectEnvironment();
+    const resports = [];
 
-    if (actualEnv === 'node') {
-        try {
-            const module = await import('@tsdi/unit-console');
-            return {
-                reporter: module.ConsoleReporter,
-                coverageReporter: module.CoverageReporter
-            };
-        } catch (e) {
-            console.warn('Failed to load @tsdi/unit-console. Install it with: npm install @tsdi/unit-console');
-            return {};
-        }
-    } else {
+    try {
+        const module = await import('@tsdi/unit-console');
+        resports.push(module.ConsoleModule.withOptions(coverageEnabled));
+
+    } catch (e) {
+        console.warn('Failed to load @tsdi/unit-console. Install it with: npm install @tsdi/unit-console');
+        // return {};
+    }
+    if (actualEnv === 'browser' || actualEnv === 'web') {
         try {
             const module = await import('@tsdi/unit-karma');
-            return {
-                reporter: module.KarmaReporter,
-                coverageReporter: module.CoverageReporter
-            };
+            resports.push(module.KarmaModule.withOptions(coverageEnabled));
         } catch (e) {
             console.warn('Failed to load @tsdi/unit-karma. Install it with: npm install @tsdi/unit-karma');
-            return {};
         }
     }
+    return resports
 }
 
-export async function runTest(src: string | AbstractType | (string | AbstractType)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
+export async function runTest(src: string | AbstractType | (string | AbstractType)[], config?: UnitTestConfigure): Promise<any> {
     const coverageEnabled = parseCoverageFromArgs() || config?.coverage?.enabled === true;
-    const env = config?.platform || 'auto';
+
 
     let finalConfig = config;
-    let finalLoads = [...loads];
 
-    const envModule = await loadEnvironmentModule(env);
+    const deps = await loadEnvironmentModule(config?.platform, coverageEnabled);
 
-    if (envModule.reporter && !loads.some(l => l === envModule.reporter)) {
-        finalLoads.push(envModule.reporter);
-    }
+
 
     if (coverageEnabled) {
         const coverageDir = resolveCoverageDir(config);
@@ -138,6 +129,7 @@ export async function runTest(src: string | AbstractType | (string | AbstractTyp
         }
 
         finalConfig = {
+            src,
             ...config,
             coverage: {
                 enabled: true,
@@ -148,29 +140,28 @@ export async function runTest(src: string | AbstractType | (string | AbstractTyp
                 threshold: config?.coverage?.threshold
             }
         };
-
-        if (envModule.coverageReporter && !loads.some(l => l === envModule.coverageReporter)) {
-            finalLoads.push(envModule.coverageReporter);
-        }
     }
 
     const providers: Provider[] = [
+        ...finalConfig?.providers ?? [],
         {
             provide: UNITTESTCONFIGURE,
-            useValue: { ...finalConfig, src }
+            useValue: finalConfig
         }
     ];
     if (finalConfig?.baseURL) {
         providers.push({
             provide: ApplicationArguments,
             useClass: UnitTestApplicationArguments,
-            deps: [],
             useFactory: () => new UnitTestApplicationArguments(finalConfig.baseURL!)
         });
     }
-    await Application.run({
-        module: UnitTest,
-        loads: finalLoads,
+    await Application.run(UnitTest, {
+        ...config,
+        deps: [
+            ...deps,
+            ...finalConfig?.deps || []
+        ],
         providers
     })
 }

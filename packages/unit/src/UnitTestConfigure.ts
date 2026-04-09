@@ -1,5 +1,6 @@
 import { AbstractType } from '@tsdi/ioc';
 import { TestReport } from './reports/interface';
+import { EnvironmentOption } from '@tsdi/core';
 
 export type CoverageReporterType = 'text' | 'text-summary' | 'json' | 'html' | 'lcov' | 'cobertura';
 
@@ -17,17 +18,14 @@ export interface CoverageOptions {
     };
 }
 
-export type TestPlatform = 'node' | 'browser' | 'auto';
-
 export interface UnitTestOptions {
     configures?: (string | UnitTestConfigure)[];
 }
 
-export interface UnitTestConfigure {
+export interface UnitTestConfigure extends EnvironmentOption {
     baseURL?: string;
     src?: string | AbstractType | (string | AbstractType)[];
     reporters?: AbstractType<TestReport>[];
     coverage?: CoverageOptions;
-    platform?: TestPlatform;
 }
 

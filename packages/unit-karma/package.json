@@ -4,8 +4,7 @@
   "description": "unit testing for karma",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "test": "ts-node -r tsconfig-paths/register unit.ts",
-    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
   },
   "devDependencies": {
     "expect": "^25.3.0"
@@ -39,14 +38,14 @@
     "@tsdi/unit": "^6.0.31",
     "@tsdi/core": "^6.0.31",
     "@tsdi/ioc": "^6.0.31",
-    "@tsdi/platform-server": "^6.0.31",
+    "@tsdi/platform-browser": "^6.0.31",
     "chalk": "^4.0.0"
   },
   "peerDependencies": {
     "@tsdi/unit": "^6.0.31",
     "@tsdi/core": "^6.0.31",
     "@tsdi/ioc": "^6.0.31",
-    "@tsdi/platform-server": "^6.0.31"
+    "@tsdi/platform-browser": "^6.0.31"
   },
   "directories": {
     "lib": "lib",

@@ -1,16 +1,9 @@
-import { Token, lang, Module } from '@tsdi/ioc';
+import { Token, lang, Injectable } from '@tsdi/ioc';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
-import { ServerModule } from '@tsdi/platform-server';
-import { ServerLog4Module } from '@tsdi/platform-server/log4js';
 
 const chalk = require('chalk');
 
-@Module({
-    imports: [
-        ServerModule,
-        ServerLog4Module
-    ]
-})
+@Injectable()
 export class ConsoleReporter extends RealtimeReporter {
 
 

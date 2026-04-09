@@ -12,7 +12,6 @@ export * from './UnitTestService';
 export * from './reports/interface';
 export * from './reports/TestReport';
 export * from './reports/Reporter';
-export * from './reports/CoverageReporter';
 
 export * from './coverage/CoverageCollector';
 
