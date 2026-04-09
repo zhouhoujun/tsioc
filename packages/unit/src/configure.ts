@@ -1,4 +1,4 @@
-import { Injectable, lang, InjectUtil, Provider, token } from '@tsdi/ioc';
+import { Injectable, lang, InjectUtil, Provider, token, toProviders } from '@tsdi/ioc';
 import { Application, ApplicationContext, Start, Startup } from '@tsdi/core';
 import * as assert from 'assert';
 import { UnitTestConfigure } from './UnitTestConfigure';
@@ -30,7 +30,7 @@ export class UnitTestConfigureService {
         // }
         
         if (config.reporters && config.reporters.length) {
-            InjectUtil.inject(ctx, config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as Provider)))
+            InjectUtil.inject(ctx , toProviders(UNIT_REPORTES, config.reporters, true))
         }
 
         if (config.coverage?.enabled) {

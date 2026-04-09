@@ -1,4 +1,4 @@
-import { AbstractType } from '@tsdi/ioc';
+import { AbstractType, ProvdierOf } from '@tsdi/ioc';
 import { TestReport } from './reports/interface';
 import { EnvironmentOption } from '@tsdi/core';
 
@@ -25,7 +25,7 @@ export interface UnitTestOptions {
 export interface UnitTestConfigure extends EnvironmentOption {
     baseURL?: string;
     src?: string | AbstractType | (string | AbstractType)[];
-    reporters?: AbstractType<TestReport>[];
+    reporters?: ProvdierOf<TestReport>[];
     coverage?: CoverageOptions;
 }
 

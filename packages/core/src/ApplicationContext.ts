@@ -1,6 +1,7 @@
 import {
     Provider, Injector, Abstract, AbstractType, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    ModuleMetadata, ModuleDef, ClassRef, Invocation, InvokeOptions, DestroyCallback
+    ModuleMetadata, ModuleDef, ClassRef, Invocation, InvokeOptions, DestroyCallback,
+    ModuleType
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { ApplicationRunners } from './ApplicationRunners';
@@ -101,7 +102,11 @@ export interface EnvironmentOption extends ModuleOption, InvokeOptions {
     /**
      * 应用程序依赖模块
      */
-    loads?: LoadType[];
+    loads?: LoadType[];    
+    /**
+     * load dependence. register after root module injector init.
+     */
+    loadDeps?: ModuleType<Type>[];
     /**
      * 应用程序参数/环境上下文
      */

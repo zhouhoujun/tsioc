@@ -1,6 +1,7 @@
-import { Module, Provider, AbstractType, Type, Token, ModuleWithProviders } from '@tsdi/ioc';
+import { Module, Provider, AbstractType, Type, Token, ModuleWithProviders, ModuleType } from '@tsdi/ioc';
 import { Application, ApplicationArguments, AppMode, AppPlatform, LoadType } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
+import { AopModule } from '@tsdi/aop';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
 import { UnitTestConfigure } from './UnitTestConfigure';
 import { UnitTestService } from './UnitTestService';
@@ -45,6 +46,7 @@ class UnitTestApplicationArguments extends ApplicationArguments {
 
 @Module({
     imports: [
+        AopModule,
         LoggerModule
     ],
     providers: [
@@ -88,9 +90,9 @@ function detectEnvironment(): 'node' | 'browser' {
     return 'node';
 }
 
-async function loadEnvironmentModule(env?: AppPlatform, coverageEnabled?: boolean): Promise<(Type | ModuleWithProviders)[]> {
+async function loadEnvironmentModule(env?: AppPlatform, coverageEnabled?: boolean): Promise<ModuleType<Type>[]> {
     const actualEnv = env ?? detectEnvironment();
-    const resports = [];
+    const resports: ModuleType<Type>[] = [];
 
     try {
         const module = await import('@tsdi/unit-console');
@@ -115,9 +117,12 @@ export async function runTest(src: string | AbstractType | (string | AbstractTyp
     const coverageEnabled = parseCoverageFromArgs() || config?.coverage?.enabled === true;
 
 
-    let finalConfig = config;
+    let finalConfig = {
+        src,
+        ...config
+    };
 
-    const deps = await loadEnvironmentModule(config?.platform, coverageEnabled);
+    const loadDeps = await loadEnvironmentModule(config?.platform, coverageEnabled);
 
 
 
@@ -128,22 +133,18 @@ export async function runTest(src: string | AbstractType | (string | AbstractTyp
             process.env.NODE_V8_COVERAGE = coverageDir;
         }
 
-        finalConfig = {
-            src,
-            ...config,
-            coverage: {
-                enabled: true,
-                reporters: config?.coverage?.reporters || ['text', 'text-summary'] as ('text' | 'text-summary')[],
-                include: config?.coverage?.include || ['**/src/**/*.ts'],
-                exclude: config?.coverage?.exclude || ['test/**/*.ts', '**/*.spec.ts', '**/*.test.ts', '**/node_modules/**'],
-                outputDir: coverageDir,
-                threshold: config?.coverage?.threshold
-            }
+        finalConfig.coverage = {
+            enabled: true,
+            ...config?.coverage,
+            reporters: config?.coverage?.reporters || ['text', 'text-summary'] as ('text' | 'text-summary')[],
+            include: config?.coverage?.include || ['**/src/**/*.ts'],
+            exclude: config?.coverage?.exclude || ['test/**/*.ts', '**/*.spec.ts', '**/*.test.ts', '**/node_modules/**'],
+            outputDir: coverageDir
+
         };
     }
 
     const providers: Provider[] = [
-        ...finalConfig?.providers ?? [],
         {
             provide: UNITTESTCONFIGURE,
             useValue: finalConfig
@@ -158,10 +159,7 @@ export async function runTest(src: string | AbstractType | (string | AbstractTyp
     }
     await Application.run(UnitTest, {
         ...config,
-        deps: [
-            ...deps,
-            ...finalConfig?.deps || []
-        ],
+        loadDeps,
         providers
     })
 }

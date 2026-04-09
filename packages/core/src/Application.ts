@@ -219,8 +219,11 @@ export class Application<T = any> {
             if (isFunction(target)) {
                 this.context = root.get(ApplicationContextFactory).create(root);
             } else {
-                if (target.loads) {
+                if (target.loads?.length) {
                     this._loads = await this.loader.register(this.root, target.loads);
+                }
+                if (target.loadDeps?.length) {
+                    await InjectUtil.useAsync(this.root, target.loadDeps);
                 }
                 this.context = root.get(ApplicationContextFactory).create(root, { ...target, providers: [] });
             }
