@@ -20,23 +20,11 @@ export class ConsoleReporter extends RealtimeReporter {
         console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title), chalk.gray(` (${this.hrtime.format(desc.used, 3)})`))
     }
 
-    override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
+    override async render(suites: SuiteDescribe[], total: [number, number]): Promise<void> {
         let reportStr = '';
-        let first: SuiteDescribe | undefined;
-        let last: SuiteDescribe | undefined;
-        let used:[number, number]|undefined;
-        const sus = Array.from(suites.values());
         const fails: Record<string, string[]> = {};
         let successed = 0, failed = 0;
-        sus.forEach((d, i) => {
-            if (i === 0) {
-                first = d;
-                used = this.hrtime.hrtime(first.start);
-            }
-            if (i === (sus.length - 1)) {
-                last = d
-            }
-            // reportStr = reportStr + '\n  ' + d.describe + '\n';
+        suites.forEach(d => {
             d.cases.forEach(c => {
                 if (c.error) {
                     failed++;
@@ -54,8 +42,8 @@ export class ConsoleReporter extends RealtimeReporter {
         if (failed > 0) {
             reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed')
         }
-        if (sus.length) {
-            reportStr = reportStr + chalk.gray(` (${this.hrtime.format(used, 3)})`)
+        if (suites.length) {
+            reportStr = reportStr + chalk.gray(` (${this.hrtime.format(total, 3)})`)
         }
 
         reportStr += '\n';

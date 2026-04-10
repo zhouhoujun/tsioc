@@ -98,9 +98,12 @@ export class DefaultTestReport implements TestReport {
     }
 
     async report(): Promise<void> {
+        const sus = Array.from(this.suites.values());
+        const used =  this.hrtime.hrtime(sus[0].start);
+
         await Promise.all(this.getReports().map(rep => {
             if (rep) {
-                return rep.render(this.suites)
+                return rep.render(sus, used)
             }
             return null
         }))

@@ -59,18 +59,12 @@ export class KarmaReporter extends RealtimeReporter {
         testResults.appendChild(testCase);
     }
 
-    override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
-        let first: SuiteDescribe | undefined;
-        let used: [number, number] | undefined;
-        const sus = Array.from(suites.values());
+    override async render(suites: SuiteDescribe[], total: [number, number]): Promise<void> {
+
         const fails: Record<string, string[]> = {};
         let successed = 0, failed = 0;
 
-        sus.forEach((d, i) => {
-            if (i === 0) {
-                first = d;
-                used = this.hrtime.hrtime(first.start);
-            }
+        suites.forEach(d=> {         
             d.cases.forEach(c => {
                 if (c.error) {
                     failed++;
@@ -85,7 +79,7 @@ export class KarmaReporter extends RealtimeReporter {
 
         let reportStr = '\n  ' + `${successed} passing`;
         if (failed > 0) reportStr += ` ${failed} failed`;
-        if (sus.length) reportStr += ` (${this.hrtime.format(used, 3)})`;
+        if (suites.length) reportStr += ` (${this.hrtime.format(total, 3)})`;
         reportStr += '\n';
 
         Object.keys(fails).forEach(describe => {
@@ -96,7 +90,7 @@ export class KarmaReporter extends RealtimeReporter {
         console.log(reportStr);
 
         if (typeof window !== 'undefined' && window.document) {
-            this.renderSummaryToDom(successed, failed, used, fails);
+            this.renderSummaryToDom(successed, failed, total, fails);
         }
     }
 

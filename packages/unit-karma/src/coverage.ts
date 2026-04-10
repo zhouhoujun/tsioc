@@ -42,7 +42,7 @@ export class KarmaCoverageReporter extends CoverageReporter {
         throw error;
     }
 
-    override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
+    override async render(suites: SuiteDescribe[], total: [number, number]): Promise<void> {
         if (!this.options?.enabled) {
             return;
         }

@@ -18,7 +18,7 @@ export interface Reporter {
      * reporter render.
      * @param suites 
      */
-    render(suites: Map<Token, SuiteDescribe>): Promise<void>;
+    render(suites: SuiteDescribe[], total: [number, number]): Promise<void>;
     /**
      * reporter track.
      * @param error 
@@ -43,7 +43,7 @@ export abstract class AbstractReporter {
      * reporter render.
      * @param suites 
      */
-    abstract render(suites: Map<Token, SuiteDescribe>): Promise<void>;
+    abstract render(suites: SuiteDescribe[], total: [number, number]): Promise<void>;
     /**
      * reporter track.
      * @param error 
