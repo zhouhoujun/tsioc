@@ -24,6 +24,14 @@ export class DefaultTestReport implements TestReport {
         return this.reports || []
     }
 
+    relRreports!: RealtimeReporter[];
+    getRealtimeReports() {
+        if (!this.relRreports) {
+            this.relRreports = this.getReports().filter(rep => rep instanceof RealtimeReporter) as RealtimeReporter[];
+        }
+        return this.relRreports || [];
+    }
+
     constructor(private ctx: ApplicationContext, protected hrtime: HrtimeFormatter) {
         this.suites = new Map()
     }
@@ -38,17 +46,15 @@ export class DefaultTestReport implements TestReport {
         if (!this.suites.has(suit)) {
             describe.start = this.hrtime.hrtime();
             // init suite must has no completed cases.
-            if(describe.cases.length) {
-                describe = { ...describe};
+            if (describe.cases.length) {
+                describe = { ...describe };
             }
             describe.cases = [];
 
             this.suites.set(suit, describe);
 
-            this.getReports().forEach(async rep => {
-                if (rep instanceof RealtimeReporter) {
-                    rep.renderSuite(describe)
-                }
+            this.getRealtimeReports().forEach(async rep => {
+                rep.renderSuite(describe)
             })
         }
     }
@@ -86,10 +92,8 @@ export class DefaultTestReport implements TestReport {
     setCaseCompleted(testCase: ICaseDescribe) {
         testCase.used = this.hrtime.hrtime(testCase.start);
 
-        this.getReports().forEach(async rep => {
-            if (rep instanceof RealtimeReporter) {
-                rep.renderCase(testCase)
-            }
+        this.getRealtimeReports().forEach(async rep => {
+            rep.renderCase(testCase)
         })
     }
 
