@@ -7,7 +7,9 @@
     "test": "ts-node -r tsconfig-paths/register unit.ts"
   },
   "devDependencies": {
-    "expect": "^25.3.0"
+    "expect": "^25.3.0",
+    "@types/ws": "^8.5.0",
+    "@types/node": "^20.0.0"
   },
   "keywords": [
     "IoC",
@@ -22,7 +24,10 @@
     "autofac",
     "Inject",
     "type",
-    "typescript"
+    "typescript",
+    "browser-test",
+    "e2e",
+    "karma"
   ],
   "author": "houjun",
   "license": "MIT",
@@ -39,17 +44,32 @@
     "@tsdi/core": "^6.0.31",
     "@tsdi/ioc": "^6.0.31",
     "@tsdi/platform-browser": "^6.0.31",
-    "chalk": "^4.0.0"
+    "@tsdi/compiler": "^6.0.0-beta7",
+    "chalk": "^4.0.0",
+    "esbuild": "^0.20.0",
+    "ws": "^8.14.0"
   },
   "peerDependencies": {
     "@tsdi/unit": "^6.0.31",
     "@tsdi/core": "^6.0.31",
     "@tsdi/ioc": "^6.0.31",
-    "@tsdi/platform-browser": "^6.0.31"
+    "@tsdi/platform-browser": "^6.0.31",
+    "@tsdi/compiler": "^6.0.0-beta7"
+  },
+  "peerDependenciesMeta": {
+    "puppeteer": {
+      "optional": true
+    },
+    "jsdom": {
+      "optional": true
+    }
+  },
+  "optionalDependencies": {
+    "puppeteer": "^21.0.0",
+    "jsdom": "^22.1.0"
   },
   "directories": {
     "lib": "lib",
     "test": "test"
-  },
-  "devDependencies": {}
+  }
 }
