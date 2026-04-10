@@ -1,10 +1,10 @@
-import { Injectable, isString, isType, isArray, step, getDef } from '@tsdi/ioc';
+import { Injectable, isString, isType, isArray, Type, step, getDef } from '@tsdi/ioc';
 import { ApplicationContext, ModuleLoader, Runner } from '@tsdi/core';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
 import { SuiteDef } from './metadata';
 import { UNITTESTCONFIGURE } from './configure';
-import { E2ERunner } from './runner/E2ERunner';
+
 
 
 /**
@@ -36,11 +36,24 @@ export class UnitTestService {
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
 
-        const unitSuites = suites.filter(v => v && getDef<SuiteDef>(v)?.suite);
-        const e2eSuites = suites.filter(v => v && getDef<SuiteDef>(v)?.e2e);
+        const { unitSuites, e2eSuites } = suites.reduce((prev: { unitSuites: Type[], e2eSuites: Type[] }, cur) => {
+            if (cur) {
+                const sdef = getDef<SuiteDef>(cur);
+                if (sdef.suite) {
+                    if (sdef.e2e) {
+                        prev.e2eSuites.push(cur);
+                    } else {
+                        prev.unitSuites.push(cur);
+                    }
+                }
+            }
+            return prev;
+        }, { unitSuites: [] as Type[], e2eSuites: [] as Type[] });
 
-        await step(unitSuites.map(s => () => ctx.bootstrap(s)));
-        await step(e2eSuites.map(s => () => ctx.bootstrap(s)));
+
+        if (unitSuites.length) await step(unitSuites.map(s => () => ctx.bootstrap(s)));
+        if (e2eSuites.length) await step(e2eSuites.map(s => () => ctx.bootstrap(s)));
+
         await ctx.resolve(DefaultTestReport).report();
     }
 }
