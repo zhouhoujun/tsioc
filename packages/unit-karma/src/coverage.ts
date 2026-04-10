@@ -7,6 +7,7 @@ import { BrowserCoverageCollector, BrowserCoverageOptions } from './BrowserCover
 export type CoverageReporterType = 'text' | 'text-summary' | 'json' | 'html' | 'lcov' | 'cobertura';
 
 export { BrowserCoverageOptions as CoverageOptions, BrowserCoverageOptions };
+export { KarmaCoverageReporter as CoverageReporter };
 
 function isBrowserEnvironment(): boolean {
     return typeof window !== 'undefined' && typeof window.document !== 'undefined';
@@ -42,7 +43,7 @@ export class KarmaCoverageReporter extends CoverageReporter {
         throw error;
     }
 
-    override async render(suites: SuiteDescribe[], total: [number, number]): Promise<void> {
+    override async render(suites: SuiteDescribe[] | Map<Token, SuiteDescribe>, total?: [number, number]): Promise<void> {
         if (!this.options?.enabled) {
             return;
         }

@@ -414,8 +414,11 @@ class JsdomBrowserPage implements BrowserPage {
 
     async evaluate<T>(fn: () => T | Promise<T>): Promise<T> {
         const window = this.dom.window;
-        const result = await fn.call(window);
-        return result;
+        // Wrap the function and execute it within jsdom's global context
+        // The function string is evaluated in the jsdom window context
+        const fnString = fn.toString();
+        const wrappedFn = new window.Function('return (' + fnString + ').call(this)');
+        return await wrappedFn.call(window);
     }
 
     async exposeFunction(name: string, fn: (...args: any[]) => any): Promise<void> {

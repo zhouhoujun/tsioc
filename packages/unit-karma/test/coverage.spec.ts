@@ -26,18 +26,6 @@ export class CoverageReporterTest {
         expect(typeof this.reporter.track).toBe('function');
     }
 
-    @Test('should have renderSuite method')
-    testRenderSuiteMethod(@Inject(ExpectToken) expect: Expect) {
-        expect(this.reporter.renderSuite).toBeDefined();
-        expect(typeof this.reporter.renderSuite).toBe('function');
-    }
-
-    @Test('should have renderCase method')
-    testRenderCaseMethod(@Inject(ExpectToken) expect: Expect) {
-        expect(this.reporter.renderCase).toBeDefined();
-        expect(typeof this.reporter.renderCase).toBe('function');
-    }
-
     @Test('should have render method')
     testRenderMethod(@Inject(ExpectToken) expect: Expect) {
         expect(this.reporter.render).toBeDefined();

@@ -1,11 +1,16 @@
 import { Suite, BeforeEach, Test, AfterEach, Expect, ExpectToken } from '@tsdi/unit';
-import { Inject } from '@tsdi/ioc';
-import { BrowserTestRunner, BrowserTestRunnerOptions } from '../src';
+import { Inject, Module } from '@tsdi/ioc';
+import { BrowserTestRunner, BrowserTestRunnerOptions, KarmaModule } from '../src';
 
 /**
  * Browser E2E Test Example
  * 浏览器 E2E 测试示例
  */
+@Module({
+    imports: [
+        KarmaModule
+    ]
+})
 @Suite('Browser E2E Tests')
 export class BrowserE2ETestExample {
 
@@ -36,7 +41,7 @@ export class BrowserE2ETestExample {
 
         const result = await this.runner.run(options);
 
-        expect(result.success || result.failed >= 0).toBeTruthy();
+        expect(result.passed >= 0 || result.failed >= 0).toBeTruthy();
     }
 
     @Test('should run tests in jsdom environment')
@@ -78,31 +83,7 @@ export class BrowserE2ETestExample {
 }
 
 /**
- * Usage Example:
+ * Usage Example for BrowserTestRunner:
  * 
- * ```typescript
- * import { BrowserTestRunner, BrowserTestRunnerOptions } from '@tsdi/unit-karma';
- * import { Injector } from '@tsdi/ioc';
- * 
- * async function runBrowserTests() {
- *     const injector = Injector.create();
- *     const runner = injector.get(BrowserTestRunner);
- *     
- *     const options: BrowserTestRunnerOptions = {
- *         src: 'e2e/**/*.e2e-spec.ts',
- *         outDir: '.browser-test',
- *         browser: {
- *             browser: 'chrome',
- *             headless: true
- *         },
- *         coverage: true,
- *         timeout: 60000
- *     };
- *     
- *     const result = await runner.run(options);
- *     console.log(`Tests: ${result.passed} passed, ${result.failed} failed`);
- * }
- * 
- * runBrowserTests();
- * ```
+ * See the README for detailed usage instructions.
  */

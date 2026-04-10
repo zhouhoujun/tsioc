@@ -1,7 +1,22 @@
-import { Token, Module, Inject } from '@tsdi/ioc';
+import { Token, Module, Inject, Optional } from '@tsdi/ioc';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { BrowserModule } from '@tsdi/platform-browser';
 import { HrtimeFormatter } from '@tsdi/core';
+import { DOCUMENT } from '@tsdi/common';
+
+type SuitesInput = SuiteDescribe[] | Map<Token, SuiteDescribe>;
+
+interface LikeDocument {
+    getElementById(id: string): LikeElement | null;
+    createElement(tag: string): LikeElement;
+}
+
+interface LikeElement {
+    className: string;
+    innerHTML: string;
+    textContent: string;
+    appendChild(child: LikeElement): LikeElement;
+}
 
 /**
  * KarmaReporter for browser test environment.
@@ -14,9 +29,12 @@ import { HrtimeFormatter } from '@tsdi/core';
 })
 export class KarmaReporter extends RealtimeReporter {
 
-    constructor(@Inject() hrtime: HrtimeFormatter) {
+    private document: LikeDocument | null;
+
+    constructor(@Inject() hrtime: HrtimeFormatter, @Optional() @Inject(DOCUMENT) document?: Object) {
         super();
         this.hrtime = hrtime;
+        this.document = document as LikeDocument ?? null;
     }
 
     override track(error: Error): void {
@@ -33,16 +51,18 @@ export class KarmaReporter extends RealtimeReporter {
         const time = desc.used ? this.hrtime.format(desc.used, 3) : '0ms';
         console.log('    ', status, desc.title, `(${time})`);
         
-        if (typeof window !== 'undefined' && window.document) {
+        if (this.document) {
             this.renderToDom(desc);
         }
     }
 
     protected renderToDom(desc: ICaseDescribe): void {
-        const testResults = window.document.getElementById('test-results');
+        if (!this.document) return;
+        
+        const testResults = this.document.getElementById('test-results');
         if (!testResults) return;
 
-        const testCase = window.document.createElement('div');
+        const testCase = this.document.createElement('div');
         testCase.className = desc.error ? 'test-case failed' : 'test-case passed';
         testCase.innerHTML = `
             <span class="status">${desc.error ? 'x' : '√'}</span>
@@ -51,7 +71,7 @@ export class KarmaReporter extends RealtimeReporter {
         `;
         
         if (desc.error) {
-            const errorDiv = window.document.createElement('div');
+            const errorDiv = this.document.createElement('div');
             errorDiv.className = 'error-details';
             errorDiv.innerHTML = `<pre>${desc.error.stack || desc.error.message}</pre>`;
             testCase.appendChild(errorDiv);
@@ -59,12 +79,15 @@ export class KarmaReporter extends RealtimeReporter {
         testResults.appendChild(testCase);
     }
 
-    override async render(suites: SuiteDescribe[], total: [number, number]): Promise<void> {
+    override async render(suites: SuitesInput, total?: [number, number]): Promise<void> {
+        const suitesArray: SuiteDescribe[] = suites instanceof Map 
+            ? Array.from(suites.values()) 
+            : suites;
 
         const fails: Record<string, string[]> = {};
         let successed = 0, failed = 0;
 
-        suites.forEach(d=> {         
+        suitesArray.forEach(d=> {         
             d.cases.forEach(c => {
                 if (c.error) {
                     failed++;
@@ -79,7 +102,7 @@ export class KarmaReporter extends RealtimeReporter {
 
         let reportStr = '\n  ' + `${successed} passing`;
         if (failed > 0) reportStr += ` ${failed} failed`;
-        if (suites.length) reportStr += ` (${this.hrtime.format(total, 3)})`;
+        if (suitesArray.length && total) reportStr += ` (${this.hrtime.format(total, 3)})`;
         reportStr += '\n';
 
         Object.keys(fails).forEach(describe => {
@@ -89,13 +112,15 @@ export class KarmaReporter extends RealtimeReporter {
 
         console.log(reportStr);
 
-        if (typeof window !== 'undefined' && window.document) {
+        if (this.document) {
             this.renderSummaryToDom(successed, failed, total, fails);
         }
     }
 
     protected renderSummaryToDom(successed: number, failed: number, used: [number, number] | undefined, fails: Record<string, string[]>): void {
-        const summaryDiv = window.document.getElementById('test-summary');
+        if (!this.document) return;
+        
+        const summaryDiv = this.document.getElementById('test-summary');
         if (!summaryDiv) return;
 
         summaryDiv.className = failed > 0 ? 'summary failed' : 'summary passed';
@@ -108,14 +133,15 @@ export class KarmaReporter extends RealtimeReporter {
         `;
         
         if (Object.keys(fails).length > 0) {
-            const failuresDiv = window.document.createElement('div');
+            const doc = this.document;
+            const failuresDiv = doc.createElement('div');
             failuresDiv.className = 'failures';
             Object.keys(fails).forEach(describe => {
-                const suiteDiv = window.document.createElement('div');
+                const suiteDiv = doc.createElement('div');
                 suiteDiv.className = 'suite-failures';
                 suiteDiv.innerHTML = `<h3>${describe}</h3>`;
                 fails[describe].forEach(stack => {
-                    const errorPre = window.document.createElement('pre');
+                    const errorPre = doc.createElement('pre');
                     errorPre.textContent = stack;
                     suiteDiv.appendChild(errorPre);
                 });

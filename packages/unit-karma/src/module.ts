@@ -4,7 +4,7 @@ import { BrowserCoverageCollector } from './BrowserCoverageCollector';
 import { KarmaCoverageReporter } from './coverage';
 import { UNIT_REPORTES } from '@tsdi/unit';
 import { BrowserTestCompiler } from './compiler/BrowserTestCompiler';
-import { ChromeLauncher, JsdomLauncher, AutoBrowserLauncher, BrowserLauncher } from './launcher/BrowserLauncher';
+import { ChromeLauncher, JsdomLauncher, AutoBrowserLauncher } from './launcher/BrowserLauncher';
 import { TestServer } from './server/TestServer';
 import { BrowserTestRunner } from './runner/BrowserTestRunner';
 
@@ -20,7 +20,7 @@ import { BrowserTestRunner } from './runner/BrowserTestRunner';
         TestServer,
         ChromeLauncher,
         JsdomLauncher,
-        { provide: BrowserLauncher, useClass: AutoBrowserLauncher },
+        AutoBrowserLauncher,
         BrowserTestRunner
     ]
 })

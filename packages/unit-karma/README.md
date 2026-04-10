@@ -3,234 +3,374 @@
 This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/unit-karma`： unit testing karma reporter, base on AOP, Ioc container.
+`@tsdi/unit-karma`: unit testing karma reporter with browser test support, base on AOP, IoC container.
 
-version 5+ of [`@ts-ioc/core`](https://www.npmjs.com/package/@ts-ioc/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
-# Install
+version 6+ of [`@tsdi/core`](https://www.npmjs.com/package/@tsdi/core) [`tsioc`](https://www.npmjs.com/package/tsioc)
+
+## Features
+
+- **KarmaReporter**: Browser-friendly test reporter with DOM rendering support
+- **CoverageReporter**: Istanbul-style coverage reporting (text, json, html, lcov, cobertura)
+- **BrowserTestRunner**: Run tests in ChromeHeadless or jsdom environment
+- **BrowserTestCompiler**: Compile TypeScript tests with esbuild for browser execution
+- **TestServer**: HTTP/WebSocket server for browser test file serving
+- **BrowserLauncher**: Auto-detecting browser launcher (Chrome/jsdom)
+
+## Install
 
 ```shell
-
 npm install @tsdi/unit
 npm install @tsdi/unit-karma
 
-// in browser
+# in browser
 npm install @tsdi/platform-browser
 
-// in server
+# in server
 npm install @tsdi/platform-server
+
+# optional: for Chrome headless testing
+npm install puppeteer
+
+# optional: for jsdom testing
+npm install jsdom
 ```
 
-## add extends modules
+## Usage
 
-### use unit
-
+### Basic Unit Test
 
 ```ts
-
-import { Suite, BeforeEach, UnitTest, Test, After, AfterEach Assert, Expect, ExpectToken } from '@tsdi/unit';
-import { ConsoleReporter } from '@tsdi/unit-karma';
-import { PromiseUtil } from '@tsdi/core';
-
+import { Suite, BeforeEach, Test, After, AfterEach, Assert, Expect, ExpectToken } from '@tsdi/unit';
+import { Inject } from '@tsdi/ioc';
+import { KarmaReporter } from '@tsdi/unit-karma';
 
 @Suite('Unit Test')
 export class SuiteTest {
 
-    // testContainer: AnyApplicationBuilder;
-
     @BeforeEach()
     async initTest() {
-        console.log('---------beofre test-----------');
+        console.log('---------before test-----------');
     }
 
-    @Test('assert test timeout', 200)
-    testTimeout() {
-        console.log('--------assert test timeout------');
-        let def = PromiseUtil.defer();
-        setTimeout(() => {
-            def.resolve('out time do...')
-        }, 300)
-        return def.promise;
+    @Test('basic test')
+    testBasic(@Inject(ExpectToken) expect: Expect) {
+        expect(1 + 1).toBe(2);
     }
 
-    @Test('assert test in time', 200)
-    testInTime() {
-        console.log('--------assert test in time------');
-        let def = PromiseUtil.defer();
-        setTimeout(() => {
-            def.resolve('in time do...')
-        }, 100)
-        return def.promise;
-    }
-
-
-    @Test('assert test in time', 200)
-    testInTime(assert: Assert) {
-        console.log('--------assert test in time------');
-        let def = PromiseUtil.defer();
-        setTimeout(() => {
-            def.resolve('in time do...')
-        }, 100)
-        assert.strictEqual('0', 0);
-        return def.promise;
-    }
-
-    @Test('expect test')
-    async testEqural(@Inject(ExpectToken) expect: Expect) {
-        await expect('true').toBe(true);
+    @Test('assert test')
+    testAssert(assert: Assert) {
+        assert.strictEqual('hello', 'hello');
     }
 
     @AfterEach()
-    clean(){
-        //clean each data.
+    clean() {
+        // clean each data
     }
 
     @After()
-    destroy(){
-
+    destroy() {
+        // cleanup
     }
 }
-
-
 ```
 
-### support old TDD BDD style unit test.
-* TDD-style interface:
+### Browser E2E Tests
+
+```ts
+import { Suite, BeforeEach, Test, AfterEach, Expect, ExpectToken } from '@tsdi/unit';
+import { Module, Inject } from '@tsdi/ioc';
+import { BrowserTestRunner, BrowserTestRunnerOptions, KarmaModule } from '@tsdi/unit-karma';
+
+@Module({
+    imports: [KarmaModule]
+})
+@Suite('Browser E2E Tests')
+export class BrowserE2ETest {
+
+    @Inject()
+    private runner!: BrowserTestRunner;
+
+    @BeforeEach()
+    setup() {
+        console.log('Setting up browser e2e test...');
+    }
+
+    @Test('should run tests in ChromeHeadless browser')
+    async testChromeHeadless(@Inject(ExpectToken) expect: Expect) {
+        const options: BrowserTestRunnerOptions = {
+            src: 'test/fixtures/**/*.spec.ts',
+            outDir: '.browser-test-output',
+            browser: {
+                browser: 'chrome',
+                headless: true,
+                width: 1280,
+                height: 720
+            },
+            coverage: true
+        };
+
+        const result = await this.runner.run(options);
+        expect(result.passed >= 0).toBeTruthy();
+    }
+
+    @Test('should run tests in jsdom environment')
+    async testJsdom(@Inject(ExpectToken) expect: Expect) {
+        const options: BrowserTestRunnerOptions = {
+            src: 'test/fixtures/**/*.spec.ts',
+            browser: { browser: 'jsdom' },
+            coverage: false
+        };
+
+        const result = await this.runner.run(options);
+        expect(result).toBeDefined();
+    }
+
+    @AfterEach()
+    cleanup() {
+        console.log('Cleaning up browser e2e test...');
+    }
+}
+```
+
+### Coverage Reporting
+
+```ts
+import { Suite, BeforeEach, Test, Expect, ExpectToken } from '@tsdi/unit';
+import { Inject, Token } from '@tsdi/ioc';
+import { CoverageReporter, CoverageOptions } from '@tsdi/unit-karma';
+import { SuiteDescribe } from '@tsdi/unit';
+
+@Suite('Coverage Test Suite')
+export class CoverageTest {
+
+    @Inject()
+    private reporter!: CoverageReporter;
+
+    @BeforeEach()
+    setup() {
+        this.reporter.setOptions({
+            enabled: true,
+            reporters: ['text-summary', 'json', 'html'],
+            outputDir: 'coverage',
+            threshold: {
+                lines: 80,
+                functions: 80,
+                branches: 80,
+                statements: 80
+            }
+        });
+    }
+
+    @Test('should render coverage report')
+    async testCoverage(@Inject(ExpectToken) expect: Expect) {
+        const suites = new Map<Token, SuiteDescribe>();
+        suites.set('test-suite', {
+            describe: 'Test Suite',
+            cases: [{ title: 'test', key: 't1', used: [1000000, 0] }],
+            start: [0, 0]
+        });
+
+        await this.reporter.render(suites);
+        expect(true).toBeTruthy();
+    }
+}
+```
+
+### KarmaModule Configuration
+
+```ts
+import { Module } from '@tsdi/ioc';
+import { KarmaModule } from '@tsdi/unit-karma';
+
+// Basic usage
+@Module({
+    imports: [KarmaModule]
+})
+export class TestModule {}
+
+// With coverage enabled
+@Module({
+    imports: [KarmaModule.withOptions(true)]
+})
+export class TestModuleWithCoverage {}
+```
+
+### Run Tests
+
+#### Using runTest function
+
+```ts
+import { runTest } from '@tsdi/unit';
+import { KarmaReporter } from '@tsdi/unit-karma';
+
+runTest('./test/**/*.ts', { baseURL: __dirname }, KarmaReporter);
+```
+
+#### Using tsdi CLI
+
+```shell
+tsdi test                  # default load test/**/*.ts
+tsdi test test/**/*.ts     # specify test files
+```
+
+#### Using npm script
+
+```shell
+cd packages/unit-karma
+npm test
+```
+
+## API
+
+### KarmaReporter
+
+Browser-friendly test reporter that renders to both console and DOM.
+
+- `track(error: Error)`: Track and throw errors
+- `renderSuite(desc: SuiteDescribe)`: Render suite header
+- `renderCase(desc: ICaseDescribe)`: Render individual test case
+- `render(suites, total?)`: Render final summary
+
+Uses `DOCUMENT` token from `@tsdi/common` for cross-platform DOM access.
+
+### CoverageReporter (alias: KarmaCoverageReporter)
+
+Coverage reporter with multiple output formats.
+
+- `setOptions(options: CoverageOptions)`: Configure coverage settings
+- `render(suites, total?)`: Generate coverage reports
+
+**CoverageOptions:**
+```ts
+interface CoverageOptions {
+    enabled?: boolean;
+    reporters?: Array<'text' | 'text-summary' | 'json' | 'html' | 'lcov' | 'cobertura'>;
+    include?: string[];
+    exclude?: string[];
+    outputDir?: string;
+    threshold?: {
+        lines?: number;
+        functions?: number;
+        branches?: number;
+        statements?: number;
+    };
+}
+```
+
+### BrowserTestRunner
+
+Runner for browser-based tests.
+
+**BrowserTestRunnerOptions:**
+```ts
+interface BrowserTestRunnerOptions {
+    src: string | string[];
+    outDir?: string;
+    baseURL?: string;
+    browser?: BrowserLauncherOptions;
+    server?: TestServerOptions;
+    coverage?: boolean;
+    timeout?: number;
+    retries?: number;
+    parallel?: boolean;
+}
+```
+
+**BrowserTestResult:**
+```ts
+interface BrowserTestResult {
+    suites: SuiteDescribe[];
+    total: number;
+    passed: number;
+    failed: number;
+    duration: number;
+    coverage?: any;
+    errors: Error[];
+}
+```
+
+### BrowserLauncher
+
+Auto-detecting browser launcher supporting Chrome and jsdom.
+
+**BrowserLauncherOptions:**
+```ts
+interface BrowserLauncherOptions {
+    browser?: 'chrome' | 'jsdom' | 'auto';
+    headless?: boolean;
+    width?: number;
+    height?: number;
+    timeout?: number;
+    executablePath?: string;
+    args?: string[];
+}
+```
+
+### TestServer
+
+HTTP/WebSocket server for browser test file serving.
+
+**TestServerOptions:**
+```ts
+interface TestServerOptions {
+    port?: number;
+    host?: string;
+    baseDir?: string;
+    https?: boolean;
+    websocket?: boolean;
+    cors?: boolean;
+}
+```
+
+## TDD/BDD Style Support
+
+### TDD-style
+
 ```js
 suite('Array', function() {
   suite('#indexOf()', function() {
-    suiteSetup(function() {
-    });
-    test('should return -1 when not present', function() {
-    });
-    test('should return the index when present', function() {
-    });
-    suiteTeardown(function() {
-    });
+    suiteSetup(function() {});
+    test('should return -1 when not present', function() {});
+    test('should return the index when present', function() {});
+    suiteTeardown(function() {});
   });
 });
 ```
-* BDD-style interface:
+
+### BDD-style
+
 ```js
-describe('Array', function(){
+describe('Array', function() {
     describe('Array#indexOf()', function() {
-        it('should return -1 when not present', function() {
-        // ...
-        });
-        it('should return the index when present', function() {
-        // ...
-        });
+        it('should return -1 when not present', function() {});
+        it('should return the index when present', function() {});
     });
 });
 ```
 
-### custom run test code
+## Test Result
 
-* use runTest to run
-
-```ts
-// run Test
-/**
- * unit test.
- *
- * @export
- * @param {(string | Type | (string | Type)[])} src test source.
- * @param {(string | AppConfigure)} [config] test configure.
- * @param {...LoadType[]} deps custom set unit test dependencies.
- * @returns {Promise<any>}
- */
-export function runTest(src: string | Type | (string | Type)[], config?: string | UnitTestConfigure, ...deps: LoadType[]): Promise<any>;
-
-runTest(SuiteTest, {...}, ConsoleReporter);
-
-```
-
-* use boot application
-```ts
-import { BootApplication, DIModule, ConfigureRegister } from '@tsdi/boot';
-import { UnitTest } from '@tsdi/unit';
-
-BootApplication.run(UnitTestContext.parse({ module: UnitTest, deps: [ConsoleReporter], configures: [config, { src: src }] }))
-```
-
-### use command run test code
-`tsdi test [test/**/*.ts]`
-
-```shell
-
-tsdi test  //default load test/**/*.ts
-
-//or
-tsdi test test/**/*.ts
-
-```
-
-
-* test result:
 ![image](https://github.com/zhouhoujun/tsioc/blob/master/packages/unit-karma/assets/ConsoleReport1.png?raw=true)
 
-
-
 ## Documentation
-Documentation is available on the
-* [@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).
-* [@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop).
-* [@tsdi/logger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/logger).
-* [@tsdi/common document](https://github.com/zhouhoujun/tsioc/tree/master/packages/common).
-* [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
-* [@tsdi/endpoints document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport).
-* [@tsdi/amqp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/amqp).
-* [@tsdi/coap document](https://github.com/zhouhoujun/tsioc/tree/master/packages/coap).
-* [@tsdi/http document](https://github.com/zhouhoujun/tsioc/tree/master/packages/http).
-* [@tsdi/kafka document](https://github.com/zhouhoujun/tsioc/tree/master/packages/kafka).
-* [@tsdi/mqtt document](https://github.com/zhouhoujun/tsioc/tree/master/packages/mqtt).
-* [@tsdi/nats document](https://github.com/zhouhoujun/tsioc/tree/master/packages/nats).
-* [@tsdi/redis document](https://github.com/zhouhoujun/tsioc/tree/master/packages/redis).
-* [@tsdi/tcp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/tcp).
-* [@tsdi/udp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/udp).
-* [@tsdi/ws document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ws).
-* [@tsdi/swagger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/swagger).
-* [@tsdi/repository document](https://github.com/zhouhoujun/tsioc/tree/master/packages/repository).
-* [@tsdi/typeorm-adapter document](https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter).
-* [@tsdi/boot document](https://github.com/zhouhoujun/tsioc/tree/master/packages/boot).
-* [@tsdi/components document](https://github.com/zhouhoujun/tsioc/tree/master/packages/components).
-* [@tsdi/compiler document](https://github.com/zhouhoujun/tsioc/tree/master/packages/compiler).
-* [@tsdi/activities document](https://github.com/zhouhoujun/tsioc/tree/master/packages/activities).
-* [@tsdi/pack document](https://github.com/zhouhoujun/tsioc/tree/master/packages/pack).
-* [@tsdi/unit document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit).
-* [@tsdi/unit-console document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit-console).
-* [@tsdi/cli document](https://github.com/zhouhoujun/tsioc/tree/master/packages/cli).
 
+- [@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc)
+- [@tsdi/aop document](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop)
+- [@tsdi/logger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/logger)
+- [@tsdi/common document](https://github.com/zhouhoujun/tsioc/tree/master/packages/common)
+- [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core)
+- [@tsdi/unit document](https://github.com/zhouhoujun/tsioc/tree/master/packages/unit)
 
+## Packages
 
-### packages
 [@tsdi/cli](https://www.npmjs.com/package/@tsdi/cli)
 [@tsdi/ioc](https://www.npmjs.com/package/@tsdi/ioc)
 [@tsdi/aop](https://www.npmjs.com/package/@tsdi/aop)
 [@tsdi/logger](https://www.npmjs.com/package/@tsdi/logger)
 [@tsdi/common](https://www.npmjs.com/package/@tsdi/common)
 [@tsdi/core](https://www.npmjs.com/package/@tsdi/core)
-[@tsdi/endpoints](https://www.npmjs.com/package/@tsdi/endpoints)
-[@tsdi/amqp](https://www.npmjs.com/package/@tsdi/amqp)
-[@tsdi/coap](https://www.npmjs.com/package/@tsdi/coap)
-[@tsdi/http](https://www.npmjs.com/package/@tsdi/http)
-[@tsdi/kafka](https://www.npmjs.com/package/@tsdi/kafka)
-[@tsdi/mqtt](https://www.npmjs.com/package/@tsdi/mqtt)
-[@tsdi/nats](https://www.npmjs.com/package/@tsdi/nats)
-[@tsdi/redis](https://www.npmjs.com/package/@tsdi/redis)
-[@tsdi/tcp](https://www.npmjs.com/package/@tsdi/tcp)
-[@tsdi/udp](https://www.npmjs.com/package/@tsdi/udp)
-[@tsdi/ws](https://www.npmjs.com/package/@tsdi/ws)
-[@tsdi/swagger](https://www.npmjs.com/package/@tsdi/swagger)
-[@tsdi/repository](https://www.npmjs.com/package/@tsdi/repository)
-[@tsdi/typeorm-adapter](https://www.npmjs.com/package/@tsdi/typeorm-adapter)
-[@tsdi/boot](https://www.npmjs.com/package/@tsdi/boot)
-[@tsdi/components](https://www.npmjs.com/package/@tsdi/components)
-[@tsdi/compiler](https://www.npmjs.com/package/@tsdi/compiler)
-[@tsdi/activities](https://www.npmjs.com/package/@tsdi/activities)
-[@tsdi/pack](https://www.npmjs.com/package/@tsdi/pack)
 [@tsdi/unit](https://www.npmjs.com/package/@tsdi/unit)
-[@tsdi/unit-console](https://www.npmjs.com/package/@tsdi/unit-console)
-
+[@tsdi/unit-karma](https://www.npmjs.com/package/@tsdi/unit-karma)
 
 ## License
 

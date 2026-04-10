@@ -1,7 +1,7 @@
-import { Injectable, Inject } from '@tsdi/ioc';
+import { Injectable, Inject, Injector } from '@tsdi/ioc';
 import { SuiteDescribe, ICaseDescribe } from '@tsdi/unit';
 import { BrowserTestCompiler, BrowserTestCompileOptions, BrowserTestCompileResult } from '../compiler/BrowserTestCompiler';
-import { BrowserLauncher, BrowserLauncherOptions, BrowserInstance, BrowserPage } from '../launcher/BrowserLauncher';
+import { BrowserLauncher, BrowserLauncherOptions, BrowserInstance, BrowserPage, AutoBrowserLauncher } from '../launcher/BrowserLauncher';
 import { TestServer, TestServerOptions } from '../server/TestServer';
 import { E2EOptions } from '@tsdi/unit';
 
@@ -36,13 +36,21 @@ export class BrowserTestRunner {
     private compiler!: BrowserTestCompiler;
 
     @Inject()
-    private launcher!: BrowserLauncher;
+    private injector!: Injector;
 
     @Inject()
     private testServer!: TestServer;
 
     private browser: BrowserInstance | null = null;
     private compileResult: BrowserTestCompileResult | null = null;
+    private launcher: AutoBrowserLauncher | null = null;
+
+    private getLauncher(): AutoBrowserLauncher {
+        if (!this.launcher) {
+            this.launcher = this.injector.get(AutoBrowserLauncher) ?? new AutoBrowserLauncher();
+        }
+        return this.launcher;
+    }
 
     async run(options: BrowserTestRunnerOptions): Promise<BrowserTestResult> {
         const startTime = Date.now();
@@ -169,8 +177,9 @@ export class BrowserTestRunner {
             ...options.browser
         };
 
-        this.browser = await this.launcher.launch(browserOptions);
-        console.log(`Browser launched: ${this.launcher.name}`);
+        const launcher = this.getLauncher();
+        this.browser = await launcher.launch(browserOptions);
+        console.log(`Browser launched: ${launcher.name}`);
     }
 
     private async executeTests(options: BrowserTestRunnerOptions): Promise<BrowserTestResult> {
