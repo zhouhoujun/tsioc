@@ -3,7 +3,6 @@ import { Inject, Token, Injectable } from '@tsdi/ioc';
 import { KarmaReporter } from '../src';
 import { SuiteDescribe, ICaseDescribe } from '@tsdi/unit';
 
-@Injectable()
 @Suite('KarmaReporter Test Suite')
 export class KarmaReporterTest {
 

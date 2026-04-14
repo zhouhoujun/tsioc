@@ -4,7 +4,7 @@ import { BrowserCoverageCollector, BrowserCoverageOptions } from '../src';
 
 declare const window: any;
 
-@Injectable()
+
 @Suite('BrowserCoverageCollector Test Suite')
 export class BrowserCoverageCollectorTest {
 

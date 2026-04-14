@@ -3,7 +3,7 @@ import { Inject, Token, Injectable } from '@tsdi/ioc';
 import { CoverageReporter, CoverageOptions } from '../src';
 import { SuiteDescribe, ICaseDescribe } from '@tsdi/unit';
 
-@Injectable()
+
 @Suite('CoverageReporter Test Suite')
 export class CoverageReporterTest {
 

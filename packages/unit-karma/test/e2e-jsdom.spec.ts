@@ -24,7 +24,6 @@ async function loadJsdom() {
  * E2E Test Suite for jsdom browser environment
  * jsdom 浏览器环境的 E2E 测试套件
  */
-@Injectable()
 @Suite('E2E JSDOM Tests')
 export class E2EJsdomTest {
 

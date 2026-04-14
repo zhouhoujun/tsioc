@@ -6,11 +6,6 @@ import { BrowserTestRunner, BrowserTestRunnerOptions, KarmaModule } from '../src
  * Browser E2E Test Example
  * 浏览器 E2E 测试示例
  */
-@Module({
-    imports: [
-        KarmaModule
-    ]
-})
 @Suite('Browser E2E Tests')
 export class BrowserE2ETestExample {
 

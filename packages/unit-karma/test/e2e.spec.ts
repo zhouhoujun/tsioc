@@ -8,7 +8,6 @@ import { HrtimeFormatter } from '@tsdi/core';
  * E2E Test Suite - Tests the full end-to-end workflow of unit-karma package.
  * 端到端测试套件 - 测试unit-karma包的完整工作流程
  */
-@Injectable()
 @Suite('E2E Integration Tests')
 export class E2EIntegrationTest {
 
