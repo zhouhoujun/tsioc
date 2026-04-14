@@ -150,7 +150,18 @@ export class BrowserTestCompiler {
                 sourcemap: options.sourcemap ?? true,
                 minify: options.minify ?? false,
                 splitting: false,
-                external: options.external || [],
+                external: [
+                    '@tsdi/*',
+                    '@tsdi/ioc',
+                    '@tsdi/unit',
+                    '@tsdi/core',
+                    '@tsdi/aop',
+                    '@tsdi/common',
+                    '@tsdi/compiler',
+                    '@tsdi/platform-browser',
+                    '@tsdi/platform-server',
+                    ...options.external || []
+                ],
                 define: {
                     'process.env.NODE_ENV': '"test"',
                     ...options.define
