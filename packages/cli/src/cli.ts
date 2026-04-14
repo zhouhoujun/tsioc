@@ -5,6 +5,8 @@ import * as path from 'path';
 import * as chalk from 'chalk';
 import { program } from 'commander';
 import { execSync } from 'child_process';
+import { handleBuild, BuildOptions } from './BuildCommand';
+import { handleServe, ServeOptions } from './ServeCommand';
 const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');
 const packageConf = require(cliRoot + '/package.json');
@@ -236,20 +238,45 @@ program
 
 program
     .command('build [taskfile]')
-    .description('build project, run build activities')
-    .option('--boot [bool]', 'target file with Workflow instace to boot activity.')
-    .option('-e, --env [string]', 'use that particular environment.ts during the build, just like @angular/cli')
-    .option('-c, --clean [bool]', 'destroy the build folder prior to compilation, default for prod')
+    .description('build project. For components/core/boot packages, compile TypeScript files. For activity projects, run build activities.')
+    .option('-t, --target <target>', 'build target: components, core, boot')
+    .option('--src <pattern>', 'source files pattern (default: src/**/*.ts)')
+    .option('--outDir <dir>', 'output directory (default: lib)')
+    .option('--tsconfig <path>', 'TypeScript config file path')
+    .option('--bundle [bool]', 'bundle files into single output')
+    .option('--minify [bool]', 'minify output')
+    .option('--sourcemap [bool]', 'generate source maps')
+    .option('--declaration [bool]', 'generate declaration files')
+    .option('--outputStyle <style>', 'output style: esm2020, esm2022, fesm2020, fesm2022')
+    .option('--platform <platform>', 'target platform: browser, node')
+    .option('--entry <file>', 'entry point for bundling')
+    .option('--boot [bool]', 'target file with Workflow instance to boot activity.')
+    .option('-e, --env [string]', 'use that particular environment.ts during the build')
+    .option('-c, --clean [bool]', 'destroy the build folder prior to compilation')
     .option('-w, --watch [bool]', 'listen for changes in filesystem and rebuild')
-    .option('--config [string]', 'path to configuration file for activities build')
+    .option('--config [string]', 'path to configuration file')
     .option('--debug [bool]', 'enable debug log or not')
     .option('-d, --deploy [bool]', 'run deploy activity')
     .option('--verbose [bool]', 'log all messages in list format')
-    .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
+    .option('--closure [bool]', 'bundle and optimize with closure compiler')
     .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .allowUnknownOption(true)
     .action((taskfile, options) => {
         requireRegisters();
+        
+        // Check if target option is provided for new build functionality
+        if (options.target && ['components', 'core', 'boot'].includes(options.target)) {
+            handleBuild(options as BuildOptions, processRoot);
+            return;
+        }
+        
+        // Check if no taskfile and no explicit target - auto-detect
+        if (!taskfile && !options.target) {
+            handleBuild(options as BuildOptions, processRoot);
+            return;
+        }
+        
+        // Legacy taskfile-based build
         taskfile = vaildifyFile(taskfile);
         if (options.boot) {
             requireCwd(taskfile);
@@ -260,18 +287,33 @@ program
 
 program
     .command('serve [taskfile]')
-    .description('spawn the local express server')
-    .option('-e, --env [string]', 'use that particular environment.ts during the build, just like @angular/cli')
-    .option('-c, --clean [bool]', 'destroy the build folder prior to compilation, default for prod')
-    .option('-w, --watch [bool]', 'listen for changes in filesystem and rebuild')
-    .option('--config [string]', 'path to configuration file for activities build')
-    .option('-d, --deploy [bool]', 'run deploy activity')
+    .description('start preview server for components or boot services')
+    .option('-p, --port <port>', 'port to listen on (default: 3000)')
+    .option('-h, --host <host>', 'host to bind to (default: localhost)')
+    .option('--root <dir>', 'root directory to serve (default: lib)')
+    .option('--entry <file>', 'component preview entry file')
+    .option('-w, --watch [bool]', 'enable hot reload on file changes')
+    .option('--open [bool]', 'open browser automatically')
+    .option('--cors [bool]', 'enable CORS')
+    .option('--index <file>', 'index HTML file name (default: index.html)')
+    .option('--tsconfig <path>', 'TypeScript config file path')
+    .option('--boot [bool]', 'boot application service (use @tsdi/boot)')
+    .option('-e, --env [string]', 'use that particular environment.ts during the build')
+    .option('-c, --clean [bool]', 'destroy the build folder prior to compilation')
+    .option('--config [string]', 'path to configuration file')
+    .option('--debug [bool]', 'enable debug log or not')
     .option('--verbose [bool]', 'log all messages in list format')
-    .option('--closure [bool]', 'bundle and optimize with closure compiler (default)')
-    .option('-r, --rollup [bool]', 'bundle with rollup and optimize with closure compiler')
     .allowUnknownOption(true)
     .action((taskfile, options) => {
         requireRegisters();
+        
+        // Check if boot option or no taskfile - use new serve functionality
+        if (options.boot || (!taskfile && !process.argv.includes('--boot'))) {
+            handleServe(options as ServeOptions, processRoot);
+            return;
+        }
+        
+        // Legacy taskfile-based serve
         taskfile = vaildifyFile(taskfile);
         if (options.boot) {
             requireCwd(taskfile);
