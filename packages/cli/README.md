@@ -43,6 +43,51 @@ tsdi run [--activity] [taskfile.ts] [--your_env_arg=val]...
 tsdi build [taskfile config]  [--your_env_arg=val]...
 ```
 
+### build - Compile TypeScript packages
+```
+# Build components package
+tsdi build --target components
+
+# Build with bundling and source maps
+tsdi build --target components --bundle --sourcemap
+
+# Build with minification
+tsdi build --target components --minify
+
+# Generate declaration files
+tsdi build --target components --declaration
+
+# Angular-style output
+tsdi build --target components --outputStyle fesm2022
+
+# Watch mode
+tsdi build --target components --watch
+
+# Auto-detect and build
+tsdi build
+```
+
+### serve - Preview server for components
+```
+# Start preview server (default: port 3000)
+tsdi serve
+
+# Custom port and open browser
+tsdi serve --port 4200 --open
+
+# Enable hot reload
+tsdi serve --watch
+
+# Custom root directory
+tsdi serve --root ./dist
+
+# Enable CORS
+tsdi serve --cors
+
+# Boot application service
+tsdi serve --boot
+```
+
 ### Unit test
 
 ```shell
