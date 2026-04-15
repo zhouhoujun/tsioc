@@ -40,8 +40,9 @@ export abstract class AbstractInvocation<T = any,
         this._isResolve = hasContextOptions(options);
         this._mthCtx = new Map();
         // Store invocation in context using records directly
-        injector[RECORDS].set(Invocation, createValueRecord(this));
-        injector[RECORDS].set(getType(this), createValueRecord(this));
+        const rvalue = createValueRecord(this);
+        injector[RECORDS].set(Invocation, rvalue);
+        injector[RECORDS].set(getType(this), rvalue);
         injector.onDestroy(this);
     }
 

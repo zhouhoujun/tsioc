@@ -17,10 +17,12 @@ export class HttpClient {
 
     constructor(
         private injector: Injector,
-        readonly handler: HttpHandler
+        private handler: HttpHandler
     ) {
 
     }
+
+
 
     /**
      * Sends an `HttpRequest` and returns a stream of `HttpEvent`s.
