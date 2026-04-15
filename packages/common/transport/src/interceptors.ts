@@ -37,19 +37,18 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
 
 export function createSendMessageBackend(eventName: string = Events.DATA, socket?: Socket): RequestHandlerFn {
 
-    // let socket: Socket;
     let source$: Observable<any>;
+    let trackedSocket: Socket | null = null;
+
     return (req, context) => {
         const currSocket = socket ?? context.get(SOCKET);
         if (!currSocket) {
             return throwError(() => new ArgumentException('no socket in context'));
         }
 
-        if (socket !== currSocket) {
-            if (socket) {
-                socket.removeAllListeners();
-            }
-            socket = currSocket;
+        // Create or update source$ when socket changes
+        if (trackedSocket !== currSocket) {
+            trackedSocket = currSocket;
             source$ = fromEvent(currSocket, eventName)
                 .pipe(
                     takeUntil(race(fromEvent(currSocket, Events.CLOSE), fromEvent(currSocket, Events.DISCONNECT)).pipe(take(1))),

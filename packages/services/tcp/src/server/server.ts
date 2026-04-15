@@ -21,7 +21,7 @@ import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTI
 
 
 /**
- * tcp server of `tcp` or `ipc`. 
+ * tcp server of `tcp` or `ipc`.
  */
 @Injectable()
 export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, RequestContext> implements ListenService {
@@ -33,6 +33,11 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
     protected isSecure: boolean;
 
     private destroy$: Subject<void>;
+
+    /**
+     * Track active socket connections for proper shutdown
+     */
+    private activeConnections: Set<tls.TLSSocket | net.Socket> = new Set();
 
     constructor(
         readonly handler: ServiceHandler<any, any, RequestContext>,
@@ -135,8 +140,26 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
 
     protected override async onShutdown(): Promise<any> {
         if (!this.serv) return;
+
+        // Signal all handlers to stop
         this.destroy$.next();
         this.destroy$.complete();
+
+        // Close all active connections gracefully
+        for (const socket of this.activeConnections) {
+            if (!socket.destroyed) {
+                socket.end();
+                // Force destroy after timeout if socket doesn't close gracefully
+                setTimeout(() => {
+                    if (!socket.destroyed) {
+                        socket.destroy();
+                    }
+                }, 1000);
+            }
+        }
+        this.activeConnections.clear();
+
+        // Then close the server
         await promisify(this.serv.close, this.serv)()
             .finally(() => {
                 this.serv?.removeAllListeners();
@@ -150,6 +173,14 @@ export class TcpServer<TReq = any, TRes = any> extends Server<TReq, TRes, Reques
     }
 
     private handleMessage(socket: tls.TLSSocket | net.Socket) {
+        // Track the active connection
+        this.activeConnections.add(socket);
+
+        // Remove from tracking when socket closes
+        socket.once(Events.CLOSE, () => {
+            this.activeConnections.delete(socket);
+        });
+
         this.handler.handle(socket, createRequestContext(this.injector, [[SOCKET, socket]]))
             .pipe(
                 takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1)))

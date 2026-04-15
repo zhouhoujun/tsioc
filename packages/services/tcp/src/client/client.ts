@@ -43,34 +43,49 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             const valid = this.connection && this.isValid(this.connection as (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean });
             if (valid) return this.connection;
 
+            if (this.connection) {
+                this.connection.removeAllListeners();
+                this.connection.destroy();
+            }
 
-            if (this.connection) this.connection.removeAllListeners();
-
-            return await new Promise<tls.TLSSocket | net.Socket>((r, j) => {
+            return await new Promise<tls.TLSSocket | net.Socket>((resolve, reject) => {
                 const conn = this.createConnection(this.options);
 
-                const onError = (err: any) => {
-                    this.logger?.error(err);
-                    j(err);
-                }
-
-                const onConnect = () => {
-                    this.connection = conn;
-                    r(conn);
-                }
-                const onClose = () => {
+                const cleanup = () => {
                     conn.off(Events.CONNECT, onConnect)
                         .off(Events.ERROR, onError)
-                        .off(Events.DISCONNECT, onError)
-                        .off(Events.END, onClose)
+                        .off(Events.END, onEnd)
                         .off(Events.CLOSE, onClose);
+                };
+
+                const onError = (err: any) => {
+                    cleanup();
+                    this.logger?.error('Connection error:', err);
+                    reject(err);
+                };
+
+                const onConnect = () => {
+                    cleanup();
+                    this.connection = conn;
+                    resolve(conn);
+                };
+
+                const onEnd = () => {
+                    cleanup();
                     conn.end();
-                }
+                };
+
+                const onClose = () => {
+                    cleanup();
+                    if (!this.connection) {
+                        reject(new Error('Connection closed before connect'));
+                    }
+                };
+
                 conn.on(Events.ERROR, onError)
-                    .on(Events.DISCONNECT, onError)
-                    .on(Events.END, onClose)
-                    .on(Events.CLOSE, onClose)
                     .on(Events.CONNECT, onConnect)
+                    .once(Events.END, onEnd)
+                    .once(Events.CLOSE, onClose);
             });
 
         });
@@ -94,15 +109,40 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
-        await promisify(this.connection.destroy, this.connection)(null!)
-            .finally(() => {
+
+        return new Promise<void>((resolve) => {
+            const cleanup = () => {
                 this.connection.removeAllListeners();
                 this.connection = null!;
-            })
-            .catch(err => {
-                this.logger?.error(err);
-                return err;
+                resolve();
+            };
+
+            this.connection.once(Events.CLOSE, cleanup);
+
+            // Use end() for graceful shutdown, which will trigger 'close' event
+            this.connection.end();
+
+            // Set a timeout to force destroy if graceful shutdown takes too long
+            const timeout = setTimeout(() => {
+                if (this.connection && !this.connection.destroyed) {
+                    this.logger?.warn('TCP client connection shutdown timeout, forcing destroy');
+                    this.connection.destroy();
+                }
+            }, 5000);
+
+            // Clear timeout when cleanup runs
+            this.connection.once(Events.CLOSE, () => {
+                clearTimeout(timeout);
             });
+        }).catch(err => {
+            this.logger?.error('TCP client shutdown error:', err);
+            // Ensure cleanup even on error
+            if (this.connection) {
+                this.connection.removeAllListeners();
+                this.connection.destroy();
+                this.connection = null!;
+            }
+        });
     }
 
     protected isValid(connection: (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean }): boolean {
@@ -175,7 +215,9 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
 
 export function withTcpClientTransport(...options: Partial<TcpClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
-        return tcpClientTransportFacotry(option, options.length == 1 || option.asDefault);
+        // First option is default unless explicitly specified
+        const asDefault = option.asDefault ?? (idx === 0);
+        return tcpClientTransportFacotry(option, asDefault);
     });
 }
 
