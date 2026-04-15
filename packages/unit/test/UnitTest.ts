@@ -1,6 +1,6 @@
 import { lang, Inject, Container, CONTAINER } from '@tsdi/ioc';
 import { Suite, BeforeEach, Test, Assert, Expect, ExpectToken, BeforeAll, Before, AfterEach } from '../src';
-
+import expect = require('expect');
 
 
 @Suite('Unit Test')
@@ -53,8 +53,13 @@ export class SuiteTest {
     }
 
     @Test()
-    async testEqural(@Inject(ExpectToken) expect: Expect, @Inject() conatiner: Container) {
-        await expect('true').not.toBe(true);
+    async testEqural(@Inject(ExpectToken) expect1: Expect, @Inject() conatiner: Container) {
+        await expect1('true').not.toBe(true);
+    }
+
+    @Test()
+    testExpEqural() {
+        expect('true').not.toBe(true);
     }
 }
 

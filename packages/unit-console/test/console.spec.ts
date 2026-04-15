@@ -1,9 +1,10 @@
-import { Suite, BeforeEach, Test, AfterEach, Assert, Expect, ExpectToken } from '@tsdi/unit';
-import { Inject, Token, Injectable } from '@tsdi/ioc';
+import { Suite, BeforeEach, Test, AfterEach, Assert } from '@tsdi/unit';
+import { Inject, Token } from '@tsdi/ioc';
 import { ConsoleReporter } from '../src';
 import { SuiteDescribe, ICaseDescribe } from '@tsdi/unit';
+import expect = require('expect');
 
-@Injectable()
+
 @Suite('ConsoleReporter Test Suite')
 export class ConsoleReporterTest {
 
@@ -15,37 +16,37 @@ export class ConsoleReporterTest {
     }
 
     @Test('should create ConsoleReporter instance')
-    testCreateInstance(@Inject(ExpectToken) expect: Expect) {
+    testCreateInstance() {
         expect(this.reporter).toBeDefined();
         expect(this.reporter instanceof ConsoleReporter).toBeTruthy();
     }
 
     @Test('should have track method')
-    testTrackMethod(@Inject(ExpectToken) expect: Expect) {
+    testTrackMethod() {
         expect(this.reporter.track).toBeDefined();
         expect(typeof this.reporter.track).toBe('function');
     }
 
     @Test('should have renderSuite method')
-    testRenderSuiteMethod(@Inject(ExpectToken) expect: Expect) {
+    testRenderSuiteMethod() {
         expect(this.reporter.renderSuite).toBeDefined();
         expect(typeof this.reporter.renderSuite).toBe('function');
     }
 
     @Test('should have renderCase method')
-    testRenderCaseMethod(@Inject(ExpectToken) expect: Expect) {
+    testRenderCaseMethod() {
         expect(this.reporter.renderCase).toBeDefined();
         expect(typeof this.reporter.renderCase).toBe('function');
     }
 
     @Test('should have render method')
-    testRenderMethod(@Inject(ExpectToken) expect: Expect) {
+    testRenderMethod() {
         expect(this.reporter.render).toBeDefined();
         expect(typeof this.reporter.render).toBe('function');
     }
 
     @Test('should throw error when tracking')
-    testTrackError(@Inject(ExpectToken) expect: Expect) {
+    testTrackError() {
         const error = new Error('test error');
         let thrown = false;
         try {
@@ -93,7 +94,7 @@ export class ConsoleReporterTest {
     }
 
     @Test('should render final report with all passing')
-    async testRenderAllPassing(@Inject(ExpectToken) expect: Expect) {
+    async testRenderAllPassing() {
         const suites = new Map<Token, SuiteDescribe>();
         suites.set('suite1', {
             describe: 'Test Suite 1',
@@ -104,12 +105,12 @@ export class ConsoleReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 2000000]);
         expect(true).toBeTruthy();
     }
 
     @Test('should handle multiple suites')
-    async testMultipleSuites(@Inject(ExpectToken) expect: Expect) {
+    async testMultipleSuites() {
         const suites = new Map<Token, SuiteDescribe>();
         suites.set('suite1', {
             describe: 'Suite One',
@@ -126,15 +127,15 @@ export class ConsoleReporterTest {
             start: [1000000, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 2000000]);
         expect(true).toBeTruthy();
     }
 
     @Test('should handle empty suites')
-    async testEmptySuites(@Inject(ExpectToken) expect: Expect) {
+    async testEmptySuites() {
         const suites = new Map<Token, SuiteDescribe>();
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [0, 0]);
         expect(true).toBeTruthy();
     }
 

@@ -1,57 +1,45 @@
-import { Suite, BeforeEach, Test, AfterEach, Assert, Expect, ExpectToken } from '@tsdi/unit';
-import { Inject, Token, Injectable } from '@tsdi/ioc';
-import { CoverageReporter, CoverageOptions } from '../src';
-import { SuiteDescribe, ICaseDescribe } from '@tsdi/unit';
+import { Suite, BeforeEach, Test, AfterEach } from '@tsdi/unit';
+import { Inject, Token } from '@tsdi/ioc';
+import { V8CoverageReporter } from '../src';
+import { SuiteDescribe } from '@tsdi/unit';
+import expect = require('expect');
 
-@Injectable()
-@Suite('CoverageReporter Test Suite')
+@Suite('V8CoverageReporter Test Suite')
 export class CoverageReporterTest {
 
     @Inject()
-    private reporter!: CoverageReporter;
+    private reporter!: V8CoverageReporter;
 
     @BeforeEach()
     setup() {
     }
 
-    @Test('should create CoverageReporter instance')
-    testCreateInstance(@Inject(ExpectToken) expect: Expect) {
+    @Test('should create V8CoverageReporter instance')
+    testCreateInstance() {
         expect(this.reporter).toBeDefined();
-        expect(this.reporter instanceof CoverageReporter).toBeTruthy();
+        expect(this.reporter instanceof V8CoverageReporter).toBeTruthy();
     }
 
     @Test('should have track method')
-    testTrackMethod(@Inject(ExpectToken) expect: Expect) {
+    testTrackMethod() {
         expect(this.reporter.track).toBeDefined();
         expect(typeof this.reporter.track).toBe('function');
     }
 
-    @Test('should have renderSuite method')
-    testRenderSuiteMethod(@Inject(ExpectToken) expect: Expect) {
-        expect(this.reporter.renderSuite).toBeDefined();
-        expect(typeof this.reporter.renderSuite).toBe('function');
-    }
-
-    @Test('should have renderCase method')
-    testRenderCaseMethod(@Inject(ExpectToken) expect: Expect) {
-        expect(this.reporter.renderCase).toBeDefined();
-        expect(typeof this.reporter.renderCase).toBe('function');
-    }
-
     @Test('should have render method')
-    testRenderMethod(@Inject(ExpectToken) expect: Expect) {
+    testRenderMethod() {
         expect(this.reporter.render).toBeDefined();
         expect(typeof this.reporter.render).toBe('function');
     }
 
     @Test('should have setOptions method')
-    testSetOptionsMethod(@Inject(ExpectToken) expect: Expect) {
+    testSetOptionsMethod() {
         expect(this.reporter.setOptions).toBeDefined();
         expect(typeof this.reporter.setOptions).toBe('function');
     }
 
     @Test('should throw error when tracking')
-    testTrackError(@Inject(ExpectToken) expect: Expect) {
+    testTrackError() {
         const error = new Error('test error');
         let thrown = false;
         try {
@@ -63,7 +51,7 @@ export class CoverageReporterTest {
     }
 
     @Test('should not render when coverage disabled')
-    async testDisabledCoverage(@Inject(ExpectToken) expect: Expect) {
+    async testDisabledCoverage() {
         this.reporter.setOptions({ enabled: false });
         
         const suites = new Map<Token, SuiteDescribe>();
@@ -75,12 +63,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should render with text-summary reporter')
-    async testTextSummaryReport(@Inject(ExpectToken) expect: Expect) {
+    async testTextSummaryReport() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary'] 
@@ -96,12 +84,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [2000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should render with text reporter')
-    async testTextReport(@Inject(ExpectToken) expect: Expect) {
+    async testTextReport() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text'] 
@@ -116,12 +104,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should render with json reporter')
-    async testJsonReport(@Inject(ExpectToken) expect: Expect) {
+    async testJsonReport() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['json'] 
@@ -136,12 +124,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should render with html reporter')
-    async testHtmlReport(@Inject(ExpectToken) expect: Expect) {
+    async testHtmlReport() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['html'],
@@ -157,12 +145,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should render with lcov reporter')
-    async testLcovReport(@Inject(ExpectToken) expect: Expect) {
+    async testLcovReport() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['lcov'] 
@@ -177,12 +165,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should render with cobertura reporter')
-    async testCoberturaReport(@Inject(ExpectToken) expect: Expect) {
+    async testCoberturaReport() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['cobertura'] 
@@ -197,12 +185,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should render with multiple reporters')
-    async testMultipleReporters(@Inject(ExpectToken) expect: Expect) {
+    async testMultipleReporters() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary', 'json'] 
@@ -218,12 +206,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [3000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should handle empty suites')
-    async testEmptySuites(@Inject(ExpectToken) expect: Expect) {
+    async testEmptySuites() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary'] 
@@ -231,12 +219,12 @@ export class CoverageReporterTest {
         
         const suites = new Map<Token, SuiteDescribe>();
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [0, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should calculate 100% coverage with all passing')
-    async testAllPassing(@Inject(ExpectToken) expect: Expect) {
+    async testAllPassing() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary'] 
@@ -253,12 +241,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [6000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should calculate 0% coverage with all failing')
-    async testAllFailing(@Inject(ExpectToken) expect: Expect) {
+    async testAllFailing() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary'] 
@@ -274,12 +262,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [3000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should show high coverage with green color')
-    async testHighCoverageColor(@Inject(ExpectToken) expect: Expect) {
+    async testHighCoverageColor() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary'] 
@@ -298,12 +286,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [15000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should show medium coverage with yellow color')
-    async testMediumCoverageColor(@Inject(ExpectToken) expect: Expect) {
+    async testMediumCoverageColor() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary'] 
@@ -321,12 +309,12 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [10000000, 0]);
         expect(true).toBeTruthy();
     }
 
     @Test('should show low coverage with red color')
-    async testLowCoverageColor(@Inject(ExpectToken) expect: Expect) {
+    async testLowCoverageColor() {
         this.reporter.setOptions({ 
             enabled: true, 
             reporters: ['text-summary'] 
@@ -345,7 +333,7 @@ export class CoverageReporterTest {
             start: [0, 0]
         });
         
-        await this.reporter.render(suites);
+        await this.reporter.render(Array.from(suites.values()), [15000000, 0]);
         expect(true).toBeTruthy();
     }
 
