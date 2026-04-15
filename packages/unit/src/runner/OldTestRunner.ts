@@ -78,7 +78,7 @@ export class OldTestRunner implements UnitRunner {
                 suiteDesc.cases.push({ title: title, key: '', fn: test, timeout: timeout })
             }
             globals.before = globals.beforeAll = (beforefn: () => any, timeout?: number) => {
-                if (!isFunction(fn)) return;
+                if (!isFunction(beforefn)) return;
                 suiteDesc.before = suiteDesc.before || [];
                 suiteDesc.before.push({
                     fn: beforefn,

@@ -1,4 +1,4 @@
-import { tokenId } from '@tsdi/ioc';
+import { token } from '@tsdi/ioc';
 import { SwaggerConfigs } from 'swagger-ui-dist';
 
 
@@ -169,9 +169,9 @@ export interface SwaggerSetupOptions {
 /**
  * Swagger setup options.
  */
-export const SWAGGER_SETUP_OPTIONS = tokenId<SwaggerSetupOptions>('SWAGGER_SETUP_OPTIONS');
+export const SWAGGER_SETUP_OPTIONS = token<SwaggerSetupOptions>('SWAGGER_SETUP_OPTIONS');
 
 /**
  * Token of JSON object with the API schema.
  */
-export const SWAGGER_DOCUMENT = tokenId<OpenAPIObject>('SWAGGER_DOCUMENT');
+export const SWAGGER_DOCUMENT = token<OpenAPIObject>('SWAGGER_DOCUMENT');
