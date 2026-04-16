@@ -19,9 +19,13 @@ export const bodyServializeInterceptor: RequestInterceptorFn<AbstractRequest<any
     if (body == null) {
         return next(req, context);
     }
+    const headerAdapter = context.get(HeaderAdapter);
+    if(!headerAdapter) {
+        return next(req, context);
+    }
+
     return defer(async () => {
         let headers = req.headers;
-        const headerAdapter = context.get(HeaderAdapter);
         if (!headerAdapter.hasContentType(headers)) {
             const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : detectContentTypeHeader(streamAdapter, req.body);
             if (!contentType) {
