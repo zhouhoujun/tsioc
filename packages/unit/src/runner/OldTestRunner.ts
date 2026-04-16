@@ -202,20 +202,41 @@ export class OldTestRunner implements UnitRunner {
 
         try {
             const result = fn?.(done);
-            // If function returns a Promise, handle it alongside done callback
-            // This allows both Promise-based and callback-based async tests
+            // If function returns a Promise, handle it
+            // If function doesn't return Promise (sync test or undefined), it's complete immediately
+            // or it will call done() later for callback-style async tests
             if (result !== undefined && result !== null && typeof result.then === 'function') {
                 Promise.resolve(result)
                     .then(r => {
-                        clearTimeout(timer);
-                        timer = null!;
-                        defer.resolve(r);
+                        if (timer) {
+                            clearTimeout(timer);
+                            timer = null!;
+                            defer.resolve(r);
+                        }
                     })
                     .catch(err => {
-                        clearTimeout(timer);
-                        timer = null!;
-                        defer.reject(err);
+                        if (timer) {
+                            clearTimeout(timer);
+                            timer = null!;
+                            defer.reject(err);
+                        }
                     });
+            } else if (result === undefined) {
+                // For sync tests or tests that will use done callback
+                // Do nothing here - wait for done() to be called or timer timeout
+                // Note: if test doesn't need done callback (sync test without params),
+                // it should complete immediately. Check if function expects done parameter.
+                if (fn && fn.length === 0) {
+                    // Function doesn't expect any parameter (sync test), complete immediately
+                    clearTimeout(timer);
+                    timer = null!;
+                    defer.resolve(result);
+                }
+            } else {
+                // Function returned a non-Promise value (sync test with return value)
+                clearTimeout(timer);
+                timer = null!;
+                defer.resolve(result);
             }
         } catch (err) {
             clearTimeout(timer);
