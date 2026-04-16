@@ -72,7 +72,9 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
     protected canHanlde(input: ReadableLike<Incoming>, streamAdapter: StreamAdapter): boolean {
         return (isUndefined(input.body) && streamAdapter.isReadable(input))
             || streamAdapter.isReadable(input.body)
-            || isBuffer(input.body);
+            || isBuffer(input.body)
+            // Also handle cases where body is already an object (parsed payload)
+            || (input.body !== undefined && input.body !== null && typeof input.body === 'object');
     }
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<any> {
@@ -92,6 +94,12 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
         const types = context.get(MimeTypes);
         const headerAdapter = context.get(HeaderAdapter);
         const mimeAdapter = context.get(MimeAdapter);
+
+        // If no headerAdapter (e.g., for TCP microservice without HTTP headers),
+        // try to parse body directly from input
+        if (!headerAdapter) {
+            return this.parseBodyWithoutHeaders(input, context);
+        }
 
         let encoding = headerAdapter.getContentEncoding(input);
         const len = headerAdapter.getContentLength(input);
@@ -253,6 +261,53 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
 
     private enableType(type: string): boolean {
         return this.options.enableTypes.includes(type) === true
+    }
+
+    /**
+     * Parse body without HTTP headers (e.g., for TCP microservice mode).
+     * Try to detect content type from body content.
+     */
+    protected async parseBodyWithoutHeaders(input: ReadableLike<Incoming>, context: RequestContext): Promise<{ raw?: any, body?: any }> {
+        const streamAdapter = context.get(StreamAdapter);
+        const { limit, encoding } = this.options.json;
+
+        let str: string;
+        if (isBuffer(input.body)) {
+            str = input.body.toString();
+        } else if (streamAdapter.isReadable(input)) {
+            str = await streamAdapter.rawbody(input, { encoding, limit });
+        } else if (streamAdapter.isReadable(input.body)) {
+            str = await streamAdapter.rawbody(input.body, { encoding, limit });
+        } else if (input.body !== undefined) {
+            // body is already parsed (object, string, etc.)
+            return { body: input.body };
+        } else {
+            return {};
+        }
+
+        // Try to parse as JSON if it looks like JSON
+        if (this.enableJson && strictJSONReg.test(str)) {
+            try {
+                const body = this.jsonify(str, false);
+                return { raw: str, body };
+            } catch {
+                // Not valid JSON, return as text
+            }
+        }
+
+        // Try to parse as form data if it looks like form data
+        if (this.enableForm && str.indexOf('=') >= 0) {
+            try {
+                const qs = this.options.form.qs ?? qslib;
+                const body = qs.parse(str, this.options.form.queryString);
+                return { raw: str, body };
+            } catch {
+                // Not valid form data, return as text
+            }
+        }
+
+        // Return as text
+        return { raw: str, body: str };
     }
 }
 
