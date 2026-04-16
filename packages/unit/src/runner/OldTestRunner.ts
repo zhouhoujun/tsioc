@@ -189,17 +189,39 @@ export class OldTestRunner implements UnitRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(fn?.(() => defer.resolve()))
-            .then(r => {
-                clearTimeout(timer);
-                timer = null!;
-                defer.resolve(r)
-            })
-            .catch(err => {
-                clearTimeout(timer);
-                timer = null!;
-                defer.reject(err)
-            })
+        // Mocha Done callback support
+        const done = (err?: Error | any) => {
+            clearTimeout(timer);
+            timer = null!;
+            if (err) {
+                defer.reject(err);
+            } else {
+                defer.resolve();
+            }
+        };
+
+        try {
+            const result = fn?.(done);
+            // If function returns a Promise, handle it alongside done callback
+            // This allows both Promise-based and callback-based async tests
+            if (result !== undefined && result !== null && typeof result.then === 'function') {
+                Promise.resolve(result)
+                    .then(r => {
+                        clearTimeout(timer);
+                        timer = null!;
+                        defer.resolve(r);
+                    })
+                    .catch(err => {
+                        clearTimeout(timer);
+                        timer = null!;
+                        defer.reject(err);
+                    });
+            }
+        } catch (err) {
+            clearTimeout(timer);
+            timer = null!;
+            defer.reject(err);
+        }
 
         return defer.promise
     }

@@ -24,6 +24,9 @@
       "dom",
       "es2015",
       "es2017"
+    ],
+    "types": [
+      "mocha"
     ]
   },
   "exclude": [
