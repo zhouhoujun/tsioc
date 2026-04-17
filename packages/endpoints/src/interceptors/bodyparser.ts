@@ -70,11 +70,9 @@ export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<In
     }
 
     protected canHanlde(input: ReadableLike<Incoming>, streamAdapter: StreamAdapter): boolean {
-        return (isUndefined(input.body) && streamAdapter.isReadable(input))
+        return streamAdapter.isReadable(input)    
             || streamAdapter.isReadable(input.body)
-            || isBuffer(input.body)
-            // Also handle cases where body is already an object (parsed payload)
-            || (input.body !== undefined && input.body !== null && typeof input.body === 'object');
+            || isBuffer(input.body);
     }
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<any> {
