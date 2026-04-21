@@ -1,0 +1,59 @@
+import { ElementRef } from './element';
+import { EmbeddedViewRef } from './view';
+import { NodeInjector } from './injector';
+import { noReact, ReactiveEffect } from '../effect';
+import { RNode } from '../renderer/Node';
+import { Renderer } from '../renderer/Renderer';
+/**
+ * Represents an embedded template that can be used to instantiate embedded views.
+ * To instantiate embedded views based on a template, use the `ViewContainerRef`
+ * method `createEmbeddedView()`.
+ *
+ * Access a `TemplateRef` instance by placing a directive on an `<template>`
+ * element (or directive prefixed with `*`). The `TemplateRef` for the embedded view
+ * is injected into the constructor of the directive,
+ * using the `TemplateRef` token.
+ *
+ * You can also use a `Query` to find a `TemplateRef` associated with
+ * a component or a directive.
+ *
+ * @see `ViewContainerRef`
+ * @see Navigate the Component Tree with DI
+ *
+ * @publicApi
+ */
+export declare abstract class TemplateRef<C = any> {
+    [noReact]: boolean;
+    /**
+     * The anchor element in the parent view for this embedded view.
+     *
+     * The data-binding and injection contexts of embedded views created from this `TemplateRef`
+     * inherit from the contexts of this location.
+     *
+     * Typically new embedded views are attached to the view container of this location, but in
+     * advanced use-cases, the view can be attached to a different container while keeping the
+     * data-binding and injection context from the original location.
+     *
+     */
+    abstract get elementRef(): ElementRef;
+    /**
+     * Instantiates an embedded view based on this template,
+     * and attaches it to the view container.
+     * @param context The data-binding context of the embedded view, as declared
+     * in the `<template>` usage.
+     * @param injector NodeInjector to be used within the embedded view.
+     * @param effect ReactiveEffect to be used for the embedded view.
+     * @returns The new embedded view object.
+     */
+    abstract createEmbeddedView(context: C, injector?: NodeInjector, effect?: ReactiveEffect): EmbeddedViewRef<C>;
+}
+export type NodeFactory<C> = (renderer: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect) => RNode[];
+export type TemplateFactory<C = any> = (host: ElementRef, injector?: NodeInjector) => TemplateRef<C>;
+/**
+ * 取消绑定
+ */
+export type Unbinding = () => void;
+/**
+ * 绑定上下文到目标元素
+ */
+export type Bindings<T = any> = (target: RNode, context: T, effect: ReactiveEffect, injector: NodeInjector) => Unbinding | void;

@@ -1,0 +1,91 @@
+import { AbstractType, HandlerLike } from '@tsdi/ioc';
+import { Handler } from '../handler';
+import { InterceptorFn } from '../interceptor';
+/**
+ * filter is a chainable behavior modifier for `handlers`.
+ *
+ * 处理器过滤器。
+ */
+export declare abstract class Filter<TInput = any, TOutput = any, TContext = any> {
+    /**
+     * the method to implement interceptor filter.
+     * @param input request input data.
+     * @param next The next interceptor in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @returns An observable of the event stream.
+     */
+    abstract doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): TOutput;
+    /**
+     * is this equals to target or not
+     *
+     * 该实例等于目标与否？
+     * @param target
+     */
+    equals?(target: any): boolean;
+}
+/**
+ * FilterFn is a chainable behavior modifier for `handlers`.
+ *
+ * 处理器过滤方法。
+ */
+export type FilterFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, TOutput, TContext>;
+/**
+ * filter like
+ */
+export type FilterLike<TInput = any, TOutput = any, TContext = any> = FilterFn<TInput, TOutput, TContext> | Filter<TInput, TOutput, TContext>;
+/**
+ * multi filters token
+ */
+export declare const FILTERS_TOKEN: import("@tsdi/ioc").InjectToken<FilterLike<any, any, any>[]>;
+/**
+ * Filter resolver.
+ */
+export declare abstract class FilterResolver {
+    /**
+     * resolve hanlde filter.
+     * @param target
+     */
+    abstract resolve<T>(target: AbstractType<T> | T | string): FilterLike[];
+    /**
+     * add handle filter.
+     * @param target filter for the target type
+     * @param filter handler filter.
+     * @param order order.
+     */
+    abstract addFilter(target: AbstractType | string, filter: FilterLike, order?: number): this;
+    /**
+     * remove handle filter.
+     * @param target filter for the target type
+     * @param filter handler filter.
+     */
+    abstract removeFilter(target: AbstractType | string, filter: FilterLike): this;
+}
+/**
+ * Endpoint handler method resolver.
+ */
+export declare abstract class FilterHandlerResolver {
+    /**
+     * resolve filter hanlde.
+     * @param filter
+     */
+    abstract resolve<T>(filter: AbstractType<T> | T | string): HandlerLike[];
+    /**
+     * add filter handle.
+     * @param filter filter type
+     * @param handler filter handler.
+     * @param order order.
+     */
+    abstract addHandle(filter: AbstractType | string, handler: HandlerLike, order?: number): this;
+    /**
+     * remove filter handle.
+     * @param filter filter type.
+     * @param handler filter handler.
+     */
+    abstract removeHandle(filter: AbstractType | string, handler: HandlerLike): this;
+}
+/**
+ * compose chain filters.
+ * @param filters
+ * @returns
+ */
+export declare function composeFilters(filters: FilterLike[]): FilterFn;

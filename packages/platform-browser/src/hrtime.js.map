@@ -1,0 +1,1 @@
+{"version":3,"file":"hrtime.js","sourceRoot":"","sources":["hrtime.ts"],"names":[],"mappings":";;;;AAAA,qCAA6C;AAC7C,mCAAuC;AACvC,iDAAkD;AAG3C,IAAM,sBAAsB,GAA5B,MAAM,sBAAuB,SAAQ,sBAAe;IACvD,MAAM,CAAC,IAAmC;QACtC,OAAO,MAAM,CAAC,IAAI,CAAC,CAAC;IACxB,CAAC;CAEJ,CAAA;AALY,wDAAsB;iCAAtB,sBAAsB;IADlC,IAAA,gBAAU,GAAE;GACA,sBAAsB,CAKlC"}

@@ -9,6 +9,7 @@ import { GuardLike, VaildatorLike } from '@tsdi/core';
 import { BodyparserOptions, JsonOptions } from './interceptors';
 import { MiddlewareLike } from './middleware/middleware';
 import { RequestContextFactory } from './AbstractRequestContext';
+import { ConfigSource, ConfigOptions } from '@tsdi/config';
 
 export interface ProxyOpts {
     proxyIpHeader: string;
@@ -59,7 +60,7 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
 
     server?: any;
     /**
-     * send detail error message to client or not. 
+     * send detail error message to client or not.
      */
     detailError?: boolean;
 
@@ -70,8 +71,18 @@ export interface ServiceConfig<TSerOpts = any> extends ServiceHandlerOptions<any
     secure?: boolean;
 
     bootstrap?: boolean;
-    
+
     payloadKey?: 'body' | 'payload';
+
+    /**
+     * configuration options.
+     */
+    config?: ConfigOptions;
+
+    /**
+     * configuration sources.
+     */
+    configSources?: ConfigSource[];
 }
 
 

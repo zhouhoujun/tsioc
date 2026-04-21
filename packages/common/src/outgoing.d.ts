@@ -1,0 +1,92 @@
+import { Header, HeaderAccess, IHeaders } from './headers';
+/**
+ * Outgoing message
+ */
+export interface OutgoingMessage<T = any, THead extends Header = Header> extends HeaderAccess<THead> {
+    id?: number | string;
+    pattern?: string;
+    body?: T | null;
+}
+/**
+ * Server outgoing message.
+ */
+export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
+    type?: string | number | null;
+    error?: any;
+    /**
+     * Get packet status code.
+     *
+     * @return {TStatus}
+     * @api public
+     */
+    get statusCode(): TStatus;
+    /**
+     * Set packet status code.
+     *
+     * @api public
+     */
+    set statusCode(code: TStatus);
+    /**
+     * Get packet status message.
+     *
+     * @return {String}
+     * @api public
+     */
+    get statusMessage(): string;
+    /**
+     * Set packet status message
+     *
+     * @return {TPacket}
+     * @api public
+     */
+    set statusMessage(statusText: string);
+    /**
+     * has header in packet or not.
+     * @param packet
+     * @param field
+     */
+    hasHeader(field: string): boolean;
+    /**
+     * get header from packet.
+     * @param packet
+     * @param field
+     */
+    getHeader?(field: string): string | undefined;
+    /**
+     * Set header `field` to `val` or pass
+     * an object of header fields.
+     *
+     * Examples:
+     *
+     *    this.set('Foo', ['bar', 'baz']);
+     *    this.set('Accept', 'application/json');
+     *    this.set({ Accept: 'text/plain', 'X-API-Key': 'tobi' });
+     *
+     * @param {String|Object|Array} field
+     * @param {String} val
+     * @api public
+     */
+    setHeader(field: string, val: Header): void;
+    /**
+     * remove header in packet.
+     * @param packet
+     * @param field
+     */
+    removeHeader(field: string): void;
+    /**
+     * get response headers.
+     */
+    getHeaders?(): IHeaders;
+    /**
+     * Check if a header has been written to the socket.
+     *
+     * @return {Boolean}
+     * @api public
+     */
+    headersSent?: boolean;
+    /**
+     * is writable or not.
+     * @param packet
+     */
+    writable?: boolean;
+}

@@ -7,5 +7,7 @@ export * from './AbstractClient';
 export * from './options';
 export * from './tokens';
 export * from './provider';
+export * from './pool';
+export * from './connection.pool';
 
 

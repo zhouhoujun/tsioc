@@ -1,0 +1,33 @@
+import { Token, Injector } from '@tsdi/ioc';
+import { SuiteDescribe, CoverageSummary, UnitTestConfigure, CoverageReporter } from '@tsdi/unit';
+import { HrtimeFormatter } from '@tsdi/core';
+import { FileAdapter } from '@tsdi/common';
+import { BrowserCoverageOptions } from './BrowserCoverageCollector';
+export type CoverageReporterType = 'text' | 'text-summary' | 'json' | 'html' | 'lcov' | 'cobertura';
+export { BrowserCoverageOptions as CoverageOptions, BrowserCoverageOptions };
+export { KarmaCoverageReporter as CoverageReporter };
+export declare class KarmaCoverageReporter extends CoverageReporter {
+    private injector;
+    private fileAdapter?;
+    private config?;
+    private _options;
+    constructor(hrtime: HrtimeFormatter, injector: Injector, fileAdapter?: FileAdapter | undefined, config?: UnitTestConfigure | undefined);
+    private coverageCollector;
+    private get options();
+    setOptions(options: BrowserCoverageOptions): void;
+    track(error: Error): void;
+    render(suites: SuiteDescribe[] | Map<Token, SuiteDescribe>, total?: [number, number]): Promise<void>;
+    protected renderReport(type: CoverageReporterType): Promise<void>;
+    private getColor;
+    private colorPct;
+    private barChart;
+    protected renderTextReport(): void;
+    protected renderSummaryReport(): void;
+    protected renderJsonReport(): void;
+    protected renderHtmlReport(): Promise<void>;
+    protected renderLcovReport(): void;
+    protected renderCoberturaReport(): void;
+    protected checkThreshold(summary: CoverageSummary): void;
+    private getRelativePath;
+    private getBaseName;
+}

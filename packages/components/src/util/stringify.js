@@ -1,0 +1,67 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.stringify = stringify;
+exports.concatStringsWithSpace = concatStringsWithSpace;
+exports.renderStringify = renderStringify;
+exports.stringifyForError = stringifyForError;
+const ioc_1 = require("@tsdi/ioc");
+function stringify(token) {
+    if ((0, ioc_1.isString)(token)) {
+        return token;
+    }
+    if (Array.isArray(token)) {
+        return '[' + token.map(stringify).join(', ') + ']';
+    }
+    if (token == null) {
+        return '' + token;
+    }
+    if (token.overriddenName) {
+        return `${token.overriddenName}`;
+    }
+    if (token.name) {
+        return `${token.name}`;
+    }
+    const res = token.toString();
+    if (res == null) {
+        return '' + res;
+    }
+    const newLineIndex = res.indexOf('\n');
+    return newLineIndex === -1 ? res : res.substring(0, newLineIndex);
+}
+/**
+ * Concatenates two strings with separator, allocating new strings only when necessary.
+ *
+ * @param before before string.
+ * @param separator separator string.
+ * @param after after string.
+ * @returns concatenated string.
+ */
+function concatStringsWithSpace(before, after) {
+    return (before == null || before === '') ?
+        (after === null ? '' : after) :
+        ((after == null || after === '') ? before : before + ' ' + after);
+}
+function renderStringify(value) {
+    if (typeof value === 'string')
+        return value;
+    if (value == null)
+        return '';
+    return String(value);
+}
+/**
+ * Used to stringify a value so that it can be displayed in an error message.
+ * Important! This function contains a megamorphic read and should only be
+ * used for error messages.
+ */
+function stringifyForError(value) {
+    if (typeof value === 'function') {
+        const name = value.name;
+        return (name && name !== 'fn') ? name : value.toString();
+    }
+    if (typeof value === 'object' && value != null && typeof value.type === 'function') {
+        const typeName = value.type.name;
+        return (typeName && typeName !== 'fn') ? typeName : value.type.toString();
+    }
+    return renderStringify(value);
+}
+//# sourceMappingURL=stringify.js.map

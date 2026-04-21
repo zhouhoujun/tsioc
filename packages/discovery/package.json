@@ -1,0 +1,39 @@
+{
+  "name": "@tsdi/discovery",
+  "version": "6.0.31",
+  "description": "@tsdi/discovery is service discovery module for microservice, with registration and discovery capabilities",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
+  },
+  "keywords": [
+    "discovery",
+    "service-discovery",
+    "microservice",
+    "registry",
+    "tsdi",
+    "@tsdi",
+    "tsioc",
+    "ioc",
+    "IoC",
+    "type",
+    "container",
+    "dependency",
+    "injection"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {},
+  "directories": {
+    "lib": "lib"
+  },
+  "devDependencies": {}
+}

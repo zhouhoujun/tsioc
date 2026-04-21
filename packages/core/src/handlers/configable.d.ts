@@ -1,0 +1,113 @@
+import { ProvdierOf, StaticProvider, Type, Token, InvokeProviders, Injector } from '@tsdi/ioc';
+import { GuardLike } from '../guard';
+import { InterceptorLike } from '../interceptor';
+import { PipeTransform } from '../pipes/pipe';
+import { FilterLike } from '../filters/filter';
+import { Handler, HandlerLike, RunContext } from '../handler';
+/**
+ * handler service.
+ *
+ * 处理器服务
+ */
+export interface HandlerAppendService<TInput, TOutput = any, TContext = any> {
+    /**
+     * use interceptor for this handler.
+     * @param inteceptor
+     * @param order mutil order
+     */
+    use(inteceptor: ProvdierOf<InterceptorLike<TInput, TOutput, TContext>>, order?: number): this;
+    /**
+     * use interceptor for this handler.
+     * @param inteceptors
+     */
+    use(inteceptors: ProvdierOf<InterceptorLike<TInput, TOutput, TContext>>[]): this;
+    /**
+     * use and append hanlder options.
+     * @param options
+     */
+    use(options: HandlerOptions<TInput, TOutput, TContext>): this;
+}
+/**
+ * Configable handler
+ */
+export declare abstract class AbstractConfigableHandler<TInput = any, TOutput = any, TContext extends RunContext = RunContext> implements Handler<TInput, TOutput, TContext> {
+    abstract get injector(): Injector;
+    /**
+     * append handler options.
+     * @param options
+     */
+    abstract append(options: HandlerOptions<TInput, TOutput, TContext>): this;
+    /**
+     * handle.
+     *
+     * 处理句柄
+     * @param input handle input.
+     * @param context handle with context.
+     */
+    abstract handle(input: TInput, context: TContext): TOutput;
+    /**
+     * destroy hooks.
+     */
+    abstract onDestroy(): void;
+}
+/**
+ * hanlder control options
+ */
+export interface HandlerOptions<TInput = any, TOutput = any, TContext = any> {
+    /**
+     * An array of dependency-injection tokens used to look up `GuardLike()`
+     * handlers, in order to determine if the current user is allowed to
+     * activate the component. By default, any user can activate.
+     */
+    guards?: ProvdierOf<GuardLike<TInput>>[];
+    /**
+     * interceptors of handler.
+     */
+    interceptors?: ProvdierOf<InterceptorLike<TInput, TOutput, TContext>>[];
+    /**
+     * pipes for the handler.
+     */
+    pipes?: StaticProvider<PipeTransform>[];
+    /**
+     * filters of handler.
+     */
+    filters?: ProvdierOf<FilterLike<TInput, TOutput>>[];
+    /**
+     * backend handler.
+     */
+    backend?: ProvdierOf<HandlerLike<TInput, TOutput, TContext>>;
+}
+export declare function isHandlerOptions(target: any): target is HandlerOptions;
+/**
+ * Configable handler options.
+ */
+export interface ConfigableHandlerOptions<TInput = any, TOutput = any, TContext = any> extends HandlerOptions<TInput, TOutput, TContext>, InvokeProviders {
+    /**
+     * handler type.
+     */
+    handlerType?: Type<Handler>;
+    /**
+     * enable input type filters and interceptors chain for handler.
+     */
+    enableTypeChain?: boolean;
+    /**
+     * execption handlers
+     */
+    execptionHandlers?: Type<any> | Type[] | null;
+    /**
+     * interceptors token.
+     */
+    interceptorsToken?: Token<InterceptorLike<TInput, TOutput, TContext>[]>;
+    /**
+     * guards tokens.
+     */
+    guardsToken?: Token<GuardLike<TInput, TContext>[]>;
+    /**
+     * filter tokens.
+     */
+    filtersToken?: Token<FilterLike<TInput, TOutput, TContext>[]>;
+    /**
+     * backend handler token.
+     */
+    backendToken?: Token<HandlerLike<TInput, TOutput, TContext>[]>;
+}

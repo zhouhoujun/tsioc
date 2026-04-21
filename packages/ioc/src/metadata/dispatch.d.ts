@@ -1,0 +1,12 @@
+import { AbstractType } from '../types';
+import { DecorDefine, DecorContext, DecoratorOption } from './define';
+import { RuntimeHandler } from '../lifescope/handler';
+export type DecorHandlerFn = (input: DecorContext, context?: any) => any;
+export declare const typeDecorLifeScope: RuntimeHandler<DecorContext>;
+export declare const methodDecorLifeScope: RuntimeHandler<DecorContext>;
+export declare const propDecorLifeScope: RuntimeHandler<DecorContext>;
+export declare const paramDecorLifeScope: RuntimeHandler<DecorContext>;
+export declare function dispatchTypeDecor(type: AbstractType, define: DecorDefine, options: DecoratorOption<any>): void;
+export declare function dispatchPropertyDecor(type: any, define: DecorDefine, options: DecoratorOption<any>): void;
+export declare function dispatchMethodDecor(type: any, define: DecorDefine, options: DecoratorOption<any>): void;
+export declare function dispatchParamDecor(type: any, define: DecorDefine, options: DecoratorOption<any>): void;

@@ -1,0 +1,11 @@
+export * from './metrics';
+export * from './collector';
+export * from './registry';
+export * from './interceptors';
+export * from './exporters';
+export * from './counters';
+export * from './gauges';
+export * from './histograms';
+export * from './metrics.controller';
+export * from './metrics.module';
+export { METRICS_OPTIONS } from './metrics.module';

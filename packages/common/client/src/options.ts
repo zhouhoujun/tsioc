@@ -1,5 +1,6 @@
 import { ProvdierOf, Token } from '@tsdi/ioc';
 import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, ResponseFactory, TransferConfig, TransferSide } from '@tsdi/common';
+import { ConnectionPoolOptions } from './pool';
 
 
 /**
@@ -39,5 +40,10 @@ export interface ClientConfig<
     asDefault?: boolean;
 
     payloadKey?: 'body' | 'payload';
+
+    /**
+     * connection pool options.
+     */
+    pool?: ConnectionPoolOptions;
 
 }
