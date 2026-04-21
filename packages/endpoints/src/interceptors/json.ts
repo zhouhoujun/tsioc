@@ -1,5 +1,5 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestInterceptor, ContentType, ReadableLike, Incoming, StreamAdapter, HeaderAdapter, MimeAdapter } from '@tsdi/common';
+import { RequestContext, RequestHandler, RequestInterceptor, ContentType, ReadableLike, Incoming, StreamAdapter } from '@tsdi/common';
 import { Observable, map } from 'rxjs';
 
 
