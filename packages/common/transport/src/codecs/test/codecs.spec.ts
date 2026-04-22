@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer';
 import expect = require('expect');
-import { MessageType, createTextMessage, createJsonMessage, createHeaderPacket, ContentTypes } from '../../message';
+import { MessageType, createTextMessage, createJsonMessage, createHeaderPacket, ContentTypes } from '@tsdi/common';
 import { TextCodec } from '../text.codec';
 import { JsonCodec } from '../json.codec';
 import { HeaderPacketCodec } from '../packet.codec';

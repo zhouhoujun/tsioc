@@ -1,7 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext } from '../context';
-import { MessageType, TextMessage, createTextMessage } from '../message';
-import { Codec, TEXT_CODEC_OPTIONS, TextCodecOptions } from './index';
+import { MessageType, TextMessage, createTextMessage, RequestContext } from '@tsdi/common';
+import { Codec, TEXT_CODEC_OPTIONS, TextCodecOptions } from './codec';
 
 /**
  * TextCodec - 文本编解码器

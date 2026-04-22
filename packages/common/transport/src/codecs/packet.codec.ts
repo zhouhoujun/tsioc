@@ -1,7 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext } from '../context';
-import { MessageType, HeaderPacket, createHeaderPacket, PacketHeader, ContentTypes } from '../message';
-import { Codec, PACKET_CODEC_OPTIONS, PacketCodecOptions } from './index';
+import { MessageType, HeaderPacket, createHeaderPacket, PacketHeader, ContentTypes, RequestContext } from '@tsdi/common';
+import { Codec, PACKET_CODEC_OPTIONS, PacketCodecOptions } from './codec';
 
 /**
  * HeaderPacket编码格式:

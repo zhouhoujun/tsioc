@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext } from '../context';
-import { StreamAdapter } from '../StreamAdapter';
-import { MessageType, HeaderStream, createHeaderStream, PacketHeader, ContentTypes } from '../message';
+import { RequestContext } from '../../../src/context';
+import { StreamAdapter } from '../../../src/StreamAdapter';
+import { MessageType, HeaderStream, createHeaderStream, PacketHeader, ContentTypes } from '../../../src/message';
 import { Codec, STREAM_CODEC_OPTIONS, StreamCodecOptions } from './index';
-import { IReadable } from '../stream';
+import { IReadable } from '../../../src/stream';
 
 /**
  * HeaderStream编码格式:

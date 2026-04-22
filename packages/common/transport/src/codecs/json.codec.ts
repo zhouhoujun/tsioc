@@ -1,8 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
-import { RequestContext } from '../context';
-import { MessageType, JsonMessage, createJsonMessage, ContentTypes } from '../message';
-import { Codec, JSON_CODEC_OPTIONS, JsonCodecOptions } from './index';
+import { RequestContext, MessageType, JsonMessage, createJsonMessage, ContentTypes } from '@tsdi/common';
+import { Codec, JSON_CODEC_OPTIONS, JsonCodecOptions } from './codec';
 
 const strictJSONReg = /^[\x20\x09\x0a\x0d]*(\[|\{)/;
 

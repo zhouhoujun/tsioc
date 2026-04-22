@@ -1,6 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
-import { RequestContext } from '../context';
-import { MessageType } from '../message';
+import { RequestContext, MessageType } from '@tsdi/common';
+
+
 
 /**
  * Codec接口 - 编解码器抽象
