@@ -1,8 +1,9 @@
-import { Module, ModuleWithProviders, Provider, Type, token } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, Provider, Type } from '@tsdi/ioc';
 import { Translator } from './translator';
 import { TranslatorService } from './translator.service';
 import { LocaleService, TranslationBundle } from './locale';
 import { JsonTranslationLoader, TranslationLoader } from './loaders';
+import { TranslatePipe } from './pipes';
 import { I18N_OPTIONS, TRANSLATION_LOADERS } from './tokens';
 
 /**
@@ -43,7 +44,8 @@ export const I18N_PROVIDERS: Provider[] = [
     TranslatorService,
     { provide: Translator, useClass: TranslatorService },
     JsonTranslationLoader,
-    { provide: TRANSLATION_LOADERS, useClass: JsonTranslationLoader, multi: true }
+    { provide: TRANSLATION_LOADERS, useClass: JsonTranslationLoader, multi: true },
+    TranslatePipe
 ];
 
 /**
@@ -53,7 +55,7 @@ export const I18N_PROVIDERS: Provider[] = [
  */
 @Module({
     providers: I18N_PROVIDERS,
-    exports: [Translator, LocaleService]
+    exports: [TranslatePipe]
 })
 export class I18nModule {
     /**

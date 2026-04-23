@@ -1,8 +1,8 @@
 import { Injectable, isArray, isNil, isString, TypeException } from '@tsdi/ioc';
-import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, FileAdapter, FileStats, FindOptions, ForbiddenException, InternalServerException, IReadable, IStats, NotFoundException } from '@tsdi/common';
+import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, FileAdapter, FileStats, FindOptions, ForbiddenException, InternalServerException, IReadable, IStats, NotFoundException, Encodings } from '@tsdi/common';
 import { isAbsolute, resolve, join, normalize, extname, basename, parse, sep } from 'node:path';
-import { existsSync, createReadStream, Stats } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { existsSync, createReadStream, Stats, readFileSync } from 'node:fs';
+import { stat, readFile } from 'node:fs/promises';
 
 
 
@@ -135,6 +135,25 @@ export class NodeFileAdapter extends FileAdapter {
 
     private joinPath(root: string, ...path: string[]): string {
         return normalize(join(resolve(root), ...path))
+    }
+
+    async readText(path: string, encoding?: Encodings): Promise<string> {
+        const content = await readFile(path, encoding || 'utf-8');
+        return content.toString();
+    }
+
+    readTextSync(path: string, encoding?: Encodings): string {
+        return readFileSync(path, encoding || 'utf-8').toString();
+    }
+
+    async readJSON<T = any>(path: string): Promise<T> {
+        const content = await this.readText(path);
+        return JSON.parse(content);
+    }
+
+    readJSONSync<T = any>(path: string): T {
+        const content = this.readTextSync(path);
+        return JSON.parse(content);
     }
 }
 

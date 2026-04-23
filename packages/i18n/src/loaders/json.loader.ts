@@ -1,8 +1,7 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, Inject } from '@tsdi/ioc';
+import { FileAdapter } from '@tsdi/common';
 import { TranslationLoader } from './loader';
 import { TranslationBundle } from '../locale';
-import * as path from 'path';
-import * as fs from 'fs';
 
 /**
  * JSON translation file loader.
@@ -11,6 +10,10 @@ import * as fs from 'fs';
  */
 @Injectable()
 export class JsonTranslationLoader extends TranslationLoader {
+    constructor(@Inject() private fileAdapter: FileAdapter) {
+        super();
+    }
+
     /**
      * load translations from path.
      * @param basePath base path for translation files.
@@ -39,14 +42,15 @@ export class JsonTranslationLoader extends TranslationLoader {
      * @returns translation bundle.
      */
     async loadLocale(basePath: string, locale: string): Promise<TranslationBundle> {
-        const filePath = path.join(basePath, `${locale}.json`);
+        const filePath = this.fileAdapter.join(basePath, `${locale}.json`);
 
-        if (!fs.existsSync(filePath)) {
+        const fileStats = await this.fileAdapter.find(filePath);
+        if (!fileStats) {
             throw new Error(`Translation file not found: ${filePath}`);
         }
 
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const messages = JSON.parse(content);
+        // Use readJSON method
+        const messages = await this.fileAdapter.readJSON(filePath);
 
         return {
             locale,

@@ -1,5 +1,5 @@
 import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
-import { normalize, joinPath, FindOptions, IStats, FileStats, BadRequestException } from '@tsdi/common';
+import { normalize, joinPath, FindOptions, IStats, FileStats, BadRequestException, Encodings } from '@tsdi/common';
 import { IReadable, FileAdapter } from '@tsdi/common';
 import { PassThrough } from 'readable-stream';
 
@@ -101,6 +101,26 @@ export class BrowserFileAdapter extends FileAdapter {
             filename: flieEntry.fullPath,
             stats: null!
         };
+    }
+
+    async readText(path: string, encoding?: Encodings): Promise<string> {
+        const handle = new FileSystemDirectoryHandle();
+        const filehandle = await handle.getFileHandle(path);
+        const file = await filehandle.getFile();
+        return await file.text();
+    }
+
+    readTextSync(path: string, encoding?: Encodings): string {
+        throw new Error('readTextSync is not supported in browser environment');
+    }
+
+    async readJSON<T = any>(path: string): Promise<T> {
+        const content = await this.readText(path);
+        return JSON.parse(content);
+    }
+
+    readJSONSync<T = any>(path: string): T {
+        throw new Error('readJSONSync is not supported in browser environment');
     }
 
 }

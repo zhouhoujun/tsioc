@@ -12,7 +12,7 @@ export class MessageFormatter {
      */
     format(message: string, params: Record<string, any>, locale: string): string {
         // Handle plural/select syntax
-        if (message.includes('{') && message.includes(', plural,') || message.includes(', select,')) {
+        if (message.includes('{') && (message.includes(', plural,') || message.includes(', select,'))) {
             return this.formatICU(message, params, locale);
         }
 
@@ -24,13 +24,22 @@ export class MessageFormatter {
      * simple interpolation.
      */
     private interpolate(message: string, params: Record<string, any>): string {
-        return message.replace(/\{(\w+)\}/g, (match, key) => {
+        // Replace # with value if present (ICU plural syntax)
+        let result = message;
+        if ('#' in params) {
+            result = result.replace(/#/g, String(params['#']));
+        }
+
+        // Replace {name} with value
+        result = result.replace(/\{(\w+)\}/g, (match, key) => {
             if (key in params) {
                 const value = params[key];
                 return String(value);
             }
             return match;
         });
+
+        return result;
     }
 
     /**
@@ -41,55 +50,89 @@ export class MessageFormatter {
         // Pattern: {count, plural, one{# item} other{# items}}
         // Pattern: {gender, select, male{He} female{She} other{They}}
 
-        const pluralRegex = /\{(\w+),\s*plural,\s*([^}]+)\}/g;
-        const selectRegex = /\{(\w+),\s*select,\s*([^}]+)\}/g;
+        // Handle plural/select patterns by finding and replacing them
+        let result = message;
 
-        // Handle plural
-        let result = message.replace(pluralRegex, (match, key, choices) => {
-            const value = params[key];
-            if (typeof value !== 'number') return match;
+        // Process each ICU pattern
+        const patternRegex = /\{(\w+),\s*(plural|select),\s*/g;
+        let match: RegExpExecArray | null;
 
-            const pluralForm = this.getPluralForm(value, locale);
-            const choice = this.extractChoice(choices, pluralForm, value);
-            return this.interpolate(choice, { '#': value, ...params });
-        });
+        while ((match = patternRegex.exec(message)) !== null) {
+            const startIndex = match.index;
+            const key = match[1];
+            const type = match[2];
 
-        // Handle select
-        result = result.replace(selectRegex, (match, key, choices) => {
-            const value = params[key];
-            if (value === undefined) return match;
+            // Find the matching closing brace for the entire pattern
+            const choicesStart = startIndex + match[0].length;
+            const choicesEnd = this.findMatchingBrace(message, startIndex);
 
-            const choice = this.extractChoice(choices, String(value), value);
-            return this.interpolate(choice, params);
-        });
+            if (choicesEnd === -1) continue;
+
+            const choicesStr = message.substring(choicesStart, choicesEnd);
+            const fullPattern = message.substring(startIndex, choicesEnd + 1);
+
+            // Parse choices
+            const choices = this.parseChoices(choicesStr);
+
+            if (type === 'plural') {
+                const value = params[key];
+                if (typeof value === 'number') {
+                    const pluralForm = this.getPluralForm(value, locale);
+                    const choiceContent = choices[pluralForm] || choices['other'] || '';
+                    const replacement = this.interpolate(choiceContent, { '#': value, ...params });
+                    result = result.replace(fullPattern, replacement);
+                }
+            } else if (type === 'select') {
+                const value = params[key];
+                if (value !== undefined) {
+                    const choiceContent = choices[String(value)] || choices['other'] || '';
+                    const replacement = this.interpolate(choiceContent, params);
+                    result = result.replace(fullPattern, replacement);
+                }
+            }
+        }
 
         return this.interpolate(result, params);
     }
 
     /**
-     * extract choice from plural/select pattern.
+     * find matching closing brace.
      */
-    private extractChoice(choices: string, category: string, value: any): string {
-        // Parse: one{# item} other{# items}
-        const parts = choices.split(/\s*(one|other|zero|few|many|male|female)\s*\{/);
+    private findMatchingBrace(str: string, startIndex: number): number {
+        let depth = 1;
+        for (let i = startIndex + 1; i < str.length; i++) {
+            if (str[i] === '{') {
+                depth++;
+            } else if (str[i] === '}') {
+                depth--;
+                if (depth === 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
 
-        for (let i = 1; i < parts.length; i += 2) {
-            const cat = parts[i];
-            if (cat === category) {
-                const content = parts[i + 1];
-                return content.replace(/\}$/, '');
+    /**
+     * parse choices from ICU pattern.
+     */
+    private parseChoices(choicesStr: string): Record<string, string> {
+        const choices: Record<string, string> = {};
+        const regex = /(one|other|zero|few|many|male|female|\w+)\s*\{/g;
+        let match: RegExpExecArray | null;
+
+        while ((match = regex.exec(choicesStr)) !== null) {
+            const category = match[1];
+            const contentStart = match.index + match[0].length;
+            const contentEnd = this.findMatchingBrace(choicesStr, match.index + match[0].length - 1);
+
+            if (contentEnd !== -1) {
+                const content = choicesStr.substring(contentStart, contentEnd);
+                choices[category] = content.trim();
             }
         }
 
-        // Fallback to 'other'
-        for (let i = 1; i < parts.length; i += 2) {
-            if (parts[i] === 'other') {
-                const content = parts[i + 1];
-                return content.replace(/\}$/, '');
-            }
-        }
-
-        return String(value);
+        return choices;
     }
 
     /**

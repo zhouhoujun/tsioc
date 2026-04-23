@@ -95,11 +95,41 @@ export abstract class FileAdapter {
 
     /**
      * find file with path and options
-     * @param path 
-     * @param options 
-     * @returns 
+     * @param path
+     * @param options
+     * @returns
      */
     abstract find<T extends IStats>(path: string, options?: FindOptions): Promise<FileStats<T> | null>;
+
+    /**
+     * read text content from file.
+     * @param path file path.
+     * @param encoding text encoding (default: 'utf-8').
+     * @returns text content.
+     */
+    abstract readText(path: string, encoding?: Encodings): Promise<string>;
+
+    /**
+     * read text content from file synchronously.
+     * @param path file path.
+     * @param encoding text encoding (default: 'utf-8').
+     * @returns text content.
+     */
+    abstract readTextSync(path: string, encoding?: Encodings): string;
+
+    /**
+     * read JSON content from file.
+     * @param path file path.
+     * @returns parsed JSON object.
+     */
+    abstract readJSON<T = any>(path: string): Promise<T>;
+
+    /**
+     * read JSON content from file synchronously.
+     * @param path file path.
+     * @returns parsed JSON object.
+     */
+    abstract readJSONSync<T = any>(path: string): T;
 }
 
 

@@ -1,4 +1,4 @@
-import { Interceptor, InvocationContext } from '@tsdi/ioc';
+import { Handler, Interceptor, nextTick, RunContext } from '@tsdi/ioc';
 import { Injectable } from '@tsdi/ioc';
 import { Translator } from '../translator';
 
@@ -8,24 +8,25 @@ import { Translator } from '../translator';
  * 本地化拦截器，自动处理响应消息的翻译。
  */
 @Injectable()
-export class LocalizeInterceptor implements Interceptor<InvocationContext, any> {
-    constructor(private translator: Translator) {}
+export class LocalizeInterceptor<TInput, TOutput> implements Interceptor<TInput, TOutput, RunContext> {
+    constructor(private translator: Translator) { }
 
-    async intercept(ctx: InvocationContext, next: () => Promise<any>): Promise<any> {
-        const result = await next();
+    intercept(input: TInput, next: Handler<TInput, TOutput, RunContext>, context: RunContext): TOutput {
+        return nextTick(() => next.handle(input, context), (result: TOutput) => {
 
-        // Auto-translate if result contains translation key pattern
-        if (typeof result === 'string' && result.startsWith('i18n:')) {
-            const key = result.substring(5);
-            return this.translator.translate(key);
-        }
+            // Auto-translate if result contains translation key pattern
+            if (typeof result === 'string' && result.startsWith('i18n:')) {
+                const key = result.substring(5);
+                return this.translator.translate(key);
+            }
 
-        // Translate object keys that have i18n: prefix
-        if (result && typeof result === 'object') {
-            return this.translateObject(result);
-        }
+            // Translate object keys that have i18n: prefix
+            if (result && typeof result === 'object') {
+                return this.translateObject(result);
+            }
 
-        return result;
+            return result;
+        });
     }
 
     private translateObject(obj: any): any {

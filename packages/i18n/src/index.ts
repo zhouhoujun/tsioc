@@ -8,3 +8,4 @@ export * from './decorators';
 export * from './loaders';
 export * from './formatters';
 export * from './interceptors';
+export * from './pipes';
