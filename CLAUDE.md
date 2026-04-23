@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `@tsdi/aop`: AOP advice/interceptor layer built on top of IoC runtime handling
 - `@tsdi/core`: application/module bootstrap, routing abstractions, lifecycle, application context
 - platform and integration packages: HTTP endpoints, security, repository/transactions, TypeORM adapter, browser/server platforms
-- transport adapters under `packages/services/*`: protocol-specific integrations for AMQP, Kafka, MQTT, NATS, Redis, TCP, UDP, WS, etc.
+- transport adapters under `packages/services/*`: protocol-specific integrations for AMQP, Kafka, MQTT, NATS, Redis, TCP, UDP, WS, etc. These follow the same module/container patterns as core packages.
 
 The framework follows a Spring-like model in TypeScript: decorators define metadata, IoC resolves instances, AOP wraps invocation, and higher-level packages compose those primitives into application bootstrapping and transports.
 
@@ -75,6 +75,8 @@ cd packages/ioc
 npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/unit'); const { ConsoleReporter } = require('@tsdi/unit-console'); runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
 ```
 
+For VS Code debugging, create a launch configuration that runs `unit.ts` with the test glob as an argument.
+
 ### Lint
 
 There is a root ESLint config at `.eslintrc.js`, but no root `npm run lint` script is defined. If needed, run ESLint directly against the files you changed:
@@ -125,7 +127,21 @@ If you are changing dependency resolution, invocation context, or performance of
 - Module loading, bootstrapping, route handling, and application events all depend on the IoC runtime contracts.
 - If injector/context abstractions change, inspect `ApplicationContext`, module loader/bootstrap code, and invocation handler options here.
 
-### 4. Integration packages
+### 4. Observability packages
+
+These provide health checks, metrics, and distributed tracing:
+
+- `health`: Health check module with indicators and `/health` endpoint
+- `metrics`: Metrics collection with counters, gauges, histograms, and Prometheus-compatible exports
+- `tracing`: Distributed tracing with span creation, context propagation, and exporter integrations
+- `discovery`: Service discovery abstractions for microservice environments
+- `config`: Configuration management and environment-aware config loading
+
+### 5. i18n package
+
+- `i18n`: Internationalization module with translation management, locale switching, ICU MessageFormat (interpolation, plural, select), number/date/currency formatters, and JSON translation loaders
+
+### 6. Integration packages
 
 Other packages are mostly adapters over the core runtime:
 
@@ -152,4 +168,5 @@ Other packages are mostly adapters over the core runtime:
 - Many APIs are decorator-driven; when debugging behavior, inspect metadata/reflection code as well as runtime execution code.
 - Cross-package refactors frequently require synchronized changes in `packages/ioc`, `packages/aop`, and `packages/core`.
 - Build output is generated under `dist/`; avoid editing generated files.
+- **Do not commit compiled `.js` and `.js.map` files** in `packages/*/src/` directories. These are build artifacts that should only exist in `dist/`.
 - The existing ESLint config is intentionally permissive for framework internals (`any`, empty functions, unused vars, namespaces are allowed in several cases).

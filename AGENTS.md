@@ -10,9 +10,26 @@ This file provides guidance for AI coding agents operating in this repository.
 - `@tsdi/ioc`: dependency injection container, tokens, metadata, runtime contexts
 - `@tsdi/aop`: AOP advice/interceptor layer built on IoC runtime
 - `@tsdi/core`: application/module bootstrap, routing abstractions, lifecycle
-- Protocol adapters in `packages/`: AMQP, Kafka, MQTT, NATS, Redis, TCP, WS, etc.
 
-**Note:** No Cursor rules (`.cursor/rules/`, `.cursorrules`) or Copilot rules (`.github/copilot-instructions.md`) exist in this repo.
+**Integration packages:**
+- `packages/services/*`: Protocol adapters (amqp, coap, http, kafka, mqtt, nats, redis, tcp, udp, ws)
+- `packages/transport/*`: Transport utilities (json, packet, stream, text)
+- `packages/common/http`: HTTP abstractions shared across services
+
+**Observability packages:**
+- `health`: Health check module with indicators
+- `metrics`: Metrics collection (counters, gauges, histograms, Prometheus exports)
+- `tracing`: Distributed tracing with span creation and context propagation
+- `discovery`: Service discovery abstractions
+- `config`: Configuration management and environment-aware config loading
+
+**Additional packages:**
+- `i18n`: Internationalization module
+- `annotations`: Build tooling for ES5 uglify compatibility
+- `common/http`: Shared HTTP abstractions
+- `common/transport`: Shared transport utilities
+
+**Note:** No Cursor rules or Copilot rules exist. CLAUDE.md also exists with additional guidance.
 
 ---
 
@@ -20,13 +37,15 @@ This file provides guidance for AI coding agents operating in this repository.
 
 ```bash
 npm install                      # Install dependencies
-npm run build                    # Build entire monorepo
+npm run build                    # Build entire monorepo (runs taskfile.ts)
 npm run build -- --setvs=4.0.0-beta  # Build with version replacement
 npm run build -- --deploy=true   # Build and publish dist packages
-./deploy.cmd                     # Alternative deploy script
 
 cd packages/<package-name> && npm run build  # Build single package
+# Equivalent: ts-node -r tsconfig-paths/register taskfile.ts
 ```
+
+**Build output:** Generated under `dist/<package-name>/`. Do not edit generated files.
 
 ## Testing Commands
 
@@ -38,9 +57,12 @@ tsdi test                                # Run tests via tsdi CLI (from project 
 cd packages/ioc
 npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/unit'); const { ConsoleReporter } = require('@tsdi/unit-console'); runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
 
-# Debug tests
-cd packages/<package-name> && npx ts-node -r tsconfig-paths/register unit.ts
+# Debug tests in VSCode
+# .vscode/launch.json contains pre-configured debug targets for each package
+# Select "test <package>" from VSCode debug menu
 ```
+
+**Test framework:** Uses `@tsdi/unit` (custom), not Jest/Mocha directly. Mocha-style `describe`/`it` blocks with `expect` assertions.
 
 ## Linting
 
@@ -48,12 +70,14 @@ cd packages/<package-name> && npx ts-node -r tsconfig-paths/register unit.ts
 npx eslint "packages/**/*.ts"
 ```
 
+**Note:** No `.eslintrc` config file exists. ESLint uses defaults from `package.json` devDependencies. The config is intentionally permissive for framework internals: `any` types, empty functions, unused variables, namespaces, and empty interfaces are allowed. Follow existing patterns when editing code.
+
 ## TypeScript Configuration
 
 - **Target:** ES2020, **Module:** CommonJS
 - **Decorators:** Enabled (`experimentalDecorators`, `emitDecoratorMetadata`)
 - **Strict mode:** Enabled (`strict`, `strictNullChecks`, `strictPropertyInitialization`)
-- **Path aliases:** `@tsdi/*` → `packages/*` and `packages/services/*`
+- **Path aliases:** `@tsdi/*` → `packages/*`, `packages/services/*`, `packages/transport/*`
 
 ---
 
@@ -113,9 +137,11 @@ Include for public APIs. Use bilingual format (English + Chinese):
 ### Testing Conventions
 
 - Test files: `*.spec.ts` in `test/` directory
-- Mocha-style `describe`/`it` blocks
-- `expect` assertions from `expect` library
-- `beforeEach` for setup
+- Two test styles supported by `@tsdi/unit`:
+  - **Mocha-style**: `describe()`, `it()`, `beforeEach()` with `expect` library
+  - **Decorator-style**: `@Suite`, `@Test`, `@BeforeEach` decorators with IoC-injected `Expect`
+- Container setup: Use `createInjector()` from `@tsdi/ioc`, not `new Container()`
+- Integration tests: Bootstrap with `Application.run(TestModule)`, cleanup with `ctx.destroy()`
 
 ---
 
@@ -155,6 +181,24 @@ packages/<package-name>/
 
 ---
 
-## ESLint Allowances
+## Release and Deployment
 
-Permissive config intentional for framework internals: `any` types, empty functions, unused variables, namespaces, and empty interfaces are allowed. Follow existing patterns when editing code.
+**Note:** No automated CI/CD configured. All operations are manual local executions.
+
+```bash
+npm run build -- --setvs=6.0.0-beta  # Update all packages to new version
+./deploy                            # Build and prepare for publish (logs commands only)
+```
+
+After `./deploy`, manually run `npm publish --access=public` in each `dist/<package>` directory.
+
+---
+
+## Integration Test Services
+
+`simples/docker-compose.yml` provides test services (postgres, redis, nats, mqtt, rabbit, kafka):
+```bash
+cd simples && docker-compose up -d
+```
+
+`simples/` directory contains example applications (`boot`, `core`) demonstrating full module bootstrap patterns.
