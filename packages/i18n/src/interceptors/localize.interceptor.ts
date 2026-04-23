@@ -1,4 +1,4 @@
-import { Handler, Interceptor, nextTick, RunContext } from '@tsdi/ioc';
+import { Handler, Interceptor, RunContext } from '@tsdi/ioc';
 import { Injectable } from '@tsdi/ioc';
 import { Translator } from '../translator';
 
@@ -12,21 +12,19 @@ export class LocalizeInterceptor<TInput, TOutput> implements Interceptor<TInput,
     constructor(private translator: Translator) { }
 
     intercept(input: TInput, next: Handler<TInput, TOutput, RunContext>, context: RunContext): TOutput {
-        return nextTick(() => next.handle(input, context), (result: TOutput) => {
+        const result = next.handle(input, context);
 
-            // Auto-translate if result contains translation key pattern
-            if (typeof result === 'string' && result.startsWith('i18n:')) {
-                const key = result.substring(5);
-                return this.translator.translate(key);
-            }
+        // Auto-translate if result contains translation key pattern
+        if (typeof result === 'string' && result.startsWith('i18n:')) {
+            return this.translator.translate(result.substring(5)) as TOutput;
+        }
 
-            // Translate object keys that have i18n: prefix
-            if (result && typeof result === 'object') {
-                return this.translateObject(result);
-            }
+        // Translate object keys that have i18n: prefix
+        if (result && typeof result === 'object') {
+            return this.translateObject(result) as TOutput;
+        }
 
-            return result;
-        });
+        return result;
     }
 
     private translateObject(obj: any): any {
