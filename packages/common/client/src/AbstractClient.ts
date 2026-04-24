@@ -1,13 +1,15 @@
-import { Abstract, ArgumentException, Exception, Context, isNil, isString, Injector } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Exception, Context, isNil, isString, Injector, Optional, Inject } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, PAYLOAD_KEY, StreamAdapter, REQUEST, Incoming } from '@tsdi/common';
-import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
+import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, timeout as timeoutOperator } from 'rxjs';
 import { ClientHandler } from './handler';
-
-
+import { IClientTransportStrategy, CLIENT_TRANSPORT_STRATEGY } from './strategies/IClientTransportStrategy';
+import { IBodySerializeStrategy, BODY_SERIALIZE_STRATEGY } from './strategies/IBodySerializeStrategy';
+import { ITimeoutStrategy, TIMEOUT_STRATEGY, DEFAULT_TIMEOUT } from './strategies/ITimeoutStrategy';
 
 /**
  * abstract client. use to request text, stream, blob, arraybuffer and json.
+ * 抽象客户端，用于请求文本、流、blob、arraybuffer和json
  */
 @Abstract()
 export abstract class AbstractClient<
@@ -19,10 +21,36 @@ export abstract class AbstractClient<
     protected get injector(): Injector {
         return this.handler.injector;
     }
+    
     /**
      * client handler
+     * 客户端处理器
      */
     protected abstract get handler(): ClientHandler<TRequest, TResponse>;
+
+    /**
+     * Optional transport strategy for protocol-specific operations.
+     * 可选的传输策略，用于协议特定的操作
+     */
+    protected get transportStrategy(): IClientTransportStrategy<TRequest, TResponse, any> | null {
+        return this.injector.get(CLIENT_TRANSPORT_STRATEGY, null);
+    }
+
+    /**
+     * Optional body serialize strategy.
+     * 可选的请求体序列化策略
+     */
+    protected get bodySerializeStrategy(): IBodySerializeStrategy | null {
+        return this.injector.get(BODY_SERIALIZE_STRATEGY, null);
+    }
+
+    /**
+     * Optional timeout strategy.
+     * 可选的超时策略
+     */
+    protected get timeoutStrategy(): ITimeoutStrategy | null {
+        return this.injector.get(TIMEOUT_STRATEGY, null);
+    }
 
     /**
      * Sends an `Request` and returns a stream of `ResponseEvent`s.
@@ -255,14 +283,52 @@ export abstract class AbstractClient<
         }
         return defer(() => this.injector.ready)
             .pipe(
-                mergeMap(() => this.connect()),
+                mergeMap(() => this.strategyConnect()),
                 catchError((err, caught) => {
-                    return throwError(() => this.onError(err))
+                    return throwError(() => this.strategyHandleError(err))
                 }),
                 mergeMap(() => {
                     return this.request(req, options)
-                })
+                }),
+                this.strategyApplyTimeout()
             )
+    }
+
+    /**
+     * Connect using strategy if available, otherwise use legacy connect.
+     * 使用策略连接（如果可用），否则使用传统连接
+     */
+    protected strategyConnect(): Promise<any> | Observable<any> {
+        const strategy = this.transportStrategy;
+        if (strategy) {
+            return strategy.connect();
+        }
+        return this.connect();
+    }
+
+    /**
+     * Handle error using strategy if available.
+     * 使用策略处理错误（如果可用）
+     */
+    protected strategyHandleError(err: Error): Error {
+        const strategy = this.timeoutStrategy;
+        if (strategy && err.name === 'TimeoutError') {
+            const context = createRequestContext(this.injector);
+            return strategy.handleTimeout(err, context);
+        }
+        return this.onError(err);
+    }
+
+    /**
+     * Apply timeout using strategy if available.
+     * 使用策略应用超时（如果可用）
+     */
+    protected strategyApplyTimeout<T>() {
+        const strategy = this.timeoutStrategy;
+        if (strategy && strategy.shouldApplyTimeout(createRequestContext(this.injector))) {
+            return timeoutOperator(strategy.getTimeout());
+        }
+        return <T>(source: Observable<T>) => source;
     }
 
     protected request(first: Pattern | TRequest, options: TReqOptions = {} as any): Observable<any> {
@@ -271,41 +337,24 @@ export abstract class AbstractClient<
         if (!context) {
             context = this.createContext();
             context.set(REQUEST, req as any);
-            this.initContext(context, req);
+            this.strategyInitContext(context, req);
         }
-        // Start with an Observable.of() the initial request, and run the handler (which
-        // includes all interceptors) inside a concatMap(). This way, the handler runs
-        // inside an Observable chain, which causes interceptors to be re-run on every
-        // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<ResponseEvent<any>> =
             of(req).pipe(
                 concatMap((req: TRequest) => this.handler.handle(req, context)),
                 finalize(() => context.onDestroy())
             );
 
-        // If coming via the API signature which accepts a previously constructed HttpRequest,
-        // the only option is to get the event stream. Otherwise, return the event stream if
-        // that is what was requested.
         if (req.observe === 'events') {
             return events$
         }
 
-        // The requested stream contains either the full response or the body. In either
-        // case, the first step is to filter the event stream to extract a stream of
-        // responses(s).
         const res$: Observable<any> = events$;
-        // Decide which stream to return.
         switch (req.observe || 'body') {
             case 'body':
-                // The requested stream is the body. Map the response stream to the response
-                // body. This could be done more simply, but a misbehaving interceptor might
-                // transform the response body into a different format and ignore the requested
-                // responseType. Guard against this by validating that the response is of the
-                // requested type.
                 switch (req.responseType) {
                     case 'arraybuffer':
                         return res$.pipe(map((res: Response<any>) => {
-                            // Validate that the body is an ArrayBuffer.
                             if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
                                 throw new Exception('Response is not an ArrayBuffer.')
                             }
@@ -313,7 +362,6 @@ export abstract class AbstractClient<
                         }));
                     case 'blob':
                         return res$.pipe(map((res: Response<any>) => {
-                            // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
                                 throw new Exception('Response is not a Blob.')
                             }
@@ -321,7 +369,6 @@ export abstract class AbstractClient<
                         }));
                     case 'stream':
                         return res$.pipe(map((res: Response<any>) => {
-                            // Validate that the body is a ReadableStream.
                             if (res.body !== null && !(this.injector.get(StreamAdapter).isReadable(res.body))) {
                                 throw new Exception('Response is not a ReadableStream.')
                             }
@@ -329,7 +376,6 @@ export abstract class AbstractClient<
                         }));
                     case 'text':
                         return res$.pipe(map((res: Response<any>) => {
-                            // Validate that the payload is a string.
                             if (res.body !== null && !isString(res.body)) {
                                 throw new Exception('Response is not a string.')
                             }
@@ -337,21 +383,17 @@ export abstract class AbstractClient<
                         }));
                     case 'json':
                     default:
-                        // No validation needed for JSON responses, as they can be of any type.
                         return res$.pipe(map((res: Response<any>) => res.body))
                 }
             case 'response':
-                // The response stream was requested directly, so return it.
                 return res$
             default:
-                // Guard against new future observe types being added.
                 throw new Exception(`Unreachable: unhandled observe type ${req.observe}}`)
         }
     }
 
     protected createContext(): RequestContext {
         const context = createRequestContext(this.injector);
-        // context.setProtocol(this.getOptions().protocol);
         return context;
     }
 
@@ -360,20 +402,29 @@ export abstract class AbstractClient<
     }
 
     /**
+     * Initialize context using strategy if available, otherwise use legacy initContext.
+     * 使用策略初始化上下文（如果可用），否则使用传统初始化
+     */
+    protected strategyInitContext(context: RequestContext, req: TRequest): void {
+        const strategy = this.transportStrategy;
+        if (strategy) {
+            strategy.initContext(context as any, req);
+        } else {
+            this.initContext(context as any, req);
+        }
+    }
+
+    /**
      * build request.
+     * 构建请求
      * @param first 
      * @param options 
      */
     protected buildRequest(first: TRequest | Pattern, options: TReqOptions & ResponseAs = {} as any): TRequest {
         let req: TRequest;
-        // First, check whether the primary argument is an instance of `TRequest`.
         if (this.isRequest(first)) {
-            // It is. The other arguments must be undefined (per the signatures) and can be
-            // ignored.
             req = first
         } else {
-            // const method = first as string;
-            // Figure out the headers.
             let headers: HeaderMappings | undefined = undefined;
             if (options.headers instanceof HeaderMappings) {
                 headers = options.headers
@@ -381,7 +432,6 @@ export abstract class AbstractClient<
                 headers = new HeaderMappings(options.headers)
             }
 
-            // Sort out parameters.
             let params: RequestParams | undefined = undefined;
             if (options.params) {
                 if (options.params instanceof RequestParams) {
@@ -391,22 +441,57 @@ export abstract class AbstractClient<
                 }
             }
 
-            // Construct the request.
-            req = this.createRequest(first, {
-                ...options,
-                headers,
-                params,
-                payload: options.payload ?? null,
-                // By default, JSON is assumed to be returned for all calls.
-                responseType: options.responseType
-            })
+            // Use strategy for request creation if available
+            const strategy = this.transportStrategy;
+            if (strategy) {
+                req = strategy.createRequest(first, {
+                    ...options,
+                    headers,
+                    params,
+                    payload: options.payload ?? null,
+                    responseType: options.responseType
+                }) as TRequest;
+            } else {
+                req = this.createRequest(first, {
+                    ...options,
+                    headers,
+                    params,
+                    payload: options.payload ?? null,
+                    responseType: options.responseType
+                })
+            }
         }
         return req;
+    }
+
+    /**
+     * Serialize body using strategy if available.
+     * 使用策略序列化请求体（如果可用）
+     */
+    protected strategySerializeBody(body: any): any {
+        const strategy = this.bodySerializeStrategy;
+        if (strategy) {
+            const context = createRequestContext(this.injector);
+            return strategy.serialize(body, context);
+        }
+        return body;
     }
 
     @Shutdown()
     close(): Promise<void> {
         this.injector.onDestroy();
+        return this.strategyOnShutdown();
+    }
+
+    /**
+     * Shutdown using strategy if available, otherwise use legacy onShutdown.
+     * 使用策略关闭（如果可用），否则使用传统关闭
+     */
+    protected strategyOnShutdown(): Promise<void> {
+        const strategy = this.transportStrategy;
+        if (strategy) {
+            return strategy.onShutdown();
+        }
         return this.onShutdown();
     }
 
@@ -415,6 +500,10 @@ export abstract class AbstractClient<
         return target instanceof AbstractRequest;
     }
 
+    /**
+     * Legacy create request method - override in concrete implementations.
+     * 传统创建请求方法 - 在具体实现中覆盖
+     */
     protected abstract createRequest(pattern: Pattern, options: RequestInitOpts<any, TReqOptions>): TRequest;
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
@@ -423,15 +512,22 @@ export abstract class AbstractClient<
     }
 
     /**
-     * connect service.
+     * Legacy connect method - override in concrete implementations.
+     * 传统连接方法 - 在具体实现中覆盖
      */
     protected abstract connect(): Promise<any> | Observable<any>;
+    
     /**
-     * init request context.
+     * Legacy init context method - override in concrete implementations.
+     * 传统初始化上下文方法 - 在具体实现中覆盖
      * @param context 
      */
     protected abstract initContext(context: Context, req: TRequest): void;
 
+    /**
+     * Legacy shutdown method - override in concrete implementations.
+     * 传统关闭方法 - 在具体实现中覆盖
+     */
     protected abstract onShutdown(): Promise<void>;
 
 }

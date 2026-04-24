@@ -38,5 +38,5 @@ export * from './mime.module';
 
 export * from './tokens';
 export * from './provider';
-
-
+export * from './strategies';
+export * from './resolvers';

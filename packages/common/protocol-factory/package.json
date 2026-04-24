@@ -1,0 +1,15 @@
+{
+  "name": "@tsdi/protocol-factory",
+  "version": "6.0.0",
+  "description": "Protocol factory abstraction for tsioc framework",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "author": "Houjun",
+  "license": "MIT",
+  "peerDependencies": {
+    "@tsdi/ioc": "^6.0.0",
+    "@tsdi/common": "^6.0.0",
+    "@tsdi/common/client": "^6.0.0",
+    "@tsdi/endpoints": "^6.0.0"
+  }
+}

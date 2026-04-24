@@ -9,6 +9,11 @@ import { isBuffer } from '@tsdi/common/transport';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { Session } from './sessions/Session';
 import { ServiceConfig } from './server.options';
+import { IContentStrategy, CONTENT_STRATEGY } from './strategies/IContentStrategy';
+import { IBodyparserStrategy, BODYPARSER_STRATEGY } from './strategies/IBodyparserStrategy';
+import { ISessionStrategy, SESSION_STRATEGY } from './strategies/ISessionStrategy';
+import { IJsonStrategy, JSON_STRATEGY } from './strategies/IJsonStrategy';
+import { ILoggerStrategy, LOGGER_STRATEGY } from './strategies/ILoggerStrategy';
 
 /**
  * abstract request context for sevice side.
@@ -66,6 +71,47 @@ export abstract class AbstractRequestContext<
      */
     get fileAdapter(): FileAdapter {
         return this.get(FileAdapter)
+    }
+
+
+    /**
+     * Optional content strategy for protocol-specific content handling.
+     * 可选的内容策略，用于协议特定的内容处理
+     */
+    protected get contentStrategy(): IContentStrategy | null {
+        return this.get(CONTENT_STRATEGY, undefined) ?? null;
+    }
+
+    /**
+     * Optional bodyparser strategy for protocol-specific body parsing.
+     * 可选的请求体解析策略，用于协议特定的请求体解析
+     */
+    protected get bodyparserStrategy(): IBodyparserStrategy | null {
+        return this.get(BODYPARSER_STRATEGY, undefined) ?? null;
+    }
+
+    /**
+     * Optional session strategy for protocol-specific session handling.
+     * 可选的会话策略，用于协议特定的会话处理
+     */
+    protected get sessionStrategy(): ISessionStrategy | null {
+        return this.get(SESSION_STRATEGY, undefined) ?? null;
+    }
+
+    /**
+     * Optional json strategy for protocol-specific JSON handling.
+     * 可选的JSON策略，用于协议特定的JSON处理
+     */
+    protected get jsonStrategy(): IJsonStrategy | null {
+        return this.get(JSON_STRATEGY, undefined) ?? null;
+    }
+
+    /**
+     * Optional logger strategy for protocol-specific logging.
+     * 可选的日志策略，用于协议特定的日志记录
+     */
+    protected get loggerStrategy(): ILoggerStrategy | null {
+        return this.get(LOGGER_STRATEGY, undefined) ?? null;
     }
 
     private _session?: Session;
