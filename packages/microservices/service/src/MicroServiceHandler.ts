@@ -1,8 +1,8 @@
 import { Abstract, Token } from '@tsdi/ioc';
 import { VaildatorLike } from '@tsdi/core';
 import { ConfigableRequestHandler, Incoming, Outgoing, RequestContext, RequestHandler, RequestHandlerOptions } from '@tsdi/common';
-import { Router, ServiceHandler } from '@tsdi/endpoints';
-import { MiddlewareLike } from '@tsdi/endpoints/middleware';
+
+import { MiddlewareLike, Router } from '@tsdi/endpoints';
 
 
 /**

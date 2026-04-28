@@ -62,11 +62,11 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
 
 
 /**
- * Abstract microservice server, like Spring Cloud @EnableEurekaClient.
+ * Abstract server, like Spring Cloud @EnableEurekaClient.
  * 抽象微服务服务器，类似 Spring Cloud @EnableEurekaClient
  */
 @Abstract()
-export abstract class MicroServiceServer<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
+export abstract class Service<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
     extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
 
     get injector() {
