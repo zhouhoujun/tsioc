@@ -18,7 +18,7 @@
       "@tsdi/*": [
         "packages/*",
         "packages/services/*",
-        "packages/transport/*"
+        "packages/microservices/*"
       ]
     },
     "lib": [
