@@ -1,0 +1,249 @@
+import { ProvdierOf, Token } from '@tsdi/ioc';
+import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, ResponseFactory, TransferConfig, TransferSide } from '@tsdi/common';
+import { ConnectionPoolOptions } from './pool';
+
+
+
+/**
+ * Client options.
+ */
+export interface ClientConfig<
+    TInput extends AbstractRequest<any> = AbstractRequest<any>,
+    TOutput extends ResponseEvent<any> = ResponseEvent<any>,
+> extends RequestHandlerOptions, TransferConfig {
+
+    side: TransferSide.client;
+    /**
+     * url
+     */
+    url?: string;
+    /**
+     * timeout
+     */
+    timeout?: number;
+    /**
+     * authority base url.
+     */
+    authority?: string;
+    /**
+     * is microservice client or not.
+     */
+    microservice?: boolean;
+
+    // /**
+    //  * transport backend.
+    //  */
+    // backend?: Token<ClientBackend> | ClientBackend;
+    formatter?: Token<PatternFormatter>;
+    /**
+     * as default client or not.
+     */
+    asDefault?: boolean;
+
+    payloadKey?: 'body' | 'payload';
+
+    /**
+     * connection pool options.
+     */
+    pool?: ConnectionPoolOptions;
+
+}
+
+/**
+ * Service discovery options.
+ * 服务发现选项
+ */
+export interface DiscoveryOptions {
+    /**
+     * discovery server host.
+     * 发现服务器地址
+     */
+    host?: string;
+    /**
+     * discovery server port.
+     * 发现服务器端口
+     */
+    port?: number;
+    /**
+     * service name to discover.
+     * 要发现的服务名称
+     */
+    serviceName?: string;
+    /**
+     * prefer ip address or not.
+     * 是否优先使用IP地址
+     */
+    preferIpAddress?: boolean;
+    /**
+     * heartbeat interval in milliseconds.
+     * 心跳间隔（毫秒）
+     */
+    heartbeatInterval?: number;
+}
+
+/**
+ * Load balance strategy type.
+ * 负载均衡策略类型
+ */
+export enum LoadBalanceStrategy {
+    /**
+     * round robin strategy.
+     * 轮询策略
+     */
+    RoundRobin,
+    /**
+     * random strategy.
+     * 随机策略
+     */
+    Random,
+    /**
+     * weighted round robin strategy.
+     * 加权轮询策略
+     */
+    WeightedRoundRobin,
+    /**
+     * least connections strategy.
+     * 最少连接策略
+     */
+    LeastConnections
+}
+
+/**
+ * Load balance options.
+ * 负载均衡选项
+ */
+export interface LoadBalanceOptions {
+    /**
+     * load balance strategy.
+     * 负载均衡策略
+     */
+    strategy?: LoadBalanceStrategy;
+    /**
+     * retry on same instance or not.
+     * 是否在同一实例上重试
+     */
+    retryOnSame?: boolean;
+    /**
+     * service instances cache ttl in milliseconds.
+     * 服务实例缓存过期时间（毫秒）
+     */
+    cacheTtl?: number;
+}
+
+/**
+ * Circuit breaker options, like Spring Cloud Resilience4j.
+ * 断路器选项，类似 Spring Cloud Resilience4j
+ */
+export interface CircuitBreakerOptions {
+    /**
+     * failure rate threshold (0-1) to open circuit.
+     * 打开断路器的失败率阈值（0-1）
+     */
+    failureRateThreshold?: number;
+    /**
+     * slow call rate threshold (0-1).
+     * 慢调用率阈值（0-1）
+     */
+    slowCallRateThreshold?: number;
+    /**
+     * wait duration in open state in milliseconds.
+     * 断路器打开状态等待时间（毫秒）
+     */
+    waitDurationInOpenState?: number;
+    /**
+     * permitted number of calls in half-open state.
+     * 半开状态允许的调用数量
+     */
+    permittedNumberOfCallsInHalfOpenState?: number;
+    /**
+     * sliding window size.
+     * 滑动窗口大小
+     */
+    slidingWindowSize?: number;
+    /**
+     * slow call duration threshold in milliseconds.
+     * 慢调用持续时间阈值（毫秒）
+     */
+    slowCallDurationThreshold?: number;
+}
+
+/**
+ * Retry options, like Spring Cloud Retry.
+ * 重试选项，类似 Spring Cloud Retry
+ */
+export interface RetryOptions {
+    /**
+     * max retry attempts.
+     * 最大重试次数
+     */
+    maxAttempts?: number;
+    /**
+     * wait duration between retries in milliseconds.
+     * 重试间隔等待时间（毫秒）
+     */
+    waitDuration?: number;
+    /**
+     * retry on which exceptions.
+     * 对哪些异常进行重试
+     */
+    retryOnExceptions?: (new (...args: any[]) => Error)[];
+    /**
+     * exponential backoff multiplier.
+     * 指数退避乘数
+     */
+    backoffMultiplier?: number;
+}
+
+/**
+ * Microservice client config.
+ * 微服务客户端配置
+ */
+export interface ClientConfig<
+    TInput extends AbstractRequest<any> = AbstractRequest<any>,
+    TOutput extends ResponseEvent<any> = ResponseEvent<any>,
+> extends ClientConfig<TInput, TOutput> {
+
+    side: TransferSide.client;
+
+    /**
+     * is microservice client.
+     * 是否为微服务客户端
+     */
+    microservice: true;
+
+    /**
+     * service discovery options.
+     * 服务发现选项
+     */
+    discovery?: boolean | DiscoveryOptions;
+
+    /**
+     * load balance options.
+     * 负载均衡选项
+     */
+    loadBalance?: boolean | LoadBalanceOptions;
+
+    /**
+     * circuit breaker options.
+     * 断路器选项
+     */
+    circuitBreaker?: boolean | CircuitBreakerOptions;
+
+    /**
+     * retry options.
+     * 重试选项
+     */
+    retry?: boolean | RetryOptions;
+
+    /**
+     * target service name.
+     * 目标服务名称
+     */
+    serviceName?: string;
+
+    /**
+     * connection pool options.
+     * 连接池选项
+     */
+    pool?: ConnectionPoolOptions;
+}
