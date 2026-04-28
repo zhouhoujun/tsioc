@@ -1,68 +1,83 @@
 # AGENTS.md - Guidelines for Agentic Coding Assistants
 
 This file provides guidance for AI coding agents operating in this repository.
+See also [CLAUDE.md](./CLAUDE.md) which overlaps but contains at least one known error (claims `.eslintrc.js` exists — it does not).
 
 ## Repository Overview
 
-`tsioc` is a TypeScript monorepo for a decorator-driven IoC and application framework.
+`tsioc` is a TypeScript monorepo for a decorator-driven IoC and application framework (Spring-like model).
 
-**Core packages:**
-- `@tsdi/ioc`: dependency injection container, tokens, metadata, runtime contexts
-- `@tsdi/aop`: AOP advice/interceptor layer built on IoC runtime
-- `@tsdi/core`: application/module bootstrap, routing abstractions, lifecycle
+**Core stack (layered — changes propagate downward):**
+- `@tsdi/ioc` → foundation: DI container, tokens, metadata, runtime contexts, invocation/resolution pipeline
+- `@tsdi/aop` → builds on IoC runtime: aspects, advisors, proxy/proceed/joinpoint logic
+- `@tsdi/core` → builds on AOP + IoC: application/module bootstrap, routing, lifecycle, `ApplicationContext`
 
-**Integration packages:**
-- `packages/services/*`: Protocol adapters (amqp, coap, http, kafka, mqtt, nats, redis, tcp, udp, ws)
-- `packages/transport/*`: Transport utilities (json, packet, stream, text)
-- `packages/common/http`: HTTP abstractions shared across services
+**Other top-level packages under `packages/`:**
+- `activities` — workflow engine, sequence/parallel activities, task orchestration
+- `annotations` — build tooling for ES5 uglify compatibility
+- `boot` — bootstrap via `BootApplication.run()` with app configuration
+- `cli` — CLI tool (`tsdi new`, `tsdi test`)
+- `common` — shared utilities (sub-dirs: `http`, `transport`)
+- `compiler` — TypeScript compiler integration (build tooling)
+- `components` — UI component system with templates and directives
+- `config` — configuration management, env-aware config loading
+- `discovery` — service discovery abstractions
+- `endpoints` — HTTP endpoint handling (controllers, decorators for routes)
+- `health` — health check module with indicators
+- `i18n` — internationalization (ICU MessageFormat, locale switching)
+- `logger` — logging module (AOP-based)
+- `metrics` — counters, gauges, histograms, Prometheus exports
+- `microservice` — microservice patterns on top of core + transports
+- `oidc-auth` — OIDC authentication module
+- `platform-browser` — browser platform adapter
+- `platform-server` — server platform adapter
+- `repository` — ORM repository patterns, `@Transactional`, `@Repository`
+- `security` — authentication/authorization
+- `swagger` — Swagger/OpenAPI integration
+- `tracing` — distributed tracing (spans, context propagation)
+- `typeorm-adapter` — TypeORM integration
+- `unit` — custom test framework (`@tsdi/unit`, Mocha-style)
+- `unit-console` — console reporter for tests
+- `unit-karma` — Karma integration (intentionally excluded from build)
 
-**Observability packages:**
-- `health`: Health check module with indicators
-- `metrics`: Metrics collection (counters, gauges, histograms, Prometheus exports)
-- `tracing`: Distributed tracing with span creation and context propagation
-- `discovery`: Service discovery abstractions
-- `config`: Configuration management and environment-aware config loading
-
-**Additional packages:**
-- `i18n`: Internationalization module
-- `annotations`: Build tooling for ES5 uglify compatibility
-- `common/http`: Shared HTTP abstractions
-- `common/transport`: Shared transport utilities
-
-**Note:** No Cursor rules or Copilot rules exist. CLAUDE.md also exists with additional guidance.
-
----
+**Sub-package directories:**
+- `packages/services/*` — protocol adapters: amqp, coap, http, kafka, mqtt, nats, redis, tcp, udp, ws
+- `packages/transport/*` — transport utilities: json, packet, stream, text
 
 ## Build Commands
 
 ```bash
 npm install                      # Install dependencies
-npm run build                    # Build entire monorepo (runs taskfile.ts)
-npm run build -- --setvs=4.0.0-beta  # Build with version replacement
-npm run build -- --deploy=true   # Build and publish dist packages
+npm run build                    # Build entire monorepo (runs taskfile.ts via ts-node)
+npm run build -- --setvs=4.0.0-beta  # Build + version replacement in all package.json
+npm run build -- --deploy=true   # Build + generate publish commands
 
 cd packages/<package-name> && npm run build  # Build single package
 # Equivalent: ts-node -r tsconfig-paths/register taskfile.ts
 ```
 
 **Build output:** Generated under `dist/<package-name>/`. Do not edit generated files.
+**Self-referential:** The build system (`taskfile.ts`) uses `@tsdi/compiler` and `@tsdi/activities` — the framework builds itself.
 
 ## Testing Commands
 
 ```bash
-cd packages/<package-name> && npm test   # Run tests for single package (recommended)
-tsdi test                                # Run tests via tsdi CLI (from project root)
+cd packages/<package-name> && npm test   # Run tests for single package (RECOMMENDED)
 
 # Run a single spec file
 cd packages/ioc
-npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/unit'); const { ConsoleReporter } = require('@tsdi/unit-console'); runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
-
-# Debug tests in VSCode
-# .vscode/launch.json contains pre-configured debug targets for each package
-# Select "test <package>" from VSCode debug menu
+npx ts-node -r tsconfig-paths/register -e \
+  "const { runTest } = require('@tsdi/unit'); \
+   const { ConsoleReporter } = require('@tsdi/unit-console'); \
+   runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
 ```
 
-**Test framework:** Uses `@tsdi/unit` (custom), not Jest/Mocha directly. Mocha-style `describe`/`it` blocks with `expect` assertions.
+**Test framework:** Uses `@tsdi/unit` (custom, NOT Jest/Mocha). Supports two styles:
+- **Mocha-style**: `describe()`, `it()`, `beforeEach()` with `expect`
+- **Decorator-style**: `@Suite`, `@Test`, `@BeforeEach` with IoC-injected `Expect`
+
+**Container in tests:** Use `createInjector()` from `@tsdi/ioc`. For integration tests: `Application.run(TestModule)`, cleanup with `ctx.destroy()`.
+Test files: `*.spec.ts` in `test/` directory. Each package has a `unit.ts` entry point.
 
 ## Linting
 
@@ -70,16 +85,15 @@ npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/un
 npx eslint "packages/**/*.ts"
 ```
 
-**Note:** No `.eslintrc` config file exists. ESLint uses defaults from `package.json` devDependencies. The config is intentionally permissive for framework internals: `any` types, empty functions, unused variables, namespaces, and empty interfaces are allowed. Follow existing patterns when editing code.
+**No `.eslintrc` file exists anywhere.** ESLint uses defaults from `package.json` devDependencies. The config is intentionally permissive: `any` types, empty functions, unused variables, namespaces, and empty interfaces are allowed. Follow existing patterns when editing.
 
 ## TypeScript Configuration
 
-- **Target:** ES2020, **Module:** CommonJS
-- **Decorators:** Enabled (`experimentalDecorators`, `emitDecoratorMetadata`)
+- **Target:** ES2020, **Module:** CommonJS, **ModuleResolution:** node
+- **Decorators:** Enabled (`experimentalDecorators`, `emitDecoratorMetadata`) — FUNDAMENTAL to the framework
 - **Strict mode:** Enabled (`strict`, `strictNullChecks`, `strictPropertyInitialization`)
 - **Path aliases:** `@tsdi/*` → `packages/*`, `packages/services/*`, `packages/transport/*`
-
----
+- **lib:** dom, es2015, es2017; **types:** mocha
 
 ## Code Style Guidelines
 
@@ -102,48 +116,35 @@ npx eslint "packages/**/*.ts"
 - Group: external packages first, then internal modules
 - Named exports preferred; avoid default exports
 
-### Type Annotations
-
-- Explicit types for public API parameters and return types
-- Use type guards (`isXxx()`) for runtime checks
-- Available type guards: `isNil()`, `isArray()`, `isFunction()`, `isString()`, `isPromise()`, `isType()`
-
 ### Decorator Usage
 
-Decorators are fundamental to this framework:
-- `@Abstract()` — Abstract base classes
-- `@Injectable()` — Register as injectable service
-- `@Singleton()` — Global singleton scope
-- `@Module()` (alias `@DIModule`) — Module definition
-- `@Inject()` / `@Autowired()` — Property/method injection
-- `@Providers([...])` — Private providers for class
+Decorators are fundamental:
+- `@Abstract()` — abstract base class
+- `@Injectable()` — register as injectable service, can provide to token
+- `@Singleton()` — global singleton scope
+- `@Static()` — static in injector scope
+- `@Inject()` / `@Autowired()` / `@Param()` — property/parameter injection
+- `@Module()` (alias `@DIModule`) — module definition
+- `@Aspect()` — AOP aspect class
+- `@Before`/`@After`/`@Around`/`@AfterThrowing`/`@AfterReturning`/`@Pointcut` — AOP advice (matchString|RegExp)
+- `@Providers([...])` — private providers for a class
+- `@Nullable`, `@Optional`, `@Self`, `@SkipSelf`, `@Host` — parameter resolution modifiers
 
 ### Error Handling
 
 - Extend `Exception` for custom errors
-- Use type guards from `@tsdi/ioc/utils/chk` for validation
+- Use type guards from `@tsdi/ioc/utils/chk` for validation: `isNil()`, `isArray()`, `isFunction()`, `isString()`, `isPromise()`, `isType()`
 - `ArgumentException`, `TypeException` are built-in exception types
 
 ### JSDoc Comments
 
-Include for public APIs. Use bilingual format (English + Chinese):
+Include for public APIs. Bilingual format (English + Chinese):
 ```typescript
 /**
  * injector. implements {@link Destroyable}
  * IoC 容器，注入器
  */
 ```
-
-### Testing Conventions
-
-- Test files: `*.spec.ts` in `test/` directory
-- Two test styles supported by `@tsdi/unit`:
-  - **Mocha-style**: `describe()`, `it()`, `beforeEach()` with `expect` library
-  - **Decorator-style**: `@Suite`, `@Test`, `@BeforeEach` decorators with IoC-injected `Expect`
-- Container setup: Use `createInjector()` from `@tsdi/ioc`, not `new Container()`
-- Integration tests: Bootstrap with `Application.run(TestModule)`, cleanup with `ctx.destroy()`
-
----
 
 ## File Structure
 
@@ -161,8 +162,6 @@ packages/<package-name>/
 └── package.json
 ```
 
----
-
 ## Key Architecture Patterns
 
 **Provider Types:**
@@ -173,26 +172,24 @@ packages/<package-name>/
 
 **Scope Management:** Singleton, Static, Platform, Root
 
-**Layer Dependencies:**
+**Layer Dependencies (IMPORTANT):**
 - `ioc` → Foundation (standalone)
 - `aop` → Builds on `ioc` runtime contexts
 - `core` → Builds on `aop` + `ioc`
-- Cross-package changes often require synchronized updates across layers
+- Cross-package changes often require synchronized updates across all three layers.
 
----
+**When debugging decorator-driven behavior:** Inspect metadata/reflection code AND runtime execution code.
 
 ## Release and Deployment
 
-**Note:** No automated CI/CD configured. All operations are manual local executions.
+No automated CI/CD. All operations are manual local executions.
 
 ```bash
 npm run build -- --setvs=6.0.0-beta  # Update all packages to new version
-./deploy                            # Build and prepare for publish (logs commands only)
+./deploy                            # Equivalent: npm run build -- --deploy=true
 ```
 
 After `./deploy`, manually run `npm publish --access=public` in each `dist/<package>` directory.
-
----
 
 ## Integration Test Services
 
@@ -201,4 +198,10 @@ After `./deploy`, manually run `npm publish --access=public` in each `dist/<pack
 cd simples && docker-compose up -d
 ```
 
-`simples/` directory contains example applications (`boot`, `core`) demonstrating full module bootstrap patterns.
+`simples/` directory contains example applications (`boot`, `core`) demonstrating full module bootstrap.
+
+## Repo-Specific Notes
+
+- **Do not commit compiled `.js`/`.js.map` files** in `packages/*/src/` directories — these are build artifacts that belong only in `dist/`.
+- `.claude/` contains `settings.local.json` (Claude Code permissions) and `worktrees/` — these are local dev files.
+- `.sisyphus/` contains work plans — reference for session continuity if needed.

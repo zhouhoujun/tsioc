@@ -1,0 +1,6 @@
+src/
+test/
+*.ts
+*.js
+!taskfile.ts
+!unit.ts
