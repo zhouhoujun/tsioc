@@ -1,7 +1,8 @@
 import { getToken, Token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import { Transport, RequestInterceptorLike, RequestFilterLike } from '@tsdi/common';
-import { Router, MiddlewareLike } from '../../endpoints/src';
+import { Router } from './router';
+import { MiddlewareLike } from './middleware';
 import { ServiceConfig } from './options';
 
 

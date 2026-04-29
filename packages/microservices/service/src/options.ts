@@ -6,14 +6,11 @@ import {
 } from '@tsdi/common';
 import { ServiceFeatureKind } from './provider';
 export * from './features/index';
+import { MiddlewareLike } from './middleware';
+export * from './middleware';
 import { RegistrationOptions } from './features/RegistrationOptions';
 import { HealthOptions } from './features/HealthOptions';
 import { GracefulShutdownOptions } from './features/GracefulShutdownOptions';
-
-// Re-export types referenced from endpoints to avoid direct import of the whole package
-export interface MiddlewareLike {
-    (context: RequestContext, next: () => Promise<void>): Promise<void> | void;
-}
 
 export interface RouteOpts {
     microservice?: boolean;

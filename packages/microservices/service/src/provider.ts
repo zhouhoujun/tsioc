@@ -277,7 +277,7 @@ export function withServiceMiddlewares(...middlewares: ProvdierOf<any>[]): Servi
         providers.push({
             provide: interToken,
             useFactory: (middlewares: any[]) => {
-                const { composeMiddleware, convertToInterceptor } = require('../../../endpoints/src/middleware');
+                const { composeMiddleware, convertToInterceptor } = require('../middleware');
                 return convertToInterceptor(composeMiddleware(middlewares));
             },
             multi: true,
@@ -351,8 +351,8 @@ export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatur
     return (config) => {
         const tk = getServiceInterceptorsToken(config);
         const routerToken = getServiceRouterToken(config);
-        // The createRouteProviders is imported from endpoints via dynamic require in runtime
-        const { createRouteProviders } = require('../../../endpoints/src/router/router.providers');
+        // The createRouteProviders from local router module
+        const { createRouteProviders } = require('../router/router.providers');
         return makeServiceFeature(
             ServiceFeatureKind.Router,
             [
@@ -393,23 +393,24 @@ export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS');
 
 /**
  * Provide micro service from DI.
+ * 从依赖注入提供微服务服务
  */
 export function provideServiceFromDi(options: TransportConfig): Provider[] {
     return [
         {
             provider: (injector) => {
                 const configs = injector.get(SERVICE_CONFIGS, []).filter(c => matchTransport(options, c));
-                if (!configs?.length) throw new ArgumentException(`messings ${options.transport} microservice service configure` + (options.name ? `, ailas with name ${options.name}` : ''));
-                const featires: ServiceFeatureLike<ServiceFeatureKind>[] = [];
+                if (!configs.length) throw new ArgumentException(`missing ${options.transport} microservice service configuration` + (options.name ? `, alias with name ${options.name}` : ''));
+                const features: ServiceFeatureLike<ServiceFeatureKind>[] = [];
                 const transports: ServiceTransportFeature[] = [];
                 configs.forEach(config => {
-                    if (!config.transportFeature) throw new ArgumentException(`messings transportFeature ${options.transport} microservice service configure` + (options.name ? `, ailas with name ${options.name}` : ''));
-                    featires.push(withServiceFeatures(config.features));
+                    if (!config.transportFeature) throw new ArgumentException(`missing transportFeature ${options.transport} microservice service configuration` + (options.name ? `, alias with name ${options.name}` : ''));
+                    features.push(withServiceFeatures(config.features));
                     transports.push(config.transportFeature(config, configs.length == 1 && config.asDefault));
                 });
 
                 return provideService(
-                    ...featires,
+                    ...features,
                     transports
                 ) as StaticProvider[];
             }
