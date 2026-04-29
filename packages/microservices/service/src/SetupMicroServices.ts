@@ -29,7 +29,7 @@ export class SetupMicroServices {
     protected async setup(context: ApplicationContext): Promise<any> {
         this.context = context;
 
-        const services = context.get(REGISTER_MICRO_SERVICES);
+        const services = context.get(REGISTER_MICRO_SERVICES) || [];
 
         services.forEach(s => {
             if (s.bootstrap === false) {

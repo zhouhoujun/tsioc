@@ -1,5 +1,5 @@
 import { getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
-import { ApplicationEventMulticaster } from '@tsdi/core';
+import { ApplicationEventMulticaster, Startup } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext, InternalServerException, ListenOpts
@@ -18,7 +18,7 @@ const SOCKET = Events.SOCKET;
 @Injectable()
 export class TcpServer<TReq = any, TRes = any> {
 
-    protected serv?: net.Server | tls.Server | null;
+    serv?: net.Server | tls.Server | null;
 
     @InjectLog() protected logger!: Logger;
 
@@ -38,6 +38,8 @@ export class TcpServer<TReq = any, TRes = any> {
     ) {
         this.destroy$ = new Subject();
         this.isSecure = !!(options.serverOpts as tls.TlsOptions)?.cert;
+        // Create server immediately since it doesn't require any listening info
+        this.serv = this.createServer();
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
@@ -79,13 +81,11 @@ export class TcpServer<TReq = any, TRes = any> {
         return this;
     }
 
+    @Startup()
     async onStart(): Promise<void> {
 
         if (this.options.heybird) return;
 
-        await this.setup();
-
-        if (!this.serv) throw new InternalServerException();
         const injector = this.injector;
         injector.setValue(Logger, this.logger);
 
@@ -147,8 +147,9 @@ export class TcpServer<TReq = any, TRes = any> {
 
     }
 
-    private async setup(): Promise<void> {
-        this.serv = this.createServer();
+    private createServer(): net.Server | tls.Server {
+        return this.isSecure ? tls.createServer(this.options.serverOpts as tls.TlsOptions)
+            : net.createServer(this.options.serverOpts as net.ServerOpts);
     }
 
     private handleMessage(socket: tls.TLSSocket | net.Socket) {

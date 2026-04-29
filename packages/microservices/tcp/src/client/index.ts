@@ -1,3 +1,3 @@
 export * from './client';
 export * from './request';
-export * from './options';
+export { TcpClientOptions, TCP_CLIENT_OPTIONS } from './options';

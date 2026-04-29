@@ -298,7 +298,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                 const injector = ctx.injector;
                 const mapping = typeRef.getAnnotation<MappingDef>();
 
-                const router = mapping?.router ? injector.get(mapping.router) : getRouter(injector, mapping?.transport);
+                const router = mapping?.router ? injector.get(mapping.router) : getRouter(injector, mapping?.transport, true);
                 if (!router) throw new Exception(`${getTypeName(typeRef.type)} has not registered router!`);
                 if (!(router instanceof Router)) throw new Exception(`${getTypeName(router)} is not a router!`);
 

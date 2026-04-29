@@ -140,12 +140,16 @@ describe('TCP Microservice Client End-to-End Test', () => {
         // Get the actual server port from the TcpServer
         const TcpServerType = require('../src/server/tcp-server').TcpServer;
         const tcpServer = ctx.get(TcpServerType) as any;
+        console.log('tcpServer:', !!tcpServer);
+        console.log('tcpServer.serv:', !!tcpServer?.serv);
         // Wait a bit for server to start
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 200));
         if (tcpServer && tcpServer.serv) {
             const address = tcpServer.serv.address();
+            console.log('address:', address);
             if (address && typeof address === 'object' && 'port' in address) {
                 serverPort = address.port;
+                console.log('serverPort:', serverPort);
                 // Update client connection port
                 const tcpClient = ctx.get(TcpClient);
                 // @ts-ignore

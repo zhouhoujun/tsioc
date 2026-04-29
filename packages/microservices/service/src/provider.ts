@@ -264,6 +264,8 @@ export function withServiceFilters(...filters: ProvdierOf<RequestFilterLike>[]):
     };
 }
 
+import { composeMiddleware, convertToInterceptor } from './middleware';
+
 /**
  * Adds middlewares to micro service.
  * @publicApi
@@ -277,7 +279,6 @@ export function withServiceMiddlewares(...middlewares: ProvdierOf<any>[]): Servi
         providers.push({
             provide: interToken,
             useFactory: (middlewares: any[]) => {
-                const { composeMiddleware, convertToInterceptor } = require('../middleware');
                 return convertToInterceptor(composeMiddleware(middlewares));
             },
             multi: true,
@@ -343,6 +344,8 @@ export function withServiceLogger(options?: LoggerOptions): ServiceFeatureFn<Ser
     };
 }
 
+import { createRouteProviders } from './router/router.providers';
+
 /**
  * Adds router to micro service.
  * @publicApi
@@ -351,8 +354,6 @@ export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatur
     return (config) => {
         const tk = getServiceInterceptorsToken(config);
         const routerToken = getServiceRouterToken(config);
-        // The createRouteProviders from local router module
-        const { createRouteProviders } = require('../router/router.providers');
         return makeServiceFeature(
             ServiceFeatureKind.Router,
             [

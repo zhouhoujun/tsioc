@@ -1,5 +1,4 @@
 export * from './options';
-export * from './features';
 export * from './strategies';
 export * from './tokens';
 export * from './ClientHandler';
