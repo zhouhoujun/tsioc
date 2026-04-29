@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/micro-client",
+  "name": "@tsdi/client",
   "version": "6.0.31",
   "description": "Microservice client with Spring Cloud-style features. base on AOP, Ioc container, via @tsdi/core.",
   "scripts": {
