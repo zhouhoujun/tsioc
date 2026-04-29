@@ -82,6 +82,7 @@ export interface ServiceConfig<TSerOpts = any> extends TransferConfig {
     middlewaresToken?: Token<any>;
     transfersToken?: Token<any>;
     routerToken?: Token<any>;
+    backendToken?: Token<any>;
 }
 
 export interface ServiceTransportFeature {

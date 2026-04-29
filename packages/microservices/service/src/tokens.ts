@@ -1,4 +1,4 @@
-import { getToken, Token } from '@tsdi/ioc';
+import { getToken, Token, Invocation } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import { Transport, RequestInterceptorLike, RequestFilterLike } from '@tsdi/common';
 import { Router } from './router';
@@ -51,4 +51,23 @@ export function getServiceRouterToken(config: ServiceConfig): Token<Router> {
         config.routerToken = getToken(Router, Transport[config.transport] + '_MICRO_' + toMicroName(config.microservice));
     }
     return config.routerToken;
+}
+
+export function getServiceOptionsToken(config: ServiceConfig): Token<ServiceConfig> {
+    return getToken<ServiceConfig>(`${Transport[config.transport].toUpperCase()}_OPTIONS`, toMicroName(config.microservice, config.name));
+}
+
+export function getServiceHandlerToken(config: ServiceConfig): Token<any> {
+    return getToken<any>(`${Transport[config.transport].toUpperCase()}_HANDLER`, toMicroName(config.microservice, config.name));
+}
+
+export function getServiceBackendToken(config: ServiceConfig): Token<any> {
+    if(!config.backendToken) {
+        config.backendToken = getToken<any>(`${Transport[config.transport].toUpperCase()}_BACKEND`, toMicroName(config.microservice, config.name));
+    }
+    return config.backendToken;
+}
+
+export function getServiceToken(config: ServiceConfig): Token<Invocation> {
+    return getToken<Invocation>(`${Transport[config.transport].toUpperCase()}_SERVICE`, toMicroName(config.microservice, config.name));
 }

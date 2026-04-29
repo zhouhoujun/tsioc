@@ -1,0 +1,9 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../../dist/tcp-microservice",
+    "baseUrl": "../../"
+  },
+  "include": ["index.ts", "src/**/*"],
+  "exclude": ["node_modules", "test"]
+}
