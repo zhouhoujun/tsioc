@@ -101,7 +101,7 @@ export abstract class Service<TRequest = any, TResponse = any, TContext extends 
 
 
 /**
- * Abstract microservice server, like Spring Cloud @EnableEurekaClient.
+ * Abstract server, like Spring Cloud @EnableEurekaClient.
  * 抽象微服务服务器，类似 Spring Cloud @EnableEurekaClient
  */
 @Abstract()
