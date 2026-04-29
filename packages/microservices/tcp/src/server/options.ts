@@ -1,5 +1,5 @@
-import { token } from '@tsdi/ioc';
-import { ListenOpts } from '@tsdi/common';
+import { token, Provider } from '@tsdi/ioc';
+import { ListenOpts, Transport } from '@tsdi/common';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { ServiceConfig } from '../../../service/src/options';
@@ -8,6 +8,16 @@ import { ServiceConfig } from '../../../service/src/options';
  * TCP server options.
  */
 export interface TcpServOptions extends ServiceConfig {
+    /**
+     * Transport type.
+     * 传输类型
+     */
+    transport: Transport;
+    /**
+     * Additional providers.
+     * 额外提供者
+     */
+    providers?: Provider[];
     /**
      * listen options.
      */

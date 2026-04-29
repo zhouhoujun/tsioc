@@ -87,23 +87,26 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         });
     }
 
-    protected override initContext(context: Context, req: TcpRequest<any>): void {
+    protected initContext(context: Context, req: TcpRequest<any>): void {
         context.set(TcpClient, this);
         context.set(TcpRequest, req);
         context.set(SOCKET, this.connection);
     }
 
-    protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {
+    protected buildRequest(first: TcpRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {
+        if (first instanceof TcpRequest) {
+            return first;
+        }
         options.withCredentials = this.connection instanceof tls.TLSSocket;
         const defaultMethod = this.options.microservice ? undefined : 'GET';
-        if (isString(pattern)) {
-            return new TcpRequest(pattern, null, options, defaultMethod);
+        if (isString(first)) {
+            return new TcpRequest(first, null, options, defaultMethod);
         } else {
-            return new TcpRequest(this.injector.get(PatternFormatter).format(pattern), pattern, options, defaultMethod);
+            return new TcpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
         }
     }
 
-    protected override async onShutdown(): Promise<void> {
+    protected async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
 
         return new Promise<void>((resolve) => {
