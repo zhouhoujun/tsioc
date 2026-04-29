@@ -1,16 +1,19 @@
 import { Abstract, Injector, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
 import { HandlerAppendService, Runner, Shutdown, isHandlerOptions } from '@tsdi/core';
 import { RequestContext, RequestHandler, RequestInterceptorLike, RequestHandlerOptions, Transport } from '@tsdi/common';
-import { ServiceHandler } from './MicroServiceHandler';
+import { ServiceHandler } from './ServiceHandler';
 import { Observable } from 'rxjs';
+import { IRegistrationStrategy, REGISTRATION_STRATEGY } from './strategies/IRegistrationStrategy';
+import { IHealthCheckStrategy, HEALTH_CHECK_STRATEGY } from './strategies/IHealthCheckStrategy';
+import { IGracefulShutdownStrategy, GRACEFUL_SHUTDOWN_STRATEGY } from './strategies/IGracefulShutdownStrategy';
 
 
 /**
- * Abstract microservice, extends base MicroService with registration, health, graceful shutdown.
- * 抽象微服务，扩展基础微服务添加注册、健康检查、优雅关闭
+ * Abstract microservice, extends base Service with registration, health, graceful shutdown.
+ * 抽象微服务，扩展基础服务添加注册、健康检查、优雅关闭
  */
 @Abstract()
-export abstract class MicroService<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext> {
+export abstract class Service<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext> {
 
     abstract get injector(): Injector;
 
@@ -19,16 +22,52 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
     @Runner()
     async start() {
         if (this.injector.ready) await this.injector.ready;
-        await this.onRegister();
+        await this.strategyRegister();
         return await this.onStart();
     }
 
     @Shutdown()
     async close() {
-        await this.onGracefulShutdown();
-        await this.onDeregister();
+        await this.strategyGracefulShutdown();
+        await this.strategyDeregister();
         await this.onShutdown();
         this.handler.onDestroy?.();
+    }
+
+    /**
+     * Register service with discovery using strategy.
+     * 使用策略向服务发现注册服务
+     */
+    protected async strategyRegister(): Promise<any> {
+        const strategy = this.injector.get(REGISTRATION_STRATEGY, null);
+        if (strategy) {
+            return strategy.register();
+        }
+        return this.onRegister();
+    }
+
+    /**
+     * Deregister service from discovery using strategy.
+     * 使用策略从服务发现注销服务
+     */
+    protected async strategyDeregister(): Promise<any> {
+        const strategy = this.injector.get(REGISTRATION_STRATEGY, null);
+        if (strategy) {
+            return strategy.deregister();
+        }
+        return this.onDeregister();
+    }
+
+    /**
+     * Graceful shutdown using strategy.
+     * 使用策略优雅关闭
+     */
+    protected async strategyGracefulShutdown(): Promise<any> {
+        const strategy = this.injector.get(GRACEFUL_SHUTDOWN_STRATEGY, null);
+        if (strategy) {
+            return strategy.shutdown();
+        }
+        return this.onGracefulShutdown();
     }
 
     /**
@@ -66,8 +105,8 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
  * 抽象微服务服务器，类似 Spring Cloud @EnableEurekaClient
  */
 @Abstract()
-export abstract class MicroServiceServer<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
-    extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
+export abstract class ServiceServer<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
+    extends Service<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
 
     get injector() {
         return this.handler.injector;
@@ -83,7 +122,7 @@ export abstract class MicroServiceServer<TRequest = any, TResponse = any, TConte
             isArray(options) ? { interceptors: options }
                 : ((isHandlerOptions(options) ? options : { interceptors: [toMutilProvdierOf(options as ProvdierOf<RequestInterceptorLike<TRequest, TResponse, TContext>>, order)] })
                 )
-        )
+        );
         return this;
     }
 }
@@ -93,7 +132,7 @@ export abstract class MicroServiceServer<TRequest = any, TResponse = any, TConte
  * Bind microservice server event.
  * 绑定微服务服务器事件
  */
-export class BindMicroServiceEvent<T = any> {
+export class BindServiceEvent<T = any> {
     constructor(readonly server: T, readonly transport: Transport, target: any) {
     }
 }

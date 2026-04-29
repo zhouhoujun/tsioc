@@ -25,10 +25,10 @@ export interface ClientConfig<
      * authority base url.
      */
     authority?: string;
-    /**
-     * is microservice client or not.
-     */
-    microservice?: boolean;
+    // /**
+    //  * is microservice client or not.
+    //  */
+    // microservice?: boolean;
 
     // /**
     //  * transport backend.
@@ -198,7 +198,7 @@ export interface RetryOptions {
  * Microservice client config.
  * 微服务客户端配置
  */
-export interface ClientConfig<
+export interface MircoClientConfig<
     TInput extends AbstractRequest<any> = AbstractRequest<any>,
     TOutput extends ResponseEvent<any> = ResponseEvent<any>,
 > extends ClientConfig<TInput, TOutput> {

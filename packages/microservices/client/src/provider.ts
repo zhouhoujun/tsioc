@@ -283,7 +283,7 @@ export interface ClientFeatureOptions {
     filters?: ProvdierOf<RequestFilterLike>[];
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     guards?: ProvdierOf<GuardLike>[];
-    transfers?: TransferInterceptorFactory[];
+    transfers?: boolean | TransferInterceptorFactory[];
     discovery?: boolean | DiscoveryOptions;
     loadBalance?: boolean | LoadBalanceOptions;
     circuitBreaker?: boolean | CircuitBreakerOptions;

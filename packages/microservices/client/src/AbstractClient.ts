@@ -1,10 +1,12 @@
-import { Abstract, ArgumentException, Context, Inject, Injector, Optional } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Exception, Context, Injector, Optional } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { AbstractRequest, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, RequestContext, createRequestContext, REQUEST } from '@tsdi/common';
-import { Observable, throwError, defer, mergeMap, catchError } from 'rxjs';
+import { Pattern, ResponseEvent, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, REQUEST } from '@tsdi/common';
+import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, timeout } from 'rxjs';
 import { ClientHandler } from './ClientHandler';
-import { ClientConfig } from './options';
-
+import { IClientDiscoveryStrategy, CLIENT_DISCOVERY_STRATEGY } from './strategies/IClientDiscoveryStrategy';
+import { ILoadBalanceStrategy, LOAD_BALANCE_STRATEGY } from './strategies/ILoadBalanceStrategy';
+import { ICircuitBreakerStrategy, CIRCUIT_BREAKER_STRATEGY } from './strategies/ICircuitBreakerStrategy';
+import { IRetryStrategy, RETRY_STRATEGY } from './strategies/IRetryStrategy';
 
 /**
  * Abstract microservice client. Extends base client with Spring Cloud-style features.
@@ -28,16 +30,45 @@ export abstract class AbstractClient<
     protected abstract get handler(): ClientHandler<TRequest, TResponse>;
 
     /**
-     * micro client config.
-     * 微服务客户端配置
+     * Optional discovery strategy for service discovery.
+     * 可选的服务发现策略
      */
-    protected abstract get config(): ClientConfig<TRequest, TResponse>;
+    protected get discoveryStrategy(): IClientDiscoveryStrategy | null {
+        return this.injector.get(CLIENT_DISCOVERY_STRATEGY, null);
+    }
+
+    /**
+     * Optional load balance strategy.
+     * 可选的负载均衡策略
+     */
+    protected get loadBalanceStrategy(): ILoadBalanceStrategy | null {
+        return this.injector.get(LOAD_BALANCE_STRATEGY, null);
+    }
+
+    /**
+     * Optional circuit breaker strategy.
+     * 可选的断路器策略
+     */
+    protected get circuitBreakerStrategy(): ICircuitBreakerStrategy | null {
+        return this.injector.get(CIRCUIT_BREAKER_STRATEGY, null);
+    }
+
+    /**
+     * Optional retry strategy.
+     * 可选的重试策略
+     */
+    protected get retryStrategy(): IRetryStrategy | null {
+        return this.injector.get(RETRY_STRATEGY, null);
+    }
 
     /**
      * Sends a request to microservice.
      * 向微服务发送请求
      */
-    send<R = any>(pattern: Pattern, options?: TReqOptions): Observable<R>;
+    send<R = any>(pattern: Pattern, options?: TReqOptions & {
+        observe?: 'body';
+        responseType?: 'json';
+    }): Observable<R>;
     send(req: TRequest): Observable<TResponse>;
     send(req: TRequest | Pattern, options?: TReqOptions): Observable<any> {
         if (!req) {
@@ -45,72 +76,193 @@ export abstract class AbstractClient<
         }
         return defer(() => this.injector.ready)
             .pipe(
-                mergeMap(() => this.discover()),
-                catchError((err, caught) => {
+                mergeMap(() => this.strategyDiscover()),
+                catchError((err) => {
                     return throwError(() => this.onError(err));
                 }),
-                mergeMap(() => this.handleRequest(req, options))
+                mergeMap(() => this.strategyChooseServer()),
+                mergeMap(() => {
+                    return this.request(req, options);
+                }),
+                this.strategyApplyCircuitBreaker(),
+                this.strategyApplyRetry()
             );
     }
 
     /**
-     * Discover service instance via service discovery.
-     * 通过服务发现发现服务实例
+     * Discover service instance via discovery strategy.
+     * 通过服务发现策略发现服务
      */
-    protected discover(): Promise<any> | Observable<any> {
-        // Default: no discovery, override in concrete implementations
+    protected strategyDiscover(): Promise<any> | Observable<any> {
+        const strategy = this.discoveryStrategy;
+        if (strategy) {
+            return strategy.discover();
+        }
+        return this.discover();
+    }
+
+    /**
+     * Choose server via load balance strategy.
+     * 通过负载均衡策略选择服务实例
+     */
+    protected strategyChooseServer(): Promise<any> | Observable<any> {
+        const strategy = this.loadBalanceStrategy;
+        if (strategy) {
+            return strategy.chooseServer();
+        }
         return Promise.resolve();
     }
 
     /**
-     * Handle request with load balancing.
-     * 通过负载均衡处理请求
+     * Apply circuit breaker via strategy.
+     * 通过断路器策略应用断路器
      */
-    protected handleRequest(first: Pattern | TRequest, options: TReqOptions = {} as any): Observable<any> {
+    protected strategyApplyCircuitBreaker<T>(): (source: Observable<T>) => Observable<T> {
+        const strategy = this.circuitBreakerStrategy;
+        if (strategy) {
+            return (source) => source.pipe(
+                catchError(err => {
+                    if (strategy.isOpen()) {
+                        return throwError(() => strategy.getOpenError());
+                    }
+                    return source;
+                })
+            );
+        }
+        return <T>(source: Observable<T>) => source;
+    }
+
+    /**
+     * Apply retry via retry strategy.
+     * 通过重试策略应用重试
+     */
+    protected strategyApplyRetry<T>(): (source: Observable<T>) => Observable<T> {
+        const strategy = this.retryStrategy;
+        if (strategy) {
+            // Retry will be handled via the strategy's retry operator
+            return (source) => strategy.retry(source);
+        }
+        return <T>(source: Observable<T>) => source;
+    }
+
+    protected request(first: Pattern | TRequest, options: TReqOptions = {} as any): Observable<any> {
         const req = this.buildRequest(first, options);
         let context = options.context;
         if (!context) {
             context = createRequestContext(this.injector);
             context.set(REQUEST, req as any);
-            this.initContext(context, req);
+            this.strategyInitContext(context, req);
         }
-        return this.handler.handle(req, context);
+        const events$: Observable<ResponseEvent<any>> =
+            of(req).pipe(
+                concatMap((req: TRequest) => this.handler.handle(req, context)),
+                finalize(() => context.onDestroy())
+            );
+
+        if (req.observe === 'events') {
+            return events$;
+        }
+
+        const res$: Observable<any> = events$;
+        switch (req.observe || 'body') {
+            case 'body':
+                switch (req.responseType) {
+                    case 'arraybuffer':
+                        return res$.pipe(map((res: Response<any>) => {
+                            if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
+                                throw new Exception('Response is not an ArrayBuffer.');
+                            }
+                            return res.body;
+                        }));
+                    case 'blob':
+                        return res$.pipe(map((res: Response<any>) => {
+                            if (res.body !== null && !(res.body instanceof Blob)) {
+                                throw new Exception('Response is not a Blob.');
+                            }
+                            return res.body;
+                        }));
+                    case 'stream':
+                        return res$.pipe(map((res: Response<any>) => {
+                            // stream check handled by base client
+                            return res.body;
+                        }));
+                    case 'text':
+                        return res$.pipe(map((res: Response<any>) => {
+                            if (res.body !== null && typeof res.body !== 'string') {
+                                throw new Exception('Response is not a string.');
+                            }
+                            return res.body;
+                        }));
+                    case 'json':
+                    default:
+                        return res$.pipe(map((res: Response<any>) => res.body));
+                }
+            case 'response':
+                return res$;
+            default:
+                throw new Exception(`Unreachable: unhandled observe type ${req.observe}}`);
+        }
     }
-
-    /**
-     * Build request from pattern and options.
-     * 根据模式和选项构建请求
-     */
-    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions & ResponseAs): TRequest;
-
-    /**
-     * Initialize request context.
-     * 初始化请求上下文
-     */
-    protected abstract initContext(context: Context, req: TRequest): void;
 
     protected onError(err: Error): Error {
         return err;
     }
 
-    @Shutdown()
-    close(): Promise<void> {
-        this.injector.onDestroy();
-        return this.onShutdown();
+    /**
+     * Initialize context using strategy if available.
+     * 使用策略初始化上下文（如果可用）
+     */
+    protected strategyInitContext(context: RequestContext, req: TRequest): void {
+        // Let concrete implementation handle this
+        this.initContext(context, req);
     }
 
     /**
-     * Shutdown handler.
-     * 关闭处理器
+     * build request.
+     * 构建请求
+     */
+    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions & {
+        observe?: 'body' | 'events' | 'response';
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+    }): TRequest;
+
+    /**
+     * Legacy discover method - override in concrete implementations.
+     * 传统服务发现方法 - 在具体实现中覆盖
+     */
+    protected discover(): Promise<any> | Observable<any> {
+        return Promise.resolve();
+    }
+
+    /**
+     * Legacy init context method - override in concrete implementations.
+     * 传统初始化上下文方法 - 在具体实现中覆盖
+     */
+    protected abstract initContext(context: Context, req: TRequest): void;
+
+    @Shutdown()
+    close(): Promise<void> {
+        this.injector.onDestroy();
+        return this.strategyOnShutdown();
+    }
+
+    /**
+     * Shutdown using strategies if available.
+     * 使用策略关闭（如果可用）
+     */
+    protected strategyOnShutdown(): Promise<void> {
+        // Shutdown all strategies
+        const promises: Promise<void>[] = [];
+        const discovery = this.discoveryStrategy;
+        if (discovery) {
+            promises.push(discovery.onShutdown());
+        }
+        return Promise.all(promises).then(() => this.onShutdown());
+    }
+
+    /**
+     * Legacy shutdown method - override in concrete implementations.
+     * 传统关闭方法 - 在具体实现中覆盖
      */
     protected abstract onShutdown(): Promise<void>;
-}
-
-/**
- * Response as options.
- * 响应类型选项
- */
-export interface ResponseAs {
-    observe?: 'body' | 'events' | 'response' | 'emit';
-    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
