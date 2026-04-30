@@ -1,11 +1,11 @@
-import { getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
-import { ApplicationEventMulticaster, Startup } from '@tsdi/core';
+import { getTypeName, Inject, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
+import { ApplicationEventMulticaster } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext, InternalServerException, ListenOpts
 } from '@tsdi/common';
 import { Transport } from '@tsdi/common';
-import { ServiceHandler } from '@tsdi/service';
+import { ServiceHandler, Service } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -15,8 +15,7 @@ const SOCKET = Events.SOCKET;
 /**
  * tcp server of `tcp` or `ipc`.
  */
-@Injectable()
-export class TcpServer<TReq = any, TRes = any> {
+export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
     serv?: net.Server | tls.Server | null;
 
@@ -34,8 +33,8 @@ export class TcpServer<TReq = any, TRes = any> {
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(TCP_SERV_OPTIONS, { nullable: true }) protected options: TcpServOptions,
-        readonly injector: Injector
     ) {
+        super();
         this.destroy$ = new Subject();
         this.isSecure = !!(options.serverOpts as tls.TlsOptions)?.cert;
         // Create server immediately since it doesn't require any listening info
@@ -81,30 +80,30 @@ export class TcpServer<TReq = any, TRes = any> {
         return this;
     }
 
-    @Startup()
     async onStart(): Promise<void> {
 
         if (this.options.heybird) return;
 
-        const injector = this.injector;
-        injector.setValue(Logger, this.logger);
+        const inj = this.injector;
+        inj.setValue(Logger, this.logger);
 
-        this.serv.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
-        this.serv.on(Events.ERROR, (err: Error) => this.logger.error(err));
+        const server = this.serv!;
+        server.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
+        server.on(Events.ERROR, (err: Error) => this.logger.error(err));
 
-        if (this.serv instanceof tls.Server) {
-            this.serv.on(Events.SECURE_CONNECTION, (socket: tls.TLSSocket) => {
+        if (server instanceof tls.Server) {
+            server.on(Events.SECURE_CONNECTION, (socket: tls.TLSSocket) => {
                 this.handleMessage(socket);
             });
         } else {
-            this.serv.on(Events.CONNECTION, (socket: net.Socket) => {
+            server.on(Events.CONNECTION, (socket: net.Socket) => {
                 this.handleMessage(socket);
             });
         }
 
         if (!this.options.microservice) {
             // notify hybrid service to bind http server.
-            await injector.get(ApplicationEventMulticaster).emit({
+            await inj.get(ApplicationEventMulticaster).emit({
                 server: this.serv,
                 transport: Transport.TCP,
                 serverInst: this
@@ -167,8 +166,4 @@ export class TcpServer<TReq = any, TRes = any> {
             ).subscribe();
     }
 
-    private createServer(): net.Server | tls.Server {
-        return this.isSecure ? tls.createServer(this.options.serverOpts as tls.TlsOptions)
-            : net.createServer(this.options.serverOpts as net.ServerOpts);
-    }
 }

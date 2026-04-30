@@ -13,7 +13,7 @@ import { IGracefulShutdownStrategy, GRACEFUL_SHUTDOWN_STRATEGY } from './strateg
  * 抽象微服务，扩展基础服务添加注册、健康检查、优雅关闭
  */
 @Abstract()
-export abstract class Service<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext> {
+export abstract class MicroService<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext> {
 
     abstract get injector(): Injector;
 
@@ -105,8 +105,8 @@ export abstract class Service<TRequest = any, TResponse = any, TContext extends 
  * 抽象微服务服务器，类似 Spring Cloud @EnableEurekaClient
  */
 @Abstract()
-export abstract class ServiceServer<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
-    extends Service<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
+export abstract class Service<TRequest = any, TResponse = any, TContext extends RequestContext = RequestContext>
+    extends MicroService<TRequest, TResponse, TContext> implements HandlerAppendService<TRequest, Observable<TResponse>, TContext> {
 
     get injector() {
         return this.handler.injector;

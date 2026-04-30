@@ -3,7 +3,7 @@ import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, crea
 import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, CLIENT_CONFIGS } from '@tsdi/microservices/client';
 import { SOCKET, createSendMessageBackend } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, Observable } from 'rxjs';
+import { defer, Observable, switchMap } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
@@ -104,6 +104,12 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         } else {
             return new TcpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
         }
+    }
+
+    protected override request(first: Pattern | TcpRequest<any>, options: RequestInitOpts<any, UrlRequestOptions> = {} as any): Observable<any> {
+        return this.connect().pipe(
+            switchMap(() => super.request(first, options))
+        );
     }
 
     protected async onShutdown(): Promise<void> {

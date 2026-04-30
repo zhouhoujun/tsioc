@@ -1,6 +1,6 @@
 import { Injectable, Provider, Invocation, AbstractType, token, isFunction } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
-import { ServiceServer } from './Service';
+import { Service } from './Service';
 
 
 export interface RegisterMicroService {
@@ -22,7 +22,7 @@ export class SetupMicroServices {
 
     private context!: ApplicationContext;
 
-    private services: Invocation<ServiceServer>[] = [];
+    private services: Invocation<Service>[] = [];
     private unboots = new Set<AbstractType>();
 
     @Startup()
@@ -39,7 +39,7 @@ export class SetupMicroServices {
         });
     }
 
-    getServices(): Invocation<ServiceServer>[] {
+    getServices(): Invocation<Service>[] {
         return this.services;
     }
 
