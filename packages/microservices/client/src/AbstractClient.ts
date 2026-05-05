@@ -1,6 +1,6 @@
-import { Abstract, ArgumentException, Exception, Context, Injector, Optional } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Context, Injector, Optional } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { Pattern, ResponseEvent, RequestOptions, AbstractRequest, Response, createRequestContext, RequestContext, REQUEST } from '@tsdi/common';
+import { Pattern, RequestOptions, createRequestContext, RequestContext, REQUEST } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, timeout } from 'rxjs';
 import { ClientHandler } from './ClientHandler';
 import { IClientDiscoveryStrategy, CLIENT_DISCOVERY_STRATEGY } from './strategies/IClientDiscoveryStrategy';
@@ -14,8 +14,8 @@ import { IRetryStrategy, RETRY_STRATEGY } from './strategies/IRetryStrategy';
  */
 @Abstract()
 export abstract class AbstractClient<
-    TRequest extends AbstractRequest<any> = AbstractRequest<any>,
-    TResponse extends ResponseEvent<any> = ResponseEvent<any>,
+    TRequest,
+    TResponse,
     TReqOptions extends RequestOptions = RequestOptions
 > {
 
@@ -81,9 +81,7 @@ export abstract class AbstractClient<
                     return throwError(() => this.onError(err));
                 }),
                 mergeMap(() => this.strategyChooseServer()),
-                mergeMap(() => {
-                    return this.request(req, options);
-                }),
+                mergeMap(() => this.request(req, options)),
                 this.strategyApplyCircuitBreaker(),
                 this.strategyApplyRetry()
             );
@@ -153,55 +151,10 @@ export abstract class AbstractClient<
             context.set(REQUEST, req as any);
             this.strategyInitContext(context, req);
         }
-        const events$: Observable<ResponseEvent<any>> =
-            of(req).pipe(
+        return of(req).pipe(
                 concatMap((req: TRequest) => this.handler.handle(req, context)),
                 finalize(() => context.onDestroy())
             );
-
-        if (req.observe === 'events') {
-            return events$;
-        }
-
-        const res$: Observable<any> = events$;
-        switch (req.observe || 'body') {
-            case 'body':
-                switch (req.responseType) {
-                    case 'arraybuffer':
-                        return res$.pipe(map((res: Response<any>) => {
-                            if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
-                                throw new Exception('Response is not an ArrayBuffer.');
-                            }
-                            return res.body;
-                        }));
-                    case 'blob':
-                        return res$.pipe(map((res: Response<any>) => {
-                            if (res.body !== null && !(res.body instanceof Blob)) {
-                                throw new Exception('Response is not a Blob.');
-                            }
-                            return res.body;
-                        }));
-                    case 'stream':
-                        return res$.pipe(map((res: Response<any>) => {
-                            // stream check handled by base client
-                            return res.body;
-                        }));
-                    case 'text':
-                        return res$.pipe(map((res: Response<any>) => {
-                            if (res.body !== null && typeof res.body !== 'string') {
-                                throw new Exception('Response is not a string.');
-                            }
-                            return res.body;
-                        }));
-                    case 'json':
-                    default:
-                        return res$.pipe(map((res: Response<any>) => res.body));
-                }
-            case 'response':
-                return res$;
-            default:
-                throw new Exception(`Unreachable: unhandled observe type ${req.observe}}`);
-        }
     }
 
     protected onError(err: Error): Error {
@@ -221,10 +174,7 @@ export abstract class AbstractClient<
      * build request.
      * 构建请求
      */
-    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions & {
-        observe?: 'body' | 'events' | 'response';
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-    }): TRequest;
+    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions): TRequest;
 
     /**
      * Legacy discover method - override in concrete implementations.

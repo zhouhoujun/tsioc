@@ -8,10 +8,7 @@ import { Observable } from 'rxjs';
  * 微服务客户端处理器
  */
 @Abstract()
-export abstract class ClientHandler<
-    TReq extends AbstractRequest<any> = AbstractRequest<any>,
-    TRes extends ResponseEvent<any> = ResponseEvent<any>>
-    extends ConfigableRequestHandler<TReq, TRes, RequestContext> {
+export abstract class ClientHandler<TReq, TRes> extends ConfigableRequestHandler<TReq, TRes, RequestContext> {
 
 }
 
@@ -21,7 +18,7 @@ export abstract class ClientHandler<
  * 微服务客户端后端
  */
 @Abstract()
-export abstract class ClientBackend<TReq extends AbstractRequest<any> = AbstractRequest<any>, TRes extends ResponseEvent<any> = ResponseEvent<any>> implements RequestHandler<TReq, TRes> {
+export abstract class ClientBackend<TReq, TRes> implements RequestHandler<TReq, TRes> {
 
     /**
      * handle micro client request.

@@ -2,7 +2,7 @@ import { token, Provider } from '@tsdi/ioc';
 import { ListenOpts, Transport } from '@tsdi/common';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { ServiceConfig } from '../../../service/src/options';
+import { ServiceConfig } from '@tsdi/service';
 
 /**
  * TCP server options.

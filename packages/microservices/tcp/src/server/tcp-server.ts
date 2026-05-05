@@ -160,7 +160,7 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             this.activeConnections.delete(socket);
         });
 
-        this.handler.handle(socket as unknown as TReq, createRequestContext(this.injector, [[SOCKET, socket]]))
+        this.handler.handle(socket as TReq, createRequestContext(this.injector, [[SOCKET, socket]]))
             .pipe(
                 takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1)))
             ).subscribe();
