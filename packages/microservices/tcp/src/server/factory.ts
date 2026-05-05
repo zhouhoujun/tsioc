@@ -80,13 +80,13 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
         }
     ];
 
-    if (asDefault) {
-        providers.push({
-            provide: TcpServer,
-            useFactory: (inv: Invocation) => inv.instance,
-            deps: [serviceToken]
-        });
-    }
+    // if (asDefault) {
+    //     providers.push({
+    //         provide: TcpServer,
+    //         useFactory: (inv: Invocation) => inv.instance,
+    //         deps: [serviceToken]
+    //     });
+    // }
 
     return {
         kind: ServiceFeatureKind.Transport,
