@@ -1,5 +1,5 @@
 import { Abstract, Injector, isArray, ProvdierOf, toMutilProvdierOf } from '@tsdi/ioc';
-import { HandlerAppendService, Runner, Shutdown, isHandlerOptions } from '@tsdi/core';
+import { ApplicationEvent, HandlerAppendService, Runner, Shutdown, isHandlerOptions } from '@tsdi/core';
 import { RequestContext, RequestHandler, RequestInterceptorLike, RequestHandlerOptions, Transport } from '@tsdi/common';
 import { ServiceHandler } from './ServiceHandler';
 import { Observable } from 'rxjs';
@@ -132,7 +132,8 @@ export abstract class Service<TRequest = any, TResponse = any, TContext extends 
  * Bind microservice server event.
  * 绑定微服务服务器事件
  */
-export class BindServiceEvent<T = any> {
+export class BindServiceEvent<T = any> extends ApplicationEvent {
     constructor(readonly server: T, readonly transport: Transport, target: any) {
+        super(target);
     }
 }

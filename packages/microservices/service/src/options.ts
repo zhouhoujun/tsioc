@@ -52,6 +52,12 @@ export interface ServiceConfig<TSerOpts = any> extends TransferConfig {
     microservice: true;
 
     /**
+     * bootstrap service. default true.
+     * 是否启动服务，默认 true
+     */
+    bootstrap?: boolean;
+
+    /**
      * service registration options.
      * 服务注册选项
      */

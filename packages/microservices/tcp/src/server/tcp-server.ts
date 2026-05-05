@@ -1,11 +1,11 @@
 import { getTypeName, Inject, isNumber, isString, promisify, Injectable } from '@tsdi/ioc';
-import { ApplicationEventMulticaster } from '@tsdi/core';
+import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    LOCALHOST, Events, createRequestContext, RequestContext, InternalServerException, ListenOpts
+    LOCALHOST, Events, createRequestContext, RequestContext,
+    InternalServerException, ListenOpts, Transport
 } from '@tsdi/common';
-import { Transport } from '@tsdi/common';
-import { ServiceHandler, Service } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -79,15 +79,25 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         return this;
     }
 
-    async onStart(): Promise<void> {
+    @EventHandler(BindServiceEvent, {
+        // interceptorsToken: TCP_BIND_INTERCEPTORS,
+        // filtersToken: TCP_BIND_FILTERS,
+        // guardsToken: TCP_BIND_GUARDS
+    })
+    async bind(event: BindServiceEvent<any>) {
+        if (this.serv || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;
+        await this.onStart(event.server);
+    }
 
-        if (this.options.heybird) return;
+    async onStart(bindServer?: net.Server | tls.Server): Promise<void> {
+
+        if (this.options.heybird && !bindServer) return;
 
         const inj = this.injector;
         inj.setValue(Logger, this.logger);
 
         if (!this.serv) {
-            this.serv = this.createServer();
+            this.serv = bindServer || this.createServer();
         }
 
         const server = this.serv;
@@ -104,19 +114,17 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             });
         }
 
-        if (!this.options.microservice) {
+        if (!this.options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
-            await inj.get(ApplicationEventMulticaster).emit({
-                server: this.serv,
-                transport: Transport.TCP,
-                serverInst: this
-            });
+            await inj.get(ApplicationEventMulticaster).emit(new BindServiceEvent(this.serv, Transport.TCP, this));
         }
 
-        if (!this.options.listenOpts) {
-            this.options.listenOpts = { host: LOCALHOST, port: 3000 };
+        if (!bindServer) {
+            if (!this.options.listenOpts) {
+                this.options.listenOpts = { host: LOCALHOST, port: 3000 };
+            }
+            this.listen(this.options.listenOpts);
         }
-        this.listen(this.options.listenOpts);
     }
 
     async onShutdown(): Promise<void> {

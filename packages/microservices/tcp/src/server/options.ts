@@ -33,7 +33,7 @@ export interface TcpServOptions extends ServiceConfig {
     /**
      * heybird service.
      */
-    heybird?: string;
+    heybird?: Transport;
     /**
      * as default service or not.
      */

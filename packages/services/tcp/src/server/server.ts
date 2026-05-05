@@ -1,4 +1,4 @@
-import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
+import { asProvider, getClassRef, getTypeName, Inject, Injectable, Injector, Invocation, isNumber, isString, promisify, Provider } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
@@ -276,7 +276,8 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     if (asDefault) {
         providers.push({
             provide: TcpServer,
-            useExisting: serviceToken
+            useFactory: (inv: Invocation) => inv.instance,
+            deps: [serviceToken]
         })
     }
 
