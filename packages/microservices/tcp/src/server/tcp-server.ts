@@ -1,4 +1,4 @@
-import { getTypeName, Inject, Injector, isNumber, isString, promisify } from '@tsdi/ioc';
+import { getTypeName, Inject, isNumber, isString, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
@@ -15,11 +15,12 @@ const SOCKET = Events.SOCKET;
 /**
  * tcp server of `tcp` or `ipc`.
  */
+@Injectable()
 export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
     serv?: net.Server | tls.Server | null;
 
-    @InjectLog() protected logger!: Logger;
+    @InjectLog() logger!: Logger;
 
     protected isSecure: boolean;
 
@@ -37,8 +38,6 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         super();
         this.destroy$ = new Subject();
         this.isSecure = !!(options.serverOpts as tls.TlsOptions)?.cert;
-        // Create server immediately since it doesn't require any listening info
-        this.serv = this.createServer();
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
@@ -87,7 +86,11 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         const inj = this.injector;
         inj.setValue(Logger, this.logger);
 
-        const server = this.serv!;
+        if (!this.serv) {
+            this.serv = this.createServer();
+        }
+
+        const server = this.serv;
         server.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         server.on(Events.ERROR, (err: Error) => this.logger.error(err));
 

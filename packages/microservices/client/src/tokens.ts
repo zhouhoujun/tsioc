@@ -52,6 +52,6 @@ export function getClientBackendToken(config: ClientConfig): Token<RequestHandle
     return config.backendToken;
 }
 
-export function getClientToken(config: ClientConfig): Token<AbstractClient> {
-    return getToken<AbstractClient>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT`, toMicroName(config.microservice, config.name));
+export function getClientToken(config: ClientConfig): Token<AbstractClient<any, any>> {
+    return getToken<AbstractClient<any, any>>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT`, toMicroName(config.microservice, config.name));
 }

@@ -7,7 +7,7 @@ import {
     RequestHeader, RequestPath, RequestParam, RequestBody,
     provideService, withServiceRouter
 } from '@tsdi/service';
-import { provideClient } from '@tsdi/microservices/client';
+import { provideClient } from '@tsdi/client';
 import { withTcpTransport } from '../src/server';
 import { withTcpClientTransport, TcpClient } from '../src/client';
 import { lastValueFrom, catchError, of } from 'rxjs';

@@ -149,7 +149,7 @@
             "request": "launch",
             "name": "test amqp service",
             "args": [
-                "${workspaceRoot}/packages/services/amqp/unit.ts" 
+                "${workspaceRoot}/packages/microservices/amqp/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -169,7 +169,7 @@
             "request": "launch",
             "name": "test coap service",
             "args": [
-                "${workspaceRoot}/packages/services/coap/unit.ts" 
+                "${workspaceRoot}/packages/microservices/coap/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -189,7 +189,7 @@
             "request": "launch",
             "name": "test http service",
             "args": [
-                "${workspaceRoot}/packages/services/http/unit.ts" 
+                "${workspaceRoot}/packages/microservices/http/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -209,7 +209,7 @@
             "request": "launch",
             "name": "test kafka service",
             "args": [
-                "${workspaceRoot}/packages/services/kafka/unit.ts" 
+                "${workspaceRoot}/packages/microservices/kafka/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -229,7 +229,7 @@
             "request": "launch",
             "name": "test mqtt service",
             "args": [
-                "${workspaceRoot}/packages/services/mqtt/unit.ts" 
+                "${workspaceRoot}/packages/microservices/mqtt/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -249,7 +249,7 @@
             "request": "launch",
             "name": "test nats service",
             "args": [
-                "${workspaceRoot}/packages/services/nats/unit.ts" 
+                "${workspaceRoot}/packages/microservices/nats/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -269,7 +269,7 @@
             "request": "launch",
             "name": "test redis service",
             "args": [
-                "${workspaceRoot}/packages/services/redis/unit.ts" 
+                "${workspaceRoot}/packages/microservices/redis/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -289,7 +289,7 @@
             "request": "launch",
             "name": "test tcp service",
             "args": [
-                "${workspaceRoot}/packages/services/tcp/unit.ts" 
+                "${workspaceRoot}/packages/microservices/tcp/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -309,7 +309,7 @@
             "request": "launch",
             "name": "test udp service",
             "args": [
-                "${workspaceRoot}/packages/services/udp/unit.ts" 
+                "${workspaceRoot}/packages/microservices/udp/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
@@ -329,7 +329,7 @@
             "request": "launch",
             "name": "test ws service",
             "args": [
-                "${workspaceRoot}/packages/services/ws/unit.ts" 
+                "${workspaceRoot}/packages/microservices/ws/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",

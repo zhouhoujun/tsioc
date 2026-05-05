@@ -1,7 +1,7 @@
 import { token, Token } from '@tsdi/ioc';
 import { Transport, TransferSide } from '@tsdi/common';
 import { ResponseEvent } from '@tsdi/common';
-import { ClientConfig } from '@tsdi/microservices/client';
+import { ClientConfig } from '@tsdi/client';
 import { ConnectionOptions } from 'node:tls';
 import { SocketConstructorOpts, NetConnectOpts } from 'node:net';
 import { TcpRequest } from './request';

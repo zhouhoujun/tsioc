@@ -1,10 +1,10 @@
 import { asProvider, Provider, getClassRef, Injector } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler } from '@tsdi/common';
 import { of } from 'rxjs';
 import { Transport, TransferSide } from '@tsdi/common';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 
 /**
  * create TCP transport feature for microservice.
@@ -53,16 +53,16 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
             useFactory: (injector: Injector) => {
                 return getClassRef(TcpServer).createInvocation(injector, {
                     providers: [
+                        { provide: TCP_SERV_OPTIONS, useValue: config },
                         {
-                            provide: TCP_SERV_OPTIONS,
-                            useValue: config
+                            provide: ServiceHandler,
+                            useFactory: (inj: Injector) => createRequestHandler(inj, config),
+                            deps: [Injector]
                         }
                     ]
                 });
             },
-            deps: [
-                Injector
-            ]
+            deps: [Injector]
         },
 
         // Register with REGISTER_MICRO_SERVICES so SetupMicroServices starts the server
