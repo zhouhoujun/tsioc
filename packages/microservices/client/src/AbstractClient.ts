@@ -70,7 +70,10 @@ export abstract class AbstractClient<
         responseType?: 'json';
     }): Observable<R>;
     send(req: TRequest): Observable<TResponse>;
-    send(req: TRequest | Pattern, options?: TReqOptions): Observable<any> {
+    send(req: TRequest | Pattern, options?: TReqOptions & {
+        observe?: 'body';
+        responseType?: 'json';
+    }): Observable<any> {
         if (!req) {
             return throwError(() => new ArgumentException('Invalid message'));
         }
@@ -143,7 +146,10 @@ export abstract class AbstractClient<
         return <T>(source: Observable<T>) => source;
     }
 
-    protected request(first: Pattern | TRequest, options: TReqOptions = {} as any): Observable<any> {
+    protected request(first: Pattern | TRequest, options: TReqOptions & {
+        observe?: 'body';
+        responseType?: 'json';
+    } = {} as any): Observable<any> {
         const req = this.buildRequest(first, options);
         let context = options.context;
         if (!context) {
@@ -174,7 +180,10 @@ export abstract class AbstractClient<
      * build request.
      * 构建请求
      */
-    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions): TRequest;
+    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions & {
+        observe?: 'body';
+        responseType?: 'json';
+    }): TRequest;
 
     /**
      * Legacy discover method - override in concrete implementations.
