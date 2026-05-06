@@ -1,5 +1,5 @@
 import { ProvdierOf, Provider, Token } from '@tsdi/ioc';
-import { GuardLike, VaildatorLike } from '@tsdi/core';
+import { GuardLike, MessageReaderFactory, VaildatorLike } from '@tsdi/core';
 import {
     Incoming, Outgoing, RequestContext, RequestFilterLike,
     RequestInterceptorLike, TransferConfig, TransferSide, TransferInterceptorFactory
@@ -29,7 +29,8 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     router?: boolean | RouteOpts;
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;
-    gracefulShutdown?: boolean | GracefulShutdownOptions;
+    gracefulShutdown?: boolean | GracefulShutdownOptions;    
+    messagerReaderFactory?: ProvdierOf<MessageReaderFactory>;
     defaultTransfer?: TransferInterceptorFactory;
 }
 
@@ -37,11 +38,11 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
  * Microservice service config.
  * 微服务服务端配置
  */
-export interface ServiceConfig<TSerOpts = any> extends TransferConfig {
+export interface ServiceConfig<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends TransferConfig {
 
     side: TransferSide.server;
     
-    features: ServiceFeatureOptions;
+    features: ServiceFeatureOptions<TReq, TRes, TContext>;
 
     /**
      * is microservice. default true.
@@ -86,7 +87,7 @@ export interface ServiceTransportFeature {
     providers: Provider[];
 }
 
-export interface ServiceOptions<TSerOpts = any> extends ServiceConfig<TSerOpts> {
+export interface ServiceOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceConfig<TReq, TRes, TContext> {
     asDefault?: boolean;
-    transportFeature?: (options: ServiceOptions<TSerOpts>, asDefault?: boolean) => ServiceTransportFeature;
+    transportFeature?: (options: ServiceOptions<TReq, TRes, TContext>, asDefault?: boolean) => ServiceTransportFeature;
 }

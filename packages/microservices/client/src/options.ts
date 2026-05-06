@@ -1,4 +1,5 @@
-import { Token } from '@tsdi/ioc';
+import { ProvdierOf, Token } from '@tsdi/ioc';
+import { MessageReaderFactory } from '@tsdi/core';
 import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig, TransferInterceptorFactory, TransferSide } from '@tsdi/common';
 import { ConnectionPoolOptions } from './pool';
 
@@ -14,6 +15,7 @@ export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends R
     loadBalance?: boolean | LoadBalanceOptions;
     circuitBreaker?: boolean | CircuitBreakerOptions;
     retry?: boolean | RetryOptions;
+    messagerReaderFactory?: ProvdierOf<MessageReaderFactory>;
 }
 
 

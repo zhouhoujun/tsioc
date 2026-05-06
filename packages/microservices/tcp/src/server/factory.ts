@@ -1,5 +1,6 @@
-import { asProvider, Provider, getClassRef, Injector, isArray, importProvidersFrom } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, TransferInterceptorFactory, Transport, TransferSide, MessageReaderFactory, IncomingMessageReaderFactory } from '@tsdi/common';
+import { asProvider, Provider, getClassRef, Injector, isArray, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { MessageReaderFactory } from '@tsdi/core';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, TransferInterceptorFactory, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
@@ -14,11 +15,10 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     const config = {
         transport: Transport.TCP,
         side: TransferSide.server,
-        microservice: true,
         ...option,
         features: {
             ...option.features,
-            defaultTransfer: useJsonPacket(),
+            defaultTransfer: useJsonPacket()
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
         serverOpts: option.serverOpts ? { ...option.serverOpts } : undefined,
@@ -27,14 +27,15 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
 
-    config.providers = [
+    config.providers ??= [];
+    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.providers.push(
         { provide: TCP_SERV_OPTIONS, useValue: config },
-        ...(config.providers ?? [])
-    ];
+        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+    );
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
-        { provide: MessageReaderFactory, useClass: IncomingMessageReaderFactory },
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         asProvider({
             provide: backendToken,
