@@ -4,7 +4,7 @@ import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
-import { TransferSide } from './transfer';
+import { TransferInterceptorFactory, TransferSide } from './transfer';
 import { RequestFilterLike } from './filter';
 
 
@@ -78,7 +78,7 @@ export interface RequestHandlerOptions<TReq = any, TRes = any, TContext extends 
     backend?: ProvdierOf<RequestHandlerLike<TReq, TRes, TContext>>;
 
 
-    transfers?: ProvdierOf<RequestInterceptorLike[]>;
+    transfers?: TransferInterceptorFactory[];
 
 
     handlerType?: Type<RequestHandler>;

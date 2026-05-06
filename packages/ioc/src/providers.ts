@@ -256,6 +256,7 @@ export interface ModuleWithProviders<T = any> {
 
 export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType>;
 
+
 /**
  * is module providers or not.
  * @param target 

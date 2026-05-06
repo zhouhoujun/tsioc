@@ -2,17 +2,17 @@ import { token, Provider } from '@tsdi/ioc';
 import { ListenOpts, Transport } from '@tsdi/common';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { ServiceConfig } from '@tsdi/service';
+import { ServiceOptions } from '@tsdi/service';
 
 /**
  * TCP server options.
  */
-export interface TcpServOptions extends ServiceConfig {
+export interface TcpServOptions extends ServiceOptions {
     /**
      * Transport type.
      * 传输类型
      */
-    transport: Transport;
+    transport: Transport.TCP;
     /**
      * Additional providers.
      * 额外提供者
@@ -34,10 +34,6 @@ export interface TcpServOptions extends ServiceConfig {
      * heybird service.
      */
     heybird?: Transport;
-    /**
-     * as default service or not.
-     */
-    asDefault?: boolean;
 }
 
 export const TCP_SERV_OPTIONS = token<TcpServOptions>('TCP_SERV_OPTIONS');

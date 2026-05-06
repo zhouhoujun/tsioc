@@ -12,45 +12,45 @@ function toMicroName(microservice?: boolean, name?: string) {
 }
 
 export function getServiceGuardsToken(config: ServiceConfig): Token<GuardLike[]> {
-    if (!config.guardsToken) {
-        config.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_GUARDS`, toMicroName(config.microservice));
+    if (!config.features.guardsToken) {
+        config.features.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_GUARDS`, toMicroName(config.microservice));
     }
-    return config.guardsToken;
+    return config.features.guardsToken;
 }
 
 export function getServiceFiltersToken(config: ServiceConfig): Token<RequestFilterLike[]> {
-    if (!config.filtersToken) {
-        config.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_FILTERS`, toMicroName(config.microservice));
+    if (!config.features.filtersToken) {
+        config.features.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_FILTERS`, toMicroName(config.microservice));
     }
-    return config.filtersToken;
+    return config.features.filtersToken;
 }
 
 export function getServiceInterceptorsToken(config: ServiceConfig): Token<RequestInterceptorLike[]> {
-    if (!config.interceptorsToken) {
-        config.interceptorsToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_INTERCEPTORS`, toMicroName(config.microservice));
+    if (!config.features.interceptorsToken) {
+        config.features.interceptorsToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_INTERCEPTORS`, toMicroName(config.microservice));
     }
-    return config.interceptorsToken;
+    return config.features.interceptorsToken;
 }
 
 export function getServiceMiddlewaresToken(config: ServiceConfig): Token<MiddlewareLike[]> {
-    if (!config.middlewaresToken) {
-        config.middlewaresToken = getToken<MiddlewareLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_MIDDLEWARES`, toMicroName(config.microservice));
+    if (!config.features.middlewaresToken) {
+        config.features.middlewaresToken = getToken<MiddlewareLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_MIDDLEWARES`, toMicroName(config.microservice));
     }
-    return config.middlewaresToken;
+    return config.features.middlewaresToken;
 }
 
 export function getServiceTransfersToken(config: ServiceConfig): Token<RequestInterceptorLike[]> {
-    if (!config.transfersToken) {
-        config.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_TRANSFERS`, toMicroName(config.microservice));
+    if (!config.features.transfersToken) {
+        config.features.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_TRANSFERS`, toMicroName(config.microservice));
     }
-    return config.transfersToken;
+    return config.features.transfersToken;
 }
 
 export function getServiceRouterToken(config: ServiceConfig): Token<Router> {
-    if (!config.routerToken) {
-        config.routerToken = getToken(Router, Transport[config.transport] + '_MICRO_' + toMicroName(config.microservice));
+    if (!config.features.routerToken) {
+        config.features.routerToken = getToken(Router, Transport[config.transport] + '_MICRO_' + toMicroName(config.microservice));
     }
-    return config.routerToken;
+    return config.features.routerToken;
 }
 
 export function getServiceOptionsToken(config: ServiceConfig): Token<ServiceConfig> {
@@ -62,10 +62,10 @@ export function getServiceHandlerToken(config: ServiceConfig): Token<any> {
 }
 
 export function getServiceBackendToken(config: ServiceConfig): Token<any> {
-    if(!config.backendToken) {
-        config.backendToken = getToken<any>(`${Transport[config.transport].toUpperCase()}_BACKEND`, toMicroName(config.microservice, config.name));
+    if(!config.features.backendToken) {
+        config.features.backendToken = getToken<any>(`${Transport[config.transport].toUpperCase()}_BACKEND`, toMicroName(config.microservice, config.name));
     }
-    return config.backendToken;
+    return config.features.backendToken;
 }
 
 export function getServiceToken(config: ServiceConfig): Token<Invocation> {

@@ -216,7 +216,7 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         }
     }
 
-    
+
     /**
      * set value.
      *
@@ -345,7 +345,7 @@ export class StaticInjector extends AbstractInjector {
         this.records.set(Injector, val);
         this.records.set(StaticInjector, val);
         this._runtime.register(this, scope);
-        
+
     }
 }
 
@@ -370,7 +370,7 @@ export class DefaultInjector extends AbstractInjector {
         this._runtime.register(this, scope);
         if (scope === 'root') {
             this.records.set(INJECTOR, val);
-        } else if(scope) {
+        } else if (scope) {
             SCOPE_PRODIDERS.length && processProviders(this, SCOPE_PRODIDERS);
         }
     }
@@ -396,6 +396,24 @@ INJECT_IMPL.create = (parent: Injector, providers?: Provider[], scope?: Injector
 INJECT_IMPL.isInjector = (target) => target instanceof AbstractInjector;
 
 
+
+/**
+ * Import providers from the given modules, similar to Angular's `importProvidersFrom`.
+ * Collects all providers from the specified modules for use in standalone contexts.
+ *
+ * 类似 Angular 的 `importProvidersFrom`，从给定模块中收集所有提供者。
+ *
+ * @param modules module types to import providers from
+ * @returns module types that can be used as providers or deps
+ */
+export function importProvidersFrom(...modules: ModuleType[]): DynamicProvider {
+    return {
+        provider: (inj) => {
+            let ps: Promise<void> | void | undefined;
+            return mergePromise(ps, () => processUse(inj, modules))
+        }
+    };
+}
 
 /**
  * Inject Util.
@@ -500,7 +518,7 @@ export namespace InjectUtil {
                 context = arg1;
                 isCtx = true;
             } else if (isArray(arg1)) {
-                context = arg1.length ? createRunContext(createInjector(injector, {  providers: arg1 })) : undefined;
+                context = arg1.length ? createRunContext(createInjector(injector, { providers: arg1 })) : undefined;
             } else if (arg1.provide) {
                 context = createRunContext(createInjector(injector, { providers: [arg1] }));
             } else if (hasContextOptions(arg1)) {
@@ -625,6 +643,7 @@ export namespace InjectUtil {
         await processUse(injector, args, types);
         return types;
     }
+
 
 
     /**
@@ -752,7 +771,7 @@ export namespace InjectUtil {
 
         if (!context) {
             option = { ...option, providers };
-            injector =  createInjector(injector, option);
+            injector = createInjector(injector, option);
         }
         if (isTypeObject(target)) {
             targetClass = getType(target);

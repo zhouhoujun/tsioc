@@ -10,31 +10,31 @@ function toMicroName(microservice?: boolean, name?: string) {
 }
 
 export function getClientGuardsToken(config: ClientConfig): Token<GuardLike[]> {
-    if (!config.guardsToken) {
-        config.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_GUARDS`, toMicroName(config.microservice));
+    if (!config.features.guardsToken) {
+        config.features.guardsToken = getToken<GuardLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_GUARDS`, toMicroName(config.microservice));
     }
-    return config.guardsToken;
+    return config.features.guardsToken;
 }
 
 export function getClientFiltersToken(config: ClientConfig): Token<RequestFilterLike[]> {
-    if (!config.filtersToken) {
-        config.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_FILTERS`, toMicroName(config.microservice));
+    if (!config.features.filtersToken) {
+        config.features.filtersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_FILTERS`, toMicroName(config.microservice));
     }
-    return config.filtersToken;
+    return config.features.filtersToken;
 }
 
 export function getClientInterceptorsToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
-    if (!config.interceptorsToken) {
-        config.interceptorsToken = getToken<RequestInterceptor[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_INTERCEPTORS`, toMicroName(config.microservice));
+    if (!config.features.interceptorsToken) {
+        config.features.interceptorsToken = getToken<RequestInterceptor[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_INTERCEPTORS`, toMicroName(config.microservice));
     }
-    return config.interceptorsToken;
+    return config.features.interceptorsToken;
 }
 
 export function getClientTransfersToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
-    if (!config.transfersToken) {
-        config.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_TRANSFERS`, toMicroName(config.microservice));
+    if (!config.features.transfersToken) {
+        config.features.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_TRANSFERS`, toMicroName(config.microservice));
     }
-    return config.transfersToken;
+    return config.features.transfersToken;
 }
 
 export function getClientOptionsToken(config: ClientConfig): Token<ClientConfig> {
@@ -46,10 +46,10 @@ export function getClientHandlerToken(config: ClientConfig): Token<RequestHandle
 }
 
 export function getClientBackendToken(config: ClientConfig): Token<RequestHandlerLike> {
-    if (!config.backendToken) {
-        config.backendToken = getToken<RequestHandlerLike>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_BACKEND`, toMicroName(config.microservice, config.name));
+    if (!config.features.backendToken) {
+        config.features.backendToken = getToken<RequestHandlerLike>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_BACKEND`, toMicroName(config.microservice, config.name));
     }
-    return config.backendToken;
+    return config.features.backendToken;
 }
 
 export function getClientToken(config: ClientConfig): Token<AbstractClient<any, any>> {

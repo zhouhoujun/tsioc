@@ -1,14 +1,12 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Token, isArray, isBoolean, isFunction, isToken, toProvider, toProviders, token } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
-    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory, useSimpleJson,
+    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
     UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike,
-    ResponseFactory, DefaultResponseFactory
 } from '@tsdi/common';
-import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken, getClientOptionsToken, getClientHandlerToken, getClientBackendToken, getClientToken } from './tokens';
-import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions } from './options';
-import { AbstractClient } from './AbstractClient';
-import { ClientHandler } from './ClientHandler';
+import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
+import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions } from './options';
+
 
 
 /**
@@ -253,8 +251,8 @@ export function withClientTransfers(
             UrlClientIncomingFactory,
             TopicClientIncomingFactory,
         ];
-        if (!selectors.length) {
-            selectors.push(useSimpleJson());
+        if (!selectors.length && config.features.defaultTransfer) {
+            selectors.push(config.features.defaultTransfer);
         }
         selectors.forEach((fac) => {
             const itps = fac(config);
@@ -279,23 +277,12 @@ export const MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS = token<CircuitBreakerOptions>
 export const MICRO_CLIENT_RETRY_OPTIONS = token<RetryOptions>('MICRO_CLIENT_RETRY_OPTIONS');
 
 
-export interface ClientFeatureOptions {
-    filters?: ProvdierOf<RequestFilterLike>[];
-    interceptors?: ProvdierOf<RequestInterceptorLike>[];
-    guards?: ProvdierOf<GuardLike>[];
-    transfers?: boolean | TransferInterceptorFactory[];
-    discovery?: boolean | DiscoveryOptions;
-    loadBalance?: boolean | LoadBalanceOptions;
-    circuitBreaker?: boolean | CircuitBreakerOptions;
-    retry?: boolean | RetryOptions;
-}
 
 const defaultClientOptions: Partial<ClientFeatureOptions> = {
     discovery: true,
     loadBalance: true,
     circuitBreaker: false,
-    retry: false,
-    transfers: true
+    retry: false
 };
 
 /**
@@ -329,9 +316,9 @@ export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatur
         if (opts.retry) {
             features.push(withRetry(opts.retry)(config));
         }
-        if (opts.transfers) {
-            features.push(withClientTransfers(...(isArray(opts.transfers) ? opts.transfers : []))(config));
-        }
+
+        features.push(withClientTransfers(...(isArray(opts.transfers) ? opts.transfers : []))(config));
+
         return features;
     }
 }
@@ -341,7 +328,6 @@ export interface ClientOptions<
     TReq extends AbstractRequest<any> = AbstractRequest<any>,
     TRes extends ResponseEvent<any> = ResponseEvent<any>,
 > extends ClientConfig<TReq, TRes> {
-    features?: ClientFeatureOptions;
     transportFeature?: (options: ClientOptions<TReq, TRes>, asDefault?: boolean) => ClientTransportFeature;
 }
 

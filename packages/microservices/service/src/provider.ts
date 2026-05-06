@@ -153,9 +153,9 @@ export function withServiceFeatures(options?: ServiceFeatureOptions): ServiceFea
         if (opts.router) {
             features.push(withServiceRouter(isBoolean(opts.router) ? undefined : opts.router)(config));
         }
-        if (opts.transfers) {
-            features.push(withServiceTransfers(...(isArray(opts.transfers) ? opts.transfers : []))(config));
-        }
+
+        features.push(withServiceTransfers(...opts.transfers ?? [])(config));
+
         if (opts.registration) {
             features.push(withRegistration(opts.registration)(config));
         }
@@ -264,13 +264,13 @@ export function withServiceFilters(...filters: ProvdierOf<RequestFilterLike>[]):
     };
 }
 
-import { composeMiddleware, convertToInterceptor } from './middleware';
+import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware';
 
 /**
  * Adds middlewares to micro service.
  * @publicApi
  */
-export function withServiceMiddlewares(...middlewares: ProvdierOf<any>[]): ServiceFeatureFn<ServiceFeatureKind.Middlewares> {
+export function withServiceMiddlewares(...middlewares: ProvdierOf<MiddlewareLike>[]): ServiceFeatureFn<ServiceFeatureKind.Middlewares> {
     return (config) => {
         const tk = getServiceMiddlewaresToken(config);
         const providers = middlewares.map((u) => toProvider(tk, u, true)) as Provider[];
@@ -300,8 +300,8 @@ export function withServiceTransfers(...selectors: TransferInterceptorFactory[])
     return (config) => {
         const tk = getServiceTransfersToken(config);
         const providers: Provider[] = [];
-        if (!selectors.length) {
-            selectors.push(useSimpleJson());
+        if (!selectors.length && config.features.defaultTransfer) {
+            selectors.push(config.features.defaultTransfer);
         }
         selectors.forEach((fac) => {
             const itps = fac(config);

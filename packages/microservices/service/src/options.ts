@@ -6,11 +6,11 @@ import {
 } from '@tsdi/common';
 import { ServiceFeatureKind } from './provider';
 export * from './features/index';
-import { MiddlewareLike } from './middleware';
 export * from './middleware';
 import { RegistrationOptions } from './features/RegistrationOptions';
 import { HealthOptions } from './features/HealthOptions';
 import { GracefulShutdownOptions } from './features/GracefulShutdownOptions';
+import { ServiceHandlerOptions } from './ServiceHandler';
 
 export interface RouteOpts {
     microservice?: boolean;
@@ -20,21 +20,17 @@ export interface RouteOpts {
  * Microservice feature options.
  * 微服务特性选项
  */
-export interface ServiceFeatureOptions {
+export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {
     timeout?: number;
-    filters?: ProvdierOf<RequestFilterLike>[];
-    interceptors?: ProvdierOf<RequestInterceptorLike>[];
-    middlewares?: ProvdierOf<MiddlewareLike>[];
-    guards?: ProvdierOf<GuardLike>[];
-    requestVaildators?: ProvdierOf<VaildatorLike<Incoming, RequestContext>>[];
-    responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, RequestContext>>[];
+    requestVaildators?: ProvdierOf<VaildatorLike<Incoming, TContext>>[];
+    responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, TContext>>[];
     logger?: boolean;
     bodyparser?: boolean;
     router?: boolean | RouteOpts;
-    transfers?: TransferInterceptorFactory[];
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;
     gracefulShutdown?: boolean | GracefulShutdownOptions;
+    defaultTransfer?: TransferInterceptorFactory;
 }
 
 /**
@@ -44,12 +40,14 @@ export interface ServiceFeatureOptions {
 export interface ServiceConfig<TSerOpts = any> extends TransferConfig {
 
     side: TransferSide.server;
+    
+    features: ServiceFeatureOptions;
 
     /**
      * is microservice. default true.
      * 是否为微服务，默认 true
      */
-    microservice: true;
+    microservice?: true;
 
     /**
      * bootstrap service. default true.
@@ -80,15 +78,6 @@ export interface ServiceConfig<TSerOpts = any> extends TransferConfig {
      * 目标服务名称
      */
     serviceName?: string;
-
-    // Allow tokens to be added for interceptors, guards, etc.
-    guardsToken?: Token<any>;
-    filtersToken?: Token<any>;
-    interceptorsToken?: Token<any>;
-    middlewaresToken?: Token<any>;
-    transfersToken?: Token<any>;
-    routerToken?: Token<any>;
-    backendToken?: Token<any>;
 }
 
 export interface ServiceTransportFeature {
@@ -98,7 +87,6 @@ export interface ServiceTransportFeature {
 }
 
 export interface ServiceOptions<TSerOpts = any> extends ServiceConfig<TSerOpts> {
-    features?: ServiceFeatureOptions;
     asDefault?: boolean;
     transportFeature?: (options: ServiceOptions<TSerOpts>, asDefault?: boolean) => ServiceTransportFeature;
 }

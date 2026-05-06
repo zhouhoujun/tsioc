@@ -183,29 +183,7 @@ export interface InvocationOptions<T = any> extends InvokeOptions {
 
 }
 
-// /**
-//  * RunContext - Optimized context for runtime execution.
-//  *
-//  * Combines Context with Injector for efficient data passing during method invocation.
-//  * Avoids creating full InvocationContext instances when only runtime data is needed.
-//  *
-//  * 运行时上下文 - 优化的运行时执行上下文。
-//  * 结合 Context 和 Injector，在方法调用期间高效传递数据。
-//  * 当只需要运行时数据时，避免创建完整的 InvocationContext 实例。
-//  */
-// export abstract class InvocationContext extends Context {
 
-//     abstract getInjector(): Injector;
-
-//     abstract setInjector(injector: Injector): this;
-
-//     abstract getPayload<T = any>(): T;
-
-//     abstract setPayload<T>(payload: T): this;
-
-//     abstract onFailed(failed: (target: AbstractType, propertyKey: string) => void): this;
-
-// }
 
 export function hasContextOptions(option?: InvokeOptions): boolean {
     if (!option) return false;

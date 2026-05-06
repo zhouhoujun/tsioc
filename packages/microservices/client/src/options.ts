@@ -1,6 +1,16 @@
 import { ProvdierOf, Token } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, RequestHandlerOptions, ResponseEvent, ResponseFactory, TransferConfig, TransferSide } from '@tsdi/common';
+import { AbstractRequest, PatternFormatter, RequestFilterLike, RequestHandlerOptions, RequestInterceptorLike, ResponseEvent, ResponseFactory, TransferConfig, TransferInterceptorFactory, TransferSide } from '@tsdi/common';
 import { ConnectionPoolOptions } from './pool';
+
+
+
+export interface ClientFeatureOptions extends RequestHandlerOptions {
+    defaultTransfer?: TransferInterceptorFactory;
+    discovery?: boolean | DiscoveryOptions;
+    loadBalance?: boolean | LoadBalanceOptions;
+    circuitBreaker?: boolean | CircuitBreakerOptions;
+    retry?: boolean | RetryOptions;
+}
 
 
 
@@ -10,9 +20,11 @@ import { ConnectionPoolOptions } from './pool';
 export interface ClientConfig<
     TInput extends AbstractRequest<any> = AbstractRequest<any>,
     TOutput extends ResponseEvent<any> = ResponseEvent<any>,
-> extends RequestHandlerOptions, TransferConfig {
+> extends TransferConfig {
 
     side: TransferSide.client;
+
+    features: ClientFeatureOptions;
     /**
      * url
      */
