@@ -1,5 +1,5 @@
 import { asProvider, Provider, getClassRef, Injector, isArray, importProvidersFrom } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, TransferInterceptorFactory, Transport, TransferSide } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, TransferInterceptorFactory, Transport, TransferSide, MessageReaderFactory, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
@@ -14,6 +14,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     const config = {
         transport: Transport.TCP,
         side: TransferSide.server,
+        microservice: true,
         ...option,
         features: {
             ...option.features,
@@ -33,6 +34,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        { provide: MessageReaderFactory, useClass: IncomingMessageReaderFactory },
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         asProvider({
             provide: backendToken,

@@ -129,7 +129,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             ...provideService(
                 withServiceRouter(),
                 withTcpTransport({
-                    listenOpts: { port: 0, host: '127.0.0.1' },
+                    listenOpts: { port: 11400, host: '127.0.0.1' },
                     asDefault: true
                 })
             )
@@ -137,25 +137,14 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
     })
     class UserApiModule { }
 
+    const SERVER_PORT = 11400;
+
     let ctx: ApplicationContext;
-    let serverPort: number;
 
     before(async () => {
         ctx = await Application.run(UserApiModule);
-        // Get the actual server port from the TcpServer
-        // Since TcpServer listens on 0, OS assigns a random port
-        // We need to get it from the underlying server address
-        const TcpServer = require('../src/server/tcp-server').TcpServer;
-        const tcpServer = ctx.get(TcpServer) as any;
-        // Wait a bit for server to start
-        await new Promise(resolve => setTimeout(resolve, 50));
-        if (tcpServer && tcpServer.serv) {
-            const address = tcpServer.serv.address();
-            if (address && typeof address === 'object' && 'port' in address) {
-                serverPort = address.port;
-            }
-        }
-        expect(serverPort).toBeGreaterThan(0);
+        // Wait for server to start listening
+        await new Promise(resolve => setTimeout(resolve, 300));
     });
 
     it('should GET user list with query parameters', async () => {
@@ -167,7 +156,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             headers: { accept: 'application/json' }
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.page).toBe(2);
@@ -186,7 +175,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             headers: { accept: 'application/json' }
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.page).toBe(1);
@@ -201,7 +190,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             headers: { authorization: 'Bearer token123' }
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.id).toBe('123');
@@ -221,7 +210,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             body: userData
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.id).toBeDefined();
@@ -241,7 +230,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             body: updateData
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.id).toBe('456');
@@ -255,7 +244,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             method: 'DELETE'
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.deleted).toBe(true);
@@ -269,7 +258,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             query: { q: 'test', active: 'true' }
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.query).toBe('test');
@@ -288,7 +277,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             body: users
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.count).toBe(2);
@@ -302,7 +291,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
             query: { age: '25', enabled: 'true' }
         });
 
-        const response = await sendTcpRequest(serverPort, request);
+        const response = await sendTcpRequest(SERVER_PORT, request);
         const result = JSON.parse(response);
 
         expect(result.age).toBe(25);
@@ -319,7 +308,7 @@ describe('TCP Microservice End-to-End Request-Response Test', () => {
         });
 
         try {
-            const response = await sendTcpRequest(serverPort, request);
+            const response = await sendTcpRequest(SERVER_PORT, request);
             // Should contain error info
             const result = JSON.parse(response);
             expect(result.error).toBeDefined();

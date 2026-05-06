@@ -4,7 +4,7 @@ import {
     AnnotationMetadata, Handler, Type, ActionType, getTypeName, isNumber, isDefined,
     TokenOf
 } from '@tsdi/ioc';
-import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor, createPayloadResolveInterceptors, MODEL_RESOLVERS } from '@tsdi/core';
+import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor, createMessageResolveInterceptors, MODEL_RESOLVERS } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
 import { Route, RouteOptions } from './router/route';
 import { MappingDef, RouteMappingMetadata, RouteMappingOptions, Router } from './router/router';
@@ -40,22 +40,7 @@ export interface Subscribe {
 }
 
 
-const primitiveResolvers = createPayloadResolveInterceptors(
-    (input, scope, field) => {
-        if (field && !scope) {
-            scope = 'query'
-        }
-        if (scope) {
-            const data = getScopeValue(input, scope);
-            if (field) {
-                return isDefined(data) ? data[field] : null;
-            }
-            return data;
-        }
-        return input;
-    },
-    // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
-);
+const primitiveResolvers = createMessageResolveInterceptors();
 
 
 

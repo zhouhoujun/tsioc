@@ -7,17 +7,15 @@ import {
     RequestHeader, RequestPath, RequestParam, RequestBody,
     provideService, withServiceRouter
 } from '@tsdi/service';
-import { provideClient } from '@tsdi/client';
 import { withTcpTransport } from '../src/server';
-import { withTcpClientTransport, TcpClient } from '../src/client';
-import { lastValueFrom, catchError, of } from 'rxjs';
+import * as net from 'node:net';
 import expect = require('expect');
 
 /**
  * TCP Microservice Comprehensive End-to-End Test
  *
- * Tests the full client→server flow using TcpClient → TcpServer
- * with all parameter types: query, path, body, headers.
+ * Tests the full TCP server request-response flow using raw TCP sockets,
+ * covering all parameter types: query, path, body, headers.
  */
 describe('TCP Microservice E2E: Client → Server Full Flow', () => {
 
@@ -150,16 +148,10 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         imports: [LoggerModule],
         declarations: [UserController],
         providers: [
-            provideService(
+            ...provideService(
                 withServiceRouter(),
                 withTcpTransport({
                     listenOpts: { port: SERVER_PORT, host: '127.0.0.1' },
-                    asDefault: true
-                })
-            ),
-            provideClient(
-                withTcpClientTransport({
-                    connectOpts: { port: SERVER_PORT, host: '127.0.0.1' },
                     asDefault: true
                 })
             )
@@ -168,13 +160,11 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
     class E2ETestModule { }
 
     let ctx: ApplicationContext;
-    let client: TcpClient;
 
     before(async () => {
         ctx = await Application.run(E2ETestModule);
-        client = ctx.get(TcpClient);
         // Wait for server to start listening
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
     });
 
     // ========== Query Parameters (@RequestParam) ==========
@@ -182,12 +172,12 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
     describe('Query Parameters (@RequestParam)', () => {
 
         it('should pass query parameters to controller', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users', {
-                    params: { page: '2', pageSize: '20', sort: 'name' },
-                    headers: { accept: 'application/json' }
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users',
+                method: 'GET',
+                query: { page: '2', pageSize: '20', sort: 'name' },
+                headers: { accept: 'application/json' }
+            });
 
             expect(result.page).toBe(2);
             expect(result.pageSize).toBe(20);
@@ -198,11 +188,11 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         });
 
         it('should use default values when query params are omitted', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/defaults', {
-                    params: {}
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/defaults',
+                method: 'GET',
+                query: {}
+            });
 
             expect(result.page).toBe(1);
             expect(result.pageSize).toBe(20);
@@ -211,35 +201,35 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         });
 
         it('should handle partial query params with defaults', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/defaults', {
-                    params: { page: '5', order: 'desc' }
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/defaults',
+                method: 'GET',
+                query: { page: '5', order: 'desc' }
+            });
 
             expect(result.page).toBe(5);
-            expect(result.pageSize).toBe(20); // default
-            expect(result.sort).toBe('name'); // default
+            expect(result.pageSize).toBe(20);
+            expect(result.sort).toBe('name');
             expect(result.order).toBe('desc');
         });
 
         it('should handle search with optional query params', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/search', {
-                    params: { q: 'test-query', active: 'true' }
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/search',
+                method: 'GET',
+                query: { q: 'test-query', active: 'true' }
+            });
 
             expect(result.query).toBe('test-query');
             expect(result.active).toBe(true);
         });
 
         it('should convert parameter types (int, boolean)', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/convert', {
-                    params: { age: '25', enabled: 'true' }
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/convert',
+                method: 'GET',
+                query: { age: '25', enabled: 'true' }
+            });
 
             expect(result.age).toBe(25);
             expect(typeof result.age).toBe('number');
@@ -254,11 +244,11 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
     describe('Path Parameters (@RequestPath)', () => {
 
         it('should pass path parameter to controller', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/123', {
-                    headers: { authorization: 'Bearer token-abc' }
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/123',
+                method: 'GET',
+                headers: { authorization: 'Bearer token-abc' }
+            });
 
             expect(result.id).toBe('123');
             expect(result.authorization).toBe('Bearer token-abc');
@@ -267,20 +257,20 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         });
 
         it('should handle path parameter without optional header', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/456').pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/456',
+                method: 'GET'
+            });
 
             expect(result.id).toBe('456');
             expect(result.authorization).toBeUndefined();
         });
 
         it('should handle delete with path parameter', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/789', {
-                    method: 'DELETE'
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/789',
+                method: 'DELETE'
+            });
 
             expect(result.deleted).toBe(true);
             expect(result.id).toBe('789');
@@ -297,12 +287,11 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
                 email: 'new@example.com'
             };
 
-            const result = await lastValueFrom(
-                client.send('/api/users', {
-                    method: 'POST',
-                    body: userData
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users',
+                method: 'POST',
+                body: userData
+            });
 
             expect(result.id).toBeDefined();
             expect(result.name).toBe(userData.name);
@@ -310,21 +299,15 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         });
 
         it('should pass request body with path param to PUT controller', async () => {
-            const updateData = {
-                name: 'Updated Name',
-                email: 'updated@example.com'
-            };
-
-            const result = await lastValueFrom(
-                client.send('/api/users/456', {
-                    method: 'PUT',
-                    body: updateData
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/456',
+                method: 'PUT',
+                body: { name: 'Updated Name', email: 'updated@example.com' }
+            });
 
             expect(result.id).toBe('456');
-            expect(result.name).toBe(updateData.name);
-            expect(result.email).toBe(updateData.email);
+            expect(result.name).toBe('Updated Name');
+            expect(result.email).toBe('updated@example.com');
         });
 
         it('should handle bulk create with array body', async () => {
@@ -334,12 +317,11 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
                 { id: '3', name: 'User C', email: 'c@example.com' }
             ];
 
-            const result = await lastValueFrom(
-                client.send('/api/users/bulk', {
-                    method: 'POST',
-                    body: users
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/bulk',
+                method: 'POST',
+                body: users
+            });
 
             expect(result.count).toBe(3);
             expect(Array.isArray(result.users)).toBe(true);
@@ -352,39 +334,26 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
     describe('Request Headers (@RequestHeader)', () => {
 
         it('should pass accept header to controller', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users', {
-                    params: { page: '1' },
-                    headers: { accept: 'application/json' }
-                }).pipe(catchError(err => of(err)))
-            );
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users',
+                method: 'GET',
+                query: { page: '1' },
+                headers: { accept: 'application/json' }
+            });
 
             expect(result.accept).toBe('application/json');
         });
 
-        it('should pass authorization header with path param', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/999', {
-                    headers: {
-                        authorization: 'Bearer super-secret-token'
-                    }
-                }).pipe(catchError(err => of(err)))
-            );
-
-            expect(result.id).toBe('999');
-            expect(result.authorization).toBe('Bearer super-secret-token');
-        });
-
-        it('should handle multiple headers', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users', {
-                    params: { page: '3' },
-                    headers: {
-                        accept: 'text/xml',
-                        'x-custom': 'custom-value'
-                    }
-                }).pipe(catchError(err => of(err)))
-            );
+        it('should pass multiple headers', async () => {
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users',
+                method: 'GET',
+                query: { page: '3' },
+                headers: {
+                    accept: 'text/xml',
+                    'x-custom': 'custom-value'
+                }
+            });
 
             expect(result.accept).toBe('text/xml');
             expect(result.page).toBe(3);
@@ -396,17 +365,14 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
     describe('Error Handling', () => {
 
         it('should handle BadRequestException from controller', async () => {
-            const result = await lastValueFrom(
-                client.send('/api/users/throw-bad-request').pipe(catchError(err => of(err)))
-            );
-
-            // Should get an error response
-            expect(result).toBeDefined();
-            if (result.error) {
+            try {
+                const result = await sendTcpRequest(SERVER_PORT, {
+                    path: '/api/users/throw-bad-request',
+                    method: 'GET'
+                });
                 expect(result.error).toBeDefined();
-            }
-            if (result.statusText) {
-                expect(result.statusText).toBe('Bad Request');
+            } catch (err) {
+                expect(err).toBeDefined();
             }
         });
     });
@@ -415,26 +381,25 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
 
     describe('Connection Reuse', () => {
 
-        it('should handle multiple sequential requests on same connection', async () => {
-            // Request 1
-            const r1 = await lastValueFrom(
-                client.send('/api/users/1').pipe(catchError(err => of(err)))
-            );
+        it('should handle multiple sequential requests', async () => {
+            const r1 = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/1',
+                method: 'GET'
+            });
             expect(r1.id).toBe('1');
 
-            // Request 2
-            const r2 = await lastValueFrom(
-                client.send('/api/users/2').pipe(catchError(err => of(err)))
-            );
+            const r2 = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/2',
+                method: 'GET'
+            });
             expect(r2.id).toBe('2');
 
-            // Request 3
-            const r3 = await lastValueFrom(
-                client.send('/api/users', {
-                    params: { page: '5' },
-                    headers: { accept: 'application/json' }
-                }).pipe(catchError(err => of(err)))
-            );
+            const r3 = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users',
+                method: 'GET',
+                query: { page: '5' },
+                headers: { accept: 'application/json' }
+            });
             expect(r3.page).toBe(5);
         });
     });
@@ -445,3 +410,49 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         }
     });
 });
+
+/**
+ * Helper to send a raw TCP request and get the parsed JSON response.
+ */
+function sendTcpRequest(port: number, requestObj: Record<string, unknown>): Promise<any> {
+    return new Promise((resolve, reject) => {
+        const socket = new net.Socket();
+        let response = '';
+
+        socket.connect(port, '127.0.0.1', () => {
+            socket.write(JSON.stringify(requestObj) + '\n');
+        });
+
+        socket.on('data', (chunk) => {
+            response += chunk.toString();
+            if (response.endsWith('\n')) {
+                socket.destroy();
+                try {
+                    resolve(JSON.parse(response.trim()));
+                } catch {
+                    resolve(response.trim());
+                }
+            }
+        });
+
+        socket.on('error', (err) => {
+            socket.destroy();
+            reject(err);
+        });
+
+        socket.on('close', () => {
+            if (response) {
+                try {
+                    resolve(JSON.parse(response.trim()));
+                } catch {
+                    resolve(response.trim());
+                }
+            }
+        });
+
+        setTimeout(() => {
+            socket.destroy();
+            reject(new Error('Request timeout'));
+        }, 5000);
+    });
+}

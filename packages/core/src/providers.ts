@@ -12,7 +12,8 @@ import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterc
 import { ExceptionHandlerFilter } from './filters/execption.filter';
 import { getResolveHandlerToken } from './handlers/resolver';
 import { PayloadApplicationEvent } from './events';
-import { createPayloadResolveInterceptors } from './handlers/resolvers';
+import { createMessageResolveInterceptors } from './handlers/resolvers';
+import { AbstractMessageReader, MessageReaderFactory } from './MessageReader';
 
 
 
@@ -42,21 +43,20 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
     RESOLVER_PROVIDERS,
     {
         provide: getResolveHandlerToken(PayloadApplicationEvent),
-        useValue: createResolveHandler(createPayloadResolveInterceptors(
-            (input, scope, field) => {
-                if (scope) {
-                    const scopeVal = input[scope];
-                    if (field) {
-                        return isDefined(scopeVal) ? scopeVal[field] : null;
-                    }
-                    return scopeVal;
-                } else if (field) {
-                    return null;
-                }
-                return input;
-            },
-            // (param, payload) => payload && param.scope && isDefined(payload[param.scope])
-        ))
+        useValue: createResolveHandler(createMessageResolveInterceptors({
+            create(message: any) {
+                return {
+                    field(section: string, name?: string): any {
+                        if (!message) return undefined;
+                        const scopeVal = message[section];
+                        if (name) {
+                            return isDefined(scopeVal) ? scopeVal[name] : null;
+                        }
+                        return scopeVal;
+                    },
+                };
+            }
+        } as MessageReaderFactory))
     },
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
 ]

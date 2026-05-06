@@ -4,7 +4,7 @@ import {
     AnnotationMetadata, Handler, Type, ActionType, getTypeName, isNumber, isDefined,
     TokenOf
 } from '@tsdi/ioc';
-import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor, createPayloadResolveInterceptors, MODEL_RESOLVERS } from '@tsdi/core';
+import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike, typeResolveInterceptor, createMessageResolveInterceptors, MODEL_RESOLVERS } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
 import { Route, RouteOptions } from './router/route';
 import { MappingDef, RouteMappingMetadata, RouteMappingOptions, Router } from './router/router';
@@ -36,21 +36,7 @@ export interface Subscribe {
     (topic: string, transport?: Transport, option?: RouteOptions): MethodDecorator;
 }
 
-const primitiveResolvers = createPayloadResolveInterceptors(
-    (input, scope, field) => {
-        if (field && !scope) {
-            scope = 'query';
-        }
-        if (scope) {
-            const data = input ? input[scope] : null;
-            if (field && data) {
-                return isDefined(data) ? data[field] : null;
-            }
-            return data;
-        }
-        return input;
-    }
-);
+const primitiveResolvers = createMessageResolveInterceptors();
 
 /**
  * Subscribe decorator, use to handle subscribe message event.

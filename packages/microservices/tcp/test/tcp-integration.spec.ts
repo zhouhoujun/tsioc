@@ -2,6 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { Controller, Get, provideService, provideServiceFromDi } from '@tsdi/service';
 import { withTcpTransport } from '../src/server';
 import expect = require('expect');
+import { Transport } from '@tsdi/common';
 
 describe('TCP Microservice Integration', () => {
 
@@ -74,7 +75,7 @@ describe('TCP Microservice Integration', () => {
     it('should work with provideServiceFromDi', () => {
         // verify that provideServiceFromDi can be called with TCP config
         const providers = provideServiceFromDi({
-            transport: require('@tsdi/common').Transport.TCP,
+            transport: Transport.TCP,
             name: 'test-service'
         });
         expect(Array.isArray(providers)).toBe(true);

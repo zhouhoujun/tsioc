@@ -33,6 +33,8 @@ export * from './filters';
 
 export * from './handlers';
 
+export * from './MessageReader';
+
 export * from './invocation';
 
 

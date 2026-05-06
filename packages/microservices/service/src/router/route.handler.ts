@@ -16,7 +16,7 @@ export class RouteHandler implements RequestHandler {
 
     handle(input: ReadableLike<Incoming>, context: RequestContext): Observable<any> {
         // The invocation already has the injector, just pass the args
-        return this.invocation.invoke(this.propertyKey, [context]) as any;
+        return this.invocation.invoke(this.propertyKey, context);
     }
 }
 
