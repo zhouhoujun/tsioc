@@ -5,6 +5,7 @@ import { MicroService } from './Service';
 
 export interface RegisterMicroService {
     service: AbstractType | Invocation;
+    asDefault?: boolean;
     bootstrap?: boolean;
     microservice?: boolean;
     providers?: Provider[];

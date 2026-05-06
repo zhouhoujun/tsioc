@@ -70,7 +70,8 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
                 return {
                     service,
                     bootstrap: config.bootstrap,
-                    microservice: config.microservice
+                    microservice: config.microservice,
+                    asDefault
                 }
             },
             deps: [
@@ -79,14 +80,6 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
             multi: true
         }
     ];
-
-    // if (asDefault) {
-    //     providers.push({
-    //         provide: TcpServer,
-    //         useFactory: (inv: Invocation) => inv.instance,
-    //         deps: [serviceToken]
-    //     });
-    // }
 
     return {
         kind: ServiceFeatureKind.Transport,
