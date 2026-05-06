@@ -1,13 +1,15 @@
+import { asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport } from '@tsdi/common';
+import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { TcpClientOptions } from './options';
-import { createRequestHandler, TransferSide, Transport } from '@tsdi/common';
-import { asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
-import { TcpRequest } from './request';
 import { TcpClient } from './client';
 
-export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
+
+function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
+        transport: Transport.TCP,
+        side: TransferSide.client,
         ...option,
         features: {
             defaultTransfer: useJsonPacket(),
@@ -15,8 +17,7 @@ export function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asD
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as TcpClientOptions;
-    config.transport = Transport.TCP;
-    config.side = TransferSide.client;
+    
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);

@@ -37,15 +37,7 @@ export interface ClientConfig<
      * authority base url.
      */
     authority?: string;
-    // /**
-    //  * is microservice client or not.
-    //  */
-    // microservice?: boolean;
 
-    // /**
-    //  * transport backend.
-    //  */
-    // backend?: Token<ClientBackend> | ClientBackend;
     formatter?: Token<PatternFormatter>;
     /**
      * as default client or not.

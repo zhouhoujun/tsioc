@@ -1,7 +1,7 @@
-import { Injectable, isString, Context, Injector, Provider, Inject, asProvider } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, Transport, createRequestHandler, ResponseEvent, Events, PatternFormatter, TransferSide } from '@tsdi/common';
-import { AbstractClient, ClientFeatureKind, makeClientFeature, ClientTransportFeature, getClientHandlerToken, getClientToken, ClientHandler, getClientBackendToken, CLIENT_CONFIGS } from '@tsdi/client';
-import { SOCKET, createSendMessageBackend } from '@tsdi/transport';
+import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
+import { AbstractClient, ClientHandler } from '@tsdi/client';
+import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { defer, Observable, switchMap } from 'rxjs';
 import * as net from 'node:net';
@@ -163,71 +163,3 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     }
 }
 
-/**
- * Create TCP client transport feature for microservices.
- * 创建微服务 TCP 客户端传输特性
- */
-export function tcpClientTransportFactory(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
-    const config = {
-        ...option,
-        connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
-        // Preserve token references set by feature functions
-        transfersToken: option.transfersToken,
-        interceptorsToken: option.interceptorsToken,
-        guardsToken: option.guardsToken,
-        filtersToken: option.filtersToken,
-        backendToken: option.backendToken
-    } as TcpClientOptions;
-    config.transport = Transport.TCP;
-    config.side = TransferSide.client;
-    const clientToken = getClientToken(config);
-    const handlerToken = getClientHandlerToken(config);
-    const backendToken = getClientBackendToken(config);
-
-    const providers: Provider[] = [
-        { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({
-            provide: backendToken,
-            useFactory: createSendMessageBackend,
-            multi: true
-        }),
-        {
-            provide: handlerToken,
-            useFactory: (injector: Injector) => {
-                return createRequestHandler(injector, config);
-            },
-            deps: [
-                Injector
-            ]
-        },
-        {
-            provide: clientToken,
-            useFactory: (handler: ClientHandler<TcpRequest<any>, ResponseEvent<any>>) => {
-                return new TcpClient(handler, config);
-            },
-            deps: [
-                handlerToken
-            ]
-        }
-    ];
-
-    if (asDefault) {
-        providers.push({
-            provide: TcpClient,
-            useExisting: clientToken
-        });
-    }
-    return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
-}
-
-/**
- * Helper to create multiple TCP client transports.
- * 创建多个 TCP 客户端传输
- */
-export function withTcpClientTransport(...options: Partial<TcpClientOptions>[]): ClientTransportFeature[] {
-    return options.map((option, idx) => {
-        // First option is default unless explicitly specified
-        const asDefault = option.asDefault ?? (idx === 0);
-        return tcpClientTransportFactory(option, asDefault);
-    });
-}

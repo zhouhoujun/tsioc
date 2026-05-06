@@ -2,6 +2,7 @@ import { Module, Provider } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { BadRequestException } from '@tsdi/common';
+import { provideClient } from '@tsdi/client';
 import { provideService, withServiceRouter, Controller, Get, Post, Put, Delete, RequestHeader, RequestPath, RequestParam, RequestBody } from '@tsdi/service';
 import { withTcpTransport } from '../src/server';
 import { withTcpClientTransport, TcpClient } from '../src/client';
@@ -120,14 +121,14 @@ describe('TCP Microservice Client End-to-End Test', () => {
                 withServiceRouter(),
                 withTcpTransport({
                     listenOpts: { port: 0, host: '127.0.0.1' },
-                    asDefault: true
                 })
             ),
-            // Add client providers
-            withTcpClientTransport({
-                connectOpts: { port: 0, host: '127.0.0.1' },
-                asDefault: true
-            }).reduce((acc, feature) => acc.concat(feature.providers), [] as Provider[])
+            provideClient(
+                // Add client providers
+                withTcpClientTransport({
+                    connectOpts: { port: 0, host: '127.0.0.1' },
+                })
+            )
         ]
     })
     class UserApiModule { }
