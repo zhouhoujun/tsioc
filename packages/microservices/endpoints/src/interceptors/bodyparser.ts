@@ -3,7 +3,7 @@ import { Abstract, Injectable, isArray, isUndefined, Nullable, TypeException } f
 import { InvalidJsonException } from '@tsdi/core';
 import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, HeaderAdapter, MimeAdapter } from '@tsdi/common';
 import { MimeTypes } from '@tsdi/common';
-import { isBuffer } from '@tsdi/common/transport';
+import { isBuffer } from '@tsdi/transport';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 

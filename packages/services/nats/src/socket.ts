@@ -1,6 +1,6 @@
 import { ContextToken } from '@tsdi/ioc';
 import { getHeaders, HeadersLike } from '@tsdi/common';
-import { TransportContext } from '@tsdi/common/transport';
+import { TransportContext } from '@tsdi/transport';
 import { Msg, MsgHdrs, NatsConnection, Payload, PublishOptions, Subscription, SubscriptionOptions, headers as createHeaders } from 'nats';
 import { Observable, BehaviorSubject, filter, map } from 'rxjs';
 

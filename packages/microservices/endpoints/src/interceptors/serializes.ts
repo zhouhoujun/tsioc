@@ -1,7 +1,7 @@
 // import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
 // import { HandlerFn, InterceptorFn, PipeTransform } from '@tsdi/core';
 // import { HEAD, ENOENT, RequestInterceptorFn, RequestHandlerFn, Outgoing, PacketLengthException, Packet } from '@tsdi/common';
-// import { TEXT_DECODER, toBuffer } from '@tsdi/common/transport';
+// import { TEXT_DECODER, toBuffer } from '@tsdi/transport';
 // import { defer, map, of, throwError } from 'rxjs';
 // import { AbstractRequestContext } from '../AbstractRequestContext';
 

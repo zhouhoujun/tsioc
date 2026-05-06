@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { IBodySerializeStrategy } from '@tsdi/common/transport';
+import { IBodySerializeStrategy } from '@tsdi/transport';
 
 /**
  * UDP body serializer.

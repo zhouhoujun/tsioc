@@ -1,6 +1,6 @@
 import { Injectable, lang } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { ctype } from '@tsdi/common/transport';
+import { ctype } from '@tsdi/transport';
 import { RequestContext } from '@tsdi/endpoints';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';

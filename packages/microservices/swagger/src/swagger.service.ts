@@ -2,7 +2,7 @@ import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, Tr
 import { AbstractType, Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
-import { ctype } from '@tsdi/common/transport';
+import { ctype } from '@tsdi/transport';
 import { RouteMappingMetadata, Router, ContentInterceptor, getRouter, SetupServices } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'

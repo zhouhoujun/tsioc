@@ -5,7 +5,7 @@ import {
     GatewayTimeoutException, InternalServerException, MethodNotAllowedException, NotAcceptableException,
     NotFoundException, NotImplementedException, NotSupportedException, RequestTimeoutException,
     UnauthorizedException, UnsupportedMediaTypeException
-} from '@tsdi/common/transport';
+} from '@tsdi/transport';
 import { RequestContext } from '@tsdi/endpoints';
 import { MissingModelFieldException } from '@tsdi/repository';
 import { CoapStatuCode } from '../status';

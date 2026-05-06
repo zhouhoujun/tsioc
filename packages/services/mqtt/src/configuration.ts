@@ -5,7 +5,7 @@ import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     ev, IReadable, FileAdapter, MimeAdapter, NotSupportedException,Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory, messageVaildateInterceptor
-} from '@tsdi/common/transport';
+} from '@tsdi/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport, requestSerializeBackend, requestTimeoutInterceptor

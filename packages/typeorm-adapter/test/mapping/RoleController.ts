@@ -1,6 +1,6 @@
 import { RouteMapping, RequestParam, Controller, Post, Put, Get, Delete, RequestPath } from '@tsdi/endpoints';
 import { Log, Logger } from '@tsdi/logger';
-import { InternalServerException } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/transport';
 import { InjectRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
 import { Role } from '../models/models';

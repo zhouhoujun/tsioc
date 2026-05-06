@@ -1,6 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
 import { GuardLike, Filter, ApplicationInterceptor } from '@tsdi/core';
-import { TransportConfigure } from '@tsdi/common/transport';
+import { TransportConfigure } from '@tsdi/transport';
 import { BindServerEvent, ServiceConfig } from '@tsdi/endpoints';
 import { ServerOptions } from 'ws';
 

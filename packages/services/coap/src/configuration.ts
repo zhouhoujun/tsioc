@@ -12,7 +12,7 @@ import {
     ClientIncoming,
     TransportContext,
     Incoming
-} from '@tsdi/common/transport';
+} from '@tsdi/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport,

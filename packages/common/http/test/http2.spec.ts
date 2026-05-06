@@ -10,7 +10,7 @@
 //     Application, ApplicationContext
 // } from '@tsdi/core';
 // import { HttpClient, HttpClientModule } from '../src';
-// import { BadRequestException } from '@tsdi/common/transport';
+// import { BadRequestException } from '@tsdi/transport';
 // import { LoggerModule } from '@tsdi/logger';
 // import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 // import { ServerEndpointModule } from '@tsdi/platform-server/common';

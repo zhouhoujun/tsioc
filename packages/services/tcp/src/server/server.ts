@@ -6,7 +6,7 @@ import {
     createRequestContext, RequestContext, TransferSide, NotFoundException, StatusAdapter, UrlOutgoingFactory,
     OutgoingFactory
 } from '@tsdi/common';
-import { SOCKET } from '@tsdi/common/transport';
+import { SOCKET } from '@tsdi/transport';
 import {
     BindServerEvent, FeatureKind, makeFeature, Server, getServiceToken, TransportFeature, REGISTER_SERVICES,
     ServiceHandler, getServiceBackendToken, SERV_OPTIONS

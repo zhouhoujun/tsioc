@@ -1,6 +1,6 @@
 import { Injectable, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
-import { ServiceUnavailableException } from '@tsdi/common/transport';
+import { ServiceUnavailableException } from '@tsdi/transport';
 import { Server, ServerTransportFactory, RequestContext, getRouter, ServerTransport } from '@tsdi/endpoints';
 import { Kafka, LogEntry, logLevel } from 'kafkajs';
 import { Subject } from 'rxjs';

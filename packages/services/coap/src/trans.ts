@@ -1,5 +1,5 @@
 import { isArray, isNumber, isString } from '@tsdi/ioc';
-import { isBuffer, ctype } from '@tsdi/common/transport';
+import { isBuffer, ctype } from '@tsdi/transport';
 import { OptionName } from 'coap-packet';
 
 

@@ -1,10 +1,11 @@
-import { asProvider, Provider, getClassRef, Injector, Invocation } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler } from '@tsdi/common';
+import { asProvider, Provider, getClassRef, Injector, isArray } from '@tsdi/ioc';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, TransferInterceptorFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { Transport, TransferSide } from '@tsdi/common';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
+import { useJsonPacket } from '@tsdi/transport';
 
 /**
  * create TCP transport feature for microservice.
@@ -28,8 +29,32 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
 
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
-    config.providers = [...(config.providers ?? [])];
-    config.providers.push({ provide: TCP_SERV_OPTIONS, useValue: config });
+    const transfersToken = getServiceTransfersToken(config);
+    const transferProviders: Provider[] = [];
+    transferProviders.push({ provide: TCP_SERV_OPTIONS, useValue: config });
+
+    // Register transport transfer interceptors for the handler pipeline
+    // These handle raw socket data → JSON parsing (delimiter, packet, JSON serialize/deserialize)
+    // Only default to useJsonPacket when no custom transfers are defined by the user
+    const customTransfers: TransferInterceptorFactory[] | undefined = (option as Record<string, unknown>).transfers as TransferInterceptorFactory[] | undefined;
+    const transfersFactories: TransferInterceptorFactory[] = customTransfers ?? [useJsonPacket()];
+    for (const transfersFactory of transfersFactories) {
+        const transferInterceptors = transfersFactory(config);
+        if (isArray(transferInterceptors)) {
+            transferInterceptors.forEach((itp) => {
+                transferProviders.push({
+                    provide: transfersToken,
+                    useValue: itp,
+                    multi: true
+                });
+            });
+        }
+    }
+
+    config.providers = [...(config.providers ?? []), ...transferProviders];
+
+    // Ensure transfersToken is set on config for handler to pick up
+    config.transfersToken = transfersToken;
 
     const providers: Provider[] = [
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },

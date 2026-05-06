@@ -6,7 +6,7 @@ import {
     IReadable, FileAdapter, MimeAdapter, NotSupportedException, bodyDesrializeBackend,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, TransportContext,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
-} from '@tsdi/common/transport';
+} from '@tsdi/transport';
 import {
     RESPONSE_TRANSFER_INTERCEPTORS, bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,

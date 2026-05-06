@@ -6,7 +6,7 @@ import {
     FileAdapter, MimeAdapter, PacketDeserializeInterceptor, messageSerializeInterceptor,
     messageVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory, ev, NotSupportedException, isBuffer
-} from '@tsdi/common/transport';
+} from '@tsdi/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport,

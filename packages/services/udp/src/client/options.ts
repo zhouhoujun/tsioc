@@ -1,7 +1,7 @@
 import { Filter, ApplicationInterceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ResponseEvent } from '@tsdi/common';
-import { TransportOptions } from '@tsdi/common/transport';
+import { TransportOptions } from '@tsdi/transport';
 import { ClientConfig } from '@tsdi/common/client';
 import { SocketOptions } from 'node:dgram';
 import { UdpRequest } from './request';

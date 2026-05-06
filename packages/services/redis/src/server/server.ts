@@ -2,7 +2,7 @@ import { Exception, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST, defaultFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
-import { ev } from '@tsdi/common/transport';
+import { ev } from '@tsdi/transport';
 import Redis from 'ioredis';
 import { RedisRequestHandler } from './handler';
 import { RedisServConfig } from './options';

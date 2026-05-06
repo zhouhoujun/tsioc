@@ -1,6 +1,6 @@
 import { getTypeName, Injectable, promisify } from '@tsdi/ioc';
 import { LOCALHOST } from '@tsdi/common';
-import { InternalServerException, ev } from '@tsdi/common/transport';
+import { InternalServerException, ev } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'node:dgram';

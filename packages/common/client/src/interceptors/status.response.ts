@@ -1,6 +1,6 @@
 import { ContextToken, isNil, isString, lang } from '@tsdi/ioc';
 import { Events, HEAD, HeaderAdapter, MimeAdapter, RequestInterceptorFn, ResponseFactory, ResponseJsonParseError, StatusAdapter, StreamAdapter, XSSI_PREFIX } from '@tsdi/common';
-import { TEXT_DECODER } from '@tsdi/common/transport';
+import { TEXT_DECODER } from '@tsdi/transport';
 import { Buffer } from 'buffer';
 import { defer, map, mergeMap } from 'rxjs';
 

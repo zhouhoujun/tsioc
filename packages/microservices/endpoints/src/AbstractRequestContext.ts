@@ -5,7 +5,7 @@ import {
     RequestContext, Incoming, Outgoing, FileAdapter, MimeAdapter, StatusAdapter, StreamAdapter, xmlRegExp, ContentType,
     ReadableLike, WritableLike, AcceptsPriority
 } from '@tsdi/common';
-import { isBuffer } from '@tsdi/common/transport';
+import { isBuffer } from '@tsdi/transport';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { Session } from './sessions/Session';
 import { ServiceConfig } from './server.options';

@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { NotSupportedException, StatusAdapter } from '@tsdi/common/transport';
+import { NotSupportedException, StatusAdapter } from '@tsdi/transport';
 
 
 @Injectable({ static: true })

@@ -1,7 +1,7 @@
 import { Injectable, isFunction, lang, promisify, isNumber, isString, isNil } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
-import { InternalServerException } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, HttpServConfig, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';

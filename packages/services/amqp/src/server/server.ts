@@ -1,6 +1,6 @@
 import { Exception, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ev } from '@tsdi/common/transport';
+import { ev } from '@tsdi/transport';
 import { Server, ServerTransportFactory, ServerTransport, RequestContext, getRouter } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
 import { Subject } from 'rxjs';

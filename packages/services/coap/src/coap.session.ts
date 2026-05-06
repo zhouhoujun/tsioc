@@ -1,6 +1,6 @@
 // import { ArgumentException, Injectable, Injector, lang, promisify } from '@tsdi/ioc';
 // import { Decoder, Encoder } from '@tsdi/common';
-// import { Packet, TransportOpts, ServerTransportFactory, ev } from '@tsdi/common/transport';
+// import { Packet, TransportOpts, ServerTransportFactory, ev } from '@tsdi/transport';
 // import { EventServerTransport } from '@tsdi/endpoints';
 // import { Socket, RemoteInfo } from 'dgram';
 // import { parse, generate } from 'coap-packet';

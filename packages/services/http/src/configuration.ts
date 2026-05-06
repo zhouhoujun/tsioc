@@ -8,7 +8,7 @@ import {
     FileAdapter, Incoming, IncomingFactory, IReadable, MimeAdapter,
     Redirector,  StatusAdapter, StreamAdapter, StreamIncomingOptions, UrlClientIncomingFactory,
     UrlClientIncomingOpts, UrlOutgoingFactory
-} from '@tsdi/common/transport';
+} from '@tsdi/transport';
 import {
     bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,

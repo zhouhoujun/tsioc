@@ -1,5 +1,5 @@
 import { lang } from '@tsdi/ioc';
-import { BadRequestException } from '@tsdi/common/transport';
+import { BadRequestException } from '@tsdi/transport';
 import { Handle, Payload, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/endpoints';
 import { of } from 'rxjs';
 import { AmqpClient } from '../src';
