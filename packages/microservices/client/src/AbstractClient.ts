@@ -1,6 +1,6 @@
 import { Abstract, ArgumentException, Context, Injector, Optional } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { Pattern, RequestOptions, createRequestContext, RequestContext, REQUEST } from '@tsdi/common';
+import { Pattern, RequestOptions, createRequestContext, RequestContext, REQUEST, ResponseAs } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, timeout } from 'rxjs';
 import { ClientHandler } from './ClientHandler';
 import { IClientDiscoveryStrategy, CLIENT_DISCOVERY_STRATEGY } from './strategies/IClientDiscoveryStrategy';
@@ -70,10 +70,7 @@ export abstract class AbstractClient<
         responseType?: 'json';
     }): Observable<R>;
     send(req: TRequest): Observable<TResponse>;
-    send(req: TRequest | Pattern, options?: TReqOptions & {
-        observe?: 'body';
-        responseType?: 'json';
-    }): Observable<any> {
+    send(req: TRequest | Pattern, options?: TReqOptions & ResponseAs): Observable<any> {
         if (!req) {
             return throwError(() => new ArgumentException('Invalid message'));
         }
@@ -180,10 +177,7 @@ export abstract class AbstractClient<
      * build request.
      * 构建请求
      */
-    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions & {
-        observe?: 'body';
-        responseType?: 'json';
-    }): TRequest;
+    protected abstract buildRequest(first: TRequest | Pattern, options: TReqOptions & ResponseAs): TRequest;
 
     /**
      * Legacy discover method - override in concrete implementations.

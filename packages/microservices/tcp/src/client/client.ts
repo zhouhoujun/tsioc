@@ -106,7 +106,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         }
     }
 
-    protected override request(first: Pattern | TcpRequest<any>, options: RequestInitOpts<any, UrlRequestOptions> = {} as any): Observable<any> {
+    protected override request(first: Pattern | TcpRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
         return this.connect().pipe(
             switchMap(() => super.request(first, options))
         );
