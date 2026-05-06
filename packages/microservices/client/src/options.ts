@@ -1,10 +1,14 @@
-import { ProvdierOf, Token } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, RequestFilterLike, RequestHandlerOptions, RequestInterceptorLike, ResponseEvent, ResponseFactory, TransferConfig, TransferInterceptorFactory, TransferSide } from '@tsdi/common';
+import { Token } from '@tsdi/ioc';
+import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig, TransferInterceptorFactory, TransferSide } from '@tsdi/common';
 import { ConnectionPoolOptions } from './pool';
 
 
 
-export interface ClientFeatureOptions extends RequestHandlerOptions {
+export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends RequestHandlerOptions<TReq, TRes, TContext> {
+    /**
+     * timeout
+     */
+    timeout?: number;
     defaultTransfer?: TransferInterceptorFactory;
     discovery?: boolean | DiscoveryOptions;
     loadBalance?: boolean | LoadBalanceOptions;
@@ -17,34 +21,25 @@ export interface ClientFeatureOptions extends RequestHandlerOptions {
 /**
  * Client options.
  */
-export interface ClientConfig<
-    TInput extends AbstractRequest<any> = AbstractRequest<any>,
-    TOutput extends ResponseEvent<any> = ResponseEvent<any>,
-> extends TransferConfig {
+export interface ClientConfig<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends TransferConfig {
 
     side: TransferSide.client;
 
-    features: ClientFeatureOptions;
+    features: ClientFeatureOptions<TReq, TRes, TContext>;
     /**
      * url
      */
     url?: string;
-    /**
-     * timeout
-     */
-    timeout?: number;
-    /**
-     * authority base url.
-     */
-    authority?: string;
+    // /**
+    //  * authority base url.
+    //  */
+    // authority?: string;
 
     formatter?: Token<PatternFormatter>;
     /**
      * as default client or not.
      */
     asDefault?: boolean;
-
-    payloadKey?: 'body' | 'payload';
 
     /**
      * connection pool options.
@@ -196,58 +191,4 @@ export interface RetryOptions {
      * 指数退避乘数
      */
     backoffMultiplier?: number;
-}
-
-/**
- * Microservice client config.
- * 微服务客户端配置
- */
-export interface MircoClientConfig<
-    TInput extends AbstractRequest<any> = AbstractRequest<any>,
-    TOutput extends ResponseEvent<any> = ResponseEvent<any>,
-> extends ClientConfig<TInput, TOutput> {
-
-    side: TransferSide.client;
-
-    /**
-     * is microservice client.
-     * 是否为微服务客户端
-     */
-    microservice: true;
-
-    /**
-     * service discovery options.
-     * 服务发现选项
-     */
-    discovery?: boolean | DiscoveryOptions;
-
-    /**
-     * load balance options.
-     * 负载均衡选项
-     */
-    loadBalance?: boolean | LoadBalanceOptions;
-
-    /**
-     * circuit breaker options.
-     * 断路器选项
-     */
-    circuitBreaker?: boolean | CircuitBreakerOptions;
-
-    /**
-     * retry options.
-     * 重试选项
-     */
-    retry?: boolean | RetryOptions;
-
-    /**
-     * target service name.
-     * 目标服务名称
-     */
-    serviceName?: string;
-
-    /**
-     * connection pool options.
-     * 连接池选项
-     */
-    pool?: ConnectionPoolOptions;
 }

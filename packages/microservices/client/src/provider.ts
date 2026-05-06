@@ -21,7 +21,7 @@ export enum ClientFeatureKind {
     Interceptors,
     BodySerialize,
     Fetch,
-    ResponseEvent,
+    Response,
     Transfer,
     Transport,
     Discovery,
@@ -324,10 +324,7 @@ export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatur
 }
 
 
-export interface ClientOptions<
-    TReq extends AbstractRequest<any> = AbstractRequest<any>,
-    TRes extends ResponseEvent<any> = ResponseEvent<any>,
-> extends ClientConfig<TReq, TRes> {
+export interface ClientOptions<TReq = any, TRes = any> extends ClientConfig<TReq, TRes> {
     transportFeature?: (options: ClientOptions<TReq, TRes>, asDefault?: boolean) => ClientTransportFeature;
 }
 
