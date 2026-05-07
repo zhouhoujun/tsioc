@@ -1,0 +1,23 @@
+{
+  "name": "@tsdi/http-microservice",
+  "version": "6.0.31",
+  "description": "HTTP protocol microservice transport implementation for @tsdi/microservices.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
+  },
+  "keywords": [
+    "microservice", "http", "https", "transport", "server",
+    "IoC", "AOP", "tsdi", "@tsdi", "tsioc", "ioc",
+    "type", "container", "dependency", "injection"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": { "url": "https://github.com/zhouhoujun/tsioc/issues" },
+  "repository": { "type": "git", "url": "https://github.com/zhouhoujun/tsioc.git" },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {},
+  "directories": { "lib": "dist", "test": "test" },
+  "devDependencies": {}
+}
