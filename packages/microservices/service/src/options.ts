@@ -45,12 +45,6 @@ export interface ServiceConfig<TReq = any, TRes = any, TContext extends RequestC
     features: ServiceFeatureOptions<TReq, TRes, TContext>;
 
     /**
-     * is microservice. default true.
-     * 是否为微服务，默认 true
-     */
-    microservice?: true;
-
-    /**
      * bootstrap service. default true.
      * 是否启动服务，默认 true
      */

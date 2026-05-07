@@ -1,114 +1,109 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, POST } from '@tsdi/common';
+import { GET, POST, Transport } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
-import { withTcpTransport } from '../src/server';
-import { withTcpClientTransport } from '../src/client';
+import { withHttpTransport } from '../src/server';
+import { withHttpClientTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import expect = require('expect');
 
-// Top-level controllers for module declarations
 @Controller('/api/test')
-class TestController {
+class HttpTestController {
     @Get('/info') info() { return { status: 'ok' }; }
     @Post('/echo') echo(@RequestBody() body: any) { return { received: body }; }
 }
 
 @RouteMapping('/api/route')
-class RouteCtrl {
+class HttpRouteCtrl {
     @RouteMapping('/hello', GET) hello() { return 'hi'; }
     @RouteMapping('/data', POST) data(@RequestBody() b: any) { return { received: b }; }
 }
 
-const PORTS = { ms: 11400, host: 11401, ctrl: 11402, route: 11403 };
+const PORTS = { ms: 21200, host: 21201, ctrl: 21202, route: 21203 };
 
-// ----- microservice:true -----
-describe('TCP E2E microservice:true', () => {
+describe('HTTP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
             ...provideService(withServiceRouter(),
-                withTcpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
+                withHttpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
             ...provideClient(
-                withTcpClientTransport({ connectOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true }))
+                withHttpClientTransport({ url: `http://127.0.0.1:${PORTS.ms}`, asDefault: true }))
         ]
     })
-    class MsModule { }
+    class HttpMsModule { }
 
     let ctx: ApplicationContext;
 
     before(async () => {
-        ctx = await Application.run(MsModule);
+        ctx = await Application.run(HttpMsModule);
         await new Promise(r => setTimeout(r, 500));
     });
     after(async () => { if (ctx) await ctx.close(); });
 
-    it('should bootstrap', () => { expect(ctx).toBeDefined(); });
+    it('should bootstrap HTTP with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 
-// ----- microservice:false -----
-describe('TCP E2E microservice:false', () => {
+describe('HTTP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
             ...provideService(withServiceRouter(),
-                withTcpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
+                withHttpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             ...provideClient(
-                withTcpClientTransport({ connectOpts: { port: PORTS.host, host: '127.0.0.1' }, microservice: false, asDefault: true }))
+                withHttpClientTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
         ]
     })
-    class HostModule { }
+    class HttpHostModule { }
 
     let ctx: ApplicationContext;
 
     before(async () => {
-        ctx = await Application.run(HostModule);
+        ctx = await Application.run(HttpHostModule);
         await new Promise(r => setTimeout(r, 500));
     });
     after(async () => { if (ctx) await ctx.close(); });
 
-    it('should bootstrap', () => { expect(ctx).toBeDefined(); });
+    it('should bootstrap HTTP with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
 
-// ----- @Controller / @Get / @Post -----
-describe('TCP @Controller / @Get / @Post', () => {
+describe('HTTP @Controller / @Get / @Post', () => {
     @Module({
         imports: [LoggerModule],
-        declarations: [TestController],
+        declarations: [HttpTestController],
         providers: [...provideService(withServiceRouter(),
-            withTcpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
+            withHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
     })
-    class CtrlModule { }
+    class HttpCtrlModule { }
 
     let ctx: ApplicationContext;
 
     before(async () => {
-        ctx = await Application.run(CtrlModule);
+        ctx = await Application.run(HttpCtrlModule);
         await new Promise(r => setTimeout(r, 500));
     });
     after(async () => { if (ctx) await ctx.close(); });
 
-    it('should bootstrap', () => { expect(ctx).toBeDefined(); });
+    it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 });
 
-// ----- @RouteMapping -----
-describe('TCP @RouteMapping', () => {
+describe('HTTP @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
-        declarations: [RouteCtrl],
+        declarations: [HttpRouteCtrl],
         providers: [...provideService(withServiceRouter(),
-            withTcpTransport({ listenOpts: { port: PORTS.route, host: '127.0.0.1' }, asDefault: true }))]
+            withHttpTransport({ listenOpts: { port: PORTS.route, host: '127.0.0.1' }, asDefault: true }))]
     })
-    class RouteModule { }
+    class HttpRouteModule { }
 
     let ctx: ApplicationContext;
 
     before(async () => {
-        ctx = await Application.run(RouteModule);
+        ctx = await Application.run(HttpRouteModule);
         await new Promise(r => setTimeout(r, 500));
     });
     after(async () => { if (ctx) await ctx.close(); });
 
-    it('should bootstrap', () => { expect(ctx).toBeDefined(); });
+    it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });

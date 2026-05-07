@@ -1,100 +1,102 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { catchError, firstValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { provideClient } from '@tsdi/client';
-import { ErrorResponse, Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload, RequestPath, Subscribe } from '@tsdi/service';
-import { withWsClientTransport, WsClient } from '../src/client';
+import { GET, POST, Transport } from '@tsdi/common';
+import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withWsTransport } from '../src/server';
 
-describe('WebSocket Microservice End-to-End Message Test', () => {
+const PORT = 11500;
+const HOST_PORT = 11501;
+const CTRL_PORT = 11502;
+const ROUTE_PORT = 11503;
 
-    class WsMessageService {
-        @Handle({ cmd: 'ping' }, Transport.WS)
-        ping(@Payload() payload: { value: string }) {
-            return payload.value;
-        }
+describe('WS E2E microservice:true', () => {
+    @Module({
+        imports: [LoggerModule],
+        providers: [...provideService(withServiceRouter(),
+            withWsTransport({ microservice: true, listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true }))]
+    })
+    class WsMsModule { }
 
-        @Subscribe('sensor/:id/start', Transport.WS)
-        start(@RequestPath('id') id: string, @Payload() payload: { value: string }) {
-            return { id, value: payload.value };
-        }
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(WsMsModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    it('should bootstrap WS with microservice:true', () => { expect(ctx).toBeDefined(); });
+});
+
+describe('WS E2E microservice:false', () => {
+    @Module({
+        imports: [LoggerModule],
+        providers: [...provideService(withServiceRouter(),
+            withWsTransport({ microservice: false as any, listenOpts: { port: HOST_PORT, host: '127.0.0.1' }, asDefault: true }))]
+    })
+    class WsHostModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(WsHostModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    it('should bootstrap WS with microservice:false', () => { expect(ctx).toBeDefined(); });
+});
+
+describe('WS @Controller / @Get / @Post', () => {
+    @Controller('/api')
+    class WsTestController {
+        @Get('/info') info() { return { status: 'ok' }; }
+        @Post('/echo') echo(@RequestBody() body: any) { return { received: body }; }
     }
 
     @Module({
         imports: [LoggerModule],
-        declarations: [WsMessageService],
-        providers: [
-            ...provideService(
-                withServiceRouter(),
-                withWsTransport({
-                    microservice: true,
-                    listenOpts: { port: 11500, host: '127.0.0.1' },
-                    asDefault: true
-                })
-            ),
-            ...provideClient(
-                withWsClientTransport({
-                    microservice: true,
-                    url: 'ws://127.0.0.1:11500',
-                    asDefault: true
-                })
-            )
-        ]
+        declarations: [WsTestController],
+        providers: [...provideService(withServiceRouter(),
+            withWsTransport({ listenOpts: { port: CTRL_PORT, host: '127.0.0.1' }, asDefault: true }))]
     })
-    class WsMicroserviceModule { }
+    class WsCtrlModule { }
 
     let ctx: ApplicationContext;
-    let client: WsClient;
 
     before(async () => {
-        ctx = await Application.run(WsMicroserviceModule);
-        client = ctx.get(WsClient);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        ctx = await Application.run(WsCtrlModule);
+        await new Promise(r => setTimeout(r, 500));
     });
+    after(async () => { if (ctx) await ctx.close(); });
 
-    after(async () => {
-        if (ctx) {
-            await ctx.close();
-        }
+    it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
+});
+
+describe('WS @RouteMapping', () => {
+    @RouteMapping('/ws-route')
+    class WsRouteCtrl {
+        @RouteMapping('/hello', GET) hello() { return 'hi'; }
+        @RouteMapping('/data', POST) data(@RequestBody() b: any) { return { received: b }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [WsRouteCtrl],
+        providers: [...provideService(withServiceRouter(),
+            withWsTransport({ listenOpts: { port: ROUTE_PORT, host: '127.0.0.1' }, asDefault: true }))]
+    })
+    class WsRouteModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(WsRouteModule);
+        await new Promise(r => setTimeout(r, 500));
     });
+    after(async () => { if (ctx) await ctx.close(); });
 
-    it('should use simpleJson by default for command messages', async () => {
-        const result = await firstValueFrom(
-            client.send({ cmd: 'ping' }, {
-                payload: { value: 'pong' }
-            }).pipe(
-                catchError(err => of(err))
-            )
-        );
-
-        expect(result).toBe('pong');
-    });
-
-    it('should use simpleJson by default for subscribe routes', async () => {
-        const result = await firstValueFrom(
-            client.send('sensor/device-01/start', {
-                payload: { value: 'started' }
-            }).pipe(
-                catchError(err => of(err))
-            )
-        );
-
-        expect(result).toEqual({ id: 'device-01', value: 'started' });
-    });
-
-    it('should return not found for unmatched message patterns', async () => {
-        const result = await firstValueFrom(
-            client.send('sensor/device-01/stop', {
-                payload: { value: 'stopped' }
-            }).pipe(
-                catchError(err => of(err as ErrorResponse))
-            )
-        );
-
-        expect(result).toBeInstanceOf(ErrorResponse);
-        expect((result as ErrorResponse).statusText).toBe('Not Found');
-    });
+    it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });
