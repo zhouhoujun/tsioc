@@ -1,11 +1,12 @@
-import { asProvider, Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
+import { Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
 import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, TransferInterceptorFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { useWsPacket } from '../transfer';
 
 /**
  * Create WebSocket transport feature for microservice.
@@ -18,6 +19,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         microservice: true,
         ...option,
         features: {
+            defaultTransfer: useWsPacket(),
             ...option.features
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
@@ -28,10 +30,21 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
     const backendToken = getServiceBackendToken(config);
     const transfersToken = getServiceTransfersToken(config);
 
+
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
     config.providers.push(
         { provide: WS_SERV_OPTIONS, useValue: config },
+        { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
+            const response = context.getResponse();
+            const statusAdapter = context.get(StatusAdapter);
+            response.error = new NotFoundException();
+            if (statusAdapter) {
+                response.statusCode = statusAdapter.notFound;
+                response.statusMessage = response.error.message;
+            }
+            return of(response);
+        }, multi: true },
         toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
     );
 
@@ -53,20 +66,6 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         importProvidersFrom(ServerCommonModule),
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         ...transferProviders,
-        asProvider({
-            provide: backendToken,
-            useValue: (_req: any, context: RequestContext): any => {
-                const response = context.getResponse();
-                const statusAdapter = context.get(StatusAdapter);
-                response.error = new NotFoundException();
-                if (statusAdapter) {
-                    response.statusCode = statusAdapter.notFound;
-                    response.statusMessage = response.error.message;
-                }
-                return of(response);
-            },
-            multi: true
-        }),
 
         {
             provide: serviceToken,
@@ -74,6 +73,16 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
                 return getClassRef(WsServer).createInvocation(injector, {
                     providers: [
                         { provide: WS_SERV_OPTIONS, useValue: config },
+                        { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
+                            const response = context.getResponse();
+                            const statusAdapter = context.get(StatusAdapter);
+                            response.error = new NotFoundException();
+                            if (statusAdapter) {
+                                response.statusCode = statusAdapter.notFound;
+                                response.statusMessage = response.error.message;
+                            }
+                            return of(response);
+                        }, multi: true },
                         ...transferProviders,
                         {
                             provide: ServiceHandler,

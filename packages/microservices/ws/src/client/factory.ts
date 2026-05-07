@@ -5,6 +5,7 @@ import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeatur
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsClient } from './client';
 import { MessageReaderFactory } from '@tsdi/core';
+import { useWsPacket } from '../transfer';
 
 
 function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: boolean): ClientTransportFeature {
@@ -13,6 +14,7 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
         side: TransferSide.client,
         ...option,
         features: {
+            defaultTransfer: useWsPacket(),
             ...option.features
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,

@@ -1,4 +1,5 @@
 import { WsServer, WsServOptions, wsTransportFactory, WS_SERV_OPTIONS } from '../src/server';
+import { withWsClientTransport } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 import * as http from 'node:http';
@@ -85,12 +86,12 @@ describe('WebSocket Microservice', () => {
             expect(hasInConfig || hasInMain).toBe(true);
         });
 
-        it('should not force a default transfer', () => {
+        it('should use ws packet transfer by default', () => {
             const feature = wsTransportFactory({
                 listenOpts: { port: 8080 }
             });
 
-            expect(feature.config.features?.defaultTransfer).toBeUndefined();
+            expect(feature.config.features?.defaultTransfer).toBeDefined();
         });
 
         it('should preserve an explicit default transfer override', () => {
@@ -101,6 +102,44 @@ describe('WebSocket Microservice', () => {
             });
 
             expect(feature.config.features?.defaultTransfer).toBe(defaultTransfer);
+        });
+
+        it('should preserve host service mode when microservice is false', () => {
+            const feature = wsTransportFactory({
+                microservice: false as any,
+                listenOpts: { port: 8080 }
+            });
+
+            expect(feature.config.microservice).toBe(false);
+        });
+    });
+
+    describe('withWsClientTransport', () => {
+        it('should use ws packet transfer by default', () => {
+            const features = withWsClientTransport({
+                url: 'ws://localhost:8080'
+            });
+
+            expect(features[0].config.features?.defaultTransfer).toBeDefined();
+        });
+
+        it('should preserve an explicit default transfer override', () => {
+            const defaultTransfer = () => [];
+            const features = withWsClientTransport({
+                url: 'ws://localhost:8080',
+                features: { defaultTransfer }
+            });
+
+            expect(features[0].config.features?.defaultTransfer).toBe(defaultTransfer);
+        });
+
+        it('should preserve host client mode when microservice is false', () => {
+            const features = withWsClientTransport({
+                microservice: false,
+                url: 'ws://localhost:8080'
+            });
+
+            expect(features[0].config.microservice).toBe(false);
         });
     });
 

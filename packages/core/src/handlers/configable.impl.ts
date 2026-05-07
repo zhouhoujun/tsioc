@@ -60,17 +60,18 @@ export class ConfigableHandler<
     }
 
     protected initOptions(options: ConfigableHandlerOptions): void {
+        const features = (options as ConfigableHandlerOptions & { features?: ConfigableHandlerOptions }).features;
         if (!options.backendToken) {
-            options.backendToken = BACKENDS_TOKEN;
+            options.backendToken = features?.backendToken ?? BACKENDS_TOKEN;
         }
         if (!options.interceptorsToken) {
-            options.interceptorsToken = INTERCEPTORS_TOKEN;
+            options.interceptorsToken = features?.interceptorsToken ?? INTERCEPTORS_TOKEN;
         }
         if (!options.guardsToken) {
-            options.guardsToken = GUARDS_TOKEN;
+            options.guardsToken = features?.guardsToken ?? GUARDS_TOKEN;
         }
         if (!options.filtersToken) {
-            options.filtersToken = FILTERS_TOKEN;
+            options.filtersToken = features?.filtersToken ?? FILTERS_TOKEN;
         }
     }
 

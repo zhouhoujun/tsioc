@@ -1,10 +1,10 @@
-import { asProvider, Provider, getClassRef, Injector, isArray, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { asProvider, Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, TransferInterceptorFactory, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
@@ -18,8 +18,8 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
         microservice: true,
         ...option,
         features: {
-            ...option.features,
-            defaultTransfer: useJsonPacket()
+            defaultTransfer: useJsonPacket(),
+            ...option.features
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
         serverOpts: option.serverOpts ? { ...option.serverOpts } : undefined,
@@ -27,15 +27,9 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
 
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
-    const interceptorsToken = getServiceInterceptorsToken(config);
-    const filtersToken = getServiceFiltersToken(config);
-    const guardsToken = getServiceGuardsToken(config);
-
-    // Copy tokens from features to config root for createRequestHandler to find
-    (config as any).backendToken = backendToken;
-    (config as any).interceptorsToken = interceptorsToken;
-    (config as any).filtersToken = filtersToken;
-    (config as any).guardsToken = guardsToken;
+    getServiceInterceptorsToken(config);
+    getServiceFiltersToken(config);
+    getServiceGuardsToken(config);
 
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;

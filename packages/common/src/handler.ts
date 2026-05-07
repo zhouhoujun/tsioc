@@ -169,9 +169,10 @@ export class DefaultRequestHandler<
     }
 
     protected override generateInterceptorFn(fns: InterceptorLike[]): RequestInterceptorFn {
-        const options = this.options as RequestHandlerOptions;
+        const options = this.options as RequestHandlerOptions & { features?: RequestHandlerOptions };
         if (options.side === TransferSide.server) {
-            const transfers = this.injector.get(options.transfersToken!);
+            const transfersToken = options.transfersToken ?? options.features?.transfersToken;
+            const transfers = transfersToken ? this.injector.get(transfersToken, []) : [];
             if (transfers?.length) {
                 fns.unshift(...transfers)
             }
@@ -181,9 +182,10 @@ export class DefaultRequestHandler<
 
     protected override generateBackendFn(): RequestHandlerFn {
         const handler = super.generateBackendFn() as RequestHandlerFn;
-        const options = this.options as RequestHandlerOptions;
+        const options = this.options as RequestHandlerOptions & { features?: RequestHandlerOptions };
         if (options.side === TransferSide.client) {
-            const transfers = this.injector.get(options.transfersToken!);
+            const transfersToken = options.transfersToken ?? options.features?.transfersToken;
+            const transfers = transfersToken ? this.injector.get(transfersToken, []) : [];
             if (transfers?.length) {
                 const interceptorFn = composeInterceptors(transfers) as RequestInterceptorFn;
                 return (req: TReq, context: RequestContext) => interceptorFn(req, handler, context);

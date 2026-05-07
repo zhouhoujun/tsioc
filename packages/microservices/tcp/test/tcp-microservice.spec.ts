@@ -73,10 +73,33 @@ describe('TCP Microservice', () => {
             expect(hasInConfig || hasInMain).toBe(true);
         });
 
-        it('should set asDefault correctly when single option', () => {
-            const features = withTcpTransport({ listenOpts: { port: 8080 }, asDefault: true });
-            expect(features.length).toBe(1);
+        it('should use json packet transfer by default', () => {
+            const feature = tcpTransportFactory({
+                listenOpts: { port: 8080 }
+            });
+
+            expect(feature.config.features?.defaultTransfer).toBeDefined();
         });
+
+        it('should preserve an explicit default transfer override', () => {
+            const defaultTransfer = () => [];
+            const feature = tcpTransportFactory({
+                listenOpts: { port: 8080 },
+                features: { defaultTransfer }
+            });
+
+            expect(feature.config.features?.defaultTransfer).toBe(defaultTransfer);
+        });
+
+        it('should preserve host service mode when microservice is false', () => {
+            const feature = tcpTransportFactory({
+                microservice: false as any,
+                listenOpts: { port: 8080 }
+            });
+
+            expect(feature.config.microservice).toBe(false);
+        });
+
 
         it('should create multiple transport features for multiple options', () => {
             const features = withTcpTransport(

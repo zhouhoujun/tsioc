@@ -152,6 +152,33 @@ describe('withTcpClientTransport', () => {
         expect(features[0].config.microservice).toBe(true);
     });
 
+    it('should use json packet transfer by default', () => {
+        const features = withTcpClientTransport({
+            connectOpts: { port: 8080 }
+        });
+
+        expect(features[0].config.features?.defaultTransfer).toBeDefined();
+    });
+
+    it('should preserve an explicit default transfer override', () => {
+        const defaultTransfer = () => [];
+        const features = withTcpClientTransport({
+            connectOpts: { port: 8080 },
+            features: { defaultTransfer }
+        });
+
+        expect(features[0].config.features?.defaultTransfer).toBe(defaultTransfer);
+    });
+
+    it('should preserve host client mode when microservice is false', () => {
+        const features = withTcpClientTransport({
+            microservice: false,
+            connectOpts: { port: 8080 }
+        });
+
+        expect(features[0].config.microservice).toBe(false);
+    });
+
     it('should support keepalive option', () => {
         const features = withTcpClientTransport({
             keepalive: 60000,
@@ -161,6 +188,7 @@ describe('withTcpClientTransport', () => {
         expect(features.length).toBe(1);
         expect((features[0].config as TcpClientOptions).keepalive).toBe(60000);
     });
+
 });
 
 describe('TcpClient export', () => {
