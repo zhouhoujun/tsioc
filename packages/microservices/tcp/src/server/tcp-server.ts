@@ -9,7 +9,7 @@ import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
+import { TcpServOptions, TCP_SERV_OPTIONS, TCP_BIND_INTERCEPTORS, TCP_BIND_FILTERS, TCP_BIND_GUARDS } from './options';
 const SOCKET = Events.SOCKET;
 
 /**
@@ -80,9 +80,9 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
     }
 
     @EventHandler(BindServiceEvent, {
-        // interceptorsToken: TCP_BIND_INTERCEPTORS,
-        // filtersToken: TCP_BIND_FILTERS,
-        // guardsToken: TCP_BIND_GUARDS
+        interceptorsToken: TCP_BIND_INTERCEPTORS,
+        filtersToken: TCP_BIND_FILTERS,
+        guardsToken: TCP_BIND_GUARDS
     })
     async bind(event: BindServiceEvent<any>) {
         if (this.serv || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;

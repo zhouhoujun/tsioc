@@ -1,11 +1,10 @@
 import { asProvider, Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, TransferInterceptorFactory, RequestInterceptorLike } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, TransferInterceptorFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
-import { useWsPacket } from '../transfer';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
 /**
@@ -19,8 +18,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         microservice: true,
         ...option,
         features: {
-            ...option.features,
-            defaultTransfer: useWsPacket()
+            ...option.features
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
         serverOpts: option.serverOpts ? { ...option.serverOpts } : undefined,
@@ -28,17 +26,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
 
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
-    const interceptorsToken = getServiceInterceptorsToken(config);
-    const filtersToken = getServiceFiltersToken(config);
-    const guardsToken = getServiceGuardsToken(config);
     const transfersToken = getServiceTransfersToken(config);
-
-    // Copy tokens from features to config root for createRequestHandler to find
-    (config as any).backendToken = backendToken;
-    (config as any).interceptorsToken = interceptorsToken;
-    (config as any).filtersToken = filtersToken;
-    (config as any).guardsToken = guardsToken;
-    (config as any).transfersToken = transfersToken;
 
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
@@ -47,7 +35,6 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
     );
 
-    // Add transfer interceptors providers to main providers array
     const transferProviders: Provider[] = [];
     const transfers: TransferInterceptorFactory[] = [];
     if (config.features.defaultTransfer) {

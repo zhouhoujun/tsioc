@@ -10,7 +10,7 @@ import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { WebSocketServer, WebSocket } from 'ws';
-import { WsServOptions, WS_SERV_OPTIONS } from './options';
+import { WsServOptions, WS_SERV_OPTIONS, WS_BIND_INTERCEPTORS, WS_BIND_FILTERS, WS_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
 
 /**
@@ -81,9 +81,9 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
     }
 
     @EventHandler(BindServiceEvent, {
-        // interceptorsToken: WS_BIND_INTERCEPTORS,
-        // filtersToken: WS_BIND_FILTERS,
-        // guardsToken: WS_BIND_GUARDS
+        interceptorsToken: WS_BIND_INTERCEPTORS,
+        filtersToken: WS_BIND_FILTERS,
+        guardsToken: WS_BIND_GUARDS
     })
     async bind(event: BindServiceEvent<any>) {
         if (this.server || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;

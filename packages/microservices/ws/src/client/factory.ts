@@ -1,6 +1,6 @@
 import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
-import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
+import { createSendMessageBackend } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsClient } from './client';
@@ -13,7 +13,6 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
         side: TransferSide.client,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
             ...option.features
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,

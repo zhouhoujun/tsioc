@@ -1,4 +1,4 @@
-import { WsServer, WsServOptions, wsTransportFactory, withWsTransport, WS_SERV_OPTIONS } from '../src/server';
+import { WsServer, WsServOptions, wsTransportFactory, WS_SERV_OPTIONS } from '../src/server';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 import * as http from 'node:http';
@@ -85,17 +85,22 @@ describe('WebSocket Microservice', () => {
             expect(hasInConfig || hasInMain).toBe(true);
         });
 
-        it('should set asDefault correctly when single option', () => {
-            const features = withWsTransport({ listenOpts: { port: 8080 }, asDefault: true });
-            expect(features.length).toBe(1);
+        it('should not force a default transfer', () => {
+            const feature = wsTransportFactory({
+                listenOpts: { port: 8080 }
+            });
+
+            expect(feature.config.features?.defaultTransfer).toBeUndefined();
         });
 
-        it('should create multiple transport features for multiple options', () => {
-            const features = withWsTransport(
-                { listenOpts: { port: 8080 } },
-                { listenOpts: { port: 8081 } }
-            );
-            expect(features.length).toBe(2);
+        it('should preserve an explicit default transfer override', () => {
+            const defaultTransfer = () => [];
+            const feature = wsTransportFactory({
+                listenOpts: { port: 8080 },
+                features: { defaultTransfer }
+            });
+
+            expect(feature.config.features?.defaultTransfer).toBe(defaultTransfer);
         });
     });
 

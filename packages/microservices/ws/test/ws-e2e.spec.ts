@@ -298,7 +298,7 @@ function sendWsRequest(port: number, data: string): Promise<any> {
         const ws = new WebSocket(`ws://127.0.0.1:${port}`);
 
         ws.on('open', () => {
-            ws.send(JSON.stringify(data));
+            ws.send(data);
         });
 
         ws.on('message', (chunk) => {
