@@ -1,52 +1,71 @@
-import { asProvider, Provider, getClassRef, Injector, isArray, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { asProvider, Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, TransferInterceptorFactory, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, TransferInterceptorFactory, RequestInterceptorLike } from '@tsdi/common';
 import { of } from 'rxjs';
-import { TcpServer } from './tcp-server';
-import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
+import { WsServer } from './ws-server';
+import { WsServOptions, WS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
+import { useWsPacket } from '../transfer';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
 /**
- * create TCP transport feature for microservice.
+ * Create WebSocket transport feature for microservice.
+ * 创建 WebSocket 微服务传输特性
  */
-export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?: boolean): ServiceTransportFeature {
+export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
-        transport: Transport.TCP,
+        transport: Transport.WS,
         side: TransferSide.server,
         microservice: true,
         ...option,
         features: {
             ...option.features,
-            defaultTransfer: useJsonPacket()
+            defaultTransfer: useWsPacket()
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
         serverOpts: option.serverOpts ? { ...option.serverOpts } : undefined,
-    } as TcpServOptions;
+    } as WsServOptions;
 
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
     const interceptorsToken = getServiceInterceptorsToken(config);
     const filtersToken = getServiceFiltersToken(config);
     const guardsToken = getServiceGuardsToken(config);
+    const transfersToken = getServiceTransfersToken(config);
 
     // Copy tokens from features to config root for createRequestHandler to find
     (config as any).backendToken = backendToken;
     (config as any).interceptorsToken = interceptorsToken;
     (config as any).filtersToken = filtersToken;
     (config as any).guardsToken = guardsToken;
+    (config as any).transfersToken = transfersToken;
 
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
     config.providers.push(
-        { provide: TCP_SERV_OPTIONS, useValue: config },
+        { provide: WS_SERV_OPTIONS, useValue: config },
         toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
     );
+
+    // Add transfer interceptors providers to main providers array
+    const transferProviders: Provider[] = [];
+    const transfers: TransferInterceptorFactory[] = [];
+    if (config.features.defaultTransfer) {
+        transfers.push(config.features.defaultTransfer);
+    }
+    transfers.forEach((fac) => {
+        const itps = fac(config);
+        if (isArray(itps)) {
+            transferProviders.push(...toProviders(transfersToken, itps, true));
+        } else {
+            transferProviders.push(toProvider(transfersToken, itps, true));
+        }
+    });
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        ...transferProviders,
         asProvider({
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
@@ -65,9 +84,10 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
         {
             provide: serviceToken,
             useFactory: (injector: Injector) => {
-                return getClassRef(TcpServer).createInvocation(injector, {
+                return getClassRef(WsServer).createInvocation(injector, {
                     providers: [
-                        { provide: TCP_SERV_OPTIONS, useValue: config },
+                        { provide: WS_SERV_OPTIONS, useValue: config },
+                        ...transferProviders,
                         {
                             provide: ServiceHandler,
                             useFactory: (inj: Injector) => createRequestHandler(inj, config),
@@ -102,8 +122,8 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     };
 }
 
-export function withTcpTransport(...options: Partial<TcpServOptions>[]): ServiceTransportFeature[] {
+export function withWsTransport(...options: Partial<WsServOptions>[]): ServiceTransportFeature[] {
     return options.map(option => {
-        return tcpTransportFactory(option, options.length === 1 && option.asDefault);
+        return wsTransportFactory(option, options.length === 1 && option.asDefault);
     });
 }
