@@ -120,7 +120,9 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private validOptions() {
-        const withCredentials = this.isSecure = this.options.transport !== Transport.HTTP && !!(this.options.serverOpts as any)?.cert;
+        const hasCert = !!(this.options.serverOpts as any)?.cert;
+        this.isSecure = hasCert || !!this.options.secure;
+        const withCredentials = this.isSecure;
         this.options.listenOpts = {
             ...this.options.listenOpts,
             withCredentials,

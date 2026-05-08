@@ -10,7 +10,7 @@ export interface HttpServOptions extends ServiceOptions {
     providers?: ProvdierOf<any>[];
     interceptors?: ProvdierOf<RequestInterceptorLike>[];
     listenOpts?: ListenOpts;
-    serverOpts?: http.ServerOptions | https.ServerOptions | http2.ServerOptions<typeof http.IncomingMessage, typeof http.ServerResponse> | http2.SecureServerOptions<typeof http.IncomingMessage, typeof http.ServerResponse>;
+    serverOpts?: http.ServerOptions | https.ServerOptions | http2.ServerOptions | http2.SecureServerOptions;
     secure?: boolean;
     majorVersion?: number;
     timeout?: number;

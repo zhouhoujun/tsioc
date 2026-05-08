@@ -1,4 +1,4 @@
-import { Injector, Invocation } from '@tsdi/ioc';
+import { Injector, Invocation, toObservable } from '@tsdi/ioc';
 import { RequestHandler, RequestContext, ReadableLike, Incoming } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
@@ -15,8 +15,8 @@ export class RouteHandler implements RequestHandler {
     }
 
     handle(input: ReadableLike<Incoming>, context: RequestContext): Observable<any> {
-        // The invocation already has the injector, just pass the args
-        return this.invocation.invoke(this.propertyKey, context);
+        const result = this.invocation.invoke(this.propertyKey, context);
+        return toObservable(result);
     }
 }
 

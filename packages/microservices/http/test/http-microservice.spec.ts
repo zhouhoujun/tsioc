@@ -85,4 +85,46 @@ describe('HTTP Microservice', () => {
     describe('HttpServer', () => {
         it('should exist as a class', () => expect(typeof HttpServer).toBe('function'));
     });
+
+    describe('HTTP/2', () => {
+        it('httpTransportFactory should accept majorVersion: 2', () => {
+            const feature = httpTransportFactory({ majorVersion: 2, listenOpts: { port: 3000 } });
+            expect((feature.config as HttpServOptions).majorVersion).toBe(2);
+        });
+
+        it('httpTransportFactory should create h2 server with secure opts', () => {
+            const feature = httpTransportFactory({
+                majorVersion: 2,
+                serverOpts: { key: 'test-key', cert: 'test-cert' } as any,
+                listenOpts: { port: 3000 }
+            });
+            expect((feature.config as HttpServOptions).majorVersion).toBe(2);
+            expect(((feature.config as HttpServOptions).serverOpts as any).key).toBe('test-key');
+        });
+
+        it('withHttpClientTransport should accept http2 authority', () => {
+            const features = withHttpClientTransport({ authority: 'http://localhost:3000', asDefault: true });
+            expect((features[0].config as HttpClientOptions).authority).toBe('http://localhost:3000');
+        });
+
+        it('withHttpClientTransport should accept http2 requestOptions', () => {
+            const features = withHttpClientTransport({
+                authority: 'http://localhost:3000',
+                requestOptions: { endStream: true }
+            });
+            expect((features[0].config as HttpClientOptions).requestOptions?.endStream).toBe(true);
+        });
+
+        it('httpTransportFactory should have bodyparser enabled for h2', () => {
+            const feature = httpTransportFactory({ majorVersion: 2, listenOpts: { port: 3000 } });
+            expect(feature.config.features?.bodyparser).toBe(true);
+            expect(feature.providers.some((p: any) => p.useClass === BodyparserInterceptor)).toBe(true);
+        });
+
+        it('withHttpClientTransport should handle authority without asDefault', () => {
+            const features = withHttpClientTransport({ authority: 'http://localhost:4000' });
+            expect(features.length).toBe(1);
+            expect((features[0].config as HttpClientOptions).authority).toBe('http://localhost:4000');
+        });
+    });
 });
