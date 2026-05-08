@@ -273,7 +273,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
             }
             meta.resolvers.push(MODEL_RESOLVERS, typeResolveInterceptor, ...primitiveResolvers);
         },
-        def: controllerOnly ? undefined : {
+        def: {
             class: (ctx) => {
                 ctx.classRef.assignAnnotation(ctx.define.metadata);
             },

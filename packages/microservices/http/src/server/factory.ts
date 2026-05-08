@@ -1,25 +1,32 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, DefaultHeaderAdapter, HeaderAdapter } from '@tsdi/common';
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
+import { MimeModule, BodyparserInterceptor } from '@tsdi/endpoints';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
-        transport: Transport.HTTP, side: TransferSide.server, microservice: true,
+        transport: Transport.HTTP,
+        side: TransferSide.server,
+        microservice: true,
         ...option,
-        features: { defaultTransfer: useJsonPacket(), ...option.features },
+        features: {
+            bodyparser: true,
+            ...option.features,
+        },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
         serverOpts: option.serverOpts ? { ...option.serverOpts } : undefined,
     } as HttpServOptions;
 
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
-    getServiceInterceptorsToken(config); getServiceFiltersToken(config); getServiceGuardsToken(config);
+    config.features.interceptorsToken ??= getServiceInterceptorsToken(config);
+    config.features.filtersToken ??= getServiceFiltersToken(config);
+    config.features.guardsToken ??= getServiceGuardsToken(config);
 
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
@@ -30,7 +37,10 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        importProvidersFrom(MimeModule),
+        { provide: HeaderAdapter, useClass: DefaultHeaderAdapter },
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        { provide: config.features.interceptorsToken, useClass: BodyparserInterceptor, multi: true, multiOrder: -1000 },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const r = context.getResponse(); const s = context.get(StatusAdapter);
             r.error = new NotFoundException(); if (s) { r.statusCode = s.notFound; r.statusMessage = r.error.message; } return of(r);

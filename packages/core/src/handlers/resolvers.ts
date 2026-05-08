@@ -99,22 +99,24 @@ export function createMessageResolveInterceptors(
 
             const resolvedFactory = factoryInstance ?? injector.get(token, null);
             const reader = resolvedFactory?.create(context.getPayload());
+            const implicitWholeSection = parameter.scope === 'body' || parameter.scope === 'payload';
+            const field = isDefined(parameter.field) ? parameter.field : (implicitWholeSection ? undefined : parameter.name);
 
             let payload: any;
             if (reader) {
-                payload = reader.field(parameter.scope as any, parameter.field ?? parameter.name);
+                payload = reader.field(parameter.scope as any, field as any);
             } else {
                 const input = context.getPayload();
                 if (parameter.scope && input) {
                     const scopeVal = input[parameter.scope];
-                    payload = parameter.field && scopeVal ? scopeVal[parameter.field] : scopeVal;
+                    payload = field && scopeVal ? scopeVal[field] : scopeVal;
                 }
             }
 
             if (isNil(payload)) {
                 if (reader) {
                     const data = reader.field(parameter.scope as any);
-                    if (isDefined(data) && !isObject(data)) {
+                    if (isDefined(data) && (!isObject(data) || implicitWholeSection)) {
                         payload = data;
                     } else if (parameter.nullable) {
                         return parameter.defaultValue ?? null;
@@ -129,6 +131,7 @@ export function createMessageResolveInterceptors(
                     }
                 }
             }
+
 
             if (parameter.multi) {
                 const value = getMutilResolveHanlder(context.getInjector().getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], context);

@@ -1,20 +1,26 @@
-import { getTypeName, Inject, isNumber, isString, promisify, Injectable } from '@tsdi/ioc';
+import { getTypeName, Inject, isNumber, isString, promisify, Injectable, isNil } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport
+    InternalServerException, ListenOpts, Transport, RESPONSE, REQUEST,
+    StreamAdapter, ContentType, Outgoing, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as http2 from 'node:http2';
 import { HttpServOptions, HTTP_SERV_OPTIONS, HTTP_BIND_INTERCEPTORS, HTTP_BIND_FILTERS, HTTP_BIND_GUARDS } from './options';
+
+type HttpRequestLike = http.IncomingMessage | http2.Http2ServerRequest;
+type HttpResponseLike = http.ServerResponse | http2.Http2ServerResponse;
+type HttpServerLike = http.Server | https.Server | http2.Http2Server | http2.Http2SecureServer;
 
 @Injectable()
 export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
-    server?: http.Server | https.Server | null;
+    server?: HttpServerLike | null;
 
     @InjectLog() logger!: Logger;
 
@@ -27,7 +33,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     ) {
         super();
         this.destroy$ = new Subject();
-        this.isSecure = !!(options.serverOpts as https.ServerOptions)?.cert;
+        this.isSecure = !!(options.serverOpts as https.ServerOptions | http2.SecureServerOptions)?.cert;
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;
@@ -68,15 +74,16 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         await this.onStart();
     }
 
-    async onStart(bindServer?: http.Server | https.Server): Promise<void> {
+    async onStart(bindServer?: HttpServerLike): Promise<void> {
         const inj = this.injector;
         inj.setValue(Logger, this.logger);
+        this.validOptions();
 
         if (!this.server) {
             this.server = bindServer || this.createServer();
         }
 
-        this.server.on('request', (req: http.IncomingMessage, res: http.ServerResponse) => {
+        this.server.on('request', (req: HttpRequestLike, res: HttpResponseLike) => {
             this.handleRequest(req, res);
         });
 
@@ -100,39 +107,160 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             .finally(() => { this.server?.removeAllListeners(); this.server = null; });
     }
 
-    private createServer(): http.Server | https.Server {
-        return this.isSecure ? https.createServer(this.options.serverOpts as https.ServerOptions)
+    private createServer(): HttpServerLike {
+        const majorVersion = this.options.majorVersion ?? 1;
+        if (majorVersion >= 2) {
+            return this.isSecure
+                ? http2.createSecureServer(this.options.serverOpts as http2.SecureServerOptions)
+                : http2.createServer(this.options.serverOpts as http2.ServerOptions);
+        }
+        return this.isSecure
+            ? https.createServer(this.options.serverOpts as https.ServerOptions)
             : http.createServer(this.options.serverOpts as http.ServerOptions);
     }
 
-    private handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
-        const chunks: Buffer[] = [];
-        req.on('data', (chunk: Buffer) => chunks.push(chunk));
-        req.on('end', () => {
-            const body = Buffer.concat(chunks).toString();
-            const context = createRequestContext(this.injector, [
-                ['request', req],
-                ['url', req.url],
-                ['method', req.method],
-                ['headers', req.headers],
-            ]);
+    private validOptions() {
+        const withCredentials = this.isSecure = this.options.transport !== Transport.HTTP && !!(this.options.serverOpts as any)?.cert;
+        this.options.listenOpts = {
+            ...this.options.listenOpts,
+            withCredentials,
+            majorVersion: this.options.majorVersion
+        } as ListenOpts;
+    }
 
-            let parsed: any = body || null;
-            try { if (body) parsed = JSON.parse(body); } catch { /* keep as string */ }
+    private handleRequest(req: HttpRequestLike, res: HttpResponseLike) {
+        const url = this.getRequestUrl(req);
+        const method = this.getRequestMethod(req);
+        const requestData = {
+            body: this.hasRequestBody(req) ? req : null,
+            url,
+            method,
+            headers: req.headers,
+            query: this.parseQuery(url),
+        };
+        const context = createRequestContext(this.injector, [
+            [REQUEST, requestData],
+            [RESPONSE, this.createOutgoing(req)],
+            ['request', req],
+            ['response', res],
+            ['url', url],
+            ['method', method],
+            ['headers', req.headers],
+        ]);
+        context.setPayload(requestData);
 
-            const requestData = { body: parsed, url: req.url, method: req.method, headers: req.headers };
+        this.handler.handle(requestData as TReq, context)
+            .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
+            .subscribe({
+                next: (response: any) => this.writeResponse(req, res, context, response),
+                error: (err: any) => this.writeError(req, res, err)
+            });
+    }
 
-            this.handler.handle(requestData as TReq, context)
-                .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
-                .subscribe((response: any) => {
-                    if (response) {
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(typeof response === 'string' ? response : JSON.stringify(response));
-                    } else {
-                        res.writeHead(204);
-                        res.end();
-                    }
-                });
+
+
+    private createOutgoing(_req: HttpRequestLike): Outgoing<any> {
+        return this.injector.get(OutgoingFactory).create({});
+    }
+
+    private writeResponse(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, response: any) {
+        if (isNil(response)) {
+            res.statusCode = 204;
+            res.end();
+            return;
+        }
+
+        const outgoing = this.toOutgoing(response, context);
+        const streamAdapter = context.get(StreamAdapter);
+        const status = outgoing ? outgoing.statusCode ?? 200 : 200;
+        const contentType = outgoing?.getHeader?.('content-type') ?? context.getContentType();
+        const payload = !isNil(outgoing?.body) ? outgoing.body : response;
+
+        const headerNames = outgoing?.getHeaderNames?.() ?? [];
+        headerNames.forEach((name: string) => {
+            const value = outgoing?.getHeader?.(name);
+            if (!isNil(value)) {
+                res.setHeader(name, value as any);
+            }
         });
+
+        if (contentType && !res.hasHeader('content-type')) {
+            res.setHeader('content-type', contentType);
+        }
+
+        if (!isNil(status)) {
+            res.statusCode = status as number;
+            if (req.httpVersionMajor < 2 && outgoing?.statusMessage) {
+                res.statusMessage = outgoing.statusMessage;
+            }
+        }
+
+        if (isNil(payload)) {
+            res.end();
+            return;
+        }
+
+        if (streamAdapter.isStream(payload)) {
+            streamAdapter.pipeTo(payload, res as any, { end: true }).catch(err => this.logger.error(err));
+            return;
+        }
+
+        if (!res.hasHeader('content-type') && typeof payload !== 'string' && !Buffer.isBuffer(payload)) {
+            res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
+        }
+        res.end(typeof payload === 'string' || Buffer.isBuffer(payload) ? payload : JSON.stringify(payload));
+    }
+
+    private writeError(req: HttpRequestLike, res: HttpResponseLike, err: any) {
+        this.logger.error(err);
+        const status = err?.statusCode ?? err?.status ?? 500;
+        res.statusCode = status;
+        if (req.httpVersionMajor < 2 && err?.statusMessage) {
+            res.statusMessage = err.statusMessage;
+        }
+        if (!res.hasHeader('content-type')) {
+            res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
+        }
+        res.end(JSON.stringify({ statusCode: status, message: err?.message ?? String(err) }));
+    }
+
+    private toOutgoing(response: any, context: RequestContext): Outgoing<any> | null {
+        if (!response) {
+            return null;
+        }
+        if (typeof response.getHeader === 'function' && typeof response.setHeader === 'function') {
+            return response as Outgoing<any>;
+        }
+        const outgoing = context.getResponse();
+        if (response === outgoing) {
+            return outgoing;
+        }
+        outgoing.body = response;
+        return outgoing;
+    }
+
+
+    private hasRequestBody(req: HttpRequestLike) {
+        const method = this.getRequestMethod(req)?.toUpperCase();
+        return method !== 'GET' && method !== 'HEAD';
+    }
+
+    private getRequestUrl(req: HttpRequestLike): string | undefined {
+        return req.url ?? (req.headers[':path'] as string | undefined);
+    }
+
+    private getRequestMethod(req: HttpRequestLike): string | undefined {
+        return req.method ?? (req.headers[':method'] as string | undefined);
+    }
+
+    private parseQuery(url?: string | null) {
+        if (!url) {
+            return {};
+        }
+        const idx = url.indexOf('?');
+        if (idx < 0 || idx === url.length - 1) {
+            return {};
+        }
+        return Object.fromEntries(new URLSearchParams(url.slice(idx + 1)).entries());
     }
 }
