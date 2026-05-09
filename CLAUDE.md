@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `@tsdi/aop`: AOP advice/interceptor layer built on top of IoC runtime handling
 - `@tsdi/core`: application/module bootstrap, routing abstractions, lifecycle, application context
 - platform and integration packages: HTTP endpoints, security, repository/transactions, TypeORM adapter, browser/server platforms
-- transport adapters under `packages/services/*`: protocol-specific integrations for AMQP, Kafka, MQTT, NATS, Redis, TCP, UDP, WS, etc. These follow the same module/container patterns as core packages.
+- protocol adapters under `packages/services/*` and microservice transports under `packages/microservices/*`
 
 The framework follows a Spring-like model in TypeScript: decorators define metadata, IoC resolves instances, AOP wraps invocation, and higher-level packages compose those primitives into application bootstrapping and transports.
 
@@ -22,25 +22,33 @@ The framework follows a Spring-like model in TypeScript: decorators define metad
 npm install
 ```
 
-### Build the whole monorepo
+### Build the direct root packages
 
 ```bash
 npm run build
 ```
 
+The root build entrypoint is `taskfile.ts`. It scans only direct children of `packages/`, so nested packages under `packages/services/*` and `packages/microservices/*` are built with their own package-level commands.
+
 ### Build with version replacement
 
 ```bash
-npm run build -- --setvs=4.0.0-beta
+npm run build -- --setvs=6.0.0-beta
 ```
 
-### Build and publish dist packages
+This version replacement uses the root build runner and updates only direct child packages under `packages/` plus the root `package.json`.
+
+### Build and generate publish output
 
 ```bash
 npm run build -- --deploy=true
 # or
+./deploy
+# or on Windows
 ./deploy.cmd
 ```
+
+The current deploy path logs/generates publish output from `dist/`; it does not run `npm publish` itself.
 
 ### Build a single package
 
@@ -51,19 +59,33 @@ npm run build
 ts-node -r tsconfig-paths/register taskfile.ts
 ```
 
+For nested packages:
+
+```bash
+cd packages/services/<protocol> && npm run build
+cd packages/microservices/<package> && npm run build
+```
+
 ### Run tests for a single package
 
-Most packages expose:
+Most testable packages expose:
 
 ```bash
 cd packages/<package-name>
 npm test
 ```
 
-For example:
+Nested packages follow the same pattern:
 
 ```bash
-cd packages/ioc && npm test
+cd packages/services/mqtt && npm test
+cd packages/microservices/mqtt && npm test
+```
+
+Many packages also expose coverage via:
+
+```bash
+npm run test:coverage
 ```
 
 ### Run a single spec file
@@ -75,26 +97,20 @@ cd packages/ioc
 npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/unit'); const { ConsoleReporter } = require('@tsdi/unit-console'); runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
 ```
 
-For VS Code debugging, create a launch configuration that runs `unit.ts` with the test glob as an argument.
+For VS Code debugging, run the target package’s `unit.ts` with `-r ts-node/register -r tsconfig-paths/register`.
 
 ### Lint
 
-There is a root ESLint config at `.eslintrc.js`, but no root `npm run lint` script is defined. If needed, run ESLint directly against the files you changed:
-
-```bash
-npx eslint "packages/**/*.ts"
-```
+There is no ESLint configuration in this repository (`.eslintrc*`, `eslint.config.*`, or `eslintConfig` in `package.json` are absent) and no root `npm run lint` script. Prefer TypeScript/package builds and targeted tests for validation.
 
 ## Build and Test Structure
 
-- Root build entrypoint is [taskfile.ts](taskfile.ts). It iterates package folders and runs each package `taskfile.ts`.
-- Each package-level `taskfile.ts` defines:
-  - source glob
-  - test glob
-  - output directory under `dist/<package>`
-  - bundle formats (typically CommonJS plus ES targets and sometimes UMD)
+- Root build entrypoint is `taskfile.ts`. It updates versions when `--setvs=<version>` is passed, then builds direct child packages under `packages/`.
+- The root build skips direct packages whose paths end in `component` or `unit-karma`; the actual `packages/components` directory is not skipped by that singular `component` filter.
+- Package-level `taskfile.ts` files compile `src/**/*.ts` into `dist/<package>` with declaration and source maps enabled.
+- Some packages customize output/module format; for example `packages/ioc` emits ES module output while most package taskfiles emit CommonJS.
 - Package tests are typically started from `unit.ts` in the package root, not from a generic root test runner.
-- Root `package.json` only defines `build`, `postinstall`, and `reinstall`; package-level `package.json` files often define their own `build` and `test` scripts.
+- Root `package.json` only defines `build`, `postinstall`, and `reinstall`; package-level `package.json` files define their own `build`, `test`, and sometimes `test:coverage` scripts.
 
 ## Architecture Map
 
@@ -109,7 +125,7 @@ This is the foundation of the repo.
 - `src/metadata/*`: decorator metadata model (`@Injectable`, `@Module`, param/property decorators, class refs)
 - `src/providers.ts`, `src/resolver.ts`, `src/tokens.ts`: provider model, parameter resolution, token semantics
 
-If you are changing dependency resolution, invocation context, or performance of object creation/invocation, start in `packages/ioc` and then inspect downstream consumers in `aop` and `core`.
+If you are changing dependency resolution, invocation context, or performance of object creation/invocation, start in `packages/ioc` and then inspect downstream consumers in AOP and core.
 
 ### 2. AOP layer (`packages/aop`)
 
@@ -127,46 +143,43 @@ If you are changing dependency resolution, invocation context, or performance of
 - Module loading, bootstrapping, route handling, and application events all depend on the IoC runtime contracts.
 - If injector/context abstractions change, inspect `ApplicationContext`, module loader/bootstrap code, and invocation handler options here.
 
-### 4. Observability packages
+### 4. Build/tooling layer
 
-These provide health checks, metrics, and distributed tracing:
+- `packages/activities` provides the workflow primitives used by build taskfiles.
+- `packages/compiler` provides `CompilerModule`, which package taskfiles invoke through `Workflow.run()`.
+- The repo is self-hosting: the root and package taskfiles import `@tsdi/activities` and `@tsdi/compiler` via the root TypeScript path aliases.
 
-- `health`: Health check module with indicators and `/health` endpoint
-- `metrics`: Metrics collection with counters, gauges, histograms, and Prometheus-compatible exports
-- `tracing`: Distributed tracing with span creation, context propagation, and exporter integrations
-- `discovery`: Service discovery abstractions for microservice environments
-- `config`: Configuration management and environment-aware config loading
+### 5. Platform and integration packages
 
-### 5. i18n package
+- `platform-server` and `platform-browser` provide runtime platform integration.
+- `repository` and `typeorm-adapter` provide persistence and transaction support.
+- `logger`, `components`, `boot`, `cli`, `common`, `annotations`, and `i18n` layer additional framework features on top of IoC/core.
 
-- `i18n`: Internationalization module with translation management, locale switching, ICU MessageFormat (interpolation, plural, select), number/date/currency formatters, and JSON translation loaders
+### 6. Services and microservices
 
-### 6. Integration packages
-
-Other packages are mostly adapters over the core runtime:
-
-- `endpoints`, `platform-server`, `platform-browser`: transport/platform concerns
-- `repository`, `typeorm-adapter`: persistence and transactions
-- `security`, `logger`, `swagger`, `components`: feature modules on top of core abstractions
-- `packages/services/*`: protocol adapters sharing the same container/module patterns
+- `packages/services/*` contains protocol adapters such as AMQP, CoAP, HTTP, Kafka, MQTT, NATS, Redis, TCP, UDP, and WS.
+- `packages/microservices/*` contains microservice infrastructure and transports: client/service/transport plus config, discovery, endpoints, health, metrics, tracing, security, swagger, protocol implementations, and OIDC auth.
+- These packages follow the same container/module/decorator patterns as the core packages but are nested, so do not assume root `npm run build` covers them.
 
 ## TypeScript and Module Conventions
 
-- TypeScript target is ES2020 with CommonJS modules.
+- TypeScript target is ES2020 with CommonJS modules at the root config level.
 - Decorators and `emitDecoratorMetadata` are enabled and are fundamental to the framework design.
-- Root path aliases map `@tsdi/*` to both `packages/*` and `packages/services/*` via [tsconfig.json](tsconfig.json).
+- Root path aliases map `@tsdi/*` to `packages/agents/*`, `packages/microservices/*`, and `packages/*` via `tsconfig.json`.
 - Strict mode is enabled, including `strictNullChecks` and `strictPropertyInitialization`.
+- Cross-package imports generally use `@tsdi/*` aliases.
 
 ## Testing Conventions
 
 - Tests live in each package’s `test/` directory and usually use `*.spec.ts`.
-- The test style is Mocha-like `describe`/`it` with `expect` assertions.
+- The test style is Mocha-like `describe`/`it` with `expect` assertions; some areas also use `@tsdi/unit` decorator-style tests.
 - `@tsdi/unit` provides the actual test bootstrap; package `unit.ts` files are thin wrappers.
+- Integration services for examples/tests are defined in `simples/docker-compose.yml` and include postgres, redis, nats, mqtt/mosquitto, rabbitmq, zookeeper, and kafka.
 
 ## Repository-Specific Notes
 
 - Many APIs are decorator-driven; when debugging behavior, inspect metadata/reflection code as well as runtime execution code.
 - Cross-package refactors frequently require synchronized changes in `packages/ioc`, `packages/aop`, and `packages/core`.
 - Build output is generated under `dist/`; avoid editing generated files.
-- **Do not commit compiled `.js` and `.js.map` files** in `packages/*/src/` directories. These are build artifacts that should only exist in `dist/`.
-- The existing ESLint config is intentionally permissive for framework internals (`any`, empty functions, unused vars, namespaces are allowed in several cases).
+- Do not commit compiled `.js` and `.js.map` files in `packages/*/src/` directories. These are build artifacts that should only exist in `dist/`.
+- `reflect-metadata` is required by the decorator system.
