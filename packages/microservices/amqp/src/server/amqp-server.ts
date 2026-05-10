@@ -1,8 +1,8 @@
-import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
+import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    Events, createRequestContext, RequestContext, Transport
+    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
@@ -11,13 +11,13 @@ import { AmqpServOptions, AMQP_SERV_OPTIONS, AMQP_BIND_INTERCEPTORS, AMQP_BIND_F
 
 /**
  * AMQP server for microservices.
- * Connects to RabbitMQ and consumes messages from queues.
+ * Connects to AMQP broker and consumes messages from queue for handling.
  */
 @Injectable()
 export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
-    connection?: amqp.Connection | null;
-    channel?: amqp.Channel | null;
+    connection: amqp.Connection | null = null;
+    channel: amqp.Channel | null = null;
 
     @InjectLog() logger!: Logger;
 
@@ -46,7 +46,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         inj.setValue(Logger, this.logger);
 
         try {
-            const url = this.options.url || 'amqp://localhost:5672';
+            const url = this.options.url || 'amqp://127.0.0.1:5672';
             this.connection = await amqp.connect(url);
             this.channel = await this.connection.createChannel();
 
@@ -108,11 +108,6 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private handleMessage(msg: amqp.ConsumeMessage, exchange: string, _routingKey: string) {
         const content = msg.content.toString();
-        const context = createRequestContext(this.injector, [
-            ['exchange', exchange],
-            ['routingKey', msg.fields.routingKey],
-            ['content', content],
-        ]);
 
         let parsed: any;
         try {
@@ -121,16 +116,33 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             parsed = content;
         }
 
-        this.handler.handle(parsed as TReq, context)
+        const routingKey = msg.fields.routingKey;
+        const url = parsed.url || '/' + routingKey.replace(/\./g, '/');
+        const method = parsed.method || 'GET';
+        const requestData = { ...parsed, url, method };
+
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+
+        const context = createRequestContext(this.injector, [
+            [REQUEST, requestData],
+            [RESPONSE, outgoing],
+            ['exchange', exchange],
+            ['routingKey', routingKey],
+            ['content', content],
+        ]);
+
+        this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe({
                 next: (response: any) => {
                     if (response && this.channel) {
+                        const ctxResponse = context.get(RESPONSE);
+                        const body = ctxResponse?.body ?? response;
                         const replyTo = msg.properties.replyTo;
                         if (replyTo) {
                             const buf = Buffer.from(
-                                typeof response === 'string' ? response : JSON.stringify(response)
+                                typeof body === 'string' ? body : JSON.stringify(body)
                             );
                             this.channel.sendToQueue(replyTo, buf, {
                                 correlationId: msg.properties.correlationId

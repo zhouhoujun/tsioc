@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport
+    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
@@ -120,8 +120,19 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 return;
             }
 
+            const requestData = {
+                ...jsonRpcRequest,
+                url: '/' + jsonRpcRequest.method.replace(/\./g, '/'),
+                method: 'POST',
+                body: jsonRpcRequest.params
+            };
+            const outgoing = this.injector.get(OutgoingFactory).create({});
+
             const context = createRequestContext(this.injector, [
+                [REQUEST, requestData],
+                [RESPONSE, outgoing],
                 ['request', req],
+                ['response', res],
                 ['method', jsonRpcRequest.method],
                 ['params', jsonRpcRequest.params],
                 ['id', jsonRpcRequest.id],
@@ -131,10 +142,12 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
                 .subscribe({
                     next: (response: any) => {
+                        const ctxResponse = context.get(RESPONSE);
+                        const resultBody = ctxResponse?.body ?? response;
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({
                             jsonrpc: '2.0',
-                            result: response,
+                            result: resultBody,
                             id: jsonRpcRequest.id ?? null
                         }));
                     },

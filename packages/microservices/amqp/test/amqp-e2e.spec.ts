@@ -6,6 +6,7 @@ import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping,
 import { withAmqpTransport } from '../src/server';
 import { withAmqpClientTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
+import * as amqp from 'amqplib';
 import expect = require('expect');
 
 @Controller('/api/test')
@@ -106,4 +107,137 @@ describe('AMQP @RouteMapping', () => {
     after(async () => { if (ctx) await ctx.close(); });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
+});
+
+// ----- AMQP E2E request/response via native client -----
+describe('AMQP E2E with provideService + provideClient (microservice:true)', () => {
+    const ROUTING_KEY = 'e2e.microservice';
+
+    @Controller('/e2e')
+    class AmqpE2eController {
+        @Get('/ping') ping() { return { result: 'pong' }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [AmqpE2eController],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withAmqpTransport({ url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
+            ...provideClient(
+                withAmqpClientTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
+        ]
+    })
+    class AmqpE2eModule { }
+
+    let ctx: ApplicationContext;
+    let connection: amqp.Connection;
+    let channel: amqp.Channel;
+
+    before(async () => {
+        ctx = await Application.run(AmqpE2eModule);
+        connection = await amqp.connect(AMQP_URL);
+        channel = await connection.createChannel();
+        await new Promise(r => setTimeout(r, 1000));
+    });
+    after(async () => {
+        if (channel) await channel.close();
+        if (connection) await connection.close();
+        if (ctx) await ctx.destroy();
+    });
+
+    it('should bootstrap with provideService and provideClient', () => {
+        expect(ctx).toBeDefined();
+    });
+
+    it('should handle message and respond via AMQP RPC', async () => {
+        const q = await channel.assertQueue('', { exclusive: true });
+        const corrId = 'test-' + Date.now();
+
+        const result = await new Promise<any>((resolve, reject) => {
+            channel.consume(q.queue, (msg) => {
+                if (msg && msg.properties.correlationId === corrId) {
+                    try {
+                        resolve(JSON.parse(msg.content.toString()));
+                    } catch {
+                        resolve(msg.content.toString());
+                    }
+                }
+            }, { noAck: true });
+
+            channel.publish('tsdi', ROUTING_KEY, Buffer.from(JSON.stringify({
+                url: '/e2e/ping',
+                method: 'GET'
+            })), {
+                replyTo: q.queue,
+                correlationId: corrId
+            });
+
+            setTimeout(() => reject(new Error('Timeout')), 10000);
+        });
+
+        expect(result).toBeDefined();
+        expect(result).toBeDefined();
+    });
+});
+
+// ----- microservice:false -----
+describe('AMQP E2E with provideService + provideClient (microservice:false)', () => {
+    const ROUTING_KEY = 'e2e.host.microservice';
+
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withAmqpTransport({ microservice: false as any, url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
+            ...provideClient(
+                withAmqpClientTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
+        ]
+    })
+    class AmqpE2eHostModule { }
+
+    let ctx: ApplicationContext;
+    let connection: amqp.Connection;
+    let channel: amqp.Channel;
+
+    before(async () => {
+        ctx = await Application.run(AmqpE2eHostModule);
+        connection = await amqp.connect(AMQP_URL);
+        channel = await connection.createChannel();
+        await new Promise(r => setTimeout(r, 1000));
+    });
+    after(async () => {
+        if (channel) await channel.close();
+        if (connection) await connection.close();
+        if (ctx) await ctx.destroy();
+    });
+
+    it('should bootstrap with provideService and provideClient in host mode', () => {
+        expect(ctx).toBeDefined();
+    });
+
+    it('should handle request in host mode', async () => {
+        const q = await channel.assertQueue('', { exclusive: true });
+        const corrId = 'host-' + Date.now();
+
+        const result = await new Promise<any>((resolve, reject) => {
+            channel.consume(q.queue, (msg) => {
+                if (msg && msg.properties.correlationId === corrId) {
+                    try { resolve(JSON.parse(msg.content.toString())); } catch { resolve(msg.content.toString()); }
+                }
+            }, { noAck: true });
+
+            channel.publish('tsdi', ROUTING_KEY, Buffer.from(JSON.stringify({
+                url: '/test',
+                method: 'GET'
+            })), {
+                replyTo: q.queue,
+                correlationId: corrId
+            });
+
+            setTimeout(() => reject(new Error('Timeout')), 10000);
+        });
+
+        expect(result).toBeDefined();
+    });
 });

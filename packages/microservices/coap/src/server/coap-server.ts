@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     createRequestContext, RequestContext,
-    InternalServerException, Transport
+    InternalServerException, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
@@ -88,24 +88,37 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private handleRequest(req: coap.IncomingMessage, res: coap.OutgoingMessage) {
-        const context = createRequestContext(this.injector, [
-            [SOCKET, req],
-            ['request', req],
-            ['url', req.url],
-        ]);
-
         let payload: any = req.payload?.toString() || '';
         try {
             payload = JSON.parse(payload);
         } catch { /* keep as string */ }
 
-        this.handler.handle({ payload, url: req.url, method: req.code } as TReq, context)
+        const url = req.url || '/';
+        const method = req.code || 'GET';
+        const requestData = { payload, url, method };
+
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+
+        const context = createRequestContext(this.injector, [
+            [SOCKET, req],
+            [REQUEST, requestData],
+            [RESPONSE, outgoing],
+            ['request', req],
+            ['response', res],
+            ['url', url],
+            ['method', method],
+        ]);
+        context.setPayload({ ...requestData });
+
+        this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
-                if (response) {
+                const ctxResponse = context.get(RESPONSE);
+                const body = ctxResponse?.body ?? response;
+                if (body != null) {
                     const buf = Buffer.from(
-                        typeof response === 'string' ? response : JSON.stringify(response)
+                        typeof body === 'string' ? body : JSON.stringify(body)
                     );
                     res.end(buf);
                 } else {

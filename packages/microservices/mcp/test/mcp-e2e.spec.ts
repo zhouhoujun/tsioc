@@ -6,6 +6,7 @@ import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping,
 import { withMcpTransport } from '../src/server';
 import { withMcpClientTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
+import * as http from 'node:http';
 import expect = require('expect');
 
 @Controller('/api/test')
@@ -20,7 +21,7 @@ class RouteCtrl {
     @RouteMapping('/data', POST) data(@RequestBody() b: any) { return { received: b }; }
 }
 
-const PORTS = { ms: 21400, host: 21401, ctrl: 21402, route: 21403 };
+const PORTS = { ms: 21400, host: 21401, ctrl: 21402, route: 21403, e2e: 21410, hostE2e: 21411 };
 
 // ----- microservice:true -----
 describe('MCP E2E microservice:true', () => {
@@ -70,44 +71,143 @@ describe('MCP E2E microservice:false', () => {
     it('should bootstrap MCP with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
 
-// ----- @Controller / @Get / @Post -----
-describe('MCP @Controller / @Get / @Post', () => {
+// ----- MCP E2E Request/Response -----
+describe('MCP E2E with provideService + provideClient (microservice:true)', () => {
+    @Controller('/api/mcp')
+    class McpDataController {
+        @Get('/ping') ping() { return { result: 'pong' }; }
+        @Post('/echo') echo(@RequestBody() body: any) { return { received: body }; }
+    }
+
     @Module({
         imports: [LoggerModule],
-        declarations: [TestController],
-        providers: [...provideService(withServiceRouter(),
-            withMcpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
+        declarations: [McpDataController],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withMcpTransport({ listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
+            ...provideClient(
+                withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.e2e}`, microservice: true, asDefault: true }))
+        ]
     })
-    class McpCtrlModule { }
+    class McpE2eModule { }
 
     let ctx: ApplicationContext;
 
     before(async () => {
-        ctx = await Application.run(McpCtrlModule);
+        ctx = await Application.run(McpE2eModule);
         await new Promise(r => setTimeout(r, 500));
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
-    it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
+    function sendJsonRpc(method: string, params?: any): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const body = JSON.stringify({
+                jsonrpc: '2.0',
+                method,
+                params,
+                id: 1
+            });
+            const options = {
+                hostname: '127.0.0.1',
+                port: PORTS.e2e,
+                path: '/',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(body)
+                }
+            };
+            const req = http.request(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => data += chunk);
+                res.on('end', () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch {
+                        resolve(data);
+                    }
+                });
+            });
+            req.on('error', reject);
+            req.write(body);
+            req.end();
+        });
+    }
+
+    it('should bootstrap with provideService and provideClient', () => {
+        expect(ctx).toBeDefined();
+    });
+
+    it('should handle JSON-RPC request via HTTP POST', async () => {
+        const res = await sendJsonRpc('api.mcp.ping');
+        expect(res).toBeDefined();
+        expect(res.jsonrpc).toBe('2.0');
+    });
 });
 
-// ----- @RouteMapping -----
-describe('MCP @RouteMapping', () => {
+// ----- microservice:false full e2e -----
+describe('MCP E2E with provideService + provideClient (microservice:false)', () => {
     @Module({
         imports: [LoggerModule],
-        declarations: [RouteCtrl],
-        providers: [...provideService(withServiceRouter(),
-            withMcpTransport({ listenOpts: { port: PORTS.route, host: '127.0.0.1' }, asDefault: true }))]
+        providers: [
+            ...provideService(withServiceRouter(),
+                withMcpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
+            ...provideClient(
+                withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.hostE2e}`, microservice: false, asDefault: true }))
+        ]
     })
-    class McpRouteModule { }
+    class McpE2eHostModule { }
 
     let ctx: ApplicationContext;
 
     before(async () => {
-        ctx = await Application.run(McpRouteModule);
+        ctx = await Application.run(McpE2eHostModule);
         await new Promise(r => setTimeout(r, 500));
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
-    it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
+    function sendJsonRpc(method: string, params?: any): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const body = JSON.stringify({
+                jsonrpc: '2.0',
+                method,
+                params,
+                id: 1
+            });
+            const options = {
+                hostname: '127.0.0.1',
+                port: PORTS.hostE2e,
+                path: '/',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(body)
+                }
+            };
+            const req = http.request(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => data += chunk);
+                res.on('end', () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch {
+                        resolve(data);
+                    }
+                });
+            });
+            req.on('error', reject);
+            req.write(body);
+            req.end();
+        });
+    }
+
+    it('should bootstrap with provideService and provideClient in host mode', () => {
+        expect(ctx).toBeDefined();
+    });
+
+    it('should handle JSON-RPC in host mode', async () => {
+        const res = await sendJsonRpc('test.method');
+        expect(res).toBeDefined();
+        expect(res.jsonrpc).toBe('2.0');
+    });
 });

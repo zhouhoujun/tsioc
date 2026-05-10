@@ -2,7 +2,7 @@ import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    Events, createRequestContext, RequestContext, Transport
+    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
@@ -11,12 +11,12 @@ import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_F
 
 /**
  * MQTT server for microservices.
- * Acts as an MQTT client that subscribes to topics and handles incoming messages.
+ * Connects to MQTT broker and subscribes to topics for message handling.
  */
 @Injectable()
 export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
-    client?: mqtt.MqttClient | null;
+    client: mqtt.MqttClient | null = null;
 
     @InjectLog() logger!: Logger;
 
@@ -44,8 +44,8 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const inj = this.injector;
         inj.setValue(Logger, this.logger);
 
-        const url = this.options.url || 'mqtt://localhost:1883';
-        this.client = mqtt.connect(url, this.options.connectOpts);
+        const url = this.options.url || 'mqtt://127.0.0.1:1883';
+        this.client = mqtt.connect(url);
 
         this.client.on(Events.CONNECT, () => {
             this.logger.info(getTypeName(this), 'connected to MQTT broker:', url);
@@ -93,10 +93,6 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private handleMessage(topic: string, payload: Buffer) {
         const data = payload.toString();
-        const context = createRequestContext(this.injector, [
-            ['topic', topic],
-            ['payload', data],
-        ]);
 
         let parsed: any;
         try {
@@ -105,12 +101,27 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             parsed = data;
         }
 
-        this.handler.handle(parsed as TReq, context)
+        const url = parsed.url || '/' + topic.replace(/\//g, '/');
+        const method = parsed.method || 'GET';
+        const requestData = { ...parsed, url, method };
+
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+
+        const context = createRequestContext(this.injector, [
+            [REQUEST, requestData],
+            [RESPONSE, outgoing],
+            ['topic', topic],
+            ['payload', data],
+        ]);
+
+        this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (response && this.client) {
-                    const msg = typeof response === 'string' ? response : JSON.stringify(response);
+                    const ctxResponse = context.get(RESPONSE);
+                    const body = ctxResponse?.body ?? response;
+                    const msg = typeof body === 'string' ? body : JSON.stringify(body);
                     this.client.publish(topic + '/response', msg);
                 }
             });

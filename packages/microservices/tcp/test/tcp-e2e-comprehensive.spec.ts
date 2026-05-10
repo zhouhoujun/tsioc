@@ -420,12 +420,12 @@ function sendTcpRequest(port: number, requestObj: Record<string, unknown>): Prom
         let response = '';
 
         socket.connect(port, '127.0.0.1', () => {
-            socket.write(JSON.stringify(requestObj) + '\n');
+            socket.write(JSON.stringify(requestObj) + '\r\n');
         });
 
         socket.on('data', (chunk) => {
             response += chunk.toString();
-            if (response.endsWith('\n')) {
+            if (response.endsWith('\r\n')) {
                 socket.destroy();
                 try {
                     resolve(JSON.parse(response.trim()));

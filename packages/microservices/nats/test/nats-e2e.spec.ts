@@ -6,6 +6,7 @@ import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping,
 import { withNatsTransport } from '../src/server';
 import { withNatsClientTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
+import { connect, StringCodec, NatsConnection } from 'nats';
 import expect = require('expect');
 
 @Controller('/api/test')
@@ -106,4 +107,97 @@ describe('NATS @RouteMapping', () => {
     after(async () => { if (ctx) await ctx.close(); });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
+});
+
+// ----- NATS E2E request/response via native client -----
+describe('NATS E2E with provideService + provideClient (microservice:true)', () => {
+    const SUBJECT = 'e2e.test.ping';
+
+    @Controller('/e2e/test')
+    class NatsE2eController {
+        @Get('/ping') ping() { return { result: 'pong' }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [NatsE2eController],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withNatsTransport({ url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
+            ...provideClient(
+                withNatsClientTransport({ url: NATS_URL, microservice: true, asDefault: true }))
+        ]
+    })
+    class NatsE2eModule { }
+
+    let ctx: ApplicationContext;
+    let nc: NatsConnection;
+    const sc = StringCodec();
+
+    before(async () => {
+        ctx = await Application.run(NatsE2eModule);
+        nc = await connect({ servers: NATS_URL });
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => {
+        if (nc) await nc.drain();
+        if (ctx) await ctx.destroy();
+    });
+
+    it('should bootstrap with provideService and provideClient', () => {
+        expect(ctx).toBeDefined();
+    });
+
+    it('should handle request and respond via NATS', async () => {
+        const msg = await nc.request(SUBJECT, sc.encode(JSON.stringify({
+            url: '/e2e/test/ping',
+            method: 'GET'
+        })), { timeout: 10000 });
+        const response = JSON.parse(sc.decode(msg.data));
+        expect(response).toBeDefined();
+        expect(response).toBeDefined();
+    });
+});
+
+// ----- microservice:false -----
+describe('NATS E2E with provideService + provideClient (microservice:false)', () => {
+    const SUBJECT = 'e2e.host.ping';
+
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withNatsTransport({ microservice: false as any, url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
+            ...provideClient(
+                withNatsClientTransport({ url: NATS_URL, microservice: false, asDefault: true }))
+        ]
+    })
+    class NatsE2eHostModule { }
+
+    let ctx: ApplicationContext;
+    let nc: NatsConnection;
+    const sc = StringCodec();
+
+    before(async () => {
+        ctx = await Application.run(NatsE2eHostModule);
+        nc = await connect({ servers: NATS_URL });
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => {
+        if (nc) await nc.drain();
+        if (ctx) await ctx.destroy();
+    });
+
+    it('should bootstrap with provideService and provideClient in host mode', () => {
+        expect(ctx).toBeDefined();
+    });
+
+    it('should handle request in host mode', async () => {
+        const msg = await nc.request(SUBJECT, sc.encode(JSON.stringify({
+            url: '/test',
+            method: 'GET'
+        })), { timeout: 10000 });
+        const response = JSON.parse(sc.decode(msg.data));
+        expect(response).toBeDefined();
+    });
 });

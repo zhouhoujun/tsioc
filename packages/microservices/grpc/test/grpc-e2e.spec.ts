@@ -111,3 +111,60 @@ describe('gRPC @RouteMapping', () => {
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });
+
+// ----- provideService + provideClient (microservice:true) -----
+describe('gRPC E2E with provideService + provideClient (microservice:true)', () => {
+    const E2E_PORT = 50056;
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [TestController],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withGrpcTransport({ port: E2E_PORT, asDefault: true })),
+            ...provideClient(
+                withGrpcClientTransport({ url: `localhost:${E2E_PORT}`, microservice: true, asDefault: true }))
+        ]
+    })
+    class GrpcE2eModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(GrpcE2eModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('should bootstrap with provideService and provideClient', () => {
+        expect(ctx).toBeDefined();
+    });
+});
+
+// ----- provideService + provideClient (microservice:false) -----
+describe('gRPC E2E with provideService + provideClient (microservice:false)', () => {
+    const E2E_HOST_PORT = 50057;
+
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withGrpcTransport({ microservice: false as any, port: E2E_HOST_PORT, asDefault: true })),
+            ...provideClient(
+                withGrpcClientTransport({ url: `localhost:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
+        ]
+    })
+    class GrpcE2eHostModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(GrpcE2eHostModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('should bootstrap with provideService and provideClient in host mode', () => {
+        expect(ctx).toBeDefined();
+    });
+});
