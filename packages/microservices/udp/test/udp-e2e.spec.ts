@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withUdpTransport } from '../src/server';
-import { withUdpClientTransport } from '../src/client';
+import { withUdpClientTransport, UdpClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as dgram from 'node:dgram';
 import expect = require('expect');
@@ -44,6 +44,7 @@ describe('UDP E2E microservice:true', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
+    it('should get UdpClient via ctx.get()', () => { expect(ctx.get(UdpClient)).toBeDefined(); });
     it('should bootstrap UDP with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 

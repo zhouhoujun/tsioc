@@ -7,6 +7,8 @@ import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping,
 import { withWsTransport } from '../src/server';
 import { withWsClientTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
+import { WsClient } from '../src/client/client';
+import { catchError, lastValueFrom, of } from 'rxjs';
 
 const PORT = 11500;
 const HOST_PORT = 11501;
@@ -105,8 +107,8 @@ describe('WS @RouteMapping', () => {
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });
 
-// ----- WS with provideService + provideClient (microservice:true) -----
-describe('WS E2E with provideService + provideClient (microservice:true)', () => {
+describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
+
     @Controller('/api/ws')
     class WsE2eController {
         @Get('/ping') ping() { return { result: 'pong' }; }
@@ -125,20 +127,31 @@ describe('WS E2E with provideService + provideClient (microservice:true)', () =>
     class WsE2eModule { }
 
     let ctx: ApplicationContext;
+    let client: WsClient;
 
     before(async () => {
         ctx = await Application.run(WsE2eModule);
+        client = ctx.get(WsClient);
         await new Promise(r => setTimeout(r, 500));
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
-    it('should bootstrap with provideService and provideClient', () => {
-        expect(ctx).toBeDefined();
+    it('should get WsClient via ctx.get()', () => {
+        expect(client).toBeDefined();
+        expect(client.send).toBeDefined();
+    });
+
+    it('should send cmd via WsClient.send()', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
+            observe: 'response' as any,
+            responseType: 'text' as any
+        }).pipe(catchError(err => of(err))));
+        expect(result).toBeDefined();
     });
 });
 
-// ----- WS with provideService + provideClient (microservice:false) -----
-describe('WS E2E with provideService + provideClient (microservice:false)', () => {
+describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
+
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -151,14 +164,24 @@ describe('WS E2E with provideService + provideClient (microservice:false)', () =
     class WsE2eHostModule { }
 
     let ctx: ApplicationContext;
+    let client: WsClient;
 
     before(async () => {
         ctx = await Application.run(WsE2eHostModule);
+        client = ctx.get(WsClient);
         await new Promise(r => setTimeout(r, 500));
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
-    it('should bootstrap with provideService and provideClient in host mode', () => {
-        expect(ctx).toBeDefined();
+    it('should get WsClient via ctx.get() in host mode', () => {
+        expect(client).toBeDefined();
+    });
+
+    it('should send cmd via WsClient.send() in host mode', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
+            observe: 'response' as any,
+            responseType: 'text' as any
+        }).pipe(catchError(err => of(err))));
+        expect(result).toBeDefined();
     });
 });

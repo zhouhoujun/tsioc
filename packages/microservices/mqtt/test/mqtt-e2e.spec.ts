@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withMqttTransport } from '../src/server';
-import { withMqttClientTransport } from '../src/client';
+import { withMqttClientTransport, MqttClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as mqtt from 'mqtt';
 import expect = require('expect');
@@ -43,6 +43,7 @@ describe('MQTT E2E microservice:true', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
+    it('should get MqttClient via ctx.get()', () => { expect(ctx.get(MqttClient)).toBeDefined(); });
     it('should bootstrap MQTT with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 

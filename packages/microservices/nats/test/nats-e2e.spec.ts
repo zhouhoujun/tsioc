@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withNatsTransport } from '../src/server';
-import { withNatsClientTransport } from '../src/client';
+import { withNatsClientTransport, NatsClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import { connect, StringCodec, NatsConnection } from 'nats';
 import expect = require('expect');
@@ -43,6 +43,7 @@ describe('NATS E2E microservice:true', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
+    it('should get NatsClient via ctx.get()', () => { expect(ctx.get(NatsClient)).toBeDefined(); });
     it('should bootstrap NATS with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 

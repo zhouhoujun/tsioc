@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withMcpTransport } from '../src/server';
-import { withMcpClientTransport } from '../src/client';
+import { withMcpClientTransport, McpClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as http from 'node:http';
 import expect = require('expect');
@@ -44,6 +44,7 @@ describe('MCP E2E microservice:true', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
+    it('should get McpClient via ctx.get()', () => { expect(ctx.get(McpClient)).toBeDefined(); });
     it('should bootstrap MCP with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 

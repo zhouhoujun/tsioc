@@ -5,8 +5,10 @@ import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withCoapTransport } from '../src/server';
 import { withCoapClientTransport } from '../src/client';
+import { CoapClient } from '../src/client/client';
 import { provideClient } from '@tsdi/client';
 import * as coap from 'coap';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 
 @Controller('/api/test')
@@ -195,5 +197,81 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
     it('should respond to CoAP request in host mode', async () => {
         const res = await sendCoapRequest('GET', '/api/test/info');
         expect(res).toBeDefined();
+    });
+});
+
+// ----- Verify client via ctx.get -----
+describe('CoAP client via ctx.get(CoapClient)', () => {
+
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withCoapTransport({ listenOpts: { port: 21320, host: '127.0.0.1' }, asDefault: true })),
+            ...provideClient(
+                withCoapClientTransport({ port: 21320, host: '127.0.0.1', microservice: true, asDefault: true }))
+        ]
+    })
+    class CoapClientModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(CoapClientModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('should get CoapClient via ctx.get()', () => {
+        const client = ctx.get(CoapClient);
+        expect(client).toBeDefined();
+        expect(client.send).toBeDefined();
+    });
+
+    it('should get CoapClient via ctx.get() and send cmd', async () => {
+        const client = ctx.get(CoapClient);
+        expect(client).toBeDefined();
+        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
+            observe: 'response' as any
+        }).pipe(catchError(err => of(err))));
+        expect(result).toBeDefined();
+    });
+});
+
+// ----- ctx.get(CoapClient) verification -----
+describe('CoAP client via ctx.get(CoapClient)', () => {
+    const P = 21320;
+
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withCoapTransport({ listenOpts: { port: P, host: '127.0.0.1' }, asDefault: true })),
+            ...provideClient(
+                withCoapClientTransport({ port: P, host: '127.0.0.1', microservice: true, asDefault: true }))
+        ]
+    })
+    class CoapGetModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(CoapGetModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('should get CoapClient via ctx.get()', () => {
+        const client = ctx.get(CoapClient);
+        expect(client).toBeDefined();
+        expect(client.send).toBeDefined();
+    });
+
+    it('should send cmd via CoapClient.send()', async () => {
+        const client = ctx.get(CoapClient);
+        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
+            observe: 'response' as any
+        }).pipe(catchError(err => of(err))));
+        expect(result).toBeDefined();
     });
 });

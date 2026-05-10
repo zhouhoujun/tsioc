@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withRedisTransport } from '../src/server';
-import { withRedisClientTransport } from '../src/client';
+import { withRedisClientTransport, RedisClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import expect = require('expect');
 
@@ -42,6 +42,7 @@ describe('Redis E2E microservice:true', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
+    it('should get RedisClient via ctx.get()', () => { expect(ctx.get(RedisClient)).toBeDefined(); });
     it('should bootstrap Redis with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 

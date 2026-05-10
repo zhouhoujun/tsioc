@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withAmqpTransport } from '../src/server';
-import { withAmqpClientTransport } from '../src/client';
+import { withAmqpClientTransport, AmqpClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as amqp from 'amqplib';
 import expect = require('expect');
@@ -43,6 +43,7 @@ describe('AMQP E2E microservice:true', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
+    it('should get AmqpClient via ctx.get()', () => { expect(ctx.get(AmqpClient)).toBeDefined(); });
     it('should bootstrap AMQP with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 

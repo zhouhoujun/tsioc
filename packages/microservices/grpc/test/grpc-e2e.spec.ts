@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withGrpcTransport } from '../src/server';
-import { withGrpcClientTransport } from '../src/client';
+import { withGrpcClientTransport, GrpcClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import expect = require('expect');
 
@@ -43,6 +43,7 @@ describe('gRPC E2E microservice:true', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
+    it('should get GrpcClient via ctx.get()', () => { expect(ctx.get(GrpcClient)).toBeDefined(); });
     it('should bootstrap gRPC with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 
