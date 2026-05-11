@@ -2,22 +2,18 @@ import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    Events, createRequestContext, RequestContext, Transport
+    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import Redis from 'ioredis';
 import { RedisServOptions, REDIS_SERV_OPTIONS, REDIS_BIND_INTERCEPTORS, REDIS_BIND_FILTERS, REDIS_BIND_GUARDS } from './options';
 
-/**
- * Redis server for microservices.
- * Connects to Redis and subscribes to channels for message handling.
- */
 @Injectable()
 export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
-    subscriber?: Redis | null;
-    publisher?: Redis | null;
+    subscriber: Redis | null = null;
+    publisher: Redis | null = null;
 
     @InjectLog() logger!: Logger;
 
@@ -45,22 +41,17 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         const inj = this.injector;
         inj.setValue(Logger, this.logger);
 
-        const redisOpts = this.options.connectOpts || {};
-        this.subscriber = this.options.url ? new Redis(this.options.url, redisOpts as any) : new Redis(redisOpts as any);
-        this.publisher = this.options.url ? new Redis(this.options.url, redisOpts as any) : new Redis(redisOpts as any);
+        const url = this.options.url || 'redis://127.0.0.1:6379';
+        this.subscriber = new Redis(url);
+        this.publisher = new Redis(url);
 
-        this.subscriber.on(Events.CONNECT, () => {
-            this.logger.info(getTypeName(this), 'connected to Redis');
-
-            const channels = this.options.channels || ['microservice'];
-            const callback: any = (err: Error | null) => {
-                if (err) {
-                    this.logger.error('Failed to subscribe to Redis channels:', err);
-                } else {
-                    this.logger.info(`Subscribed to channel(s): ${channels.join(', ')}`);
-                }
-            };
-            (this.subscriber as Redis).subscribe(...channels, callback);
+        const channels = this.options.channels || ['microservice.*'];
+        (this.subscriber as Redis).subscribe(...channels, (err: any) => {
+            if (err) {
+                this.logger.error('Redis subscribe error:', err);
+            } else {
+                this.logger.info(`Subscribed to channel(s): ${channels.join(', ')}`);
+            }
         });
 
         this.subscriber.on(Events.MESSAGE, (channel: string, message: string) => {
@@ -98,11 +89,6 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     }
 
     private handleMessage(channel: string, message: string) {
-        const context = createRequestContext(this.injector, [
-            ['channel', channel],
-            ['message', message],
-        ]);
-
         let parsed: any;
         try {
             parsed = JSON.parse(message);
@@ -110,12 +96,27 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             parsed = message;
         }
 
-        this.handler.handle(parsed as TReq, context)
+        const url = parsed.url || channel;
+        const method = parsed.method || 'GET';
+        const requestData = { ...parsed, url, method };
+
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+
+        const context = createRequestContext(this.injector, [
+            [REQUEST, requestData],
+            [RESPONSE, outgoing],
+            ['channel', channel],
+            ['message', message],
+        ]);
+
+        this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (response && this.publisher) {
-                    const msg = typeof response === 'string' ? response : JSON.stringify(response);
+                    const ctxResponse = context.get(RESPONSE);
+                    const body = ctxResponse?.body ?? response;
+                    const msg = typeof body === 'string' ? body : JSON.stringify(body);
                     this.publisher.publish(channel + ':response', msg);
                 }
             });

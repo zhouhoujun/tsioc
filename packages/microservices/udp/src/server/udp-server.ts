@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport
+    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
@@ -115,10 +115,6 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
 
     private handleMessage(msg: Buffer, rinfo: dgram.RemoteInfo) {
         const data = msg.toString();
-        const context = createRequestContext(this.injector, [
-            [SOCKET, this.socket],
-            ['rinfo', rinfo],
-        ]);
 
         let parsed: any;
         try {
@@ -127,13 +123,28 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             parsed = data;
         }
 
-        this.handler.handle(parsed as TReq, context)
+        const url = parsed.url || '/';
+        const method = parsed.method || 'GET';
+        const requestData = { ...parsed, url, method };
+
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+
+        const context = createRequestContext(this.injector, [
+            [SOCKET, this.socket],
+            [REQUEST, requestData],
+            [RESPONSE, outgoing],
+            ['rinfo', rinfo],
+        ]);
+
+        this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (response && this.socket) {
+                    const ctxResponse = context.get(RESPONSE);
+                    const body = ctxResponse?.body ?? response;
                     const buf = Buffer.from(
-                        typeof response === 'string' ? response : JSON.stringify(response)
+                        typeof body === 'string' ? body : JSON.stringify(body)
                     );
                     this.socket.send(buf, rinfo.port, rinfo.address);
                 }

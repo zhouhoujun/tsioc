@@ -2,14 +2,20 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
-import { GET, POST, Transport } from '@tsdi/common';
+import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { withWsTransport } from '../src/server';
+import { withWsClientTransport } from '../src/client';
+import { provideClient } from '@tsdi/client';
+import { WsClient } from '../src/client/client';
+import { catchError, lastValueFrom, of } from 'rxjs';
 
 const PORT = 11500;
 const HOST_PORT = 11501;
 const CTRL_PORT = 11502;
 const ROUTE_PORT = 11503;
+const E2E_PORT = 11510;
+const E2E_HOST_PORT = 11511;
 
 describe('WS E2E microservice:true', () => {
     @Module({
@@ -99,4 +105,83 @@ describe('WS @RouteMapping', () => {
     after(async () => { if (ctx) await ctx.close(); });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
+});
+
+describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
+
+    @Controller('/api/ws')
+    class WsE2eController {
+        @Get('/ping') ping() { return { result: 'pong' }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [WsE2eController],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withWsTransport({ listenOpts: { port: E2E_PORT, host: '127.0.0.1' }, asDefault: true })),
+            ...provideClient(
+                withWsClientTransport({ url: `ws://127.0.0.1:${E2E_PORT}`, microservice: true, asDefault: true }))
+        ]
+    })
+    class WsE2eModule { }
+
+    let ctx: ApplicationContext;
+    let client: WsClient;
+
+    before(async () => {
+        ctx = await Application.run(WsE2eModule);
+        client = ctx.get(WsClient);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('should get WsClient via ctx.get()', () => {
+        expect(client).toBeDefined();
+        expect(client.send).toBeDefined();
+    });
+
+    it('should send cmd via WsClient.send()', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
+            observe: 'response' as any,
+            responseType: 'text' as any
+        }).pipe(catchError(err => of(err))));
+        expect(result).toBeDefined();
+    });
+});
+
+describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
+
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withWsTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
+            ...provideClient(
+                withWsClientTransport({ url: `ws://127.0.0.1:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
+        ]
+    })
+    class WsE2eHostModule { }
+
+    let ctx: ApplicationContext;
+    let client: WsClient;
+
+    before(async () => {
+        ctx = await Application.run(WsE2eHostModule);
+        client = ctx.get(WsClient);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('should get WsClient via ctx.get() in host mode', () => {
+        expect(client).toBeDefined();
+    });
+
+    it('should send cmd via WsClient.send() in host mode', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
+            observe: 'response' as any,
+            responseType: 'text' as any
+        }).pipe(catchError(err => of(err))));
+        expect(result).toBeDefined();
+    });
 });

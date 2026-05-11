@@ -1,12 +1,12 @@
-import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
+import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
+import { connect, StringCodec, NatsConnection, Subscription } from 'nats';
 import {
-    createRequestContext, RequestContext, Transport
+    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
-import { connect, NatsConnection, StringCodec, Subscription } from 'nats';
 import { NatsServOptions, NATS_SERV_OPTIONS, NATS_BIND_INTERCEPTORS, NATS_BIND_FILTERS, NATS_BIND_GUARDS } from './options';
 
 /**
@@ -16,7 +16,7 @@ import { NatsServOptions, NATS_SERV_OPTIONS, NATS_BIND_INTERCEPTORS, NATS_BIND_F
 @Injectable()
 export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
-    nc?: NatsConnection | null;
+    nc: NatsConnection | null = null;
     subscriptions: Subscription[] = [];
 
     @InjectLog() logger!: Logger;
@@ -46,10 +46,10 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         inj.setValue(Logger, this.logger);
 
         try {
-            const servers = this.options.servers || [this.options.url || 'nats://localhost:4222'];
+            const servers = this.options.url || 'nats://127.0.0.1:4222';
             this.nc = await connect({ servers });
 
-            this.logger.info(getTypeName(this), 'connected to NATS:', servers.join(', '));
+            this.logger.info(getTypeName(this), 'connected to NATS:', this.options.url || 'nats://127.0.0.1:4222');
 
             const subjects = this.options.subjects || ['microservice.>'];
             const sc = StringCodec();
@@ -103,10 +103,6 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private handleMessage(subject: string, data: Uint8Array, sc: any, msg: any) {
         const content = sc.decode(data);
-        const context = createRequestContext(this.injector, [
-            ['subject', subject],
-            ['content', content],
-        ]);
 
         let parsed: any;
         try {
@@ -115,13 +111,28 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             parsed = content;
         }
 
-        this.handler.handle(parsed as TReq, context)
+        const url = parsed.url || '/' + subject.replace(/\./g, '/');
+        const method = parsed.method || 'GET';
+        const requestData = { ...parsed, url, method };
+
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+
+        const context = createRequestContext(this.injector, [
+            [REQUEST, requestData],
+            [RESPONSE, outgoing],
+            ['subject', subject],
+            ['content', content],
+        ]);
+
+        this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (response && msg.respond) {
+                    const ctxResponse = context.get(RESPONSE);
+                    const body = ctxResponse?.body ?? response;
                     const buf = sc.encode(
-                        typeof response === 'string' ? response : JSON.stringify(response)
+                        typeof body === 'string' ? body : JSON.stringify(body)
                     );
                     msg.respond(buf);
                 }
