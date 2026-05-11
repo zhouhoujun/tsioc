@@ -202,6 +202,11 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             return;
         }
 
+        if (this.getRequestMethod(req)?.toUpperCase() === 'HEAD') {
+            res.end();
+            return;
+        }
+
         if (streamAdapter.isStream(payload)) {
             streamAdapter.pipeTo(payload, res as any, { end: true }).catch(err => this.logger.error(err));
             return;
@@ -220,8 +225,19 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         if (req.httpVersionMajor < 2 && err?.statusMessage) {
             res.statusMessage = err.statusMessage;
         }
+        if (err?.headers && typeof err.headers === 'object') {
+            Object.entries(err.headers).forEach(([name, value]) => {
+                if (!isNil(value) && !res.hasHeader(name)) {
+                    res.setHeader(name, value as any);
+                }
+            });
+        }
         if (!res.hasHeader('content-type')) {
             res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
+        }
+        if (this.getRequestMethod(req)?.toUpperCase() === 'HEAD') {
+            res.end();
+            return;
         }
         res.end(JSON.stringify({ statusCode: status, message: err?.message ?? String(err) }));
     }

@@ -84,6 +84,7 @@ export function createMessageResolveInterceptors(
     return [
         (parameter, next, context) => {
             const injector = context.getInjector();
+            const hasMessageScope = !!parameter.scope;
             let pipe: PipeTransform | undefined;
             if (parameter.pipe) {
                 pipe = isToken(parameter.pipe) ? injector.get<PipeTransform>(parameter.pipe) : parameter.pipe;
@@ -91,11 +92,17 @@ export function createMessageResolveInterceptors(
                 pipe = injector.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
             } else if (parameter.type && isPrimitive(parameter.type)) {
                 pipe = injector.get<PipeTransform>(parameter.type.name.toLowerCase());
-            } else {
+            } else if (!hasMessageScope) {
                 return next(parameter, context);
             }
 
-            if (!pipe) throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
+            if (!pipe && !hasMessageScope) {
+                return next(parameter, context);
+            }
+            if (!pipe && hasMessageScope) {
+            } else if (!pipe) {
+                throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
+            }
 
             const resolvedFactory = factoryInstance ?? injector.get(token, null);
             const reader = resolvedFactory?.create(context.getPayload());
@@ -132,7 +139,9 @@ export function createMessageResolveInterceptors(
                 }
             }
 
-
+            if (!pipe) {
+                return payload;
+            }
             if (parameter.multi) {
                 const value = getMutilResolveHanlder(context.getInjector().getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], context);
                 if (isResolved(value)) return value;

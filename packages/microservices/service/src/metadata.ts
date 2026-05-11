@@ -467,7 +467,7 @@ export function createRouteDecorator(method: RequestMethod) {
             if (!meta.resolvers) {
                 meta.resolvers = [];
             }
-            meta.resolvers.push(typeResolveInterceptor);
+            meta.resolvers.push(MODEL_RESOLVERS, typeResolveInterceptor, ...primitiveResolvers);
         },
         props: (
             route: string,

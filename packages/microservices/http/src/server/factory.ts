@@ -5,8 +5,10 @@ import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { MimeModule, BodyparserInterceptor } from '@tsdi/endpoints';
+import { MimeModule } from '@tsdi/mime';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { BodyparserInterceptor } from './bodyparser';
+import { StaticFileInterceptor } from './static-file.interceptor';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -40,7 +42,11 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         importProvidersFrom(MimeModule),
         { provide: HeaderAdapter, useClass: DefaultHeaderAdapter },
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
-        { provide: config.features.interceptorsToken, useClass: BodyparserInterceptor, multi: true, multiOrder: -1000 },
+        { provide: config.features.interceptorsToken, useFactory: () => new StaticFileInterceptor(config.static), multi: true, multiOrder: -2000 },
+        { provide: config.features.interceptorsToken, useFactory: () => new BodyparserInterceptor({
+            multipart: typeof config.upload === 'object' ? { limit: config.upload.limit ?? '10mb' } : undefined,
+            enableTypes: config.upload ? ['json', 'form', 'multipart'] : ['json', 'form']
+        }), multi: true, multiOrder: -1000 },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const r = context.getResponse(); const s = context.get(StatusAdapter);
             r.error = new NotFoundException(); if (s) { r.statusCode = s.notFound; r.statusMessage = r.error.message; } return of(r);

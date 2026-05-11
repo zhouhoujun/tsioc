@@ -1,7 +1,9 @@
-import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, HTTP_SERV_OPTIONS } from '../src/server';
+import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult } from '../src/server';
 import { withHttpClientTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
-import { BodyparserInterceptor } from '@tsdi/endpoints';
+import { parseMultipartBody } from '../src/server/multipart';
+import { Controller, Post, RequestBody } from '@tsdi/service';
+import { getClassRef } from '@tsdi/ioc';
 import expect = require('expect');
 
 describe('HTTP Microservice', () => {
@@ -21,6 +23,16 @@ describe('HTTP Microservice', () => {
             const options: Partial<HttpServOptions> = { transport: Transport.HTTP, majorVersion: 2, timeout: 5000 };
             expect(options.majorVersion).toBe(2);
             expect(options.timeout).toBe(5000);
+        });
+
+        it('should accept static and upload options', () => {
+            const options: Partial<HttpServOptions> = {
+                transport: Transport.HTTP,
+                static: { root: 'public', prefix: '/assets' },
+                upload: { limit: '5mb' }
+            };
+            expect((options.static as any).prefix).toBe('/assets');
+            expect((options.upload as any).limit).toBe('5mb');
         });
     });
 
@@ -47,7 +59,12 @@ describe('HTTP Microservice', () => {
         it('should enable bodyparser by default', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 } });
             expect(feature.config.features?.bodyparser).toBe(true);
-            expect(feature.providers.some((p: any) => p.useClass === BodyparserInterceptor)).toBe(true);
+            expect(feature.providers.some((p: any) => p.useFactory && String(p.useFactory).includes('BodyparserInterceptor'))).toBe(true);
+        });
+
+        it('should register static interceptor factory', () => {
+            const feature = httpTransportFactory({ listenOpts: { port: 3000 }, static: true });
+            expect(feature.providers.some((p: any) => p.useFactory && String(p.useFactory).includes('StaticFileInterceptor'))).toBe(true);
         });
 
         it('should preserve http2 server configuration', () => {
@@ -86,6 +103,40 @@ describe('HTTP Microservice', () => {
         it('should exist as a class', () => expect(typeof HttpServer).toBe('function'));
     });
 
+    describe('multipart parser', () => {
+        it('should parse multipart fields and files', () => {
+            const boundary = 'AaB03x';
+            const body = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="name"\r\n\r\nzhou\r\n--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\nhello\r\n--${boundary}--\r\n`);
+            const parsed = parseMultipartBody(body, `multipart/form-data; boundary=${boundary}`);
+            expect(parsed.fields.name).toBe('zhou');
+            expect(parsed.files.file.filename).toBe('a.txt');
+            expect(parsed.files.file.buffer.toString('utf8')).toBe('hello');
+        });
+
+        it('should export HttpFileResult', () => {
+            expect(new HttpFileResult(Buffer.from('x'))).toBeInstanceOf(HttpFileResult);
+        });
+    });
+
+    describe('RequestBody metadata', () => {
+        @Controller('/inspect')
+        class InspectController {
+            @Post('/upload')
+            upload(@RequestBody() body: any) {
+                return body;
+            }
+        }
+
+        it('should attach scope and resolvers for whole-body params', () => {
+            const typeRef = getClassRef(InspectController);
+            const params = typeRef.getParameters('upload') as any[] | undefined;
+            const options = typeRef.getMethodOptions('upload') as any;
+            expect(params?.length).toBe(1);
+            expect(params?.[0]?.scope).toBe('body');
+            expect(options?.resolvers?.length ?? 0).toBeGreaterThan(1);
+        });
+    });
+
     describe('HTTP/2', () => {
         it('httpTransportFactory should accept majorVersion: 2', () => {
             const feature = httpTransportFactory({ majorVersion: 2, listenOpts: { port: 3000 } });
@@ -118,7 +169,7 @@ describe('HTTP Microservice', () => {
         it('httpTransportFactory should have bodyparser enabled for h2', () => {
             const feature = httpTransportFactory({ majorVersion: 2, listenOpts: { port: 3000 } });
             expect(feature.config.features?.bodyparser).toBe(true);
-            expect(feature.providers.some((p: any) => p.useClass === BodyparserInterceptor)).toBe(true);
+            expect(feature.providers.some((p: any) => p.useFactory && String(p.useFactory).includes('BodyparserInterceptor'))).toBe(true);
         });
 
         it('withHttpClientTransport should handle authority without asDefault', () => {

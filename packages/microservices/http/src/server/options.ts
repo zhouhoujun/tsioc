@@ -1,9 +1,20 @@
 import { token, ProvdierOf } from '@tsdi/ioc';
-import { ListenOpts, Transport, RequestInterceptorLike } from '@tsdi/common';
+import { ListenOpts, Transport, RequestInterceptorLike, FindOptions, Header } from '@tsdi/common';
 import { ServiceOptions } from '@tsdi/service';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
+
+export interface HttpStaticOptions extends FindOptions {
+    enabled?: boolean;
+    disposition?: 'inline' | 'attachment';
+    headers?: Record<string, Header>;
+}
+
+export interface HttpUploadOptions {
+    enabled?: boolean;
+    limit?: string;
+}
 
 export interface HttpServOptions extends ServiceOptions {
     transport: Transport.HTTP;
@@ -14,6 +25,8 @@ export interface HttpServOptions extends ServiceOptions {
     secure?: boolean;
     majorVersion?: number;
     timeout?: number;
+    static?: boolean | HttpStaticOptions | HttpStaticOptions[];
+    upload?: boolean | HttpUploadOptions;
 }
 
 export const HTTP_SERV_OPTIONS = token<HttpServOptions>('HTTP_SERV_OPTIONS');
