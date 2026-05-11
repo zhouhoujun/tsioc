@@ -142,7 +142,9 @@ function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, me
 }
 
 function inferContentType(mimeAdapter: MimeAdapter | null | undefined, filename?: string, encodingExt?: string): string {
-    const contentType = filename && mimeAdapter?.contentType(encodingExt ? filename.slice(0, -encodingExt.length) : filename);
+    const name = filename ?? '';
+    const lookupName = encodingExt ? name.slice(0, -encodingExt.length) : name;
+    const contentType = lookupName && mimeAdapter?.lookup(lookupName);
     return contentType || ContentType.OCTET_STREAM;
 }
 

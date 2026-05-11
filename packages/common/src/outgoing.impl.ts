@@ -178,6 +178,10 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
         this.headers.removeHeader(field);
     }
 
+    getHeaderNames(): string[] {
+        return this.headers.getHeaderNames();
+    }
+
     abstract toJson(payloadKey?: 'body' | 'payload'): Record<string, any>;
 
 }

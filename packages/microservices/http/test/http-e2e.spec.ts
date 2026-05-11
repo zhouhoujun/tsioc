@@ -326,3 +326,270 @@ describe('HTTP/2 via microservice client pipeline', () => {
         expect(response.body).toEqual({ status: 'ok' });
     });
 });
+
+describe('HTTP/2 over TLS (HTTPS/2)', () => {
+    const key = require('fs').readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+    const cert = require('fs').readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [HttpTestController],
+        providers: [...provideService(withServiceRouter(),
+            withHttpTransport({
+                majorVersion: 2,
+                secure: true,
+                serverOpts: { key, cert, allowHTTP1: true } as any,
+                listenOpts: { port: PORTS.h2 + 10, host: '127.0.0.1' },
+                asDefault: true
+            }))]
+    })
+    class Https2Module { }
+
+    let ctx: ApplicationContext;
+    let http2Client: http2.ClientHttp2Session;
+
+    before(async () => {
+        ctx = await Application.run(Https2Module);
+        await new Promise(r => setTimeout(r, 500));
+        http2Client = http2.connect(`https://127.0.0.1:${PORTS.h2 + 10}`, { ca: cert });
+    });
+    after(async () => {
+        try { http2Client?.close(); } catch { /* ignore */ }
+        if (ctx) await ctx.close();
+    });
+
+    function https2Request(method: string, path: string, headers?: Record<string, string>): Promise<{ status: number; body: string; headers: http2.IncomingHttpHeaders }> {
+        return new Promise((resolve, reject) => {
+            const req = http2Client.request({
+                ':method': method,
+                ':path': path,
+                'accept': 'application/json',
+                ...headers
+            });
+            const chunks: Buffer[] = [];
+            const responseHeaders: http2.IncomingHttpHeaders = {};
+            req.on('response', headers => { Object.assign(responseHeaders, headers); });
+            req.on('data', chunk => chunks.push(Buffer.from(chunk)));
+            req.on('end', () => {
+                resolve({
+                    status: Number(responseHeaders[':status'] ?? 0),
+                    body: Buffer.concat(chunks).toString('utf8'),
+                    headers: responseHeaders
+                });
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('should handle GET over https2', async () => {
+        const response = await https2Request('GET', '/api/test/info');
+        expect(response.status).toBe(200);
+        expect(JSON.parse(response.body)).toEqual({ status: 'ok' });
+    });
+
+    it('should support http1 fallback on http2 server', async () => {
+        const response = await new Promise<{ status: number; body: string }>((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: PORTS.h2 + 10,
+                path: '/api/test/info',
+                method: 'GET',
+                headers: { 'accept': 'application/json' }
+            }, res => {
+                let body = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+        expect(response.status).toBe(200);
+        expect(JSON.parse(response.body)).toEqual({ status: 'ok' });
+    });
+});
+
+describe('HTTP/2 concurrent streams', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [HttpTestController],
+        providers: [...provideService(withServiceRouter(),
+            withHttpTransport({
+                majorVersion: 2,
+                listenOpts: { port: PORTS.h2 + 20, host: '127.0.0.1' },
+                asDefault: true
+            }))]
+    })
+    class Http2ConcurrentModule { }
+
+    let ctx: ApplicationContext;
+    let http2Client: http2.ClientHttp2Session;
+
+    before(async () => {
+        ctx = await Application.run(Http2ConcurrentModule);
+        await new Promise(r => setTimeout(r, 500));
+        http2Client = http2.connect(`http://127.0.0.1:${PORTS.h2 + 20}`);
+    });
+    after(async () => {
+        try { http2Client?.close(); } catch { /* ignore */ }
+        if (ctx) await ctx.close();
+    });
+
+    it('should handle multiple concurrent streams', async () => {
+        const count = 10;
+        const requests = Array.from({ length: count }, (_, i) =>
+            new Promise<{ status: number; body: string }>((resolve, reject) => {
+                const req = http2Client.request({
+                    ':method': 'GET',
+                    ':path': '/api/test/info',
+                    'accept': 'application/json'
+                });
+                const chunks: Buffer[] = [];
+                const responseHeaders: http2.IncomingHttpHeaders = {};
+                req.on('response', headers => { Object.assign(responseHeaders, headers); });
+                req.on('data', chunk => chunks.push(Buffer.from(chunk)));
+                req.on('end', () => resolve({
+                    status: Number(responseHeaders[':status'] ?? 0),
+                    body: Buffer.concat(chunks).toString('utf8')
+                }));
+                req.on('error', reject);
+                req.end();
+            })
+        );
+        const results = await Promise.all(requests);
+        results.forEach(r => {
+            expect(r.status).toBe(200);
+            expect(JSON.parse(r.body)).toEqual({ status: 'ok' });
+        });
+    });
+});
+
+describe('HTTP content negotiation', () => {
+    @Controller('/negotiate')
+    class NegotiateController {
+        @Get('/format')
+        format() {
+            return { data: 'content-negotiation' };
+        }
+    }
+
+    const NEG_PORT = PORTS.ctrl + 100;
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [NegotiateController],
+        providers: [...provideService(withServiceRouter(),
+            withHttpTransport({
+                listenOpts: { port: NEG_PORT, host: '127.0.0.1' },
+                asDefault: true
+            }))]
+    })
+    class NegotiateModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(NegotiateModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    function request(method: string, targetPath: string, headers?: Record<string, string>): Promise<{ status: number; body: string; contentType: string }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: NEG_PORT,
+                path: targetPath,
+                method,
+                headers: { accept: 'application/json', ...headers }
+            }, res => {
+                let body = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve({
+                    status: res.statusCode ?? 0,
+                    body,
+                    contentType: res.headers['content-type'] ?? ''
+                }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('should respond with json by default', async () => {
+        const response = await request('GET', '/negotiate/format', { accept: 'application/json' });
+        expect(response.status).toBe(200);
+        expect(response.contentType).toContain('application/json');
+    });
+
+    it('should work with any accept header', async () => {
+        const response = await request('GET', '/negotiate/format', { accept: '*/*' });
+        expect(response.status).toBe(200);
+    });
+
+    it('should work with text accept header', async () => {
+        const response = await request('GET', '/negotiate/format', { accept: 'text/plain' });
+        expect(response.status).toBe(200);
+    });
+});
+
+describe('HTTP error handling', () => {
+    const ERR_PORT = PORTS.ctrl + 200;
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [HttpTestController],
+        providers: [...provideService(withServiceRouter(),
+            withHttpTransport({
+                listenOpts: { port: ERR_PORT, host: '127.0.0.1' },
+                asDefault: true
+            }))]
+    })
+    class ErrModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(ErrModule);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: ERR_PORT,
+                path: targetPath,
+                method,
+                headers: { accept: 'application/json' }
+            }, res => {
+                let body = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('should return 404 for unknown route', async () => {
+        const response = await request('GET', '/nonexistent');
+        expect(response.status).toBe(404);
+        const parsed = JSON.parse(response.body);
+        expect(parsed.statusCode).toBe(404);
+    });
+
+    it('should return 404 for unknown path on static', async () => {
+        const response = await request('GET', '/nonexistent-file.txt');
+        expect(response.status).toBe(404);
+    });
+
+    it('should return 405 for method mismatch', async () => {
+        const response = await request('POST', '/api/test/info');
+        expect([404, 405]).toContain(response.status);
+    });
+});
