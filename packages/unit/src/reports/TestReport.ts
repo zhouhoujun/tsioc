@@ -1,4 +1,4 @@
-import { Singleton, Token, Injector } from '@tsdi/ioc';
+import { Singleton, Token } from '@tsdi/ioc';
 import { TestReport, SuiteDescribe, ICaseDescribe } from './interface';
 import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
 import { ApplicationContext, HrtimeFormatter } from '@tsdi/core';
@@ -99,7 +99,10 @@ export class DefaultTestReport implements TestReport {
 
     async report(): Promise<void> {
         const sus = Array.from(this.suites.values());
-        const used =  this.hrtime.hrtime(sus[0].start);
+        if (!sus.length) {
+            return;
+        }
+        const used = this.hrtime.hrtime(sus[0].start);
 
         await Promise.all(this.getReports().map(rep => {
             if (rep) {

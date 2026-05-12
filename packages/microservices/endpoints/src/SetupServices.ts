@@ -32,7 +32,7 @@ export class SetupServices {
 
         const services = context.get(REGISTER_SERVICES);
 
-        services.forEach(s => {
+        if (services) services.forEach(s => {
 
             if (s.bootstrap === false) {
                 this.unboots.add(isFunction(s.service) ? s.service : s.service.type);

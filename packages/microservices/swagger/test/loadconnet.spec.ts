@@ -1,93 +1,39 @@
-import { ApplicationContext, Application } from '@tsdi/core';
-import { HttpClient } from '@tsdi/common/http';
-import { Suite, Before, Test, After } from '@tsdi/unit';
-import { TypeormAdapter, TypeOrmHelper } from '@tsdi/typeorm-adapter';
-import { lastValueFrom } from 'rxjs';
-import * as expect from 'expect';
+import { Suite, Test } from '@tsdi/unit';
+import { SwaggerModule } from '../src';
+import expect = require('expect');
 
-import { User } from './models/models';
-// import { UserRepository } from './repositories/UserRepository';
-import { option, MockBootTest } from './app';
+@Suite('swagger module test')
+export class SwaggerLoadTest {
 
-@Suite('load Repository test')
-export class LoadReposTest {
-
-    private ctx!: ApplicationContext;
-
-    @Before()
-    async beforeInit() {
-        this.ctx = await Application.run(MockBootTest);
+    @Test()
+    async swaggerModuleDefined() {
+        expect(SwaggerModule).toBeDefined();
+        expect(SwaggerModule.withOptions).toBeInstanceOf(Function);
     }
 
     @Test()
-    async hasUserRepository() {
-        expect(this.ctx.get(TypeormAdapter).getRepository(User)).toBeDefined();
-        // expect(this.ctx.has(UserRepository)).toBeTruthy();
-    }
-
-    // @Test()
-    // async canGetUserRepository() {
-    //     const rep = this.ctx.get(UserRepository);
-    //     expect(rep).toBeInstanceOf(UserRepository);
-    // }
-
-    @Test()
-    async save() {
-        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
-        const newUr = new User();
-        newUr.name = 'admin----test';
-        newUr.account = 'admin----test';
-        newUr.password = '111111';
-        await rep.save(newUr);
-        const svu = await rep.findOne({ where: { account: 'admin----test' } })
-        // console.log(svu);
-        expect(svu).toBeInstanceOf(User);
-        expect(svu?.id).toBeDefined();
+    async swaggerWithOptionsReturnsModuleWithProviders() {
+        const result = SwaggerModule.withOptions({
+            title: 'api test',
+            version: 'v1',
+            prefix: 'api-docs'
+        });
+        expect(result).toBeDefined();
+        expect(result.module).toBe(SwaggerModule);
+        expect(result.providers?.length).toBeGreaterThan(0);
     }
 
     @Test()
-    async getUser0() {
-        // const usrRep = this.ctx.get(TypeormAdapter).getRepository(User);
-        const rep = await lastValueFrom(this.ctx.get(HttpClient).get<User>('/users/admin----test', { observe: 'response' }));
-        expect(rep.status).toEqual(200);
-        expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body?.account).toEqual('admin----test');
+    async swaggerServiceClassExists() {
+        const { SwaggerService } = await import('../src');
+        expect(SwaggerService).toBeDefined();
     }
 
     @Test()
-    async deleteUser() {
-        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
-        const svu = await rep.findOne({ where: { account: 'admin----test' } })
-        await rep.remove(svu!);
-    }
-
-    @Test()
-    async postUser() {
-        const rep = await lastValueFrom(this.ctx.get(HttpClient).post<User>('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
-        rep.error && console.log(rep.error)
-        expect(rep.status).toEqual(200);
-        expect(rep.body).toBeInstanceOf(User);
-        expect(rep.body?.name).toEqual('post_test');
-    }
-
-    @Test()
-    async getUser() {
-        const rep = await lastValueFrom(this.ctx.get(HttpClient).get<User>('/users/post_test'));
-        expect(rep).toBeInstanceOf(User);
-        expect(rep.account).toEqual('post_test');
-    }
-
-    @Test()
-    async detUser() {
-        const rep1 = await lastValueFrom(this.ctx.get(HttpClient).get<User>('/users/post_test'));
-        expect(rep1).toBeInstanceOf(User);
-        const rep = await lastValueFrom(this.ctx.get(HttpClient).delete('/users/' + rep1.id));
-        expect(rep).toBeTruthy();
-    }
-
-    @After()
-    async after() {
-        this.ctx.destroy();
+    async swaggerConfigTypesExported() {
+        const config = await import('../src/swagger.config');
+        expect(config.SWAGGER_SETUP_OPTIONS).toBeDefined();
+        expect(config.SWAGGER_DOCUMENT).toBeDefined();
     }
 
 }

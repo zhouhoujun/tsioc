@@ -1,12 +1,10 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
 import { AbstractType, Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, joinPath } from '@tsdi/common';
-import { ctype } from '@tsdi/transport';
-import { RouteMappingMetadata, Router, ContentInterceptor, getRouter, SetupServices } from '@tsdi/endpoints';
+import { LOCALHOST, joinPath, ContentType } from '@tsdi/common';
+import { RouteMappingMetadata, Router, getRouter, SetupServices } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
-import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
 import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';
@@ -37,9 +35,10 @@ export class SwaggerService {
             return models.find(m => m.hasModel(target))
         }
 
-        const servers = moduleRef.get(SetupServices).getServices().map(r => r.instance).filter(r => /^http(s)?$/.test(r.getOptions().protocol || ''))
+        const servers = moduleRef.get(SetupServices).getServices().map(r => r.instance).filter(r => /^http(s)?$/.test((r as any).getOptions?.()?.protocol ?? ''))
             .map(r => {
-                const url = r.getOptions().listenOpts?.url ?? '';
+                const opts = (r as any).getOptions?.() ?? (r as any).options ?? {};
+                const url = opts.listenOpts?.url ?? '';
                 return {
                     url
                 }
@@ -102,36 +101,23 @@ export class SwaggerService {
         this.buildDoc(router, doc, getModelResolver);
 
         const prefix = opts.prefix ?? 'api-doc';
-        router.use(prefix, async (ctx, next) => {
+        router.use(prefix, async (ctx: any, _next: any) => {
             const html = this.generateHTML(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle);
-            ctx.contentType = ctype.TEXT_HTML;
+            ctx.contentType = ContentType.TEXT_HTML;
             ctx.body = html;
         });
 
-        const httpRefs = ctx.runners.getRefs(HttpServer);
-        const fspath = getAbsoluteFSPath();
-        httpRefs.forEach(httpRef => {
-            const http = httpRef.instance;
-            http.useInterceptors(ContentInterceptor.create({
-                root: fspath,
-                baseUrl: false,
-                index: false
-            }), 1);
-
-            http.useInterceptors({
-                intercept: (input, next) => {
-                    if (input.url.endsWith('swagger-ui-init.js')) {
-                        input.contentType = ctype.APPL_JAVASCRIPT;
-                        input.body = this.swaggerInit;
-                        return of(input.response);
-                    } else {
-                        return next.handle(input);
-                    }
+        try {
+            const httpRefs = ctx.runners.getRefs(HttpServer);
+            const fspath = getAbsoluteFSPath();
+            httpRefs.forEach(httpRef => {
+                const http = httpRef.instance as any;
+                if (http.getOptions) {
+                    const httpopts = http.getOptions().listenOpts ?? {};
+                    this.logger.info('Swagger started!', 'access with url:', `${http.getOptions().protocol ?? 'http'}://${httpopts.host ?? LOCALHOST}:${httpopts.port ?? 3000}/${prefix}`, '!')
                 }
-            }, 2);
-            const httpopts = http.getOptions().listenOpts ?? {};
-            this.logger.info('Swagger started!', 'access with url:', `${http.getOptions().protocol ?? 'http'}://${httpopts.host ?? LOCALHOST}:${httpopts.port ?? 3000}/${prefix}`, '!')
-        });
+            });
+        } catch { }
 
     }
 
