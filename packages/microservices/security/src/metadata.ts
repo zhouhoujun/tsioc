@@ -53,5 +53,5 @@ export interface AuthorizationDecorator {
  * @Authorization
  */
 export const Authorization: AuthorizationDecorator = createDecorator<AuthorizationMetadata>('Authorization', {
-    props: (role: string) => ({ role })
+    props: (role: string | AuthorizationMetadata) => typeof role === 'string' ? ({ role }) : (role ?? {})
 })

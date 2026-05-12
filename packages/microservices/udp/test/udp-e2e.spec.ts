@@ -145,11 +145,21 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
         return new Promise((resolve, reject) => {
             const client = dgram.createSocket('udp4');
             const payload = Buffer.from(JSON.stringify(data));
+            const timer = setTimeout(() => {
+                try { client.close(); } catch { }
+                reject(new Error('Timeout'));
+            }, 5000);
             client.send(payload, PORTS.e2e, '127.0.0.1', (err) => {
-                if (err) { client.close(); reject(err); return; }
+                if (err) {
+                    clearTimeout(timer);
+                    try { client.close(); } catch { }
+                    reject(err);
+                    return;
+                }
             });
             client.on('message', (msg) => {
-                client.close();
+                clearTimeout(timer);
+                try { client.close(); } catch { }
                 try {
                     resolve(JSON.parse(msg.toString()));
                 } catch {
@@ -157,10 +167,10 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
                 }
             });
             client.on('error', (err) => {
-                client.close();
+                clearTimeout(timer);
+                try { client.close(); } catch { }
                 reject(err);
             });
-            setTimeout(() => { client.close(); reject(new Error('Timeout')); }, 5000);
         });
     }
 
@@ -204,11 +214,21 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
         return new Promise((resolve, reject) => {
             const client = dgram.createSocket('udp4');
             const payload = Buffer.from(JSON.stringify(data));
+            const timer = setTimeout(() => {
+                try { client.close(); } catch { }
+                reject(new Error('Timeout'));
+            }, 5000);
             client.send(payload, PORTS.hostE2e, '127.0.0.1', (err) => {
-                if (err) { client.close(); reject(err); return; }
+                if (err) {
+                    clearTimeout(timer);
+                    try { client.close(); } catch { }
+                    reject(err);
+                    return;
+                }
             });
             client.on('message', (msg) => {
-                client.close();
+                clearTimeout(timer);
+                try { client.close(); } catch { }
                 try {
                     resolve(JSON.parse(msg.toString()));
                 } catch {
@@ -216,10 +236,10 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
                 }
             });
             client.on('error', (err) => {
-                client.close();
+                clearTimeout(timer);
+                try { client.close(); } catch { }
                 reject(err);
             });
-            setTimeout(() => { client.close(); reject(new Error('Timeout')); }, 5000);
         });
     }
 

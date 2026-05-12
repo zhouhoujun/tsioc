@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import * as jwt from 'jsonwebtoken';
-import { createPublicKey, createPrivateKey, JsonWebKeyInput } from 'crypto';
+import { createPublicKey, JsonWebKeyInput } from 'crypto';
 
 @Injectable()
 export class JWTService {
@@ -23,8 +23,9 @@ export class JWTService {
         clockTolerance?: number;
     } = {}): Promise<any> {
         return new Promise((resolve, reject) => {
-            jwt.verify(token, options.publicKey || this.getDefaultKey(), {
-                ...options,
+            const { publicKey, ...verifyOptions } = options;
+            jwt.verify(token, publicKey || this.getDefaultKey(), {
+                ...verifyOptions,
                 clockTolerance: options.clockTolerance || 30 // 默认30秒时钟容差
             }, (err, decoded) => {
                 if (err) {
@@ -56,8 +57,9 @@ export class JWTService {
         privateKey?: string | Buffer;
     } = {}): Promise<string> {
         return new Promise((resolve, reject) => {
-            jwt.sign(payload, options.privateKey || this.getDefaultKey(), {
-                ...options,
+            const { privateKey, ...signOptions } = options;
+            jwt.sign(payload, privateKey || this.getDefaultKey(), {
+                ...signOptions,
                 algorithm: options.algorithm || 'HS256' // 默认算法
             }, (err, token) => {
                 if (err) {

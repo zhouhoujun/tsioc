@@ -2,7 +2,7 @@ import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray,
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
-    useSimpleJson, LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
+    LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
     provideIncomings, provideOutgoings, RequestFilterLike
 } from '@tsdi/common';
 import {
