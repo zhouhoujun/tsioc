@@ -2,6 +2,7 @@ export * from './options';
 export * from './tokens';
 export * from './provider';
 export * from './agent.module';
+export * from './orm.module';
 
 export * from './model/ModelAdapter';
 export * from './model/ModelRequest';
@@ -45,6 +46,4 @@ export * from './channels/PubSubAgentChannel';
 export * from './ui/AgentConsoleViewModel';
 export * from './ui/AgentConsoleComponent';
 
-export * from './hermes/HermesAgentModule';
-export * from './hermes/HermesOrmModule';
-export * from './hermes/HermesDefaults';
+

@@ -4,17 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-`tsioc` is a TypeScript monorepo for a decorator-driven IoC and application framework. The core stack is:
+`tsioc` is a TypeScript monorepo for a decorator-driven IoC and application framework. The core layering is:
 
-- `@tsdi/ioc`: dependency injection container, tokens, metadata, runtime contexts, invocation/resolution pipeline
-- `@tsdi/aop`: AOP advice/interceptor layer built on top of IoC runtime handling
-- `@tsdi/core`: application/module bootstrap, routing abstractions, lifecycle, application context
-- platform and integration packages: HTTP endpoints, security, repository/transactions, TypeORM adapter, browser/server platforms
-- protocol adapters under `packages/services/*` and microservice transports under `packages/microservices/*`
+- `@tsdi/ioc`: DI container, provider registration, metadata, runtime contexts, invocation/resolution pipeline
+- `@tsdi/aop`: aspect/advice/proxy layer built on top of IoC runtime handling
+- `@tsdi/core`: application bootstrap, modules, lifecycle, handlers, routing abstractions, application events
+- `@tsdi/repository` + `@tsdi/typeorm-adapter`: repository/transaction/persistence integration
+- `@tsdi/components` + `@tsdi/components/html`: component model and HTML rendering
+- `packages/services/*`: protocol adapters such as HTTP, MQTT, Kafka, NATS, Redis, TCP, UDP, WS
+- `packages/microservices/*`: microservice infrastructure such as client/service/config/discovery/endpoints/security/swagger/tracing
+- `packages/activities` + `packages/compiler`: the build system used by the repo to build itself
 
-The framework follows a Spring-like model in TypeScript: decorators define metadata, IoC resolves instances, AOP wraps invocation, and higher-level packages compose those primitives into application bootstrapping and transports.
+The framework is Spring-like: decorators define metadata, IoC resolves instances, AOP wraps execution, and higher-level packages compose those primitives into applications, transports, and platform integrations.
 
-## Common Commands
+## Commands
 
 ### Install dependencies
 
@@ -22,13 +25,13 @@ The framework follows a Spring-like model in TypeScript: decorators define metad
 npm install
 ```
 
-### Build the direct root packages
+### Build the repository
 
 ```bash
 npm run build
 ```
 
-The root build entrypoint is `taskfile.ts`. It scans only direct children of `packages/`, so nested packages under `packages/services/*` and `packages/microservices/*` are built with their own package-level commands.
+Root build is driven by `taskfile.ts`. It only scans direct children of `packages/`, so nested package groups are **not** covered by the root build.
 
 ### Build with version replacement
 
@@ -36,7 +39,7 @@ The root build entrypoint is `taskfile.ts`. It scans only direct children of `pa
 npm run build -- --setvs=6.0.0-beta
 ```
 
-This version replacement uses the root build runner and updates only direct child packages under `packages/` plus the root `package.json`.
+This updates direct child package versions plus the root `package.json` before building.
 
 ### Build and generate publish output
 
@@ -44,13 +47,13 @@ This version replacement uses the root build runner and updates only direct chil
 npm run build -- --deploy=true
 # or
 ./deploy
-# or on Windows
+# on Windows
 ./deploy.cmd
 ```
 
-The current deploy path logs/generates publish output from `dist/`; it does not run `npm publish` itself.
+The deploy flow generates publish output from `dist/`; it does not directly publish packages.
 
-### Build a single package
+### Build a single top-level package
 
 ```bash
 cd packages/<package-name>
@@ -59,20 +62,19 @@ npm run build
 ts-node -r tsconfig-paths/register taskfile.ts
 ```
 
-For nested packages:
+### Build nested packages
 
 ```bash
 cd packages/services/<protocol> && npm run build
 cd packages/microservices/<package> && npm run build
 ```
 
-### Run tests for a single package
-
-Most testable packages expose:
+### Run tests for a package
 
 ```bash
 cd packages/<package-name>
 npm test
+cd packages/<package-name> && npm run test:coverage
 ```
 
 Nested packages follow the same pattern:
@@ -82,104 +84,139 @@ cd packages/services/mqtt && npm test
 cd packages/microservices/mqtt && npm test
 ```
 
-Many packages also expose coverage via:
-
-```bash
-npm run test:coverage
-```
-
 ### Run a single spec file
 
-Package tests are launched through `unit.ts`, which calls `runTest('./test/**/*.ts', { baseURL: __dirname }, ConsoleReporter)`. To run one spec, invoke `runTest` directly from the package directory:
+Package tests are launched through `unit.ts`, which calls `runTest('./test/**/*.ts', { baseURL: __dirname })`. To run one spec:
 
 ```bash
 cd packages/ioc
 npx ts-node -r tsconfig-paths/register -e "const { runTest } = require('@tsdi/unit'); const { ConsoleReporter } = require('@tsdi/unit-console'); runTest('./test/method.spec.ts', { baseURL: __dirname }, ConsoleReporter)"
 ```
 
-For VS Code debugging, run the target package’s `unit.ts` with `-r ts-node/register -r tsconfig-paths/register`.
+### VS Code debug
 
-### Lint
+Run the target package's `unit.ts` with runtime args:
 
-There is no ESLint configuration in this repository (`.eslintrc*`, `eslint.config.*`, or `eslintConfig` in `package.json` are absent) and no root `npm run lint` script. Prefer TypeScript/package builds and targeted tests for validation.
+```bash
+-r ts-node/register -r tsconfig-paths/register
+```
+
+### Integration services for examples/tests
+
+```bash
+cd simples && docker-compose up -d
+```
+
+`simples/docker-compose.yml` includes postgres, redis, nats, mqtt/mosquitto, rabbitmq, zookeeper, and kafka.
+
+### Linting
+
+There is **no** active ESLint configuration in this repository: no `.eslintrc*`, no `eslint.config.*`, and no root `npm run lint` script. Validate changes with package builds and targeted tests.
 
 ## Build and Test Structure
 
-- Root build entrypoint is `taskfile.ts`. It updates versions when `--setvs=<version>` is passed, then builds direct child packages under `packages/`.
-- The root build skips direct packages whose paths end in `component` or `unit-karma`; the actual `packages/components` directory is not skipped by that singular `component` filter.
-- Package-level `taskfile.ts` files compile `src/**/*.ts` into `dist/<package>` with declaration and source maps enabled.
-- Some packages customize output/module format; for example `packages/ioc` emits ES module output while most package taskfiles emit CommonJS.
-- Package tests are typically started from `unit.ts` in the package root, not from a generic root test runner.
-- Root `package.json` only defines `build`, `postinstall`, and `reinstall`; package-level `package.json` files define their own `build`, `test`, and sometimes `test:coverage` scripts.
+- Root `taskfile.ts` is self-hosting: it uses `@tsdi/activities` and `@tsdi/compiler` from this same monorepo.
+- Root build skips direct packages whose path names end with `component` or `unit-karma`.
+- Package `taskfile.ts` files typically compile `src/**/*.ts` into `dist/<package-name>` with declarations and source maps.
+- Tests are package-local and usually run through each package's `unit.ts`, not from a root-wide test runner.
+- Root `package.json` only provides `build`, `postinstall`, and `reinstall`; package-level scripts are the authoritative place for package test/build commands.
 
 ## Architecture Map
 
-### 1. IoC layer (`packages/ioc`)
+### 1. IoC foundation: `packages/ioc`
 
-This is the foundation of the repo.
+Start here for anything involving dependency resolution, runtime contexts, invocation behavior, provider semantics, or decorator metadata.
 
-- `src/injector.ts`: abstract injector contract, provider registration, token resolution API, scope/lifecycle surface
-- `src/context.ts`: invocation/resolve options and context-related types; this area is central when changing how call context is propagated
-- `src/handlers/*`: runtime handler/interceptor/context pipeline primitives
-- `src/impl/*`: concrete injector, invocation, and initialization implementations
-- `src/metadata/*`: decorator metadata model (`@Injectable`, `@Module`, param/property decorators, class refs)
-- `src/providers.ts`, `src/resolver.ts`, `src/tokens.ts`: provider model, parameter resolution, token semantics
+Important areas:
+- `src/injector.ts`: injector contract and provider resolution API
+- `src/context.ts` and `src/handlers/*`: runtime context and handler pipeline primitives
+- `src/impl/*`: concrete injector, invocation, initialization, resolver implementations
+- `src/metadata/*`: decorators and metadata model
 
-If you are changing dependency resolution, invocation context, or performance of object creation/invocation, start in `packages/ioc` and then inspect downstream consumers in AOP and core.
+Changes here often ripple into `aop` and `core`.
 
-### 2. AOP layer (`packages/aop`)
+### 2. AOP layer: `packages/aop`
 
-`@tsdi/aop` builds on IoC runtime contexts and handlers.
+This package wraps IoC-managed execution with aspects/advisers/proxy logic. If invocation context or handler composition changes in `ioc`, inspect `aop` for matching updates.
 
-- Advisers/aspects match join points by method/property metadata and naming patterns.
-- Proceeding/proxy logic wraps instance methods and property access, then re-enters the IoC runtime pipeline.
-- Changes to IoC context objects or invocation APIs often require corresponding updates here, especially in proxy/proceed/joinpoint code.
+### 3. Application framework: `packages/core`
 
-### 3. Application layer (`packages/core`)
+`@tsdi/core` turns IoC + AOP into an application runtime.
 
-`@tsdi/core` turns IoC + AOP into an application framework.
+Important areas:
+- `Application` / `ApplicationContext`: application bootstrap and global container
+- module loading and lifecycle wiring
+- generic handler chain support: guards, interceptors, filters, backends
+- application events and runners
 
-- `ApplicationContext` extends `Injector` and acts as the global application container.
-- Module loading, bootstrapping, route handling, and application events all depend on the IoC runtime contracts.
-- If injector/context abstractions change, inspect `ApplicationContext`, module loader/bootstrap code, and invocation handler options here.
+If a change affects bootstrap, lifecycle, route handling, or event dispatch, this is the layer to inspect.
 
-### 4. Build/tooling layer
+### 4. Persistence layer: `packages/repository` and `packages/typeorm-adapter`
 
-- `packages/activities` provides the workflow primitives used by build taskfiles.
-- `packages/compiler` provides `CompilerModule`, which package taskfiles invoke through `Workflow.run()`.
-- The repo is self-hosting: the root and package taskfiles import `@tsdi/activities` and `@tsdi/compiler` via the root TypeScript path aliases.
+Repository injection and transaction behavior live in `repository`; TypeORM-specific module/connection/entity integration lives in `typeorm-adapter`.
 
-### 5. Platform and integration packages
+### 5. UI/component layer: `packages/components` and `packages/components/html`
 
-- `platform-server` and `platform-browser` provide runtime platform integration.
-- `repository` and `typeorm-adapter` provide persistence and transaction support.
-- `logger`, `components`, `boot`, `cli`, `common`, `annotations`, and `i18n` layer additional framework features on top of IoC/core.
+Component rendering is split between the component model and HTML-specific rendering/template support. For UI tests, look at existing JSDOM-based specs in component-related packages.
 
-### 6. Services and microservices
+### 6. Transports and distributed runtime
 
-- `packages/services/*` contains protocol adapters such as AMQP, CoAP, HTTP, Kafka, MQTT, NATS, Redis, TCP, UDP, and WS.
-- `packages/microservices/*` contains microservice infrastructure and transports: client/service/transport plus config, discovery, endpoints, health, metrics, tracing, security, swagger, protocol implementations, and OIDC auth.
-- These packages follow the same container/module/decorator patterns as the core packages but are nested, so do not assume root `npm run build` covers them.
+There are two separate groupings with different responsibilities:
+
+- `packages/services/*`: protocol adapters
+- `packages/microservices/*`: client/service/discovery/config/security/swagger/tracing infrastructure
+
+When working on networked or distributed flows, expect application logic to reuse the same module/container/decorator patterns rather than a separate runtime model.
+
+### 7. Build/tooling layer
+
+- `packages/activities`: workflow primitives used by build taskfiles
+- `packages/compiler`: compiler module used by the taskfiles
+
+Because the repo builds itself, breakages in these packages can cascade into build failures across the monorepo.
+
+### 8. Agents package: `packages/agents`
+
+`packages/agents` is a standard top-level package layered on the existing framework, not a separate architecture. It currently composes:
+
+- `runtime/`: agent turn loop, tool loop, events, handler integration
+- `model/`: model adapter abstraction and default echo adapter
+- `tools/`: tool registry and built-in tools
+- `memory/`: session store, memory store, summarizer, ORM entities
+- `scheduler/`: in-memory scheduled tasks
+- `channels/`: local request/server/client abstractions
+- `ui/`: console component and view-model
+- `hermes/`: default Hermes-like assembly modules
+
+Recent work routes `AgentRuntime.runTurn()` through `@tsdi/core`'s generic guard/interceptor/filter pipeline via a turn handler token, so runtime behavior may be extended through providers rather than direct conditionals.
 
 ## TypeScript and Module Conventions
 
-- TypeScript target is ES2020 with CommonJS modules at the root config level.
-- Decorators and `emitDecoratorMetadata` are enabled and are fundamental to the framework design.
-- Root path aliases map `@tsdi/*` to `packages/agents/*`, `packages/microservices/*`, and `packages/*` via `tsconfig.json`.
+- Root TypeScript target is ES2020 with CommonJS modules.
+- `experimentalDecorators` and `emitDecoratorMetadata` are fundamental to the framework design.
 - Strict mode is enabled, including `strictNullChecks` and `strictPropertyInitialization`.
+- Root path aliases currently map `@tsdi/*` to:
+  - `packages/*`
+  - `packages/microservices/*`
+  - `packages/agents/*`
 - Cross-package imports generally use `@tsdi/*` aliases.
+
+If IDE diagnostics show missing `@tsdi/*` modules, verify the workspace is using the repository root `tsconfig.json` rather than a nested folder in isolation.
 
 ## Testing Conventions
 
-- Tests live in each package’s `test/` directory and usually use `*.spec.ts`.
-- The test style is Mocha-like `describe`/`it` with `expect` assertions; some areas also use `@tsdi/unit` decorator-style tests.
-- `@tsdi/unit` provides the actual test bootstrap; package `unit.ts` files are thin wrappers.
-- Integration services for examples/tests are defined in `simples/docker-compose.yml` and include postgres, redis, nats, mqtt/mosquitto, rabbitmq, zookeeper, and kafka.
+- Tests live under each package's `test/` directory and typically use `*.spec.ts`.
+- The repo uses `@tsdi/unit`, not Jest.
+- Two common styles exist:
+  - Mocha-style `describe` / `it` with `expect`
+  - decorator-style `@Suite` / `@Test`
+- Package `unit.ts` files are thin wrappers around `runTest(...)`.
+- For application-level integration tests, use `Application.run(...)` and close/destroy the context explicitly afterward.
 
 ## Repository-Specific Notes
 
-- Many APIs are decorator-driven; when debugging behavior, inspect metadata/reflection code as well as runtime execution code.
-- Cross-package refactors frequently require synchronized changes in `packages/ioc`, `packages/aop`, and `packages/core`.
-- Build output is generated under `dist/`; avoid editing generated files.
-- Do not commit compiled `.js` and `.js.map` files in `packages/*/src/` directories. These are build artifacts that should only exist in `dist/`.
+- Many behaviors are decorator-driven. Debug both metadata registration and runtime execution.
+- Cross-package refactors commonly require coordinated changes across `packages/ioc`, `packages/aop`, and `packages/core`.
+- Build artifacts belong in `dist/`; do not edit generated output.
+- Do not commit compiled `.js` or `.js.map` files into `packages/*/src/`.
 - `reflect-metadata` is required by the decorator system.

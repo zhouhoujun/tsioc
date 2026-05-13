@@ -10,7 +10,7 @@ import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
 import { defaultAgentOptions } from '../src/options';
 import { TurnHandler } from '../src/runtime/TurnHandler';
 import { AgentTurnResult } from '../src/runtime/AgentTurnResult';
-import { HermesAgentModule } from '../src/hermes/HermesAgentModule';
+import { AgentOrmModule } from '../src/orm.module';
 import { AGENT_MODEL_ADAPTER } from '../src/tokens';
 import { withAgentTurnFilters, withAgentTurnGuards, withAgentTurnInterceptors } from '../src/provider';
 
@@ -119,7 +119,7 @@ export class RuntimeLoopTest {
 
     @Test('turn handler delegates to runtime backend')
     async turnHandlerDelegates() {
-        const ctx = await Application.run(HermesAgentModule);
+        const ctx = await Application.run(AgentOrmModule);
         const runtime = new RuntimeStub();
         const handler = new TurnHandler(ctx, runtime as any);
         try {
@@ -134,7 +134,7 @@ export class RuntimeLoopTest {
 
     @Test('turn handler guard blocks execution')
     async turnHandlerGuardBlocks() {
-        const ctx = await Application.run(HermesAgentModule);
+        const ctx = await Application.run(AgentOrmModule);
         const runtime = new RuntimeStub();
         const handler = new TurnHandler(ctx, runtime as any);
         try {
@@ -197,7 +197,7 @@ export class RuntimeLoopTest {
 
     @Test('runtime runTurn uses provider guard')
     async runtimeUsesProviderGuard() {
-        const ctx = await Application.run(HermesAgentModule, {
+        const ctx = await Application.run(AgentOrmModule, {
             providers: [
                 { provide: AGENT_MODEL_ADAPTER, useValue: new StaticModelAdapter('guarded') },
                 ...withAgentTurnGuards(() => false)
@@ -220,7 +220,7 @@ export class RuntimeLoopTest {
 
     @Test('runtime runTurn uses provider interceptor')
     async runtimeUsesProviderInterceptor() {
-        const ctx = await Application.run(HermesAgentModule, {
+        const ctx = await Application.run(AgentOrmModule, {
             providers: [
                 { provide: AGENT_MODEL_ADAPTER, useValue: new StaticModelAdapter('hello') },
                 ...withAgentTurnInterceptors(async (input, next, context) => {
@@ -241,7 +241,7 @@ export class RuntimeLoopTest {
 
     @Test('runtime runTurn uses provider filter')
     async runtimeUsesProviderFilter() {
-        const ctx = await Application.run(HermesAgentModule, {
+        const ctx = await Application.run(AgentOrmModule, {
             providers: [
                 ...withAgentTurnFilters(async (input, _next, _context) => {
                     return {
