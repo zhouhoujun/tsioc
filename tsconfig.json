@@ -16,9 +16,9 @@
     "resolveJsonModule": true,
     "paths": {
       "@tsdi/*": [
-        "packages/agents/*",
+        "packages/*",
         "packages/microservices/*",
-        "packages/*"
+        "packages/agents/*"
       ]
     },
     "lib": [

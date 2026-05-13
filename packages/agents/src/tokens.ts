@@ -1,0 +1,25 @@
+import { token, HandlerLike } from '@tsdi/ioc';
+import { FilterLike, GuardLike, InterceptorLike, RunContext } from '@tsdi/core';
+import { AgentOptions } from './options';
+import { AgentTool } from './tools/AgentTool';
+import { SessionStore } from './memory/SessionStore';
+import { MemoryStore } from './memory/MemoryStore';
+import { SessionSummarizer } from './memory/SessionSummarizer';
+import { ModelAdapter } from './model/ModelAdapter';
+import { AgentScheduler } from './scheduler/AgentScheduler';
+import { AgentTurnResult } from './runtime/AgentTurnResult';
+import { AgentTurnInput } from './runtime/AgentTurnInput';
+
+export const AGENT_OPTIONS = token<AgentOptions>('AGENT_OPTIONS');
+export const AGENT_TOOLS = token<AgentTool[]>('AGENT_TOOLS');
+export const AGENT_SESSION_STORE = token<SessionStore>('AGENT_SESSION_STORE');
+export const AGENT_MEMORY_STORE = token<MemoryStore>('AGENT_MEMORY_STORE');
+export const AGENT_SESSION_SUMMARIZER = token<SessionSummarizer>('AGENT_SESSION_SUMMARIZER');
+export const AGENT_MODEL_ADAPTER = token<ModelAdapter>('AGENT_MODEL_ADAPTER');
+export const AGENT_SCHEDULER = token<AgentScheduler>('AGENT_SCHEDULER');
+export const AGENT_RUNTIME = token<any>('AGENT_RUNTIME');
+export const AGENT_TURN_HANDLER = token<any>('AGENT_TURN_HANDLER');
+export const AGENT_TURN_BACKENDS = token<HandlerLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_BACKENDS');
+export const AGENT_TURN_GUARDS = token<GuardLike<AgentTurnInput, RunContext>[]>('AGENT_TURN_GUARDS');
+export const AGENT_TURN_INTERCEPTORS = token<InterceptorLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_INTERCEPTORS');
+export const AGENT_TURN_FILTERS = token<FilterLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_FILTERS');
