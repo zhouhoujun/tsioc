@@ -33,9 +33,27 @@ export class AgentChannelOrchestrator {
         if (message.channel && message.channel !== channel.name()) {
             throw new Error(`channel mismatch: ${message.channel}`);
         }
+
         const normalized = { ...message, channel: channel.name() };
-        const request = this.mapper.toAgentRequest(normalized);
-        const response = await this.server.execute(request);
-        await channel.send(this.mapper.toSendMessage(normalized, response));
+
+        // Start typing indicator (like zeroclaw 👀 reaction)
+        channel.startTyping?.(normalized.channel, normalized.threadId);
+
+        try {
+            const request = this.mapper.toAgentRequest(normalized);
+            const response = await this.server.execute(request);
+
+            // Send response
+            await channel.send(this.mapper.toSendMessage(normalized, response));
+
+            // Success feedback (like zeroclaw ✅ reaction)
+            channel.addReaction?.(normalized.channel, normalized.threadId, normalized.id, '✅');
+        } catch (error) {
+            // Failure feedback (like zeroclaw ⚠️ reaction)
+            channel.addReaction?.(normalized.channel, normalized.threadId, normalized.id, '⚠️');
+            throw error;
+        } finally {
+            channel.stopTyping?.(normalized.channel, normalized.threadId);
+        }
     }
 }

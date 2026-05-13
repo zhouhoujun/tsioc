@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@tsdi/ioc';
 import { AGENT_CHANNELS } from '../tokens';
+import { HealthStatus } from '../contracts/HealthStatus';
 import { AgentConversationChannel } from '../contracts/AgentConversationChannel';
 
 @Injectable()
@@ -29,9 +30,9 @@ export class AgentChannelRegistry {
         return Array.from(this.channels.values());
     }
 
-    async health(): Promise<Record<string, boolean>> {
+    async health(): Promise<Record<string, HealthStatus>> {
         const entries = await Promise.all(this.getAll().map(async channel => {
-            const status = channel.healthCheck ? await channel.healthCheck() : true;
+            const status = await channel.healthCheck();
             return [channel.name(), status] as const;
         }));
         return Object.fromEntries(entries);

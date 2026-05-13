@@ -1,3 +1,5 @@
+import { Attachment } from './Attachment';
+
 export interface SendMessage {
     id?: string;
     channel: string;
@@ -6,5 +8,7 @@ export interface SendMessage {
     sessionId?: string;
     threadId?: string;
     subject?: string;
+    attachments?: Attachment[];
+    replyTo?: string;
     metadata?: Record<string, any>;
 }

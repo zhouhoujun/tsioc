@@ -2,6 +2,10 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { AgentConversationChannel } from '../src/contracts/AgentConversationChannel';
+import { ChannelCapability } from '../src/contracts/ChannelCapability';
+import { HealthStatus } from '../src/contracts/HealthStatus';
+import { ChannelMessage } from '../src/contracts/ChannelMessage';
+import { SendMessage } from '../src/contracts/SendMessage';
 
 class StubChannel implements AgentConversationChannel {
     constructor(private readonly channelName: string) {
@@ -11,8 +15,36 @@ class StubChannel implements AgentConversationChannel {
         return this.channelName;
     }
 
-    async send(): Promise<void> {
-        return;
+    async send(message: SendMessage): Promise<string> {
+        return `stub-${message.channel}`;
+    }
+
+    listen(handler: (message: ChannelMessage) => Promise<void> | void): void {
+        // no-op
+    }
+
+    healthCheck(): HealthStatus {
+        return { healthy: true };
+    }
+
+    capabilities(): ChannelCapability[] {
+        return [];
+    }
+
+    supportsFreeFormAsk(): boolean {
+        return false;
+    }
+
+    supportsDraftUpdates(): boolean {
+        return false;
+    }
+
+    supportsMultiMessageStreaming(): boolean {
+        return false;
+    }
+
+    multiMessageDelayMs(): number {
+        return 0;
     }
 }
 

@@ -19,6 +19,7 @@ export class ChannelEnvelopeMapper {
             sessionId: response.sessionId,
             threadId: message.threadId,
             content: response.output,
+            replyTo: message.id,
             metadata: {
                 ...message.metadata,
                 replyTo: message.id
@@ -27,6 +28,7 @@ export class ChannelEnvelopeMapper {
     }
 
     protected createSessionId(message: ChannelMessage): string {
-        return [message.channel, message.sender, message.threadId ?? ''].map(part => encodeURIComponent(part)).join('|');
+        const parts = [message.channel, message.sender, message.threadId ?? ''];
+        return parts.map(part => encodeURIComponent(part)).join('|');
     }
 }

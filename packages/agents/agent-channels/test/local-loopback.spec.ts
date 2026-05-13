@@ -20,13 +20,15 @@ export class LocalLoopbackAgentChannelTest {
     async fullLoop() {
         const channel = new LocalLoopbackAgentChannel();
         const orchestrator = new AgentChannelOrchestrator(new ServerStub() as any, new ChannelEnvelopeMapper(), new AgentChannelRegistry([channel]));
+
+        await channel.listen((message) => orchestrator.dispatch(message));
         await channel.receive({
             id: 'm1',
             channel: 'loopback',
             sender: 'user-1',
             content: 'hello',
             timestamp: Date.now()
-        }, (message) => orchestrator.dispatch(message));
+        });
 
         expect(channel.inbox.length).toBe(1);
         expect(channel.outbox.length).toBe(1);

@@ -4,6 +4,8 @@ import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { ChannelEnvelopeMapper } from '../src/orchestrator/ChannelEnvelopeMapper';
 import { AgentChannelOrchestrator } from '../src/orchestrator/AgentChannelOrchestrator';
 import { AgentConversationChannel } from '../src/contracts/AgentConversationChannel';
+import { ChannelCapability } from '../src/contracts/ChannelCapability';
+import { HealthStatus } from '../src/contracts/HealthStatus';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
 import { SendMessage } from '../src/contracts/SendMessage';
 
@@ -26,8 +28,37 @@ class CaptureChannel implements AgentConversationChannel {
         return this.channelName;
     }
 
-    async send(message: SendMessage): Promise<void> {
+    async send(message: SendMessage): Promise<string> {
         this.sent.push(message);
+        return `capture-${this.channelName}-${this.sent.length}`;
+    }
+
+    listen(handler: (message: ChannelMessage) => Promise<void> | void): void {
+        // no-op
+    }
+
+    healthCheck(): HealthStatus {
+        return { healthy: true };
+    }
+
+    capabilities(): ChannelCapability[] {
+        return [];
+    }
+
+    supportsFreeFormAsk(): boolean {
+        return false;
+    }
+
+    supportsDraftUpdates(): boolean {
+        return false;
+    }
+
+    supportsMultiMessageStreaming(): boolean {
+        return false;
+    }
+
+    multiMessageDelayMs(): number {
+        return 0;
     }
 }
 
