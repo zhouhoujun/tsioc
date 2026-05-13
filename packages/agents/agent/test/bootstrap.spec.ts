@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { AgentOrmModule, AgentConsoleComponent } from '../src';
+import { AgentModule, AgentConsoleComponent } from '../src';
 
 @Suite('Agents bootstrap')
 export class BootstrapTest {
@@ -9,7 +9,7 @@ export class BootstrapTest {
 
     @Before()
     async init() {
-        this.ctx = await Application.run(AgentOrmModule);
+        this.ctx = await Application.run(AgentModule);
     }
 
     @Test('can bootstrap hermes module')
