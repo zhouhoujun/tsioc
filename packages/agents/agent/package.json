@@ -1,5 +1,5 @@
 {
-  "name": "@tsdi/agents",
+  "name": "@tsdi/agent",
   "version": "6.0.31",
   "description": "AI agent runtime and UI package built on @tsdi/core and microservices.",
   "scripts": {

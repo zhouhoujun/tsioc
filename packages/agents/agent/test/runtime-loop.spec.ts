@@ -26,6 +26,18 @@ class EmptyToolRegistry extends ToolRegistry {
     async invoke(): Promise<any> { return null; }
 }
 
+class EchoToolRegistry extends ToolRegistry {
+    getTools() {
+        return [{ name: 'echo', description: 'echo input' } as any];
+    }
+    getTool() {
+        return this.getTools()[0] as any;
+    }
+    async invoke(_name: string, input: any): Promise<any> {
+        return input;
+    }
+}
+
 class RuntimeStub {
     calls: string[] = [];
 
@@ -34,6 +46,33 @@ class RuntimeStub {
         return {
             sessionId: input.sessionId,
             message: { id: '1', role: 'assistant', content: `Echo: ${input.input}`, createdAt: Date.now() }
+        };
+    }
+}
+
+class ToolLoopModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-1', name: 'echo', input: { value: 'from-tool' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'tool-finished',
+            stopReason: 'end'
+        };
+    }
+}
+
+class EndlessToolLoopModelAdapter extends EchoModelAdapter {
+    async complete(): Promise<any> {
+        return {
+            toolCalls: [{ id: `tool-${Date.now()}`, name: 'echo', input: { value: 'loop' } }],
+            stopReason: 'tool'
         };
     }
 }
@@ -113,6 +152,47 @@ export class RuntimeLoopTest {
             handler.onDestroy();
             await ctx.close();
         }
+    }
+
+    @Test('runs tool loop and stores tool message')
+    async runsToolLoop() {
+        const runtime = new AgentRuntime(
+            new ToolLoopModelAdapter(),
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        expect(result.message.content).toEqual('tool-finished');
+
+        const messages = await runtime.getMessages('s1');
+        expect(messages.length).toEqual(3);
+        expect(messages[0].role).toEqual('user');
+        expect(messages[1].role).toEqual('tool');
+        expect(messages[1].content).toContain('from-tool');
+        expect(messages[2].role).toEqual('assistant');
+    }
+
+    @Test('stops after reaching tool round limit')
+    async stopsAfterToolRoundLimit() {
+        const runtime = new AgentRuntime(
+            new EndlessToolLoopModelAdapter(),
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            { ...defaultAgentOptions, maxToolRounds: 1 },
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        expect(result.message.content).toContain('tool round limit');
+        const messages = await runtime.getMessages('s1');
+        expect(messages.filter(msg => msg.role === 'tool').length).toEqual(2);
     }
 
     @Test('runtime runTurn uses provider guard')
