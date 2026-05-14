@@ -6,7 +6,11 @@ export interface AgentMemoryRecord {
     key: string;
     value: string;
     scope: 'session' | 'global';
+    namespace?: string;
+    category?: 'core' | 'daily' | 'conversation' | 'experience' | string;
+    metadata?: Record<string, any>;
     createdAt: number;
+    updatedAt?: number;
 }
 
 @Abstract()

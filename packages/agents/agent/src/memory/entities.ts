@@ -12,7 +12,43 @@ export class AgentSessionEntity {
     summary!: string;
 
     @Column({ type: 'bigint' })
+    createdAt!: number;
+
+    @Column({ type: 'bigint' })
     updatedAt!: number;
+}
+
+@Entity()
+export class AgentMessageEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column()
+    messageId!: string;
+
+    @Column({ type: 'int' })
+    sequence!: number;
+
+    @Column()
+    role!: string;
+
+    @Column({ type: 'text' })
+    content!: string;
+
+    @Column({ nullable: true })
+    name!: string;
+
+    @Column({ nullable: true })
+    toolCallId!: string;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata!: Record<string, any>;
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
 }
 
 @Entity()
@@ -32,8 +68,20 @@ export class AgentMemoryEntity {
     @Column()
     scope!: string;
 
+    @Column({ nullable: true })
+    namespace!: string;
+
+    @Column({ nullable: true })
+    category!: string;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata!: Record<string, any>;
+
     @Column({ type: 'bigint' })
     createdAt!: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    updatedAt!: number;
 }
 
 @Entity()

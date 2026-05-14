@@ -1,6 +1,6 @@
 import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
-import { AgentMemoryEntity, AgentScheduledTaskEntity, AgentSessionEntity } from './memory/entities';
+import { AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity } from './memory/entities';
 
 
 
@@ -10,7 +10,7 @@ import { AgentMemoryEntity, AgentScheduledTaskEntity, AgentSessionEntity } from 
             type: 'sqljs' as any,
             autoLoadEntities: false as any,
             synchronize: true,
-            entities: [AgentSessionEntity, AgentMemoryEntity, AgentScheduledTaskEntity]
+            entities: [AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity]
         } as TypeormOptions)
     ]
 })
@@ -26,6 +26,6 @@ export class AgentOrmModule {
 
 export function provideAgentOrm(options: TypeormOptions): Provider[] {
     options.entities ??= [];
-    options.entities.push(AgentSessionEntity, AgentMemoryEntity, AgentScheduledTaskEntity);
+    options.entities.push(AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity);
     return provideTypeOrm(options);
 }

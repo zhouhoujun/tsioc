@@ -96,18 +96,50 @@ export class AgentRuntime {
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
 
             if (response.toolCalls?.length) {
+                const assistantToolCallMessage = this.createMessage('assistant', response.message ?? '', undefined, undefined, {
+                    toolCalls: response.toolCalls,
+                    model: response.metadata?.model,
+                    provider: response.metadata?.provider,
+                    finishReason: response.metadata?.finishReason,
+                    usage: response.metadata?.usage,
+                    reasoningContent: response.metadata?.reasoningContent
+                });
+                await this.sessions.append(sessionId, assistantToolCallMessage);
+                let toolError: Error | undefined;
                 for (const toolCall of response.toolCalls) {
+                    if (toolError) {
+                        const skippedMessage = this.createMessage('tool', JSON.stringify({ error: 'Skipped because a previous tool call failed.' }), toolCall.name, toolCall.id, {
+                            input: toolCall.input,
+                            error: 'Skipped because a previous tool call failed.'
+                        });
+                        await this.sessions.append(sessionId, skippedMessage);
+                        continue;
+                    }
                     await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCall.input));
-                    const output = await this.toolRegistry.invoke(toolCall.name, toolCall.input, sessionId);
-                    await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output));
-                    const toolMessage = this.createMessage('tool', JSON.stringify(output), toolCall.name, toolCall.id);
-                    await this.sessions.append(sessionId, toolMessage);
+                    try {
+                        const output = await this.toolRegistry.invoke(toolCall.name, toolCall.input, sessionId);
+                        await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output));
+                        const toolMessage = this.createMessage('tool', JSON.stringify(output), toolCall.name, toolCall.id, {
+                            input: toolCall.input
+                        });
+                        await this.sessions.append(sessionId, toolMessage);
+                    } catch (error) {
+                        toolError = error instanceof Error ? error : new Error(String(error));
+                        const toolMessage = this.createMessage('tool', JSON.stringify({ error: toolError.message }), toolCall.name, toolCall.id, {
+                            input: toolCall.input,
+                            error: toolError.message
+                        });
+                        await this.sessions.append(sessionId, toolMessage);
+                    }
+                }
+                if (toolError) {
+                    throw toolError;
                 }
                 round++;
                 continue;
             }
 
-            const message = this.createMessage('assistant', response.message ?? '');
+            const message = this.createMessage('assistant', response.message ?? '', undefined, undefined, response.metadata);
             return { sessionId, message };
         }
 
@@ -124,14 +156,15 @@ export class AgentRuntime {
         }
     }
 
-    private createMessage(role: AgentMessage['role'], content: string, name?: string, toolCallId?: string): AgentMessage {
+    private createMessage(role: AgentMessage['role'], content: string, name?: string, toolCallId?: string, metadata?: Record<string, any>): AgentMessage {
         return {
             id: `${Date.now()}-${Math.random()}`,
             role,
             content,
             name,
             toolCallId,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            metadata
         };
     }
 }

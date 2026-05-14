@@ -2,10 +2,12 @@ import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ConfigModule } from '@tsdi/microservices/config';
-import { AgentOptions, defaultAgentOptions } from './options';
+import { AgentOptions, defaultAgentOptions, mergeAgentOptions } from './options';
 import { AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_RUNTIME, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TOOLS, AGENT_TURN_HANDLER } from './tokens';
 import { EchoModelAdapter } from './model/EchoModelAdapter';
 import { ModelAdapter } from './model/ModelAdapter';
+import { DeepSeekModelAdapter } from './model/DeepSeekModelAdapter';
+import { createModelAdapter } from './model/ModelProviderFactory';
 import { ToolRegistry } from './tools/ToolRegistry';
 import { LocalToolRegistry } from './tools/LocalToolRegistry';
 import { EchoTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
@@ -36,9 +38,28 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
     declarations: [AgentConsoleComponent],
     bootstrap: [AgentConsoleComponent],
     providers: [
-        { provide: AGENT_OPTIONS, useValue: defaultAgentOptions },
+        {
+            provider(injector) {
+                if (injector.has(AGENT_OPTIONS)) {
+                    return;
+                }
+                return [{ provide: AGENT_OPTIONS, useValue: defaultAgentOptions }];
+            }
+        },
         EchoModelAdapter,
-        { provide: AGENT_MODEL_ADAPTER, useClass: EchoModelAdapter },
+        DeepSeekModelAdapter,
+        {
+            provider(injector) {
+                if (injector.has(AGENT_MODEL_ADAPTER)) {
+                    return;
+                }
+                return [{
+                    provide: AGENT_MODEL_ADAPTER,
+                    useFactory: (options: AgentOptions) => createModelAdapter(options.model),
+                    deps: [AGENT_OPTIONS]
+                }];
+            }
+        },
         { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER },
         LocalToolRegistry,
         { provide: ToolRegistry, useClass: LocalToolRegistry },
@@ -86,7 +107,7 @@ export class AgentModule {
         return {
             module: AgentModule,
             providers: [
-                { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...options } }
+                { provide: AGENT_OPTIONS, useValue: mergeAgentOptions(options) }
             ]
         };
     }

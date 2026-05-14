@@ -1,11 +1,12 @@
 import { ModuleWithProviders, Provider, ProvdierOf, toProviders } from '@tsdi/ioc';
 import { FilterLike, GuardLike, InterceptorLike, RunContext } from '@tsdi/core';
 import { AgentTool } from './tools/AgentTool';
-import { AGENT_OPTIONS, AGENT_TOOLS, AGENT_TURN_FILTERS, AGENT_TURN_GUARDS, AGENT_TURN_INTERCEPTORS } from './tokens';
-import { AgentOptions, defaultAgentOptions } from './options';
+import { AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_TOOLS, AGENT_TURN_FILTERS, AGENT_TURN_GUARDS, AGENT_TURN_INTERCEPTORS } from './tokens';
+import { AgentOptions, mergeAgentOptions } from './options';
 import { AgentModule } from './agent.module';
 import { AgentTurnResult } from './runtime/AgentTurnResult';
 import { AgentTurnInput } from './runtime/AgentTurnInput';
+import { ModelAdapter } from './model/ModelAdapter';
 
 export function withAgentTools(...tools: ProvdierOf<AgentTool>[]): Provider[] {
     return toProviders(AGENT_TOOLS, tools, true);
@@ -23,11 +24,15 @@ export function withAgentTurnFilters(...filters: ProvdierOf<FilterLike<AgentTurn
     return toProviders(AGENT_TURN_FILTERS, filters, true);
 }
 
+export function withAgentModelAdapter(modelAdapter: ProvdierOf<ModelAdapter>): Provider[] {
+    return toProviders(AGENT_MODEL_ADAPTER, [modelAdapter]);
+}
+
 export function provideAgent(options?: AgentOptions, ...tools: ProvdierOf<AgentTool>[]): ModuleWithProviders<AgentModule> {
     return {
         module: AgentModule,
         providers: [
-            { provide: AGENT_OPTIONS, useValue: { ...defaultAgentOptions, ...(options ?? {}) } },
+            { provide: AGENT_OPTIONS, useValue: mergeAgentOptions(options) },
             ...withAgentTools(...tools)
         ]
     };

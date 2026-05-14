@@ -93,6 +93,36 @@ class StaticModelAdapter extends EchoModelAdapter {
     }
 }
 
+class FailingToolRegistry extends EchoToolRegistry {
+    async invoke(): Promise<any> {
+        throw new Error('tool failed');
+    }
+}
+
+class MultiToolLoopModelAdapter extends EchoModelAdapter {
+    async complete(): Promise<any> {
+        return {
+            toolCalls: [
+                { id: 'tool-1', name: 'echo', input: { value: 'first' } },
+                { id: 'tool-2', name: 'echo', input: { value: 'second' } }
+            ],
+            stopReason: 'tool'
+        };
+    }
+}
+
+class FailFirstToolRegistry extends EchoToolRegistry {
+    private count = 0;
+
+    async invoke(_name: string, input: any): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            throw new Error('tool failed');
+        }
+        return input;
+    }
+}
+
 @Suite('Agent runtime loop')
 export class RuntimeLoopTest {
     @Test('can answer one user turn')
@@ -170,11 +200,13 @@ export class RuntimeLoopTest {
         expect(result.message.content).toEqual('tool-finished');
 
         const messages = await runtime.getMessages('s1');
-        expect(messages.length).toEqual(3);
+        expect(messages.length).toEqual(4);
         expect(messages[0].role).toEqual('user');
-        expect(messages[1].role).toEqual('tool');
-        expect(messages[1].content).toContain('from-tool');
-        expect(messages[2].role).toEqual('assistant');
+        expect(messages[1].role).toEqual('assistant');
+        expect(messages[1].metadata?.toolCalls?.[0]?.id).toEqual('tool-1');
+        expect(messages[2].role).toEqual('tool');
+        expect(messages[2].content).toContain('from-tool');
+        expect(messages[3].role).toEqual('assistant');
     }
 
     @Test('stops after reaching tool round limit')
@@ -193,6 +225,81 @@ export class RuntimeLoopTest {
         expect(result.message.content).toContain('tool round limit');
         const messages = await runtime.getMessages('s1');
         expect(messages.filter(msg => msg.role === 'tool').length).toEqual(2);
+    }
+
+    @Test('stores assistant tool call history before tool results')
+    async storesAssistantToolCallHistory() {
+        const runtime = new AgentRuntime(
+            new ToolLoopModelAdapter(),
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'hello');
+        const messages = await runtime.getMessages('s1');
+        expect(messages.length).toEqual(4);
+        expect(messages[1].role).toEqual('assistant');
+        expect(messages[1].metadata?.toolCalls?.[0]?.id).toEqual('tool-1');
+        expect(messages[2].role).toEqual('tool');
+        expect(messages[2].toolCallId).toEqual('tool-1');
+        expect(messages[2].metadata?.input?.value).toEqual('from-tool');
+    }
+
+    @Test('stores tool error result before rethrowing')
+    async storesToolErrorResultBeforeRethrowing() {
+        const runtime = new AgentRuntime(
+            new ToolLoopModelAdapter(),
+            new FailingToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        let error: Error | undefined;
+        try {
+            await runtime.runTurn('s1', 'hello');
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toEqual('tool failed');
+        const messages = await runtime.getMessages('s1');
+        expect(messages[1].role).toEqual('assistant');
+        expect(messages[2].role).toEqual('tool');
+        expect(messages[2].content).toContain('tool failed');
+        expect(messages[2].metadata?.error).toEqual('tool failed');
+    }
+
+    @Test('stores skipped tool results after earlier tool failure')
+    async storesSkippedToolResultsAfterEarlierToolFailure() {
+        const runtime = new AgentRuntime(
+            new MultiToolLoopModelAdapter(),
+            new FailFirstToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        let error: Error | undefined;
+        try {
+            await runtime.runTurn('s1', 'hello');
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toEqual('tool failed');
+        const messages = await runtime.getMessages('s1');
+        expect(messages[1].metadata?.toolCalls?.length).toEqual(2);
+        expect(messages[2].toolCallId).toEqual('tool-1');
+        expect(messages[2].metadata?.error).toEqual('tool failed');
+        expect(messages[3].toolCallId).toEqual('tool-2');
+        expect(messages[3].metadata?.error).toContain('Skipped');
     }
 
     @Test('runtime runTurn uses provider guard')
@@ -233,7 +340,7 @@ export class RuntimeLoopTest {
         try {
             const runtime = ctx.get(AgentRuntime);
             const result = await runtime.runTurn('s1', 'hello');
-            expect(result.message.content).toEqual('Echo: hello!');
+            expect(result.message.content).toEqual('hello!');
         } finally {
             await ctx.close();
         }

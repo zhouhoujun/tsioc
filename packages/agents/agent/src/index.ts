@@ -7,6 +7,10 @@ export * from './orm.module';
 export * from './model/ModelAdapter';
 export * from './model/ModelRequest';
 export * from './model/ModelResponse';
+export * from './model/ModelProviderOptions';
+export * from './model/ModelProviderFactory';
+export * from './model/OpenAICompatibleModelAdapter';
+export * from './model/DeepSeekModelAdapter';
 export * from './model/EchoModelAdapter';
 
 export * from './runtime/AgentMessage';
@@ -28,6 +32,8 @@ export * from './memory/SessionStore';
 export * from './memory/SessionSummarizer';
 export * from './memory/InMemoryMemoryStore';
 export * from './memory/InMemorySessionStore';
+export * from './memory/TypeOrmMemoryStore';
+export * from './memory/TypeOrmSessionStore';
 export * from './memory/SimpleSessionSummarizer';
 export * from './memory/entities';
 
