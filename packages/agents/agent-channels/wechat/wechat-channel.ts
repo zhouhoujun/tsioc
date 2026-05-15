@@ -1,15 +1,22 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { WechatSignatureService } from '@tsdi/security';
-import { BaseAgentChannel } from './contracts/BaseAgentChannel';
-import { SendMessage } from './contracts/SendMessage';
-import { ChannelMessage } from './contracts/ChannelMessage';
-import { ChannelCapability } from './contracts/ChannelCapability';
-import { HealthStatus } from './contracts/HealthStatus';
-import { AGENT_CHANNELS } from './tokens';
+import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
+import { SendMessage } from '../src/contracts/SendMessage';
+import { ChannelMessage } from '../src/contracts/ChannelMessage';
+import { ChannelCapability } from '../src/contracts/ChannelCapability';
+import { HealthStatus } from '../src/contracts/HealthStatus';
+import { AGENT_CHANNELS } from '../src/tokens';
 import { WECHAT_AGENT_CHANNEL_OPTIONS } from './wechat-tokens';
 import { WechatAgentChannelOptions, defaultWechatAgentChannelOptions } from './wechat-options';
-import { AgentChannelFeature } from './contracts/AgentChannelFeature';
+import { AgentChannelFeature } from '../src/contracts/AgentChannelFeature';
 
+/**
+ * WeChat (weixin) personal account channel via Tencent iLink Bot API.
+ *
+ * Reference:
+ *   - hermes-agent:  gateway/platforms/weixin.py  (long-poll REST adapter)
+ *   - zeroclaw:      crates/zeroclaw-channels/src/wechat.rs
+ */
 @Injectable()
 export class WechatAgentChannel extends BaseAgentChannel {
     private listener?: (message: ChannelMessage) => Promise<void> | void;
