@@ -8,9 +8,7 @@ export * from './model/ModelAdapter';
 export * from './model/ModelRequest';
 export * from './model/ModelResponse';
 export * from './model/ModelProviderOptions';
-export * from './model/ModelProviderFactory';
 export * from './model/OpenAICompatibleModelAdapter';
-export * from './model/DeepSeekModelAdapter';
 export * from './model/EchoModelAdapter';
 
 export * from './runtime/AgentMessage';

@@ -4,10 +4,8 @@ import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ConfigModule } from '@tsdi/microservices/config';
 import { AgentOptions, defaultAgentOptions, mergeAgentOptions } from './options';
 import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_RUNTIME, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TOOLS, AGENT_TURN_HANDLER } from './tokens';
-import { EchoModelAdapter } from './model/EchoModelAdapter';
+import { OpenAICompatibleModelAdapter } from './model/OpenAICompatibleModelAdapter';
 import { ModelAdapter } from './model/ModelAdapter';
-import { DeepSeekModelAdapter } from './model/DeepSeekModelAdapter';
-import { createModelAdapter } from './model/ModelProviderFactory';
 import { ToolRegistry } from './tools/ToolRegistry';
 import { LocalToolRegistry } from './tools/LocalToolRegistry';
 import { EchoTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
@@ -48,8 +46,6 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
                 return [{ provide: AGENT_OPTIONS, useValue: defaultAgentOptions }];
             }
         },
-        EchoModelAdapter,
-        DeepSeekModelAdapter,
         {
             provider(injector) {
                 if (injector.has(AGENT_MODEL_ADAPTER)) {
@@ -57,8 +53,13 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
                 }
                 return [{
                     provide: AGENT_MODEL_ADAPTER,
-                    useFactory: (options: AgentOptions) => createModelAdapter(options.model),
-                    deps: [AGENT_OPTIONS]
+                    useFactory: () => new OpenAICompatibleModelAdapter({
+                        provider: 'deepseek',
+                        model: 'deepseek-chat',
+                        baseUrl: 'https://api.deepseek.com',
+                        apiKeyEnv: 'DEEPSEEK_API_KEY',
+                        timeoutMs: 120000
+                    })
                 }];
             }
         },

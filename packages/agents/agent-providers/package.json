@@ -1,0 +1,65 @@
+{
+  "name": "@tsdi/agent-providers",
+  "version": "6.0.31",
+  "description": "AI model provider adapters for @tsdi/agent — modular, importable individually.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
+  },
+  "keywords": [
+    "agents",
+    "providers",
+    "llm",
+    "openai",
+    "anthropic",
+    "gemini",
+    "deepseek",
+    "tsdi",
+    "ioc"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./openai": {
+      "types": "./openai/index.d.ts",
+      "default": "./openai/index.js"
+    },
+    "./anthropic": {
+      "types": "./anthropic/index.d.ts",
+      "default": "./anthropic/index.js"
+    },
+    "./gemini": {
+      "types": "./gemini/index.d.ts",
+      "default": "./gemini/index.js"
+    },
+    "./deepseek": {
+      "types": "./deepseek/index.d.ts",
+      "default": "./deepseek/index.js"
+    },
+    "./openai-compatible": {
+      "types": "./openai-compatible/index.d.ts",
+      "default": "./openai-compatible/index.js"
+    }
+  },
+  "dependencies": {
+    "@tsdi/agent": "6.0.31",
+    "@tsdi/ioc": "6.0.31"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
+}
