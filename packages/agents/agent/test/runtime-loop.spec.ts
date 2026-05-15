@@ -93,6 +93,53 @@ class StaticModelAdapter extends EchoModelAdapter {
     }
 }
 
+class CapturingModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        return {
+            message: 'captured',
+            stopReason: 'end'
+        };
+    }
+}
+
+class SearchOnlyMemoryStore extends InMemoryMemoryStore {
+    searchCalls: Array<{ query: string; sessionId?: string }> = [];
+    getAllCalls = 0;
+
+    async search(query: string, sessionId?: string): Promise<any[]> {
+        this.searchCalls.push({ query, sessionId });
+        return [{ id: 'relevant', sessionId, key: 'topic', value: 'router', scope: 'session', createdAt: 1 }];
+    }
+
+    async getAll(sessionId?: string): Promise<any[]> {
+        this.getAllCalls++;
+        return [{ id: 'irrelevant', sessionId, key: 'other', value: 'unrelated', scope: 'session', createdAt: 1 }];
+    }
+}
+
+class PreservingUserToolLoopModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count <= 3) {
+            return {
+                toolCalls: [{ id: `tool-${this.count}`, name: 'echo', input: { value: `round-${this.count}` } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
 class FailingToolRegistry extends EchoToolRegistry {
     async invoke(): Promise<any> {
         throw new Error('tool failed');
@@ -207,6 +254,92 @@ export class RuntimeLoopTest {
         expect(messages[2].role).toEqual('tool');
         expect(messages[2].content).toContain('from-tool');
         expect(messages[3].role).toEqual('assistant');
+    }
+
+    @Test('sends only configured recent messages to model')
+    async sendsOnlyConfiguredRecentMessagesToModel() {
+        const model = new CapturingModelAdapter();
+        const sessions = new InMemorySessionStore();
+        for (let index = 1; index <= 5; index++) {
+            await sessions.append('s1', { id: `${index}`, role: 'user', content: `old-${index}`, createdAt: index });
+        }
+        const runtime = new AgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            sessions,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 } },
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'newest');
+
+        expect(model.requests[0].messages.map((msg: any) => msg.content)).toEqual(['old-4', 'old-5', 'newest']);
+        const stored = await runtime.getMessages('s1');
+        expect(stored.map(msg => msg.content)).toEqual(['old-1', 'old-2', 'old-3', 'old-4', 'old-5', 'newest', 'captured']);
+    }
+
+    @Test('sends relevant memory search results to model')
+    async sendsRelevantMemorySearchResultsToModel() {
+        const model = new CapturingModelAdapter();
+        const memory = new SearchOnlyMemoryStore();
+        const runtime = new AgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            memory,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'router question');
+
+        expect(memory.searchCalls).toEqual([{ query: 'router question', sessionId: 's1' }]);
+        expect(memory.getAllCalls).toEqual(0);
+        expect(model.requests[0].memory.map((record: any) => record.id)).toEqual(['relevant']);
+    }
+
+    @Test('does not search memory for blank input')
+    async doesNotSearchMemoryForBlankInput() {
+        const model = new CapturingModelAdapter();
+        const memory = new SearchOnlyMemoryStore();
+        const runtime = new AgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            memory,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', '   ');
+
+        expect(memory.searchCalls).toEqual([]);
+        expect(memory.getAllCalls).toEqual(0);
+        expect(model.requests[0].memory).toEqual([]);
+    }
+
+    @Test('preserves current user message across tool rounds')
+    async preservesCurrentUserMessageAcrossToolRounds() {
+        const model = new PreservingUserToolLoopModelAdapter();
+        const runtime = new AgentRuntime(
+            model,
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            { ...defaultAgentOptions, session: { ...defaultAgentOptions.session, recentMessages: 2, summaryThreshold: 999 } },
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'keep-me');
+
+        expect(model.requests.length).toEqual(4);
+        expect(model.requests.every((request: any) => request.messages.some((message: any) => message.content === 'keep-me'))).toEqual(true);
+        expect(model.requests[3].messages.map((message: any) => message.content)).toEqual(['keep-me', '', '{"value":"round-3"}']);
     }
 
     @Test('stops after reaching tool round limit')

@@ -43,7 +43,7 @@ export class AgentRuntime {
         await this.sessions.append(input.sessionId, userMessage);
 
         try {
-            const result = await this.completeTurn(input.sessionId);
+            const result = await this.completeTurn(input.sessionId, input.input, userMessage.id);
             await this.sessions.append(input.sessionId, result.message);
             await this.maybeSummarize(input.sessionId);
             await this.app.publishEvent(new AgentTurnCompletedEvent(this, input.sessionId, result.message));
@@ -77,14 +77,14 @@ export class AgentRuntime {
         return (await this.sessions.get(sessionId)).messages;
     }
 
-    private async completeTurn(sessionId: string): Promise<AgentTurnResult> {
+    private async completeTurn(sessionId: string, query: string, currentUserMessageId: string): Promise<AgentTurnResult> {
         let round = 0;
         while (round <= (this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!)) {
             const state = await this.sessions.get(sessionId);
-            const memory = await this.memory.getAll(sessionId);
+            const memory = await this.getRelevantMemory(query, sessionId);
             const response = await this.modelAdapter.complete({
                 sessionId,
-                messages: state.messages,
+                messages: this.getRecentMessages(state.messages, currentUserMessageId),
                 tools: this.toolRegistry.getTools().map(tool => ({
                     name: tool.name,
                     description: tool.description,
@@ -154,6 +154,27 @@ export class AgentRuntime {
             const summary = await this.summarizer.summarize(state.messages);
             await this.sessions.setSummary(sessionId, summary);
         }
+    }
+
+    private async getRelevantMemory(query: string, sessionId: string): Promise<AgentMemoryRecord[]> {
+        const normalized = query.trim();
+        if (!normalized) {
+            return [];
+        }
+        return this.memory.search(normalized, sessionId);
+    }
+
+    private getRecentMessages(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {
+        const recentLimit = this.options.session?.recentMessages ?? defaultAgentOptions.session!.recentMessages!;
+        if (!recentLimit || recentLimit < 0 || messages.length <= recentLimit) {
+            return messages;
+        }
+        const currentUserMessage = messages.find(message => message.id === currentUserMessageId);
+        const recentMessages = messages.slice(-recentLimit);
+        if (!currentUserMessage || recentMessages.some(message => message.id === currentUserMessage.id)) {
+            return recentMessages;
+        }
+        return [currentUserMessage, ...recentMessages];
     }
 
     private createMessage(role: AgentMessage['role'], content: string, name?: string, toolCallId?: string, metadata?: Record<string, any>): AgentMessage {
