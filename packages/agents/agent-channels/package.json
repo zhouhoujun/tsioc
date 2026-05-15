@@ -25,9 +25,20 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./wechat": {
+      "types": "./src/wechat.d.ts",
+      "default": "./src/wechat.js"
+    }
+  },
   "dependencies": {
     "@tsdi/agent": "6.0.31",
-    "@tsdi/ioc": "6.0.31"
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/security": "6.0.31"
   },
   "directories": {
     "lib": "lib",

@@ -1,5 +1,8 @@
 import * as http from 'http';
-import { Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { HttpAuthOptions, HttpAuthService } from '@tsdi/security';
+import { AGENT_CHANNEL_OPTIONS } from '../tokens';
+import { AgentChannelsOptions, defaultAgentChannelsOptions } from '../options';
 import { BaseAgentChannel } from '../contracts/BaseAgentChannel';
 import { ChannelCapability } from '../contracts/ChannelCapability';
 import { ChannelMessage } from '../contracts/ChannelMessage';
@@ -11,6 +14,7 @@ export interface SSEChannelOptions {
     messagePath?: string;
     port?: number;
     host?: string;
+    auth?: HttpAuthOptions;
 }
 
 const defaultOptions: SSEChannelOptions = {
@@ -36,10 +40,22 @@ export class SSEAgentChannel extends BaseAgentChannel {
     private clients = new Set<http.ServerResponse>();
     private server?: http.Server;
     private options: SSEChannelOptions;
+    private httpAuth: HttpAuthService;
 
-    constructor(options?: SSEChannelOptions) {
+    constructor(
+        @Optional() @Inject(HttpAuthService) httpAuthOrOptions?: HttpAuthService | SSEChannelOptions,
+        @Optional() options?: SSEChannelOptions,
+        @Optional() @Inject(AGENT_CHANNEL_OPTIONS) channelOptions: AgentChannelsOptions = defaultAgentChannelsOptions
+    ) {
         super();
-        this.options = { ...defaultOptions, ...options };
+        const configured = channelOptions.sse ?? {};
+        if (httpAuthOrOptions instanceof HttpAuthService) {
+            this.httpAuth = httpAuthOrOptions;
+            this.options = { ...defaultOptions, ...configured, ...(options ?? {}) };
+        } else {
+            this.httpAuth = new HttpAuthService();
+            this.options = { ...defaultOptions, ...configured, ...(httpAuthOrOptions ?? {}) };
+        }
     }
 
     name(): string {
@@ -80,10 +96,11 @@ export class SSEAgentChannel extends BaseAgentChannel {
 
         return new Promise<void>((resolve) => {
             this.server = http.createServer((req, res) => {
-                if (req.method === 'GET' && req.url === this.options.ssePath) {
-                    this.handleSSEConnection(req, res);
-                } else if (req.method === 'POST' && req.url === this.options.messagePath) {
-                    this.handleInboundMessage(req, res);
+                const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+                if (req.method === 'GET' && url.pathname === this.options.ssePath) {
+                    void this.handleSSEConnection(req, res);
+                } else if (req.method === 'POST' && url.pathname === this.options.messagePath) {
+                    void this.handleInboundMessage(req, res);
                 } else {
                     res.writeHead(404).end();
                 }
@@ -93,7 +110,11 @@ export class SSEAgentChannel extends BaseAgentChannel {
         });
     }
 
-    private handleSSEConnection(_req: http.IncomingMessage, res: http.ServerResponse): void {
+    private async handleSSEConnection(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+        if (!await this.isAuthorized(req)) {
+            res.writeHead(401).end('unauthorized');
+            return;
+        }
         res.writeHead(200, {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
@@ -107,6 +128,10 @@ export class SSEAgentChannel extends BaseAgentChannel {
     }
 
     private async handleInboundMessage(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+        if (!await this.isAuthorized(req)) {
+            res.writeHead(401).end('unauthorized');
+            return;
+        }
         const body = await this.readBody(req);
 
         try {
@@ -191,6 +216,10 @@ export class SSEAgentChannel extends BaseAgentChannel {
             }
         }
         dead.forEach(c => this.clients.delete(c));
+    }
+
+    private async isAuthorized(req: http.IncomingMessage): Promise<boolean> {
+        return (await this.httpAuth.authenticate(req, this.options.auth)).authenticated;
     }
 
     private readBody(req: http.IncomingMessage): Promise<Buffer> {

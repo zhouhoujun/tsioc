@@ -1,4 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
+import { fetch } from 'cross-fetch';
 import { OIDCOptions } from './oidc.options';
 import { OAuth2Service } from '../oauth2/oauth2.service';
 import { JWTService } from '../jwt/jwt.service';
@@ -65,14 +66,14 @@ export class OIDCService extends OAuth2Service {
         }
         
         // 验证aud (受众)
-        if (decoded.aud !== options.clientId) {
+        const audiences = Array.isArray(decoded.aud) ? decoded.aud : [decoded.aud];
+        if (!audiences.includes(options.clientId)) {
             throw new Error('Invalid audience');
         }
     }
 
     async getUserInfo(accessToken: string, options: OIDCOptions): Promise<any> {
-        // 获取用户信息端点
-        const userInfo = await super.getUserInfo(accessToken, options);
+        const userInfo = await super.fetchUserInfo(accessToken, options);
         
         // 添加OIDC标准claims处理
         return {

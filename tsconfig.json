@@ -15,6 +15,9 @@
     "experimentalDecorators": true,
     "resolveJsonModule": true,
     "paths": {
+      "@tsdi/agent-channels/*": [
+        "packages/agents/agent-channels/src/*"
+      ],
       "@tsdi/*": [
         "packages/*",
         "packages/microservices/*",

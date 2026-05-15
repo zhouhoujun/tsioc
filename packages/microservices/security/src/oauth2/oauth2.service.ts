@@ -12,21 +12,15 @@ export class OAuth2Service {
             throw new Error('Authorization code not found');
         }
 
-        // 使用授权码获取访问令牌
-        const tokenResponse = await this.getAccessToken(code, options);
-        
-        // 验证令牌响应
+        const tokenResponse = await this.exchangeAuthorizationCode(code, options);
         if (!tokenResponse.access_token) {
             throw new Error('Invalid token response');
         }
 
-        // 获取用户信息
-        const userInfo = await this.getUserInfo(tokenResponse.access_token, options);
-        
-        return userInfo;
+        return this.fetchUserInfo(tokenResponse.access_token, options);
     }
 
-    protected async getAccessToken(code: string, options: OAuth2Options): Promise<any> {
+    async exchangeAuthorizationCode(code: string, options: OAuth2Options): Promise<any> {
         const params = new URLSearchParams();
         params.append('grant_type', 'authorization_code');
         params.append('code', code);
@@ -49,7 +43,7 @@ export class OAuth2Service {
         return response.json();
     }
 
-    protected async getUserInfo(accessToken: string, options: OAuth2Options): Promise<any> {
+    async fetchUserInfo(accessToken: string, options: OAuth2Options): Promise<any> {
         const response = await fetch(options.profileURL || `${options.tokenURL}/userinfo`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -63,15 +57,26 @@ export class OAuth2Service {
         return response.json();
     }
 
-    // 新增方法：构建授权URL
     buildAuthorizationUrl(options: OAuth2Options, state?: string): string {
         const url = new URL(options.authorizationURL);
         url.searchParams.append('response_type', 'code');
         url.searchParams.append('client_id', options.clientId);
         url.searchParams.append('redirect_uri', options.callbackURL);
-        url.searchParams.append('scope', options.scope?.join(' ') || '');
-        if (state) {
-            url.searchParams.append('state', state);
+        if (options.scope?.length) {
+            url.searchParams.append('scope', options.scope.join(' '));
+        }
+        const authState = state ?? options.state;
+        if (authState) {
+            url.searchParams.append('state', authState);
+        }
+        if (options.nonce) {
+            url.searchParams.append('nonce', options.nonce);
+        }
+        if (options.prompt) {
+            url.searchParams.append('prompt', options.prompt);
+        }
+        if (options.loginHint) {
+            url.searchParams.append('login_hint', options.loginHint);
         }
         return url.toString();
     }

@@ -30,7 +30,8 @@
   "dependencies": {
     "@tsdi/agent": "6.0.31",
     "@tsdi/agent-channels": "6.0.31",
-    "@tsdi/ioc": "6.0.31"
+    "@tsdi/ioc": "6.0.31",
+    "@tsdi/security": "6.0.31"
   },
   "directories": {
     "lib": "lib",

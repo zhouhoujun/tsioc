@@ -14,7 +14,14 @@ import { SSEAgentChannel } from './adapters/SSEAgentChannel';
 @Module({
     imports: [AgentModule],
     providers: [
-        { provide: AGENT_CHANNEL_OPTIONS, useValue: defaultAgentChannelsOptions },
+        {
+            provider(injector) {
+                if (injector.has(AGENT_CHANNEL_OPTIONS)) {
+                    return;
+                }
+                return [{ provide: AGENT_CHANNEL_OPTIONS, useValue: defaultAgentChannelsOptions }];
+            }
+        },
         LocalLoopbackAgentChannel,
         PubSubConversationChannel,
         ConsoleAgentChannel,

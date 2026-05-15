@@ -37,7 +37,8 @@
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
   "dependencies": {
     "jsonwebtoken": "^9.0.2",
-    "@types/jsonwebtoken": "^9.0.9"
+    "@types/jsonwebtoken": "^9.0.9",
+    "cross-fetch": "^4.1.0"
   },
   "directories": {
     "lib": "lib",

@@ -105,7 +105,7 @@ export class GatewayServer {
 
         // Auth check
         if (matched.route.auth !== false) {
-            if (!this.auth.authenticate(req, res)) return;
+            if (!await this.auth.authenticate(req, res)) return;
         }
 
         // CORS headers

@@ -10,8 +10,12 @@ export class OIDCOptions extends OAuth2Options {
         callbackURL: string,
         readonly issuer: string,
         readonly jwksURI?: string,
-        scope?: string[]
+        scope?: string[],
+        state?: string,
+        nonce?: string,
+        prompt?: string,
+        loginHint?: string
     ) {
-        super(clientId, clientSecret, authorizationURL, tokenURL, profileURL, callbackURL, scope);
+        super(clientId, clientSecret, authorizationURL, tokenURL, profileURL, callbackURL, scope, state, nonce, prompt, loginHint);
     }
 }

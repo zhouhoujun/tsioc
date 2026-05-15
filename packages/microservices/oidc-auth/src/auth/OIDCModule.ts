@@ -1,13 +1,14 @@
-import { Module, Provider } from '@tsdi/ioc';
+import { Module } from '@tsdi/ioc';
+import { OIDCModule as SharedOIDCModule, OAuth2Module } from '@tsdi/security';
 import { OIDCService } from './OIDCService';
-import { OIDCStrategy } from './OIDCStrategy';
-import { OIDCInterceptor } from './OIDCInterceptor';
 
 @Module({
+    imports: [
+        OAuth2Module,
+        SharedOIDCModule
+    ],
     providers: [
-        OIDCService,
-        OIDCStrategy,
-        OIDCInterceptor
+        OIDCService
     ],
     exports: [OIDCService]
 })

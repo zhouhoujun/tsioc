@@ -36,6 +36,7 @@
   "dependencies": {
     "@tsdi/ioc": "latest",
     "@tsdi/core": "latest",
+    "@tsdi/security": "6.0.31",
     "@types/node": "^14.14.7",
     "jsonwebtoken": "^9.0.0",
     "class-transformer": "^0.5.1",

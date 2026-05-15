@@ -1,6 +1,8 @@
 import * as http from 'http';
-import * as crypto from 'crypto';
-import { Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { HmacSignatureService, HttpAuthOptions, HttpAuthService } from '@tsdi/security';
+import { AGENT_CHANNEL_OPTIONS } from '../tokens';
+import { AgentChannelsOptions, defaultAgentChannelsOptions } from '../options';
 import { BaseAgentChannel } from '../contracts/BaseAgentChannel';
 import { ChannelCapability } from '../contracts/ChannelCapability';
 import { ChannelMessage } from '../contracts/ChannelMessage';
@@ -14,6 +16,7 @@ export interface WebhookChannelOptions {
     secret?: string;
     signatureHeader?: string;
     outgoingUrl?: string;
+    auth?: HttpAuthOptions;
 }
 
 const defaultOptions: WebhookChannelOptions = {
@@ -35,10 +38,31 @@ export class WebhookAgentChannel extends BaseAgentChannel {
     private messageCounter = 0;
     private server?: http.Server;
     private options: WebhookChannelOptions;
+    private signatures: HmacSignatureService;
+    private httpAuth: HttpAuthService;
 
-    constructor(options?: WebhookChannelOptions) {
+    constructor(
+        @Optional() @Inject(HmacSignatureService) signaturesOrOptions?: HmacSignatureService | WebhookChannelOptions,
+        @Optional() @Inject(HttpAuthService) httpAuthOrOptions?: HttpAuthService | WebhookChannelOptions,
+        @Optional() options?: WebhookChannelOptions,
+        @Optional() @Inject(AGENT_CHANNEL_OPTIONS) channelOptions: AgentChannelsOptions = defaultAgentChannelsOptions
+    ) {
         super();
-        this.options = { ...defaultOptions, ...options };
+        const configured = channelOptions.webhook ?? {};
+        if (signaturesOrOptions instanceof HmacSignatureService) {
+            this.signatures = signaturesOrOptions;
+            if (httpAuthOrOptions instanceof HttpAuthService) {
+                this.httpAuth = httpAuthOrOptions;
+                this.options = { ...defaultOptions, ...configured, ...(options ?? {}) };
+            } else {
+                this.httpAuth = new HttpAuthService();
+                this.options = { ...defaultOptions, ...configured, ...(httpAuthOrOptions ?? {}) };
+            }
+        } else {
+            this.signatures = new HmacSignatureService();
+            this.httpAuth = new HttpAuthService();
+            this.options = { ...defaultOptions, ...configured, ...(signaturesOrOptions ?? {}) };
+        }
     }
 
     name(): string {
@@ -69,11 +93,12 @@ export class WebhookAgentChannel extends BaseAgentChannel {
                     res.writeHead(405).end();
                     return;
                 }
-                if (req.url !== this.options.path) {
+                const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+                if (url.pathname !== this.options.path) {
                     res.writeHead(404).end();
                     return;
                 }
-                this.handleRequest(req, res);
+                void this.handleRequest(req, res);
             });
 
             this.server.listen(this.options.port, this.options.host, () => {
@@ -83,9 +108,12 @@ export class WebhookAgentChannel extends BaseAgentChannel {
     }
 
     private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+        if (!await this.isAuthorized(req)) {
+            res.writeHead(401).end('unauthorized');
+            return;
+        }
         const body = await this.readBody(req);
 
-        // HMAC verification
         if (this.options.secret) {
             const signature = req.headers[this.options.signatureHeader!.toLowerCase()] as string | undefined;
             if (!signature || !this.verifySignature(body, signature)) {
@@ -149,8 +177,11 @@ export class WebhookAgentChannel extends BaseAgentChannel {
     }
 
     private verifySignature(body: Buffer, signature: string): boolean {
-        const computed = crypto.createHmac('sha256', this.options.secret ?? '').update(body).digest('hex');
-        return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
+        return this.signatures.verify(body, signature, this.options.secret ?? '');
+    }
+
+    private async isAuthorized(req: http.IncomingMessage): Promise<boolean> {
+        return (await this.httpAuth.authenticate(req, this.options.auth)).authenticated;
     }
 
     private readBody(req: http.IncomingMessage): Promise<Buffer> {

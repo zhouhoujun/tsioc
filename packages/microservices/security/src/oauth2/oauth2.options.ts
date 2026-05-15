@@ -6,6 +6,10 @@ export class OAuth2Options {
         readonly tokenURL: string,
         readonly profileURL: string,
         readonly callbackURL: string,
-        readonly scope?: string[]
+        readonly scope?: string[],
+        readonly state?: string,
+        readonly nonce?: string,
+        readonly prompt?: string,
+        readonly loginHint?: string
     ) { }
-} 
+}
