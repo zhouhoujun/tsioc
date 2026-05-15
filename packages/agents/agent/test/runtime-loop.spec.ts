@@ -13,6 +13,9 @@ import { AgentTurnResult } from '../src/runtime/AgentTurnResult';
 import { AgentModule } from '../src/agent.module';
 import { AGENT_MODEL_ADAPTER } from '../src/tokens';
 import { withAgentTurnFilters, withAgentTurnGuards, withAgentTurnInterceptors } from '../src/provider';
+import { ExperienceDistiller } from '../src/memory/ExperienceDistiller';
+import { ExperienceDistillationInput } from '../src/memory/ExperienceDistiller';
+import { AgentMemoryRecord } from '../src/memory/MemoryStore';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -167,6 +170,31 @@ class FailFirstToolRegistry extends EchoToolRegistry {
             throw new Error('tool failed');
         }
         return input;
+    }
+}
+
+class CapturingExperienceDistiller extends ExperienceDistiller {
+    calls: ExperienceDistillationInput[] = [];
+
+    constructor(private records: AgentMemoryRecord[] = []) {
+        super();
+    }
+
+    async distill(input: ExperienceDistillationInput): Promise<AgentMemoryRecord[]> {
+        this.calls.push(input);
+        return this.records;
+    }
+}
+
+class ThrowingExperienceDistiller extends ExperienceDistiller {
+    async distill(): Promise<AgentMemoryRecord[]> {
+        throw new Error('distill failed');
+    }
+}
+
+class PutFailingMemoryStore extends InMemoryMemoryStore {
+    async put(): Promise<void> {
+        throw new Error('put failed');
     }
 }
 
@@ -340,6 +368,116 @@ export class RuntimeLoopTest {
         expect(model.requests.length).toEqual(4);
         expect(model.requests.every((request: any) => request.messages.some((message: any) => message.content === 'keep-me'))).toEqual(true);
         expect(model.requests[3].messages.map((message: any) => message.content)).toEqual(['keep-me', '', '{"value":"round-3"}']);
+    }
+
+    @Test('distills and persists experience memories after completed turn')
+    async distillsAndPersistsExperienceMemoriesAfterCompletedTurn() {
+        const memory = new InMemoryMemoryStore();
+        const distiller = new CapturingExperienceDistiller([
+            {
+                id: 'exp-1',
+                sessionId: 's1',
+                key: 'experience:router',
+                value: 'Remember router cache fix',
+                scope: 'session',
+                category: 'experience',
+                createdAt: 1
+            }
+        ]);
+        const runtime = new AgentRuntime(
+            new StaticModelAdapter('learned'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            memory,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            distiller
+        );
+
+        const result = await runtime.runTurn('s1', 'remember router cache fix');
+
+        expect(result.message.content).toEqual('learned');
+        expect(distiller.calls.length).toEqual(1);
+        expect(distiller.calls[0].userMessage.content).toEqual('remember router cache fix');
+        expect(distiller.calls[0].assistantMessage.content).toEqual('learned');
+        const records = await memory.getAll('s1');
+        expect(records.length).toEqual(1);
+        expect(records[0].category).toEqual('experience');
+    }
+
+    @Test('does not persist memory when distiller returns no experiences')
+    async doesNotPersistMemoryWhenDistillerReturnsNoExperiences() {
+        const memory = new InMemoryMemoryStore();
+        const distiller = new CapturingExperienceDistiller();
+        const runtime = new AgentRuntime(
+            new StaticModelAdapter('learned'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            memory,
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            distiller
+        );
+
+        await runtime.runTurn('s1', 'remember nothing');
+
+        expect(distiller.calls.length).toEqual(1);
+        expect(await memory.getAll('s1')).toEqual([]);
+        const messages = await runtime.getMessages('s1');
+        expect(messages.map(message => message.role)).toEqual(['user', 'assistant']);
+    }
+
+    @Test('keeps runTurn successful when experience distillation fails')
+    async keepsRunTurnSuccessfulWhenExperienceDistillationFails() {
+        const runtime = new AgentRuntime(
+            new StaticModelAdapter('learned'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            new ThrowingExperienceDistiller()
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+
+        expect(result.message.content).toEqual('learned');
+        const messages = await runtime.getMessages('s1');
+        expect(messages.map(message => message.role)).toEqual(['user', 'assistant']);
+    }
+
+    @Test('keeps runTurn successful when experience persistence fails')
+    async keepsRunTurnSuccessfulWhenExperiencePersistenceFails() {
+        const distiller = new CapturingExperienceDistiller([
+            {
+                id: 'exp-1',
+                sessionId: 's1',
+                key: 'experience:router',
+                value: 'Remember router cache fix',
+                scope: 'session',
+                category: 'experience',
+                createdAt: 1
+            }
+        ]);
+        const runtime = new AgentRuntime(
+            new StaticModelAdapter('learned'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new PutFailingMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any,
+            distiller
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+
+        expect(result.message.content).toEqual('learned');
+        const messages = await runtime.getMessages('s1');
+        expect(messages.map(message => message.role)).toEqual(['user', 'assistant']);
     }
 
     @Test('stops after reaching tool round limit')

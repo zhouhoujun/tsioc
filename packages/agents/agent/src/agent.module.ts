@@ -3,7 +3,7 @@ import { ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ConfigModule } from '@tsdi/microservices/config';
 import { AgentOptions, defaultAgentOptions, mergeAgentOptions } from './options';
-import { AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_RUNTIME, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TOOLS, AGENT_TURN_HANDLER } from './tokens';
+import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_RUNTIME, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TOOLS, AGENT_TURN_HANDLER } from './tokens';
 import { EchoModelAdapter } from './model/EchoModelAdapter';
 import { ModelAdapter } from './model/ModelAdapter';
 import { DeepSeekModelAdapter } from './model/DeepSeekModelAdapter';
@@ -17,6 +17,8 @@ import { MemoryStore } from './memory/MemoryStore';
 import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
 import { SessionSummarizer } from './memory/SessionSummarizer';
 import { SimpleSessionSummarizer } from './memory/SimpleSessionSummarizer';
+import { ExperienceDistiller } from './memory/ExperienceDistiller';
+import { DeterministicExperienceDistiller } from './memory/DeterministicExperienceDistiller';
 import { AgentScheduler } from './scheduler/AgentScheduler';
 import { IntervalAgentScheduler } from './scheduler/IntervalAgentScheduler';
 import { AgentRuntime } from './runtime/AgentRuntime';
@@ -73,6 +75,9 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         { provide: MemoryStore, useExisting: AGENT_MEMORY_STORE },
         { provide: AGENT_SESSION_SUMMARIZER, useClass: SimpleSessionSummarizer },
         { provide: SessionSummarizer, useExisting: AGENT_SESSION_SUMMARIZER },
+        DeterministicExperienceDistiller,
+        { provide: AGENT_EXPERIENCE_DISTILLER, useClass: DeterministicExperienceDistiller },
+        { provide: ExperienceDistiller, useExisting: AGENT_EXPERIENCE_DISTILLER },
         { provide: AGENT_SCHEDULER, useClass: IntervalAgentScheduler },
         { provide: AgentScheduler, useExisting: AGENT_SCHEDULER },
         { provide: AGENT_RUNTIME, useClass: AgentRuntime },

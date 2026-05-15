@@ -1,11 +1,13 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationContext, RunContext, createRunContext } from '@tsdi/core';
+import { randomUUID } from 'crypto';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { SessionStore } from '../memory/SessionStore';
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
-import { AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TURN_HANDLER } from '../tokens';
+import { ExperienceDistiller } from '../memory/ExperienceDistiller';
+import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TURN_HANDLER } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { AgentMessage } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -21,7 +23,8 @@ export class AgentRuntime {
         @Inject(AGENT_MEMORY_STORE) private memory: MemoryStore,
         @Inject(AGENT_SESSION_SUMMARIZER) private summarizer: SessionSummarizer,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions,
-        @Inject(ApplicationContext) private app: ApplicationContext
+        @Inject(ApplicationContext) private app: ApplicationContext,
+        @Optional() @Inject(AGENT_EXPERIENCE_DISTILLER) private experienceDistiller?: ExperienceDistiller
     ) {
     }
 
@@ -46,6 +49,7 @@ export class AgentRuntime {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id);
             await this.sessions.append(input.sessionId, result.message);
             await this.maybeSummarize(input.sessionId);
+            await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.app.publishEvent(new AgentTurnCompletedEvent(this, input.sessionId, result.message));
             return result;
         } catch (error) {
@@ -162,6 +166,48 @@ export class AgentRuntime {
             return [];
         }
         return this.memory.search(normalized, sessionId);
+    }
+
+    private async maybeDistillExperience(sessionId: string, userMessage: AgentMessage, assistantMessage: AgentMessage): Promise<void> {
+        if (!this.experienceDistiller) {
+            return;
+        }
+        try {
+            const records = await this.experienceDistiller.distill({
+                sessionId,
+                userMessage,
+                assistantMessage,
+                createdAt: Date.now()
+            });
+            for (const record of records) {
+                const persisted = this.createDistilledMemoryRecord(sessionId, record);
+                await this.memory.put(persisted);
+                try {
+                    await this.app.publishEvent(new AgentMemoryUpdatedEvent(this, sessionId, persisted));
+                } catch {
+                    continue;
+                }
+            }
+        } catch (error) {
+            try {
+                const err = error instanceof Error ? error : new Error(String(error));
+                await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
+            } catch {
+                return;
+            }
+        }
+    }
+
+    private createDistilledMemoryRecord(sessionId: string, record: AgentMemoryRecord): AgentMemoryRecord {
+        const createdAt = record.createdAt ?? Date.now();
+        return {
+            ...record,
+            id: randomUUID(),
+            sessionId,
+            scope: record.scope ?? 'session',
+            createdAt,
+            updatedAt: record.updatedAt ?? createdAt
+        };
     }
 
     private getRecentMessages(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {

@@ -30,6 +30,8 @@ export * from './tools/BuiltinTools';
 export * from './memory/MemoryStore';
 export * from './memory/SessionStore';
 export * from './memory/SessionSummarizer';
+export * from './memory/ExperienceDistiller';
+export * from './memory/DeterministicExperienceDistiller';
 export * from './memory/InMemoryMemoryStore';
 export * from './memory/InMemorySessionStore';
 export * from './memory/TypeOrmMemoryStore';
