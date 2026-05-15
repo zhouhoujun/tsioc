@@ -52,8 +52,39 @@ export class AgentTurnCompletedEvent extends ApplicationEvent {
     }
 }
 
+export class AgentStreamChunkEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly type: 'text' | 'reasoning' | 'tool_call' | 'done',
+        readonly content?: string,
+        readonly toolCalls?: any[],
+        readonly usage?: any
+    ) {
+        super(source);
+    }
+}
+
 export class AgentErrorEvent extends ApplicationEvent {
     constructor(source: Object, readonly sessionId: string, readonly error: Error) {
+        super(source);
+    }
+}
+
+export class AgentApprovalRequestedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly request: { id: string; toolName: string; input: any; sessionId: string; reason: string; timeoutMs: number }) {
+        super(source);
+    }
+}
+
+export class AgentApprovalCompletedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly request: { id: string; toolName: string; sessionId: string }, readonly approved: boolean) {
+        super(source);
+    }
+}
+
+export class AgentApprovalFailedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly request: { id: string; toolName: string; sessionId: string }, readonly error: Error) {
         super(source);
     }
 }

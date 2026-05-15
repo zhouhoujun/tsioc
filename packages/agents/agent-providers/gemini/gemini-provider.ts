@@ -1,6 +1,7 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ModelAdapter, ModelRequest, ModelResponse, AgentToolCall } from '@tsdi/agent';
 import { AGENT_MODEL_ADAPTER } from '@tsdi/agent';
+import { ApplicationArguments } from '@tsdi/core';
 import { GEMINI_PROVIDER_OPTIONS } from './gemini-tokens';
 import { GeminiProviderOptions, defaultGeminiProviderOptions } from './gemini-options';
 
@@ -54,10 +55,14 @@ interface GeminiResponse {
  */
 @Injectable()
 export class GeminiProvider extends ModelAdapter {
+    private appArgs?: ApplicationArguments;
+
     constructor(
-        @Optional() @Inject(GEMINI_PROVIDER_OPTIONS) private options: GeminiProviderOptions = {}
+        @Optional() @Inject(GEMINI_PROVIDER_OPTIONS) private options: GeminiProviderOptions = {},
+        @Optional() @Inject(ApplicationArguments) appArgs?: ApplicationArguments
     ) {
         super();
+        this.appArgs = appArgs;
     }
 
     async complete(request: ModelRequest): Promise<ModelResponse> {
@@ -196,7 +201,9 @@ export class GeminiProvider extends ModelAdapter {
     private resolveApiKey(): string | undefined {
         if (this.options.apiKey) return this.options.apiKey;
         const envKey = this.options.apiKeyEnv ?? defaultGeminiProviderOptions.apiKeyEnv!;
-        return process.env[envKey] || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        return this.appArgs?.get<string>(envKey)
+            || this.appArgs?.get<string>('GEMINI_API_KEY')
+            || this.appArgs?.get<string>('GOOGLE_API_KEY');
     }
 }
 

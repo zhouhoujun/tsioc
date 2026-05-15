@@ -1,6 +1,7 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ModelAdapter, ModelRequest, ModelResponse, AgentToolCall } from '@tsdi/agent';
 import { AGENT_MODEL_ADAPTER } from '@tsdi/agent';
+import { ApplicationArguments } from '@tsdi/core';
 import { ANTHROPIC_PROVIDER_OPTIONS } from './anthropic-tokens';
 import { AnthropicProviderOptions, defaultAnthropicProviderOptions } from './anthropic-options';
 
@@ -60,10 +61,14 @@ interface AnthropicResponse {
  */
 @Injectable()
 export class AnthropicProvider extends ModelAdapter {
+    private appArgs?: ApplicationArguments;
+
     constructor(
-        @Optional() @Inject(ANTHROPIC_PROVIDER_OPTIONS) private options: AnthropicProviderOptions = {}
+        @Optional() @Inject(ANTHROPIC_PROVIDER_OPTIONS) private options: AnthropicProviderOptions = {},
+        @Optional() @Inject(ApplicationArguments) appArgs?: ApplicationArguments
     ) {
         super();
+        this.appArgs = appArgs;
     }
 
     async complete(request: ModelRequest): Promise<ModelResponse> {
@@ -215,7 +220,8 @@ export class AnthropicProvider extends ModelAdapter {
     private resolveApiKey(): string | undefined {
         if (this.options.apiKey) return this.options.apiKey;
         const envKey = this.options.apiKeyEnv ?? defaultAnthropicProviderOptions.apiKeyEnv!;
-        return process.env[envKey] || process.env.ANTHROPIC_API_KEY;
+        return this.appArgs?.get<string>(envKey)
+            || this.appArgs?.get<string>('ANTHROPIC_API_KEY');
     }
 
     private url(path: string): string {

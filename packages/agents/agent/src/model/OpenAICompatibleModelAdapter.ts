@@ -5,6 +5,7 @@ import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse } from './ModelResponse';
 import { AgentModelOptions } from './ModelProviderOptions';
+import type { ApplicationArguments } from '@tsdi/core';
 
 type OpenAIRole = 'system' | 'user' | 'assistant' | 'tool';
 
@@ -69,8 +70,11 @@ interface OpenAIChatCompletionResponse {
 }
 
 export class OpenAICompatibleModelAdapter extends ModelAdapter {
-    constructor(protected readonly options: AgentModelOptions) {
+    protected appArgs?: ApplicationArguments;
+
+    constructor(protected readonly options: AgentModelOptions, appArgs?: ApplicationArguments) {
         super();
+        this.appArgs = appArgs;
     }
 
     async complete(request: ModelRequest): Promise<ModelResponse> {
@@ -134,7 +138,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             return this.options.apiKey;
         }
         const envKey = this.options.apiKeyEnv ?? 'DEEPSEEK_API_KEY';
-        return process.env[envKey] || process.env.API_KEY;
+        return this.appArgs?.get<string>(envKey)
+            || this.appArgs?.get<string>('API_KEY');
     }
 
     protected resolveUrl(path: string): string {

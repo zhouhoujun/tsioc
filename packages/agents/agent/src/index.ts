@@ -7,6 +7,7 @@ export * from './orm.module';
 export * from './model/ModelAdapter';
 export * from './model/ModelRequest';
 export * from './model/ModelResponse';
+export * from './model/StreamChunk';
 export * from './model/ModelProviderOptions';
 export * from './model/OpenAICompatibleModelAdapter';
 export * from './model/EchoModelAdapter';
@@ -23,7 +24,17 @@ export * from './runtime/AgentRuntime';
 export * from './tools/AgentTool';
 export * from './tools/ToolRegistry';
 export * from './tools/LocalToolRegistry';
+export * from './tools/ToolLoopDetector';
+export * from './tools/ToolApprovalManager';
 export * from './tools/BuiltinTools';
+
+export * from './context/AgentContextManager';
+export * from './prompt/SystemPromptBuilder';
+export * from './prompt/PromptSection';
+export * from './prompt/sections/IdentitySection';
+export * from './prompt/sections/ToolsSection';
+export * from './prompt/sections/DateTimeSection';
+export * from './prompt/sections/MemorySection';
 
 export * from './memory/MemoryStore';
 export * from './memory/SessionStore';

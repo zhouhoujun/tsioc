@@ -8,6 +8,11 @@ import { OpenAICompatibleModelAdapter } from './model/OpenAICompatibleModelAdapt
 import { ModelAdapter } from './model/ModelAdapter';
 import { ToolRegistry } from './tools/ToolRegistry';
 import { LocalToolRegistry } from './tools/LocalToolRegistry';
+import { ToolLoopDetector } from './tools/ToolLoopDetector';
+import { ToolApprovalManager } from './tools/ToolApprovalManager';
+import { AgentContextManager } from './context/AgentContextManager';
+import { SystemPromptBuilder, IdentitySection, DateTimeSection, ToolsSection, MemorySection } from './prompt/SystemPromptBuilder';
+import { AGENT_PROMPT_SECTIONS } from './tokens';
 import { EchoTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
 import { SessionStore } from './memory/SessionStore';
 import { InMemorySessionStore } from './memory/InMemorySessionStore';
@@ -64,6 +69,14 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
             }
         },
         { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER },
+        AgentContextManager,
+        ToolLoopDetector,
+        SystemPromptBuilder,
+        ToolApprovalManager,
+        { provide: AGENT_PROMPT_SECTIONS, useClass: DateTimeSection, multi: true },
+        { provide: AGENT_PROMPT_SECTIONS, useClass: IdentitySection, multi: true },
+        { provide: AGENT_PROMPT_SECTIONS, useClass: ToolsSection, multi: true },
+        { provide: AGENT_PROMPT_SECTIONS, useClass: MemorySection, multi: true },
         LocalToolRegistry,
         { provide: ToolRegistry, useClass: LocalToolRegistry },
         EchoTool,

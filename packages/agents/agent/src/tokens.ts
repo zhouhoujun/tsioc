@@ -25,3 +25,4 @@ export const AGENT_TURN_BACKENDS = token<HandlerLike<AgentTurnInput, Promise<Age
 export const AGENT_TURN_GUARDS = token<GuardLike<AgentTurnInput, RunContext>[]>('AGENT_TURN_GUARDS');
 export const AGENT_TURN_INTERCEPTORS = token<InterceptorLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_INTERCEPTORS');
 export const AGENT_TURN_FILTERS = token<FilterLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_FILTERS');
+export const AGENT_PROMPT_SECTIONS = token<import('./prompt/PromptSection').PromptSection[]>('AGENT_PROMPT_SECTIONS');
