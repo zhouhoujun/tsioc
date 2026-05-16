@@ -4,6 +4,38 @@ import { AgentMessage } from './AgentMessage';
 import { ScheduledAgentTask } from '../scheduler/ScheduledAgentTask';
 import { AgentMemoryRecord } from '../memory/MemoryStore';
 
+const MAX_EVENT_INPUT_SUMMARY_CHARS = 200;
+
+function summarizeEventInput(input: any): string | undefined {
+    if (input === undefined) {
+        return undefined;
+    }
+    const seen = new WeakSet<object>();
+    let text: string | undefined;
+    try {
+        text = typeof input === 'string' ? input : JSON.stringify(input, (_key, current) => {
+            if (typeof current === 'bigint') {
+                return current.toString();
+            }
+            if (current && typeof current === 'object') {
+                if (seen.has(current)) {
+                    return '[circular]';
+                }
+                seen.add(current);
+            }
+            return current;
+        });
+    } catch {
+        text = '[unserializable]';
+    }
+    if (!text) {
+        return undefined;
+    }
+    return text.length > MAX_EVENT_INPUT_SUMMARY_CHARS
+        ? `${text.slice(0, MAX_EVENT_INPUT_SUMMARY_CHARS)}...[truncated]`
+        : text;
+}
+
 export class AgentStartedEvent extends ApplicationEvent {
     constructor(source: Object, readonly name: string) {
         super(source);
@@ -17,8 +49,13 @@ export class AgentTurnStartedEvent extends ApplicationEvent {
 }
 
 export class AgentToolInvokedEvent extends ApplicationEvent {
-    constructor(source: Object, readonly sessionId: string, readonly toolName: string, readonly input: any) {
+    readonly hasInput: boolean;
+    readonly inputSummary?: string;
+
+    constructor(source: Object, readonly sessionId: string, readonly toolName: string, input: any) {
         super(source);
+        this.hasInput = input !== undefined;
+        this.inputSummary = summarizeEventInput(input);
     }
 }
 
@@ -72,7 +109,7 @@ export class AgentErrorEvent extends ApplicationEvent {
 }
 
 export class AgentApprovalRequestedEvent extends ApplicationEvent {
-    constructor(source: Object, readonly request: { id: string; toolName: string; input: any; sessionId: string; reason: string; timeoutMs: number }) {
+    constructor(source: Object, readonly request: { id: string; toolName: string; sessionId: string; reason: string; summary: string; hasInput: boolean; inputSummary?: string; timeoutMs: number }) {
         super(source);
     }
 }

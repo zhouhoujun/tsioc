@@ -5,6 +5,9 @@ import { AgentTool, AgentToolContext } from './AgentTool';
 export class EchoTool implements AgentTool {
     name = 'echo';
     description = 'Return the provided input as-is.';
+    toolset = 'builtin';
+    source = 'local';
+    execution = { readOnly: true };
 
     async invoke(input: any): Promise<any> {
         return input;
@@ -15,6 +18,9 @@ export class EchoTool implements AgentTool {
 export class TimeTool implements AgentTool {
     name = 'time';
     description = 'Return the current timestamp.';
+    toolset = 'builtin';
+    source = 'local';
+    execution = { readOnly: true };
 
     async invoke(): Promise<any> {
         return { now: Date.now() };
@@ -25,6 +31,9 @@ export class TimeTool implements AgentTool {
 export class MemoryPutTool implements AgentTool {
     name = 'memory.put';
     description = 'Store a memory record for the current session.';
+    toolset = 'memory';
+    source = 'local';
+    execution = { sideEffect: true, requiresSequential: true };
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const key = input?.key ?? 'note';
@@ -45,6 +54,9 @@ export class MemoryPutTool implements AgentTool {
 export class MemorySearchTool implements AgentTool {
     name = 'memory.search';
     description = 'Search memory records by key or value.';
+    toolset = 'memory';
+    source = 'local';
+    execution = { readOnly: true };
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const query = String(input?.query ?? '');

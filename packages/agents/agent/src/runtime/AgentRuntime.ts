@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { ToolLoopDetector } from '../tools/ToolLoopDetector';
-import { ToolApprovalManager } from '../tools/ToolApprovalManager';
+import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
 import { SessionStore } from '../memory/SessionStore';
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
@@ -24,6 +24,7 @@ import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
 @Injectable()
 export class AgentRuntime {
     private contextManager: AgentContextManager;
+    private toolApprovalManager?: ToolApprovalManager;
 
     constructor(
         @Inject(AGENT_MODEL_ADAPTER) private modelAdapter: ModelAdapter,
@@ -35,7 +36,7 @@ export class AgentRuntime {
         @Inject(ApplicationContext) private app: ApplicationContext,
         @Optional() @Inject(AGENT_EXPERIENCE_DISTILLER) private experienceDistiller?: ExperienceDistiller,
         @Optional() private promptBuilder?: SystemPromptBuilder,
-        @Optional() private approvalManager?: ToolApprovalManager,
+        @Optional() approvalManager?: ToolApprovalManager,
         @Optional() injectedContextManager?: AgentContextManager
     ) {
         this.contextManager = (injectedContextManager ?? new AgentContextManager()).configure({
@@ -43,6 +44,7 @@ export class AgentRuntime {
             maxMemoryRecords: this.options.context?.maxMemoryRecords,
             maxToolResults: this.options.context?.maxToolResultChars
         });
+        this.toolApprovalManager = this.resolveApprovalManager(approvalManager);
     }
 
     async runTurn(sessionId: string, input: string): Promise<AgentTurnResult> {
@@ -207,11 +209,7 @@ export class AgentRuntime {
     }
 
     private getToolDefinitions(): AgentToolDefinition[] {
-        return this.toolRegistry.getTools().map(tool => ({
-            name: tool.name,
-            description: tool.description,
-            inputSchema: tool.inputSchema
-        }));
+        return this.toolRegistry.getToolDefinitions();
     }
 
     private async *collectStreamingResponse(
@@ -277,7 +275,7 @@ export class AgentRuntime {
     ): Promise<{ message?: AgentMessage; error?: Error }> {
         if (response.toolCalls?.length) {
             const assistantToolCallMessage = this.createMessage('assistant', response.message ?? '', undefined, undefined, {
-                toolCalls: response.toolCalls,
+                toolCalls: response.toolCalls.map(toolCall => ({ id: toolCall.id, name: toolCall.name })),
                 model: response.metadata?.model,
                 provider: response.metadata?.provider,
                 finishReason: response.metadata?.finishReason,
@@ -308,8 +306,14 @@ export class AgentRuntime {
         return this.executeToolsSequential(sessionId, toolCalls, loopDetector);
     }
 
-    private canParallelize(toolCalls: Array<{ name: string }>, safeTools: string[]): boolean {
-        return toolCalls.every(tc => safeTools.includes(tc.name));
+    private canParallelize(toolCalls: Array<{ name: string; input?: any }>, safeTools: string[]): boolean {
+        if (!toolCalls.every(tc => safeTools.includes(tc.name))) {
+            return false;
+        }
+        if (!this.toolApprovalManager) {
+            return true;
+        }
+        return !toolCalls.some(tc => this.toolApprovalManager!.requiresApproval(tc.name, tc.input));
     }
 
     private async executeToolsSequential(
@@ -323,7 +327,10 @@ export class AgentRuntime {
                 await this.sessions.append(sessionId, this.createMessage('tool',
                     JSON.stringify({ error: 'Skipped because a previous tool call failed.' }),
                     toolCall.name, toolCall.id,
-                    { input: toolCall.input, error: 'Skipped because a previous tool call failed.' }
+                    {
+                        inputSummary: this.summarizeToolInput(toolCall.input),
+                        error: 'Skipped because a previous tool call failed.'
+                    }
                 ));
                 continue;
             }
@@ -362,37 +369,41 @@ export class AgentRuntime {
         toolCall: { id: string; name: string; input?: any },
         loopDetector: ToolLoopDetector
     ): Promise<Error | undefined> {
-        await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCall.input));
-
+        const toolCallInput = this.cloneToolInput(toolCall.input);
+        const inputSummary = this.summarizeToolInput(toolCallInput);
         // Tool loop detection
-        const loopResult = loopDetector.record(toolCall.name, toolCall.input);
+        const loopResult = loopDetector.record(toolCall.name, toolCallInput);
         if (loopResult.severity === 'break') {
             const reason = loopResult.reason ?? 'Loop detected';
             await this.sessions.append(sessionId, this.createMessage('tool',
                 JSON.stringify({ error: reason }),
                 toolCall.name, toolCall.id,
-                { input: toolCall.input, error: reason }
+                { inputSummary, error: reason }
             ));
             return new Error(reason);
         }
 
         // Tool approval check
-        if (this.approvalManager) {
-            const approved = await this.approvalManager.requireApproval(toolCall.name, toolCall.input, sessionId);
-            if (!approved) {
-                const reason = `Tool "${toolCall.name}" was rejected.`;
+        if (this.toolApprovalManager) {
+            const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId);
+            if (approval.decision === ApprovalDecision.DENIED || approval.decision === ApprovalDecision.TIMEOUT) {
+                const reason = approval.decision === ApprovalDecision.TIMEOUT
+                    ? `Tool "${toolCall.name}" approval timed out.`
+                    : `Tool "${toolCall.name}" was rejected.`;
                 await this.sessions.append(sessionId, this.createMessage('tool',
                     JSON.stringify({ error: reason }),
                     toolCall.name, toolCall.id,
-                    { input: toolCall.input, error: reason }
+                    { inputSummary, error: reason }
                 ));
                 return new Error(reason);
             }
         }
 
+        await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput));
+
         try {
-            const output = await this.toolRegistry.invoke(toolCall.name, toolCall.input, sessionId);
-            loopDetector.record(toolCall.name, toolCall.input, output);
+            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId);
+            loopDetector.record(toolCall.name, toolCallInput, output);
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output));
 
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
@@ -400,7 +411,8 @@ export class AgentRuntime {
             const truncated = outputStr.length > maxChars ? outputStr.slice(0, maxChars) + '...[truncated]' : outputStr;
 
             await this.sessions.append(sessionId, this.createMessage('tool', truncated, toolCall.name, toolCall.id, {
-                input: toolCall.input
+                toolCallInput,
+                inputSummary
             }));
             return undefined;
         } catch (error) {
@@ -408,10 +420,71 @@ export class AgentRuntime {
             await this.sessions.append(sessionId, this.createMessage('tool',
                 JSON.stringify({ error: err.message }),
                 toolCall.name, toolCall.id,
-                { input: toolCall.input, error: err.message }
+                { inputSummary, error: err.message }
             ));
             return err;
         }
+    }
+
+    private safeSerialize(input: any): string | undefined {
+        if (input === undefined) {
+            return undefined;
+        }
+        const seen = new WeakSet<object>();
+        try {
+            return JSON.stringify(input, (_key, current) => {
+                if (typeof current === 'bigint') {
+                    return current.toString();
+                }
+                if (current && typeof current === 'object') {
+                    if (seen.has(current)) {
+                        return '[circular]';
+                    }
+                    seen.add(current);
+                }
+                return current;
+            });
+        } catch {
+            return '[unserializable]';
+        }
+    }
+
+    private cloneToolInput(input: any): any {
+        const serialized = this.safeSerialize(input);
+        if (serialized == null) {
+            return input;
+        }
+        try {
+            return JSON.parse(serialized);
+        } catch {
+            return serialized;
+        }
+    }
+
+    private summarizeToolInput(input: any): string | undefined {
+        const text = typeof input === 'string' ? input : this.safeSerialize(input);
+        if (!text) {
+            return undefined;
+        }
+        return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
+    }
+
+    private resolveApprovalManager(approvalManager?: ToolApprovalManager): ToolApprovalManager | undefined {
+        if (approvalManager?.isConfigured()) {
+            return approvalManager;
+        }
+        const required = this.options.tools?.requireApproval ?? defaultAgentOptions.tools?.requireApproval ?? [];
+        if (!required.length) {
+            return undefined;
+        }
+        return new ToolApprovalManager(
+            this.app,
+            new DefaultApprovalStrategy(required),
+            {
+                defaultTimeoutMs: this.options.tools?.approvalTimeoutMs ?? defaultAgentOptions.tools?.approvalTimeoutMs,
+                autoDeny: true
+            }
+        );
     }
 
     private async maybeSummarize(sessionId: string): Promise<void> {

@@ -79,7 +79,8 @@ export class EventHandler {
         this.publish('tool_invoked', {
             sessionId: event.sessionId,
             toolName: event.toolName,
-            hasInput: event.input !== undefined
+            hasInput: event.hasInput,
+            inputSummary: event.inputSummary
         });
     }
 

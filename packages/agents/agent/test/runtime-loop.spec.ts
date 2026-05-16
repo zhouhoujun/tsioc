@@ -177,13 +177,22 @@ class FailingToolRegistry extends EchoToolRegistry {
 }
 
 class MultiToolLoopModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
     async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [
+                    { id: 'tool-1', name: 'echo', input: { value: 'first' } },
+                    { id: 'tool-2', name: 'echo', input: { value: 'second' } }
+                ],
+                stopReason: 'tool'
+            };
+        }
         return {
-            toolCalls: [
-                { id: 'tool-1', name: 'echo', input: { value: 'first' } },
-                { id: 'tool-2', name: 'echo', input: { value: 'second' } }
-            ],
-            stopReason: 'tool'
+            message: 'done',
+            stopReason: 'end'
         };
     }
 }
@@ -308,6 +317,9 @@ export class RuntimeLoopTest {
         expect(messages[1].metadata?.toolCalls?.[0]?.id).toEqual('tool-1');
         expect(messages[2].role).toEqual('tool');
         expect(messages[2].content).toContain('from-tool');
+        expect(messages[2].metadata?.toolCallInput?.value).toEqual('from-tool');
+        expect(messages[2].metadata?.inputSummary).toContain('from-tool');
+        expect(messages[2].metadata?.input).toEqual(undefined);
         expect(messages[3].role).toEqual('assistant');
     }
 
@@ -544,7 +556,9 @@ export class RuntimeLoopTest {
         expect(messages[1].metadata?.toolCalls?.[0]?.id).toEqual('tool-1');
         expect(messages[2].role).toEqual('tool');
         expect(messages[2].toolCallId).toEqual('tool-1');
-        expect(messages[2].metadata?.input?.value).toEqual('from-tool');
+        expect(messages[2].metadata?.toolCallInput?.value).toEqual('from-tool');
+        expect(messages[2].metadata?.inputSummary).toContain('from-tool');
+        expect(messages[2].metadata?.input).toEqual(undefined);
     }
 
     @Test('streaming turn yields incrementally through tool loop and persists final message')
@@ -645,6 +659,39 @@ export class RuntimeLoopTest {
         expect(messages[2].toolCallId).toEqual('tool-1');
         expect(messages[2].metadata?.error).toEqual('tool failed');
         expect(messages[3].toolCallId).toEqual('tool-2');
+        expect(messages[3].metadata?.error).toContain('Skipped');
+    }
+
+    @Test('forces sequential execution when a tool requires approval')
+    async forcesSequentialExecutionForApprovalGatedTools() {
+        const runtime = new AgentRuntime(
+            new MultiToolLoopModelAdapter(),
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            {
+                ...defaultAgentOptions,
+                tools: {
+                    ...defaultAgentOptions.tools,
+                    parallelExecution: true,
+                    parallelSafeTools: ['echo'],
+                    requireApproval: ['echo'],
+                    approvalTimeoutMs: 1000
+                }
+            },
+            new FakeApp() as any
+        );
+
+        let error: Error | undefined;
+        try {
+            await runtime.runTurn('s1', 'hello');
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('rejected');
+        const messages = await runtime.getMessages('s1');
+        expect(messages[2].metadata?.error).toContain('rejected');
         expect(messages[3].metadata?.error).toContain('Skipped');
     }
 

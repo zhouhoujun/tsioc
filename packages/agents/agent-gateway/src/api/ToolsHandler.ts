@@ -13,7 +13,7 @@ export class ToolsHandler {
 
     getRoutes(): GatewayRoute[] {
         const listTools: RouteHandler = async (_req, res) => {
-            const tools = this.toolRegistry.getTools().map(t => ({
+            const tools = this.toolRegistry.getToolDefinitions().map(t => ({
                 name: t.name,
                 description: t.description,
                 inputSchema: t.inputSchema

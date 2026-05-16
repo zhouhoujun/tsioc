@@ -185,13 +185,17 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
         for (const message of messages) {
             if (message.role === 'assistant' && this.hasToolCalls(message)) {
-                const toolCalls = this.getToolCalls(message);
-                result.push({
-                    role: 'assistant',
-                    content: this.extractText(message.content),
-                    tool_calls: toolCalls.map(call => this.mapToolCall(call))
-                });
-                activeToolCallIds = new Set(toolCalls.map(call => call.id));
+                const toolCalls = this.getToolCalls(message).filter(call => call.input !== undefined);
+                if (toolCalls.length) {
+                    result.push({
+                        role: 'assistant',
+                        content: this.extractText(message.content),
+                        tool_calls: toolCalls.map(call => this.mapToolCall(call))
+                    });
+                    activeToolCallIds = new Set(toolCalls.map(call => call.id));
+                } else {
+                    activeToolCallIds = undefined;
+                }
                 continue;
             }
 
@@ -253,7 +257,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             type: 'function',
             function: {
                 name: message.name ?? 'tool',
-                arguments: JSON.stringify(message.metadata?.input ?? message.metadata?.toolCallInput ?? {})
+                arguments: JSON.stringify(message.metadata?.toolCallInput ?? message.metadata?.input ?? {})
             }
         };
     }
