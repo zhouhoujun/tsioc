@@ -1,8 +1,11 @@
+import * as http from 'http';
 import { Injectable } from '@tsdi/ioc';
 import { AgentRuntime, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionInfo } from '../contracts/SessionInfo';
+import { getRequestPrincipalId } from '../auth/AuthMiddleware';
+import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 
 /**
  * Session management API — GET /api/sessions, GET /api/sessions/:id/messages, DELETE /api/sessions/:id.
@@ -14,7 +17,8 @@ export class SessionHandler {
 
     constructor(
         private runtime: AgentRuntime,
-        private sessions: SessionStore
+        private sessions: SessionStore,
+        private owners: SessionOwnerStore
     ) {
     }
 
@@ -39,9 +43,10 @@ export class SessionHandler {
     }
 
     getRoutes(): GatewayRoute[] {
-        const listSessions: RouteHandler = async (_req, res) => {
+        const listSessions: RouteHandler = async (req, res) => {
+            const principalId = getRequestPrincipalId(req);
             const infos: SessionInfo[] = [];
-            for (const id of this.sessionIds) {
+            for (const id of this.owners.listOwned(this.sessionIds, principalId)) {
                 try {
                     const state = await this.sessions.get(id);
                     infos.push({
@@ -53,16 +58,20 @@ export class SessionHandler {
                     });
                 } catch {
                     this.sessionIds.delete(id);
+                    this.owners.unbind(id);
                 }
             }
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(infos));
         };
 
-        const getMessages: RouteHandler = async (_req, res, params) => {
+        const getMessages: RouteHandler = async (req, res, params) => {
             const sessionId = params['id'];
             if (!sessionId) {
                 res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
+                return;
+            }
+            if (!this.ensureAccess(req, res, sessionId)) {
                 return;
             }
             try {
@@ -74,25 +83,33 @@ export class SessionHandler {
             }
         };
 
-        const deleteSession: RouteHandler = async (_req, res, params) => {
+        const deleteSession: RouteHandler = async (req, res, params) => {
             const sessionId = params['id'];
             if (!sessionId) {
                 res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
                 return;
             }
+            if (!this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
             await this.sessions.delete(sessionId);
             this.sessionIds.delete(sessionId);
+            this.owners.unbind(sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ status: 'deleted' }));
         };
 
-        const runningSessions: RouteHandler = async (_req, res) => {
+        const runningSessions: RouteHandler = async (req, res) => {
+            const principalId = getRequestPrincipalId(req);
             const running: string[] = [];
-            for (const id of this.sessionIds) {
+            for (const id of this.owners.listOwned(this.sessionIds, principalId)) {
                 try {
                     const state = await this.sessions.get(id);
                     if (state.messages.length > 0) running.push(id);
-                } catch { /* skip */ }
+                } catch {
+                    this.sessionIds.delete(id);
+                    this.owners.unbind(id);
+                }
             }
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(running));
@@ -104,5 +121,15 @@ export class SessionHandler {
             { method: 'GET', path: '/api/sessions/:id/messages', handler: getMessages },
             { method: 'DELETE', path: '/api/sessions/:id', handler: deleteSession }
         ];
+    }
+
+    private ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): boolean {
+        const principalId = getRequestPrincipalId(req);
+        if (this.owners.isOwner(sessionId, principalId)) {
+            return true;
+        }
+        res.writeHead(403, { 'Content-Type': 'application/json' })
+            .end(JSON.stringify({ error: 'forbidden' }));
+        return false;
     }
 }

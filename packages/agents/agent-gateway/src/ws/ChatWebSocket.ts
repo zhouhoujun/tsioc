@@ -3,6 +3,8 @@ import * as crypto from 'crypto';
 import { Injectable } from '@tsdi/ioc';
 import { AgentRuntime } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
+import { getRequestPrincipalId } from '../auth/AuthMiddleware';
+import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionQueue } from '../auth/SessionQueue';
 
 const MAGIC_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
@@ -17,17 +19,20 @@ const MAX_WS_MESSAGE_BYTES = 64 * 1024;
 export class ChatWebSocket {
     constructor(
         private runtime: AgentRuntime,
+        private owners: SessionOwnerStore,
         private sessionQueue: SessionQueue
     ) {
     }
 
     getRoutes(): GatewayRoute[] {
         const handler: RouteHandler = async (req, res) => {
+            const principalId = getRequestPrincipalId(req);
+            const sessionId = this.resolveSessionId(req, principalId, res);
+            if (!sessionId) {
+                return;
+            }
             const socket = await this.upgrade(req, res);
             if (!socket) return;
-
-            const sessionId = `ws-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-
             await this.handleSocket(socket, sessionId);
         };
 
@@ -130,6 +135,22 @@ export class ChatWebSocket {
             const errorMsg = JSON.stringify({ type: 'error', sessionId, error: 'invalid JSON' });
             this.writeFrame(socket, 0x01, Buffer.from(errorMsg));
         }
+    }
+
+    private resolveSessionId(req: http.IncomingMessage, principalId: string | undefined, res: http.ServerResponse): string | null {
+        const host = req.headers.host ?? 'localhost';
+        const url = new URL(req.url ?? '/ws/chat', `http://${host}`);
+        const requestedSessionId = url.searchParams.get('sessionId');
+        if (requestedSessionId) {
+            if (!this.owners.canResume(requestedSessionId, principalId)) {
+                res.writeHead(403, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'forbidden' }));
+                return null;
+            }
+            return requestedSessionId;
+        }
+        const sessionId = `ws-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+        this.owners.create(sessionId, principalId);
+        return sessionId;
     }
 
     /** WebSocket upgrade handshake */

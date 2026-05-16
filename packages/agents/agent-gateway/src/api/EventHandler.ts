@@ -3,6 +3,8 @@ import { Injectable } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
 import { AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolInvokedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
+import { getRequestPrincipalId } from '../auth/AuthMiddleware';
+import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 
 /**
  * SSE (Server-Sent Events) endpoint — GET /api/events.
@@ -23,6 +25,9 @@ export class EventHandler {
     private clients = new Map<string, Set<http.ServerResponse>>();
     private history: GatewayEventRecord[] = [];
 
+    constructor(private owners: SessionOwnerStore) {
+    }
+
     private sseHandler: RouteHandler = async (req, res) => {
         const host = req.headers?.host ?? 'localhost';
         const url = new URL(req.url ?? '/api/events', `http://${host}`);
@@ -32,11 +37,13 @@ export class EventHandler {
                 .end(JSON.stringify({ error: 'sessionId required' }));
             return;
         }
+        if (!this.ensureAccess(req, res, sessionId)) {
+            return;
+        }
         res.writeHead(200, {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-            'Access-Control-Allow-Origin': '*'
+            Connection: 'keep-alive'
         });
         res.write(`event: connected\ndata: ${JSON.stringify({ sessionId })}\n\n`);
 
@@ -189,6 +196,9 @@ export class EventHandler {
                     .end(JSON.stringify({ error: 'sessionId required' }));
                 return;
             }
+            if (!this.ensureAccess(req, res, sessionId)) {
+                return;
+            }
             const events = this.history.filter(event => event.sessionId === sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ events }));
@@ -198,5 +208,15 @@ export class EventHandler {
             { method: 'GET', path: '/api/events', handler: this.sseHandler },
             { method: 'GET', path: '/api/events/history', handler: historyHandler }
         ];
+    }
+
+    private ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): boolean {
+        const principalId = getRequestPrincipalId(req);
+        if (this.owners.isOwner(sessionId, principalId)) {
+            return true;
+        }
+        res.writeHead(403, { 'Content-Type': 'application/json' })
+            .end(JSON.stringify({ error: 'forbidden' }));
+        return false;
     }
 }

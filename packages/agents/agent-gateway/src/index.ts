@@ -15,6 +15,7 @@ export * from './auth/AuthMiddleware';
 export * from './auth/PairingStore';
 export * from './auth/RateLimiter';
 export * from './auth/SessionQueue';
+export * from './auth/SessionOwnerStore';
 
 export * from './api/HealthHandler';
 export * from './api/SessionHandler';

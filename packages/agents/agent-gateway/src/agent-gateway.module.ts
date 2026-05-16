@@ -7,6 +7,7 @@ import { AuthMiddleware } from './auth/AuthMiddleware';
 import { PairingStore } from './auth/PairingStore';
 import { RateLimiter } from './auth/RateLimiter';
 import { SessionQueue } from './auth/SessionQueue';
+import { SessionOwnerStore } from './auth/SessionOwnerStore';
 import { HealthHandler } from './api/HealthHandler';
 import { SessionHandler } from './api/SessionHandler';
 import { MemoryHandler } from './api/MemoryHandler';
@@ -22,6 +23,7 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
         PairingStore,
         RateLimiter,
         SessionQueue,
+        SessionOwnerStore,
         GatewayServer,
         HealthHandler,
         SessionHandler,
@@ -36,6 +38,7 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
         PairingStore,
         RateLimiter,
         SessionQueue,
+        SessionOwnerStore,
         HealthHandler,
         SessionHandler,
         MemoryHandler,

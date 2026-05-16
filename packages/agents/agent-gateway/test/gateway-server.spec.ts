@@ -5,11 +5,13 @@ import { GatewayServer } from '../src/gateway/GatewayServer';
 import { RouteMatcher } from '../src/gateway/RouteMatcher';
 import { ChatWebSocket } from '../src/ws/ChatWebSocket';
 import { RateLimiter } from '../src/auth/RateLimiter';
-import { AuthMiddleware } from '../src/auth/AuthMiddleware';
+import { AuthMiddleware, getRequestPrincipalId, setRequestAuth } from '../src/auth/AuthMiddleware';
 import { PairingStore } from '../src/auth/PairingStore';
+import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
-import { InMemorySessionStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentTurnCompletedEvent, AgentErrorEvent } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentTurnCompletedEvent, AgentErrorEvent } from '@tsdi/agent';
+import { MemoryHandler } from '../src/api/MemoryHandler';
 
 @Suite('RouteMatcher')
 export class RouteMatcherTest {
@@ -151,6 +153,7 @@ export class AuthMiddlewareTest {
         const req = { headers: { authorization: `Bearer ${token}` } } as any;
         const res = { writeHead: () => res, end: () => {} } as any;
         expect(await auth.authenticate(req, res)).toBe(true);
+        expect(getRequestPrincipalId(req)).toBe('gateway-user');
     }
 }
 
@@ -253,12 +256,16 @@ export class SessionHandlerTest {
     @Test('lists tracked sessions with timestamps')
     async listsTrackedSessions() {
         const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore();
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
-        const handler = new SessionHandler({ getMessages: async () => [] } as any, store);
+        owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         handler.track('s1');
 
         const route = handler.getRoutes().find(route => route.path === '/api/sessions' && route.method === 'GET')!;
         let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
         const res = {
             writeHead: () => res,
             end: (value?: string) => {
@@ -267,7 +274,7 @@ export class SessionHandlerTest {
             }
         } as any;
 
-        await route.handler({} as any, res, {} as any);
+        await route.handler(req, res, {} as any);
         const data = JSON.parse(body);
         expect(data.length).toEqual(1);
         expect(data[0].id).toEqual('s1');
@@ -276,23 +283,33 @@ export class SessionHandlerTest {
         expect(data[0].lastActiveAt).toBeTruthy();
     }
 
-    @Test('deletes only requested session')
-    async deletesRequestedSession() {
+    @Test('rejects deleting another principals session')
+    async rejectsDeletingForeignSession() {
         const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore();
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await store.append('s2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
-        const handler = new SessionHandler({ getMessages: async () => [] } as any, store);
+        owners.create('s1', 'user-1');
+        owners.create('s2', 'user-2');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         handler.track('s1');
         handler.track('s2');
 
         const route = handler.getRoutes().find(route => route.path === '/api/sessions/:id' && route.method === 'DELETE')!;
+        let status = 0;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
         const res = {
-            writeHead: () => res,
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
             end: () => res
         } as any;
 
-        await route.handler({} as any, res, { id: 's1' });
-        expect((await store.get('s1')).messages).toEqual([]);
+        await route.handler(req, res, { id: 's2' });
+        expect(status).toEqual(403);
+        expect((await store.get('s1')).messages.length).toEqual(1);
         expect((await store.get('s2')).messages.length).toEqual(1);
     }
 }
@@ -301,7 +318,9 @@ export class SessionHandlerTest {
 export class EventHandlerTest {
     @Test('stores broadcast history and returns it from history route')
     async storesEventHistory() {
-        const handler = new EventHandler();
+        const owners = new SessionOwnerStore();
+        owners.create('s1', 'user-1');
+        const handler = new EventHandler(owners);
         handler.onTurnStarted(new AgentTurnStartedEvent(handler as any, 's1', 'hello'));
         handler.onStreamChunk(new AgentStreamChunkEvent(handler as any, 's1', 'text', 'hi'));
         handler.onToolInvoked(new AgentToolInvokedEvent(handler as any, 's1', 'echo', { value: 'x' }));
@@ -310,6 +329,8 @@ export class EventHandlerTest {
 
         const route = handler.getRoutes().find(route => route.path === '/api/events/history' && route.method === 'GET')!;
         let body = '';
+        const req = { url: '/api/events/history?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
         const res = {
             writeHead: () => res,
             end: (value?: string) => {
@@ -318,7 +339,7 @@ export class EventHandlerTest {
             }
         } as any;
 
-        await route.handler({ url: '/api/events/history?sessionId=s1' } as any, res, {} as any);
+        await route.handler(req, res, {} as any);
         const data = JSON.parse(body);
         expect(data.events.length).toEqual(5);
         expect(data.events[0].type).toEqual('turn_started');
@@ -326,28 +347,28 @@ export class EventHandlerTest {
         expect(data.events[4].type).toEqual('turn_completed');
     }
 
-    @Test('filters event history by session and appends errors')
-    async filtersHistoryBySession() {
-        const handler = new EventHandler();
+    @Test('rejects event history access for another principal')
+    async rejectsForeignHistory() {
+        const owners = new SessionOwnerStore();
+        owners.create('s1', 'user-1');
+        const handler = new EventHandler(owners);
         handler.onTurnStarted(new AgentTurnStartedEvent(handler as any, 's1', 'hello'));
-        handler.onTurnStarted(new AgentTurnStartedEvent(handler as any, 's2', 'other'));
         handler.onError(new AgentErrorEvent(handler as any, 's1', new Error('boom')));
 
         const route = handler.getRoutes().find(route => route.path === '/api/events/history' && route.method === 'GET')!;
-        let body = '';
+        let status = 0;
+        const req = { url: '/api/events/history?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
         const res = {
-            writeHead: () => res,
-            end: (value?: string) => {
-                body = value ?? '';
+            writeHead: (code: number) => {
+                status = code;
                 return res;
-            }
+            },
+            end: () => res
         } as any;
 
-        await route.handler({ url: '/api/events/history?sessionId=s1' } as any, res, {} as any);
-        const data = JSON.parse(body);
-        expect(data.events.length).toEqual(2);
-        expect(data.events.every((event: any) => event.sessionId === 's1')).toEqual(true);
-        expect(data.events[1].type).toEqual('error');
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(403);
     }
 }
 
@@ -366,7 +387,7 @@ export class ChatWebSocketTest {
                 return [{ id: '1', role: 'assistant', content: 'hello', createdAt: 1 }];
             }
         } as any;
-        const ws = new ChatWebSocket(runtime, new (require('../src/auth/SessionQueue').SessionQueue)());
+        const ws = new ChatWebSocket(runtime, new SessionOwnerStore(), new (require('../src/auth/SessionQueue').SessionQueue)());
         const socket = {
             write: (buffer: Buffer) => {
                 const payloadLength = buffer[1] & 0x7f;
@@ -386,6 +407,46 @@ export class ChatWebSocketTest {
         expect(frames[2].content).toEqual('hello');
     }
 
+    @Test('rejects resuming a foreign session id')
+    rejectsForeignSessionResume() {
+        const owners = new SessionOwnerStore();
+        owners.create('s1', 'user-1');
+        const ws = new ChatWebSocket({} as any, owners, {} as any);
+        let status = 0;
+        const req = { headers: { host: 'localhost' }, url: '/ws/chat?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        const sessionId = (ws as any).resolveSessionId(req, 'user-2', res);
+        expect(sessionId).toBeNull();
+        expect(status).toEqual(403);
+    }
+
+    @Test('rejects resuming an unowned session id')
+    rejectsUnownedSessionResume() {
+        const ws = new ChatWebSocket({} as any, new SessionOwnerStore(), {} as any);
+        let status = 0;
+        const req = { headers: { host: 'localhost' }, url: '/ws/chat?sessionId=legacy-session' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        const sessionId = (ws as any).resolveSessionId(req, 'user-1', res);
+        expect(sessionId).toBeNull();
+        expect(status).toEqual(403);
+    }
+
     @Test('writes error frame when session queue rejects')
     async writesErrorFrameOnQueueReject() {
         const writes: string[] = [];
@@ -397,7 +458,7 @@ export class ChatWebSocketTest {
                 return [];
             }
         } as any;
-        const ws = new ChatWebSocket(runtime, {
+        const ws = new ChatWebSocket(runtime, new SessionOwnerStore(), {
             enqueue: () => Promise.reject(new Error('session queue limit reached')),
             remove: () => undefined
         } as any);
@@ -416,6 +477,96 @@ export class ChatWebSocketTest {
         const frame = JSON.parse(writes[0]);
         expect(frame.type).toEqual('error');
         expect(frame.error).toEqual('session queue limit reached');
+    }
+}
+
+@Suite('MemoryHandler')
+export class MemoryHandlerTest {
+    @Test('lists only memory for owned sessions')
+    async listsOwnedSessionMemory() {
+        const runtime = { putMemory: async () => null } as any;
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore();
+        owners.create('s1', 'user-1');
+        owners.create('s2', 'user-2');
+        await memory.put({ id: '1', sessionId: 's1', key: 'a', value: 'one', scope: 'session', createdAt: 1 });
+        await memory.put({ id: '2', sessionId: 's2', key: 'b', value: 'two', scope: 'session', createdAt: 2 });
+        const handler = new MemoryHandler(runtime, memory, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].sessionId).toEqual('s1');
+    }
+
+    @Test('rejects writing memory to foreign session')
+    async rejectsForeignSessionMemoryWrite() {
+        let called = false;
+        const runtime = {
+            putMemory: async () => {
+                called = true;
+                return null;
+            }
+        } as any;
+        const owners = new SessionOwnerStore();
+        owners.create('s1', 'user-1');
+        owners.create('s2', 'user-2');
+        const securedHandler = new MemoryHandler(runtime, new InMemoryMemoryStore(), owners);
+        const route = securedHandler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'POST')!;
+        let status = 0;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any, { sessionId: 's2', key: 'x', value: 'y', scope: 'session' });
+        expect(status).toEqual(403);
+        expect(called).toEqual(false);
+    }
+
+    @Test('rejects global memory writes')
+    async rejectsGlobalMemoryWrite() {
+        let called = false;
+        const runtime = {
+            putMemory: async () => {
+                called = true;
+                return null;
+            }
+        } as any;
+        const owners = new SessionOwnerStore();
+        owners.create('s1', 'user-1');
+        const handler = new MemoryHandler(runtime, new InMemoryMemoryStore(), owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'POST')!;
+        let status = 0;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any, { sessionId: 's1', key: 'x', value: 'y', scope: 'global' });
+        expect(status).toEqual(400);
+        expect(called).toEqual(false);
     }
 }
 

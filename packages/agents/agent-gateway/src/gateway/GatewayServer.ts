@@ -5,7 +5,7 @@ import { GATEWAY_CONFIG } from '../tokens';
 import { GatewayConfig, defaultGatewayConfig } from '../contracts/GatewayConfig';
 import { GatewayRoute } from '../contracts/GatewayRoute';
 import { RouteMatcher } from './RouteMatcher';
-import { AuthMiddleware } from '../auth/AuthMiddleware';
+import { AuthMiddleware, getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { RateLimiter } from '../auth/RateLimiter';
 
 /**
@@ -114,6 +114,7 @@ export class GatewayServer {
         }
 
         try {
+            const state = { principalId: getRequestPrincipalId(req) };
             if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
                 const body = await this.readBody(req);
                 let parsed: any;
@@ -123,9 +124,9 @@ export class GatewayServer {
                 } else {
                     parsed = body.toString();
                 }
-                await matched.route.handler(req, res, matched.params, parsed);
+                await matched.route.handler(req, res, matched.params, parsed, state);
             } else {
-                await matched.route.handler(req, res, matched.params);
+                await matched.route.handler(req, res, matched.params, undefined, state);
             }
         } catch (err: any) {
             res.writeHead(500, { 'Content-Type': 'application/json' })
