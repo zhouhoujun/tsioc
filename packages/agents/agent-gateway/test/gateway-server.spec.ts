@@ -10,8 +10,10 @@ import { PairingStore } from '../src/auth/PairingStore';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentTurnCompletedEvent, AgentErrorEvent } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentTurnCompletedEvent, AgentErrorEvent, LocalToolRegistry } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
+import { ToolsHandler } from '../src/api/ToolsHandler';
+import { ReadFileTool } from '../../agent-tools/src';
 
 @Suite('RouteMatcher')
 export class RouteMatcherTest {
@@ -358,6 +360,32 @@ export class SessionHandlerTest {
         const data = JSON.parse(body);
         expect(data.length).toEqual(1);
         expect(data[0].id).toEqual('s1');
+    }
+}
+
+@Suite('ToolsHandler')
+export class ToolsHandlerTest {
+    @Test('lists registered agent-tools definitions through api route')
+    async listsRegisteredAgentTools() {
+        const registry = new LocalToolRegistry([
+            new ReadFileTool({ file: { rootDir: process.cwd() } })
+        ], new InMemoryMemoryStore());
+        const handler = new ToolsHandler(registry);
+        const route = handler.getRoutes().find(route => route.path === '/api/tools' && route.method === 'GET')!;
+        let body = '';
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler({} as any, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].name).toEqual('read_file');
+        expect(data[0].inputSchema.required).toEqual(['path']);
     }
 }
 

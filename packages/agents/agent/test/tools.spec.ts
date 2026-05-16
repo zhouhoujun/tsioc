@@ -1,10 +1,13 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { Application } from '@tsdi/core';
 import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
 import { MemoryPutTool, MemorySearchTool } from '../src/tools/BuiltinTools';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../src/tools/ToolApprovalManager';
+import { ToolRegistry } from '../src/tools/ToolRegistry';
+import { AgentToolsModule, withAgentToolsOptions } from '../../agent-tools/src';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -197,5 +200,56 @@ export class BuiltinToolsTest {
         const result = await registry.invoke('memory.put', { key: 'topic', value: 'router' }, 's1');
         expect(result.stored).toEqual(true);
         expect((await store.getAll('s1')).length).toEqual(1);
+    }
+
+    @Test('agent tools module registers tool definitions into registry')
+    async agentToolsModuleRegistersDefinitions() {
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [
+                ...withAgentToolsOptions({
+                    web: {
+                        search: {
+                            async search(query: string) {
+                                return [{ title: query, url: 'https://example.com' }];
+                            }
+                        }
+                    }
+                })
+            ]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const definitions = registry.getToolDefinitions();
+            expect(definitions.some(tool => tool.name === 'read_file')).toEqual(true);
+            expect(definitions.some(tool => tool.name === 'web_search')).toEqual(true);
+            expect(definitions.find(tool => tool.name === 'calculator')?.execution?.readOnly).toEqual(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('agent tools module supports runtime registry invocation')
+    async agentToolsModuleInvokesRegisteredTool() {
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [
+                ...withAgentToolsOptions({
+                    web: {
+                        search: {
+                            async search(query: string, limit?: number) {
+                                return [{ title: `${query}:${limit}`, url: 'https://example.com', snippet: 'ok' }];
+                            }
+                        }
+                    }
+                })
+            ]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const result = await registry.invoke('web_search', { query: 'router', limit: 2 }, 's1');
+            expect(result.results.length).toEqual(1);
+            expect(result.results[0].title).toEqual('router:2');
+        } finally {
+            await ctx.close();
+        }
     }
 }
