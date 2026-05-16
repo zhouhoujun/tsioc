@@ -58,4 +58,32 @@ describe('Persistent session store', () => {
             await ctx.close();
         }
     });
+
+    it('persists owner metadata and session id listing', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-3', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setOwner('session-3', 'user-3');
+            const state = await store.get('session-3');
+            expect(state.ownerPrincipalId).toEqual('user-3');
+            expect(await store.listSessionIds()).toContain('session-3');
+        } finally {
+            await ctx.close();
+        }
+    });
+
+    it('clears owner without recreating deleted session', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-4', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setOwner('session-4', 'user-4');
+            await store.delete('session-4');
+            await store.setOwner('session-4', undefined);
+            expect(await store.has('session-4')).toEqual(false);
+        } finally {
+            await ctx.close();
+        }
+    });
 });

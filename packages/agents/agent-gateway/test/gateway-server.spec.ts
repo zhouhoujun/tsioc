@@ -256,9 +256,9 @@ export class SessionHandlerTest {
     @Test('lists tracked sessions with timestamps')
     async listsTrackedSessions() {
         const store = new InMemorySessionStore();
-        const owners = new SessionOwnerStore();
+        const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
-        owners.create('s1', 'user-1');
+        await owners.create('s1', 'user-1');
         const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         handler.track('s1');
 
@@ -286,11 +286,11 @@ export class SessionHandlerTest {
     @Test('rejects deleting another principals session')
     async rejectsDeletingForeignSession() {
         const store = new InMemorySessionStore();
-        const owners = new SessionOwnerStore();
+        const owners = new SessionOwnerStore(store);
         await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
         await store.append('s2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
-        owners.create('s1', 'user-1');
-        owners.create('s2', 'user-2');
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
         const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
         handler.track('s1');
         handler.track('s2');
@@ -312,14 +312,62 @@ export class SessionHandlerTest {
         expect((await store.get('s1')).messages.length).toEqual(1);
         expect((await store.get('s2')).messages.length).toEqual(1);
     }
+
+    @Test('deletes session without recreating empty owned record')
+    async deletesSessionWithoutRecreatingRecord() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/:id' && route.method === 'DELETE')!;
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, { id: 's1' });
+        expect(await store.has('s1')).toEqual(false);
+    }
+
+    @Test('lists persisted owned sessions without track call')
+    async listsPersistedOwnedSessionsWithoutTrack() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'hello', createdAt: 1 });
+        await owners.create('s1', 'user-1');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].id).toEqual('s1');
+    }
 }
 
 @Suite('EventHandler')
 export class EventHandlerTest {
     @Test('stores broadcast history and returns it from history route')
     async storesEventHistory() {
-        const owners = new SessionOwnerStore();
-        owners.create('s1', 'user-1');
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
         const handler = new EventHandler(owners);
         handler.onTurnStarted(new AgentTurnStartedEvent(handler as any, 's1', 'hello'));
         handler.onStreamChunk(new AgentStreamChunkEvent(handler as any, 's1', 'text', 'hi'));
@@ -349,8 +397,9 @@ export class EventHandlerTest {
 
     @Test('rejects event history access for another principal')
     async rejectsForeignHistory() {
-        const owners = new SessionOwnerStore();
-        owners.create('s1', 'user-1');
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
         const handler = new EventHandler(owners);
         handler.onTurnStarted(new AgentTurnStartedEvent(handler as any, 's1', 'hello'));
         handler.onError(new AgentErrorEvent(handler as any, 's1', new Error('boom')));
@@ -387,7 +436,8 @@ export class ChatWebSocketTest {
                 return [{ id: '1', role: 'assistant', content: 'hello', createdAt: 1 }];
             }
         } as any;
-        const ws = new ChatWebSocket(runtime, new SessionOwnerStore(), new (require('../src/auth/SessionQueue').SessionQueue)());
+        const store = new InMemorySessionStore();
+        const ws = new ChatWebSocket(runtime, new SessionOwnerStore(store), new (require('../src/auth/SessionQueue').SessionQueue)());
         const socket = {
             write: (buffer: Buffer) => {
                 const payloadLength = buffer[1] & 0x7f;
@@ -408,9 +458,10 @@ export class ChatWebSocketTest {
     }
 
     @Test('rejects resuming a foreign session id')
-    rejectsForeignSessionResume() {
-        const owners = new SessionOwnerStore();
-        owners.create('s1', 'user-1');
+    async rejectsForeignSessionResume() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
         const ws = new ChatWebSocket({} as any, owners, {} as any);
         let status = 0;
         const req = { headers: { host: 'localhost' }, url: '/ws/chat?sessionId=s1' } as any;
@@ -423,14 +474,15 @@ export class ChatWebSocketTest {
             end: () => res
         } as any;
 
-        const sessionId = (ws as any).resolveSessionId(req, 'user-2', res);
+        const sessionId = await (ws as any).resolveSessionId(req, 'user-2', res);
         expect(sessionId).toBeNull();
         expect(status).toEqual(403);
     }
 
     @Test('rejects resuming an unowned session id')
-    rejectsUnownedSessionResume() {
-        const ws = new ChatWebSocket({} as any, new SessionOwnerStore(), {} as any);
+    async rejectsUnownedSessionResume() {
+        const store = new InMemorySessionStore();
+        const ws = new ChatWebSocket({} as any, new SessionOwnerStore(store), {} as any);
         let status = 0;
         const req = { headers: { host: 'localhost' }, url: '/ws/chat?sessionId=legacy-session' } as any;
         setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
@@ -442,7 +494,7 @@ export class ChatWebSocketTest {
             end: () => res
         } as any;
 
-        const sessionId = (ws as any).resolveSessionId(req, 'user-1', res);
+        const sessionId = await (ws as any).resolveSessionId(req, 'user-1', res);
         expect(sessionId).toBeNull();
         expect(status).toEqual(403);
     }
@@ -458,7 +510,8 @@ export class ChatWebSocketTest {
                 return [];
             }
         } as any;
-        const ws = new ChatWebSocket(runtime, new SessionOwnerStore(), {
+        const store = new InMemorySessionStore();
+        const ws = new ChatWebSocket(runtime, new SessionOwnerStore(store), {
             enqueue: () => Promise.reject(new Error('session queue limit reached')),
             remove: () => undefined
         } as any);
@@ -485,13 +538,14 @@ export class MemoryHandlerTest {
     @Test('lists only memory for owned sessions')
     async listsOwnedSessionMemory() {
         const runtime = { putMemory: async () => null } as any;
+        const store = new InMemorySessionStore();
         const memory = new InMemoryMemoryStore();
-        const owners = new SessionOwnerStore();
-        owners.create('s1', 'user-1');
-        owners.create('s2', 'user-2');
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
         await memory.put({ id: '1', sessionId: 's1', key: 'a', value: 'one', scope: 'session', createdAt: 1 });
         await memory.put({ id: '2', sessionId: 's2', key: 'b', value: 'two', scope: 'session', createdAt: 2 });
-        const handler = new MemoryHandler(runtime, memory, owners);
+        const handler = new MemoryHandler(runtime, memory, store, owners);
         const route = handler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'GET')!;
         let body = '';
         const req = {} as any;
@@ -513,16 +567,17 @@ export class MemoryHandlerTest {
     @Test('rejects writing memory to foreign session')
     async rejectsForeignSessionMemoryWrite() {
         let called = false;
+        const store = new InMemorySessionStore();
         const runtime = {
             putMemory: async () => {
                 called = true;
                 return null;
             }
         } as any;
-        const owners = new SessionOwnerStore();
-        owners.create('s1', 'user-1');
-        owners.create('s2', 'user-2');
-        const securedHandler = new MemoryHandler(runtime, new InMemoryMemoryStore(), owners);
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
+        const securedHandler = new MemoryHandler(runtime, new InMemoryMemoryStore(), store, owners);
         const route = securedHandler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'POST')!;
         let status = 0;
         const req = {} as any;
@@ -540,18 +595,31 @@ export class MemoryHandlerTest {
         expect(called).toEqual(false);
     }
 
+    @Test('persists owner across store instances')
+    async persistsOwnerAcrossStoreInstances() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const reloadedOwners = new SessionOwnerStore(store);
+
+        expect(await reloadedOwners.getOwner('s1')).toEqual('user-1');
+        expect(await reloadedOwners.canResume('s1', 'user-1')).toEqual(true);
+        expect(await reloadedOwners.canResume('s1', 'user-2')).toEqual(false);
+    }
+
     @Test('rejects global memory writes')
     async rejectsGlobalMemoryWrite() {
         let called = false;
+        const store = new InMemorySessionStore();
         const runtime = {
             putMemory: async () => {
                 called = true;
                 return null;
             }
         } as any;
-        const owners = new SessionOwnerStore();
-        owners.create('s1', 'user-1');
-        const handler = new MemoryHandler(runtime, new InMemoryMemoryStore(), owners);
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const handler = new MemoryHandler(runtime, new InMemoryMemoryStore(), store, owners);
         const route = handler.getRoutes().find(route => route.path === '/api/memory' && route.method === 'POST')!;
         let status = 0;
         const req = {} as any;

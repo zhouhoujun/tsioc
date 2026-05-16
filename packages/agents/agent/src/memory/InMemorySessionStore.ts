@@ -18,9 +18,18 @@ export class InMemorySessionStore extends SessionStore {
             sessionId: state.sessionId,
             messages: state.messages.slice(),
             summary: state.summary,
+            ownerPrincipalId: state.ownerPrincipalId,
             createdAt: state.createdAt,
             updatedAt: state.updatedAt
         };
+    }
+
+    async has(sessionId: string): Promise<boolean> {
+        return this.sessions.has(sessionId);
+    }
+
+    async listSessionIds(): Promise<string[]> {
+        return Array.from(this.sessions.keys());
     }
 
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
@@ -35,6 +44,22 @@ export class InMemorySessionStore extends SessionStore {
     async setSummary(sessionId: string, summary: string): Promise<void> {
         const state = await this.get(sessionId);
         state.summary = summary;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+    }
+
+    async setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void> {
+        const state = this.sessions.get(sessionId);
+        if (!state) {
+            if (ownerPrincipalId == null) {
+                return;
+            }
+            const now = Date.now();
+            this.sessions.set(sessionId, { sessionId, messages: [], ownerPrincipalId, createdAt: now, updatedAt: now });
+            return;
+        }
+        state.ownerPrincipalId = ownerPrincipalId;
         state.updatedAt = Date.now();
         state.createdAt ??= state.updatedAt;
         this.sessions.set(sessionId, state);

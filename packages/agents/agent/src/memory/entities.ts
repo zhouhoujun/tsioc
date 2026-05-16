@@ -11,6 +11,9 @@ export class AgentSessionEntity {
     @Column({ type: 'text', nullable: true })
     summary!: string;
 
+    @Column({ type: 'text', nullable: true })
+    ownerPrincipalId!: string | null;
+
     @Column({ type: 'bigint' })
     createdAt!: number;
 

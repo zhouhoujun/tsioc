@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentRuntime, MemoryStore } from '@tsdi/agent';
+import { AgentRuntime, MemoryStore, SessionStore } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -13,6 +13,7 @@ export class MemoryHandler {
     constructor(
         private runtime: AgentRuntime,
         private memory: MemoryStore,
+        private sessions: SessionStore,
         private owners: SessionOwnerStore
     ) {
     }
@@ -20,8 +21,8 @@ export class MemoryHandler {
     getRoutes(): GatewayRoute[] {
         const listMemory: RouteHandler = async (req, res) => {
             const principalId = getRequestPrincipalId(req);
-            const sessionIds = this.owners.listOwned(this.owners.listSessionIds(), principalId);
-            const records = await Promise.all(sessionIds.map(sessionId => this.memory.getAll(sessionId)));
+            const sessionIds = await this.owners.listOwned(await this.sessions.listSessionIds(), principalId);
+            const records = await Promise.all(sessionIds.map((sessionId: string) => this.memory.getAll(sessionId)));
             const all = records.flat();
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(all));
@@ -32,7 +33,7 @@ export class MemoryHandler {
                 res.writeHead(400).end(JSON.stringify({ error: 'sessionId, key, value required' }));
                 return;
             }
-            if (!this.owners.isOwner(body.sessionId, getRequestPrincipalId(req))) {
+            if (!await this.owners.isOwner(body.sessionId, getRequestPrincipalId(req))) {
                 res.writeHead(403, { 'Content-Type': 'application/json' })
                     .end(JSON.stringify({ error: 'forbidden' }));
                 return;

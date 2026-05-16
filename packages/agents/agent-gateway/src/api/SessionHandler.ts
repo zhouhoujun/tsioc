@@ -46,20 +46,16 @@ export class SessionHandler {
         const listSessions: RouteHandler = async (req, res) => {
             const principalId = getRequestPrincipalId(req);
             const infos: SessionInfo[] = [];
-            for (const id of this.owners.listOwned(this.sessionIds, principalId)) {
-                try {
-                    const state = await this.sessions.get(id);
-                    infos.push({
-                        id,
-                        createdAt: state.createdAt ?? 0,
-                        lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
-                        messageCount: state.messages.length,
-                        summary: state.summary
-                    });
-                } catch {
-                    this.sessionIds.delete(id);
-                    this.owners.unbind(id);
-                }
+            const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
+            for (const id of await this.owners.listOwned(ids, principalId)) {
+                const state = await this.sessions.get(id);
+                infos.push({
+                    id,
+                    createdAt: state.createdAt ?? 0,
+                    lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
+                    messageCount: state.messages.length,
+                    summary: state.summary
+                });
             }
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(infos));
@@ -71,7 +67,7 @@ export class SessionHandler {
                 res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
                 return;
             }
-            if (!this.ensureAccess(req, res, sessionId)) {
+            if (!await this.ensureAccess(req, res, sessionId)) {
                 return;
             }
             try {
@@ -89,12 +85,12 @@ export class SessionHandler {
                 res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
                 return;
             }
-            if (!this.ensureAccess(req, res, sessionId)) {
+            if (!await this.ensureAccess(req, res, sessionId)) {
                 return;
             }
+            await this.owners.unbind(sessionId);
             await this.sessions.delete(sessionId);
             this.sessionIds.delete(sessionId);
-            this.owners.unbind(sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ status: 'deleted' }));
         };
@@ -102,13 +98,11 @@ export class SessionHandler {
         const runningSessions: RouteHandler = async (req, res) => {
             const principalId = getRequestPrincipalId(req);
             const running: string[] = [];
-            for (const id of this.owners.listOwned(this.sessionIds, principalId)) {
-                try {
-                    const state = await this.sessions.get(id);
-                    if (state.messages.length > 0) running.push(id);
-                } catch {
-                    this.sessionIds.delete(id);
-                    this.owners.unbind(id);
+            const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
+            for (const id of await this.owners.listOwned(ids, principalId)) {
+                const state = await this.sessions.get(id);
+                if (state.messages.length > 0) {
+                    running.push(id);
                 }
             }
             res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -123,9 +117,9 @@ export class SessionHandler {
         ];
     }
 
-    private ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): boolean {
+    private async ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): Promise<boolean> {
         const principalId = getRequestPrincipalId(req);
-        if (this.owners.isOwner(sessionId, principalId)) {
+        if (await this.owners.isOwner(sessionId, principalId)) {
             return true;
         }
         res.writeHead(403, { 'Content-Type': 'application/json' })

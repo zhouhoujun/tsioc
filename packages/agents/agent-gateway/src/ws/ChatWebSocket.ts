@@ -27,7 +27,7 @@ export class ChatWebSocket {
     getRoutes(): GatewayRoute[] {
         const handler: RouteHandler = async (req, res) => {
             const principalId = getRequestPrincipalId(req);
-            const sessionId = this.resolveSessionId(req, principalId, res);
+            const sessionId = await this.resolveSessionId(req, principalId, res);
             if (!sessionId) {
                 return;
             }
@@ -137,19 +137,19 @@ export class ChatWebSocket {
         }
     }
 
-    private resolveSessionId(req: http.IncomingMessage, principalId: string | undefined, res: http.ServerResponse): string | null {
+    private async resolveSessionId(req: http.IncomingMessage, principalId: string | undefined, res: http.ServerResponse): Promise<string | null> {
         const host = req.headers.host ?? 'localhost';
         const url = new URL(req.url ?? '/ws/chat', `http://${host}`);
         const requestedSessionId = url.searchParams.get('sessionId');
         if (requestedSessionId) {
-            if (!this.owners.canResume(requestedSessionId, principalId)) {
+            if (!await this.owners.canResume(requestedSessionId, principalId)) {
                 res.writeHead(403, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'forbidden' }));
                 return null;
             }
             return requestedSessionId;
         }
         const sessionId = `ws-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-        this.owners.create(sessionId, principalId);
+        await this.owners.create(sessionId, principalId);
         return sessionId;
     }
 

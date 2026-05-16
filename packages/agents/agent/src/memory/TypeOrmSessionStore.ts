@@ -22,6 +22,7 @@ export class TypeOrmSessionStore extends SessionStore {
         return {
             sessionId,
             summary: session.summary,
+            ownerPrincipalId: session.ownerPrincipalId ?? undefined,
             createdAt: Number(session.createdAt),
             updatedAt: Number(session.updatedAt),
             messages: messages.map(message => ({
@@ -34,6 +35,15 @@ export class TypeOrmSessionStore extends SessionStore {
                 metadata: message.metadata ?? undefined
             }))
         };
+    }
+
+    async has(sessionId: string): Promise<boolean> {
+        return !!(await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any }));
+    }
+
+    async listSessionIds(): Promise<string[]> {
+        const sessions = await this.adapter.getRepository(AgentSessionEntity).find({ order: { createdAt: 'ASC' } as any });
+        return sessions.map(session => session.sessionId);
     }
 
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
@@ -70,6 +80,22 @@ export class TypeOrmSessionStore extends SessionStore {
             session = repo.create({ sessionId, summary, createdAt: now, updatedAt: now });
         } else {
             session.summary = summary;
+            session.updatedAt = now;
+        }
+        await repo.save(session);
+    }
+
+    async setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void> {
+        const repo = this.adapter.getRepository(AgentSessionEntity);
+        let session = await repo.findOne({ where: { sessionId } as any });
+        const now = Date.now();
+        if (!session) {
+            if (ownerPrincipalId == null) {
+                return;
+            }
+            session = repo.create({ sessionId, ownerPrincipalId, createdAt: now, updatedAt: now });
+        } else {
+            session.ownerPrincipalId = ownerPrincipalId ?? null;
             session.updatedAt = now;
         }
         await repo.save(session);

@@ -1,54 +1,62 @@
 import { Injectable } from '@tsdi/ioc';
+import { SessionStore } from '@tsdi/agent';
 
 @Injectable()
 export class SessionOwnerStore {
-    private owners = new Map<string, string>();
+    constructor(private sessions: SessionStore) {
+    }
 
-    create(sessionId: string, principalId?: string): void {
+    async create(sessionId: string, principalId?: string): Promise<void> {
         if (!principalId) {
             return;
         }
-        this.owners.set(sessionId, principalId);
+        await this.sessions.setOwner(sessionId, principalId);
     }
 
-    getOwner(sessionId: string): string | undefined {
-        return this.owners.get(sessionId);
+    async getOwner(sessionId: string): Promise<string | undefined> {
+        if (!await this.sessions.has(sessionId)) {
+            return undefined;
+        }
+        return (await this.sessions.get(sessionId)).ownerPrincipalId;
     }
 
-    hasOwner(sessionId: string): boolean {
-        return this.owners.has(sessionId);
+    async hasOwner(sessionId: string): Promise<boolean> {
+        return !!(await this.getOwner(sessionId));
     }
 
-    isOwner(sessionId: string, principalId?: string): boolean {
+    async isOwner(sessionId: string, principalId?: string): Promise<boolean> {
         if (!principalId) {
             return false;
         }
-        return this.owners.get(sessionId) === principalId;
+        return (await this.getOwner(sessionId)) === principalId;
     }
 
-    canResume(sessionId: string, principalId?: string): boolean {
+    async canResume(sessionId: string, principalId?: string): Promise<boolean> {
         if (!principalId) {
             return false;
         }
-        return this.owners.get(sessionId) === principalId;
+        return (await this.getOwner(sessionId)) === principalId;
     }
 
-    listOwned(sessionIds: Iterable<string>, principalId?: string): string[] {
+    async listOwned(sessionIds: Iterable<string>, principalId?: string): Promise<string[]> {
         if (!principalId) {
             return [];
         }
-        return Array.from(sessionIds).filter(sessionId => this.owners.get(sessionId) === principalId);
+        const owned: string[] = [];
+        for (const sessionId of sessionIds) {
+            if ((await this.getOwner(sessionId)) === principalId) {
+                owned.push(sessionId);
+            }
+        }
+        return owned;
     }
 
-    listSessionIds(): string[] {
-        return Array.from(this.owners.keys());
+    async unbind(sessionId: string): Promise<void> {
+        await this.sessions.setOwner(sessionId, undefined);
     }
 
-    unbind(sessionId: string): void {
-        this.owners.delete(sessionId);
-    }
-
-    clear(): void {
-        this.owners.clear();
+    async clear(): Promise<void> {
+        const sessionIds = await this.sessions.listSessionIds();
+        await Promise.all(sessionIds.map(sessionId => this.sessions.setOwner(sessionId, undefined)));
     }
 }

@@ -40,4 +40,27 @@ export class SessionStoreTest {
         expect((await store.get('session-1')).messages).toEqual([]);
         expect((await store.get('session-2')).messages.length).toEqual(1);
     }
+
+    @Test('stores owner metadata and lists session ids')
+    async storesOwnerAndListsSessionIds() {
+        const store = new InMemorySessionStore();
+        await store.append('session-1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.append('session-2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
+        await store.setOwner('session-1', 'user-1');
+
+        const state = await store.get('session-1');
+        expect(state.ownerPrincipalId).toEqual('user-1');
+        expect(await store.listSessionIds()).toEqual(['session-1', 'session-2']);
+    }
+
+    @Test('clears owner without recreating deleted session')
+    async clearsOwnerWithoutRecreatingDeletedSession() {
+        const store = new InMemorySessionStore();
+        await store.append('session-1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.setOwner('session-1', 'user-1');
+        store.delete('session-1');
+
+        await store.setOwner('session-1', undefined);
+        expect(await store.has('session-1')).toEqual(false);
+    }
 }

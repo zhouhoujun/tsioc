@@ -37,7 +37,7 @@ export class EventHandler {
                 .end(JSON.stringify({ error: 'sessionId required' }));
             return;
         }
-        if (!this.ensureAccess(req, res, sessionId)) {
+        if (!await this.ensureAccess(req, res, sessionId)) {
             return;
         }
         res.writeHead(200, {
@@ -196,7 +196,7 @@ export class EventHandler {
                     .end(JSON.stringify({ error: 'sessionId required' }));
                 return;
             }
-            if (!this.ensureAccess(req, res, sessionId)) {
+            if (!await this.ensureAccess(req, res, sessionId)) {
                 return;
             }
             const events = this.history.filter(event => event.sessionId === sessionId);
@@ -210,9 +210,9 @@ export class EventHandler {
         ];
     }
 
-    private ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): boolean {
+    private async ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): Promise<boolean> {
         const principalId = getRequestPrincipalId(req);
-        if (this.owners.isOwner(sessionId, principalId)) {
+        if (await this.owners.isOwner(sessionId, principalId)) {
             return true;
         }
         res.writeHead(403, { 'Content-Type': 'application/json' })
