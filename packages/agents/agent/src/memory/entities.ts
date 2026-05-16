@@ -100,4 +100,31 @@ export class AgentScheduledTaskEntity {
 
     @Column({ type: 'int', nullable: true })
     intervalMs!: number;
+
+    @Column({ type: 'boolean', default: false })
+    cancelled!: boolean;
+
+    @Column({ type: 'boolean', default: false })
+    running!: boolean;
+
+    @Column({ type: 'bigint', nullable: true })
+    createdAt!: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    updatedAt!: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    lastRunAt!: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    nextRunAt!: number;
+
+    @Column({ type: 'int', default: 0 })
+    runCount!: number;
+
+    @Column({ type: 'int', default: 0 })
+    failureCount!: number;
+
+    @Column({ type: 'text', nullable: true })
+    lastError!: string;
 }

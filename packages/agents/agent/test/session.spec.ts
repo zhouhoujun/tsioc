@@ -14,4 +14,30 @@ export class SessionStoreTest {
         expect(state.messages[0].content).toEqual('hi');
         expect(state.messages[1].content).toEqual('hello');
     }
+
+    @Test('tracks created and updated timestamps')
+    async tracksTimestamps() {
+        const store = new InMemorySessionStore();
+        const empty = await store.get('session');
+        expect(typeof empty.createdAt).toEqual('number');
+        expect(typeof empty.updatedAt).toEqual('number');
+
+        await store.append('session', { id: '1', role: 'user', content: 'hi', createdAt: 1 });
+        const state = await store.get('session');
+        expect(state.createdAt).toBeTruthy();
+        expect(state.updatedAt).toBeTruthy();
+        expect(state.updatedAt! >= state.createdAt!).toEqual(true);
+    }
+
+    @Test('deletes only requested session')
+    async deletesOneSession() {
+        const store = new InMemorySessionStore();
+        await store.append('session-1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.append('session-2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
+
+        store.delete('session-1');
+
+        expect((await store.get('session-1')).messages).toEqual([]);
+        expect((await store.get('session-2')).messages.length).toEqual(1);
+    }
 }

@@ -39,6 +39,7 @@ export interface ApprovalStrategy {
 @Injectable()
 export class ToolApprovalManager {
     private pending = new Map<string, {
+        request: ApprovalRequest;
         resolve: (approved: boolean) => void;
         timer: ReturnType<typeof setTimeout>;
     }>();
@@ -80,7 +81,7 @@ export class ToolApprovalManager {
                 resolve(false);
             }, request.timeoutMs);
 
-            this.pending.set(request.id, { resolve, timer });
+            this.pending.set(request.id, { request, resolve, timer });
             this.app.publishEvent(new AgentApprovalRequestedEvent(this, request))
                 .catch(() => {});
         });
@@ -112,17 +113,7 @@ export class ToolApprovalManager {
 
     /** List all pending approval requests */
     getPending(): ApprovalRequest[] {
-        // The map stores requests by id, but we don't keep the full request
-        // We need to look up from events... for now return metadata
-        return Array.from(this.pending.keys()).map(id => ({
-            id,
-            toolName: '',
-            input: {},
-            sessionId: '',
-            reason: '',
-            createdAt: Date.now(),
-            timeoutMs: 0
-        }));
+        return Array.from(this.pending.values()).map(({ request }) => ({ ...request }));
     }
 }
 

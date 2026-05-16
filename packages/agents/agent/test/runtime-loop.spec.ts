@@ -71,6 +71,33 @@ class ToolLoopModelAdapter extends EchoModelAdapter {
     }
 }
 
+class StreamingToolLoopModelAdapter extends EchoModelAdapter {
+    private count = 0;
+    private releaseSecondChunk?: () => void;
+
+    releaseFollowupChunk(): void {
+        if (this.releaseSecondChunk) {
+            this.releaseSecondChunk();
+            this.releaseSecondChunk = undefined;
+        }
+    }
+
+    async *stream(): AsyncGenerator<any> {
+        this.count++;
+        if (this.count === 1) {
+            yield { type: 'tool_call', toolCalls: [{ id: 'tool-1', name: 'echo', input: { value: 'from-tool' } }] };
+            yield { type: 'done' };
+            return;
+        }
+        yield { type: 'text', content: 'tool-' };
+        await new Promise<void>(resolve => {
+            this.releaseSecondChunk = resolve;
+        });
+        yield { type: 'text', content: 'finished' };
+        yield { type: 'done' };
+    }
+}
+
 class EndlessToolLoopModelAdapter extends EchoModelAdapter {
     async complete(): Promise<any> {
         return {
@@ -518,6 +545,54 @@ export class RuntimeLoopTest {
         expect(messages[2].role).toEqual('tool');
         expect(messages[2].toolCallId).toEqual('tool-1');
         expect(messages[2].metadata?.input?.value).toEqual('from-tool');
+    }
+
+    @Test('streaming turn yields incrementally through tool loop and persists final message')
+    async streamingTurnExecutesToolLoop() {
+        const model = new StreamingToolLoopModelAdapter();
+        const runtime = new AgentRuntime(
+            model,
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const stream = runtime.runStreamingTurn('s1', 'hello');
+        const first = await stream.next();
+        expect(first.value?.type).toEqual('tool_call');
+
+        const second = await stream.next();
+        expect(second.value?.type).toEqual('text');
+        expect(second.value?.content).toEqual('tool-');
+
+        const pendingThird = stream.next();
+        let settled = false;
+        void pendingThird.then(() => {
+            settled = true;
+        });
+        await Promise.resolve();
+        expect(settled).toEqual(false);
+
+        const messagesBeforeFinish = await runtime.getMessages('s1');
+        expect(messagesBeforeFinish[messagesBeforeFinish.length - 1].role).toEqual('tool');
+
+        model.releaseFollowupChunk();
+        const third = await pendingThird;
+        expect(third.value?.type).toEqual('text');
+        expect(third.value?.content).toEqual('finished');
+
+        const done = await stream.next();
+        expect(done.value?.type).toEqual('done');
+        expect(done.done).toEqual(false);
+
+        const completed = await stream.next();
+        expect(completed.done).toEqual(true);
+
+        const messages = await runtime.getMessages('s1');
+        expect(messages[messages.length - 1].content).toEqual('tool-finished');
     }
 
     @Test('stores tool error result before rethrowing')

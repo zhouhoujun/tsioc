@@ -4,4 +4,6 @@ export interface AgentState {
     sessionId: string;
     messages: AgentMessage[];
     summary?: string;
+    createdAt?: number;
+    updatedAt?: number;
 }

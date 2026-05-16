@@ -21,10 +21,11 @@ const DEFAULT_BUDGET: ContextBudget = {
  */
 @Injectable()
 export class AgentContextManager {
-    private budget: ContextBudget;
+    private budget: ContextBudget = { ...DEFAULT_BUDGET };
 
-    constructor(budget?: Partial<ContextBudget>) {
+    configure(budget?: Partial<ContextBudget>): this {
         this.budget = { ...DEFAULT_BUDGET, ...(budget ?? {}) };
+        return this;
     }
 
     /** Rough token estimate (~4 chars per token) */

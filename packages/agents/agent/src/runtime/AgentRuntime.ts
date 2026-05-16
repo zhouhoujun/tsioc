@@ -17,11 +17,13 @@ import { AgentMessage } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
 import { AgentErrorEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentToolCompletedEvent, AgentToolInvokedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent, AgentStreamChunkEvent } from './AgentEvents';
 import { AgentTurnInput } from './AgentTurnInput';
+import { AgentToolDefinition } from '../tools/AgentTool';
+import { ModelRequest } from '../model/ModelRequest';
+import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
 
 @Injectable()
 export class AgentRuntime {
     private contextManager: AgentContextManager;
-    private loopDetector: ToolLoopDetector;
 
     constructor(
         @Inject(AGENT_MODEL_ADAPTER) private modelAdapter: ModelAdapter,
@@ -33,10 +35,14 @@ export class AgentRuntime {
         @Inject(ApplicationContext) private app: ApplicationContext,
         @Optional() @Inject(AGENT_EXPERIENCE_DISTILLER) private experienceDistiller?: ExperienceDistiller,
         @Optional() private promptBuilder?: SystemPromptBuilder,
-        @Optional() private approvalManager?: ToolApprovalManager
+        @Optional() private approvalManager?: ToolApprovalManager,
+        @Optional() injectedContextManager?: AgentContextManager
     ) {
-        this.contextManager = new AgentContextManager();
-        this.loopDetector = new ToolLoopDetector();
+        this.contextManager = (injectedContextManager ?? new AgentContextManager()).configure({
+            maxHistoryTokens: this.options.context?.maxHistoryTokens,
+            maxMemoryRecords: this.options.context?.maxMemoryRecords,
+            maxToolResults: this.options.context?.maxToolResultChars
+        });
     }
 
     async runTurn(sessionId: string, input: string): Promise<AgentTurnResult> {
@@ -80,38 +86,13 @@ export class AgentRuntime {
         await this.sessions.append(sessionId, userMessage);
 
         try {
-            const state = await this.sessions.get(sessionId);
-            const memory = await this.getRelevantMemory(input, sessionId);
-            const messages = this.contextManager.pruneHistory(
-                this.getRecentMessages(state.messages, userMessage.id)
-            );
-
-            const modelReq = {
-                sessionId,
-                messages,
-                tools: this.toolRegistry.getTools().map(t => ({
-                    name: t.name,
-                    description: t.description,
-                    inputSchema: t.inputSchema
-                })),
-                memory,
-                summary: state.summary
-            };
-
-            let fullContent = '';
-            for await (const chunk of this.modelAdapter.stream(modelReq)) {
-                yield { type: chunk.type, content: chunk.content };
-                await this.app.publishEvent(new AgentStreamChunkEvent(
-                    this, sessionId, chunk.type, chunk.content, chunk.toolCalls, chunk.usage
-                ));
-                if (chunk.type === 'text') fullContent += chunk.content ?? '';
-            }
-
-            const resultMsg = this.createMessage('assistant', fullContent);
-            await this.sessions.append(sessionId, resultMsg);
+            const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id);
+            await this.sessions.append(sessionId, result.message);
             await this.maybeSummarize(sessionId);
-            await this.maybeDistillExperience(sessionId, userMessage, resultMsg);
-            await this.app.publishEvent(new AgentTurnCompletedEvent(this, sessionId, resultMsg));
+            await this.maybeDistillExperience(sessionId, userMessage, result.message);
+            await this.app.publishEvent(new AgentTurnCompletedEvent(this, sessionId, result.message));
+            await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
+            yield { type: 'done' };
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
             await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
@@ -142,88 +123,189 @@ export class AgentRuntime {
     }
 
     private async completeTurn(sessionId: string, query: string, currentUserMessageId: string): Promise<AgentTurnResult> {
-        this.loopDetector.reset();
+        const loopDetector = new ToolLoopDetector();
+        loopDetector.reset();
         let round = 0;
         const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
 
         while (round <= maxRounds) {
-            const state = await this.sessions.get(sessionId);
-
-            // Context management: prune history to fit budget
-            let messages = this.getRecentMessages(state.messages, currentUserMessageId);
-            messages = this.contextManager.pruneHistory(messages);
-
-            const memory = this.contextManager.trimMemory(
-                await this.getRelevantMemory(query, sessionId)
-            );
-
-            // Build system prompt if a prompt builder is available
-            if (this.promptBuilder) {
-                const systemPrompt = await this.promptBuilder.build({
-                    sessionId,
-                    tools: this.toolRegistry.getTools().map(t => ({ name: t.name, description: t.description })),
-                    memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
-                    dateTime: new Date().toISOString()
-                });
-                if (systemPrompt) {
-                    messages = [
-                        this.createMessage('system', systemPrompt),
-                        ...messages
-                    ];
-                }
-            }
-
-            const response = await this.modelAdapter.complete({
-                sessionId,
-                messages,
-                tools: this.toolRegistry.getTools().map(tool => ({
-                    name: tool.name,
-                    description: tool.description,
-                    inputSchema: tool.inputSchema
-                })),
-                memory,
-                summary: state.summary
-            });
+            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+            const response = await this.modelAdapter.complete(request);
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
 
-            if (response.toolCalls?.length) {
-                const assistantToolCallMessage = this.createMessage('assistant', response.message ?? '', undefined, undefined, {
-                    toolCalls: response.toolCalls,
-                    model: response.metadata?.model,
-                    provider: response.metadata?.provider,
-                    finishReason: response.metadata?.finishReason,
-                    usage: response.metadata?.usage,
-                    reasoningContent: response.metadata?.reasoningContent
-                });
-                await this.sessions.append(sessionId, assistantToolCallMessage);
-
-                const toolError = await this.executeTools(sessionId, response.toolCalls);
-                if (toolError) {
-                    throw toolError;
-                }
-
-                round++;
-                continue;
+            const handled = await this.handleModelResponse(sessionId, response, loopDetector);
+            if (handled.message) {
+                return { sessionId, message: handled.message };
+            }
+            if (handled.error) {
+                throw handled.error;
             }
 
-            const message = this.createMessage('assistant', response.message ?? '', undefined, undefined, response.metadata);
-            return { sessionId, message };
+            round++;
         }
 
         const fallback = this.createMessage('assistant', 'Stopped after reaching the tool round limit.');
         return { sessionId, message: fallback };
     }
 
+    private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string }, AgentTurnResult, void> {
+        const loopDetector = new ToolLoopDetector();
+        loopDetector.reset();
+        let round = 0;
+        const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
+
+        while (round <= maxRounds) {
+            const request = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+            const response = yield* this.collectStreamingResponse(sessionId, request);
+
+            const handled = await this.handleModelResponse(sessionId, response, loopDetector);
+            if (handled.message) {
+                return { sessionId, message: handled.message };
+            }
+            if (handled.error) {
+                throw handled.error;
+            }
+
+            round++;
+        }
+
+        const fallback = this.createMessage('assistant', 'Stopped after reaching the tool round limit.');
+        return { sessionId, message: fallback };
+    }
+
+    private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string): Promise<ModelRequest> {
+        const state = await this.sessions.get(sessionId);
+        let messages = this.getRecentMessages(state.messages, currentUserMessageId);
+        messages = this.contextManager.pruneHistory(messages);
+
+        const memory = this.contextManager.trimMemory(
+            await this.getRelevantMemory(query, sessionId)
+        );
+
+        if (this.promptBuilder) {
+            const systemPrompt = await this.promptBuilder.build({
+                sessionId,
+                tools: this.getToolDefinitions().map(t => ({ name: t.name, description: t.description })),
+                memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
+                dateTime: new Date().toISOString()
+            });
+            if (systemPrompt) {
+                messages = [
+                    this.createMessage('system', systemPrompt),
+                    ...messages
+                ];
+            }
+        }
+
+        return {
+            sessionId,
+            messages,
+            tools: this.getToolDefinitions(),
+            memory,
+            summary: state.summary
+        };
+    }
+
+    private getToolDefinitions(): AgentToolDefinition[] {
+        return this.toolRegistry.getTools().map(tool => ({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema
+        }));
+    }
+
+    private async *collectStreamingResponse(
+        sessionId: string,
+        request: ModelRequest
+    ): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string }, ModelResponse, void> {
+        let message = '';
+        let reasoningContent = '';
+        let toolCalls: AgentToolCall[] = [];
+        let usage: Record<string, any> | undefined;
+        let metadata: Record<string, any> = {};
+
+        for await (const chunk of this.modelAdapter.stream(request)) {
+            if (chunk.type !== 'done') {
+                await this.app.publishEvent(new AgentStreamChunkEvent(
+                    this,
+                    sessionId,
+                    chunk.type,
+                    chunk.content,
+                    chunk.toolCalls,
+                    chunk.usage
+                ));
+            }
+
+            if (chunk.type === 'text') {
+                message += chunk.content ?? '';
+            }
+            if (chunk.type === 'reasoning') {
+                reasoningContent += chunk.content ?? '';
+            }
+            if (chunk.type === 'tool_call' && chunk.toolCalls?.length) {
+                toolCalls = toolCalls.concat(chunk.toolCalls);
+            }
+            if (chunk.usage) {
+                usage = chunk.usage as Record<string, any>;
+            }
+            if (chunk.metadata) {
+                metadata = { ...metadata, ...chunk.metadata };
+            }
+
+            if (chunk.type !== 'done') {
+                yield { type: chunk.type, content: chunk.content };
+            }
+        }
+
+        const response: ModelResponse = {
+            message,
+            toolCalls: toolCalls.length ? toolCalls : undefined,
+            metadata: {
+                ...metadata,
+                usage,
+                reasoningContent: reasoningContent || undefined
+            }
+        };
+        await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+        return response;
+    }
+
+    private async handleModelResponse(
+        sessionId: string,
+        response: ModelResponse,
+        loopDetector: ToolLoopDetector
+    ): Promise<{ message?: AgentMessage; error?: Error }> {
+        if (response.toolCalls?.length) {
+            const assistantToolCallMessage = this.createMessage('assistant', response.message ?? '', undefined, undefined, {
+                toolCalls: response.toolCalls,
+                model: response.metadata?.model,
+                provider: response.metadata?.provider,
+                finishReason: response.metadata?.finishReason,
+                usage: response.metadata?.usage,
+                reasoningContent: response.metadata?.reasoningContent
+            });
+            await this.sessions.append(sessionId, assistantToolCallMessage);
+
+            const toolError = await this.executeTools(sessionId, response.toolCalls, loopDetector);
+            return { error: toolError };
+        }
+
+        return {
+            message: this.createMessage('assistant', response.message ?? '', undefined, undefined, response.metadata)
+        };
+    }
+
     private async executeTools(
         sessionId: string,
-        toolCalls: Array<{ id: string; name: string; input?: any }>
+        toolCalls: AgentToolCall[],
+        loopDetector: ToolLoopDetector
     ): Promise<Error | undefined> {
         const toolOpts = this.options.tools ?? defaultAgentOptions.tools!;
 
         if (toolOpts.parallelExecution && toolCalls.length > 1 && this.canParallelize(toolCalls, toolOpts.parallelSafeTools ?? [])) {
-            return this.executeToolsParallel(sessionId, toolCalls);
+            return this.executeToolsParallel(sessionId, toolCalls, loopDetector);
         }
-        return this.executeToolsSequential(sessionId, toolCalls);
+        return this.executeToolsSequential(sessionId, toolCalls, loopDetector);
     }
 
     private canParallelize(toolCalls: Array<{ name: string }>, safeTools: string[]): boolean {
@@ -232,7 +314,8 @@ export class AgentRuntime {
 
     private async executeToolsSequential(
         sessionId: string,
-        toolCalls: Array<{ id: string; name: string; input?: any }>
+        toolCalls: AgentToolCall[],
+        loopDetector: ToolLoopDetector
     ): Promise<Error | undefined> {
         let toolError: Error | undefined;
         for (const toolCall of toolCalls) {
@@ -244,20 +327,21 @@ export class AgentRuntime {
                 ));
                 continue;
             }
-            toolError = await this.invokeSingleTool(sessionId, toolCall);
+            toolError = await this.invokeSingleTool(sessionId, toolCall, loopDetector);
         }
         return toolError;
     }
 
     private async executeToolsParallel(
         sessionId: string,
-        toolCalls: Array<{ id: string; name: string; input?: any }>
+        toolCalls: AgentToolCall[],
+        loopDetector: ToolLoopDetector
     ): Promise<Error | undefined> {
         const maxParallel = this.options.tools?.maxParallelTools ?? defaultAgentOptions.tools!.maxParallelTools!;
         for (let i = 0; i < toolCalls.length; i += maxParallel) {
             const batch = toolCalls.slice(i, i + maxParallel);
             const results = await Promise.allSettled(
-                batch.map(tc => this.invokeSingleTool(sessionId, tc))
+                batch.map(tc => this.invokeSingleTool(sessionId, tc, loopDetector))
             );
 
             for (let j = 0; j < results.length; j++) {
@@ -275,12 +359,13 @@ export class AgentRuntime {
 
     private async invokeSingleTool(
         sessionId: string,
-        toolCall: { id: string; name: string; input?: any }
+        toolCall: { id: string; name: string; input?: any },
+        loopDetector: ToolLoopDetector
     ): Promise<Error | undefined> {
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCall.input));
 
         // Tool loop detection
-        const loopResult = this.loopDetector.record(toolCall.name, toolCall.input);
+        const loopResult = loopDetector.record(toolCall.name, toolCall.input);
         if (loopResult.severity === 'break') {
             const reason = loopResult.reason ?? 'Loop detected';
             await this.sessions.append(sessionId, this.createMessage('tool',
@@ -307,7 +392,7 @@ export class AgentRuntime {
 
         try {
             const output = await this.toolRegistry.invoke(toolCall.name, toolCall.input, sessionId);
-            this.loopDetector.record(toolCall.name, toolCall.input, output);
+            loopDetector.record(toolCall.name, toolCall.input, output);
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output));
 
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;

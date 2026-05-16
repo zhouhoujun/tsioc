@@ -6,6 +6,7 @@ import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionQueue } from '../auth/SessionQueue';
 
 const MAGIC_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+const MAX_WS_MESSAGE_BYTES = 64 * 1024;
 
 /**
  * WebSocket chat handler — /ws/chat.
@@ -25,8 +26,7 @@ export class ChatWebSocket {
             const socket = await this.upgrade(req, res);
             if (!socket) return;
 
-            const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-            const sessionId = url.searchParams.get('session_id') ?? `ws-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+            const sessionId = `ws-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
 
             await this.handleSocket(socket, sessionId);
         };
@@ -41,7 +41,11 @@ export class ChatWebSocket {
 
         socket.on('data', (data: Buffer) => {
             buffer = Buffer.concat([buffer, data]);
-            this.processFrames(socket, buffer, sessionId);
+            if (buffer.length > MAX_WS_MESSAGE_BYTES) {
+                socket.end();
+                return;
+            }
+            buffer = this.processFrames(socket, buffer, sessionId);
         });
 
         socket.on('close', () => {
@@ -49,16 +53,19 @@ export class ChatWebSocket {
         });
     }
 
-    private processFrames(socket: DuplexSocket, buffer: Buffer, sessionId: string): void {
+    private processFrames(socket: DuplexSocket, buffer: Buffer, sessionId: string): Buffer {
+        let remaining = buffer;
         while (true) {
-            const result = this.parseFrame(buffer);
-            if (!result) break;
+            const result = this.parseFrame(remaining);
+            if (!result) {
+                return remaining;
+            }
 
-            buffer = buffer.subarray(result.totalLength);
+            remaining = remaining.subarray(result.totalLength);
 
             if (result.opcode === 0x08) {
                 socket.end();
-                return;
+                return Buffer.alloc(0);
             }
 
             if (result.opcode === 0x09) {
@@ -66,7 +73,9 @@ export class ChatWebSocket {
                 continue;
             }
 
-            if (result.opcode !== 0x01) continue;
+            if (result.opcode !== 0x01) {
+                continue;
+            }
 
             this.handleMessage(socket, result.payload.toString(), sessionId);
         }
@@ -77,24 +86,45 @@ export class ChatWebSocket {
             const message = JSON.parse(text);
             const input = message.content ?? message.input ?? text;
 
-            this.sessionQueue.enqueue(sessionId, async () => {
-                try {
-                    const result = await this.runtime.runTurn(sessionId, input);
+            void this.sessionQueue.enqueue(sessionId, async () => {
+                let streamDone = false;
+                for await (const chunk of this.runtime.runStreamingTurn(sessionId, input)) {
+                    if (chunk.type === 'done') {
+                        streamDone = true;
+                        continue;
+                    }
                     const response = JSON.stringify({
-                        type: 'message',
+                        type: 'chunk',
+                        chunkType: chunk.type,
                         sessionId,
-                        content: result.message.content,
+                        content: chunk.content,
                         timestamp: Date.now()
                     });
                     this.writeFrame(socket, 0x01, Buffer.from(response));
-                } catch (err: any) {
-                    const errorMsg = JSON.stringify({
-                        type: 'error',
-                        sessionId,
-                        error: err?.message ?? 'internal error'
-                    });
-                    this.writeFrame(socket, 0x01, Buffer.from(errorMsg));
                 }
+                const messages = await this.runtime.getMessages(sessionId);
+                const finalMessage = messages[messages.length - 1];
+                const response = JSON.stringify({
+                    type: 'message',
+                    sessionId,
+                    content: finalMessage?.content ?? '',
+                    timestamp: Date.now()
+                });
+                this.writeFrame(socket, 0x01, Buffer.from(response));
+                if (streamDone) {
+                    this.writeFrame(socket, 0x01, Buffer.from(JSON.stringify({
+                        type: 'done',
+                        sessionId,
+                        timestamp: Date.now()
+                    })));
+                }
+            }).catch((err: any) => {
+                const errorMsg = JSON.stringify({
+                    type: 'error',
+                    sessionId,
+                    error: err?.message ?? 'internal error'
+                });
+                this.writeFrame(socket, 0x01, Buffer.from(errorMsg));
             });
         } catch {
             const errorMsg = JSON.stringify({ type: 'error', sessionId, error: 'invalid JSON' });
@@ -108,6 +138,16 @@ export class ChatWebSocket {
         if (!key) {
             res.writeHead(400).end('missing sec-websocket-key');
             return Promise.resolve(null);
+        }
+        const origin = req.headers.origin as string | undefined;
+        const host = req.headers.host ?? 'localhost';
+        if (origin) {
+            const allowedOrigin = `http://${host}`;
+            const allowedSecureOrigin = `https://${host}`;
+            if (origin !== allowedOrigin && origin !== allowedSecureOrigin) {
+                res.writeHead(403).end('forbidden origin');
+                return Promise.resolve(null);
+            }
         }
 
         const accept = crypto.createHash('sha1').update(key + MAGIC_GUID).digest('base64');

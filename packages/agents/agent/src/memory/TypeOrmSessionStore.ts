@@ -22,6 +22,8 @@ export class TypeOrmSessionStore extends SessionStore {
         return {
             sessionId,
             summary: session.summary,
+            createdAt: Number(session.createdAt),
+            updatedAt: Number(session.updatedAt),
             messages: messages.map(message => ({
                 id: message.messageId,
                 role: message.role as AgentMessage['role'],
@@ -71,6 +73,11 @@ export class TypeOrmSessionStore extends SessionStore {
             session.updatedAt = now;
         }
         await repo.save(session);
+    }
+
+    async delete(sessionId: string): Promise<void> {
+        await this.adapter.getRepository(AgentMessageEntity).delete({ sessionId } as any);
+        await this.adapter.getRepository(AgentSessionEntity).delete({ sessionId } as any);
     }
 
     async clear(): Promise<void> {

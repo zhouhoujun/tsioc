@@ -1,5 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentRuntime, SessionStore } from '@tsdi/agent';
+import { AgentRuntime, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent } from '@tsdi/agent';
+import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { SessionInfo } from '../contracts/SessionInfo';
 
@@ -22,6 +23,21 @@ export class SessionHandler {
         this.sessionIds.add(sessionId);
     }
 
+    @EventHandler(AgentTurnStartedEvent)
+    onTurnStarted(event: AgentTurnStartedEvent): void {
+        this.track(event.sessionId);
+    }
+
+    @EventHandler(AgentTurnCompletedEvent)
+    onTurnCompleted(event: AgentTurnCompletedEvent): void {
+        this.track(event.sessionId);
+    }
+
+    @EventHandler(AgentStreamChunkEvent)
+    onStreamChunk(event: AgentStreamChunkEvent): void {
+        this.track(event.sessionId);
+    }
+
     getRoutes(): GatewayRoute[] {
         const listSessions: RouteHandler = async (_req, res) => {
             const infos: SessionInfo[] = [];
@@ -30,8 +46,8 @@ export class SessionHandler {
                     const state = await this.sessions.get(id);
                     infos.push({
                         id,
-                        createdAt: 0,
-                        lastActiveAt: 0,
+                        createdAt: state.createdAt ?? 0,
+                        lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
                         messageCount: state.messages.length,
                         summary: state.summary
                     });
@@ -64,7 +80,7 @@ export class SessionHandler {
                 res.writeHead(400).end(JSON.stringify({ error: 'session id required' }));
                 return;
             }
-            this.sessions.clear();
+            await this.sessions.delete(sessionId);
             this.sessionIds.delete(sessionId);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({ status: 'deleted' }));
