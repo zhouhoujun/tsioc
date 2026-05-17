@@ -4,7 +4,7 @@ This repo is for distribution on `npm`. The source for this module is in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
 `@tsdi/agent-tools` provides ready-to-register tool bundles for `@tsdi/agent`,
-including filesystem tools, utility tools, and web access tools.
+including filesystem tools, utility tools, web access tools, planning tools, scheduling tools, terminal tools, memory tools, optional HTTP tools, and registry introspection tools.
 
 ## Install
 
@@ -30,6 +30,12 @@ npm run test:coverage
 - `src/files`: file reading, glob search, content search, and path policy helpers
 - `src/utility`: utility tools such as the calculator tool
 - `src/web`: web search and web extraction tools
+- `planning`: session todo list tools
+- `http`: opt-in HTTP fetch/request tools
+- `registry`: tool registry introspection tools
+- `scheduling`: scheduled prompt tools
+- `terminal`: opt-in shell execution tools
+- `memory`: memory inspection and deletion tools
 
 ## Main exports
 
@@ -39,6 +45,12 @@ npm run test:coverage
 - `withFilesystemAgentTools`
 - `withUtilityAgentTools`
 - `withWebAgentTools`
+- `withPlanningAgentTools`
+- `withHttpAgentTools`
+- `withRegistryAgentTools`
+- `withSchedulingAgentTools`
+- `withMemoryAgentTools`
+- `withTerminalAgentTools`
 - `withDefaultAgentTools`
 - `ReadFileTool`
 - `GlobSearchTool`
@@ -46,6 +58,15 @@ npm run test:coverage
 - `CalculatorTool`
 - `WebSearchTool`
 - `WebExtractTool`
+- `TodoTool`
+- `HttpFetchTool`
+- `HttpRequestTool`
+- `ToolSearchTool`
+- `ToolInspectTool`
+- `ScheduleTool`
+- `MemoryListTool`
+- `MemoryDeleteTool`
+- `TerminalTool`
 
 ## Notes
 

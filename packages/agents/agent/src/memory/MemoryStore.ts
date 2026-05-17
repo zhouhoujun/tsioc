@@ -18,4 +18,5 @@ export abstract class MemoryStore {
     abstract put(record: AgentMemoryRecord): Promise<void>;
     abstract search(query: string, sessionId?: string): Promise<AgentMemoryRecord[]>;
     abstract getAll(sessionId?: string): Promise<AgentMemoryRecord[]>;
+    abstract delete(id: string, sessionId?: string, scope?: AgentMemoryRecord['scope']): Promise<number>;
 }

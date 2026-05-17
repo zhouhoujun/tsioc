@@ -30,6 +30,42 @@
     ".": {
       "types": "./index.d.ts",
       "default": "./index.js"
+    },
+    "./files": {
+      "types": "./files/index.d.ts",
+      "default": "./files/index.js"
+    },
+    "./web": {
+      "types": "./web/index.d.ts",
+      "default": "./web/index.js"
+    },
+    "./utility": {
+      "types": "./utility/index.d.ts",
+      "default": "./utility/index.js"
+    },
+    "./planning": {
+      "types": "./planning/index.d.ts",
+      "default": "./planning/index.js"
+    },
+    "./http": {
+      "types": "./http/index.d.ts",
+      "default": "./http/index.js"
+    },
+    "./registry": {
+      "types": "./registry/index.d.ts",
+      "default": "./registry/index.js"
+    },
+    "./memory": {
+      "types": "./memory/index.d.ts",
+      "default": "./memory/index.js"
+    },
+    "./scheduling": {
+      "types": "./scheduling/index.d.ts",
+      "default": "./scheduling/index.js"
+    },
+    "./terminal": {
+      "types": "./terminal/index.d.ts",
+      "default": "./terminal/index.js"
     }
   },
   "dependencies": {

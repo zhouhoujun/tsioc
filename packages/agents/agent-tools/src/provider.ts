@@ -9,6 +9,15 @@ import { ContentSearchTool } from './files/content-search.tool';
 import { CalculatorTool } from './utility/calculator.tool';
 import { WebSearchTool } from './web/web-search.tool';
 import { WebExtractTool } from './web/web-extract.tool';
+import { TodoTool } from '../planning/todo.tool';
+import { ScheduleTool } from '../scheduling/schedule.tool';
+import { TerminalTool } from '../terminal/terminal.tool';
+import { MemoryListTool } from '../memory/memory-list.tool';
+import { MemoryDeleteTool } from '../memory/memory-delete.tool';
+import { HttpFetchTool } from '../http/http-fetch.tool';
+import { HttpRequestTool } from '../http/http-request.tool';
+import { ToolSearchTool } from '../registry/tool-search.tool';
+import { ToolInspectTool } from '../registry/tool-inspect.tool';
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -25,15 +34,43 @@ export function withWebAgentTools(): Provider[] {
     return withAgentTools(WebSearchTool, WebExtractTool);
 }
 
+export function withHttpAgentTools(): Provider[] {
+    return withAgentTools(HttpFetchTool, HttpRequestTool);
+}
+
 export function withUtilityAgentTools(): Provider[] {
     return withAgentTools(CalculatorTool);
+}
+
+export function withPlanningAgentTools(): Provider[] {
+    return withAgentTools(TodoTool);
+}
+
+export function withMemoryAgentTools(): Provider[] {
+    return withAgentTools(MemoryListTool, MemoryDeleteTool);
+}
+
+export function withRegistryAgentTools(): Provider[] {
+    return withAgentTools(ToolSearchTool, ToolInspectTool);
+}
+
+export function withSchedulingAgentTools(): Provider[] {
+    return withAgentTools(ScheduleTool);
+}
+
+export function withTerminalAgentTools(): Provider[] {
+    return withAgentTools(TerminalTool);
 }
 
 export function withDefaultAgentTools(): Provider[] {
     return [
         ...withFilesystemAgentTools(),
         ...withUtilityAgentTools(),
-        ...withWebAgentTools()
+        ...withWebAgentTools(),
+        ...withPlanningAgentTools(),
+        ...withSchedulingAgentTools(),
+        ...withMemoryAgentTools(),
+        ...withRegistryAgentTools()
     ];
 }
 

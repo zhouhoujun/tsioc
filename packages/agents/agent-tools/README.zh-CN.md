@@ -3,7 +3,7 @@
 这个目录用于发布 `npm` 包，源码位于
 [主仓库](https://github.com/zhouhoujun/tsioc)。
 
-`@tsdi/agent-tools` 提供可直接注册到 `@tsdi/agent` 的工具集合，包括文件系统工具、实用工具以及 Web 访问工具。
+`@tsdi/agent-tools` 提供可直接注册到 `@tsdi/agent` 的工具集合，包括文件系统工具、实用工具、Web 访问工具、规划工具、调度工具、终端工具、记忆工具，以及按需启用的 HTTP 工具和工具注册表自省工具。
 
 ## 安装
 
@@ -29,6 +29,12 @@ npm run test:coverage
 - `src/files`：文件读取、glob 搜索、内容搜索与路径策略辅助函数
 - `src/utility`：计算器等通用工具
 - `src/web`：Web 搜索与网页内容提取工具
+- `planning`：会话待办列表工具
+- `http`：按需启用的 HTTP 抓取/请求工具
+- `registry`：工具注册表自省工具
+- `scheduling`：定时提示工具
+- `terminal`：按需启用的终端执行工具
+- `memory`：记忆查看与删除工具
 
 ## 主要导出
 
@@ -38,6 +44,12 @@ npm run test:coverage
 - `withFilesystemAgentTools`
 - `withUtilityAgentTools`
 - `withWebAgentTools`
+- `withPlanningAgentTools`
+- `withHttpAgentTools`
+- `withRegistryAgentTools`
+- `withSchedulingAgentTools`
+- `withMemoryAgentTools`
+- `withTerminalAgentTools`
 - `withDefaultAgentTools`
 - `ReadFileTool`
 - `GlobSearchTool`
@@ -45,6 +57,15 @@ npm run test:coverage
 - `CalculatorTool`
 - `WebSearchTool`
 - `WebExtractTool`
+- `TodoTool`
+- `HttpFetchTool`
+- `HttpRequestTool`
+- `ToolSearchTool`
+- `ToolInspectTool`
+- `ScheduleTool`
+- `MemoryListTool`
+- `MemoryDeleteTool`
+- `TerminalTool`
 
 ## 说明
 

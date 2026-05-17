@@ -8,6 +8,9 @@ import { MemoryPutTool, MemorySearchTool } from '../src/tools/BuiltinTools';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../src/tools/ToolApprovalManager';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { AgentToolsModule, withAgentToolsOptions } from '../../agent-tools/src';
+import { MemoryDeleteTool, MemoryListTool } from '../../agent-tools/memory';
+import { ScheduleTool } from '../../agent-tools/scheduling';
+import { withHttpAgentTools } from '../../agent-tools/src/provider';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -251,5 +254,113 @@ export class BuiltinToolsTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('agent tools module keeps http and terminal opt-in while exposing registry tools')
+    async agentToolsModuleKeepsHttpAndTerminalOptInWhileExposingRegistryTools() {
+        const ctx = await Application.run(AgentToolsModule);
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const definitions = registry.getToolDefinitions();
+            expect(definitions.some(tool => tool.name === 'memory.list')).toEqual(true);
+            expect(definitions.some(tool => tool.name === 'memory.delete')).toEqual(true);
+            expect(definitions.some(tool => tool.name === 'http_fetch')).toEqual(false);
+            expect(definitions.some(tool => tool.name === 'http_request')).toEqual(false);
+            expect(definitions.some(tool => tool.name === 'tool_search')).toEqual(true);
+            expect(definitions.some(tool => tool.name === 'tool_inspect')).toEqual(true);
+            expect(definitions.some(tool => tool.name === 'terminal')).toEqual(false);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('http tools are available when explicitly enabled')
+    async httpToolsAreAvailableWhenExplicitlyEnabled() {
+        const fetchCalls: Array<{ url: string; init?: any; }> = [];
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [
+                ...withAgentToolsOptions({
+                    http: {
+                        fetch: (async (url: string, init?: any) => {
+                            fetchCalls.push({ url, init });
+                            return {
+                                ok: true,
+                                status: 200,
+                                headers: { forEach() { return; } },
+                                text: async () => 'ok'
+                            };
+                        }) as any
+                    }
+                } as any),
+                ...withHttpAgentTools()
+            ]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            expect(registry.getToolDefinitions().some(tool => tool.name === 'http_fetch')).toEqual(true);
+            expect(registry.getToolDefinitions().some(tool => tool.name === 'http_request')).toEqual(true);
+
+            const fetched = await registry.invoke('http_fetch', { url: 'https://example.com/http' }, 's1');
+            expect(fetched.status).toEqual(200);
+            expect(fetchCalls[0].url).toEqual('https://example.com/http');
+
+            const inspected = await registry.invoke('tool_inspect', { name: 'memory.list' }, 's1');
+            expect(inspected.tool.name).toEqual('memory.list');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('agent tools module registers memory tools but keeps terminal opt-in')
+    async agentToolsModuleRegistersMemoryToolsButKeepsTerminalOptIn() {
+        const ctx = await Application.run(AgentToolsModule);
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const definitions = registry.getToolDefinitions();
+            expect(definitions.some(tool => tool.name === 'memory.list')).toEqual(true);
+            expect(definitions.some(tool => tool.name === 'memory.delete')).toEqual(true);
+            expect(definitions.some(tool => tool.name === 'terminal')).toEqual(false);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('memory tools operate through the registry with session visibility')
+    async memoryToolsOperateThroughRegistry() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-note', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 });
+        await store.put({ id: 's2-note', sessionId: 's2', key: 'topic', value: 'switch', scope: 'session', createdAt: 2 });
+        await store.put({ id: 'global-note', key: 'shared', value: 'policy', scope: 'global', createdAt: 3 });
+        const registry = new LocalToolRegistry([new MemoryListTool(), new MemoryDeleteTool()], store);
+
+        const listed = await registry.invoke('memory.list', undefined, 's1');
+        expect(listed.records.map((record: any) => record.id)).toEqual(['s1-note', 'global-note']);
+
+        const deleted = await registry.invoke('memory.delete', { id: 's1-note' }, 's1');
+        expect(deleted.deleted).toEqual(true);
+        expect((await store.getAll('s1')).map(record => record.id)).toEqual(['global-note']);
+    }
+
+    @Test('local tool registry passes scheduler into schedule tool context')
+    async localToolRegistryPassesSchedulerIntoScheduleToolContext() {
+        class FakeScheduler {
+            tasks: any[] = [];
+            async start() { return; }
+            async stop() { return; }
+            async schedule(task: any) {
+                this.tasks.push(task);
+                return task;
+            }
+            async cancel() { return; }
+            getTasks() {
+                return this.tasks;
+            }
+        }
+
+        const scheduler = new FakeScheduler();
+        const registry = new LocalToolRegistry([new ScheduleTool({ get: () => scheduler } as any)], new InMemoryMemoryStore());
+        await registry.invoke('schedule', { action: 'create', prompt: 'hello' }, 'session-reg');
+        expect(scheduler.tasks.length).toEqual(1);
+        expect(scheduler.tasks[0].sessionId).toEqual('session-reg');
     }
 }

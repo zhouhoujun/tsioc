@@ -52,4 +52,23 @@ describe('Persistent memory store', () => {
             await ctx.close();
         }
     });
+
+    it('deletes only current session memory unless global scope is requested', async () => {
+        const ctx = await Application.run(PersistentMemoryTestModule);
+        try {
+            const store = ctx.get(TypeOrmMemoryStore) as TypeOrmMemoryStore;
+            await store.put({ id: 'g1', key: 'team', value: 'agents', scope: 'global', createdAt: 1 });
+            await store.put({ id: 's1', sessionId: 'session-1', key: 'topic', value: 'router', scope: 'session', createdAt: 2 });
+            await store.put({ id: 's2', sessionId: 'session-2', key: 'topic', value: 'cache', scope: 'session', createdAt: 3 });
+
+            expect(await store.delete('s1', 'session-1')).toEqual(1);
+            expect(await store.delete('s2', 'session-1')).toEqual(0);
+            expect(await store.delete('g1', 'session-1')).toEqual(0);
+            expect(await store.delete('g1', 'session-1', 'global')).toEqual(1);
+            expect((await store.getAll('session-1')).map((r: any) => r.id)).toEqual([]);
+            expect((await store.getAll('session-2')).map((r: any) => r.id)).toEqual(['s2']);
+        } finally {
+            await ctx.close();
+        }
+    });
 });

@@ -50,4 +50,24 @@ export class TypeOrmMemoryStore extends MemoryStore {
                 updatedAt: record.updatedAt == null ? undefined : Number(record.updatedAt)
             }));
     }
+
+    async delete(id: string, sessionId?: string, scope?: AgentMemoryRecord['scope']): Promise<number> {
+        const repo = this.adapter.getRepository(AgentMemoryEntity);
+        const memory = await repo.findOne({ where: { id } as any });
+        if (!memory) {
+            return 0;
+        }
+        if (scope && memory.scope !== scope) {
+            return 0;
+        }
+        if (memory.scope === 'global') {
+            if (scope !== 'global') {
+                return 0;
+            }
+        } else if (!sessionId || memory.sessionId !== sessionId) {
+            return 0;
+        }
+        const result = await repo.delete({ id } as any);
+        return result.affected ?? 0;
+    }
 }

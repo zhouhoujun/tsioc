@@ -23,4 +23,24 @@ export class InMemoryMemoryStore extends MemoryStore {
     async getAll(sessionId?: string): Promise<AgentMemoryRecord[]> {
         return this.records.filter(record => record.scope === 'global' || !sessionId || record.sessionId === sessionId);
     }
+
+    async delete(id: string, sessionId?: string, scope?: AgentMemoryRecord['scope']): Promise<number> {
+        const before = this.records.length;
+        this.records = this.records.filter(record => {
+            if (record.id !== id) {
+                return true;
+            }
+            if (scope && record.scope !== scope) {
+                return true;
+            }
+            if (record.scope === 'global') {
+                return scope !== 'global';
+            }
+            if (!sessionId) {
+                return true;
+            }
+            return record.sessionId !== sessionId;
+        });
+        return before - this.records.length;
+    }
 }

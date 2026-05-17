@@ -24,9 +24,31 @@ export interface AgentToolsWebOptions {
     maxContentChars?: number;
 }
 
+export interface AgentToolsTerminalOptions {
+    defaultTimeoutMs?: number;
+    maxTimeoutMs?: number;
+}
+
+export interface AgentToolsHttpOptions {
+    fetch?: typeof fetch;
+    timeoutMs?: number;
+    maxResponseChars?: number;
+}
+
+export interface AgentToolsScheduleOptions {
+    maxTasksPerSession?: number;
+    maxPromptLength?: number;
+    maxDelayMs?: number;
+    minIntervalMs?: number;
+    maxIntervalMs?: number;
+}
+
 export interface AgentToolsOptions {
     file?: AgentToolsFileOptions;
     web?: AgentToolsWebOptions;
+    http?: AgentToolsHttpOptions;
+    terminal?: AgentToolsTerminalOptions;
+    schedule?: AgentToolsScheduleOptions;
 }
 
 export const defaultAgentToolsOptions: AgentToolsOptions = {
@@ -41,6 +63,10 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
     web: {
         timeoutMs: 15000,
         maxContentChars: 12000
+    },
+    http: {
+        timeoutMs: 15000,
+        maxResponseChars: 12000
     }
 };
 
@@ -53,6 +79,16 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         web: {
             ...(defaultAgentToolsOptions.web ?? {}),
             ...(options?.web ?? {})
+        },
+        http: {
+            ...(defaultAgentToolsOptions.http ?? {}),
+            ...(options?.http ?? {})
+        },
+        terminal: {
+            ...(options?.terminal ?? {})
+        },
+        schedule: {
+            ...(options?.schedule ?? {})
         }
     };
 }
