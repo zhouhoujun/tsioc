@@ -4,8 +4,8 @@ import { CompilerModule } from '@tsdi/compiler';
 if (process.cwd() === __dirname) {
     Workflow.run(CompilerModule, {
         baseURL: __dirname,
-        src: ['src/**/*.ts', 'wechat/**/*.ts', 'wecom/**/*.ts', 'qq/**/*.ts', 'feishu/**/*.ts', 'dingtalk/**/*.ts', 'slack/**/*.ts', 'telegram/**/*.ts', 'discord/**/*.ts', 'line/**/*.ts', 'matrix/**/*.ts', 'mattermost/**/*.ts', 'signal/**/*.ts'],
-        outDir: '../../dist/agent-channels',
+        src: 'src/**/*.ts',
+        outDir: '../../dist/agent-cli',
         options: {
             target: 'es2020',
             module: 'commonjs',

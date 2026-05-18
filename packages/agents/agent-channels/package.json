@@ -25,6 +25,60 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./slack": {
+      "types": "./slack/index.d.ts",
+      "default": "./slack/index.js"
+    },
+    "./telegram": {
+      "types": "./telegram/index.d.ts",
+      "default": "./telegram/index.js"
+    },
+    "./discord": {
+      "types": "./discord/index.d.ts",
+      "default": "./discord/index.js"
+    },
+    "./line": {
+      "types": "./line/index.d.ts",
+      "default": "./line/index.js"
+    },
+    "./matrix": {
+      "types": "./matrix/index.d.ts",
+      "default": "./matrix/index.js"
+    },
+    "./mattermost": {
+      "types": "./mattermost/index.d.ts",
+      "default": "./mattermost/index.js"
+    },
+    "./signal": {
+      "types": "./signal/index.d.ts",
+      "default": "./signal/index.js"
+    },
+    "./wechat": {
+      "types": "./wechat/index.d.ts",
+      "default": "./wechat/index.js"
+    },
+    "./wecom": {
+      "types": "./wecom/index.d.ts",
+      "default": "./wecom/index.js"
+    },
+    "./qq": {
+      "types": "./qq/index.d.ts",
+      "default": "./qq/index.js"
+    },
+    "./feishu": {
+      "types": "./feishu/index.d.ts",
+      "default": "./feishu/index.js"
+    },
+    "./dingtalk": {
+      "types": "./dingtalk/index.d.ts",
+      "default": "./dingtalk/index.js"
+    }
+  },
   "dependencies": {
     "@tsdi/agent": "6.0.31",
     "@tsdi/ioc": "6.0.31",

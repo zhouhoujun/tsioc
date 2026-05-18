@@ -43,12 +43,47 @@ export interface AgentToolsScheduleOptions {
     maxIntervalMs?: number;
 }
 
+export type AgentToolGroup =
+    | 'filesystem'
+    | 'utility'
+    | 'web'
+    | 'planning'
+    | 'scheduling'
+    | 'memory'
+    | 'registry'
+    | 'http'
+    | 'terminal';
+
+export type AgentToolItem =
+    | 'read_file'
+    | 'glob_search'
+    | 'content_search'
+    | 'calculator'
+    | 'web_search'
+    | 'web_extract'
+    | 'todo'
+    | 'schedule'
+    | 'memory.list'
+    | 'memory.delete'
+    | 'tool_search'
+    | 'tool_inspect'
+    | 'http_fetch'
+    | 'http_request'
+    | 'terminal';
+
+export interface AgentToolsRegistrationOptions {
+    preset?: 'default' | 'none' | 'all';
+    groups?: Partial<Record<AgentToolGroup, boolean>>;
+    items?: Partial<Record<AgentToolItem, boolean>>;
+}
+
 export interface AgentToolsOptions {
     file?: AgentToolsFileOptions;
     web?: AgentToolsWebOptions;
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
     schedule?: AgentToolsScheduleOptions;
+    registration?: AgentToolsRegistrationOptions;
 }
 
 export const defaultAgentToolsOptions: AgentToolsOptions = {
@@ -67,6 +102,11 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
     http: {
         timeoutMs: 15000,
         maxResponseChars: 12000
+    },
+    registration: {
+        preset: 'default',
+        groups: {},
+        items: {}
     }
 };
 
@@ -89,6 +129,18 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         },
         schedule: {
             ...(options?.schedule ?? {})
+        },
+        registration: {
+            ...(defaultAgentToolsOptions.registration ?? {}),
+            ...(options?.registration ?? {}),
+            groups: {
+                ...(defaultAgentToolsOptions.registration?.groups ?? {}),
+                ...(options?.registration?.groups ?? {})
+            },
+            items: {
+                ...(defaultAgentToolsOptions.registration?.items ?? {}),
+                ...(options?.registration?.items ?? {})
+            }
         }
     };
 }

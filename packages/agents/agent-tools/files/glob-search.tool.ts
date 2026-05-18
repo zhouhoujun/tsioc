@@ -1,8 +1,8 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import globby = require('globby');
-import { AgentToolsOptions } from '../options';
-import { AGENT_TOOLS_OPTIONS } from '../tokens';
+import { AgentToolsOptions } from '../src/options';
+import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { resolveFilePolicy, toRelativeWorkspacePath } from './path-policy';
 
 @Injectable()

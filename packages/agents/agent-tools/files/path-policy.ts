@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } from '../options';
+import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } from '../src/options';
 
 export interface ResolvedFilePolicy {
     rootDir: string;

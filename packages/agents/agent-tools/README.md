@@ -27,9 +27,9 @@ npm run test:coverage
 
 ## Package layout
 
-- `src/files`: file reading, glob search, content search, and path policy helpers
-- `src/utility`: utility tools such as the calculator tool
-- `src/web`: web search and web extraction tools
+- `files`: file reading, glob search, content search, and path policy helpers
+- `utility`: utility tools such as the calculator tool
+- `web`: web search and web extraction tools
 - `planning`: session todo list tools
 - `http`: opt-in HTTP fetch/request tools
 - `registry`: tool registry introspection tools

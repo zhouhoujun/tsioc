@@ -5,7 +5,7 @@ import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
-import { provideAgentChannels } from '../src/provider';
+import { provideAgentChannels, providerChannels, resolveAgentChannelNames, AGENT_CHANNEL_GROUPS } from '../src/provider';
 import { AGENT_CHANNEL_OPTIONS } from '../src/tokens';
 import { SSEAgentChannel } from '../src/adapters/SSEAgentChannel';
 import { WebhookAgentChannel } from '../src/adapters/WebhookAgentChannel';
@@ -53,6 +53,41 @@ export class AgentChannelProviderTest {
             expect(sse.options.auth.bearerToken).toBe('sse-secret');
             expect(webhook.options.auth.bearerToken).toBe('webhook-secret');
             expect(webhook.options.secret).toBe('signing-secret');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('resolves channel names from presets groups and items')
+    resolvesChannelNamesFromPresetsGroupsAndItems() {
+        expect(AGENT_CHANNEL_GROUPS.local).toEqual(['loopback', 'pubsub', 'console']);
+        expect(resolveAgentChannelNames()).toContain('loopback');
+        expect(resolveAgentChannelNames({ registration: { preset: 'none' } })).toEqual([]);
+        expect(resolveAgentChannelNames({ registration: { preset: 'local' } })).toContain('console');
+        expect(resolveAgentChannelNames({ registration: { groups: { domestic: true } } })).toContain('wechat');
+        expect(resolveAgentChannelNames({ registration: { items: { slack: true, console: false } } })).toContain('slack');
+        expect(resolveAgentChannelNames({ registration: { items: { slack: true, console: false } } })).not.toContain('console');
+    }
+
+    @Test('providerChannels supports dynamic built-in and provider channels')
+    async providerChannelsSupportsDynamicBuiltInAndProviderChannels() {
+        const ctx = await Application.run(providerChannels({
+            registration: {
+                preset: 'local',
+                groups: { domestic: true },
+                items: { console: false }
+            },
+            providerChannels: {
+                wechat: { token: 'wx-token' }
+            }
+        }));
+        try {
+            const registry = ctx.get(AgentChannelRegistry);
+            const names = registry.getAll().map(channel => channel.name());
+            expect(names).toContain('loopback');
+            expect(names).toContain('pubsub');
+            expect(names).not.toContain('console');
+            expect(names).toContain('wechat');
         } finally {
             await ctx.close();
         }

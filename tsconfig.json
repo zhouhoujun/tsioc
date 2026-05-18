@@ -16,7 +16,7 @@
     "resolveJsonModule": true,
     "paths": {
       "@tsdi/agent-channels/*": [
-        "packages/agents/agent-channels/channels/*",
+        "packages/agents/agent-channels/*",
         "packages/agents/agent-channels/src/*"
       ],
       "@tsdi/agent-providers/*": [

@@ -1,2 +1,2 @@
-export * from '../src/web/web-search.tool';
-export * from '../src/web/web-extract.tool';
+export * from './web-search.tool';
+export * from './web-extract.tool';

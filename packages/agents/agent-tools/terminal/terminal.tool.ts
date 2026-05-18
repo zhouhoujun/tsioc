@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { resolveFilePolicy, resolveWorkspacePath } from '../src/files/path-policy';
+import { resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 
 const DEFAULT_TIMEOUT_MS = 180000;
 const DEFAULT_MAX_TIMEOUT_MS = 600000;

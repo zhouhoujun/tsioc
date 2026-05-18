@@ -26,9 +26,9 @@ npm run test:coverage
 
 ## 目录结构
 
-- `src/files`：文件读取、glob 搜索、内容搜索与路径策略辅助函数
-- `src/utility`：计算器等通用工具
-- `src/web`：Web 搜索与网页内容提取工具
+- `files`：文件读取、glob 搜索、内容搜索与路径策略辅助函数
+- `utility`：计算器等通用工具
+- `web`：Web 搜索与网页内容提取工具
 - `planning`：会话待办列表工具
 - `http`：按需启用的 HTTP 抓取/请求工具
 - `registry`：工具注册表自省工具

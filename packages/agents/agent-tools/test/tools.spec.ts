@@ -4,12 +4,12 @@ import * as path from 'path';
 import { promises as fs } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentScheduler, InMemoryMemoryStore, ScheduledAgentTask } from '@tsdi/agent';
-import { CalculatorTool } from '../src/utility/calculator.tool';
-import { ReadFileTool } from '../src/files/read-file.tool';
-import { GlobSearchTool } from '../src/files/glob-search.tool';
-import { ContentSearchTool } from '../src/files/content-search.tool';
-import { WebSearchTool } from '../src/web/web-search.tool';
-import { WebExtractTool } from '../src/web/web-extract.tool';
+import { CalculatorTool } from '../utility/calculator.tool';
+import { ReadFileTool } from '../files/read-file.tool';
+import { GlobSearchTool } from '../files/glob-search.tool';
+import { ContentSearchTool } from '../files/content-search.tool';
+import { WebSearchTool } from '../web/web-search.tool';
+import { WebExtractTool } from '../web/web-extract.tool';
 import { TodoStore } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
@@ -20,6 +20,9 @@ import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
+import { providerTools, resolveAgentToolNames, AGENT_TOOL_GROUPS } from '../src/provider';
+import { Application } from '@tsdi/core';
+import { ToolRegistry } from '@tsdi/agent';
 import { TodoTool as ExportedTodoTool } from '../planning';
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
@@ -179,6 +182,40 @@ export class AgentToolsPackageTest {
         expect(ExportedHttpRequestTool).toEqual(HttpRequestTool);
         expect(ExportedToolSearchTool).toEqual(ToolSearchTool);
         expect(ExportedToolInspectTool).toEqual(ToolInspectTool);
+    }
+
+    @Test('provider tools expose grouped registrations and defaults')
+    providerToolsExposeGroupedRegistrationsAndDefaults() {
+        expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'glob_search', 'content_search']);
+        expect(resolveAgentToolNames()).toContain('read_file');
+        expect(resolveAgentToolNames()).not.toContain('http_fetch');
+        expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
+        expect(resolveAgentToolNames({ registration: { preset: 'none' } })).toEqual([]);
+        expect(resolveAgentToolNames({ registration: { groups: { http: true } } })).toContain('http_fetch');
+        expect(resolveAgentToolNames({ registration: { groups: { web: false } } })).not.toContain('web_search');
+        expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).toContain('terminal');
+        expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).not.toContain('web_extract');
+    }
+
+    @Test('providerTools applies registry selection through module options')
+    async providerToolsAppliesRegistrySelectionThroughModuleOptions() {
+        const ctx = await Application.run(providerTools({
+            registration: {
+                groups: { http: true },
+                items: { web_extract: false, terminal: true }
+            }
+        }));
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names).toContain('read_file');
+            expect(names).toContain('http_fetch');
+            expect(names).toContain('http_request');
+            expect(names).toContain('terminal');
+            expect(names).not.toContain('web_extract');
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('memory list returns session and global records')

@@ -1,8 +1,8 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import * as parse5 from 'parse5';
-import { AgentToolsOptions, defaultAgentToolsOptions } from '../options';
-import { AGENT_TOOLS_OPTIONS } from '../tokens';
+import { AgentToolsOptions, defaultAgentToolsOptions } from '../src/options';
+import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 
 @Injectable()
 export class WebExtractTool implements AgentTool {

@@ -1,0 +1,45 @@
+{
+  "name": "@tsdi/agent-cli",
+  "version": "6.0.31",
+  "description": "Command line interface for @tsdi/agent packages.",
+  "main": "./src/cli.js",
+  "bin": {
+    "tsdi-agent": "./src/cli.js"
+  },
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
+  },
+  "keywords": [
+    "agents",
+    "cli",
+    "ai",
+    "tsdi"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "@tsdi/agent": "6.0.31",
+    "@tsdi/agent-channels": "6.0.31",
+    "@tsdi/agent-tools": "6.0.31",
+    "@tsdi/core": "6.0.31",
+    "@tsdi/ioc": "6.0.31",
+    "commander": "^12.1.0",
+    "ts-node": "^8.10.1",
+    "tsconfig-paths": "^3.9.0",
+    "tslib": "^2.0.1"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
+}

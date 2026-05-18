@@ -1,1 +1,1 @@
-export * from '../src/utility/calculator.tool';
+export * from './calculator.tool';

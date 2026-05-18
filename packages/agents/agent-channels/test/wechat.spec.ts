@@ -47,7 +47,7 @@ export class WechatAgentChannelTest {
             timestamp: Date.now()
         };
 
-        await channel.listen((message) => orchestrator.dispatch(message));
+        await channel.listen((message: ChannelMessage) => orchestrator.dispatch(message));
         await channel.emitInbound(inbound);
 
         expect(channel.sent.length).toBe(1);

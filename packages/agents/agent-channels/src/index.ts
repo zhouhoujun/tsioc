@@ -21,5 +21,3 @@ export * from './adapters/PubSubConversationChannel';
 export * from './adapters/ConsoleAgentChannel';
 export * from './adapters/WebhookAgentChannel';
 export * from './adapters/SSEAgentChannel';
-export * from './wechat-options';
-export * from './wechat-tokens';

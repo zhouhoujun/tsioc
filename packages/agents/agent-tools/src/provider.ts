@@ -1,14 +1,15 @@
-import { ModuleWithProviders, Provider } from '@tsdi/ioc';
+import { ModuleWithProviders, Provider, ProvdierOf, toProviders, Injector } from '@tsdi/ioc';
 import { AgentTool, withAgentTools } from '@tsdi/agent';
+import { AGENT_TOOLS } from '@tsdi/agent';
 import { AgentToolsModule } from './agent-tools.module';
-import { AgentToolsOptions, mergeAgentToolsOptions } from './options';
+import { AgentToolGroup, AgentToolItem, AgentToolsOptions, mergeAgentToolsOptions } from './options';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
-import { ReadFileTool } from './files/read-file.tool';
-import { GlobSearchTool } from './files/glob-search.tool';
-import { ContentSearchTool } from './files/content-search.tool';
-import { CalculatorTool } from './utility/calculator.tool';
-import { WebSearchTool } from './web/web-search.tool';
-import { WebExtractTool } from './web/web-extract.tool';
+import { ReadFileTool } from '../files/read-file.tool';
+import { GlobSearchTool } from '../files/glob-search.tool';
+import { ContentSearchTool } from '../files/content-search.tool';
+import { CalculatorTool } from '../utility/calculator.tool';
+import { WebSearchTool } from '../web/web-search.tool';
+import { WebExtractTool } from '../web/web-extract.tool';
 import { TodoTool } from '../planning/todo.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
@@ -19,6 +20,40 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 
+const toolItems = {
+    read_file: ReadFileTool,
+    glob_search: GlobSearchTool,
+    content_search: ContentSearchTool,
+    calculator: CalculatorTool,
+    web_search: WebSearchTool,
+    web_extract: WebExtractTool,
+    todo: TodoTool,
+    schedule: ScheduleTool,
+    'memory.list': MemoryListTool,
+    'memory.delete': MemoryDeleteTool,
+    tool_search: ToolSearchTool,
+    tool_inspect: ToolInspectTool,
+    http_fetch: HttpFetchTool,
+    http_request: HttpRequestTool,
+    terminal: TerminalTool
+} as const satisfies Record<AgentToolItem, ProvdierOf<AgentTool>>;
+
+const toolGroups = {
+    filesystem: ['read_file', 'glob_search', 'content_search'],
+    utility: ['calculator'],
+    web: ['web_search', 'web_extract'],
+    planning: ['todo'],
+    scheduling: ['schedule'],
+    memory: ['memory.list', 'memory.delete'],
+    registry: ['tool_search', 'tool_inspect'],
+    http: ['http_fetch', 'http_request'],
+    terminal: ['terminal']
+} as const satisfies Record<AgentToolGroup, AgentToolItem[]>;
+
+const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'utility', 'web', 'planning', 'scheduling', 'memory', 'registry'];
+const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
+const allToolProviders = Array.from(new Set(Object.values(toolItems)));
+
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
         provide: AGENT_TOOLS_OPTIONS,
@@ -26,55 +61,96 @@ export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     }];
 }
 
+export function resolveAgentToolNames(options?: AgentToolsOptions): AgentToolItem[] {
+    const merged = mergeAgentToolsOptions(options);
+    const enabled = new Map<AgentToolItem, boolean>();
+    const preset = merged.registration?.preset ?? 'default';
+    const baseGroups = preset === 'all'
+        ? allToolGroups
+        : preset === 'none'
+            ? []
+            : defaultToolGroups;
+
+    baseGroups.forEach(group => toolGroups[group].forEach(item => enabled.set(item, true)));
+
+    Object.entries(merged.registration?.groups ?? {}).forEach(([group, isEnabled]) => {
+        if (isEnabled == null) {
+            return;
+        }
+        const groupItems = toolGroups[group as AgentToolGroup] ?? [];
+        groupItems.forEach(item => enabled.set(item, !!isEnabled));
+    });
+
+    Object.entries(merged.registration?.items ?? {}).forEach(([item, isEnabled]) => {
+        if (isEnabled == null) {
+            return;
+        }
+        enabled.set(item as AgentToolItem, !!isEnabled);
+    });
+
+    return Object.keys(toolItems).filter(item => enabled.get(item as AgentToolItem)) as AgentToolItem[];
+}
+
+export function resolveAgentToolProviders(options?: AgentToolsOptions): ProvdierOf<AgentTool>[] {
+    const names = resolveAgentToolNames(options);
+    return names.map(name => toolItems[name]);
+}
+
+export function withResolvedAgentTools(options?: AgentToolsOptions): Provider[] {
+    return withAgentTools(...resolveAgentToolProviders(options));
+}
+
 export function withFilesystemAgentTools(): Provider[] {
-    return withAgentTools(ReadFileTool, GlobSearchTool, ContentSearchTool);
+    return withAgentTools(...toolGroups.filesystem.map(name => toolItems[name]));
 }
 
 export function withWebAgentTools(): Provider[] {
-    return withAgentTools(WebSearchTool, WebExtractTool);
+    return withAgentTools(...toolGroups.web.map(name => toolItems[name]));
 }
 
 export function withHttpAgentTools(): Provider[] {
-    return withAgentTools(HttpFetchTool, HttpRequestTool);
+    return withAgentTools(...toolGroups.http.map(name => toolItems[name]));
 }
 
 export function withUtilityAgentTools(): Provider[] {
-    return withAgentTools(CalculatorTool);
+    return withAgentTools(...toolGroups.utility.map(name => toolItems[name]));
 }
 
 export function withPlanningAgentTools(): Provider[] {
-    return withAgentTools(TodoTool);
+    return withAgentTools(...toolGroups.planning.map(name => toolItems[name]));
 }
 
 export function withMemoryAgentTools(): Provider[] {
-    return withAgentTools(MemoryListTool, MemoryDeleteTool);
+    return withAgentTools(...toolGroups.memory.map(name => toolItems[name]));
 }
 
 export function withRegistryAgentTools(): Provider[] {
-    return withAgentTools(ToolSearchTool, ToolInspectTool);
+    return withAgentTools(...toolGroups.registry.map(name => toolItems[name]));
 }
 
 export function withSchedulingAgentTools(): Provider[] {
-    return withAgentTools(ScheduleTool);
+    return withAgentTools(...toolGroups.scheduling.map(name => toolItems[name]));
 }
 
 export function withTerminalAgentTools(): Provider[] {
-    return withAgentTools(TerminalTool);
+    return withAgentTools(...toolGroups.terminal.map(name => toolItems[name]));
 }
 
 export function withDefaultAgentTools(): Provider[] {
-    return [
-        ...withFilesystemAgentTools(),
-        ...withUtilityAgentTools(),
-        ...withWebAgentTools(),
-        ...withPlanningAgentTools(),
-        ...withSchedulingAgentTools(),
-        ...withMemoryAgentTools(),
-        ...withRegistryAgentTools()
-    ];
+    return withResolvedAgentTools();
 }
 
-export function provideAgentTools(options?: AgentToolsOptions, ...extraTools: (new (...args: any[]) => AgentTool)[]): ModuleWithProviders<AgentToolsModule> {
+export function provideResolvedAgentTools(): Provider {
+    return {
+        provider(injector: Injector) {
+            const options = injector.get(AGENT_TOOLS_OPTIONS, undefined as any);
+            const providers = resolveAgentToolProviders(options);
+            return toProviders(AGENT_TOOLS, providers, true);
+        }
+    };
+}
+
+export function providerTools(options?: AgentToolsOptions, ...extraTools: ProvdierOf<AgentTool>[]): ModuleWithProviders<AgentToolsModule> {
     return {
         module: AgentToolsModule,
         providers: [
@@ -83,3 +159,7 @@ export function provideAgentTools(options?: AgentToolsOptions, ...extraTools: (n
         ]
     };
 }
+
+export const provideAgentTools = providerTools;
+
+export { toolGroups as AGENT_TOOL_GROUPS, toolItems as AGENT_TOOL_ITEMS, allToolProviders as AGENT_TOOL_PROVIDERS };
