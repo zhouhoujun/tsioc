@@ -1,7 +1,7 @@
 import { token, HandlerLike } from '@tsdi/ioc';
 import { FilterLike, GuardLike, InterceptorLike, RunContext } from '@tsdi/core';
 import { AgentOptions } from './options';
-import { AgentTool } from './tools/AgentTool';
+import { AgentCapabilityBundle, AgentTool } from './tools/AgentTool';
 import { SessionStore } from './memory/SessionStore';
 import { MemoryStore } from './memory/MemoryStore';
 import { SessionSummarizer } from './memory/SessionSummarizer';
@@ -28,3 +28,4 @@ export const AGENT_TURN_INTERCEPTORS = token<InterceptorLike<AgentTurnInput, Pro
 export const AGENT_TURN_FILTERS = token<FilterLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_FILTERS');
 export const AGENT_PROMPT_SECTIONS = token<import('./prompt/PromptSection').PromptSection[]>('AGENT_PROMPT_SECTIONS');
 export const AGENT_TOOL_ACTIVATION_STORE = token<ToolActivationStore>('AGENT_TOOL_ACTIVATION_STORE');
+export const AGENT_TOOL_BUNDLES = token<AgentCapabilityBundle[]>('AGENT_TOOL_BUNDLES');

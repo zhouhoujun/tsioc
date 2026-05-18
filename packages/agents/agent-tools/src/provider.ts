@@ -1,6 +1,6 @@
 import { ModuleWithProviders, Provider, ProvdierOf, toProviders, Injector } from '@tsdi/ioc';
-import { AgentTool, withAgentTools } from '@tsdi/agent';
-import { AGENT_TOOLS } from '@tsdi/agent';
+import { AgentCapabilityBundle, AgentTool, withAgentTools } from '@tsdi/agent';
+import { AGENT_TOOL_BUNDLES, AGENT_TOOLS } from '@tsdi/agent';
 import { AgentToolsModule } from './agent-tools.module';
 import { AgentToolGroup, AgentToolItem, AgentToolsOptions, mergeAgentToolsOptions } from './options';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
@@ -53,6 +53,18 @@ const toolGroups = {
 const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'utility', 'web', 'planning', 'scheduling', 'memory', 'registry'];
 const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
 const allToolProviders = Array.from(new Set(Object.values(toolItems)));
+const bundleDescriptions: Record<AgentToolGroup, string> = {
+    filesystem: 'Workspace file reading and search tools.',
+    utility: 'General-purpose calculation and utility helpers.',
+    web: 'Web search and extraction tools.',
+    planning: 'Planning and task tracking tools.',
+    scheduling: 'Prompt scheduling and recurring task tools.',
+    memory: 'Session and global memory management tools.',
+    registry: 'Tool discovery and activation tools.',
+    http: 'HTTP fetch and request tools.',
+    terminal: 'Terminal command execution tools.'
+};
+const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'web', 'http', 'terminal']);
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -94,6 +106,22 @@ export function resolveAgentToolNames(options?: AgentToolsOptions): AgentToolIte
 export function resolveAgentToolProviders(options?: AgentToolsOptions): ProvdierOf<AgentTool>[] {
     const names = resolveAgentToolNames(options);
     return names.map(name => toolItems[name]);
+}
+
+export function resolveAgentToolBundles(options?: AgentToolsOptions): AgentCapabilityBundle[] {
+    const merged = mergeAgentToolsOptions(options);
+    const enabledNames = new Set(resolveAgentToolNames(merged));
+    return allToolGroups.map(group => {
+        const tools = toolGroups[group].slice();
+        return {
+            name: group,
+            description: bundleDescriptions[group],
+            tools,
+            defaultEnabled: defaultToolGroups.includes(group),
+            deferredActivation: deferredActivationBundles.has(group),
+            enabled: tools.some(tool => enabledNames.has(tool))
+        };
+    });
 }
 
 export function withResolvedAgentTools(options?: AgentToolsOptions): Provider[] {
@@ -146,6 +174,15 @@ export function provideResolvedAgentTools(): Provider {
             const options = injector.get(AGENT_TOOLS_OPTIONS, undefined as any);
             const providers = resolveAgentToolProviders(options);
             return toProviders(AGENT_TOOLS, providers, true);
+        }
+    };
+}
+
+export function provideResolvedAgentToolBundles(): Provider {
+    return {
+        provider(injector: Injector) {
+            const options = injector.get(AGENT_TOOLS_OPTIONS, undefined as any);
+            return toProviders(AGENT_TOOL_BUNDLES, resolveAgentToolBundles(options), true);
         }
     };
 }

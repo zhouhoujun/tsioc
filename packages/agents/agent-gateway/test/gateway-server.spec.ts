@@ -370,7 +370,15 @@ export class ToolsHandlerTest {
         const registry = new LocalToolRegistry([
             new ReadFileTool({ file: { rootDir: process.cwd() } })
         ], new InMemoryMemoryStore());
-        const handler = new ToolsHandler(registry);
+        const bundles = [{
+            name: 'filesystem',
+            description: 'Workspace file reading and search tools.',
+            tools: ['read_file'],
+            defaultEnabled: true,
+            deferredActivation: true,
+            enabled: true
+        }];
+        const handler = new ToolsHandler(registry, bundles as any);
         const route = handler.getRoutes().find(route => route.path === '/api/tools' && route.method === 'GET')!;
         let body = '';
         const res = {
@@ -390,6 +398,12 @@ export class ToolsHandlerTest {
         expect(data[0].source).toEqual('local');
         expect(data[0].execution.readOnly).toEqual(true);
         expect(data[0].inputSchema.required).toEqual(['path']);
+
+        const bundleRoute = handler.getRoutes().find(route => route.path === '/api/tool-bundles' && route.method === 'GET')!;
+        body = '';
+        await bundleRoute.handler({} as any, res, {} as any);
+        const bundleData = JSON.parse(body);
+        expect(bundleData).toEqual(bundles);
     }
 
     @Test('normalizes legacy tool metadata through api route')
@@ -402,7 +416,7 @@ export class ToolsHandlerTest {
                 }];
             }
         } as any;
-        const handler = new ToolsHandler(registry);
+        const handler = new ToolsHandler(registry, []);
         const route = handler.getRoutes().find(route => route.path === '/api/tools' && route.method === 'GET')!;
         let body = '';
         const res = {
@@ -423,6 +437,12 @@ export class ToolsHandlerTest {
             execution: null,
             inputSchema: null
         }]);
+
+        const bundleRoute = handler.getRoutes().find(route => route.path === '/api/tool-bundles' && route.method === 'GET')!;
+        body = '';
+        await bundleRoute.handler({} as any, res, {} as any);
+        const bundleData = JSON.parse(body);
+        expect(bundleData).toEqual([]);
     }
 }
 

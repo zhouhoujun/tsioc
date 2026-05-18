@@ -20,7 +20,7 @@ import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
-import { providerTools, resolveAgentToolNames, AGENT_TOOL_GROUPS } from '../src/provider';
+import { providerTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS } from '../src/provider';
 import { Application } from '@tsdi/core';
 import { ToolRegistry } from '@tsdi/agent';
 import { TodoTool as ExportedTodoTool } from '../planning';
@@ -195,6 +195,25 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames({ registration: { groups: { web: false } } })).not.toContain('web_search');
         expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).toContain('terminal');
         expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).not.toContain('web_extract');
+    }
+
+    @Test('provider tools resolve capability bundle metadata')
+    providerToolsResolveCapabilityBundleMetadata() {
+        const bundles = resolveAgentToolBundles();
+        const filesystem = bundles.find(bundle => bundle.name === 'filesystem');
+        const terminal = bundles.find(bundle => bundle.name === 'terminal');
+        expect(filesystem?.tools).toEqual(['read_file', 'glob_search', 'content_search']);
+        expect(filesystem?.defaultEnabled).toEqual(true);
+        expect(filesystem?.deferredActivation).toEqual(true);
+        expect(filesystem?.enabled).toEqual(true);
+        expect(terminal?.defaultEnabled).toEqual(false);
+        expect(terminal?.enabled).toEqual(false);
+
+        const allBundles = resolveAgentToolBundles({ registration: { preset: 'all' } });
+        expect(allBundles.find(bundle => bundle.name === 'terminal')?.enabled).toEqual(true);
+
+        const httpBundles = resolveAgentToolBundles({ registration: { groups: { http: true } } });
+        expect(httpBundles.find(bundle => bundle.name === 'http')?.enabled).toEqual(true);
     }
 
     @Test('providerTools applies registry selection through module options')

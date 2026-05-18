@@ -20,6 +20,15 @@ export interface AgentToolDefinition {
     execution?: AgentToolExecutionHints;
 }
 
+export interface AgentCapabilityBundle {
+    name: string;
+    description?: string;
+    tools: string[];
+    defaultEnabled?: boolean;
+    deferredActivation?: boolean;
+    enabled?: boolean;
+}
+
 export interface AgentTool extends AgentToolDefinition {
     getDefinition?(): AgentToolDefinition;
     invoke(input: any, context: AgentToolContext): Promise<any>;

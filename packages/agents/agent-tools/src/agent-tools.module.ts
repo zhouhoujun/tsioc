@@ -17,7 +17,7 @@ import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
-import { provideResolvedAgentTools } from './provider';
+import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './provider';
 
 @Module({
     imports: [AgentModule],
@@ -45,7 +45,8 @@ import { provideResolvedAgentTools } from './provider';
         HttpRequestTool,
         ToolSearchTool,
         ToolInspectTool,
-        provideResolvedAgentTools()
+        provideResolvedAgentTools(),
+        provideResolvedAgentToolBundles()
     ],
     exports: [
         ReadFileTool,
