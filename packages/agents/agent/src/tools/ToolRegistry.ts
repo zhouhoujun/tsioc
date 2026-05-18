@@ -7,11 +7,24 @@ export abstract class ToolRegistry {
     abstract getTool(name: string): AgentTool | undefined;
     abstract invoke(name: string, input: any, sessionId: string): Promise<any>;
 
-    getToolDefinitions(): AgentToolDefinition[] {
-        return this.getTools().map(tool => this.toDefinition(tool));
+    getToolDefinitions(sessionId?: string): AgentToolDefinition[] {
+        return this.getTools().map(tool => this.toDefinition(tool, sessionId));
     }
 
-    protected toDefinition(tool: AgentTool): AgentToolDefinition {
+    getToolDefinition(name: string, sessionId?: string): AgentToolDefinition | undefined {
+        const tool = this.getTool(name);
+        return tool ? this.toDefinition(tool, sessionId) : undefined;
+    }
+
+    async activateTool(_sessionId: string, _name: string): Promise<boolean> {
+        return false;
+    }
+
+    async isToolActive(_sessionId: string, _name: string): Promise<boolean> {
+        return false;
+    }
+
+    protected toDefinition(tool: AgentTool, _sessionId?: string): AgentToolDefinition {
         return tool.getDefinition?.() ?? {
             name: tool.name,
             description: tool.description,

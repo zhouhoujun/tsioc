@@ -16,9 +16,17 @@ import { withAgentTurnFilters, withAgentTurnGuards, withAgentTurnInterceptors } 
 import { ExperienceDistiller } from '../src/memory/ExperienceDistiller';
 import { ExperienceDistillationInput } from '../src/memory/ExperienceDistiller';
 import { AgentMemoryRecord } from '../src/memory/MemoryStore';
+import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
+import { AgentTool } from '../src/tools/AgentTool';
+import { AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent } from '../src/runtime/AgentEvents';
 
 class FakeApp {
-    async publishEvent(): Promise<void> {
+    events: any[] = [];
+
+    async publishEvent(event?: any): Promise<void> {
+        if (event) {
+            this.events.push(event);
+        }
         return;
     }
 }
@@ -135,6 +143,70 @@ class CapturingModelAdapter extends EchoModelAdapter {
     }
 }
 
+class RegistrySearchToolStub implements AgentTool {
+    name = 'tool_search';
+    description = 'search tools';
+    inputSchema = { type: 'object', properties: { query: { type: 'string' } } };
+    toolset = 'registry';
+    source = 'test';
+    execution = { readOnly: true };
+
+    async invoke(input: any): Promise<any> {
+        return input;
+    }
+}
+
+class RegistryInspectToolStub implements AgentTool {
+    name = 'tool_inspect';
+    description = 'inspect tools';
+    inputSchema = { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] };
+    toolset = 'registry';
+    source = 'test';
+    execution = { readOnly: true };
+
+    async invoke(input: any): Promise<any> {
+        return input;
+    }
+}
+
+class DeferredRuntimeTool implements AgentTool {
+    name = 'heavy_tool';
+    description = 'heavy runtime tool';
+    inputSchema = {
+        type: 'object',
+        properties: {
+            value: { type: 'string' },
+            enabled: { type: 'boolean' }
+        },
+        required: ['value']
+    };
+    toolset = 'custom';
+    source = 'test';
+    execution = { readOnly: true };
+
+    async invoke(input: any): Promise<any> {
+        return input;
+    }
+}
+
+class DeferredInvokeModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-heavy', name: 'heavy_tool', input: { value: 'blocked' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'activated',
+            stopReason: 'end'
+        };
+    }
+}
+
 class SearchOnlyMemoryStore extends InMemoryMemoryStore {
     searchCalls: Array<{ query: string; sessionId?: string }> = [];
     getAllCalls = 0;
@@ -186,6 +258,167 @@ class MultiToolLoopModelAdapter extends EchoModelAdapter {
                 toolCalls: [
                     { id: 'tool-1', name: 'echo', input: { value: 'first' } },
                     { id: 'tool-2', name: 'echo', input: { value: 'second' } }
+                ],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
+class MetadataDrivenToolRegistry extends ToolRegistry {
+    private invocations: string[] = [];
+    private active = 0;
+    private maxActive = 0;
+
+    getTools() {
+        return [
+            {
+                name: 'lookup',
+                description: 'read only lookup',
+                toolset: 'test',
+                source: 'test',
+                execution: { readOnly: true },
+                invoke: async (_input: any) => {
+                    this.active++;
+                    this.maxActive = Math.max(this.maxActive, this.active);
+                    try {
+                        await new Promise(resolve => setTimeout(resolve, 20));
+                        this.invocations.push('lookup');
+                        return { ok: true };
+                    } finally {
+                        this.active--;
+                    }
+                }
+            },
+            {
+                name: 'mutate',
+                description: 'mutating tool',
+                toolset: 'test',
+                source: 'test',
+                execution: { sideEffect: true, requiresSequential: true },
+                invoke: async (_input: any) => {
+                    this.active++;
+                    this.maxActive = Math.max(this.maxActive, this.active);
+                    try {
+                        await new Promise(resolve => setTimeout(resolve, 20));
+                        this.invocations.push('mutate');
+                        return { ok: true };
+                    } finally {
+                        this.active--;
+                    }
+                }
+            }
+        ] as any;
+    }
+
+    getTool(name: string) {
+        return this.getTools().find((tool: any) => tool.name === name) as any;
+    }
+
+    async invoke(name: string, input: any): Promise<any> {
+        return this.getTool(name).invoke(input);
+    }
+
+    getInvocationOrder(): string[] {
+        return this.invocations.slice();
+    }
+
+    getMaxActive(): number {
+        return this.maxActive;
+    }
+}
+
+class MetadataParallelModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [
+                    { id: 'tool-1', name: 'lookup', input: { value: 'first' } },
+                    { id: 'tool-2', name: 'mutate', input: { value: 'second' } }
+                ],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
+class ParallelReadOnlyToolRegistry extends ToolRegistry {
+    private active = 0;
+    private maxActive = 0;
+
+    getTools() {
+        return [
+            {
+                name: 'lookup_one',
+                description: 'first read only lookup',
+                toolset: 'test',
+                source: 'test',
+                execution: { readOnly: true },
+                invoke: async (_input: any) => {
+                    this.active++;
+                    this.maxActive = Math.max(this.maxActive, this.active);
+                    try {
+                        await new Promise(resolve => setTimeout(resolve, 20));
+                        return { ok: 'one' };
+                    } finally {
+                        this.active--;
+                    }
+                }
+            },
+            {
+                name: 'lookup_two',
+                description: 'second read only lookup',
+                toolset: 'test',
+                source: 'test',
+                execution: { readOnly: true },
+                invoke: async (_input: any) => {
+                    this.active++;
+                    this.maxActive = Math.max(this.maxActive, this.active);
+                    try {
+                        await new Promise(resolve => setTimeout(resolve, 20));
+                        return { ok: 'two' };
+                    } finally {
+                        this.active--;
+                    }
+                }
+            }
+        ] as any;
+    }
+
+    getTool(name: string) {
+        return this.getTools().find((tool: any) => tool.name === name) as any;
+    }
+
+    async invoke(name: string, input: any): Promise<any> {
+        return this.getTool(name).invoke(input);
+    }
+
+    getMaxActive(): number {
+        return this.maxActive;
+    }
+}
+
+class ParallelReadOnlyModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [
+                    { id: 'tool-1', name: 'lookup_one', input: { value: 'first' } },
+                    { id: 'tool-2', name: 'lookup_two', input: { value: 'second' } }
                 ],
                 stopReason: 'tool'
             };
@@ -660,6 +893,37 @@ export class RuntimeLoopTest {
         expect(messages[2].metadata?.error).toEqual('tool failed');
         expect(messages[3].toolCallId).toEqual('tool-2');
         expect(messages[3].metadata?.error).toContain('Skipped');
+        expect(messages[3].metadata?.receipt?.status).toEqual('skipped');
+        const skippedEvent = (runtime as any).app?.events?.find((event: any) => event instanceof AgentToolSkippedEvent);
+        expect(skippedEvent?.toolName).toEqual('echo');
+        expect(skippedEvent?.reason).toContain('Skipped');
+        expect(skippedEvent?.receipt?.status).toEqual('skipped');
+    }
+
+    @Test('forces sequential execution when tool metadata requires it')
+    async forcesSequentialExecutionWhenToolMetadataRequiresIt() {
+        const registry = new MetadataDrivenToolRegistry();
+        const runtime = new AgentRuntime(
+            new MetadataParallelModelAdapter(),
+            registry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            {
+                ...defaultAgentOptions,
+                tools: {
+                    ...defaultAgentOptions.tools,
+                    parallelExecution: true,
+                    parallelSafeTools: ['lookup', 'mutate']
+                }
+            },
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        expect(result.message.content).toEqual('done');
+        expect(registry.getInvocationOrder()).toEqual(['lookup', 'mutate']);
+        expect(registry.getMaxActive()).toEqual(1);
     }
 
     @Test('forces sequential execution when a tool requires approval')
@@ -693,6 +957,254 @@ export class RuntimeLoopTest {
         const messages = await runtime.getMessages('s1');
         expect(messages[2].metadata?.error).toContain('rejected');
         expect(messages[3].metadata?.error).toContain('Skipped');
+    }
+
+    @Test('runtime sends stubbed tools before activation and full schema after activation')
+    async runtimeSendsDeferredToolDefinitions() {
+        const model = new CapturingModelAdapter();
+        const registry = new LocalToolRegistry([
+            new RegistrySearchToolStub(),
+            new RegistryInspectToolStub(),
+            new DeferredRuntimeTool()
+        ], new InMemoryMemoryStore());
+        const runtime = new AgentRuntime(
+            model,
+            registry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'hello');
+        expect(model.requests[0].tools.find((tool: any) => tool.name === 'heavy_tool')).toEqual({
+            name: 'heavy_tool',
+            description: 'heavy runtime tool',
+            toolset: 'custom',
+            source: 'test',
+            execution: { readOnly: true }
+        });
+        expect(model.requests[0].tools.find((tool: any) => tool.name === 'tool_search')?.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+                query: { type: 'string' }
+            }
+        });
+
+        await registry.activateTool('s1', 'heavy_tool');
+        await runtime.runTurn('s1', 'again');
+        expect(model.requests[1].tools.find((tool: any) => tool.name === 'heavy_tool')?.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+                value: { type: 'string' },
+                enabled: { type: 'boolean' }
+            },
+            required: ['value']
+        });
+    }
+
+    @Test('tool activation does not leak across sessions')
+    async deferredToolActivationIsSessionScoped() {
+        const model = new CapturingModelAdapter();
+        const registry = new LocalToolRegistry([
+            new RegistrySearchToolStub(),
+            new RegistryInspectToolStub(),
+            new DeferredRuntimeTool()
+        ], new InMemoryMemoryStore());
+        const runtime = new AgentRuntime(
+            model,
+            registry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await registry.activateTool('s1', 'heavy_tool');
+        await runtime.runTurn('s1', 'hello');
+        await runtime.runTurn('s2', 'hello');
+
+        expect(model.requests[0].tools.find((tool: any) => tool.name === 'heavy_tool')?.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+                value: { type: 'string' },
+                enabled: { type: 'boolean' }
+            },
+            required: ['value']
+        });
+        expect(model.requests[1].tools.find((tool: any) => tool.name === 'heavy_tool')?.inputSchema).toEqual(undefined);
+    }
+
+    @Test('runtime rejects deferred tool invocation before activation and allows it after activation')
+    async runtimeRequiresActivationForDeferredToolInvocation() {
+        const registry = new LocalToolRegistry([
+            new RegistrySearchToolStub(),
+            new RegistryInspectToolStub(),
+            new DeferredRuntimeTool()
+        ], new InMemoryMemoryStore());
+        const runtime = new AgentRuntime(
+            new DeferredInvokeModelAdapter(),
+            registry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        let error: Error | undefined;
+        try {
+            await runtime.runTurn('s1', 'hello');
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('heavy_tool');
+        expect(error?.message).toContain('activate');
+        const blockedMessages = await runtime.getMessages('s1');
+        expect(blockedMessages[2].metadata?.error).toContain('tool_inspect');
+
+        await registry.activateTool('s1', 'heavy_tool');
+        const activatedRuntime = new AgentRuntime(
+            new DeferredInvokeModelAdapter(),
+            registry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+        const result = await activatedRuntime.runTurn('s1', 'hello');
+        expect(result.message.content).toEqual('activated');
+    }
+
+    @Test('stores successful tool execution receipt metadata and events')
+    async storesSuccessfulToolExecutionReceiptMetadataAndEvents() {
+        const app = new FakeApp();
+        const runtime = new AgentRuntime(
+            new ToolLoopModelAdapter(),
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        await runtime.runTurn('s1', 'hello');
+
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages[2];
+        const receipt = toolMessage.metadata?.receipt;
+        expect(receipt?.toolCallId).toEqual('tool-1');
+        expect(receipt?.toolName).toEqual('echo');
+        expect(receipt?.status).toEqual('success');
+        expect(receipt?.executionMode).toEqual('sequential');
+        expect(receipt?.inputSummary).toContain('from-tool');
+        expect(typeof receipt?.receiptId).toEqual('string');
+        expect(typeof receipt?.durationMs).toEqual('number');
+        expect(receipt?.durationMs).toBeGreaterThanOrEqual(0);
+        expect(receipt?.outputSummary).toContain('from-tool');
+
+        const invokedEvent = app.events.find(event => event instanceof AgentToolInvokedEvent);
+        const completedEvent = app.events.find(event => event instanceof AgentToolCompletedEvent);
+        expect(invokedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
+        expect(invokedEvent?.receipt?.status).toEqual('running');
+        expect(completedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
+        expect(completedEvent?.receipt?.status).toEqual('success');
+        expect(completedEvent?.receipt?.executionMode).toEqual('sequential');
+    }
+
+    @Test('stores failed tool execution receipt metadata and events')
+    async storesFailedToolExecutionReceiptMetadataAndEvents() {
+        const app = new FakeApp();
+        const runtime = new AgentRuntime(
+            new ToolLoopModelAdapter(),
+            new FailingToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        let error: Error | undefined;
+        try {
+            await runtime.runTurn('s1', 'hello');
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toEqual('tool failed');
+
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages[2];
+        const receipt = toolMessage.metadata?.receipt;
+        expect(receipt?.toolCallId).toEqual('tool-1');
+        expect(receipt?.toolName).toEqual('echo');
+        expect(receipt?.status).toEqual('error');
+        expect(receipt?.executionMode).toEqual('sequential');
+        expect(receipt?.error).toEqual('tool failed');
+        expect(typeof receipt?.receiptId).toEqual('string');
+        expect(typeof receipt?.durationMs).toEqual('number');
+        expect(receipt?.durationMs).toBeGreaterThanOrEqual(0);
+
+        const invokedEvent = app.events.find(event => event instanceof AgentToolInvokedEvent);
+        const completedEvent = app.events.find(event => event instanceof AgentToolCompletedEvent);
+        const failedEvent = app.events.find(event => event instanceof AgentToolFailedEvent);
+        expect(invokedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
+        expect(invokedEvent?.receipt?.status).toEqual('running');
+        expect(completedEvent).toEqual(undefined);
+        expect(failedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
+        expect(failedEvent?.receipt?.status).toEqual('error');
+        expect(failedEvent?.receipt?.error).toEqual('tool failed');
+    }
+
+    @Test('records sequential and parallel execution mode in tool receipts')
+    async recordsSequentialAndParallelExecutionModeInToolReceipts() {
+        const sequentialRuntime = new AgentRuntime(
+            new MetadataParallelModelAdapter(),
+            new MetadataDrivenToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            {
+                ...defaultAgentOptions,
+                tools: {
+                    ...defaultAgentOptions.tools,
+                    parallelExecution: true,
+                    parallelSafeTools: ['lookup', 'mutate']
+                }
+            },
+            new FakeApp() as any
+        );
+        await sequentialRuntime.runTurn('s1', 'hello');
+        const sequentialMessages = await sequentialRuntime.getMessages('s1');
+        expect(sequentialMessages[2].metadata?.receipt?.executionMode).toEqual('sequential');
+        expect(sequentialMessages[3].metadata?.receipt?.executionMode).toEqual('sequential');
+
+        const parallelRegistry = new ParallelReadOnlyToolRegistry();
+        const parallelRuntime = new AgentRuntime(
+            new ParallelReadOnlyModelAdapter(),
+            parallelRegistry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            {
+                ...defaultAgentOptions,
+                tools: {
+                    ...defaultAgentOptions.tools,
+                    parallelExecution: true,
+                    parallelSafeTools: ['lookup_one', 'lookup_two']
+                }
+            },
+            new FakeApp() as any
+        );
+        await parallelRuntime.runTurn('s2', 'hello');
+        const parallelMessages = await parallelRuntime.getMessages('s2');
+        expect(parallelMessages[2].metadata?.receipt?.executionMode).toEqual('parallel');
+        expect(parallelMessages[3].metadata?.receipt?.executionMode).toEqual('parallel');
+        expect(parallelRegistry.getMaxActive()).toBeGreaterThan(1);
     }
 
     @Test('runtime runTurn uses provider guard')

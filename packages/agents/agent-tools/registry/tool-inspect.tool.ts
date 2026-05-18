@@ -23,16 +23,21 @@ export class ToolInspectTool implements AgentTool {
     ) {
     }
 
-    async invoke(input: any, _context: AgentToolContext): Promise<any> {
+    async invoke(input: any, context: AgentToolContext): Promise<any> {
         const name = this.requireName(input?.name);
-        const tool = this.resolveRegistry().getToolDefinitions().find(definition => definition.name === name);
+        const registry = this.resolveRegistry();
+        const tool = registry.getToolDefinitions().find(definition => definition.name === name);
         if (!tool) {
             throw new Error(`Tool '${name}' not found.`);
         }
-        return { tool };
+        const activated = await registry.activateTool(context.sessionId, name);
+        return {
+            tool: registry.getToolDefinition(name, context.sessionId) ?? tool,
+            activated
+        };
     }
 
-    private resolveRegistry(): Pick<ToolRegistry, 'getToolDefinitions'> {
+    private resolveRegistry(): Pick<ToolRegistry, 'getToolDefinitions' | 'getToolDefinition' | 'activateTool'> {
         const registry = this.app && typeof (this.app as any).get === 'function'
             ? (this.app as any).get(ToolRegistry, null) as ToolRegistry | null
             : null;

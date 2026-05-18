@@ -3,11 +3,13 @@ import { ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ConfigModule } from '@tsdi/microservices/config';
 import { AgentOptions, defaultAgentOptions, mergeAgentOptions } from './options';
-import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_RUNTIME, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TOOLS, AGENT_TURN_HANDLER } from './tokens';
+import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_RUNTIME, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TOOLS, AGENT_TOOL_ACTIVATION_STORE, AGENT_TURN_HANDLER } from './tokens';
 import { OpenAICompatibleModelAdapter } from './model/OpenAICompatibleModelAdapter';
 import { ModelAdapter } from './model/ModelAdapter';
 import { ToolRegistry } from './tools/ToolRegistry';
 import { LocalToolRegistry } from './tools/LocalToolRegistry';
+import { InMemoryToolActivationStore } from './tools/InMemoryToolActivationStore';
+import { ToolActivationStore } from './tools/ToolActivationStore';
 import { ToolLoopDetector } from './tools/ToolLoopDetector';
 import { ToolApprovalManager } from './tools/ToolApprovalManager';
 import { AgentContextManager } from './context/AgentContextManager';
@@ -73,6 +75,9 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         ToolLoopDetector,
         SystemPromptBuilder,
         ToolApprovalManager,
+        InMemoryToolActivationStore,
+        { provide: AGENT_TOOL_ACTIVATION_STORE, useExisting: InMemoryToolActivationStore },
+        { provide: ToolActivationStore, useExisting: AGENT_TOOL_ACTIVATION_STORE },
         { provide: AGENT_PROMPT_SECTIONS, useClass: DateTimeSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: IdentitySection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: ToolsSection, multi: true },

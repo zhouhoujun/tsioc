@@ -1,4 +1,4 @@
-import { AGENT_SCHEDULER, AgentScheduler, AgentTool, AgentToolContext, ScheduledAgentTask } from '@tsdi/agent';
+import { AGENT_SCHEDULER, AgentScheduler, AgentTool, AgentToolContext, NextRunCalculator, ScheduledAgentTask } from '@tsdi/agent';
 import { ApplicationContext } from '@tsdi/core';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { randomUUID } from 'crypto';
@@ -23,7 +23,8 @@ export class ScheduleTool implements AgentTool {
             prompt: { type: 'string' },
             runAt: { type: 'number' },
             delayMs: { type: 'number' },
-            intervalMs: { type: 'number' }
+            intervalMs: { type: 'number' },
+            cronExpr: { type: 'string' }
         },
         required: ['action']
     };
@@ -61,15 +62,18 @@ export class ScheduleTool implements AgentTool {
         }
         if (action === 'create') {
             const prompt = this.requirePrompt(input?.prompt);
-            const runAt = this.resolveRunAt(input?.runAt, input?.delayMs);
-            const intervalMs = this.resolveInterval(input?.intervalMs);
+            const cronExpr = this.resolveCronExpr(input?.cronExpr);
+            const runAt = cronExpr ? undefined : this.resolveRunAt(input?.runAt, input?.delayMs);
+            const intervalMs = cronExpr ? undefined : this.resolveInterval(input?.intervalMs);
             this.ensureSessionCapacity(scheduler, context.sessionId);
             const task: ScheduledAgentTask = {
                 id: randomUUID(),
                 sessionId: context.sessionId,
                 prompt,
                 runAt,
-                intervalMs
+                intervalMs,
+                cronExpr,
+                scheduleType: cronExpr ? 'cron' : intervalMs ? 'interval' : 'once'
             };
             const scheduled = await scheduler.schedule(task);
             return { scheduled: true, task: scheduled };
@@ -140,5 +144,24 @@ export class ScheduleTool implements AgentTool {
             throw new Error(`Invalid schedule intervalMs: must be a finite number between ${minIntervalMs} and ${maxIntervalMs}.`);
         }
         return intervalMs;
+    }
+
+    private resolveCronExpr(value: unknown): string | undefined {
+        if (value == null) {
+            return undefined;
+        }
+        if (typeof value !== 'string' || !value.trim()) {
+            throw new Error('Invalid schedule cronExpr: must be a non-empty string.');
+        }
+        const cronExpr = value.trim();
+        const minIntervalMs = this.options?.schedule?.minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS;
+        try {
+            NextRunCalculator.validateCronExpr(cronExpr);
+            NextRunCalculator.ensureCronMeetsMinInterval(cronExpr, minIntervalMs);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Invalid schedule cronExpr: ${message}`);
+        }
+        return cronExpr;
     }
 }

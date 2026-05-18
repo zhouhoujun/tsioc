@@ -3,6 +3,7 @@ import { ApplicationContext, Runner, Shutdown } from '@tsdi/core';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentScheduler } from './AgentScheduler';
 import { ScheduledAgentTask } from './ScheduledAgentTask';
+import { NextRunCalculator } from './NextRunCalculator';
 import { AgentRuntime } from '../runtime/AgentRuntime';
 import { AgentErrorEvent, AgentTaskScheduledEvent } from '../runtime/AgentEvents';
 import { AgentScheduledTaskEntity } from '../memory/entities';
@@ -57,22 +58,26 @@ export class IntervalAgentScheduler extends AgentScheduler {
         this.timers.delete(taskId);
 
         const task = this.tasks.get(taskId);
-        if (task) {
-            const cancelledTask = {
-                ...task,
-                cancelled: true,
-                running: false,
-                updatedAt: Date.now()
-            };
-            await this.persistTask(cancelledTask);
-            if (!cancelledTask.intervalMs) {
-                this.tasks.delete(taskId);
-                await this.persistTask(cancelledTask);
-                await this.deleteTask(taskId);
-                return;
-            }
-            this.tasks.set(taskId, cancelledTask);
+        if (!task) {
+            await this.deleteTask(taskId);
+            return;
         }
+
+        const cancelledTask: ScheduledAgentTask = {
+            ...task,
+            cancelled: true,
+            running: false,
+            updatedAt: Date.now()
+        };
+
+        if (this.shouldRepeat(cancelledTask)) {
+            this.tasks.set(taskId, cancelledTask);
+            await this.persistTask(cancelledTask);
+            return;
+        }
+
+        this.tasks.delete(taskId);
+        await this.deleteTask(taskId);
     }
 
     getTasks(): ScheduledAgentTask[] {
@@ -88,21 +93,6 @@ export class IntervalAgentScheduler extends AgentScheduler {
 
         if (task.cancelled) {
             this.timers.delete(task.id);
-            return;
-        }
-
-        if (task.intervalMs && task.intervalMs > 0) {
-            const interval = task.intervalMs;
-            const dueAt = task.nextRunAt ?? task.runAt ?? Date.now();
-            const delay = Math.max(dueAt - Date.now(), 0);
-            const starter = setTimeout(() => {
-                this.fireAndForget(task.id);
-                const timer = setInterval(() => {
-                    this.fireAndForget(task.id);
-                }, interval);
-                this.timers.set(task.id, timer);
-            }, delay);
-            this.timers.set(task.id, starter);
             return;
         }
 
@@ -154,6 +144,11 @@ export class IntervalAgentScheduler extends AgentScheduler {
             }
 
             const now = Date.now();
+            const latestTask = this.tasks.get(runningTask.id);
+            if (!latestTask || latestTask.cancelled) {
+                return;
+            }
+
             const completedTask: ScheduledAgentTask = {
                 ...runningTask,
                 running: false,
@@ -164,13 +159,14 @@ export class IntervalAgentScheduler extends AgentScheduler {
                 updatedAt: now
             };
 
-            if (completedTask.intervalMs && completedTask.intervalMs > 0) {
+            if (this.shouldRepeat(completedTask)) {
                 const rescheduledTask: ScheduledAgentTask = {
                     ...completedTask,
-                    nextRunAt: now + completedTask.intervalMs
+                    nextRunAt: this.resolveNextRun(completedTask, now)
                 };
                 await this.persistTask(rescheduledTask);
                 this.tasks.set(rescheduledTask.id, rescheduledTask);
+                this.armTimer(rescheduledTask);
                 return;
             }
 
@@ -184,14 +180,19 @@ export class IntervalAgentScheduler extends AgentScheduler {
             await this.deleteTask(completedTask.id);
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
+            const latestTask = this.tasks.get(runningTask.id);
+            if (!latestTask || latestTask.cancelled) {
+                return;
+            }
             const failedTask = this.createFailedTask(runningTask, err);
-            if (failedTask.intervalMs && failedTask.intervalMs > 0) {
+            if (this.shouldRepeat(failedTask)) {
                 this.tasks.set(failedTask.id, failedTask);
                 try {
                     await this.persistTask(failedTask);
                 } catch {
                     return;
                 }
+                this.armTimer(failedTask);
                 try {
                     await this.app.publishEvent(new AgentErrorEvent(this, failedTask.sessionId, err));
                 } catch {
@@ -225,14 +226,17 @@ export class IntervalAgentScheduler extends AgentScheduler {
     }
 
     private normalizeTask(task: ScheduledAgentTask): ScheduledAgentTask {
+        this.validateSchedule(task);
         const now = Date.now();
+        const scheduleType = this.detectScheduleType(task);
         return {
             ...task,
+            scheduleType,
             cancelled: task.cancelled ?? false,
             running: task.running ?? false,
             createdAt: task.createdAt ?? now,
             updatedAt: task.updatedAt ?? now,
-            nextRunAt: task.nextRunAt ?? task.runAt ?? now,
+            nextRunAt: task.nextRunAt ?? this.resolveInitialNextRun({ ...task, scheduleType }, now),
             runCount: task.runCount ?? 0,
             failureCount: task.failureCount ?? 0,
             lastError: task.lastError
@@ -264,7 +268,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             updatedAt: now,
             failureCount: (task.failureCount ?? 0) + 1,
             lastError: error.message,
-            nextRunAt: task.intervalMs && task.intervalMs > 0 ? now + task.intervalMs : task.nextRunAt
+            nextRunAt: this.shouldRepeat(task) ? this.resolveNextRun(task, now) : task.nextRunAt
         };
     }
 
@@ -331,6 +335,8 @@ export class IntervalAgentScheduler extends AgentScheduler {
             prompt: task.prompt,
             runAt: task.runAt,
             intervalMs: task.intervalMs,
+            cronExpr: task.cronExpr,
+            scheduleType: task.scheduleType,
             cancelled: task.cancelled ?? false,
             running: task.running ?? false,
             createdAt: task.createdAt,
@@ -362,8 +368,48 @@ export class IntervalAgentScheduler extends AgentScheduler {
             ...recovered,
             running: false,
             updatedAt: now,
-            nextRunAt: recovered.nextRunAt ?? recovered.runAt ?? now
+            nextRunAt: recovered.nextRunAt ?? this.resolveInitialNextRun(recovered, now) ?? now
         };
+    }
+
+    private shouldRepeat(task: ScheduledAgentTask): boolean {
+        return task.scheduleType === 'interval' || task.scheduleType === 'cron' || !!(task.intervalMs && task.intervalMs > 0) || !!task.cronExpr;
+    }
+
+    private detectScheduleType(task: ScheduledAgentTask): ScheduledAgentTask['scheduleType'] {
+        if (task.cronExpr) {
+            return 'cron';
+        }
+        if (task.intervalMs && task.intervalMs > 0) {
+            return 'interval';
+        }
+        return 'once';
+    }
+
+    private validateSchedule(task: ScheduledAgentTask): void {
+        if (task.cronExpr && task.intervalMs && task.intervalMs > 0) {
+            throw new Error('Scheduled task cannot define both cronExpr and intervalMs.');
+        }
+        if (task.scheduleType && task.scheduleType !== this.detectScheduleType(task)) {
+            throw new Error(`Scheduled task scheduleType '${task.scheduleType}' does not match its timing fields.`);
+        }
+        if (!task.cronExpr && (!task.intervalMs || task.intervalMs <= 0) && task.runAt == null) {
+            throw new Error('Scheduled task must define runAt, intervalMs, or cronExpr.');
+        }
+    }
+
+    private resolveInitialNextRun(task: ScheduledAgentTask, now: number): number | undefined {
+        if (task.cronExpr) {
+            return NextRunCalculator.nextCronRun(task.cronExpr, now);
+        }
+        if (task.intervalMs && task.intervalMs > 0) {
+            return task.runAt ?? now;
+        }
+        return task.runAt ?? now;
+    }
+
+    private resolveNextRun(task: ScheduledAgentTask, now: number): number | undefined {
+        return NextRunCalculator.nextRun(task, now);
     }
 
     private toTask(record: AgentScheduledTaskEntity): ScheduledAgentTask {
@@ -373,6 +419,8 @@ export class IntervalAgentScheduler extends AgentScheduler {
             prompt: record.prompt,
             runAt: record.runAt == null ? undefined : Number(record.runAt),
             intervalMs: record.intervalMs == null ? undefined : Number(record.intervalMs),
+            cronExpr: record.cronExpr ?? undefined,
+            scheduleType: (record.scheduleType as any) ?? undefined,
             cancelled: !!record.cancelled,
             running: !!record.running,
             createdAt: record.createdAt == null ? undefined : Number(record.createdAt),

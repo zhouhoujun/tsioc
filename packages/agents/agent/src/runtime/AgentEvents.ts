@@ -6,6 +6,18 @@ import { AgentMemoryRecord } from '../memory/MemoryStore';
 
 const MAX_EVENT_INPUT_SUMMARY_CHARS = 200;
 
+export interface AgentToolExecutionReceipt {
+    receiptId: string;
+    toolCallId: string;
+    toolName: string;
+    executionMode: 'sequential' | 'parallel';
+    status: 'running' | 'success' | 'error' | 'skipped';
+    inputSummary?: string;
+    outputSummary?: string;
+    durationMs?: number;
+    error?: string;
+}
+
 function summarizeEventInput(input: any): string | undefined {
     if (input === undefined) {
         return undefined;
@@ -52,7 +64,7 @@ export class AgentToolInvokedEvent extends ApplicationEvent {
     readonly hasInput: boolean;
     readonly inputSummary?: string;
 
-    constructor(source: Object, readonly sessionId: string, readonly toolName: string, input: any) {
+    constructor(source: Object, readonly sessionId: string, readonly toolName: string, input: any, readonly receipt?: AgentToolExecutionReceipt) {
         super(source);
         this.hasInput = input !== undefined;
         this.inputSummary = summarizeEventInput(input);
@@ -60,7 +72,37 @@ export class AgentToolInvokedEvent extends ApplicationEvent {
 }
 
 export class AgentToolCompletedEvent extends ApplicationEvent {
-    constructor(source: Object, readonly sessionId: string, readonly toolName: string, readonly output: any) {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly toolName: string,
+        readonly output: any,
+        readonly receipt?: AgentToolExecutionReceipt
+    ) {
+        super(source);
+    }
+}
+
+export class AgentToolFailedEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly toolName: string,
+        readonly error: Error,
+        readonly receipt?: AgentToolExecutionReceipt
+    ) {
+        super(source);
+    }
+}
+
+export class AgentToolSkippedEvent extends ApplicationEvent {
+    constructor(
+        source: Object,
+        readonly sessionId: string,
+        readonly toolName: string,
+        readonly reason: string,
+        readonly receipt?: AgentToolExecutionReceipt
+    ) {
         super(source);
     }
 }

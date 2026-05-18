@@ -10,7 +10,7 @@ import { PairingStore } from '../src/auth/PairingStore';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
-import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentTurnCompletedEvent, AgentErrorEvent, LocalToolRegistry } from '@tsdi/agent';
+import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, LocalToolRegistry } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ReadFileTool } from '../../agent-tools/src';
@@ -385,7 +385,44 @@ export class ToolsHandlerTest {
         const data = JSON.parse(body);
         expect(data.length).toEqual(1);
         expect(data[0].name).toEqual('read_file');
+        expect(data[0].description).toBeTruthy();
+        expect(data[0].toolset).toEqual('filesystem');
+        expect(data[0].source).toEqual('local');
+        expect(data[0].execution.readOnly).toEqual(true);
         expect(data[0].inputSchema.required).toEqual(['path']);
+    }
+
+    @Test('normalizes legacy tool metadata through api route')
+    async normalizesLegacyToolMetadata() {
+        const registry = {
+            getToolDefinitions() {
+                return [{
+                    name: 'legacy',
+                    description: 'legacy tool'
+                }];
+            }
+        } as any;
+        const handler = new ToolsHandler(registry);
+        const route = handler.getRoutes().find(route => route.path === '/api/tools' && route.method === 'GET')!;
+        let body = '';
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler({} as any, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data).toEqual([{
+            name: 'legacy',
+            description: 'legacy tool',
+            toolset: null,
+            source: null,
+            execution: null,
+            inputSchema: null
+        }]);
     }
 }
 
@@ -401,6 +438,8 @@ export class EventHandlerTest {
         handler.onStreamChunk(new AgentStreamChunkEvent(handler as any, 's1', 'text', 'hi'));
         handler.onToolInvoked(new AgentToolInvokedEvent(handler as any, 's1', 'echo', { value: 'x' }));
         handler.onToolCompleted(new AgentToolCompletedEvent(handler as any, 's1', 'echo', { ok: true }));
+        handler.onToolFailed(new AgentToolFailedEvent(handler as any, 's1', 'echo', new Error('boom')));
+        handler.onToolSkipped(new AgentToolSkippedEvent(handler as any, 's1', 'echo', 'skipped'));
         handler.onTurnCompleted(new AgentTurnCompletedEvent(handler as any, 's1', { id: '1', role: 'assistant', content: 'done', createdAt: 1 } as any));
 
         const route = handler.getRoutes().find(route => route.path === '/api/events/history' && route.method === 'GET')!;
@@ -417,10 +456,12 @@ export class EventHandlerTest {
 
         await route.handler(req, res, {} as any);
         const data = JSON.parse(body);
-        expect(data.events.length).toEqual(5);
+        expect(data.events.length).toEqual(7);
         expect(data.events[0].type).toEqual('turn_started');
         expect(data.events[1].type).toEqual('stream_chunk');
-        expect(data.events[4].type).toEqual('turn_completed');
+        expect(data.events[4].type).toEqual('tool_failed');
+        expect(data.events[5].type).toEqual('tool_skipped');
+        expect(data.events[6].type).toEqual('turn_completed');
     }
 
     @Test('rejects event history access for another principal')

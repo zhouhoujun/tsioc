@@ -16,7 +16,10 @@ export class ToolsHandler {
             const tools = this.toolRegistry.getToolDefinitions().map(t => ({
                 name: t.name,
                 description: t.description,
-                inputSchema: t.inputSchema
+                toolset: t.toolset ?? null,
+                source: t.source ?? null,
+                execution: t.execution ?? null,
+                inputSchema: t.inputSchema ?? null
             }));
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(tools));

@@ -10,6 +10,7 @@ import { ModelAdapter } from './model/ModelAdapter';
 import { AgentScheduler } from './scheduler/AgentScheduler';
 import { AgentTurnResult } from './runtime/AgentTurnResult';
 import { AgentTurnInput } from './runtime/AgentTurnInput';
+import { ToolActivationStore } from './tools/ToolActivationStore';
 
 export const AGENT_OPTIONS = token<AgentOptions>('AGENT_OPTIONS');
 export const AGENT_TOOLS = token<AgentTool[]>('AGENT_TOOLS');
@@ -26,3 +27,4 @@ export const AGENT_TURN_GUARDS = token<GuardLike<AgentTurnInput, RunContext>[]>(
 export const AGENT_TURN_INTERCEPTORS = token<InterceptorLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_INTERCEPTORS');
 export const AGENT_TURN_FILTERS = token<FilterLike<AgentTurnInput, Promise<AgentTurnResult>, RunContext>[]>('AGENT_TURN_FILTERS');
 export const AGENT_PROMPT_SECTIONS = token<import('./prompt/PromptSection').PromptSection[]>('AGENT_PROMPT_SECTIONS');
+export const AGENT_TOOL_ACTIVATION_STORE = token<ToolActivationStore>('AGENT_TOOL_ACTIVATION_STORE');

@@ -24,6 +24,8 @@ export * from './runtime/AgentRuntime';
 export * from './tools/AgentTool';
 export * from './tools/ToolRegistry';
 export * from './tools/LocalToolRegistry';
+export * from './tools/ToolActivationStore';
+export * from './tools/InMemoryToolActivationStore';
 export * from './tools/ToolLoopDetector';
 export * from './tools/ToolApprovalManager';
 export * from './tools/BuiltinTools';
@@ -49,6 +51,8 @@ export * from './memory/SimpleSessionSummarizer';
 export * from './memory/entities';
 
 export * from './scheduler/AgentScheduler';
+export * from './scheduler/ScheduleSpec';
+export * from './scheduler/NextRunCalculator';
 export * from './scheduler/ScheduledAgentTask';
 export * from './scheduler/IntervalAgentScheduler';
 

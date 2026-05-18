@@ -1,9 +1,13 @@
+import { AgentScheduleType } from './ScheduleSpec';
+
 export interface ScheduledAgentTask {
     id: string;
     sessionId: string;
     prompt: string;
     runAt?: number;
     intervalMs?: number;
+    cronExpr?: string;
+    scheduleType?: AgentScheduleType;
     cancelled?: boolean;
     running?: boolean;
     createdAt?: number;

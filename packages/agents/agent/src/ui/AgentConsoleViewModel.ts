@@ -42,7 +42,8 @@ export class AgentConsoleViewModel {
             id: `task-${Date.now()}`,
             sessionId: this.sessionId,
             prompt,
-            runAt: Date.now() + delayMs
+            runAt: Date.now() + delayMs,
+            scheduleType: 'once'
         });
     }
 

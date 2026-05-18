@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { Injectable } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
-import { AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolInvokedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
+import { AgentErrorEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
@@ -89,7 +89,28 @@ export class EventHandler {
         this.publish('tool_completed', {
             sessionId: event.sessionId,
             toolName: event.toolName,
-            output: this.summarizeValue(event.output)
+            output: this.summarizeValue(event.output),
+            receipt: event.receipt
+        });
+    }
+
+    @OnEvent(AgentToolFailedEvent)
+    onToolFailed(event: AgentToolFailedEvent): void {
+        this.publish('tool_failed', {
+            sessionId: event.sessionId,
+            toolName: event.toolName,
+            error: event.error.message,
+            receipt: event.receipt
+        });
+    }
+
+    @OnEvent(AgentToolSkippedEvent)
+    onToolSkipped(event: AgentToolSkippedEvent): void {
+        this.publish('tool_skipped', {
+            sessionId: event.sessionId,
+            toolName: event.toolName,
+            reason: event.reason,
+            receipt: event.receipt
         });
     }
 

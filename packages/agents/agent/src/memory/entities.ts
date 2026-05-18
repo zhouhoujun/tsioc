@@ -104,6 +104,12 @@ export class AgentScheduledTaskEntity {
     @Column({ type: 'int', nullable: true })
     intervalMs!: number;
 
+    @Column({ type: 'text', nullable: true })
+    cronExpr!: string | null;
+
+    @Column({ type: 'varchar', nullable: true })
+    scheduleType!: string | null;
+
     @Column({ type: 'boolean', default: false })
     cancelled!: boolean;
 

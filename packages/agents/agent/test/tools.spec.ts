@@ -42,6 +42,44 @@ class DescribedTool implements AgentTool {
     }
 }
 
+class DeferredDefinitionTool implements AgentTool {
+    name = 'heavy_tool';
+    description = 'heavy schema tool';
+    inputSchema = {
+        type: 'object',
+        properties: {
+            value: { type: 'string' },
+            count: { type: 'number' }
+        },
+        required: ['value']
+    };
+    toolset = 'custom';
+    source = 'test';
+    execution = { readOnly: true };
+
+    async invoke(input: any): Promise<any> {
+        return input;
+    }
+}
+
+class RegistryDiscoveryTool implements AgentTool {
+    name = 'tool_search';
+    description = 'search tools';
+    inputSchema = {
+        type: 'object',
+        properties: {
+            query: { type: 'string' }
+        }
+    };
+    toolset = 'registry';
+    source = 'test';
+    execution = { readOnly: true };
+
+    async invoke(input: any): Promise<any> {
+        return input;
+    }
+}
+
 @Suite('Agent builtin tools')
 export class BuiltinToolsTest {
     @Test('memory put stores session memory')
@@ -185,6 +223,14 @@ export class BuiltinToolsTest {
 
         expect(registry.getTools().length).toEqual(1);
         expect(registry.getTool('described')?.description).toEqual('legacy description');
+        expect(registry.getToolDefinition('described')).toEqual({
+            name: 'described',
+            description: 'resolved description',
+            inputSchema: { type: 'object' },
+            toolset: 'custom',
+            source: 'test',
+            execution: { readOnly: true }
+        });
         expect(registry.getToolDefinitions()).toEqual([{
             name: 'described',
             description: 'resolved description',
@@ -200,9 +246,84 @@ export class BuiltinToolsTest {
         const store = new InMemoryMemoryStore();
         const registry = new LocalToolRegistry([new MemoryPutTool()], store);
 
+        await registry.activateTool('s1', 'memory.put');
         const result = await registry.invoke('memory.put', { key: 'topic', value: 'router' }, 's1');
         expect(result.stored).toEqual(true);
         expect((await store.getAll('s1')).length).toEqual(1);
+    }
+
+    @Test('local tool registry returns lightweight stubs by default except registry tools')
+    localToolRegistryReturnsDeferredDefinitions() {
+        const registry = new LocalToolRegistry([
+            new RegistryDiscoveryTool(),
+            new DeferredDefinitionTool()
+        ], new InMemoryMemoryStore());
+
+        expect(registry.getToolDefinition('tool_search', 's1')).toEqual({
+            name: 'tool_search',
+            description: 'search tools',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    query: { type: 'string' }
+                }
+            },
+            toolset: 'registry',
+            source: 'test',
+            execution: { readOnly: true }
+        });
+        expect(registry.getToolDefinition('heavy_tool', 's1')).toEqual({
+            name: 'heavy_tool',
+            description: 'heavy schema tool',
+            toolset: 'custom',
+            source: 'test',
+            execution: { readOnly: true }
+        });
+    }
+
+    @Test('local tool registry exposes full schema only after session activation')
+    async localToolRegistryActivatesDefinitionsPerSession() {
+        const registry = new LocalToolRegistry([
+            new RegistryDiscoveryTool(),
+            new DeferredDefinitionTool()
+        ], new InMemoryMemoryStore());
+
+        expect(registry.getToolDefinition('heavy_tool', 's1')?.inputSchema).toEqual(undefined);
+        await registry.activateTool('s1', 'heavy_tool');
+        expect(registry.getToolDefinition('heavy_tool', 's1')?.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+                value: { type: 'string' },
+                count: { type: 'number' }
+            },
+            required: ['value']
+        });
+        expect(registry.getToolDefinition('heavy_tool', 's2')?.inputSchema).toEqual(undefined);
+    }
+
+    @Test('local tool registry rejects invoke before activation and allows it after activation')
+    async localToolRegistryRequiresActivationForDeferredTools() {
+        const registry = new LocalToolRegistry([
+            new RegistryDiscoveryTool(),
+            new DeferredDefinitionTool()
+        ], new InMemoryMemoryStore());
+
+        const search = await registry.invoke('tool_search', { query: 'heavy' }, 's1');
+        expect(search.query).toEqual('heavy');
+
+        let error: Error | undefined;
+        try {
+            await registry.invoke('heavy_tool', { value: 'x' }, 's1');
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('heavy_tool');
+        expect(error?.message).toContain('activate');
+        expect(error?.message).toContain('tool_inspect');
+
+        await registry.activateTool('s1', 'heavy_tool');
+        const result = await registry.invoke('heavy_tool', { value: 'x' }, 's1');
+        expect(result).toEqual({ value: 'x' });
     }
 
     @Test('agent tools module registers tool definitions into registry')
@@ -248,6 +369,7 @@ export class BuiltinToolsTest {
         });
         try {
             const registry = ctx.get(ToolRegistry);
+            await registry.activateTool('s1', 'web_search');
             const result = await registry.invoke('web_search', { query: 'router', limit: 2 }, 's1');
             expect(result.results.length).toEqual(1);
             expect(result.results[0].title).toEqual('router:2');
@@ -300,6 +422,7 @@ export class BuiltinToolsTest {
             expect(registry.getToolDefinitions().some(tool => tool.name === 'http_fetch')).toEqual(true);
             expect(registry.getToolDefinitions().some(tool => tool.name === 'http_request')).toEqual(true);
 
+            await registry.activateTool('s1', 'http_fetch');
             const fetched = await registry.invoke('http_fetch', { url: 'https://example.com/http' }, 's1');
             expect(fetched.status).toEqual(200);
             expect(fetchCalls[0].url).toEqual('https://example.com/http');
@@ -333,6 +456,8 @@ export class BuiltinToolsTest {
         await store.put({ id: 'global-note', key: 'shared', value: 'policy', scope: 'global', createdAt: 3 });
         const registry = new LocalToolRegistry([new MemoryListTool(), new MemoryDeleteTool()], store);
 
+        await registry.activateTool('s1', 'memory.list');
+        await registry.activateTool('s1', 'memory.delete');
         const listed = await registry.invoke('memory.list', undefined, 's1');
         expect(listed.records.map((record: any) => record.id)).toEqual(['s1-note', 'global-note']);
 
@@ -359,6 +484,7 @@ export class BuiltinToolsTest {
 
         const scheduler = new FakeScheduler();
         const registry = new LocalToolRegistry([new ScheduleTool({ get: () => scheduler } as any)], new InMemoryMemoryStore());
+        await registry.activateTool('session-reg', 'schedule');
         await registry.invoke('schedule', { action: 'create', prompt: 'hello' }, 'session-reg');
         expect(scheduler.tasks.length).toEqual(1);
         expect(scheduler.tasks[0].sessionId).toEqual('session-reg');

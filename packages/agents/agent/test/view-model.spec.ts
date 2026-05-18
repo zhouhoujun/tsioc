@@ -58,5 +58,6 @@ export class AgentConsoleViewModelTest {
         expect(vm.tasksCount).toEqual(1);
         expect(scheduler.tasks[0].prompt).toEqual('later');
         expect(scheduler.tasks[0].sessionId).toEqual('console');
+        expect(typeof scheduler.tasks[0].runAt).toEqual('number');
     }
 }

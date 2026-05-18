@@ -15,11 +15,19 @@ import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AG
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { AgentMessage } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
-import { AgentErrorEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentToolCompletedEvent, AgentToolInvokedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent, AgentStreamChunkEvent } from './AgentEvents';
+import { AgentErrorEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent, AgentStreamChunkEvent } from './AgentEvents';
 import { AgentTurnInput } from './AgentTurnInput';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
+
+interface ToolInvocationResult {
+    toolCall: { id: string; name: string; input?: any };
+    content: string;
+    metadata: Record<string, any>;
+    receipt: AgentToolExecutionReceipt;
+    error?: Error;
+}
 
 @Injectable()
 export class AgentRuntime {
@@ -187,7 +195,7 @@ export class AgentRuntime {
         if (this.promptBuilder) {
             const systemPrompt = await this.promptBuilder.build({
                 sessionId,
-                tools: this.getToolDefinitions().map(t => ({ name: t.name, description: t.description })),
+                tools: this.getToolDefinitions(sessionId).map(t => ({ name: t.name, description: t.description })),
                 memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
                 dateTime: new Date().toISOString()
             });
@@ -202,14 +210,14 @@ export class AgentRuntime {
         return {
             sessionId,
             messages,
-            tools: this.getToolDefinitions(),
+            tools: this.getToolDefinitions(sessionId),
             memory,
             summary: state.summary
         };
     }
 
-    private getToolDefinitions(): AgentToolDefinition[] {
-        return this.toolRegistry.getToolDefinitions();
+    private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
+        return this.toolRegistry.getToolDefinitions(sessionId);
     }
 
     private async *collectStreamingResponse(
@@ -307,13 +315,25 @@ export class AgentRuntime {
     }
 
     private canParallelize(toolCalls: Array<{ name: string; input?: any }>, safeTools: string[]): boolean {
-        if (!toolCalls.every(tc => safeTools.includes(tc.name))) {
+        if (this.toolApprovalManager && toolCalls.some(tc => this.toolApprovalManager!.requiresApproval(tc.name, tc.input))) {
             return false;
         }
-        if (!this.toolApprovalManager) {
+
+        return toolCalls.every(tc => {
+            const definition = this.toolRegistry.getToolDefinition(tc.name);
+            const fallbackSafe = safeTools.includes(tc.name);
+            return definition ? this.isParallelSafeTool(definition, fallbackSafe) : fallbackSafe;
+        });
+    }
+
+    private isParallelSafeTool(definition: AgentToolDefinition, fallbackSafe: boolean): boolean {
+        if (definition.execution?.requiresSequential) {
+            return false;
+        }
+        if (definition.execution?.readOnly === true) {
             return true;
         }
-        return !toolCalls.some(tc => this.toolApprovalManager!.requiresApproval(tc.name, tc.input));
+        return fallbackSafe;
     }
 
     private async executeToolsSequential(
@@ -324,17 +344,21 @@ export class AgentRuntime {
         let toolError: Error | undefined;
         for (const toolCall of toolCalls) {
             if (toolError) {
+                const reason = 'Skipped because a previous tool call failed.';
+                const receipt = this.createSkippedReceipt(toolCall, 'sequential', reason);
+                await this.app.publishEvent(new AgentToolSkippedEvent(this, sessionId, toolCall.name, reason, receipt));
                 await this.sessions.append(sessionId, this.createMessage('tool',
-                    JSON.stringify({ error: 'Skipped because a previous tool call failed.' }),
+                    JSON.stringify({ error: reason }),
                     toolCall.name, toolCall.id,
                     {
                         inputSummary: this.summarizeToolInput(toolCall.input),
-                        error: 'Skipped because a previous tool call failed.'
+                        error: reason,
+                        receipt
                     }
                 ));
                 continue;
             }
-            toolError = await this.invokeSingleTool(sessionId, toolCall, loopDetector);
+            toolError = await this.invokeSingleTool(sessionId, toolCall, loopDetector, 'sequential');
         }
         return toolError;
     }
@@ -348,16 +372,22 @@ export class AgentRuntime {
         for (let i = 0; i < toolCalls.length; i += maxParallel) {
             const batch = toolCalls.slice(i, i + maxParallel);
             const results = await Promise.allSettled(
-                batch.map(tc => this.invokeSingleTool(sessionId, tc, loopDetector))
+                batch.map(tc => this.performToolInvocation(sessionId, tc, loopDetector, 'parallel'))
             );
 
+            const finalized: ToolInvocationResult[] = [];
             for (let j = 0; j < results.length; j++) {
                 const result = results[j];
                 if (result.status === 'rejected') {
                     return result.reason instanceof Error ? result.reason : new Error(String(result.reason));
                 }
-                if (result.value) {
-                    return result.value;
+                finalized.push(result.value);
+            }
+
+            for (const result of finalized) {
+                await this.finalizeToolInvocation(sessionId, result);
+                if (result.error) {
+                    return result.error;
                 }
             }
         }
@@ -367,20 +397,36 @@ export class AgentRuntime {
     private async invokeSingleTool(
         sessionId: string,
         toolCall: { id: string; name: string; input?: any },
-        loopDetector: ToolLoopDetector
+        loopDetector: ToolLoopDetector,
+        executionMode: 'sequential' | 'parallel',
+        persistMessage = true
     ): Promise<Error | undefined> {
+        const result = await this.performToolInvocation(sessionId, toolCall, loopDetector, executionMode);
+        if (persistMessage) {
+            await this.finalizeToolInvocation(sessionId, result);
+        }
+        return result.error;
+    }
+
+    private async performToolInvocation(
+        sessionId: string,
+        toolCall: { id: string; name: string; input?: any },
+        loopDetector: ToolLoopDetector,
+        executionMode: 'sequential' | 'parallel'
+    ): Promise<ToolInvocationResult> {
         const toolCallInput = this.cloneToolInput(toolCall.input);
         const inputSummary = this.summarizeToolInput(toolCallInput);
+        const baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
         // Tool loop detection
         const loopResult = loopDetector.record(toolCall.name, toolCallInput);
         if (loopResult.severity === 'break') {
             const reason = loopResult.reason ?? 'Loop detected';
-            await this.sessions.append(sessionId, this.createMessage('tool',
-                JSON.stringify({ error: reason }),
-                toolCall.name, toolCall.id,
-                { inputSummary, error: reason }
-            ));
-            return new Error(reason);
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...baseReceipt,
+                status: 'skipped',
+                durationMs: 0,
+                error: reason
+            }, reason, { sessionId, reason });
         }
 
         // Tool approval check
@@ -390,39 +436,51 @@ export class AgentRuntime {
                 const reason = approval.decision === ApprovalDecision.TIMEOUT
                     ? `Tool "${toolCall.name}" approval timed out.`
                     : `Tool "${toolCall.name}" was rejected.`;
-                await this.sessions.append(sessionId, this.createMessage('tool',
-                    JSON.stringify({ error: reason }),
-                    toolCall.name, toolCall.id,
-                    { inputSummary, error: reason }
-                ));
-                return new Error(reason);
+                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                    ...baseReceipt,
+                    status: 'skipped',
+                    durationMs: 0,
+                    error: reason
+                }, reason, { sessionId, reason });
             }
         }
 
-        await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput));
+        const startedAt = Date.now();
+        await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, baseReceipt));
 
         try {
             const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId);
             loopDetector.record(toolCall.name, toolCallInput, output);
-            await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output));
-
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
             const truncated = outputStr.length > maxChars ? outputStr.slice(0, maxChars) + '...[truncated]' : outputStr;
-
-            await this.sessions.append(sessionId, this.createMessage('tool', truncated, toolCall.name, toolCall.id, {
-                toolCallInput,
-                inputSummary
-            }));
-            return undefined;
+            const completedReceipt: AgentToolExecutionReceipt = {
+                ...baseReceipt,
+                status: 'success',
+                durationMs: Math.max(0, Date.now() - startedAt),
+                outputSummary: this.summarizeToolOutput(output)
+            };
+            await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
+            return {
+                toolCall,
+                content: truncated,
+                metadata: {
+                    toolCallInput,
+                    inputSummary,
+                    receipt: completedReceipt
+                },
+                receipt: completedReceipt
+            };
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            await this.sessions.append(sessionId, this.createMessage('tool',
-                JSON.stringify({ error: err.message }),
-                toolCall.name, toolCall.id,
-                { inputSummary, error: err.message }
-            ));
-            return err;
+            const failedReceipt: AgentToolExecutionReceipt = {
+                ...baseReceipt,
+                status: 'error',
+                durationMs: Math.max(0, Date.now() - startedAt),
+                error: err.message
+            };
+            await this.app.publishEvent(new AgentToolFailedEvent(this, sessionId, toolCall.name, err, failedReceipt));
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, failedReceipt, err.message);
         }
     }
 
@@ -467,6 +525,80 @@ export class AgentRuntime {
             return undefined;
         }
         return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
+    }
+
+    private summarizeToolOutput(output: any): string | undefined {
+        const text = typeof output === 'string' ? output : this.safeSerialize(output);
+        if (!text) {
+            return undefined;
+        }
+        return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
+    }
+
+    private async finalizeToolInvocation(sessionId: string, result: ToolInvocationResult): Promise<void> {
+        await this.sessions.append(sessionId, this.createMessage(
+            'tool',
+            result.content,
+            result.toolCall.name,
+            result.toolCall.id,
+            result.metadata
+        ));
+    }
+
+    private createBaseReceipt(
+        toolCall: { id: string; name: string },
+        executionMode: 'sequential' | 'parallel',
+        inputSummary?: string
+    ): AgentToolExecutionReceipt {
+        return {
+            receiptId: randomUUID(),
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            executionMode,
+            status: 'running',
+            inputSummary
+        };
+    }
+
+    private createFailedToolInvocationResult(
+        toolCall: { id: string; name: string; input?: any },
+        toolCallInput: any,
+        inputSummary: string | undefined,
+        receipt: AgentToolExecutionReceipt,
+        error: string,
+        skipEvent?: { sessionId: string; reason: string }
+    ): ToolInvocationResult {
+        if (skipEvent) {
+            void this.app.publishEvent(new AgentToolSkippedEvent(this, skipEvent.sessionId, toolCall.name, skipEvent.reason, receipt));
+        }
+        return {
+            toolCall,
+            content: JSON.stringify({ error }),
+            metadata: {
+                toolCallInput,
+                inputSummary,
+                error,
+                receipt
+            },
+            receipt,
+            error: new Error(error)
+        };
+    }
+
+    private createSkippedReceipt(
+        toolCall: { id: string; name: string },
+        executionMode: 'sequential' | 'parallel',
+        error: string
+    ): AgentToolExecutionReceipt {
+        return {
+            receiptId: randomUUID(),
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            executionMode,
+            status: 'skipped',
+            durationMs: 0,
+            error
+        };
     }
 
     private resolveApprovalManager(approvalManager?: ToolApprovalManager): ToolApprovalManager | undefined {

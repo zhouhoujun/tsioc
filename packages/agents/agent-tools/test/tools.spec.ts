@@ -345,6 +345,15 @@ export class AgentToolsPackageTest {
                     { name: 'memory.list', description: 'List memories', toolset: 'memory', source: 'local', execution: { readOnly: true } },
                     { name: 'http_fetch', description: 'Fetch over HTTP', toolset: 'http', source: 'local', execution: { readOnly: true }, inputSchema: { type: 'object' } }
                 ];
+            },
+            getToolDefinition(name: string, sessionId?: string) {
+                if (name === 'memory.list' && sessionId === 's1') {
+                    return { name: 'memory.list', description: 'List memories', toolset: 'memory', source: 'local', execution: { readOnly: true }, inputSchema: { type: 'object' } };
+                }
+                return this.getToolDefinitions().find((tool: any) => tool.name === name);
+            },
+            async activateTool() {
+                return true;
             }
         } as any;
         const app = { get() { return registry; } } as any;
@@ -354,9 +363,14 @@ export class AgentToolsPackageTest {
         const result = await search.invoke({ query: 'http' }, createSessionContext());
         expect(result.tools.length).toEqual(1);
         expect(result.tools[0].name).toEqual('http_fetch');
+        expect(result.tools[0].active).toEqual(true);
 
         const inspected = await inspect.invoke({ name: 'memory.list' }, createSessionContext());
         expect(inspected.tool.name).toEqual('memory.list');
+        expect(inspected.tool.toolset).toEqual('memory');
+        expect(inspected.tool.source).toEqual('local');
+        expect(inspected.tool.execution.readOnly).toEqual(true);
+        expect(inspected.activated).toEqual(true);
 
         let missingError: Error | undefined;
         try {
@@ -457,6 +471,51 @@ export class AgentToolsPackageTest {
             intervalError = err as Error;
         }
         expect(intervalError?.message).toContain('between');
+
+        let cronError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'create', prompt: 'pong', cronExpr: '* *' }, createSessionContext({ sessionId: 'sched-cron' }));
+        } catch (err) {
+            cronError = err as Error;
+        }
+        expect(cronError?.message).toContain('cron');
+    }
+
+    @Test('schedule tool creates cron tasks')
+    async scheduleToolCreatesCronTasks() {
+        const scheduler = new FakeScheduler();
+        const tool = new ScheduleTool({ get: () => scheduler } as any);
+
+        const created = await tool.invoke({ action: 'create', prompt: 'ping', cronExpr: '0 */5 * * * *' }, createSessionContext({ sessionId: 'sched-cron-ok' }));
+        expect(created.scheduled).toEqual(true);
+        expect(created.task.cronExpr).toEqual('0 */5 * * * *');
+        expect(created.task.scheduleType).toEqual('cron');
+    }
+
+    @Test('schedule tool rejects cron tasks below min interval and unschedulable cron')
+    async scheduleToolRejectsInvalidCronCadence() {
+        const scheduler = new FakeScheduler();
+        const tool = new ScheduleTool({ get: () => scheduler } as any, {
+            schedule: {
+                minIntervalMs: 60000
+            }
+        } as any);
+
+        let fastCronError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'create', prompt: 'ping', cronExpr: '*/1 * * * * *' }, createSessionContext({ sessionId: 'sched-fast-cron' }));
+        } catch (err) {
+            fastCronError = err as Error;
+        }
+        expect(fastCronError?.message).toContain('cron');
+
+        let impossibleCronError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'create', prompt: 'ping', cronExpr: '0 0 0 31 2 *' }, createSessionContext({ sessionId: 'sched-bad-cron' }));
+        } catch (err) {
+            impossibleCronError = err as Error;
+        }
+        expect(impossibleCronError?.message).toContain('cron');
     }
 
     @Test('terminal tool executes command within workspace')
