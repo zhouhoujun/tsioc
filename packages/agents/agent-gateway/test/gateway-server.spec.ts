@@ -402,12 +402,251 @@ export class ToolsHandlerTest {
         expect(data[0].source).toEqual('local');
         expect(data[0].execution.readOnly).toEqual(true);
         expect(data[0].inputSchema.required).toEqual(['path']);
+        expect(data[0].canonicalName).toEqual(null);
+        expect(data[0].aliases).toEqual(null);
+        expect(data[0].tags).toEqual(null);
+        expect(data[0].activation).toEqual(null);
+        expect(data[0].provenance).toEqual(null);
 
         const bundleRoute = handler.getRoutes().find(route => route.path === '/api/tool-bundles' && route.method === 'GET')!;
         body = '';
         await bundleRoute.handler({} as any, res, {} as any);
         const bundleData = JSON.parse(body);
         expect(bundleData).toEqual(bundles);
+        expect(bundleData[0].source).toEqual('builtin');
+        expect(bundleData[0].providerId).toEqual('@tsdi/agent-tools');
+        expect(bundleData[0].activation).toEqual({ kind: 'deferred', scope: 'session' });
+        expect(bundleData[0].sessionScoped).toEqual(true);
+    }
+
+    @Test('exposes rich tool metadata through api route when present')
+    async exposesRichToolMetadata() {
+        const registry = {
+            getToolDefinitions() {
+                return [{
+                    name: 'mcp.demo.echo',
+                    description: 'Echo from MCP.',
+                    toolset: 'mcp:demo',
+                    source: 'mcp',
+                    execution: { readOnly: false, sideEffect: true, requiresSequential: true },
+                    inputSchema: { type: 'object' },
+                    canonicalName: 'echo',
+                    aliases: ['demo.echo'],
+                    tags: ['mcp', 'dynamic'],
+                    activation: { kind: 'deferred', scope: 'session', activated: false },
+                    provenance: {
+                        origin: 'mcp',
+                        providerId: '@tsdi/agent-tools/mcp',
+                        serverId: 'demo',
+                        sessionScoped: true
+                    }
+                }];
+            }
+        } as any;
+        const handler = new ToolsHandler(registry, []);
+        const route = handler.getRoutes().find(route => route.path === '/api/tools' && route.method === 'GET')!;
+        let body = '';
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler({} as any, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data).toEqual([{
+            name: 'mcp.demo.echo',
+            description: 'Echo from MCP.',
+            toolset: 'mcp:demo',
+            source: 'mcp',
+            execution: { readOnly: false, sideEffect: true, requiresSequential: true },
+            inputSchema: { type: 'object' },
+            canonicalName: 'echo',
+            aliases: ['demo.echo'],
+            tags: ['mcp', 'dynamic'],
+            activation: { kind: 'deferred', scope: 'session', activated: false },
+            provenance: {
+                origin: 'mcp',
+                providerId: '@tsdi/agent-tools/mcp',
+                serverId: 'demo',
+                sessionScoped: true
+            }
+        }]);
+    }
+
+    @Test('discovers dynamic MCP tools through api route')
+    async discoversDynamicMcpTools() {
+        let invoked: any;
+        const registry = {
+            getToolDefinitions() {
+                return [{
+                    name: 'mcp.list_tools',
+                    description: 'List tools exposed by a configured MCP server on demand.',
+                    toolset: 'mcp',
+                    source: 'mcp',
+                    provenance: { origin: 'mcp', providerId: '@tsdi/agent-tools/mcp' }
+                }, {
+                    name: 'mcp.call_tool',
+                    description: 'Call a tool from a configured MCP server by serverId and tool name.',
+                    toolset: 'mcp',
+                    source: 'mcp',
+                    execution: { readOnly: false, sideEffect: true, requiresSequential: true },
+                    provenance: { origin: 'mcp', providerId: '@tsdi/agent-tools/mcp' }
+                }];
+            },
+            getToolDefinition(name: string) {
+                return this.getToolDefinitions().find((tool: any) => tool.name === name);
+            },
+            async invoke(name: string, input: any, sessionId: string) {
+                invoked = { name, input, sessionId };
+                return {
+                    serverId: 'demo',
+                    tools: [{
+                        name: 'echo',
+                        fullName: 'mcp.demo.echo',
+                        description: 'Echo from MCP.',
+                        inputSchema: { type: 'object' },
+                        toolset: 'mcp:demo',
+                        source: 'mcp'
+                    }]
+                };
+            }
+        } as any;
+        const handler = new ToolsHandler(registry, []);
+        const route = handler.getRoutes().find(route => route.path === '/api/mcp/tools' && route.method === 'GET')!;
+        let body = '';
+        let status = 0;
+        const req = { url: '/api/mcp/tools?serverId=demo' } as any;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(status).toEqual(200);
+        expect(invoked).toEqual({
+            name: 'mcp.list_tools',
+            input: { serverId: 'demo' },
+            sessionId: '__gateway__'
+        });
+        expect(data).toEqual([{
+            name: 'mcp.demo.echo',
+            description: 'Echo from MCP.',
+            toolset: 'mcp:demo',
+            source: 'mcp',
+            execution: { readOnly: false, sideEffect: true, requiresSequential: true },
+            inputSchema: { type: 'object' },
+            canonicalName: 'echo',
+            aliases: null,
+            tags: ['mcp', 'demo'],
+            activation: { kind: 'deferred', scope: 'session', activated: false },
+            provenance: {
+                origin: 'mcp',
+                providerId: '@tsdi/agent-tools/mcp',
+                serverId: 'demo',
+                sessionScoped: true
+            }
+        }]);
+    }
+
+    @Test('rejects dynamic MCP discovery without server id')
+    async rejectsDynamicMcpDiscoveryWithoutServerId() {
+        const registry = {
+            getToolDefinitions() {
+                return [{ name: 'mcp.list_tools', description: 'List tools.', toolset: 'mcp', source: 'mcp' }];
+            },
+            getToolDefinition(name: string) {
+                return this.getToolDefinitions().find((tool: any) => tool.name === name);
+            }
+        } as any;
+        const handler = new ToolsHandler(registry, []);
+        const route = handler.getRoutes().find(route => route.path === '/api/mcp/tools' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/mcp/tools' } as any;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(400);
+    }
+
+    @Test('returns not found when MCP discovery is not configured')
+    async returnsNotFoundWhenMcpDiscoveryIsNotConfigured() {
+        const registry = {
+            getToolDefinitions() {
+                return [];
+            },
+            getToolDefinition() {
+                return undefined;
+            }
+        } as any;
+        const handler = new ToolsHandler(registry, []);
+        const route = handler.getRoutes().find(route => route.path === '/api/mcp/tools' && route.method === 'GET')!;
+        let status = 0;
+        let body = '';
+        const req = { url: '/api/mcp/tools?serverId=demo' } as any;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(404);
+        expect(JSON.parse(body).error).toContain('not configured');
+    }
+
+    @Test('maps dynamic MCP discovery failures to non-500 responses')
+    async mapsDynamicMcpDiscoveryFailuresToNon500Responses() {
+        const registry = {
+            getToolDefinitions() {
+                return [{ name: 'mcp.list_tools', description: 'List tools.', toolset: 'mcp', source: 'mcp' }];
+            },
+            getToolDefinition(name: string) {
+                return this.getToolDefinitions().find((tool: any) => tool.name === name);
+            },
+            async invoke() {
+                throw new Error("MCP server 'demo' is not configured.");
+            }
+        } as any;
+        const handler = new ToolsHandler(registry, []);
+        const route = handler.getRoutes().find(route => route.path === '/api/mcp/tools' && route.method === 'GET')!;
+        let status = 0;
+        let body = '';
+        const req = { url: '/api/mcp/tools?serverId=demo' } as any;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(404);
+        expect(JSON.parse(body).error).toContain('not configured');
     }
 
     @Test('normalizes legacy tool metadata through api route')
@@ -439,7 +678,12 @@ export class ToolsHandlerTest {
             toolset: null,
             source: null,
             execution: null,
-            inputSchema: null
+            inputSchema: null,
+            canonicalName: null,
+            aliases: null,
+            tags: null,
+            activation: null,
+            provenance: null
         }]);
 
         const bundleRoute = handler.getRoutes().find(route => route.path === '/api/tool-bundles' && route.method === 'GET')!;
