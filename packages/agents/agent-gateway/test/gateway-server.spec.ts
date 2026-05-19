@@ -376,7 +376,11 @@ export class ToolsHandlerTest {
             tools: ['read_file'],
             defaultEnabled: true,
             deferredActivation: true,
-            enabled: true
+            enabled: true,
+            source: 'builtin',
+            providerId: '@tsdi/agent-tools',
+            activation: { kind: 'deferred', scope: 'session' },
+            sessionScoped: true
         }];
         const handler = new ToolsHandler(registry, bundles as any);
         const route = handler.getRoutes().find(route => route.path === '/api/tools' && route.method === 'GET')!;

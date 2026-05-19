@@ -1,6 +1,7 @@
-import { AgentTool, AgentToolContext, ToolRegistry } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, AgentToolDefinition, ToolRegistry } from '@tsdi/agent';
 import { ApplicationContext } from '@tsdi/core';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { LocalMcpClientRegistry, McpToolDescriptor, toMcpToolName, toMcpToolset } from '../mcp';
 
 @Injectable()
 export class ToolInspectTool implements AgentTool {
@@ -27,14 +28,18 @@ export class ToolInspectTool implements AgentTool {
         const name = this.requireName(input?.name);
         const registry = this.resolveRegistry();
         const tool = registry.getToolDefinitions().find(definition => definition.name === name);
-        if (!tool) {
-            throw new Error(`Tool '${name}' not found.`);
+        if (tool) {
+            const activated = await registry.activateTool(context.sessionId, name);
+            return {
+                tool: registry.getToolDefinition(name, context.sessionId) ?? tool,
+                activated
+            };
         }
-        const activated = await registry.activateTool(context.sessionId, name);
-        return {
-            tool: registry.getToolDefinition(name, context.sessionId) ?? tool,
-            activated
-        };
+        const dynamicTool = await this.inspectDynamicMcpTool(name);
+        if (dynamicTool) {
+            return dynamicTool;
+        }
+        throw new Error(`Tool '${name}' not found.`);
     }
 
     private resolveRegistry(): Pick<ToolRegistry, 'getToolDefinitions' | 'getToolDefinition' | 'activateTool'> {
@@ -45,6 +50,78 @@ export class ToolInspectTool implements AgentTool {
             throw new Error('tool_inspect requires a tool registry.');
         }
         return registry;
+    }
+
+    private async inspectDynamicMcpTool(
+        name: string
+    ): Promise<{ tool: AgentToolDefinition; activated: boolean; discovery: { kind: 'mcp'; serverId: string; via: 'mcp.call_tool'; }; } | null> {
+        const parts = this.parseDynamicMcpName(name);
+        if (!parts) {
+            return null;
+        }
+        const mcpRegistry = this.resolveMcpRegistry();
+        if (!mcpRegistry) {
+            return null;
+        }
+        let tools: McpToolDescriptor[];
+        try {
+            tools = await mcpRegistry.listServerTools(parts.serverId);
+        } catch {
+            return null;
+        }
+        const tool = tools.find(item => toMcpToolName(parts.serverId, item.name) === name);
+        if (!tool) {
+            return null;
+        }
+        return {
+            tool: this.toDynamicMcpDefinition(parts.serverId, tool),
+            activated: false,
+            discovery: {
+                kind: 'mcp',
+                serverId: parts.serverId,
+                via: 'mcp.call_tool'
+            }
+        };
+    }
+
+    private resolveMcpRegistry(): Pick<LocalMcpClientRegistry, 'listServerTools'> | null {
+        const registry = this.app && typeof (this.app as any).get === 'function'
+            ? (this.app as any).get(LocalMcpClientRegistry, null) as Pick<LocalMcpClientRegistry, 'listServerTools'> | null
+            : null;
+        if (!registry || typeof (registry as any).listServerTools !== 'function') {
+            return null;
+        }
+        return registry;
+    }
+
+    private parseDynamicMcpName(name: string): { serverId: string; toolName: string; } | null {
+        const match = /^mcp\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/.exec(name);
+        if (!match) {
+            return null;
+        }
+        return {
+            serverId: match[1],
+            toolName: match[2]
+        };
+    }
+
+    private toDynamicMcpDefinition(serverId: string, tool: McpToolDescriptor): AgentToolDefinition {
+        return {
+            name: toMcpToolName(serverId, tool.name),
+            description: tool.description || tool.title || `MCP tool '${tool.name}'.`,
+            inputSchema: tool.inputSchema,
+            toolset: toMcpToolset(serverId),
+            source: 'mcp',
+            canonicalName: tool.name,
+            execution: { readOnly: false, sideEffect: true, requiresSequential: true },
+            activation: { kind: 'deferred', scope: 'session', activated: false },
+            provenance: {
+                origin: 'mcp',
+                providerId: '@tsdi/agent-tools/mcp',
+                serverId,
+                sessionScoped: true
+            }
+        };
     }
 
     private requireName(name: unknown): string {

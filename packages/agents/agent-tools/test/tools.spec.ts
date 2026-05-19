@@ -30,6 +30,7 @@ import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as Exporte
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
 import { provideSkills, LocalSkillRegistry } from '../skills';
+import { LocalMcpClientRegistry } from '../mcp';
 
 class FakeScheduler extends AgentScheduler {
     scheduled: ScheduledAgentTask[] = [];
@@ -446,6 +447,101 @@ export class AgentToolsPackageTest {
             missingError = err as Error;
         }
         expect(missingError?.message).toContain('missing.tool');
+    }
+
+    @Test('tool search and inspect expose dynamic MCP discovery hints')
+    async toolSearchAndInspectExposeDynamicMcpDiscoveryHints() {
+        const mcpRegistry = {
+            getServers() {
+                return [{ id: 'demo' }];
+            },
+            async listServerTools(serverId: string) {
+                expect(serverId).toEqual('demo');
+                return [{
+                    name: 'echo',
+                    description: 'Echo from MCP.',
+                    inputSchema: { type: 'object' }
+                }, {
+                    name: 'browser.click',
+                    description: 'Click in browser MCP.',
+                    inputSchema: { type: 'object' }
+                }];
+            }
+        } as any;
+        const registry = {
+            getToolDefinitions() {
+                return [
+                    { name: 'mcp.list_tools', description: 'List tools exposed by a configured MCP server on demand.', toolset: 'mcp', source: 'mcp', execution: { readOnly: true } },
+                    { name: 'mcp.call_tool', description: 'Call a tool from a configured MCP server by serverId and tool name.', toolset: 'mcp', source: 'mcp', execution: { readOnly: false, sideEffect: true, requiresSequential: true } }
+                ];
+            },
+            getToolDefinition(name: string) {
+                return this.getToolDefinitions().find((tool: any) => tool.name === name);
+            },
+            async activateTool(_sessionId: string, name: string) {
+                return name === 'mcp.demo.echo' ? false : true;
+            }
+        } as any;
+        const app = {
+            get(token: any) {
+                if (token === ToolRegistry) {
+                    return registry;
+                }
+                if (token === LocalMcpClientRegistry) {
+                    return mcpRegistry;
+                }
+                return null;
+            }
+        } as any;
+        const search = new ToolSearchTool(app);
+        const inspect = new ToolInspectTool(app);
+
+        const result = await search.invoke({ query: 'echo', includeDynamicMcp: true }, createSessionContext());
+        expect(result.tools.length).toEqual(1);
+        expect(result.tools[0].name).toEqual('mcp.demo.echo');
+        expect(result.tools[0].canonicalName).toEqual('echo');
+        expect(result.tools[0].toolset).toEqual('mcp:demo');
+        expect(result.tools[0].source).toEqual('mcp');
+        expect(result.tools[0].provenance).toEqual({
+            origin: 'mcp',
+            providerId: '@tsdi/agent-tools/mcp',
+            serverId: 'demo',
+            sessionScoped: true
+        });
+        expect(result.tools[0].active).toEqual(false);
+        expect(result.tools[0].discovery).toEqual({
+            kind: 'mcp',
+            serverId: 'demo',
+            via: 'mcp.list_tools'
+        });
+
+        const inspected = await inspect.invoke({ name: 'mcp.demo.echo' }, createSessionContext());
+        expect(inspected.tool.name).toEqual('mcp.demo.echo');
+        expect(inspected.tool.description).toEqual('Echo from MCP.');
+        expect(inspected.tool.inputSchema).toEqual({ type: 'object' });
+        expect(inspected.tool.toolset).toEqual('mcp:demo');
+        expect(inspected.tool.source).toEqual('mcp');
+        expect(inspected.tool.execution).toEqual({ readOnly: false, sideEffect: true, requiresSequential: true });
+        expect(inspected.tool.activation).toEqual({ kind: 'deferred', scope: 'session', activated: false });
+        expect(inspected.activated).toEqual(false);
+        expect(inspected.discovery).toEqual({
+            kind: 'mcp',
+            serverId: 'demo',
+            via: 'mcp.call_tool'
+        });
+
+        const canonicalSearch = await search.invoke({ query: 'browser.click', includeDynamicMcp: true }, createSessionContext());
+        expect(canonicalSearch.tools.length).toEqual(1);
+        expect(canonicalSearch.tools[0].name).toEqual('mcp.demo.browser_click');
+        expect(canonicalSearch.tools[0].canonicalName).toEqual('browser.click');
+
+        let missingError: Error | undefined;
+        try {
+            await inspect.invoke({ name: 'mcp.demo.missing' }, createSessionContext());
+        } catch (err) {
+            missingError = err as Error;
+        }
+        expect(missingError?.message).toContain('mcp.demo.missing');
     }
 
     @Test('todo tool stores and merges per-session items')
