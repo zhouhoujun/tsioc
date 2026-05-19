@@ -45,8 +45,7 @@ export class LocalToolRegistry extends ToolRegistry {
             return false;
         }
         const definition = super.toDefinition(tool, sessionId);
-        return ALWAYS_ACTIVE_TOOL_NAMES.has(definition.name)
-            || ALWAYS_ACTIVE_TOOLSETS.has(definition.toolset ?? '')
+        return this.isAlwaysActiveDefinition(definition)
             || this.hasActivation(sessionId, name);
     }
 
@@ -66,23 +65,38 @@ export class LocalToolRegistry extends ToolRegistry {
 
     protected toDefinition(tool: AgentTool, sessionId?: string): AgentToolDefinition {
         const definition = super.toDefinition(tool, sessionId);
-        if (!sessionId || this.shouldExposeFullDefinition(definition, sessionId)) {
-            return definition;
+        const active = !!sessionId && this.shouldExposeFullDefinition(definition, sessionId);
+        const activation = definition.activation
+            ? { ...definition.activation, activated: definition.activation.kind === 'always' ? true : active }
+            : undefined;
+        if (!sessionId || active) {
+            return activation ? { ...definition, activation } : definition;
         }
         return {
             name: definition.name,
             description: definition.description,
             toolset: definition.toolset,
             source: definition.source,
-            execution: definition.execution
+            execution: definition.execution,
+            canonicalName: definition.canonicalName,
+            aliases: definition.aliases,
+            tags: definition.tags,
+            activation,
+            provenance: definition.provenance
         };
     }
 
     private shouldExposeFullDefinition(definition: AgentToolDefinition, sessionId: string): boolean {
-        if (ALWAYS_ACTIVE_TOOL_NAMES.has(definition.name) || ALWAYS_ACTIVE_TOOLSETS.has(definition.toolset ?? '')) {
+        if (this.isAlwaysActiveDefinition(definition)) {
             return true;
         }
         return this.hasActivation(sessionId, definition.name);
+    }
+
+    private isAlwaysActiveDefinition(definition: AgentToolDefinition): boolean {
+        return ALWAYS_ACTIVE_TOOL_NAMES.has(definition.name)
+            || ALWAYS_ACTIVE_TOOLSETS.has(definition.toolset ?? '')
+            || definition.activation?.kind === 'always';
     }
 
     private hasActivation(sessionId: string, name: string): boolean {

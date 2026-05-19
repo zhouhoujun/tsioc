@@ -61,7 +61,7 @@ export interface AgentChannelsOptions {
     sse?: SSEChannelOptions;
     webhook?: WebhookChannelOptions;
     registration?: AgentChannelsRegistrationOptions;
-    providerChannels?: AgentProviderChannelItemOptions;
+    provideChannels?: AgentProviderChannelItemOptions;
 }
 
 export const defaultAgentChannelsOptions: AgentChannelsOptions = {
@@ -70,7 +70,7 @@ export const defaultAgentChannelsOptions: AgentChannelsOptions = {
         groups: {},
         items: {}
     },
-    providerChannels: {}
+    provideChannels: {}
 };
 
 export function mergeAgentChannelsOptions(options?: AgentChannelsOptions): AgentChannelsOptions {
@@ -95,9 +95,9 @@ export function mergeAgentChannelsOptions(options?: AgentChannelsOptions): Agent
         webhook: {
             ...(options?.webhook ?? {})
         },
-        providerChannels: {
-            ...(defaultAgentChannelsOptions.providerChannels ?? {}),
-            ...(options?.providerChannels ?? {})
+        provideChannels: {
+            ...(defaultAgentChannelsOptions.provideChannels ?? {}),
+            ...(options?.provideChannels ?? {})
         }
     };
 }

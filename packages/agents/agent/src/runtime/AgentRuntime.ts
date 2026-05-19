@@ -1,5 +1,5 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { ApplicationContext, RunContext, createRunContext } from '@tsdi/core';
+import { ApplicationContext, RunContext, Runner, createRunContext } from '@tsdi/core';
 import { randomUUID } from 'crypto';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ToolRegistry } from '../tools/ToolRegistry';
@@ -53,6 +53,16 @@ export class AgentRuntime {
             maxToolResults: this.options.context?.maxToolResultChars
         });
         this.toolApprovalManager = this.resolveApprovalManager(approvalManager);
+    }
+
+    @Runner()
+    async start(): Promise<void> {
+        const bootstrapTurn = this.options.bootstrapTurn;
+        if (!bootstrapTurn?.enabled || !bootstrapTurn.input?.trim()) {
+            return;
+        }
+        const result = await this.runTurn(bootstrapTurn.sessionId || 'default', bootstrapTurn.input);
+        bootstrapTurn.output = result.message.content;
     }
 
     async runTurn(sessionId: string, input: string): Promise<AgentTurnResult> {

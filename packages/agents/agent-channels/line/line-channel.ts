@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
@@ -89,7 +89,7 @@ export class LineAgentChannelModule {
     }
 }
 
-export function withLineAgentChannel(options?: LineAgentChannelOptions): any[] {
+export function withLineAgentChannel(options?: LineAgentChannelOptions): Provider[] {
     return [
         { provide: LINE_AGENT_CHANNEL_OPTIONS, useValue: { ...defaultLineAgentChannelOptions, ...(options ?? {}) } },
         LineAgentChannel,

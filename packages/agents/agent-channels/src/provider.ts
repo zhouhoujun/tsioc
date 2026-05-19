@@ -1,14 +1,16 @@
-import { Injector, ModuleWithProviders, Provider, ProvdierOf, StaticProvider, toProviders } from '@tsdi/ioc';
+import { Injector, Provider, ProvdierOf, StaticProvider, toProviders } from '@tsdi/ioc';
 import { AgentConversationChannel } from './contracts/AgentConversationChannel';
 import { AgentChannelFeature } from './contracts/AgentChannelFeature';
 import { AGENT_CHANNEL_OPTIONS, AGENT_CHANNELS } from './tokens';
-import { AgentChannelsModule } from './agent-channels.module';
 import { AgentChannelGroup, AgentChannelItem, AgentChannelsOptions, mergeAgentChannelsOptions } from './options';
 import { LocalLoopbackAgentChannel } from './adapters/LocalLoopbackAgentChannel';
 import { PubSubConversationChannel } from './adapters/PubSubConversationChannel';
 import { ConsoleAgentChannel } from './adapters/ConsoleAgentChannel';
 import { WebhookAgentChannel } from './adapters/WebhookAgentChannel';
 import { SSEAgentChannel } from './adapters/SSEAgentChannel';
+import { AgentChannelRegistry } from './orchestrator/AgentChannelRegistry';
+import { ChannelEnvelopeMapper } from './orchestrator/ChannelEnvelopeMapper';
+import { AgentChannelOrchestrator } from './orchestrator/AgentChannelOrchestrator';
 import { withSlackAgentChannel } from '../slack/slack-channel';
 import { withTelegramAgentChannel } from '../telegram/telegram-channel';
 import { withDiscordAgentChannel } from '../discord/discord-channel';
@@ -31,18 +33,18 @@ const builtInChannelItems = {
 } as const satisfies Partial<Record<AgentChannelItem, ProvdierOf<AgentConversationChannel>>>;
 
 const providerChannelFactories = {
-    slack: (options?: AgentChannelsOptions) => withSlackAgentChannel(options?.providerChannels?.slack),
-    telegram: (options?: AgentChannelsOptions) => withTelegramAgentChannel(options?.providerChannels?.telegram),
-    discord: (options?: AgentChannelsOptions) => withDiscordAgentChannel(options?.providerChannels?.discord),
-    line: (options?: AgentChannelsOptions) => withLineAgentChannel(options?.providerChannels?.line),
-    matrix: (options?: AgentChannelsOptions) => withMatrixAgentChannel(options?.providerChannels?.matrix),
-    mattermost: (options?: AgentChannelsOptions) => withMattermostAgentChannel(options?.providerChannels?.mattermost),
-    signal: (options?: AgentChannelsOptions) => withSignalAgentChannel(options?.providerChannels?.signal),
-    wechat: (options?: AgentChannelsOptions) => withWechatAgentChannel(options?.providerChannels?.wechat),
-    wecom: (options?: AgentChannelsOptions) => withWecomAgentChannel(options?.providerChannels?.wecom),
-    qq: (options?: AgentChannelsOptions) => withQQAgentChannel(options?.providerChannels?.qq),
-    feishu: (options?: AgentChannelsOptions) => withFeishuAgentChannel(options?.providerChannels?.feishu),
-    dingtalk: (options?: AgentChannelsOptions) => withDingtalkAgentChannel(options?.providerChannels?.dingtalk)
+    slack: (options?: AgentChannelsOptions) => withSlackAgentChannel(options?.provideChannels?.slack),
+    telegram: (options?: AgentChannelsOptions) => withTelegramAgentChannel(options?.provideChannels?.telegram),
+    discord: (options?: AgentChannelsOptions) => withDiscordAgentChannel(options?.provideChannels?.discord),
+    line: (options?: AgentChannelsOptions) => withLineAgentChannel(options?.provideChannels?.line),
+    matrix: (options?: AgentChannelsOptions) => withMatrixAgentChannel(options?.provideChannels?.matrix),
+    mattermost: (options?: AgentChannelsOptions) => withMattermostAgentChannel(options?.provideChannels?.mattermost),
+    signal: (options?: AgentChannelsOptions) => withSignalAgentChannel(options?.provideChannels?.signal),
+    wechat: (options?: AgentChannelsOptions) => withWechatAgentChannel(options?.provideChannels?.wechat),
+    wecom: (options?: AgentChannelsOptions) => withWecomAgentChannel(options?.provideChannels?.wecom),
+    qq: (options?: AgentChannelsOptions) => withQQAgentChannel(options?.provideChannels?.qq),
+    feishu: (options?: AgentChannelsOptions) => withFeishuAgentChannel(options?.provideChannels?.feishu),
+    dingtalk: (options?: AgentChannelsOptions) => withDingtalkAgentChannel(options?.provideChannels?.dingtalk)
 } as const satisfies Partial<Record<AgentChannelItem, (options?: AgentChannelsOptions) => Provider[]>>;
 
 const channelGroups = {
@@ -120,7 +122,7 @@ export function provideResolvedAgentChannels(): Provider {
                 }
                 const factory = providerChannelFactories[name as keyof typeof providerChannelFactories];
                 if (factory) {
-                    providers.push(...factory(options));
+                    providers.push(...factory(options) as StaticProvider[]);
                 }
             });
 
@@ -132,22 +134,27 @@ export function provideResolvedAgentChannels(): Provider {
     };
 }
 
-export function providerChannels(options?: AgentChannelsOptions, ...channels: ProvdierOf<AgentConversationChannel>[]): ModuleWithProviders<AgentChannelsModule> {
+export function provideChannels(options?: AgentChannelsOptions, ...channels: ProvdierOf<AgentConversationChannel>[]): Provider[] {
     const merged = mergeAgentChannelsOptions(options);
-    return {
-        module: AgentChannelsModule,
-        providers: [
-            {
-                provider(injector: Injector) {
-                    return Promise.all((merged.imports ?? []).map(imp => (injector as any).import(imp))).then(() => []);
-                }
-            },
-            { provide: AGENT_CHANNEL_OPTIONS, useValue: merged },
-            ...withAgentChannels(...channels)
-        ]
-    } as any;
+    return [
+        {
+            async provider(injector: Injector) {
+                await Promise.all((merged.imports ?? []).map(imp => (injector as any).import(imp)));
+                return [];
+            }
+        },
+        { provide: AGENT_CHANNEL_OPTIONS, useValue: merged },
+        AgentChannelRegistry,
+        ChannelEnvelopeMapper,
+        AgentChannelOrchestrator,
+        LocalLoopbackAgentChannel,
+        PubSubConversationChannel,
+        ConsoleAgentChannel,
+        WebhookAgentChannel,
+        SSEAgentChannel,
+        provideResolvedAgentChannels(),
+        ...withAgentChannels(...channels)
+    ];
 }
-
-export const provideAgentChannels = providerChannels;
 
 export { channelGroups as AGENT_CHANNEL_GROUPS, builtInChannelProviders as AGENT_CHANNEL_PROVIDERS };

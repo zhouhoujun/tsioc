@@ -1,3 +1,5 @@
+import { AgentMcpOptions } from '../mcp/types';
+
 export interface WebSearchResult {
     title: string;
     url: string;
@@ -83,6 +85,7 @@ export interface AgentToolsOptions {
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
     schedule?: AgentToolsScheduleOptions;
+    mcp?: AgentMcpOptions;
     registration?: AgentToolsRegistrationOptions;
 }
 
@@ -130,6 +133,11 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         schedule: {
             ...(options?.schedule ?? {})
         },
+        mcp: options?.mcp ? {
+            ...options.mcp,
+            servers: (options.mcp.servers ?? []).slice(),
+            clientInfo: options.mcp.clientInfo ? { ...options.mcp.clientInfo } : undefined
+        } : undefined,
         registration: {
             ...(defaultAgentToolsOptions.registration ?? {}),
             ...(options?.registration ?? {}),

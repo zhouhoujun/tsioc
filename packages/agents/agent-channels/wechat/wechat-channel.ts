@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { WechatSignatureService } from '@tsdi/security';
 import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
@@ -95,7 +95,7 @@ export class WechatAgentChannelModule {
     }
 }
 
-export function withWechatAgentChannel(options?: WechatAgentChannelOptions): any[] {
+export function withWechatAgentChannel(options?: WechatAgentChannelOptions): Provider[] {
     return [
         { provide: WECHAT_AGENT_CHANNEL_OPTIONS, useValue: { ...defaultWechatAgentChannelOptions, ...(options ?? {}) } },
         WechatAgentChannel,

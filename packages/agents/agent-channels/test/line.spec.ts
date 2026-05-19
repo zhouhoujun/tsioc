@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { LineAgentChannel, LineAgentChannelModule } from '@tsdi/agents/agent-channels/line';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('LINE agent channel')
 export class LineAgentChannelTest {
 
     @Test('registers LINE channel from imported subpath module')
     async registersLineChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [LineAgentChannelModule.withOptions({ channelAccessToken: 'tok', channelSecret: 'sec' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('line') as LineAgentChannel;

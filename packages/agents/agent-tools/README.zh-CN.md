@@ -39,7 +39,7 @@ npm run test:coverage
 ## 主要导出
 
 - `AgentToolsModule`
-- `provideAgentTools`
+- `provideTools`
 - `withAgentToolsOptions`
 - `withFilesystemAgentTools`
 - `withUtilityAgentTools`

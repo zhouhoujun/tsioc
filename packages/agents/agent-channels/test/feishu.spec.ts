@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { FeishuAgentChannel, FeishuAgentChannelModule } from '@tsdi/agents/agent-channels/feishu';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Feishu agent channel')
 export class FeishuAgentChannelTest {
 
     @Test('registers feishu channel from imported subpath module')
     async registersFeishuChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [FeishuAgentChannelModule.withOptions({ appId: 'aid', appSecret: 'as' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('feishu') as FeishuAgentChannel;

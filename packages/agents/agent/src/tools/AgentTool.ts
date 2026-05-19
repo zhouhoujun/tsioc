@@ -11,6 +11,22 @@ export interface AgentToolExecutionHints {
     requiresSequential?: boolean;
 }
 
+export type AgentToolOrigin = 'builtin' | 'skill' | 'mcp';
+
+export interface AgentToolActivationMetadata {
+    kind: 'always' | 'deferred' | 'attach';
+    scope: 'global' | 'session';
+    activated?: boolean;
+}
+
+export interface AgentToolProvenance {
+    origin: AgentToolOrigin;
+    providerId?: string;
+    skillId?: string;
+    serverId?: string;
+    sessionScoped?: boolean;
+}
+
 export interface AgentToolDefinition {
     name: string;
     description: string;
@@ -18,6 +34,11 @@ export interface AgentToolDefinition {
     toolset?: string;
     source?: string;
     execution?: AgentToolExecutionHints;
+    canonicalName?: string;
+    aliases?: string[];
+    tags?: string[];
+    activation?: AgentToolActivationMetadata;
+    provenance?: AgentToolProvenance;
 }
 
 export interface AgentCapabilityBundle {
@@ -27,6 +48,10 @@ export interface AgentCapabilityBundle {
     defaultEnabled?: boolean;
     deferredActivation?: boolean;
     enabled?: boolean;
+    source?: AgentToolOrigin;
+    providerId?: string;
+    activation?: Omit<AgentToolActivationMetadata, 'activated'>;
+    sessionScoped?: boolean;
 }
 
 export interface AgentTool extends AgentToolDefinition {

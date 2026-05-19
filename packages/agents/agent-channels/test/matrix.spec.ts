@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { MatrixAgentChannel, MatrixAgentChannelModule } from '@tsdi/agents/agent-channels/matrix';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Matrix agent channel')
 export class MatrixAgentChannelTest {
 
     @Test('registers matrix channel from imported subpath module')
     async registersMatrixChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [MatrixAgentChannelModule.withOptions({ homeserverUrl: 'https://matrix.org', accessToken: 'tok' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('matrix') as MatrixAgentChannel;

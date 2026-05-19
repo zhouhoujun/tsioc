@@ -55,6 +55,14 @@
       "types": "./registry/index.d.ts",
       "default": "./registry/index.js"
     },
+    "./skills": {
+      "types": "./skills/index.d.ts",
+      "default": "./skills/index.js"
+    },
+    "./mcp": {
+      "types": "./mcp/index.d.ts",
+      "default": "./mcp/index.js"
+    },
     "./memory": {
       "types": "./memory/index.d.ts",
       "default": "./memory/index.js"

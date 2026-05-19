@@ -20,15 +20,16 @@ import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
-import { providerTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS } from '../src/provider';
+import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS } from '../src/provider';
 import { Application } from '@tsdi/core';
-import { ToolRegistry } from '@tsdi/agent';
+import { ToolRegistry, AgentRuntime, EchoModelAdapter, AGENT_MODEL_ADAPTER, AgentModule } from '@tsdi/agent';
 import { TodoTool as ExportedTodoTool } from '../planning';
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool } from '../memory';
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
+import { provideSkills, LocalSkillRegistry } from '../skills';
 
 class FakeScheduler extends AgentScheduler {
     scheduled: ScheduledAgentTask[] = [];
@@ -185,7 +186,7 @@ export class AgentToolsPackageTest {
     }
 
     @Test('provider tools expose grouped registrations and defaults')
-    providerToolsExposeGroupedRegistrationsAndDefaults() {
+    provideToolsExposeGroupedRegistrationsAndDefaults() {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'glob_search', 'content_search']);
         expect(resolveAgentToolNames()).toContain('read_file');
         expect(resolveAgentToolNames()).not.toContain('http_fetch');
@@ -198,7 +199,7 @@ export class AgentToolsPackageTest {
     }
 
     @Test('provider tools resolve capability bundle metadata')
-    providerToolsResolveCapabilityBundleMetadata() {
+    provideToolsResolveCapabilityBundleMetadata() {
         const bundles = resolveAgentToolBundles();
         const filesystem = bundles.find(bundle => bundle.name === 'filesystem');
         const terminal = bundles.find(bundle => bundle.name === 'terminal');
@@ -206,8 +207,14 @@ export class AgentToolsPackageTest {
         expect(filesystem?.defaultEnabled).toEqual(true);
         expect(filesystem?.deferredActivation).toEqual(true);
         expect(filesystem?.enabled).toEqual(true);
+        expect(filesystem?.source).toEqual('builtin');
+        expect(filesystem?.providerId).toEqual('@tsdi/agent-tools');
+        expect(filesystem?.activation).toEqual({ kind: 'deferred', scope: 'session' });
         expect(terminal?.defaultEnabled).toEqual(false);
         expect(terminal?.enabled).toEqual(false);
+        expect(terminal?.source).toEqual('builtin');
+        expect(terminal?.providerId).toEqual('@tsdi/agent-tools');
+        expect(terminal?.activation).toEqual({ kind: 'deferred', scope: 'session' });
 
         const allBundles = resolveAgentToolBundles({ registration: { preset: 'all' } });
         expect(allBundles.find(bundle => bundle.name === 'terminal')?.enabled).toEqual(true);
@@ -216,14 +223,16 @@ export class AgentToolsPackageTest {
         expect(httpBundles.find(bundle => bundle.name === 'http')?.enabled).toEqual(true);
     }
 
-    @Test('providerTools applies registry selection through module options')
-    async providerToolsAppliesRegistrySelectionThroughModuleOptions() {
-        const ctx = await Application.run(providerTools({
-            registration: {
-                groups: { http: true },
-                items: { web_extract: false, terminal: true }
-            }
-        }));
+    @Test('provideTools applies registry selection through module options')
+    async provideToolsAppliesRegistrySelectionThroughModuleOptions() {
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                registration: {
+                    groups: { http: true },
+                    items: { web_extract: false, terminal: true }
+                }
+            })]
+        });
         try {
             const registry = ctx.get(ToolRegistry);
             const names = registry.getToolDefinitions().map(tool => tool.name);
@@ -232,6 +241,45 @@ export class AgentToolsPackageTest {
             expect(names).toContain('http_request');
             expect(names).toContain('terminal');
             expect(names).not.toContain('web_extract');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('provideTools includes MCP management tools for dynamic servers')
+    async provideToolsIncludesMcpManagementToolsForDynamicServers() {
+        const client = {
+            async listTools() {
+                return [{
+                    name: 'echo',
+                    description: 'Echo from MCP.',
+                    inputSchema: {
+                        type: 'object',
+                        properties: {
+                            value: { type: 'string' }
+                        }
+                    }
+                }];
+            },
+            async callTool(name: string, args?: Record<string, any>) {
+                return {
+                    content: [{ type: 'text', text: `${name}:${args?.value ?? ''}` }]
+                };
+            }
+        };
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                mcp: {
+                    servers: [{ id: 'demo', client }]
+                }
+            })]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(item => item.name);
+            expect(names).toContain('mcp.list_tools');
+            expect(names).toContain('mcp.call_tool');
+            expect(names).not.toContain('mcp.demo.echo');
         } finally {
             await ctx.close();
         }
@@ -548,6 +596,67 @@ export class AgentToolsPackageTest {
         const result = await tool.invoke({ command: 'node -e "process.stdout.write(\'ok\')"' }, createSessionContext());
         expect(result.exitCode).toEqual(0);
         expect(result.stdout).toEqual('ok');
+    }
+
+    @Test('skills integrate into agent runtime via IoC providers')
+    async skillsIntegrateIntoAgentRuntimeViaIoCProviders() {
+        class CapturingModelAdapter extends EchoModelAdapter {
+            requests: any[] = [];
+            calls = 0;
+            async complete(request: any): Promise<any> {
+                this.calls++;
+                this.requests.push(request);
+                return { message: 'ok', stopReason: 'end' };
+            }
+        }
+
+        const model = new CapturingModelAdapter();
+        const ctx = await Application.run(AgentModule, {
+            providers: [
+                { provide: AGENT_MODEL_ADAPTER, useValue: model },
+                ...provideSkills({
+                    skills: [{
+                        id: 'router',
+                        title: 'Router skill',
+                        summary: 'Use router diagnostics patterns.',
+                        promptFull: 'Prefer tool-assisted router diagnostics.',
+                        aliases: ['router-skill']
+                    }]
+                })
+            ]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const skillRegistry = ctx.get(LocalSkillRegistry);
+            expect(registry.getToolDefinitions('s1').some(tool => tool.name === 'read_skill')).toEqual(true);
+            expect(skillRegistry.list().map(skill => skill.id)).toEqual(['router']);
+
+            const runtime = ctx.get(AgentRuntime);
+            await runtime.runTurn('s1', 'hello');
+            const firstSystem = model.requests[0].messages[0].content;
+            expect(firstSystem).toContain('## Available Skills');
+            expect(firstSystem).toContain('router');
+            expect(firstSystem).not.toContain('Prefer tool-assisted router diagnostics.');
+
+            const activated = await runtime.runTurn('s1', '/router-skill');
+            expect(activated.message.content).toContain('Activated skill');
+            expect(activated.message.content).toContain('router');
+            expect(model.calls).toEqual(1);
+            const messages = await runtime.getMessages('s1');
+            expect(messages[0].role).toEqual('user');
+            expect(messages[0].content).toEqual('hello');
+            expect(messages[2].role).toEqual('user');
+            expect(messages[2].content).toEqual('/router-skill');
+            expect(messages[3].role).toEqual('assistant');
+            expect(messages[3].content).toContain('Activated skill');
+
+            await runtime.runTurn('s1', 'use it');
+            const finalSystem = model.requests[1].messages[0].content;
+            expect(finalSystem).toContain('## Active Skills');
+            expect(finalSystem).toContain('Prefer tool-assisted router diagnostics.');
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('terminal tool rejects unsafe workdir and excessive timeout')

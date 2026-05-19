@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
@@ -97,7 +97,7 @@ export class SlackAgentChannelModule {
     }
 }
 
-export function withSlackAgentChannel(options?: SlackAgentChannelOptions): any[] {
+export function withSlackAgentChannel(options?: SlackAgentChannelOptions): Provider[] {
     return [
         { provide: SLACK_AGENT_CHANNEL_OPTIONS, useValue: { ...defaultSlackAgentChannelOptions, ...(options ?? {}) } },
         SlackAgentChannel,

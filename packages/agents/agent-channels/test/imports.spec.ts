@@ -4,7 +4,7 @@ import { Application } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { AGENT_CHANNELS } from '../src/tokens';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
@@ -36,7 +36,7 @@ class ImportedChannelModule {
 export class AgentChannelImportsTest {
     @Test('registers channels from imported modules')
     async registersImportedChannels() {
-        const ctx = await Application.run(provideAgentChannels({ imports: [ImportedChannelModule] }));
+        const ctx = await Application.run({ module: { providers: [...provideChannels({ imports: [ImportedChannelModule] })] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             expect(registry.get('imported-test')).toBeTruthy();

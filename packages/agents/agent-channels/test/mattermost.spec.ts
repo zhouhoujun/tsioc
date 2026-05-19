@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { MattermostAgentChannel, MattermostAgentChannelModule } from '@tsdi/agents/agent-channels/mattermost';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Mattermost agent channel')
 export class MattermostAgentChannelTest {
 
     @Test('registers mattermost channel from imported subpath module')
     async registersMattermostChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [MattermostAgentChannelModule.withOptions({ serverUrl: 'https://mm.example.com', botToken: 'tok' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('mattermost') as MattermostAgentChannel;

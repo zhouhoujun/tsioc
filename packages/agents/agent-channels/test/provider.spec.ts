@@ -5,7 +5,7 @@ import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
-import { provideAgentChannels, providerChannels, resolveAgentChannelNames, AGENT_CHANNEL_GROUPS } from '../src/provider';
+import { provideChannels, resolveAgentChannelNames, AGENT_CHANNEL_GROUPS } from '../src/provider';
 import { AGENT_CHANNEL_OPTIONS } from '../src/tokens';
 import { SSEAgentChannel } from '../src/adapters/SSEAgentChannel';
 import { WebhookAgentChannel } from '../src/adapters/WebhookAgentChannel';
@@ -26,9 +26,9 @@ class ExternalTestChannel extends BaseAgentChannel {
 
 @Suite('Agent channel providers')
 export class AgentChannelProviderTest {
-    @Test('registers external channels through provideAgentChannels')
+    @Test('registers external channels through provideChannels')
     async registersExternalChannels() {
-        const ctx = await Application.run(provideAgentChannels({ defaultChannel: 'external-test' }, ExternalTestChannel));
+        const ctx = await Application.run({ module: { providers: [...provideChannels({ defaultChannel: 'external-test' }, ExternalTestChannel)] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const options = ctx.get(AGENT_CHANNEL_OPTIONS) as any;
@@ -43,10 +43,10 @@ export class AgentChannelProviderTest {
 
     @Test('applies shared auth config to built-in webhook and sse channels')
     async appliesSharedAuthConfig() {
-        const ctx = await Application.run(provideAgentChannels({
+        const ctx = await Application.run({ module: { providers: [...provideChannels({
             sse: { auth: { bearerToken: 'sse-secret' } },
             webhook: { auth: { bearerToken: 'webhook-secret' }, secret: 'signing-secret' }
-        }));
+        })] } });
         try {
             const sse = ctx.get(SSEAgentChannel) as any;
             const webhook = ctx.get(WebhookAgentChannel) as any;
@@ -69,18 +69,18 @@ export class AgentChannelProviderTest {
         expect(resolveAgentChannelNames({ registration: { items: { slack: true, console: false } } })).not.toContain('console');
     }
 
-    @Test('providerChannels supports dynamic built-in and provider channels')
-    async providerChannelsSupportsDynamicBuiltInAndProviderChannels() {
-        const ctx = await Application.run(providerChannels({
+    @Test('provideChannels supports dynamic built-in and provider channels')
+    async provideChannelsSupportsDynamicBuiltInAndProviderChannels() {
+        const ctx = await Application.run({ module: { providers: [...provideChannels({
             registration: {
                 preset: 'local',
                 groups: { domestic: true },
                 items: { console: false }
             },
-            providerChannels: {
+            provideChannels: {
                 wechat: { token: 'wx-token' }
             }
-        }));
+        })] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const names = registry.getAll().map(channel => channel.name());

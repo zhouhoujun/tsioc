@@ -31,7 +31,12 @@ export abstract class ToolRegistry {
             inputSchema: tool.inputSchema,
             toolset: tool.toolset,
             source: tool.source,
-            execution: tool.execution
+            execution: tool.execution,
+            canonicalName: (tool as any).canonicalName,
+            aliases: (tool as any).aliases,
+            tags: (tool as any).tags,
+            activation: (tool as any).activation,
+            provenance: (tool as any).provenance
         };
     }
 }

@@ -1,7 +1,6 @@
-import { ModuleWithProviders, Provider, ProvdierOf, toProviders, Injector } from '@tsdi/ioc';
+import { Provider, ProvdierOf, toProviders, Injector } from '@tsdi/ioc';
 import { AgentCapabilityBundle, AgentTool, withAgentTools } from '@tsdi/agent';
 import { AGENT_TOOL_BUNDLES, AGENT_TOOLS } from '@tsdi/agent';
-import { AgentToolsModule } from './agent-tools.module';
 import { AgentToolGroup, AgentToolItem, AgentToolsOptions, mergeAgentToolsOptions } from './options';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { ReadFileTool } from '../files/read-file.tool';
@@ -19,6 +18,7 @@ import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
+import { provideMcpTools } from '../mcp/provider';
 
 const toolItems = {
     read_file: ReadFileTool,
@@ -119,7 +119,14 @@ export function resolveAgentToolBundles(options?: AgentToolsOptions): AgentCapab
             tools,
             defaultEnabled: defaultToolGroups.includes(group),
             deferredActivation: deferredActivationBundles.has(group),
-            enabled: tools.some(tool => enabledNames.has(tool))
+            enabled: tools.some(tool => enabledNames.has(tool)),
+            source: 'builtin',
+            providerId: '@tsdi/agent-tools',
+            activation: {
+                kind: deferredActivationBundles.has(group) ? 'deferred' : 'always',
+                scope: deferredActivationBundles.has(group) ? 'session' : 'global'
+            },
+            sessionScoped: deferredActivationBundles.has(group)
         };
     });
 }
@@ -187,16 +194,30 @@ export function provideResolvedAgentToolBundles(): Provider {
     };
 }
 
-export function providerTools(options?: AgentToolsOptions, ...extraTools: ProvdierOf<AgentTool>[]): ModuleWithProviders<AgentToolsModule> {
-    return {
-        module: AgentToolsModule,
-        providers: [
-            ...withAgentToolsOptions(options),
-            ...withAgentTools(...extraTools)
-        ]
-    };
+export function provideTools(options?: AgentToolsOptions, ...extraTools: ProvdierOf<AgentTool>[]): Provider[] {
+    const merged = mergeAgentToolsOptions(options);
+    return [
+        ...withAgentToolsOptions(merged),
+        ReadFileTool,
+        GlobSearchTool,
+        ContentSearchTool,
+        CalculatorTool,
+        WebSearchTool,
+        WebExtractTool,
+        TodoTool,
+        ScheduleTool,
+        TerminalTool,
+        MemoryListTool,
+        MemoryDeleteTool,
+        HttpFetchTool,
+        HttpRequestTool,
+        ToolSearchTool,
+        ToolInspectTool,
+        ...(merged.mcp?.servers?.length ? provideMcpTools(merged.mcp) : []),
+        provideResolvedAgentTools(),
+        provideResolvedAgentToolBundles(),
+        ...withAgentTools(...extraTools)
+    ];
 }
-
-export const provideAgentTools = providerTools;
 
 export { toolGroups as AGENT_TOOL_GROUPS, toolItems as AGENT_TOOL_ITEMS, allToolProviders as AGENT_TOOL_PROVIDERS };

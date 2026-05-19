@@ -1,0 +1,15 @@
+export type AgentSkillToolActivation = 'always' | 'deferred';
+
+export interface AgentSkillToolRef {
+    name: string;
+    activation?: AgentSkillToolActivation;
+}
+
+export interface AgentSkillDefinition {
+    id: string;
+    title: string;
+    summary: string;
+    promptFull: string;
+    aliases?: string[];
+    tools?: AgentSkillToolRef[];
+}

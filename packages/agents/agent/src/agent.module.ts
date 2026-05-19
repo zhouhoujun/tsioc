@@ -43,7 +43,7 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         HtmlTemplateModule
     ],
     declarations: [AgentConsoleComponent],
-    bootstrap: [AgentConsoleComponent],
+    bootstrap: [AgentRuntime],
     providers: [
         {
             provider(injector) {

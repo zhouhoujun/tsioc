@@ -62,6 +62,30 @@ class DeferredDefinitionTool implements AgentTool {
     }
 }
 
+class MetadataDefinitionTool implements AgentTool {
+    name = 'metadata_tool';
+    description = 'metadata aware tool';
+    inputSchema = {
+        type: 'object',
+        properties: {
+            value: { type: 'string' }
+        },
+        required: ['value']
+    };
+    toolset = 'custom';
+    source = 'skill';
+    execution = { readOnly: true };
+    canonicalName = 'skill.demo.metadata_tool';
+    aliases = ['demo-tool'];
+    tags = ['skill', 'demo'];
+    activation = { kind: 'deferred' as const, scope: 'session' as const };
+    provenance = { origin: 'skill' as const, skillId: 'demo', sessionScoped: true };
+
+    async invoke(input: any): Promise<any> {
+        return input;
+    }
+}
+
 class RegistryDiscoveryTool implements AgentTool {
     name = 'tool_search';
     description = 'search tools';
@@ -299,6 +323,61 @@ export class BuiltinToolsTest {
             required: ['value']
         });
         expect(registry.getToolDefinition('heavy_tool', 's2')?.inputSchema).toEqual(undefined);
+    }
+
+    @Test('local tool registry preserves provenance and activation metadata on lightweight and activated definitions')
+    async localToolRegistryPreservesMetadataAcrossActivationStates() {
+        const registry = new LocalToolRegistry([
+            new RegistryDiscoveryTool(),
+            new MetadataDefinitionTool()
+        ], new InMemoryMemoryStore());
+
+        expect(registry.getToolDefinition('metadata_tool', 's1')).toEqual({
+            name: 'metadata_tool',
+            description: 'metadata aware tool',
+            toolset: 'custom',
+            source: 'skill',
+            execution: { readOnly: true },
+            canonicalName: 'skill.demo.metadata_tool',
+            aliases: ['demo-tool'],
+            tags: ['skill', 'demo'],
+            activation: { kind: 'deferred', scope: 'session', activated: false },
+            provenance: { origin: 'skill', skillId: 'demo', sessionScoped: true }
+        });
+
+        await registry.activateTool('s1', 'metadata_tool');
+        expect(registry.getToolDefinition('metadata_tool', 's1')).toEqual({
+            name: 'metadata_tool',
+            description: 'metadata aware tool',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    value: { type: 'string' }
+                },
+                required: ['value']
+            },
+            toolset: 'custom',
+            source: 'skill',
+            execution: { readOnly: true },
+            canonicalName: 'skill.demo.metadata_tool',
+            aliases: ['demo-tool'],
+            tags: ['skill', 'demo'],
+            activation: { kind: 'deferred', scope: 'session', activated: true },
+            provenance: { origin: 'skill', skillId: 'demo', sessionScoped: true }
+        });
+
+        expect(registry.getToolDefinition('metadata_tool', 's2')).toEqual({
+            name: 'metadata_tool',
+            description: 'metadata aware tool',
+            toolset: 'custom',
+            source: 'skill',
+            execution: { readOnly: true },
+            canonicalName: 'skill.demo.metadata_tool',
+            aliases: ['demo-tool'],
+            tags: ['skill', 'demo'],
+            activation: { kind: 'deferred', scope: 'session', activated: false },
+            provenance: { origin: 'skill', skillId: 'demo', sessionScoped: true }
+        });
     }
 
     @Test('local tool registry rejects invoke before activation and allows it after activation')

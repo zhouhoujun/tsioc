@@ -2,7 +2,7 @@
   "name": "@tsdi/agent-cli",
   "version": "6.0.31",
   "description": "Command line interface for @tsdi/agent packages.",
-  "main": "./src/cli.js",
+  "main": "./index.js",
   "bin": {
     "tsdi-agent": "./src/cli.js"
   },

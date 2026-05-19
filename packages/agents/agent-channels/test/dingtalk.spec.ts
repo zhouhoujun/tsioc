@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { DingtalkAgentChannel, DingtalkAgentChannelModule } from '@tsdi/agents/agent-channels/dingtalk';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('DingTalk agent channel')
 export class DingtalkAgentChannelTest {
 
     @Test('registers dingtalk channel from imported subpath module')
     async registersDingtalkChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [DingtalkAgentChannelModule.withOptions({ clientId: 'cid', clientSecret: 'cs' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('dingtalk') as DingtalkAgentChannel;

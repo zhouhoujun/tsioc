@@ -35,6 +35,13 @@ export interface AgentUIOptions {
     title?: string;
 }
 
+export interface AgentBootstrapTurnOptions {
+    enabled?: boolean;
+    sessionId?: string;
+    input?: string;
+    output?: string;
+}
+
 export interface AgentOptions {
     name?: string;
     maxToolRounds?: number;
@@ -44,6 +51,7 @@ export interface AgentOptions {
     scheduler?: AgentSchedulerOptions;
     ui?: AgentUIOptions;
     model?: AgentModelOptions;
+    bootstrapTurn?: AgentBootstrapTurnOptions;
 }
 
 export const defaultAgentOptions: AgentOptions = {
@@ -77,6 +85,12 @@ export const defaultAgentOptions: AgentOptions = {
         baseUrl: 'https://api.deepseek.com',
         apiKeyEnv: 'DEEPSEEK_API_KEY',
         timeoutMs: 120000
+    },
+    bootstrapTurn: {
+        enabled: false,
+        sessionId: 'default',
+        input: '',
+        output: ''
     }
 };
 
@@ -107,6 +121,10 @@ export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
         model: {
             ...defaultAgentOptions.model,
             ...(options?.model ?? {})
+        },
+        bootstrapTurn: {
+            ...defaultAgentOptions.bootstrapTurn,
+            ...(options?.bootstrapTurn ?? {})
         }
     };
 }

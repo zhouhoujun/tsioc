@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { SignalAgentChannel, SignalAgentChannelModule } from '@tsdi/agents/agent-channels/signal';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Signal agent channel')
 export class SignalAgentChannelTest {
 
     @Test('registers signal channel from imported subpath module')
     async registersSignalChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [SignalAgentChannelModule.withOptions({ phoneNumber: '+8613800000000' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('signal') as SignalAgentChannel;

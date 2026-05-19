@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { QQAgentChannel, QQAgentChannelModule } from '@tsdi/agents/agent-channels/qq';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('QQ agent channel')
 export class QQAgentChannelTest {
 
     @Test('registers QQ channel from imported subpath module')
     async registersQQChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [QQAgentChannelModule.withOptions({ appId: 'aid', botToken: 'tok' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('qq') as QQAgentChannel;

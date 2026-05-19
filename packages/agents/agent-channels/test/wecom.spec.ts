@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { WecomAgentChannel, WecomAgentChannelModule } from '@tsdi/agents/agent-channels/wecom';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Wecom agent channel')
 export class WecomAgentChannelTest {
 
     @Test('registers wecom channel from imported subpath module')
     async registersWecomChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [WecomAgentChannelModule.withOptions({ botId: 'wb', secret: 'sec' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('wecom') as WecomAgentChannel;

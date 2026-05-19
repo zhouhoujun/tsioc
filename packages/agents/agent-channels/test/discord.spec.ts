@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { DiscordAgentChannel, DiscordAgentChannelModule } from '@tsdi/agents/agent-channels/discord';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Discord agent channel')
 export class DiscordAgentChannelTest {
 
     @Test('registers discord channel from imported subpath module')
     async registersDiscordChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [DiscordAgentChannelModule.withOptions({ botToken: 'tok', applicationId: 'app' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('discord') as DiscordAgentChannel;

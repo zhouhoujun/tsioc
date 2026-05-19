@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
@@ -88,7 +88,7 @@ export class FeishuAgentChannelModule {
     }
 }
 
-export function withFeishuAgentChannel(options?: FeishuAgentChannelOptions): any[] {
+export function withFeishuAgentChannel(options?: FeishuAgentChannelOptions): Provider[] {
     return [
         { provide: FEISHU_AGENT_CHANNEL_OPTIONS, useValue: { ...defaultFeishuAgentChannelOptions, ...(options ?? {}) } },
         FeishuAgentChannel,

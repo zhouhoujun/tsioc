@@ -40,7 +40,7 @@ npm run test:coverage
 ## Main exports
 
 - `AgentToolsModule`
-- `provideAgentTools`
+- `provideTools`
 - `withAgentToolsOptions`
 - `withFilesystemAgentTools`
 - `withUtilityAgentTools`

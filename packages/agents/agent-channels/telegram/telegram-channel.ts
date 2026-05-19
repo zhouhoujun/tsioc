@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { BaseAgentChannel } from '../src/contracts/BaseAgentChannel';
 import { SendMessage } from '../src/contracts/SendMessage';
 import { ChannelMessage } from '../src/contracts/ChannelMessage';
@@ -101,7 +101,7 @@ export class TelegramAgentChannelModule {
     }
 }
 
-export function withTelegramAgentChannel(options?: TelegramAgentChannelOptions): any[] {
+export function withTelegramAgentChannel(options?: TelegramAgentChannelOptions): Provider[] {
     return [
         { provide: TELEGRAM_AGENT_CHANNEL_OPTIONS, useValue: { ...defaultTelegramAgentChannelOptions, ...(options ?? {}) } },
         TelegramAgentChannel,

@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { SlackAgentChannel, SlackAgentChannelModule } from '@tsdi/agents/agent-channels/slack';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Slack agent channel')
 export class SlackAgentChannelTest {
 
     @Test('registers slack channel from imported subpath module')
     async registersSlackChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [SlackAgentChannelModule.withOptions({ botToken: 'tok' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('slack') as SlackAgentChannel;

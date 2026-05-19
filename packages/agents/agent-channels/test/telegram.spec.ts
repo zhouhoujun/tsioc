@@ -3,16 +3,16 @@ import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { AgentChannelRegistry } from '../src/orchestrator/AgentChannelRegistry';
 import { TelegramAgentChannel, TelegramAgentChannelModule } from '@tsdi/agents/agent-channels/telegram';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 @Suite('Telegram agent channel')
 export class TelegramAgentChannelTest {
 
     @Test('registers telegram channel from imported subpath module')
     async registersTelegramChannel() {
-        const ctx = await Application.run(provideAgentChannels(
+        const ctx = await Application.run({ module: { providers: [...provideChannels(
             { imports: [TelegramAgentChannelModule.withOptions({ botToken: 'tok' })] }
-        ));
+        )] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('telegram') as TelegramAgentChannel;

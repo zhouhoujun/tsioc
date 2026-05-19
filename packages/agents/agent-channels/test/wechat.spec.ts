@@ -7,7 +7,7 @@ import { ChannelMessage } from '../src/contracts/ChannelMessage';
 import { ChannelEnvelopeMapper } from '../src/orchestrator/ChannelEnvelopeMapper';
 import { AgentChannelOrchestrator } from '../src/orchestrator/AgentChannelOrchestrator';
 import { WechatAgentChannel, WechatAgentChannelModule } from '@tsdi/agent-channels/wechat';
-import { provideAgentChannels } from '../src/provider';
+import { provideChannels } from '../src/provider';
 
 class ServerStub {
     async execute(request: any): Promise<any> {
@@ -22,7 +22,7 @@ class ServerStub {
 export class WechatAgentChannelTest {
     @Test('registers wechat channel from imported subpath module')
     async registersWechatChannel() {
-        const ctx = await Application.run(provideAgentChannels({ imports: [WechatAgentChannelModule.withOptions({ token: 'wx-token' })] }));
+        const ctx = await Application.run({ module: { providers: [...provideChannels({ imports: [WechatAgentChannelModule.withOptions({ token: 'wx-token' })] })] } });
         try {
             const registry = ctx.get(AgentChannelRegistry);
             const channel = registry.get('wechat') as WechatAgentChannel;

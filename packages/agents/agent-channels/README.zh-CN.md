@@ -42,12 +42,12 @@ npm run test:coverage
 - `ConsoleAgentChannel`
 - `WebhookAgentChannel`
 - `SSEAgentChannel`
-- `provideAgentChannels`、`withAgentChannels`、`withAgentChannelFeatures`
+- `provideChannels`、`withAgentChannels`、`withAgentChannelFeatures`
 
 ## 说明
 
 - 当核心运行时需要通过可插拔会话通道发送或接收消息时，使用这个包。
-- 可通过 `provideAgentChannels(...)` 组合 providers、features 与 imports 完成通道装配。
+- 可通过 `provideChannels(...)` 组合 providers、features 与 imports 完成通道装配。
 
 ## License
 

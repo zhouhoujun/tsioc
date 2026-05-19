@@ -43,12 +43,12 @@ npm run test:coverage
 - `ConsoleAgentChannel`
 - `WebhookAgentChannel`
 - `SSEAgentChannel`
-- `provideAgentChannels`, `withAgentChannels`, `withAgentChannelFeatures`
+- `provideChannels`, `withAgentChannels`, `withAgentChannelFeatures`
 
 ## Notes
 
 - Use this package when the core runtime needs to send or receive messages through pluggable conversation channels.
-- Features can be composed with providers and imported modules through `provideAgentChannels(...)`.
+- Features can be composed with providers and imported modules through `provideChannels(...)`.
 
 ## License
 
