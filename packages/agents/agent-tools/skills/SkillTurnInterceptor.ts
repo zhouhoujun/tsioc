@@ -24,7 +24,7 @@ export class SkillTurnInterceptor {
         if (command === '/skills') {
             const skills = this.skills.list();
             return this.respond(input, skills.length
-                ? ['Available skills:', ...skills.map(skill => `- ${skill.id}: ${skill.summary}`)].join('\n')
+                ? ['Available skills:', ...skills.map(skill => `- ${skill.id}${this.formatMetadata(skill.metadata)}: ${skill.summary}`)].join('\n')
                 : 'No skills are registered.');
         }
 
@@ -85,5 +85,10 @@ export class SkillTurnInterceptor {
         };
         await this.sessionStore.append(input.sessionId, message);
         return { sessionId: input.sessionId, message };
+    }
+
+    private formatMetadata(metadata?: { source?: string; category?: string; }): string {
+        const parts = [metadata?.source, metadata?.category].filter((value): value is string => !!value?.trim());
+        return parts.length ? ` [${parts.join(' | ')}]` : '';
     }
 }

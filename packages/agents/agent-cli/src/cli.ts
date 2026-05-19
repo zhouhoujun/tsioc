@@ -13,6 +13,8 @@ export function createAgentCli(): Command {
         .option('--cwd <dir>')
         .option('--tools <items>')
         .option('--channels <items>')
+        .option('--skill-roots <items>')
+        .option('--with-hermes-skills')
         .option('--no-default-tools')
         .option('--no-default-channels')
         .option('--json')
@@ -29,6 +31,8 @@ export function createAgentCli(): Command {
     tools
         .command('list')
         .option('--tools <items>')
+        .option('--skill-roots <items>')
+        .option('--with-hermes-skills')
         .option('--no-default-tools')
         .action((options: any) => {
             const resolved = resolveCliConfig(options);

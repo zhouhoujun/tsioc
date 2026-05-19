@@ -24,7 +24,8 @@ export class LocalSkillRegistry {
         return {
             ...skill,
             aliases: skill.aliases ? skill.aliases.slice() : undefined,
-            tools: skill.tools ? skill.tools.map(tool => ({ ...tool })) : undefined
+            tools: skill.tools ? skill.tools.map(tool => ({ ...tool })) : undefined,
+            metadata: skill.metadata ? { ...skill.metadata } : undefined
         };
     }
 }

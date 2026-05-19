@@ -6,6 +6,8 @@ export interface AgentCliOptions {
     cwd?: string;
     tools?: string;
     channels?: string;
+    skillRoots?: string;
+    withHermesSkills?: boolean;
     defaultTools?: boolean;
     defaultChannels?: boolean;
     provider?: string;
@@ -17,6 +19,8 @@ export interface AgentCliResolvedConfig {
     sessionId: string;
     tools: AgentToolsOptions;
     channels: AgentChannelsOptions;
+    skillRoots: string[];
+    withHermesSkills: boolean;
 }
 
 function parseList(input?: string): string[] {
@@ -69,6 +73,8 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     return {
         sessionId: options.session || 'default',
         tools,
-        channels
+        channels,
+        skillRoots: parseList(options.skillRoots),
+        withHermesSkills: options.withHermesSkills === true
     };
 }

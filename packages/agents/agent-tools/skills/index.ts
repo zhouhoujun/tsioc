@@ -7,3 +7,4 @@ export * from './SkillsCatalogSection';
 export * from './ActiveSkillsSection';
 export * from './SkillTurnInterceptor';
 export * from './provider';
+export * from './local-skill-loader';

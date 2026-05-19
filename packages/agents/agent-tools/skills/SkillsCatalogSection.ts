@@ -22,9 +22,14 @@ export class SkillsCatalogSection extends PromptSection {
         const lines = ['## Available Skills'];
         skills.forEach(skill => {
             const aliases = skill.aliases?.length ? ` (/${skill.aliases.join(', /')})` : '';
-            lines.push(`- ${skill.id}${aliases}: ${skill.summary}`);
+            lines.push(`- ${skill.id}${aliases}${this.formatMetadata(skill.metadata)}: ${skill.summary}`);
         });
         lines.push('Use /skills to browse skills, /skill <id> to activate one, or call read_skill for full details.');
         return lines.join('\n');
+    }
+
+    private formatMetadata(metadata?: { source?: string; category?: string; }): string {
+        const parts = [metadata?.source, metadata?.category].filter((value): value is string => !!value?.trim());
+        return parts.length ? ` [${parts.join(' | ')}]` : '';
     }
 }

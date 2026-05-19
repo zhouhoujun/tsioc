@@ -5,6 +5,11 @@ export interface AgentSkillToolRef {
     activation?: AgentSkillToolActivation;
 }
 
+export interface AgentSkillMetadata {
+    source?: string;
+    category?: string;
+}
+
 export interface AgentSkillDefinition {
     id: string;
     title: string;
@@ -12,4 +17,5 @@ export interface AgentSkillDefinition {
     promptFull: string;
     aliases?: string[];
     tools?: AgentSkillToolRef[];
+    metadata?: AgentSkillMetadata;
 }

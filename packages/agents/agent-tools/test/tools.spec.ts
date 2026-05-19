@@ -29,7 +29,7 @@ import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool } from '../memory';
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
-import { provideSkills, LocalSkillRegistry } from '../skills';
+import { provideSkills, LocalSkillRegistry, loadAgentSkillsFromRoots } from '../skills';
 import { LocalMcpClientRegistry } from '../mcp';
 
 class FakeScheduler extends AgentScheduler {
@@ -77,6 +77,16 @@ export class AgentToolsPackageTest {
         await fs.mkdir(path.join(workspace, 'node_modules', 'pkg'), { recursive: true });
         await fs.writeFile(path.join(workspace, 'node_modules', 'pkg', 'ignored.txt'), 'ignored', 'utf8');
         return workspace;
+    }
+
+    private async createSkillRoot(): Promise<string> {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-skills-'));
+        await fs.mkdir(path.join(root, 'software-development', 'writing-plans'), { recursive: true });
+        await fs.mkdir(path.join(root, 'creative', 'sketch'), { recursive: true });
+        await fs.writeFile(path.join(root, 'software-development', 'writing-plans', 'SKILL.md'), `---\nname: writing-plans\ndescription: "Write implementation plans."\n---\n\n# Writing Plans\n\nWrite plans before implementation.\n`, 'utf8');
+        await fs.writeFile(path.join(root, 'creative', 'sketch', 'SKILL.md'), `---\nname: sketch\ndescription: |\n  Create quick visual sketches.\n---\n\n# Sketch\n\nMake fast mockups.\n`, 'utf8');
+        await fs.writeFile(path.join(root, 'README.md'), '# ignored\n', 'utf8');
+        return root;
     }
 
     @Test('calculator evaluates arithmetic expression')
@@ -694,6 +704,34 @@ export class AgentToolsPackageTest {
         expect(result.stdout).toEqual('ok');
     }
 
+    @Test('filesystem loader imports nested SKILL files')
+    async filesystemLoaderImportsNestedSkillFiles() {
+        const root = await this.createSkillRoot();
+        const skills = await loadAgentSkillsFromRoots([root]);
+        expect(skills.map(skill => skill.id)).toEqual(['sketch', 'writing-plans']);
+        expect(skills[0].title).toEqual('Sketch');
+        expect(skills[0].summary).toEqual('Create quick visual sketches.');
+        expect(skills[0].promptFull).toContain('Make fast mockups.');
+        expect(skills[0].metadata).toEqual({ category: 'creative' });
+        expect(skills[1].title).toEqual('Writing Plans');
+        expect(skills[1].summary).toEqual('Write implementation plans.');
+        expect(skills[1].metadata).toEqual({ category: 'software-development' });
+    }
+
+    @Test('filesystem loader rejects unsupported aliases shape')
+    async filesystemLoaderRejectsUnsupportedAliasesShape() {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-skills-invalid-'));
+        await fs.mkdir(path.join(root, 'invalid-skill'), { recursive: true });
+        await fs.writeFile(path.join(root, 'invalid-skill', 'SKILL.md'), `---\nname: invalid-skill\naliases:\n  - one\n---\n\n# Invalid\n\nBody.\n`, 'utf8');
+        let error: Error | undefined;
+        try {
+            await loadAgentSkillsFromRoots([root]);
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('Unsupported skill frontmatter');
+    }
+
     @Test('skills integrate into agent runtime via IoC providers')
     async skillsIntegrateIntoAgentRuntimeViaIoCProviders() {
         class CapturingModelAdapter extends EchoModelAdapter {
@@ -716,7 +754,8 @@ export class AgentToolsPackageTest {
                         title: 'Router skill',
                         summary: 'Use router diagnostics patterns.',
                         promptFull: 'Prefer tool-assisted router diagnostics.',
-                        aliases: ['router-skill']
+                        aliases: ['router-skill'],
+                        metadata: { source: 'test-suite', category: 'networking' }
                     }]
                 })
             ]
@@ -731,13 +770,16 @@ export class AgentToolsPackageTest {
             await runtime.runTurn('s1', 'hello');
             const firstSystem = model.requests[0].messages[0].content;
             expect(firstSystem).toContain('## Available Skills');
-            expect(firstSystem).toContain('router');
+            expect(firstSystem).toContain('router (/router-skill) [test-suite | networking]');
             expect(firstSystem).not.toContain('Prefer tool-assisted router diagnostics.');
 
             const activated = await runtime.runTurn('s1', '/router-skill');
             expect(activated.message.content).toContain('Activated skill');
             expect(activated.message.content).toContain('router');
             expect(model.calls).toEqual(1);
+
+            const listed = await runtime.runTurn('s1', '/skills');
+            expect(listed.message.content).toContain('router [test-suite | networking]: Use router diagnostics patterns.');
             const messages = await runtime.getMessages('s1');
             expect(messages[0].role).toEqual('user');
             expect(messages[0].content).toEqual('hello');
