@@ -1,5 +1,6 @@
 export * from './types';
 export * from './tokens';
+export * from './builtin-skills';
 export * from './LocalSkillRegistry';
 export * from './SkillSessionStore';
 export * from './read-skill.tool';

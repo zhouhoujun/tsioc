@@ -1,5 +1,6 @@
 import { Workflow } from '@tsdi/activities';
 import { CompilerModule } from '@tsdi/compiler';
+import { copyBuiltinSkillAssets } from './skills/builtin-skills';
 
 if (process.cwd() === __dirname) {
     Workflow.run(CompilerModule, {
@@ -17,5 +18,5 @@ if (process.cwd() === __dirname) {
             experimentalDecorators: true,
             emitDecoratorMetadata: true
         }
-    });
+    }).then(() => copyBuiltinSkillAssets('../../dist/agent-tools', './skills/builtin'));
 }

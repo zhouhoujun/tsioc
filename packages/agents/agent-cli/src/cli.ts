@@ -10,11 +10,9 @@ export function createAgentCli(): Command {
     program
         .command('run [prompt]')
         .option('--session <id>')
-        .option('--cwd <dir>')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
         .option('--tools <items>')
         .option('--channels <items>')
-        .option('--skill-roots <items>')
-        .option('--with-hermes-skills')
         .option('--no-default-tools')
         .option('--no-default-channels')
         .option('--json')
@@ -30,13 +28,18 @@ export function createAgentCli(): Command {
     const tools = program.command('tools');
     tools
         .command('list')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
         .option('--tools <items>')
-        .option('--skill-roots <items>')
-        .option('--with-hermes-skills')
         .option('--no-default-tools')
         .action((options: any) => {
             const resolved = resolveCliConfig(options);
-            process.stdout.write(JSON.stringify(resolved.tools.registration ?? {}) + '\n');
+            process.stdout.write(JSON.stringify({
+                root: resolved.root,
+                settingsPath: resolved.settingsPath,
+                workspace: resolved.workspace,
+                skillRoots: resolved.skillRoots,
+                tools: resolved.tools.registration ?? {}
+            }) + '\n');
         });
 
     program

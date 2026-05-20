@@ -1,33 +1,24 @@
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
-import { AGENT_TOOL_GROUPS, AgentToolsOptions } from '@tsdi/agent-tools';
+import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery } from '@tsdi/agent-tools';
 
 export interface AgentCliOptions {
     session?: string;
-    cwd?: string;
-    tools?: string;
-    channels?: string;
-    skillRoots?: string;
-    withHermesSkills?: boolean;
+    root?: string;
+    tools?: string | string[];
     defaultTools?: boolean;
+    channels?: string | string[];
     defaultChannels?: boolean;
-    provider?: string;
-    model?: string;
     json?: boolean;
 }
 
 export interface AgentCliResolvedConfig {
     sessionId: string;
+    root: string;
+    settingsPath: string;
+    workspace: string;
+    skillRoots: string[];
     tools: AgentToolsOptions;
     channels: AgentChannelsOptions;
-    skillRoots: string[];
-    withHermesSkills: boolean;
-}
-
-function parseList(input?: string): string[] {
-    return (input ?? '')
-        .split(',')
-        .map(item => item.trim())
-        .filter(Boolean);
 }
 
 function isKnownGroup(name: string, groups: Record<string, unknown>): boolean {
@@ -35,20 +26,28 @@ function isKnownGroup(name: string, groups: Record<string, unknown>): boolean {
 }
 
 export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConfig {
-    const toolNames = parseList(options.tools);
-    const channelNames = parseList(options.channels);
+    const resolved = resolveAgentToolDiscovery(options.root);
+    const settings: AgentRootSettings = resolved.settings;
+    const toolSettings = resolved.tools;
+    const toolNames = parseAgentSettingsList(options.tools ?? settings.tools?.values);
+    const channelNames = parseAgentSettingsList(options.channels ?? settings.channels?.values);
+    const skillRoots = resolved.skillRoots;
+    const workspace = resolved.workspace;
     const tools: AgentToolsOptions = {
-        file: options.cwd ? { rootDir: options.cwd } : undefined,
+        ...toolSettings,
+        file: { ...(toolSettings.file ?? {}) },
+        roots: (toolSettings.roots ?? []).slice(),
         registration: {
-            preset: options.defaultTools === false ? 'none' : 'default',
-            groups: {},
-            items: {}
+            ...(toolSettings.registration ?? {}),
+            preset: options.defaultTools === false ? 'none' : (toolSettings.registration?.preset ?? 'default'),
+            groups: { ...(toolSettings.registration?.groups ?? {}) },
+            items: { ...(toolSettings.registration?.items ?? {}) }
         }
     };
     const channels: AgentChannelsOptions = {
         defaultChannel: channelNames[0],
         registration: {
-            preset: options.defaultChannels === false ? 'none' : 'default',
+            preset: options.defaultChannels === false || settings.channels?.defaultEnabled === false ? 'none' : 'default',
             groups: {},
             items: {}
         }
@@ -71,10 +70,12 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     });
 
     return {
-        sessionId: options.session || 'default',
+        sessionId: options.session || settings.session || 'default',
+        root: resolved.root,
+        settingsPath: resolved.settingsPath,
+        workspace,
+        skillRoots,
         tools,
-        channels,
-        skillRoots: parseList(options.skillRoots),
-        withHermesSkills: options.withHermesSkills === true
+        channels
     };
 }

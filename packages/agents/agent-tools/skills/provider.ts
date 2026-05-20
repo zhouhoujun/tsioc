@@ -8,18 +8,41 @@ import { ReadSkillTool } from './read-skill.tool';
 import { SkillsCatalogSection } from './SkillsCatalogSection';
 import { ActiveSkillsSection } from './ActiveSkillsSection';
 import { SkillTurnInterceptor } from './SkillTurnInterceptor';
+import { getBuiltinSkills } from './builtin-skills';
+import { loadAgentSkillsFromRootsSync } from './local-skill-loader';
+import { resolveAgentRootSettings } from '../src/settings';
 
 export interface AgentSkillsOptions {
+    root?: string;
     skills?: AgentSkillDefinition[];
+    roots?: string[];
+    defaults?: boolean;
 }
 
 export function withAgentSkills(...skills: AgentSkillDefinition[]): Provider[] {
     return toProviders(AGENT_SKILLS, skills, true);
 }
 
+function mergeSkills(builtin: AgentSkillDefinition[], explicit: AgentSkillDefinition[]): AgentSkillDefinition[] {
+    const merged = new Map<string, AgentSkillDefinition>();
+    builtin.forEach(skill => merged.set(skill.id, skill));
+    explicit.forEach(skill => merged.set(skill.id, skill));
+    return Array.from(merged.values());
+}
+
 export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
+    const resolvedRoots = new Set<string>();
+    if (options.root) {
+        resolveAgentRootSettings(options.root).skillRoots.forEach(root => resolvedRoots.add(root));
+    }
+    options.roots?.forEach(root => resolvedRoots.add(root));
+    const loaded = resolvedRoots.size ? loadAgentSkillsFromRootsSync(Array.from(resolvedRoots.values()), { source: 'workspace' }) : [];
+    const skills = mergeSkills(
+        mergeSkills(options.defaults === false ? [] : getBuiltinSkills(), loaded),
+        options.skills ?? []
+    );
     return [
-        ...withAgentSkills(...(options.skills ?? [])),
+        ...withAgentSkills(...skills),
         LocalSkillRegistry,
         SkillSessionStore,
         ReadSkillTool,

@@ -1,4 +1,5 @@
 export * from './options';
+export * from './settings';
 export * from './tokens';
 export * from './provider';
 export * from './agent-tools.module';

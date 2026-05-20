@@ -21,6 +21,7 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS } from '../src/provider';
+import { resolveAgentRootSettings } from '../src/settings';
 import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AGENT_MODEL_ADAPTER, AgentModule } from '@tsdi/agent';
 import { TodoTool as ExportedTodoTool } from '../planning';
@@ -29,7 +30,7 @@ import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool } from '../memory';
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
-import { provideSkills, LocalSkillRegistry, loadAgentSkillsFromRoots } from '../skills';
+import { provideSkills, LocalSkillRegistry, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
 import { LocalMcpClientRegistry } from '../mcp';
 
 class FakeScheduler extends AgentScheduler {
@@ -87,6 +88,44 @@ export class AgentToolsPackageTest {
         await fs.writeFile(path.join(root, 'creative', 'sketch', 'SKILL.md'), `---\nname: sketch\ndescription: |\n  Create quick visual sketches.\n---\n\n# Sketch\n\nMake fast mockups.\n`, 'utf8');
         await fs.writeFile(path.join(root, 'README.md'), '# ignored\n', 'utf8');
         return root;
+    }
+
+    private async createAgentRootWithWorkspaceSkills(settings?: { workspace?: string; skillRoots?: string[]; }): Promise<string> {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-root-'));
+        const workspaceName = settings?.workspace ?? 'workspace';
+        const workspace = path.join(root, workspaceName);
+        const skillRoots = settings?.skillRoots ?? ['skills'];
+        await fs.mkdir(workspace, { recursive: true });
+        await fs.writeFile(path.join(root, 'settings.json'), JSON.stringify({
+            workspace: workspaceName,
+            skills: {
+                roots: skillRoots
+            }
+        }), 'utf8');
+        return root;
+    }
+
+    @Test('agent root settings resolve workspace roots from settings file')
+    async agentRootSettingsResolveWorkspaceRootsFromSettingsFile() {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-root-'));
+        await fs.writeFile(path.join(root, 'settings.json'), JSON.stringify({
+            workspace: 'custom-workspace',
+            tools: {
+                root: 'tools'
+            },
+            skills: {
+                roots: ['skills', 'custom-skills']
+            }
+        }), 'utf8');
+        const resolved = resolveAgentRootSettings(root);
+        expect(resolved.root).toBe(path.resolve(root));
+        expect(resolved.settingsPath).toBe(path.join(path.resolve(root), 'settings.json'));
+        expect(resolved.workspace).toBe(path.join(path.resolve(root), 'custom-workspace'));
+        expect(resolved.toolsRoot).toBe(path.join(path.resolve(root), 'custom-workspace', 'tools'));
+        expect(resolved.skillRoots).toEqual([
+            path.join(path.resolve(root), 'custom-workspace', 'skills'),
+            path.join(path.resolve(root), 'custom-workspace', 'custom-skills')
+        ]);
     }
 
     @Test('calculator evaluates arithmetic expression')
@@ -732,6 +771,179 @@ export class AgentToolsPackageTest {
         expect(error?.message).toContain('Unsupported skill frontmatter');
     }
 
+    @Test('builtin skill loader imports packaged SKILL files')
+    async builtinSkillLoaderImportsPackagedSkillFiles() {
+        resetBuiltinSkillsCache();
+        const builtins = loadBuiltinSkills(path.resolve(__dirname, '../skills/builtin'));
+        expect(builtins.map(skill => skill.id)).toEqual(['codebase', 'plan', 'web-research']);
+        expect(builtins[0].title).toEqual('Codebase Exploration');
+        expect(builtins[0].summary).toEqual('Explore the repository before making changes.');
+        expect(builtins[0].tools?.map(tool => tool.name)).toEqual(['read_file', 'glob_search', 'content_search', 'todo']);
+        expect(builtins[1].promptFull).toContain('Use this skill when the user wants an implementation plan');
+        expect(getBuiltinSkills().map(skill => skill.id)).toEqual(['codebase', 'plan', 'web-research']);
+    }
+
+    @Test('builtin skill assets copy to output tree')
+    async builtinSkillAssetsCopyToOutputTree() {
+        const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-tools-dist-'));
+        await copyBuiltinSkillAssets(outputRoot, path.resolve(__dirname, '../skills/builtin'));
+        const copied = await fs.readFile(path.join(outputRoot, 'skills', 'builtin', 'plan', 'SKILL.md'), 'utf8');
+        expect(copied).toContain('Plan Mode');
+    }
+
+    @Test('provideSkills includes builtin skills by default and can opt out')
+    async provideSkillsIncludesBuiltinSkillsByDefaultAndCanOptOut() {
+        resetBuiltinSkillsCache();
+        const builtinCtx = await Application.run(AgentModule, {
+            providers: [...provideSkills()]
+        });
+        try {
+            const builtinRegistry = builtinCtx.get(LocalSkillRegistry);
+            expect(builtinRegistry.list().map(skill => skill.id)).toEqual(['codebase', 'plan', 'web-research']);
+        } finally {
+            await builtinCtx.close();
+        }
+
+        const customCtx = await Application.run(AgentModule, {
+            providers: [...provideSkills({
+                defaults: false,
+                skills: [{
+                    id: 'router',
+                    title: 'Router skill',
+                    summary: 'Use router diagnostics patterns.',
+                    promptFull: 'Prefer tool-assisted router diagnostics.'
+                }]
+            })]
+        });
+        try {
+            const customRegistry = customCtx.get(LocalSkillRegistry);
+            expect(customRegistry.list().map(skill => skill.id)).toEqual(['router']);
+        } finally {
+            await customCtx.close();
+        }
+    }
+
+    @Test('workspace skill roots load through provider')
+    async workspaceSkillRootsLoadThroughProvider() {
+        resetBuiltinSkillsCache();
+        const root = await this.createSkillRoot();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideSkills({ roots: [root], defaults: false })]
+        });
+        try {
+            const registry = ctx.get(LocalSkillRegistry);
+            expect(registry.list().map(skill => skill.id)).toEqual(['sketch', 'writing-plans']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('provideSkills loads settings skill roots from agent root')
+    async provideSkillsLoadsSettingsSkillRootsFromAgentRoot() {
+        resetBuiltinSkillsCache();
+        const agentRoot = await this.createAgentRootWithWorkspaceSkills();
+        const workspaceSkills = path.join(agentRoot, 'workspace', 'skills');
+        await fs.mkdir(path.join(workspaceSkills, 'delivery', 'release-check'), { recursive: true });
+        await fs.writeFile(path.join(workspaceSkills, 'delivery', 'release-check', 'SKILL.md'), `---\nname: release-check\ndescription: "Check release readiness."\n---\n\n# Release Check\n\nVerify release readiness.\n`, 'utf8');
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideSkills({ root: agentRoot, defaults: false })]
+        });
+        try {
+            const registry = ctx.get(LocalSkillRegistry);
+            expect(registry.list().map(skill => skill.id)).toEqual(['release-check']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('provideSkills merges explicit roots with settings skill roots')
+    async provideSkillsMergesExplicitRootsWithSettingsSkillRoots() {
+        resetBuiltinSkillsCache();
+        const agentRoot = await this.createAgentRootWithWorkspaceSkills();
+        const workspaceSkills = path.join(agentRoot, 'workspace', 'skills');
+        await fs.mkdir(path.join(workspaceSkills, 'delivery', 'release-check'), { recursive: true });
+        await fs.writeFile(path.join(workspaceSkills, 'delivery', 'release-check', 'SKILL.md'), `---\nname: release-check\ndescription: "Check release readiness."\n---\n\n# Release Check\n\nVerify release readiness.\n`, 'utf8');
+        const explicitRoot = await this.createSkillRoot();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideSkills({ root: agentRoot, roots: [explicitRoot], defaults: false })]
+        });
+        try {
+            const registry = ctx.get(LocalSkillRegistry);
+            expect(registry.list().map(skill => skill.id)).toEqual(['release-check', 'sketch', 'writing-plans']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('explicit skills override settings loaded skills with same id')
+    async explicitSkillsOverrideSettingsLoadedSkillsWithSameId() {
+        resetBuiltinSkillsCache();
+        const agentRoot = await this.createAgentRootWithWorkspaceSkills();
+        const workspaceSkills = path.join(agentRoot, 'workspace', 'skills');
+        await fs.mkdir(path.join(workspaceSkills, 'planning', 'release-check'), { recursive: true });
+        await fs.writeFile(path.join(workspaceSkills, 'planning', 'release-check', 'SKILL.md'), `---\nname: release-check\ndescription: "Workspace summary."\n---\n\n# Release Check\n\nWorkspace prompt.\n`, 'utf8');
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideSkills({
+                root: agentRoot,
+                defaults: false,
+                skills: [{
+                    id: 'release-check',
+                    title: 'Explicit release check',
+                    summary: 'Explicit summary.',
+                    promptFull: 'Explicit prompt.'
+                }]
+            })]
+        });
+        try {
+            const registry = ctx.get(LocalSkillRegistry);
+            const skill = registry.get('release-check');
+            expect(skill?.title).toEqual('Explicit release check');
+            expect(skill?.summary).toEqual('Explicit summary.');
+            expect(skill?.promptFull).toEqual('Explicit prompt.');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('provideSkills ignores missing settings skill roots')
+    async provideSkillsIgnoresMissingSettingsSkillRoots() {
+        resetBuiltinSkillsCache();
+        const agentRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-root-empty-'));
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideSkills({ root: agentRoot, defaults: false })]
+        });
+        try {
+            const registry = ctx.get(LocalSkillRegistry);
+            expect(registry.list().map(skill => skill.id)).toEqual([]);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('explicit skills override builtin skills with same id')
+    async explicitSkillsOverrideBuiltinSkillsWithSameId() {
+        resetBuiltinSkillsCache();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideSkills({
+                skills: [{
+                    id: 'plan',
+                    title: 'Custom plan',
+                    summary: 'Custom plan summary.',
+                    promptFull: 'Custom plan prompt.'
+                }]
+            })]
+        });
+        try {
+            const registry = ctx.get(LocalSkillRegistry);
+            const plan = registry.get('plan');
+            expect(plan?.title).toEqual('Custom plan');
+            expect(plan?.summary).toEqual('Custom plan summary.');
+            expect(plan?.promptFull).toEqual('Custom plan prompt.');
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('skills integrate into agent runtime via IoC providers')
     async skillsIntegrateIntoAgentRuntimeViaIoCProviders() {
         class CapturingModelAdapter extends EchoModelAdapter {
@@ -764,7 +976,7 @@ export class AgentToolsPackageTest {
             const registry = ctx.get(ToolRegistry);
             const skillRegistry = ctx.get(LocalSkillRegistry);
             expect(registry.getToolDefinitions('s1').some(tool => tool.name === 'read_skill')).toEqual(true);
-            expect(skillRegistry.list().map(skill => skill.id)).toEqual(['router']);
+            expect(skillRegistry.list().map(skill => skill.id).sort()).toEqual(['codebase', 'plan', 'router', 'web-research']);
 
             const runtime = ctx.get(AgentRuntime);
             await runtime.runTurn('s1', 'hello');

@@ -85,6 +85,7 @@ export interface AgentToolsOptions {
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
     schedule?: AgentToolsScheduleOptions;
+    roots?: string[];
     mcp?: AgentMcpOptions;
     registration?: AgentToolsRegistrationOptions;
 }
@@ -133,6 +134,7 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         schedule: {
             ...(options?.schedule ?? {})
         },
+        roots: (options?.roots ?? []).slice(),
         mcp: options?.mcp ? {
             ...options.mcp,
             servers: (options.mcp.servers ?? []).slice(),
