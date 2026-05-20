@@ -6,6 +6,8 @@ export * from './agent-tools.module';
 
 export * from '../files';
 export * from '../web';
+export * from '../browser';
+export * from '../sessions';
 export * from '../utility';
 
 export * from '../planning';

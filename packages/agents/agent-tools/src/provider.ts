@@ -11,6 +11,11 @@ import { ContentSearchTool } from '../files/content-search.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
+import { BrowserOpenTool } from '../browser/browser-open.tool';
+import { TextBrowserTool } from '../browser/text-browser.tool';
+import { SessionsCurrentTool } from '../sessions/sessions-current.tool';
+import { SessionsListTool } from '../sessions/sessions-list.tool';
+import { SessionsHistoryTool } from '../sessions/sessions-history.tool';
 import { TodoTool } from '../planning/todo.tool';
 import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
@@ -22,6 +27,7 @@ import { MemorySearchTool } from '../memory/memory-search.tool';
 import { MemoryRecallTool } from '../memory/memory-recall.tool';
 import { MemoryExportTool } from '../memory/memory-export.tool';
 import { MemoryForgetTool } from '../memory/memory-forget.tool';
+import { MemoryPurgeTool } from '../memory/memory-purge.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
@@ -39,6 +45,11 @@ const toolItems = {
     calculator: CalculatorTool,
     web_search: WebSearchTool,
     web_extract: WebExtractTool,
+    browser_open: BrowserOpenTool,
+    text_browser: TextBrowserTool,
+    sessions_current: SessionsCurrentTool,
+    sessions_list: SessionsListTool,
+    sessions_history: SessionsHistoryTool,
     todo: TodoTool,
     ask_user: AskUserTool,
     escalate: EscalateTool,
@@ -49,6 +60,7 @@ const toolItems = {
     'memory.recall': MemoryRecallTool,
     'memory.export': MemoryExportTool,
     'memory.forget': MemoryForgetTool,
+    'memory.purge': MemoryPurgeTool,
     'memory.delete': MemoryDeleteTool,
     project_intel: ProjectIntelTool,
     tool_search: ToolSearchTool,
@@ -63,9 +75,11 @@ const toolGroups = {
     filesystem_write: ['write_file', 'edit_file'],
     utility: ['calculator'],
     web: ['web_search', 'web_extract'],
+    browser: ['browser_open', 'text_browser'],
+    sessions: ['sessions_current', 'sessions_list', 'sessions_history'],
     planning: ['todo', 'ask_user', 'escalate'],
     scheduling: ['schedule'],
-    memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.delete'],
+    memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete'],
     project: ['project_intel'],
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
@@ -80,6 +94,8 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     filesystem_write: 'Workspace file mutation tools.',
     utility: 'General-purpose calculation and utility helpers.',
     web: 'Web search and extraction tools.',
+    browser: 'Lightweight browser open and text browsing tools.',
+    sessions: 'Read-only session listing and history inspection tools.',
     planning: 'Planning, task tracking, and collaboration prompt tools.',
     scheduling: 'Prompt scheduling and recurring task tools.',
     memory: 'Session and global memory management tools.',
@@ -88,7 +104,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     http: 'HTTP fetch and request tools.',
     terminal: 'Terminal command execution tools.'
 };
-const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'http', 'terminal']);
+const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'http', 'terminal']);
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -167,6 +183,14 @@ export function withWebAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.web.map(name => toolItems[name]));
 }
 
+export function withBrowserAgentTools(): Provider[] {
+    return withAgentTools(...toolGroups.browser.map(name => toolItems[name]));
+}
+
+export function withSessionsAgentTools(): Provider[] {
+    return withAgentTools(...toolGroups.sessions.map(name => toolItems[name]));
+}
+
 export function withHttpAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.http.map(name => toolItems[name]));
 }
@@ -234,6 +258,11 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         CalculatorTool,
         WebSearchTool,
         WebExtractTool,
+        BrowserOpenTool,
+        TextBrowserTool,
+        SessionsCurrentTool,
+        SessionsListTool,
+        SessionsHistoryTool,
         TodoTool,
         AskUserTool,
         EscalateTool,
@@ -245,6 +274,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         MemoryRecallTool,
         MemoryExportTool,
         MemoryForgetTool,
+        MemoryPurgeTool,
         MemoryDeleteTool,
         HttpFetchTool,
         HttpRequestTool,

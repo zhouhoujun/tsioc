@@ -50,6 +50,8 @@ export type AgentToolGroup =
     | 'filesystem_write'
     | 'utility'
     | 'web'
+    | 'browser'
+    | 'sessions'
     | 'planning'
     | 'scheduling'
     | 'memory'
@@ -67,6 +69,11 @@ export type AgentToolItem =
     | 'calculator'
     | 'web_search'
     | 'web_extract'
+    | 'browser_open'
+    | 'text_browser'
+    | 'sessions_current'
+    | 'sessions_list'
+    | 'sessions_history'
     | 'todo'
     | 'ask_user'
     | 'escalate'
@@ -77,6 +84,7 @@ export type AgentToolItem =
     | 'memory.recall'
     | 'memory.export'
     | 'memory.forget'
+    | 'memory.purge'
     | 'memory.delete'
     | 'project_intel'
     | 'tool_search'
@@ -122,7 +130,9 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
     registration: {
         preset: 'default',
         groups: {},
-        items: {}
+        items: {
+            'memory.purge': false
+        }
     }
 };
 

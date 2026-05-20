@@ -39,6 +39,14 @@
       "types": "./web/index.d.ts",
       "default": "./web/index.js"
     },
+    "./browser": {
+      "types": "./browser/index.d.ts",
+      "default": "./browser/index.js"
+    },
+    "./sessions": {
+      "types": "./sessions/index.d.ts",
+      "default": "./sessions/index.js"
+    },
     "./utility": {
       "types": "./utility/index.d.ts",
       "default": "./utility/index.js"
@@ -84,7 +92,8 @@
     "@tsdi/agent": "6.0.31",
     "@tsdi/ioc": "6.0.31",
     "cross-fetch": "^4.1.0",
-    "globby": "^11.0.0"
+    "globby": "^11.0.0",
+    "parse5": "^8.0.0"
   },
   "directories": {
     "lib": "lib",

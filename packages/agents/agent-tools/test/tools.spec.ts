@@ -4,7 +4,7 @@ import * as path from 'path';
 import { promises as fs } from 'fs';
 import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
-import { AgentScheduler, InMemoryMemoryStore, ScheduledAgentTask } from '@tsdi/agent';
+import { AgentScheduler, InMemoryMemoryStore, InMemorySessionStore, ScheduledAgentTask } from '@tsdi/agent';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
@@ -13,6 +13,11 @@ import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
+import { BrowserOpenTool } from '../browser/browser-open.tool';
+import { TextBrowserTool } from '../browser/text-browser.tool';
+import { SessionsCurrentTool } from '../sessions/sessions-current.tool';
+import { SessionsListTool } from '../sessions/sessions-list.tool';
+import { SessionsHistoryTool } from '../sessions/sessions-history.tool';
 import { TodoStore } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
 import { AskUserTool } from '../planning/ask-user.tool';
@@ -26,6 +31,7 @@ import { MemorySearchTool } from '../memory/memory-search.tool';
 import { MemoryRecallTool } from '../memory/memory-recall.tool';
 import { MemoryForgetTool } from '../memory/memory-forget.tool';
 import { MemoryExportTool } from '../memory/memory-export.tool';
+import { MemoryPurgeTool } from '../memory/memory-purge.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
@@ -36,10 +42,12 @@ import { resolveAgentRootSettings } from '../src/settings';
 import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AGENT_MODEL_ADAPTER, AgentModule } from '@tsdi/agent';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
+import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool } from '../browser';
+import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as ExportedSessionsListTool, SessionsHistoryTool as ExportedSessionsHistoryTool } from '../sessions';
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool } from '../files';
-import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool, MemoryPutTool as ExportedMemoryPutTool, MemorySearchTool as ExportedMemorySearchTool, MemoryRecallTool as ExportedMemoryRecallTool, MemoryForgetTool as ExportedMemoryForgetTool, MemoryExportTool as ExportedMemoryExportTool } from '../memory';
+import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool, MemoryPutTool as ExportedMemoryPutTool, MemorySearchTool as ExportedMemorySearchTool, MemoryRecallTool as ExportedMemoryRecallTool, MemoryForgetTool as ExportedMemoryForgetTool, MemoryExportTool as ExportedMemoryExportTool, MemoryPurgeTool as ExportedMemoryPurgeTool } from '../memory';
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
 import { ProjectIntelTool as ExportedProjectIntelTool } from '../project';
@@ -349,9 +357,93 @@ export class AgentToolsPackageTest {
         expect(result.content).toContain('World');
     }
 
+    @Test('browser open normalizes safe urls and rejects unsafe protocols')
+    async browserOpenNormalizesSafeUrlsAndRejectsUnsafeProtocols() {
+        const tool = new BrowserOpenTool();
+        const result = await tool.invoke({ url: 'https://example.com/docs?q=1' }, createSessionContext());
+        expect(result.requested).toEqual(true);
+        expect(result.opened).toEqual(false);
+        expect(result.url).toEqual('https://example.com/docs?q=1');
+        expect(tool.execution?.readOnly).toEqual(true);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ url: 'javascript:alert(1)' }, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('http or https');
+    }
+
+    @Test('text browser fetches readable text and truncates large content')
+    async textBrowserFetchesReadableTextAndTruncatesLargeContent() {
+        class TestTextBrowserTool extends TextBrowserTool {
+            lastUrl?: string;
+            lastLimit?: number;
+
+            constructor() {
+                super({ web: { maxContentChars: 10 } });
+            }
+
+            protected async fetchPage(url: URL, maxBytes: number): Promise<any> {
+                this.lastUrl = url.toString();
+                this.lastLimit = maxBytes;
+                return {
+                    ok: true,
+                    status: 200,
+                    headers: { 'content-type': 'text/html; charset=utf-8' },
+                    body: '<html><head><title>Demo</title><style>.x{color:red}</style></head><body><script>bad()</script><h1>Hello</h1><p>World again</p></body></html>',
+                    truncated: false
+                };
+            }
+        }
+
+        const tool = new TestTextBrowserTool();
+        const result = await tool.invoke({ url: 'https://example.com/page' }, createSessionContext());
+        expect(tool.lastUrl).toEqual('https://example.com/page');
+        expect((tool.lastLimit ?? 0) >= 256 * 1024).toEqual(true);
+        expect(result.title).toEqual('Demo');
+        expect(result.ok).toEqual(true);
+        expect(result.status).toEqual(200);
+        expect(result.content).toEqual('Hello Worl');
+        expect(result.truncated).toEqual(true);
+    }
+
+    @Test('text browser blocks internal network targets')
+    async textBrowserBlocksInternalNetworkTargets() {
+        const tool = new TextBrowserTool({
+            web: {
+                fetch: (async () => {
+                    throw new Error('fetch should not run');
+                }) as any
+            }
+        });
+
+        let localhostError: Error | undefined;
+        try {
+            await tool.invoke({ url: 'http://localhost:8080/health' }, createSessionContext());
+        } catch (err) {
+            localhostError = err as Error;
+        }
+        expect(localhostError?.message).toContain('blocked internal host');
+
+        let metadataError: Error | undefined;
+        try {
+            await tool.invoke({ url: 'http://169.254.169.254/latest/meta-data' }, createSessionContext());
+        } catch (err) {
+            metadataError = err as Error;
+        }
+        expect(metadataError?.message).toContain('blocked internal host');
+    }
+
     @Test('grouped tool entrypoints export tool classes')
     groupedToolEntrypointsExportToolClasses() {
         expect(ExportedTodoTool).toEqual(TodoTool);
+        expect(ExportedBrowserOpenTool).toEqual(BrowserOpenTool);
+        expect(ExportedTextBrowserTool).toEqual(TextBrowserTool);
+        expect(ExportedSessionsCurrentTool).toEqual(SessionsCurrentTool);
+        expect(ExportedSessionsListTool).toEqual(SessionsListTool);
+        expect(ExportedSessionsHistoryTool).toEqual(SessionsHistoryTool);
         expect(ExportedAskUserTool).toEqual(AskUserTool);
         expect(ExportedEscalateTool).toEqual(EscalateTool);
         expect(ExportedScheduleTool).toEqual(ScheduleTool);
@@ -364,6 +456,7 @@ export class AgentToolsPackageTest {
         expect(ExportedMemoryRecallTool).toEqual(MemoryRecallTool);
         expect(ExportedMemoryForgetTool).toEqual(MemoryForgetTool);
         expect(ExportedMemoryExportTool).toEqual(MemoryExportTool);
+        expect(ExportedMemoryPurgeTool).toEqual(MemoryPurgeTool);
         expect(ExportedMemoryDeleteTool).toEqual(MemoryDeleteTool);
         expect(ExportedHttpFetchTool).toEqual(HttpFetchTool);
         expect(ExportedHttpRequestTool).toEqual(HttpRequestTool);
@@ -376,15 +469,29 @@ export class AgentToolsPackageTest {
     provideToolsExposeGroupedRegistrationsAndDefaults() {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'glob_search', 'content_search']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file']);
-        expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.delete']);
+        expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
+        expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history']);
+        expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
         expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
         expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel']);
         expect(resolveAgentToolNames()).toContain('read_file');
         expect(resolveAgentToolNames()).toContain('ask_user');
         expect(resolveAgentToolNames()).toContain('project_intel');
+        expect(resolveAgentToolNames()).not.toContain('browser_open');
+        expect(resolveAgentToolNames()).not.toContain('text_browser');
+        expect(resolveAgentToolNames()).not.toContain('sessions_current');
+        expect(resolveAgentToolNames()).not.toContain('sessions_list');
+        expect(resolveAgentToolNames()).not.toContain('sessions_history');
+        expect(resolveAgentToolNames()).not.toContain('memory.purge');
         expect(resolveAgentToolNames()).not.toContain('write_file');
         expect(resolveAgentToolNames()).not.toContain('http_fetch');
         expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
+        expect(resolveAgentToolNames({ registration: { groups: { browser: true } } })).toContain('browser_open');
+        expect(resolveAgentToolNames({ registration: { groups: { browser: true } } })).toContain('text_browser');
+        expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_current');
+        expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_list');
+        expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_history');
+        expect(resolveAgentToolNames({ registration: { items: { 'memory.purge': true } } })).toContain('memory.purge');
         expect(resolveAgentToolNames({ registration: { preset: 'none' } })).toEqual([]);
         expect(resolveAgentToolNames({ registration: { groups: { http: true } } })).toContain('http_fetch');
         expect(resolveAgentToolNames({ registration: { groups: { web: false } } })).not.toContain('web_search');
@@ -398,6 +505,8 @@ export class AgentToolsPackageTest {
         const bundles = resolveAgentToolBundles();
         const filesystem = bundles.find(bundle => bundle.name === 'filesystem');
         const filesystemWrite = bundles.find(bundle => bundle.name === 'filesystem_write');
+        const browser = bundles.find(bundle => bundle.name === 'browser');
+        const sessions = bundles.find(bundle => bundle.name === 'sessions');
         const planning = bundles.find(bundle => bundle.name === 'planning');
         const project = bundles.find(bundle => bundle.name === 'project');
         const terminal = bundles.find(bundle => bundle.name === 'terminal');
@@ -412,6 +521,14 @@ export class AgentToolsPackageTest {
         expect(filesystemWrite?.defaultEnabled).toEqual(false);
         expect(filesystemWrite?.enabled).toEqual(false);
         expect(filesystemWrite?.activation).toEqual({ kind: 'deferred', scope: 'session' });
+        expect(browser?.tools).toEqual(['browser_open', 'text_browser']);
+        expect(browser?.defaultEnabled).toEqual(false);
+        expect(browser?.enabled).toEqual(false);
+        expect(browser?.activation).toEqual({ kind: 'deferred', scope: 'session' });
+        expect(sessions?.tools).toEqual(['sessions_current', 'sessions_list', 'sessions_history']);
+        expect(sessions?.defaultEnabled).toEqual(false);
+        expect(sessions?.enabled).toEqual(false);
+        expect(sessions?.activation).toEqual({ kind: 'deferred', scope: 'session' });
         expect(planning?.tools).toEqual(['todo', 'ask_user', 'escalate']);
         expect(planning?.defaultEnabled).toEqual(true);
         expect(planning?.enabled).toEqual(true);
@@ -514,6 +631,50 @@ export class AgentToolsPackageTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('sessions tools return current session metadata list sessions and history')
+    async sessionsToolsReturnCurrentSessionMetadataListSessionsAndHistory() {
+        const store = new InMemorySessionStore();
+        await store.append('s1', { id: 'm1', role: 'user', content: 'hello', createdAt: 1 });
+        await store.append('s1', { id: 'm2', role: 'assistant', content: 'world', createdAt: 2, metadata: { source: 'model' } });
+        await store.setSummary('s1', 'summary one');
+        await store.setOwner('s1', 'owner-1');
+        await store.append('s2', { id: 'm3', role: 'tool', content: 'tool output', name: 'read_file', createdAt: 3 });
+
+        const current = new SessionsCurrentTool(store);
+        const list = new SessionsListTool(store);
+        const history = new SessionsHistoryTool(store);
+
+        const currentResult = await current.invoke({ limit: 1 }, createSessionContext({ sessionId: 's1' }));
+        expect(currentResult.exists).toEqual(true);
+        expect(currentResult.session.sessionId).toEqual('s1');
+        expect(currentResult.session.summary).toEqual('summary one');
+        expect(currentResult.session.ownerPrincipalId).toEqual('owner-1');
+        expect(currentResult.session.messageCount).toEqual(2);
+        expect(currentResult.session.messages.map((message: any) => message.id)).toEqual(['m2']);
+
+        const listResult = await list.invoke({ limit: 5 }, createSessionContext({ sessionId: 's1' }));
+        expect(listResult.sessions.map((session: any) => session.sessionId)).toEqual(['s1', 's2']);
+        expect(listResult.sessions[0].messageCount).toEqual(2);
+        expect(listResult.sessions[1].lastMessage?.id).toEqual('m3');
+
+        const historyResult = await history.invoke({ sessionId: 's1', limit: 1, offset: 1 }, createSessionContext({ sessionId: 's2' }));
+        expect(historyResult.exists).toEqual(true);
+        expect(historyResult.total).toEqual(2);
+        expect(historyResult.messages.map((message: any) => message.id)).toEqual(['m2']);
+    }
+
+    @Test('sessions history does not create missing sessions when explicitly requested')
+    async sessionsHistoryDoesNotCreateMissingSessionsWhenExplicitlyRequested() {
+        const store = new InMemorySessionStore();
+        const history = new SessionsHistoryTool(store);
+
+        const result = await history.invoke({ sessionId: 'missing' }, createSessionContext({ sessionId: 's1' }));
+        expect(result.exists).toEqual(false);
+        expect(result.total).toEqual(0);
+        expect(result.messages).toEqual([]);
+        expect(await store.has('missing')).toEqual(false);
     }
 
     @Test('memory list returns session and global records')
@@ -655,6 +816,47 @@ export class AgentToolsPackageTest {
         expect(textResult.count).toEqual(1);
         expect(textResult.content).toContain('global-policy');
         expect(textResult.content).toContain('shared');
+    }
+
+    @Test('memory purge deletes only explicitly scoped records')
+    async memoryPurgeDeletesOnlyExplicitlyScopedRecords() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-agent', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 1 });
+        await store.put({ id: 's1-shared', sessionId: 's1', key: 'note', value: 'draft', scope: 'session', namespace: 'shared', category: 'conversation', createdAt: 2 });
+        await store.put({ id: 'global-agent', key: 'policy', value: 'shared', scope: 'global', namespace: 'agent', category: 'core', createdAt: 3 });
+        await store.put({ id: 's2-agent', sessionId: 's2', key: 'topic', value: 'other', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 4 });
+        const tool = new MemoryPurgeTool();
+
+        let confirmError: Error | undefined;
+        try {
+            await tool.invoke({ namespace: 'agent' }, createSessionContext({ sessionId: 's1', memory: store }));
+        } catch (err) {
+            confirmError = err as Error;
+        }
+        expect(confirmError?.message).toContain('confirm');
+
+        const sessionPurge = await tool.invoke({ confirm: true, namespace: 'agent' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(sessionPurge.deleted).toEqual(true);
+        expect(sessionPurge.count).toEqual(1);
+        expect(sessionPurge.ids).toEqual(['s1-agent']);
+        expect((await store.getAll('s1')).map(record => record.id)).toEqual(['s1-shared', 'global-agent']);
+
+        const globalWithoutScope = await tool.invoke({ confirm: true, key: 'policy' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(globalWithoutScope.deleted).toEqual(false);
+        expect(globalWithoutScope.count).toEqual(0);
+
+        const globalPurge = await tool.invoke({ confirm: true, scope: 'global', namespace: 'agent' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(globalPurge.deleted).toEqual(true);
+        expect(globalPurge.count).toEqual(1);
+        expect(globalPurge.ids).toEqual(['global-agent']);
+
+        let selectorError: Error | undefined;
+        try {
+            await tool.invoke({ confirm: true }, createSessionContext({ sessionId: 's1', memory: store }));
+        } catch (err) {
+            selectorError = err as Error;
+        }
+        expect(selectorError?.message).toContain('selector');
     }
 
     @Test('ask user and escalate return structured collaboration payloads')

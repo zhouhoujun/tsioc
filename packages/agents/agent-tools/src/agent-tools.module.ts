@@ -10,6 +10,11 @@ import { ContentSearchTool } from '../files/content-search.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
+import { BrowserOpenTool } from '../browser/browser-open.tool';
+import { TextBrowserTool } from '../browser/text-browser.tool';
+import { SessionsCurrentTool } from '../sessions/sessions-current.tool';
+import { SessionsListTool } from '../sessions/sessions-list.tool';
+import { SessionsHistoryTool } from '../sessions/sessions-history.tool';
 import { TodoTool } from '../planning/todo.tool';
 import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
@@ -21,6 +26,7 @@ import { MemorySearchTool } from '../memory/memory-search.tool';
 import { MemoryRecallTool } from '../memory/memory-recall.tool';
 import { MemoryExportTool } from '../memory/memory-export.tool';
 import { MemoryForgetTool } from '../memory/memory-forget.tool';
+import { MemoryPurgeTool } from '../memory/memory-purge.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
@@ -48,6 +54,11 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         CalculatorTool,
         WebSearchTool,
         WebExtractTool,
+        BrowserOpenTool,
+        TextBrowserTool,
+        SessionsCurrentTool,
+        SessionsListTool,
+        SessionsHistoryTool,
         TodoTool,
         AskUserTool,
         EscalateTool,
@@ -59,6 +70,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         MemoryRecallTool,
         MemoryExportTool,
         MemoryForgetTool,
+        MemoryPurgeTool,
         MemoryDeleteTool,
         HttpFetchTool,
         HttpRequestTool,
@@ -77,6 +89,11 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         CalculatorTool,
         WebSearchTool,
         WebExtractTool,
+        BrowserOpenTool,
+        TextBrowserTool,
+        SessionsCurrentTool,
+        SessionsListTool,
+        SessionsHistoryTool,
         TodoTool,
         AskUserTool,
         EscalateTool,
@@ -88,6 +105,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         MemoryRecallTool,
         MemoryExportTool,
         MemoryForgetTool,
+        MemoryPurgeTool,
         MemoryDeleteTool,
         HttpFetchTool,
         HttpRequestTool,
