@@ -47,6 +47,7 @@ export interface AgentToolsScheduleOptions {
 
 export type AgentToolGroup =
     | 'filesystem'
+    | 'filesystem_write'
     | 'utility'
     | 'web'
     | 'planning'
@@ -58,6 +59,8 @@ export type AgentToolGroup =
 
 export type AgentToolItem =
     | 'read_file'
+    | 'write_file'
+    | 'edit_file'
     | 'glob_search'
     | 'content_search'
     | 'calculator'
@@ -66,6 +69,8 @@ export type AgentToolItem =
     | 'todo'
     | 'schedule'
     | 'memory.list'
+    | 'memory.put'
+    | 'memory.search'
     | 'memory.delete'
     | 'tool_search'
     | 'tool_inspect'

@@ -27,7 +27,7 @@ export class ToolInspectTool implements AgentTool {
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const name = this.requireName(input?.name);
         const registry = this.resolveRegistry();
-        const tool = registry.getToolDefinitions().find(definition => definition.name === name);
+        const tool = registry.getToolDefinition(name, context.sessionId);
         if (tool) {
             const activated = await registry.activateTool(context.sessionId, name);
             return {

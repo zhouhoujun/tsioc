@@ -23,11 +23,11 @@ export class LocalToolRegistry extends ToolRegistry {
     }
 
     getTools(): AgentTool[] {
-        return this.tools.slice();
+        return Array.from(this.getToolMap().values());
     }
 
     getTool(name: string): AgentTool | undefined {
-        return this.tools.find(tool => tool.name === name);
+        return this.getToolMap().get(name);
     }
 
     async activateTool(sessionId: string, name: string): Promise<boolean> {
@@ -91,6 +91,16 @@ export class LocalToolRegistry extends ToolRegistry {
             return true;
         }
         return this.hasActivation(sessionId, definition.name);
+    }
+
+    private getToolMap(): Map<string, AgentTool> {
+        const deduped = new Map<string, AgentTool>();
+        this.tools.forEach(tool => {
+            if (!deduped.has(tool.name)) {
+                deduped.set(tool.name, tool);
+            }
+        });
+        return deduped;
     }
 
     private isAlwaysActiveDefinition(definition: AgentToolDefinition): boolean {

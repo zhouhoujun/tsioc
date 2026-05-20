@@ -2,10 +2,13 @@ import expect = require('expect');
 import * as os from 'os';
 import * as path from 'path';
 import { promises as fs } from 'fs';
+import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentScheduler, InMemoryMemoryStore, ScheduledAgentTask } from '@tsdi/agent';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { ReadFileTool } from '../files/read-file.tool';
+import { WriteFileTool } from '../files/write-file.tool';
+import { EditFileTool } from '../files/edit-file.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
 import { WebSearchTool } from '../web/web-search.tool';
@@ -16,6 +19,8 @@ import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
+import { MemoryPutTool } from '../memory/memory-put.tool';
+import { MemorySearchTool } from '../memory/memory-search.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
@@ -27,7 +32,8 @@ import { ToolRegistry, AgentRuntime, EchoModelAdapter, AGENT_MODEL_ADAPTER, Agen
 import { TodoTool as ExportedTodoTool } from '../planning';
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
-import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool } from '../memory';
+import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool } from '../files';
+import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool, MemoryPutTool as ExportedMemoryPutTool, MemorySearchTool as ExportedMemorySearchTool } from '../memory';
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
 import { provideSkills, LocalSkillRegistry, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
@@ -167,6 +173,67 @@ export class AgentToolsPackageTest {
         expect(error?.message).toContain('outside');
     }
 
+    @Test('write file writes content within workspace and blocks traversal')
+    async writeFileWritesContentWithinWorkspaceAndBlocksTraversal() {
+        const workspace = await this.createWorkspace();
+        const tool = new WriteFileTool({ file: { rootDir: workspace } });
+
+        const created = await tool.invoke({ path: 'src/new.txt', content: 'hello world' }, createSessionContext());
+        expect(created.path).toEqual('src/new.txt');
+        expect(created.created).toEqual(true);
+        expect(created.overwritten).toEqual(false);
+        expect(await fs.readFile(path.join(workspace, 'src', 'new.txt'), 'utf8')).toEqual('hello world');
+
+        const nested = await tool.invoke({ path: 'nested/deep/file.txt', content: 'nested value' }, createSessionContext());
+        expect(nested.path).toEqual('nested/deep/file.txt');
+        expect(await fs.readFile(path.join(workspace, 'nested', 'deep', 'file.txt'), 'utf8')).toEqual('nested value');
+
+        const overwritten = await tool.invoke({ path: 'src/new.txt', content: 'updated' }, createSessionContext());
+        expect(overwritten.created).toEqual(false);
+        expect(overwritten.overwritten).toEqual(true);
+        expect(await fs.readFile(path.join(workspace, 'src', 'new.txt'), 'utf8')).toEqual('updated');
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ path: '../outside.txt', content: 'nope' }, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('outside');
+    }
+
+    @Test('edit file replaces exact text and validates matches')
+    async editFileReplacesExactTextAndValidatesMatches() {
+        const workspace = await this.createWorkspace();
+        const tool = new EditFileTool({ file: { rootDir: workspace } });
+
+        const result = await tool.invoke({ path: 'src/beta.ts', oldString: 'value = 1', newString: 'value = 2' }, createSessionContext());
+        expect(result.path).toEqual('src/beta.ts');
+        expect(result.replacements).toEqual(1);
+        expect(await fs.readFile(path.join(workspace, 'src', 'beta.ts'), 'utf8')).toContain('value = 2');
+
+        let notFound: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/beta.ts', oldString: 'missing', newString: 'x' }, createSessionContext());
+        } catch (err) {
+            notFound = err as Error;
+        }
+        expect(notFound?.message).toContain('not found');
+
+        await fs.writeFile(path.join(workspace, 'src', 'repeated.txt'), 'same same same', 'utf8');
+        let ambiguous: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/repeated.txt', oldString: 'same', newString: 'done' }, createSessionContext());
+        } catch (err) {
+            ambiguous = err as Error;
+        }
+        expect(ambiguous?.message).toContain('replaceAll');
+
+        const replacedAll = await tool.invoke({ path: 'src/repeated.txt', oldString: 'same', newString: 'done', replaceAll: true }, createSessionContext());
+        expect(replacedAll.replacements).toEqual(3);
+        expect(await fs.readFile(path.join(workspace, 'src', 'repeated.txt'), 'utf8')).toEqual('done done done');
+    }
+
     @Test('glob search returns relative workspace matches')
     async globSearchFindsFiles() {
         const workspace = await this.createWorkspace();
@@ -174,6 +241,51 @@ export class AgentToolsPackageTest {
 
         const result = await tool.invoke({ pattern: 'src/**/*.txt' }, createSessionContext());
         expect(result.matches).toEqual(['src/alpha.txt']);
+
+        let outsideError: Error | undefined;
+        try {
+            await tool.invoke({ pattern: '../**/*.txt' }, createSessionContext());
+        } catch (err) {
+            outsideError = err as Error;
+        }
+        expect(outsideError?.message).toContain('workspace root');
+    }
+
+    @Test('filesystem tools reject symlink paths in workspace')
+    async filesystemToolsRejectSymlinkPathsInWorkspace() {
+        const workspace = await this.createWorkspace();
+        const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-tools-outside-'));
+        const outsideFile = path.join(outside, 'outside.txt');
+        await fs.writeFile(outsideFile, 'outside', 'utf8');
+        symlinkSync(outsideFile, path.join(workspace, 'src', 'linked.txt'));
+
+        const reader = new ReadFileTool({ file: { rootDir: workspace } });
+        const globber = new GlobSearchTool({ file: { rootDir: workspace } });
+        const searcher = new ContentSearchTool({ file: { rootDir: workspace } });
+
+        let readError: Error | undefined;
+        try {
+            await reader.invoke({ path: 'src/linked.txt' }, createSessionContext());
+        } catch (err) {
+            readError = err as Error;
+        }
+        expect(readError?.message).toContain('symbolic link');
+
+        let globError: Error | undefined;
+        try {
+            await globber.invoke({ pattern: 'src/**/*.txt' }, createSessionContext());
+        } catch (err) {
+            globError = err as Error;
+        }
+        expect(globError?.message).toContain('symbolic link');
+
+        let searchError: Error | undefined;
+        try {
+            await searcher.invoke({ query: 'outside', glob: 'src/**/*.txt' }, createSessionContext());
+        } catch (err) {
+            searchError = err as Error;
+        }
+        expect(searchError?.message).toContain('symbolic link');
     }
 
     @Test('content search returns line matches')
@@ -185,6 +297,14 @@ export class AgentToolsPackageTest {
         expect(result.matches.length).toEqual(2);
         expect(result.matches[0].path).toContain('src/');
         expect(result.matches[0].line).toBeGreaterThan(0);
+
+        let outsideError: Error | undefined;
+        try {
+            await tool.invoke({ query: 'beta', glob: '../**/*' }, createSessionContext());
+        } catch (err) {
+            outsideError = err as Error;
+        }
+        expect(outsideError?.message).toContain('workspace root');
     }
 
     @Test('web search delegates to configured adapter')
@@ -227,7 +347,11 @@ export class AgentToolsPackageTest {
         expect(ExportedTodoTool).toEqual(TodoTool);
         expect(ExportedScheduleTool).toEqual(ScheduleTool);
         expect(ExportedTerminalTool).toEqual(TerminalTool);
+        expect(ExportedWriteFileTool).toEqual(WriteFileTool);
+        expect(ExportedEditFileTool).toEqual(EditFileTool);
         expect(ExportedMemoryListTool).toEqual(MemoryListTool);
+        expect(ExportedMemoryPutTool).toEqual(MemoryPutTool);
+        expect(ExportedMemorySearchTool).toEqual(MemorySearchTool);
         expect(ExportedMemoryDeleteTool).toEqual(MemoryDeleteTool);
         expect(ExportedHttpFetchTool).toEqual(HttpFetchTool);
         expect(ExportedHttpRequestTool).toEqual(HttpRequestTool);
@@ -238,7 +362,9 @@ export class AgentToolsPackageTest {
     @Test('provider tools expose grouped registrations and defaults')
     provideToolsExposeGroupedRegistrationsAndDefaults() {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'glob_search', 'content_search']);
+        expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file']);
         expect(resolveAgentToolNames()).toContain('read_file');
+        expect(resolveAgentToolNames()).not.toContain('write_file');
         expect(resolveAgentToolNames()).not.toContain('http_fetch');
         expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
         expect(resolveAgentToolNames({ registration: { preset: 'none' } })).toEqual([]);
@@ -252,6 +378,7 @@ export class AgentToolsPackageTest {
     provideToolsResolveCapabilityBundleMetadata() {
         const bundles = resolveAgentToolBundles();
         const filesystem = bundles.find(bundle => bundle.name === 'filesystem');
+        const filesystemWrite = bundles.find(bundle => bundle.name === 'filesystem_write');
         const terminal = bundles.find(bundle => bundle.name === 'terminal');
         expect(filesystem?.tools).toEqual(['read_file', 'glob_search', 'content_search']);
         expect(filesystem?.defaultEnabled).toEqual(true);
@@ -260,6 +387,10 @@ export class AgentToolsPackageTest {
         expect(filesystem?.source).toEqual('builtin');
         expect(filesystem?.providerId).toEqual('@tsdi/agent-tools');
         expect(filesystem?.activation).toEqual({ kind: 'deferred', scope: 'session' });
+        expect(filesystemWrite?.tools).toEqual(['write_file', 'edit_file']);
+        expect(filesystemWrite?.defaultEnabled).toEqual(false);
+        expect(filesystemWrite?.enabled).toEqual(false);
+        expect(filesystemWrite?.activation).toEqual({ kind: 'deferred', scope: 'session' });
         expect(terminal?.defaultEnabled).toEqual(false);
         expect(terminal?.enabled).toEqual(false);
         expect(terminal?.source).toEqual('builtin');
@@ -291,6 +422,29 @@ export class AgentToolsPackageTest {
             expect(names).toContain('http_request');
             expect(names).toContain('terminal');
             expect(names).not.toContain('web_extract');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('provideTools deduplicates tool names already registered by AgentModule')
+    async provideToolsDeduplicatesToolNamesAlreadyRegisteredByAgentModule() {
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({ registration: { groups: { filesystem_write: true } } })]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names.filter(name => name === 'memory.put').length).toEqual(1);
+            expect(names.filter(name => name === 'memory.search').length).toEqual(1);
+
+            const putDefinition = registry.getToolDefinition('memory.put');
+            expect(putDefinition?.description).toContain('visible to the current or global scope');
+
+            await registry.activateTool('s1', 'memory.put');
+            const putResult = await registry.invoke('memory.put', { key: 'topic', value: 'router' }, 's1');
+            expect(putResult.stored).toEqual(true);
+            expect(putResult.record.key).toEqual('topic');
         } finally {
             await ctx.close();
         }
@@ -343,8 +497,45 @@ export class AgentToolsPackageTest {
         await store.put({ id: 'global-note', key: 'shared', value: 'policy', scope: 'global', createdAt: 3 });
         const tool = new MemoryListTool();
 
-        const result = await tool.invoke(undefined, createSessionContext({ sessionId: 's1', memory: store }));
-        expect(result.records.map((record: any) => record.id)).toEqual(['s1-note', 'global-note']);
+        const result = await tool.invoke({ limit: 1 }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(result.records.map((record: any) => record.id)).toEqual(['s1-note']);
+
+        const all = await tool.invoke(undefined, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(all.records.map((record: any) => record.id)).toEqual(['s1-note', 'global-note']);
+    }
+
+    @Test('memory put and search respect visibility and filters')
+    async memoryPutAndSearchRespectVisibilityAndFilters() {
+        const store = new InMemoryMemoryStore();
+        const put = new MemoryPutTool();
+        const search = new MemorySearchTool();
+
+        const sessionRecord = await put.invoke({ key: 'topic', value: 'router cache', namespace: 'agent', category: 'conversation' }, createSessionContext({ sessionId: 's1', memory: store }));
+        const globalRecord = await put.invoke({ key: 'policy', value: 'shared cache', scope: 'global', namespace: 'shared', category: 'core' }, createSessionContext({ sessionId: 's1', memory: store }));
+        await store.put({ id: 's2-note', sessionId: 's2', key: 'topic', value: 'other cache', scope: 'session', createdAt: 3 });
+
+        expect(sessionRecord.stored).toEqual(true);
+        expect(sessionRecord.record.sessionId).toEqual('s1');
+        expect(globalRecord.record.scope).toEqual('global');
+        expect(globalRecord.record.sessionId).toEqual(undefined);
+
+        const visible = await search.invoke({ query: 'cache' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(visible.records.map((record: any) => record.key)).toEqual(['topic', 'policy']);
+
+        const filtered = await search.invoke({ query: 'cache', namespace: 'shared', scope: 'global', limit: 1 }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(filtered.records.length).toEqual(1);
+        expect(filtered.records[0].key).toEqual('policy');
+
+        const otherSession = await search.invoke({ query: 'cache' }, createSessionContext({ sessionId: 's2', memory: store }));
+        expect(otherSession.records.map((record: any) => record.key)).toEqual(['policy', 'topic']);
+
+        let scopeError: Error | undefined;
+        try {
+            await put.invoke({ key: 'bad', value: 'bad', scope: 'team' }, createSessionContext({ sessionId: 's1', memory: store }));
+        } catch (err) {
+            scopeError = err as Error;
+        }
+        expect(scopeError?.message).toContain('scope');
     }
 
     @Test('memory delete removes only visible records')

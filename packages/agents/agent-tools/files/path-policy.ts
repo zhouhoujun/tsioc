@@ -40,6 +40,30 @@ export function toRelativeWorkspacePath(filePath: string, rootDir: string): stri
     return path.relative(rootDir, filePath).split(path.sep).join('/');
 }
 
+export async function assertNoSymlinkInWorkspacePath(targetPath: string, rootDir: string, options?: { allowMissingPath?: boolean; }): Promise<void> {
+    const absoluteRoot = path.resolve(rootDir);
+    const relative = path.relative(absoluteRoot, targetPath);
+    const segments = relative.split(path.sep).filter(Boolean);
+    let current = absoluteRoot;
+    for (let index = 0; index < segments.length; index++) {
+        current = path.join(current, segments[index]);
+        try {
+            const stat = await import('fs').then(fs => fs.promises.lstat(current));
+            if (stat.isSymbolicLink()) {
+                throw new Error(`Path '${toRelativeWorkspacePath(current, absoluteRoot)}' resolves through a symbolic link, which is not allowed.`);
+            }
+        } catch (error: any) {
+            if (error?.code === 'ENOENT' && options?.allowMissingPath) {
+                return;
+            }
+            if (error?.code === 'ENOENT') {
+                throw error;
+            }
+            throw error;
+        }
+    }
+}
+
 export function truncateTextByLinesAndBytes(content: string, maxBytes: number, maxLines: number): { content: string; truncated: boolean; } {
     const lines = content.split(/\r?\n/);
     const sliced = lines.slice(0, Math.max(1, maxLines)).join('\n');

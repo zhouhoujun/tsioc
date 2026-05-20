@@ -4,6 +4,8 @@ import { AGENT_TOOL_BUNDLES, AGENT_TOOLS } from '@tsdi/agent';
 import { AgentToolGroup, AgentToolItem, AgentToolsOptions, mergeAgentToolsOptions } from './options';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { ReadFileTool } from '../files/read-file.tool';
+import { WriteFileTool } from '../files/write-file.tool';
+import { EditFileTool } from '../files/edit-file.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
@@ -13,6 +15,8 @@ import { TodoTool } from '../planning/todo.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
+import { MemoryPutTool } from '../memory/memory-put.tool';
+import { MemorySearchTool } from '../memory/memory-search.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
@@ -22,6 +26,8 @@ import { provideMcpTools } from '../mcp/provider';
 
 const toolItems = {
     read_file: ReadFileTool,
+    write_file: WriteFileTool,
+    edit_file: EditFileTool,
     glob_search: GlobSearchTool,
     content_search: ContentSearchTool,
     calculator: CalculatorTool,
@@ -30,6 +36,8 @@ const toolItems = {
     todo: TodoTool,
     schedule: ScheduleTool,
     'memory.list': MemoryListTool,
+    'memory.put': MemoryPutTool,
+    'memory.search': MemorySearchTool,
     'memory.delete': MemoryDeleteTool,
     tool_search: ToolSearchTool,
     tool_inspect: ToolInspectTool,
@@ -40,11 +48,12 @@ const toolItems = {
 
 const toolGroups = {
     filesystem: ['read_file', 'glob_search', 'content_search'],
+    filesystem_write: ['write_file', 'edit_file'],
     utility: ['calculator'],
     web: ['web_search', 'web_extract'],
     planning: ['todo'],
     scheduling: ['schedule'],
-    memory: ['memory.list', 'memory.delete'],
+    memory: ['memory.list', 'memory.put', 'memory.search', 'memory.delete'],
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
     terminal: ['terminal']
@@ -55,6 +64,7 @@ const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
 const allToolProviders = Array.from(new Set(Object.values(toolItems)));
 const bundleDescriptions: Record<AgentToolGroup, string> = {
     filesystem: 'Workspace file reading and search tools.',
+    filesystem_write: 'Workspace file mutation tools.',
     utility: 'General-purpose calculation and utility helpers.',
     web: 'Web search and extraction tools.',
     planning: 'Planning and task tracking tools.',
@@ -64,7 +74,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     http: 'HTTP fetch and request tools.',
     terminal: 'Terminal command execution tools.'
 };
-const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'web', 'http', 'terminal']);
+const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'http', 'terminal']);
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -199,6 +209,8 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
     return [
         ...withAgentToolsOptions(merged),
         ReadFileTool,
+        WriteFileTool,
+        EditFileTool,
         GlobSearchTool,
         ContentSearchTool,
         CalculatorTool,
@@ -208,6 +220,8 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ScheduleTool,
         TerminalTool,
         MemoryListTool,
+        MemoryPutTool,
+        MemorySearchTool,
         MemoryDeleteTool,
         HttpFetchTool,
         HttpRequestTool,

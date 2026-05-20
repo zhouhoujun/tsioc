@@ -1,161 +1,31 @@
-现在 Phase 5 已经有了正式 bundle 元数据和 gateway 暴露，而且没有打破原有 /api/tools。下一步如果继续，我建议回到你刚打开的
-  ModelAdapter.ts 相关方向，开始把 bundle / activation 信息更系统地喂给模型请求层。
+参考 @../hermes-agent/ 和 @../zeroclaw/ 这两个智能体， 继续完善 @packages/agents/agent-tools/  的工具，并参考添加这个两个智能体已有的工具
 
 
-1. 在 packages/agents/agent/src/runtime/AgentRuntime.ts 注入 bundle 元数据。
-  import { AGENT_TOOL_BUNDLES, AgentCapabilityBundle } from '../tools/AgentTool'; // 按现有导出路径调整
-  // 或 token 从 tokens.ts 引
 
-  constructor(
-    // ...
-    @Inject(AGENT_TOOL_BUNDLES, { defaultValue: [] }) private bundles: AgentCapabilityBundle[] = []
-  ) {}
+这次改动主要是：
+  - 新增文件变更工具：write_file、edit_file
+  - 新增 memory 工具：memory.put、memory.search
+  - memory.list 增加 limit
+  - 给 read_file / glob_search / content_search 补了 symlink 防护和 workspace pattern 边界校验
+  - 修正 LocalToolRegistry 的重复工具名去重，让定义、inspect、invoke 语义一致
+  - 将 write_file / edit_file 从默认 filesystem 分组拆到新的 filesystem_write，默认不启用
 
-  2. 在 buildModelRequest() 里构造一个很轻的 toolContext，不要改 ModelRequest 结构。
-  const tools = this.toolRegistry.getToolDefinitions(sessionId);
-  const toolContext = await this.buildToolPromptContext(sessionId, tools);
+  关键位置：
+  - packages/agents/agent-tools/files/write-file.tool.ts
+  - packages/agents/agent-tools/files/edit-file.tool.ts
+  - packages/agents/agent-tools/memory/memory-put.tool.ts
+  - packages/agents/agent-tools/memory/memory-search.tool.ts
+  - packages/agents/agent-tools/src/provider.ts
+  - packages/agents/agent/src/tools/LocalToolRegistry.ts
+  - packages/agents/agent-tools/test/tools.spec.ts
+
+  验证结果：
+  - cd /home/zhouyou/workspace/core/packages/agents/agent-tools && npm test
+  - 结果：51 passing
+
+  还剩两个我没有继续深入处理的安全设计问题，建议作为下一批：
+  - write_file / edit_file 仍有更深层的 TOCTOU symlink race 风险，若要彻底收口，需要改成更严格的 fd/open 策略
+  - memory.put/search/list/delete 对 global scope 目前仍偏宽松，若后续要支持多会话/多租户，建议加权限或 ACL
+
+  如果你同意，我下一步继续做第二批：ask_user + process.start/poll/kill。
   
-  const systemPrompt = this.promptBuilder.build({
-    sessionId,
-    tools,
-    memory,
-    dateTime: new Date().toISOString(),
-    extra: {
-      toolContext
-    } 
-  });
-  
-  3. 在 AgentRuntime.ts 新增 helper，核心只做三件事：
-  - 只保留 enabled === true 的 bundles
-  - 给每个 bundle 算出 activeTools / inactiveTools
-  - 给 prompt 一个统一 activation hint
-
-  建议返回形状：
-  interface ToolPromptContext {
-    bundles: Array<{
-      name: string;
-      description?: string;
-      deferredActivation: boolean;
-      activeTools: string[];
-      inactiveTools: string[];
-    }>;
-    activation: {
-      discoveryTools: string[];
-      hasInactiveTools: boolean;
-    };
-  }
-
-  实现可以很直接：
-
-  private async buildToolPromptContext(
-    sessionId: string,
-    tools: AgentToolDefinition[]
-  ): Promise<ToolPromptContext> {
-    const visibleToolNames = new Set(tools.map(t => t.name));
-    const enabledBundles = this.bundles.filter(bundle => bundle.enabled);
-
-    const bundles = await Promise.all(enabledBundles.map(async bundle => {
-      const bundleTools = bundle.tools.filter(name => visibleToolNames.has(name));
-      const states = await Promise.all(bundleTools.map(async name => ({
-        name,
-        active: await this.toolRegistry.isToolActive(sessionId, name)
-      })));
-
-      return {
-        name: bundle.name,
-        deferredActivation: !!bundle.deferredActivation,
-        activeTools: states.filter(s => s.active).map(s => s.name),
-        inactiveTools: states.filter(s => !s.active).map(s => s.name)
-      };
-    }));
-    
-    return {
-      bundles: bundles.filter(bundle => bundle.activeTools.length || bundle.inactiveTools.length),
-      activation: {
-        discoveryTools: ['tool_search', 'tool_inspect'],
-        hasInactiveTools: bundles.some(bundle => bundle.inactiveTools.length > 0)
-      } 
-    };
-  } 
-
-  4. packages/agents/agent/src/prompt/sections/ToolsSection.ts 不要新建 section，直接增强现有 section。
-  现在它只有平铺工具列表；这里最适合把 activation 状态直接标到工具名上，再追加一个简短的 bundle 摘要。这样模型不用自己推断。
-  
-  建议输出逻辑改成：
-  
-  - ## Available Tools
-  - 每个 tool 行带状态：
-    - - read_file [active]: ...
-    - - glob_search [inactive]: ...
-  - 如果 hasInactiveTools 为 true，加一句固定提示：
-    - Inactive tools require discovery/activation through tool_search or tool_inspect before calling them.
-  - 然后输出 ## Capability Bundles
-    - - filesystem: active [read_file], inactive [glob_search, content_search]
-    - - registry: active [tool_search, tool_inspect]
-  
-  可以用 context.extra?.toolContext 做，不需要改 prompt builder 公共接口。
-  
-  一个够小的实现方式：
-
-  const toolContext = context.extra?.toolContext;
-  const activeNames = new Set(
-    toolContext?.bundles?.flatMap((bundle: any) => bundle.activeTools) ?? []
-  );
-  const inactiveNames = new Set(
-    toolContext?.bundles?.flatMap((bundle: any) => bundle.inactiveTools) ?? []
-  );
-
-  const lines: string[] = ['## Available Tools'];
-  for (const tool of tools) {
-    const state = activeNames.has(tool.name)
-      ? 'active'
-      : inactiveNames.has(tool.name)
-        ? 'inactive'
-        : 'available';
-    lines.push(`- ${tool.name} [${state}]: ${tool.description}`);
-  }
-
-  if (toolContext?.activation?.hasInactiveTools) {
-    lines.push('');
-    lines.push('Inactive tools require discovery or inspection through tool_search or tool_inspect before use.');
-  }
-
-    lines.push('');
-    lines.push('## Capability Bundles');
-    for (const bundle of toolContext.bundles) {
-      const parts: string[] = [];
-      if (bundle.activeTools.length) {
-        parts.push(`active [${bundle.activeTools.join(', ')}]`);
-      }
-      if (bundle.inactiveTools.length) {
-        parts.push(`inactive [${bundle.inactiveTools.join(', ')}]`);
-      }
-      const suffix = parts.length ? `: ${parts.join('; ')}` : '';
-      lines.push(`- ${bundle.name}${bundle.deferredActivation ? ' (deferred)' : ''}${suffix}`);
-    }
-  } 
-
-  5. 回归测试先只补 packages/agents/agent/test/runtime-loop.spec.ts，不用扩散。
-  最值钱的一个测试就是：system prompt 真正出现 bundle / activation 信息。
-
-  建议新测例形状：
-  - 构造一个带 deferred bundle 的 registry
-  - session 下只激活一部分工具
-  - 跑一次 turn
-  - 从 capture model adapter 的最后一个 request 里取 system prompt
-  - 断言包含： 
-    - ## Capability Bundles
-    - filesystem
-    - inactive
-    - tool_search
-    - tool_inspect
-    
-  如果现有测试里已经有捕获 ModelRequest 的 fake adapter，就复用，不要再造一套。
-  
-  6. 这里先别改 ModelRequest 的原因很明确：
-  - 当前目标是“模型可见上下文”，不是“所有 adapter 都拿到结构化 bundle 数据”
-  - SystemPromptBuilder.build({ extra }) 已经是最小 seam
-  - 先把 prompt 语义跑通，再决定后面是否需要给非 prompt adapter 补 request.toolContext?: ...
-
-  如果要给这个阶段留一个自然后手，可以等这一步稳定后，再把同一个 ToolPromptContext 提升成 ModelRequest 的 optional
-  字段，但现在不值得先做。

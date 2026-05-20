@@ -1,10 +1,11 @@
+import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { promises as fs } from 'fs';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import globby = require('globby');
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { resolveFilePolicy, toRelativeWorkspacePath } from './path-policy';
+import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, toRelativeWorkspacePath } from './path-policy';
 
 @Injectable()
 export class ContentSearchTool implements AgentTool {
@@ -34,6 +35,7 @@ export class ContentSearchTool implements AgentTool {
         }
         const policy = resolveFilePolicy(this.options);
         const patterns = typeof input.glob === 'string' && input.glob.trim() ? [input.glob] : policy.defaultGlob;
+        patterns.forEach(pattern => this.assertWorkspacePattern(pattern));
         const files = await globby(patterns, {
             cwd: policy.rootDir,
             absolute: true,
@@ -46,6 +48,7 @@ export class ContentSearchTool implements AgentTool {
             if (matches.length >= policy.maxSearchResults) {
                 break;
             }
+            await assertNoSymlinkInWorkspacePath(file, policy.rootDir);
             const content = await fs.readFile(file, 'utf8');
             const lines = content.split(/\r?\n/);
             for (let index = 0; index < lines.length; index++) {
@@ -64,5 +67,12 @@ export class ContentSearchTool implements AgentTool {
             }
         }
         return { matches };
+    }
+
+    private assertWorkspacePattern(pattern: string): void {
+        const trimmed = pattern.trim();
+        if (path.isAbsolute(trimmed) || trimmed.split(/[\\/]+/).includes('..')) {
+            throw new Error('Invalid content_search input: glob must stay within the workspace root.');
+        }
     }
 }

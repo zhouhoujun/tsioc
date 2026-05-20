@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath, truncateTextByLinesAndBytes } from './path-policy';
+import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath, toRelativeWorkspacePath, truncateTextByLinesAndBytes } from './path-policy';
 
 @Injectable()
 export class ReadFileTool implements AgentTool {
@@ -30,6 +30,7 @@ export class ReadFileTool implements AgentTool {
         const requestedPath = this.getRequestedPath(input);
         const policy = resolveFilePolicy(this.options);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
+        await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
         const content = await fs.readFile(absolutePath, 'utf8');
         const truncated = truncateTextByLinesAndBytes(content, policy.maxReadBytes, policy.maxReadLines);
         return {

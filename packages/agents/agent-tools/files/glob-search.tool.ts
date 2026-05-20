@@ -1,9 +1,10 @@
+import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import globby = require('globby');
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { resolveFilePolicy, toRelativeWorkspacePath } from './path-policy';
+import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, toRelativeWorkspacePath } from './path-policy';
 
 @Injectable()
 export class GlobSearchTool implements AgentTool {
@@ -30,6 +31,7 @@ export class GlobSearchTool implements AgentTool {
         if (!input || typeof input.pattern !== 'string' || !input.pattern.trim()) {
             throw new Error('Invalid glob_search input: pattern must be a non-empty string.');
         }
+        this.assertWorkspacePattern(input.pattern);
         const policy = resolveFilePolicy(this.options);
         const matches = await globby(input.pattern, {
             cwd: policy.rootDir,
@@ -37,10 +39,23 @@ export class GlobSearchTool implements AgentTool {
             onlyFiles: true,
             ignore: policy.excludedGlobs
         });
+        const safeMatches: string[] = [];
+        for (const file of matches) {
+            await assertNoSymlinkInWorkspacePath(file, policy.rootDir);
+            safeMatches.push(toRelativeWorkspacePath(file, policy.rootDir));
+            if (safeMatches.length >= policy.maxSearchResults) {
+                break;
+            }
+        }
         return {
-            matches: matches
-                .slice(0, policy.maxSearchResults)
-                .map((file: string) => toRelativeWorkspacePath(file, policy.rootDir))
+            matches: safeMatches
         };
+    }
+
+    private assertWorkspacePattern(pattern: string): void {
+        const trimmed = pattern.trim();
+        if (path.isAbsolute(trimmed) || trimmed.split(/[\\/]+/).includes('..')) {
+            throw new Error('Invalid glob_search input: pattern must stay within the workspace root.');
+        }
     }
 }
