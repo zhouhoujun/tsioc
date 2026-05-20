@@ -12,16 +12,22 @@ import { CalculatorTool } from '../utility/calculator.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { TodoTool } from '../planning/todo.tool';
+import { AskUserTool } from '../planning/ask-user.tool';
+import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
 import { MemoryPutTool } from '../memory/memory-put.tool';
 import { MemorySearchTool } from '../memory/memory-search.tool';
+import { MemoryRecallTool } from '../memory/memory-recall.tool';
+import { MemoryExportTool } from '../memory/memory-export.tool';
+import { MemoryForgetTool } from '../memory/memory-forget.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
+import { ProjectIntelTool } from '../project/project-intel.tool';
 import { provideMcpTools } from '../mcp/provider';
 
 const toolItems = {
@@ -34,11 +40,17 @@ const toolItems = {
     web_search: WebSearchTool,
     web_extract: WebExtractTool,
     todo: TodoTool,
+    ask_user: AskUserTool,
+    escalate: EscalateTool,
     schedule: ScheduleTool,
     'memory.list': MemoryListTool,
     'memory.put': MemoryPutTool,
     'memory.search': MemorySearchTool,
+    'memory.recall': MemoryRecallTool,
+    'memory.export': MemoryExportTool,
+    'memory.forget': MemoryForgetTool,
     'memory.delete': MemoryDeleteTool,
+    project_intel: ProjectIntelTool,
     tool_search: ToolSearchTool,
     tool_inspect: ToolInspectTool,
     http_fetch: HttpFetchTool,
@@ -51,15 +63,16 @@ const toolGroups = {
     filesystem_write: ['write_file', 'edit_file'],
     utility: ['calculator'],
     web: ['web_search', 'web_extract'],
-    planning: ['todo'],
+    planning: ['todo', 'ask_user', 'escalate'],
     scheduling: ['schedule'],
-    memory: ['memory.list', 'memory.put', 'memory.search', 'memory.delete'],
+    memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.delete'],
+    project: ['project_intel'],
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
     terminal: ['terminal']
 } as const satisfies Record<AgentToolGroup, AgentToolItem[]>;
 
-const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'utility', 'web', 'planning', 'scheduling', 'memory', 'registry'];
+const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry'];
 const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
 const allToolProviders = Array.from(new Set(Object.values(toolItems)));
 const bundleDescriptions: Record<AgentToolGroup, string> = {
@@ -67,9 +80,10 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     filesystem_write: 'Workspace file mutation tools.',
     utility: 'General-purpose calculation and utility helpers.',
     web: 'Web search and extraction tools.',
-    planning: 'Planning and task tracking tools.',
+    planning: 'Planning, task tracking, and collaboration prompt tools.',
     scheduling: 'Prompt scheduling and recurring task tools.',
     memory: 'Session and global memory management tools.',
+    project: 'Project summarization and risk/handoff intelligence tools.',
     registry: 'Tool discovery and activation tools.',
     http: 'HTTP fetch and request tools.',
     terminal: 'Terminal command execution tools.'
@@ -169,6 +183,10 @@ export function withMemoryAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.memory.map(name => toolItems[name]));
 }
 
+export function withProjectAgentTools(): Provider[] {
+    return withAgentTools(...toolGroups.project.map(name => toolItems[name]));
+}
+
 export function withRegistryAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.registry.map(name => toolItems[name]));
 }
@@ -217,16 +235,22 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         WebSearchTool,
         WebExtractTool,
         TodoTool,
+        AskUserTool,
+        EscalateTool,
         ScheduleTool,
         TerminalTool,
         MemoryListTool,
         MemoryPutTool,
         MemorySearchTool,
+        MemoryRecallTool,
+        MemoryExportTool,
+        MemoryForgetTool,
         MemoryDeleteTool,
         HttpFetchTool,
         HttpRequestTool,
         ToolSearchTool,
         ToolInspectTool,
+        ProjectIntelTool,
         ...(merged.mcp?.servers?.length ? provideMcpTools(merged.mcp) : []),
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles(),

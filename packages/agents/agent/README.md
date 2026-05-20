@@ -80,6 +80,8 @@ npm run test:coverage
 ## Notes
 
 - The default module registers builtin tools: `echo`, `time`, `memory.put`, and `memory.search`.
+- Deferred tools remain session-gated: inspecting a tool definition does not activate it.
+- Manifest-backed MCP tools require session activation before invocation, and dynamic `mcp.call_tool` access is limited to tools explicitly declared or allowlisted by `@tsdi/agent-tools`.
 - The default model adapter is configured as an OpenAI-compatible DeepSeek adapter unless overridden.
 - Cross-package integrations for channels, providers, gateway, and tool bundles live in sibling packages under `packages/agents`.
 

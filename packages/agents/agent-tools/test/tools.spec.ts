@@ -15,27 +15,34 @@ import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { TodoStore } from '../planning/todo-store';
 import { TodoTool } from '../planning/todo.tool';
+import { AskUserTool } from '../planning/ask-user.tool';
+import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
 import { MemoryPutTool } from '../memory/memory-put.tool';
 import { MemorySearchTool } from '../memory/memory-search.tool';
+import { MemoryRecallTool } from '../memory/memory-recall.tool';
+import { MemoryForgetTool } from '../memory/memory-forget.tool';
+import { MemoryExportTool } from '../memory/memory-export.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
-import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS } from '../src/provider';
+import { ProjectIntelTool } from '../project/project-intel.tool';
+import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS, withProjectAgentTools } from '../src/provider';
 import { resolveAgentRootSettings } from '../src/settings';
 import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AGENT_MODEL_ADAPTER, AgentModule } from '@tsdi/agent';
-import { TodoTool as ExportedTodoTool } from '../planning';
+import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool } from '../files';
-import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool, MemoryPutTool as ExportedMemoryPutTool, MemorySearchTool as ExportedMemorySearchTool } from '../memory';
+import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool, MemoryPutTool as ExportedMemoryPutTool, MemorySearchTool as ExportedMemorySearchTool, MemoryRecallTool as ExportedMemoryRecallTool, MemoryForgetTool as ExportedMemoryForgetTool, MemoryExportTool as ExportedMemoryExportTool } from '../memory';
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
+import { ProjectIntelTool as ExportedProjectIntelTool } from '../project';
 import { provideSkills, LocalSkillRegistry, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
 import { LocalMcpClientRegistry } from '../mcp';
 
@@ -345,6 +352,8 @@ export class AgentToolsPackageTest {
     @Test('grouped tool entrypoints export tool classes')
     groupedToolEntrypointsExportToolClasses() {
         expect(ExportedTodoTool).toEqual(TodoTool);
+        expect(ExportedAskUserTool).toEqual(AskUserTool);
+        expect(ExportedEscalateTool).toEqual(EscalateTool);
         expect(ExportedScheduleTool).toEqual(ScheduleTool);
         expect(ExportedTerminalTool).toEqual(TerminalTool);
         expect(ExportedWriteFileTool).toEqual(WriteFileTool);
@@ -352,18 +361,27 @@ export class AgentToolsPackageTest {
         expect(ExportedMemoryListTool).toEqual(MemoryListTool);
         expect(ExportedMemoryPutTool).toEqual(MemoryPutTool);
         expect(ExportedMemorySearchTool).toEqual(MemorySearchTool);
+        expect(ExportedMemoryRecallTool).toEqual(MemoryRecallTool);
+        expect(ExportedMemoryForgetTool).toEqual(MemoryForgetTool);
+        expect(ExportedMemoryExportTool).toEqual(MemoryExportTool);
         expect(ExportedMemoryDeleteTool).toEqual(MemoryDeleteTool);
         expect(ExportedHttpFetchTool).toEqual(HttpFetchTool);
         expect(ExportedHttpRequestTool).toEqual(HttpRequestTool);
         expect(ExportedToolSearchTool).toEqual(ToolSearchTool);
         expect(ExportedToolInspectTool).toEqual(ToolInspectTool);
+        expect(ExportedProjectIntelTool).toEqual(ProjectIntelTool);
     }
 
     @Test('provider tools expose grouped registrations and defaults')
     provideToolsExposeGroupedRegistrationsAndDefaults() {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'glob_search', 'content_search']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file']);
+        expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.delete']);
+        expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
+        expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel']);
         expect(resolveAgentToolNames()).toContain('read_file');
+        expect(resolveAgentToolNames()).toContain('ask_user');
+        expect(resolveAgentToolNames()).toContain('project_intel');
         expect(resolveAgentToolNames()).not.toContain('write_file');
         expect(resolveAgentToolNames()).not.toContain('http_fetch');
         expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
@@ -372,6 +390,7 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames({ registration: { groups: { web: false } } })).not.toContain('web_search');
         expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).toContain('terminal');
         expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).not.toContain('web_extract');
+        expect(typeof withProjectAgentTools).toEqual('function');
     }
 
     @Test('provider tools resolve capability bundle metadata')
@@ -379,6 +398,8 @@ export class AgentToolsPackageTest {
         const bundles = resolveAgentToolBundles();
         const filesystem = bundles.find(bundle => bundle.name === 'filesystem');
         const filesystemWrite = bundles.find(bundle => bundle.name === 'filesystem_write');
+        const planning = bundles.find(bundle => bundle.name === 'planning');
+        const project = bundles.find(bundle => bundle.name === 'project');
         const terminal = bundles.find(bundle => bundle.name === 'terminal');
         expect(filesystem?.tools).toEqual(['read_file', 'glob_search', 'content_search']);
         expect(filesystem?.defaultEnabled).toEqual(true);
@@ -391,6 +412,12 @@ export class AgentToolsPackageTest {
         expect(filesystemWrite?.defaultEnabled).toEqual(false);
         expect(filesystemWrite?.enabled).toEqual(false);
         expect(filesystemWrite?.activation).toEqual({ kind: 'deferred', scope: 'session' });
+        expect(planning?.tools).toEqual(['todo', 'ask_user', 'escalate']);
+        expect(planning?.defaultEnabled).toEqual(true);
+        expect(planning?.enabled).toEqual(true);
+        expect(project?.tools).toEqual(['project_intel']);
+        expect(project?.defaultEnabled).toEqual(true);
+        expect(project?.enabled).toEqual(true);
         expect(terminal?.defaultEnabled).toEqual(false);
         expect(terminal?.enabled).toEqual(false);
         expect(terminal?.source).toEqual('builtin');
@@ -562,6 +589,149 @@ export class AgentToolsPackageTest {
         const globalWithFlag = await tool.invoke({ id: 'global-note', scope: 'global' }, createSessionContext({ sessionId: 's1', memory: store }));
         expect(globalWithFlag.deleted).toEqual(true);
         expect(globalWithFlag.count).toEqual(1);
+    }
+
+    @Test('memory recall returns visible records with filters')
+    async memoryRecallReturnsVisibleRecordsWithFilters() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-topic', sessionId: 's1', key: 'topic', value: 'router cache', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 1 });
+        await store.put({ id: 's1-policy', key: 'policy', value: 'shared cache', scope: 'global', namespace: 'shared', category: 'core', createdAt: 2 });
+        await store.put({ id: 's2-topic', sessionId: 's2', key: 'topic', value: 'other cache', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 3 });
+        const tool = new MemoryRecallTool();
+
+        const visible = await tool.invoke({ query: 'cache' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(visible.records.map((record: any) => record.id)).toEqual(['s1-topic', 's1-policy']);
+
+        const filtered = await tool.invoke({ key: 'policy', scope: 'global', namespace: 'shared' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(filtered.records.map((record: any) => record.id)).toEqual(['s1-policy']);
+
+        let scopeError: Error | undefined;
+        try {
+            await tool.invoke({ scope: 'team' }, createSessionContext({ sessionId: 's1', memory: store }));
+        } catch (err) {
+            scopeError = err as Error;
+        }
+        expect(scopeError?.message).toContain('scope');
+    }
+
+    @Test('memory forget deletes visible records by id or key filters')
+    async memoryForgetDeletesVisibleRecordsByIdOrKeyFilters() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-topic', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', createdAt: 1 });
+        await store.put({ id: 's1-note', sessionId: 's1', key: 'note', value: 'draft', scope: 'session', namespace: 'agent', createdAt: 2 });
+        await store.put({ id: 'global-policy', key: 'policy', value: 'shared', scope: 'global', namespace: 'shared', createdAt: 3 });
+        await store.put({ id: 's2-topic', sessionId: 's2', key: 'topic', value: 'other', scope: 'session', namespace: 'agent', createdAt: 4 });
+        const tool = new MemoryForgetTool();
+
+        const byKey = await tool.invoke({ key: 'topic', namespace: 'agent' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(byKey.deleted).toEqual(true);
+        expect(byKey.count).toEqual(1);
+        expect(byKey.ids).toEqual(['s1-topic']);
+
+        const globalWithoutScope = await tool.invoke({ key: 'policy' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(globalWithoutScope.deleted).toEqual(false);
+        expect(globalWithoutScope.count).toEqual(0);
+
+        const globalWithScope = await tool.invoke({ key: 'policy', scope: 'global' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(globalWithScope.deleted).toEqual(true);
+        expect(globalWithScope.ids).toEqual(['global-policy']);
+    }
+
+    @Test('memory export returns deterministic records in json and text formats')
+    async memoryExportReturnsDeterministicRecordsInJsonAndTextFormats() {
+        const store = new InMemoryMemoryStore();
+        await store.put({ id: 's1-topic', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', namespace: 'agent', category: 'conversation', createdAt: 1 });
+        await store.put({ id: 'global-policy', key: 'policy', value: 'shared', scope: 'global', namespace: 'shared', category: 'core', createdAt: 2 });
+        const tool = new MemoryExportTool();
+
+        const jsonResult = await tool.invoke({ format: 'json' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(jsonResult.format).toEqual('json');
+        expect(jsonResult.count).toEqual(2);
+        expect(jsonResult.records.map((record: any) => record.id)).toEqual(['s1-topic', 'global-policy']);
+        expect(jsonResult.content).toContain('"id": "s1-topic"');
+
+        const textResult = await tool.invoke({ format: 'text', scope: 'global' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(textResult.format).toEqual('text');
+        expect(textResult.count).toEqual(1);
+        expect(textResult.content).toContain('global-policy');
+        expect(textResult.content).toContain('shared');
+    }
+
+    @Test('ask user and escalate return structured collaboration payloads')
+    async askUserAndEscalateReturnStructuredPayloads() {
+        const askUser = new AskUserTool();
+        const escalate = new EscalateTool();
+
+        const question = await askUser.invoke({
+            question: 'Which rollout mode should we use?',
+            options: ['safe', 'fast'],
+            context: 'deploy',
+            severity: 'medium'
+        }, createSessionContext());
+        expect(question.requested).toEqual(true);
+        expect(question.kind).toEqual('ask_user');
+        expect(question.question).toEqual('Which rollout mode should we use?');
+        expect(question.options).toEqual(['safe', 'fast']);
+        expect(question.context).toEqual('deploy');
+        expect(question.severity).toEqual('medium');
+
+        const escalation = await escalate.invoke({
+            reason: 'Need approval for production migration',
+            summary: 'The migration changes shared state.',
+            requestedAction: 'Approve or reject migration window',
+            severity: 'high',
+            context: 'release'
+        }, createSessionContext());
+        expect(escalation.requested).toEqual(true);
+        expect(escalation.kind).toEqual('escalate');
+        expect(escalation.reason).toContain('approval');
+        expect(escalation.requestedAction).toContain('Approve');
+        expect(escalation.severity).toEqual('high');
+
+        let questionError: Error | undefined;
+        try {
+            await askUser.invoke({ options: [] }, createSessionContext());
+        } catch (err) {
+            questionError = err as Error;
+        }
+        expect(questionError?.message).toContain('question');
+    }
+
+    @Test('project intel summarizes task context deterministically')
+    async projectIntelSummarizesTaskContextDeterministically() {
+        const tool = new ProjectIntelTool();
+
+        const summary = await tool.invoke({
+            action: 'summary',
+            task: 'Add memory recall and collaboration tools',
+            todos: [
+                { id: '1', content: 'add tests', status: 'completed' },
+                { id: '2', content: 'implement tools', status: 'in_progress' },
+                { id: '3', content: 'update readme', status: 'pending' }
+            ],
+            notes: ['Reuse existing provider groups', 'Avoid plugin architecture']
+        }, createSessionContext());
+        expect(summary.action).toEqual('summary');
+        expect(summary.task).toContain('memory recall');
+        expect(summary.todoSummary.total).toEqual(3);
+        expect(summary.todoSummary.in_progress).toEqual(1);
+        expect(summary.highlights.length).toBeGreaterThan(0);
+
+        const risks = await tool.invoke({
+            action: 'risks',
+            task: 'Expand built-in tools',
+            notes: ['New tool registration required', 'README must stay in sync']
+        }, createSessionContext());
+        expect(risks.action).toEqual('risks');
+        expect(risks.highlights.length).toBeGreaterThan(0);
+
+        let actionError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'unknown', task: 'x' }, createSessionContext());
+        } catch (err) {
+            actionError = err as Error;
+        }
+        expect(actionError?.message).toContain('action');
     }
 
     @Test('http fetch performs get requests applies timeout signal and truncates large responses')

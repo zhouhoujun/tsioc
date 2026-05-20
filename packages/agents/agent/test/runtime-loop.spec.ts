@@ -1063,7 +1063,7 @@ export class RuntimeLoopTest {
         expect(error?.message).toContain('heavy_tool');
         expect(error?.message).toContain('activate');
         const blockedMessages = await runtime.getMessages('s1');
-        expect(blockedMessages[2].metadata?.error).toContain('tool_inspect');
+        expect(blockedMessages[2].metadata?.error).not.toContain('tool_inspect');
 
         await registry.activateTool('s1', 'heavy_tool');
         const activatedRuntime = new AgentRuntime(

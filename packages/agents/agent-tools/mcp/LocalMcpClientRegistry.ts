@@ -58,6 +58,10 @@ export class LocalMcpClientRegistry implements OnDestroy {
     }
 
     async callTool(serverId: string, toolName: string, args?: Record<string, any>): Promise<McpToolCallResult> {
+        const server = this.getServer(serverId);
+        if (!this.isToolAllowed(server, toolName)) {
+            throw new Error(`MCP tool '${serverId}.${toolName}' is not declared or allowlisted.`);
+        }
         return this.getClient(serverId).callTool(toolName, args);
     }
 
@@ -103,6 +107,17 @@ export class LocalMcpClientRegistry implements OnDestroy {
         const client = server.client ?? new StdioMcpClient(server, this.options);
         this.clients.set(serverId, client);
         return client;
+    }
+
+    private isToolAllowed(server: AgentMcpServerOptions, toolName: string): boolean {
+        const normalized = toolName.trim();
+        if (!normalized) {
+            return false;
+        }
+        if (server.tools?.some(tool => tool.name === normalized)) {
+            return true;
+        }
+        return server.allowedTools?.includes(normalized) ?? false;
     }
 
     private getServer(serverId: string): AgentMcpServerOptions {

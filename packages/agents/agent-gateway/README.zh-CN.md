@@ -55,6 +55,8 @@ npm run test:coverage
 
 这些处理器通过 `getRoutes()` 暴露路由，需要显式调用 `GatewayServer.addRoute(...)` 或 `GatewayServer.addRoutes(...)` 注册到服务中。
 
+工具列表 API 是只读的：它只暴露 registry 中的工具定义与激活状态，不会激活 deferred tool。通过网关暴露的 MCP 工具仍然遵守 `@tsdi/agent` 与 `@tsdi/agent-tools` 强制执行的 session 激活和 allowlist 规则。
+
 ## License
 
 MIT © [Houjun](https://github.com/zhouhoujun/)

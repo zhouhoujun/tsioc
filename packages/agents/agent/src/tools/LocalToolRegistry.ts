@@ -55,7 +55,7 @@ export class LocalToolRegistry extends ToolRegistry {
             throw new Error(`Tool '${name}' not found`);
         }
         if (!(await this.isToolActive(sessionId, name))) {
-            throw new Error(`Tool '${name}' is not activated for this session. Inspect it with tool_inspect before invoking it.`);
+            throw new Error(`Tool '${name}' is not activated for this session. Activate it through the host or approval flow before invoking it.`);
         }
         return tool.invoke(input, {
             sessionId,

@@ -11,16 +11,22 @@ import { CalculatorTool } from '../utility/calculator.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { TodoTool } from '../planning/todo.tool';
+import { AskUserTool } from '../planning/ask-user.tool';
+import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
 import { MemoryPutTool } from '../memory/memory-put.tool';
 import { MemorySearchTool } from '../memory/memory-search.tool';
+import { MemoryRecallTool } from '../memory/memory-recall.tool';
+import { MemoryExportTool } from '../memory/memory-export.tool';
+import { MemoryForgetTool } from '../memory/memory-forget.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { HttpFetchTool } from '../http/http-fetch.tool';
 import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
+import { ProjectIntelTool } from '../project/project-intel.tool';
 import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './provider';
 
 @Module({
@@ -43,16 +49,22 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         WebSearchTool,
         WebExtractTool,
         TodoTool,
+        AskUserTool,
+        EscalateTool,
         ScheduleTool,
         TerminalTool,
         MemoryListTool,
         MemoryPutTool,
         MemorySearchTool,
+        MemoryRecallTool,
+        MemoryExportTool,
+        MemoryForgetTool,
         MemoryDeleteTool,
         HttpFetchTool,
         HttpRequestTool,
         ToolSearchTool,
         ToolInspectTool,
+        ProjectIntelTool,
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles()
     ],
@@ -66,16 +78,22 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         WebSearchTool,
         WebExtractTool,
         TodoTool,
+        AskUserTool,
+        EscalateTool,
         ScheduleTool,
         TerminalTool,
         MemoryListTool,
         MemoryPutTool,
         MemorySearchTool,
+        MemoryRecallTool,
+        MemoryExportTool,
+        MemoryForgetTool,
         MemoryDeleteTool,
         HttpFetchTool,
         HttpRequestTool,
         ToolSearchTool,
-        ToolInspectTool
+        ToolInspectTool,
+        ProjectIntelTool
     ]
 })
 export class AgentToolsModule {

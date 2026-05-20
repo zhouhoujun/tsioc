@@ -398,7 +398,7 @@ export class BuiltinToolsTest {
         }
         expect(error?.message).toContain('heavy_tool');
         expect(error?.message).toContain('activate');
-        expect(error?.message).toContain('tool_inspect');
+        expect(error?.message).not.toContain('tool_inspect');
 
         await registry.activateTool('s1', 'heavy_tool');
         const result = await registry.invoke('heavy_tool', { value: 'x' }, 's1');

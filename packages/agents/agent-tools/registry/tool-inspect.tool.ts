@@ -29,10 +29,9 @@ export class ToolInspectTool implements AgentTool {
         const registry = this.resolveRegistry();
         const tool = registry.getToolDefinition(name, context.sessionId);
         if (tool) {
-            const activated = await registry.activateTool(context.sessionId, name);
             return {
-                tool: registry.getToolDefinition(name, context.sessionId) ?? tool,
-                activated
+                tool,
+                activated: await this.resolveActivated(registry, context.sessionId, tool)
             };
         }
         const dynamicTool = await this.inspectDynamicMcpTool(name);
@@ -42,7 +41,7 @@ export class ToolInspectTool implements AgentTool {
         throw new Error(`Tool '${name}' not found.`);
     }
 
-    private resolveRegistry(): Pick<ToolRegistry, 'getToolDefinitions' | 'getToolDefinition' | 'activateTool'> {
+    private resolveRegistry(): Pick<ToolRegistry, 'getToolDefinitions' | 'getToolDefinition' | 'isToolActive'> {
         const registry = this.app && typeof (this.app as any).get === 'function'
             ? (this.app as any).get(ToolRegistry, null) as ToolRegistry | null
             : null;
@@ -50,6 +49,23 @@ export class ToolInspectTool implements AgentTool {
             throw new Error('tool_inspect requires a tool registry.');
         }
         return registry;
+    }
+
+    private async resolveActivated(
+        registry: Pick<ToolRegistry, 'getToolDefinitions' | 'getToolDefinition' | 'isToolActive'>,
+        sessionId: string,
+        tool: AgentToolDefinition
+    ): Promise<boolean> {
+        if (typeof registry.isToolActive === 'function') {
+            return registry.isToolActive(sessionId, tool.name);
+        }
+        if (!tool.activation) {
+            return true;
+        }
+        if (tool.activation.kind === 'always') {
+            return true;
+        }
+        return tool.activation.activated === true;
     }
 
     private async inspectDynamicMcpTool(

@@ -42,6 +42,7 @@ npm run test:coverage
 
 - This package is intentionally modular: import only the provider entrypoints you need.
 - Provider tests live under `test/*.spec.ts` and are organized per vendor adapter.
+- Model providers generate completions only; tool activation boundaries and MCP allowlist enforcement remain the responsibility of `@tsdi/agent` and `@tsdi/agent-tools`.
 
 ## License
 

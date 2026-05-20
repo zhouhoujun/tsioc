@@ -55,6 +55,7 @@ export interface AgentMcpServerOptions {
     timeoutMs?: number;
     client?: McpClient;
     tools?: McpToolDescriptor[];
+    allowedTools?: string[];
 }
 
 export interface AgentMcpOptions {

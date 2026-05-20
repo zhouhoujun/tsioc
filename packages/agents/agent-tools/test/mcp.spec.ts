@@ -78,7 +78,7 @@ export class AgentMcpToolsTest {
         }
     }
 
-    @Test('manifest-backed MCP tools stay gated until session activation and then invoke configured client')
+    @Test('manifest-backed MCP tools stay gated until session activation and mcp.call_tool respects that boundary')
     async manifestBackedMcpToolsStayGatedUntilSessionActivationAndThenInvokeConfiguredClient() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
@@ -114,6 +114,14 @@ export class AgentMcpToolsTest {
             }
             expect(inactiveError?.message).toContain('not activated');
 
+            let callToolError: Error | undefined;
+            try {
+                await registry.invoke('mcp.call_tool', { serverId: 'demo', name: 'echo', arguments: { value: 'hello' } }, 's1');
+            } catch (err) {
+                callToolError = err as Error;
+            }
+            expect(callToolError?.message).toContain('not activated');
+
             const activated = await registry.activateTool('s1', 'mcp.demo.echo');
             expect(activated).toEqual(true);
             const after = registry.getToolDefinition('mcp.demo.echo', 's1');
@@ -125,6 +133,9 @@ export class AgentMcpToolsTest {
             expect(result.tool).toEqual('echo');
             expect(result.content[0].text).toEqual('echo:hello');
             expect(result.structuredContent).toEqual({ echoed: 'hello' });
+
+            const bridged = await registry.invoke('mcp.call_tool', { serverId: 'demo', name: 'echo', arguments: { value: 'again' } }, 's1');
+            expect(bridged.content[0].text).toEqual('echo:again');
         } finally {
             await ctx.close();
         }
@@ -173,12 +184,35 @@ export class AgentMcpToolsTest {
         }
     }
 
-    @Test('mcp.call_tool calls dynamic server tools lazily')
-    async mcpCallToolCallsDynamicServerToolsLazily() {
+    @Test('mcp.call_tool rejects dynamic server tools unless explicitly allowlisted')
+    async mcpCallToolRejectsDynamicServerToolsUnlessExplicitlyAllowlisted() {
         const client = new FakeMcpClient();
         const ctx = await Application.run(AgentModule, {
             providers: [...provideMcpTools({
                 servers: [{ id: 'demo', client }]
+            })]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            let error: Error | undefined;
+            try {
+                await registry.invoke('mcp.call_tool', { serverId: 'demo', name: 'echo', arguments: { value: 'hello' } }, 's1');
+            } catch (err) {
+                error = err as Error;
+            }
+            expect(error?.message).toContain('not declared or allowlisted');
+            expect(client.calls).toEqual([]);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('mcp.call_tool allows explicitly allowlisted dynamic server tools')
+    async mcpCallToolAllowsExplicitlyAllowlistedDynamicServerTools() {
+        const client = new FakeMcpClient();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideMcpTools({
+                servers: [{ id: 'demo', client, allowedTools: ['echo'] }]
             })]
         });
         try {

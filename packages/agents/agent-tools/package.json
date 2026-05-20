@@ -67,6 +67,10 @@
       "types": "./memory/index.d.ts",
       "default": "./memory/index.js"
     },
+    "./project": {
+      "types": "./project/index.d.ts",
+      "default": "./project/index.js"
+    },
     "./scheduling": {
       "types": "./scheduling/index.d.ts",
       "default": "./scheduling/index.js"

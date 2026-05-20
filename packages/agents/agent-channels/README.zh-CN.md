@@ -48,6 +48,7 @@ npm run test:coverage
 
 - 当核心运行时需要通过可插拔会话通道发送或接收消息时，使用这个包。
 - 可通过 `provideChannels(...)` 组合 providers、features 与 imports 完成通道装配。
+- 通道适配器只负责传输智能体请求与响应，不会绕过运行时内部的工具激活边界或 MCP allowlist 校验。
 
 ## License
 

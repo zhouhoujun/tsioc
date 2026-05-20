@@ -49,6 +49,7 @@ npm run test:coverage
 
 - Use this package when the core runtime needs to send or receive messages through pluggable conversation channels.
 - Features can be composed with providers and imported modules through `provideChannels(...)`.
+- Channel adapters transport agent requests and responses, but they do not bypass tool activation or MCP allowlist checks enforced inside the runtime.
 
 ## License
 

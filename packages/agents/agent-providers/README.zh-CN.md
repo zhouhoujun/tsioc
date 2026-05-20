@@ -41,6 +41,7 @@ npm run test:coverage
 
 - 这个包按模块拆分，按需导入需要的 provider 即可。
 - 提供方测试位于 `test/*.spec.ts`，按厂商分别组织。
+- 模型 provider 只负责生成补全结果；工具激活边界与 MCP allowlist 约束仍由 `@tsdi/agent` 和 `@tsdi/agent-tools` 负责执行。
 
 ## License
 

@@ -78,6 +78,8 @@ npm run test:coverage
 ## 说明
 
 - 默认模块会注册内置工具：`echo`、`time`、`memory.put`、`memory.search`。
+- deferred tool 仍然保持 session 级激活边界；inspect 工具定义不会触发激活。
+- 通过 manifest 注册的 MCP 工具必须先按 session 激活后才能调用，而动态 `mcp.call_tool` 只能访问 `@tsdi/agent-tools` 中显式声明或 allowlist 放行的工具。
 - 默认模型适配器是 OpenAI Compatible 的 DeepSeek 适配器；可自行覆盖。
 - 通道、模型提供方、网关和工具包的扩展能力位于 `packages/agents` 下的兄弟包中。
 

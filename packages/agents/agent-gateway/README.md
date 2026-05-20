@@ -56,6 +56,8 @@ The package includes handlers for:
 
 These handlers expose `getRoutes()` and must be registered into `GatewayServer` explicitly via `addRoute(...)` or `addRoutes(...)`.
 
+Tool listing APIs are read-only: they expose registry definitions and activation state, but do not activate deferred tools. MCP-backed tools exposed through the gateway still obey the runtime session-activation and allowlist rules enforced by `@tsdi/agent` and `@tsdi/agent-tools`.
+
 ## License
 
 MIT © [Houjun](https://github.com/zhouhoujun/)
