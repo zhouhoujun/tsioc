@@ -6,6 +6,33 @@ import { promises as fs } from 'fs';
 import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentScheduler, InMemoryMemoryStore, InMemorySessionStore, ScheduledAgentTask } from '@tsdi/agent';
+import { SpawnAgentTool } from '../agent/spawn-agent.tool';
+import { ExecuteCodeTool } from '../code-execution/execute-code.tool';
+import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
+import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
+import { GitOperationsTool } from '../git/git-operations.tool';
+import { WeatherTool } from '../utility/weather.tool';
+import { SessionSearchTool } from '../sessions/session-search.tool';
+import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
+import { ImageGenerateTool } from '../media/image-generate.tool';
+import { SendMessageTool } from '../communication/send-message.tool';
+import { AudioTranscribeTool } from '../audio/audio-transcribe.tool';
+import { TextToSpeechTool } from '../audio/text-to-speech.tool';
+import { VerifiableIntentTool } from '../security/verifiable-intent.tool';
+import { SecurityScanTool } from '../security/security-scan.tool';
+import { CronManageTool } from '../cron/cron-manage.tool';
+import { DataManageTool } from '../data/data-manage.tool';
+import { LlmTaskTool } from '../llm/llm-task.tool';
+import { ScreenshotTool } from '../capture/screenshot.tool';
+import { CanvasTool } from '../canvas/canvas.tool';
+import { ApprovalTool } from '../approval/approval.tool';
+import { CheckpointTool } from '../approval/checkpoint.tool';
+import { PipelineTool } from '../pipeline/pipeline.tool';
+import { KanbanTool } from '../kanban/kanban.tool';
+import { BackupTool } from '../backup/backup.tool';
+import { ModelRoutingTool } from '../model-routing/model-routing.tool';
+import { PollTool } from '../poll/poll.tool';
+import { AiCliTool } from '../ai-cli/ai-cli.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
@@ -1028,8 +1055,8 @@ export class AgentToolsPackageTest {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
-        expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read']);
-        expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history']);
+        expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read', 'vision_analyze', 'image_generate']);
+        expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search']);
         expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
         expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
         expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
@@ -1100,7 +1127,7 @@ export class AgentToolsPackageTest {
         expect(browser?.defaultEnabled).toEqual(false);
         expect(browser?.enabled).toEqual(false);
         expect(browser?.activation).toEqual({ kind: 'deferred', scope: 'session' });
-        expect(sessions?.tools).toEqual(['sessions_current', 'sessions_list', 'sessions_history']);
+        expect(sessions?.tools).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search']);
         expect(sessions?.defaultEnabled).toEqual(false);
         expect(sessions?.enabled).toEqual(false);
         expect(sessions?.activation).toEqual({ kind: 'deferred', scope: 'session' });
@@ -2075,8 +2102,8 @@ export class AgentToolsPackageTest {
 
     @Test('provider and module expose media tools')
     async providerAndModuleExposeMediaTools() {
-        expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read']);
-        expect(resolveAgentToolBundles().find(bundle => bundle.name === 'media')?.activation).toEqual({ kind: 'always', scope: 'global' });
+        expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read', 'vision_analyze', 'image_generate']);
+        expect(resolveAgentToolBundles().find(bundle => bundle.name === 'media')?.activation).toEqual({ kind: 'deferred', scope: 'session' });
 
         const workspace = await this.createWorkspace();
         const ctx = await Application.run(AgentToolsModule, {
@@ -2495,4 +2522,787 @@ export class AgentToolsPackageTest {
         }
         expect(timeoutError?.message).toContain('timeout');
     }
+
+    @Test('spawn agent requires adapter and requests delegation')
+    async spawnAgentRequiresAdapterAndRequestsDelegation() {
+        let adapter: Error | undefined;
+        try {
+            await new SpawnAgentTool().invoke({ goal: 'test' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('SpawnAgentAdapter');
+
+        const tool = new SpawnAgentTool(new MockAdapter(async () => ({ output: 'done', turnCount: 2, toolCalls: 3 })));
+        const result = await tool.invoke({ goal: 'test task', context: 'some context', toolsets: ['filesystem', 'web'], maxTurns: 5 }, createSessionContext());
+        expect(result.goal).toEqual('test task');
+        expect(result.output).toEqual('done');
+        expect(result.turnCount).toEqual(2);
+        expect(result.toolCalls).toEqual(3);
+
+        let goalError: Error | undefined;
+        try {
+            await tool.invoke({}, createSessionContext());
+        } catch (err) {
+            goalError = err as Error;
+        }
+        expect(goalError?.message).toContain('goal');
+    }
+
+    @Test('execute code requires adapter and delegates execution')
+    async executeCodeRequiresAdapterAndDelegatesExecution() {
+        let adapter: Error | undefined;
+        try {
+            await new ExecuteCodeTool().invoke({ language: 'python', code: 'print(1)' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('CodeExecutionAdapter');
+
+        const tool = new ExecuteCodeTool(new MockAdapter(async () => ({ stdout: 'hello\n', stderr: '', exitCode: 0 })));
+        const result = await tool.invoke({ language: 'python', code: 'print("hello")', timeoutMs: 5000 }, createSessionContext());
+        expect(result.language).toEqual('python');
+        expect(result.stdout).toEqual('hello\n');
+        expect(result.exitCode).toEqual(0);
+
+        let langError: Error | undefined;
+        try {
+            await tool.invoke({ code: 'x' }, createSessionContext());
+        } catch (err) {
+            langError = err as Error;
+        }
+        expect(langError?.message).toContain('language');
+    }
+
+    @Test('knowledge search and store require adapter')
+    async knowledgeSearchAndStoreRequireAdapter() {
+        let searchError: Error | undefined;
+        try {
+            await new KnowledgeSearchTool().invoke({ query: 'test' }, createSessionContext());
+        } catch (err) {
+            searchError = err as Error;
+        }
+        expect(searchError?.message).toContain('KnowledgeAdapter');
+
+        let storeError: Error | undefined;
+        try {
+            await new KnowledgeStoreTool().invoke({ title: 't', content: 'c' }, createSessionContext());
+        } catch (err) {
+            storeError = err as Error;
+        }
+        expect(storeError?.message).toContain('KnowledgeAdapter');
+
+        const adapter = {
+            async search(q: string, _opts?: any) {
+                return { entries: [{ id: '1', title: q, content: 'result', tags: ['test'] }], total: 1 };
+            },
+            async store(entry: any) {
+                return { ...entry, id: 'new-1', createdAt: 1000 };
+            }
+        };
+        const searchTool = new KnowledgeSearchTool(adapter as any);
+        const searchResult = await searchTool.invoke({ query: 'hello', tags: ['test'], limit: 5 }, createSessionContext());
+        expect(searchResult.query).toEqual('hello');
+        expect(searchResult.entries[0].title).toEqual('hello');
+        expect(searchResult.total).toEqual(1);
+
+        const storeTool = new KnowledgeStoreTool(adapter as any);
+        const storeResult = await storeTool.invoke({ title: 'my title', content: 'my content', tags: ['docs'], source: 'test' }, createSessionContext());
+        expect(storeResult.title).toEqual('my title');
+        expect(storeResult.id).toEqual('new-1');
+    }
+
+    @Test('git operations validates repo and supports read-only actions')
+    async gitOperationsValidatesRepoAndSupportsReadOnlyActions() {
+        const workspace = await this.createWorkspace();
+        const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any);
+
+        let notRepo: Error | undefined;
+        try {
+            await tool.invoke({ action: 'status' }, createSessionContext());
+        } catch (err) {
+            notRepo = err as Error;
+        }
+        expect(notRepo?.message).toContain('not a Git repository');
+
+        execFileSync('git', ['init'], { cwd: workspace, stdio: 'pipe' });
+        execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: workspace, stdio: 'pipe' });
+        execFileSync('git', ['config', 'user.name', 'Tester'], { cwd: workspace, stdio: 'pipe' });
+        execFileSync('git', ['add', '-A'], { cwd: workspace, stdio: 'pipe' });
+        execFileSync('git', ['commit', '-m', 'initial'], { cwd: workspace, stdio: 'pipe' });
+
+        const status = await tool.invoke({ action: 'status' }, createSessionContext());
+        expect(status.action).toEqual('status');
+        expect(status.readOnly).toEqual(true);
+        expect(typeof status.stdout).toEqual('string');
+
+        const logResult = await tool.invoke({ action: 'log', maxCount: 5 }, createSessionContext());
+        expect(logResult.action).toEqual('log');
+        expect(logResult.stdout).toContain('initial');
+
+        let missingAction: Error | undefined;
+        try {
+            await tool.invoke({}, createSessionContext());
+        } catch (err) {
+            missingAction = err as Error;
+        }
+        expect(missingAction?.message).toContain('action');
+    }
+
+    @Test('weather tool requires adapter and returns structured data')
+    async weatherToolRequiresAdapterAndReturnsStructuredData() {
+        let adapter: Error | undefined;
+        try {
+            await new WeatherTool().invoke({ location: 'Beijing' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('WeatherAdapter');
+
+        const tool = new WeatherTool(new MockAdapter(async () => ({
+            location: 'Beijing', temperature: 22, feelsLike: 20, humidity: 60,
+            description: 'sunny', windSpeed: 5, units: 'metric'
+        })));
+        const result = await tool.invoke({ location: 'Beijing', units: 'metric' }, createSessionContext());
+        expect(result.location).toEqual('Beijing');
+        expect(result.temperature).toEqual(22);
+        expect(result.description).toEqual('sunny');
+    }
+
+    @Test('session search searches session store messages')
+    async sessionSearchSearchesSessionStoreMessages() {
+        const store = new InMemorySessionStore();
+        await store.append('s1', { id: 'm1', role: 'user', content: 'hello world', createdAt: 1 });
+        await store.append('s1', { id: 'm2', role: 'assistant', content: 'router cache', createdAt: 2 });
+        await store.append('s2', { id: 'm3', role: 'user', content: 'test router', createdAt: 3 });
+        const tool = new SessionSearchTool(store);
+
+        const result = await tool.invoke({ query: 'router' }, createSessionContext({ sessionId: 's1' }));
+        expect(result.query).toEqual('router');
+        expect(result.total).toBeGreaterThanOrEqual(1);
+        expect(result.results.some((r: any) => r.role === 'assistant')).toEqual(true);
+
+        const filtered = await tool.invoke({ query: 'router', sessionId: 's2' }, createSessionContext({ sessionId: 's1' }));
+        expect(filtered.total).toEqual(1);
+        expect(filtered.results[0].sessionId).toEqual('s2');
+    }
+
+    @Test('vision analyze and image generate require adapter')
+    async visionAnalyzeAndImageGenerateRequireAdapter() {
+        let visionError: Error | undefined;
+        try {
+            await new VisionAnalyzeTool().invoke({ image_url: 'https://example.com/img.png' }, createSessionContext());
+        } catch (err) {
+            visionError = err as Error;
+        }
+        expect(visionError?.message).toContain('VisionAdapter');
+
+        let genError: Error | undefined;
+        try {
+            await new ImageGenerateTool().invoke({ prompt: 'cat' }, createSessionContext());
+        } catch (err) {
+            genError = err as Error;
+        }
+        expect(genError?.message).toContain('ImageGenerationAdapter');
+
+        const visionTool = new VisionAnalyzeTool(new MockAdapter(async () => ({
+            description: 'A cat sitting on a mat.', labels: ['cat', 'mat'], objects: [{ name: 'cat', confidence: 0.95 }]
+        })));
+        const visionResult = await visionTool.invoke({ image_url: 'https://example.com/cat.png', question: 'what is this?' }, createSessionContext());
+        expect(visionResult.description).toContain('cat');
+        expect(visionResult.labels).toContain('cat');
+        expect(visionResult.objects[0].name).toEqual('cat');
+
+        const genTool = new ImageGenerateTool(new MockAdapter(async () => ({
+            url: 'https://example.com/gen.png', revisedPrompt: 'a cute cat'
+        })));
+        const genResult = await genTool.invoke({ prompt: 'cat', aspect_ratio: '16:9', style: 'anime' }, createSessionContext());
+        expect(genResult.url).toContain('gen.png');
+        expect(genResult.revisedPrompt).toEqual('a cute cat');
+    }
+
+    @Test('send message requires adapter and validates channel')
+    async sendMessageRequiresAdapterAndValidatesChannel() {
+        let adapter: Error | undefined;
+        try {
+            await new SendMessageTool().invoke({ channel: { type: 'telegram', recipient: '123' }, content: 'hello' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('MessagingAdapter');
+
+        const tool = new SendMessageTool(new MockAdapter(async () => ({ success: true, messageId: 'msg-1', channel: 'telegram' })));
+        const result = await tool.invoke({ channel: { type: 'email', recipient: 'a@b.com' }, subject: 'hi', content: 'body', priority: 'high' }, createSessionContext());
+        expect(result.success).toEqual(true);
+        expect(result.messageId).toEqual('msg-1');
+
+        let channelError: Error | undefined;
+        try {
+            await tool.invoke({ content: 'x' }, createSessionContext());
+        } catch (err) {
+            channelError = err as Error;
+        }
+        expect(channelError?.message).toContain('channel');
+    }
+
+    @Test('audio transcribe and TTS require adapter')
+    async audioTranscribeAndTTSRequireAdapter() {
+        let transcribeError: Error | undefined;
+        try {
+            await new AudioTranscribeTool().invoke({ audio_url: 'https://example.com/a.mp3' }, createSessionContext());
+        } catch (err) {
+            transcribeError = err as Error;
+        }
+        expect(transcribeError?.message).toContain('TranscriptionAdapter');
+
+        let ttsError: Error | undefined;
+        try {
+            await new TextToSpeechTool().invoke({ text: 'hello' }, createSessionContext());
+        } catch (err) {
+            ttsError = err as Error;
+        }
+        expect(ttsError?.message).toContain('TtsAdapter');
+
+        const transcribe = new AudioTranscribeTool(new MockAdapter(async () => ({ text: 'hello world', language: 'en', duration: 3.2 })));
+        const trResult = await transcribe.invoke({ audio_url: 'https://example.com/a.mp3', language: 'en', segments: true }, createSessionContext());
+        expect(trResult.text).toEqual('hello world');
+        expect(trResult.language).toEqual('en');
+        expect(trResult.duration).toEqual(3.2);
+
+        const tts = new TextToSpeechTool(new MockAdapter(async () => ({ audioUrl: 'https://example.com/out.mp3', format: 'mp3', duration: 2.5 })));
+        const ttsResult = await tts.invoke({ text: 'hello', voice: 'alloy', speed: 1.2, format: 'mp3' }, createSessionContext());
+        expect(ttsResult.audioUrl).toContain('out.mp3');
+        expect(ttsResult.format).toEqual('mp3');
+        expect(ttsResult.duration).toEqual(2.5);
+    }
+
+    @Test('verifiable intent and security scan provide fallback behavior')
+    async verifiableIntentAndSecurityScanProvideFallbackBehavior() {
+        const intent = new VerifiableIntentTool();
+        const result = await intent.invoke({ action: 'delete file', target: '/tmp/x', reason: 'cleanup' }, createSessionContext());
+        expect(result.approved).toEqual(true);
+        expect(result.action).toEqual('delete file');
+        expect(result.target).toEqual('/tmp/x');
+
+        const workspace = await this.createWorkspace();
+        const scan = new SecurityScanTool({ file: { rootDir: workspace } } as any);
+        const scanResult = await scan.invoke({ path: 'src/alpha.txt' }, createSessionContext());
+        expect(scanResult.path).toEqual('src/alpha.txt');
+        expect(scanResult.summary.total).toEqual(0);
+
+        const missing = await scan.invoke({ path: 'src/beta.ts' } as any, createSessionContext());
+        expect(missing.vulnerabilities).toBeDefined();
+
+        let actionError: Error | undefined;
+        try {
+            await intent.invoke({ target: '/tmp/x', reason: 'cleanup' } as any, createSessionContext());
+        } catch (err) {
+            actionError = err as Error;
+        }
+        expect(actionError?.message).toContain('action');
+    }
+
+    @Test('cron manage requires and uses agent scheduler')
+    async cronManageRequiresAndUsesAgentScheduler() {
+        const tool = new CronManageTool({ get: () => undefined } as any);
+        let schedulerError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'list' }, createSessionContext());
+        } catch (err) {
+            schedulerError = err as Error;
+        }
+        expect(schedulerError?.message).toContain('scheduler');
+
+        const scheduler = new FakeScheduler();
+        const cronTool = new CronManageTool({ get: () => scheduler } as any);
+
+        const listed = await cronTool.invoke({ action: 'list' }, createSessionContext({ sessionId: 'cron-1' }));
+        expect(listed.jobs).toEqual([]);
+        expect(listed.total).toEqual(0);
+
+        const created = await cronTool.invoke({
+            action: 'create',
+            prompt: 'daily job',
+            cron_expr: '0 0 9 * * *'
+        }, createSessionContext({ sessionId: 'cron-1' }));
+        expect(created.created).toEqual(true);
+        expect(created.job.cronExpr).toEqual('0 0 9 * * *');
+
+        const listed2 = await cronTool.invoke({ action: 'list' }, createSessionContext({ sessionId: 'cron-1' }));
+        expect(listed2.total).toEqual(1);
+        expect(listed2.jobs[0].cronExpr).toEqual('0 0 9 * * *');
+
+        const got = await cronTool.invoke({ action: 'get', id: created.job.id }, createSessionContext({ sessionId: 'cron-1' }));
+        expect(got.job.id).toEqual(created.job.id);
+
+        const paused = await cronTool.invoke({ action: 'pause', id: created.job.id }, createSessionContext({ sessionId: 'cron-1' }));
+        expect(paused.pause).toEqual(true);
+
+        const removed = await cronTool.invoke({ action: 'remove', id: created.job.id }, createSessionContext({ sessionId: 'cron-1' }));
+        expect(removed.removed).toEqual(true);
+
+        let actionError: Error | undefined;
+        try {
+            await cronTool.invoke({ action: 'invalid' }, createSessionContext());
+        } catch (err) {
+            actionError = err as Error;
+        }
+        expect(actionError?.message).toContain('Invalid action');
+    }
+
+    @Test('data manage exports and imports memory records')
+    async dataManageExportsAndImportsMemoryRecords() {
+        const store = new InMemoryMemoryStore();
+        const tool = new DataManageTool(store);
+
+        const exported = await tool.invoke({ action: 'export', scope: 'memory', format: 'json' }, createSessionContext({ sessionId: 's1' }));
+        expect(exported.format).toEqual('json');
+        expect(typeof exported.data).toEqual('string');
+
+        await store.put({ id: 'rec-1', sessionId: 's1', key: 'mykey', value: 'myval', scope: 'session', createdAt: 1 });
+        const exported2 = await tool.invoke({ action: 'export', scope: 'memory' }, createSessionContext({ sessionId: 's1' }));
+        expect(exported2.entryCount).toEqual(1);
+        expect(exported2.data).toContain('mykey');
+
+        const imported = await tool.invoke({
+            action: 'import',
+            format: 'json',
+            scope: 'memory',
+            data: JSON.stringify([{ key: 'k1', value: 'v1' }])
+        }, createSessionContext({ sessionId: 's1' }));
+        expect(imported.imported).toEqual(1);
+        expect(imported.format).toEqual('json');
+
+        let actionError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'bad' }, createSessionContext());
+        } catch (err) {
+            actionError = err as Error;
+        }
+        expect(actionError?.message).toContain('Invalid action');
+    }
+
+    @Test('group tool registration includes new groups')
+    groupedToolRegistrationIncludesNewGroups() {
+        expect(AGENT_TOOL_GROUPS.agent).toEqual(['spawn_agent']);
+        expect(AGENT_TOOL_GROUPS.code_execution).toEqual(['execute_code']);
+        expect(AGENT_TOOL_GROUPS.knowledge).toEqual(['knowledge_search', 'knowledge_store']);
+        expect(AGENT_TOOL_GROUPS.git).toEqual(['git_operations']);
+        expect(AGENT_TOOL_GROUPS.communication).toEqual(['send_message']);
+        expect(AGENT_TOOL_GROUPS.audio).toEqual(['audio_transcribe', 'text_to_speech']);
+        expect(AGENT_TOOL_GROUPS.security).toEqual(['verifiable_intent', 'security_scan']);
+        expect(AGENT_TOOL_GROUPS.cron).toEqual(['cron_manage']);
+        expect(AGENT_TOOL_GROUPS.data).toEqual(['data_manage']);
+    }
+
+    @Test('default tool registration includes new groups')
+    defaultToolRegistrationIncludesNewGroups() {
+        const names = resolveAgentToolNames();
+        expect(names).toContain('spawn_agent');
+        expect(names).toContain('knowledge_search');
+        expect(names).toContain('knowledge_store');
+        expect(names).toContain('git_operations');
+        expect(names).toContain('weather');
+        expect(names).not.toContain('session_search');
+        expect(names).toContain('cron_manage');
+        expect(names).not.toContain('execute_code');
+        expect(names).not.toContain('send_message');
+        expect(names).not.toContain('audio_transcribe');
+        expect(names).not.toContain('text_to_speech');
+        expect(names).not.toContain('verifiable_intent');
+        expect(names).not.toContain('security_scan');
+        expect(names).not.toContain('data_manage');
+    }
+
+    @Test('llm task requires adapter and returns inference result')
+    async llmTaskRequiresAdapterAndReturnsInferenceResult() {
+        let adapter: Error | undefined;
+        try {
+            await new LlmTaskTool().invoke({ prompt: 'hello' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('LlmTaskAdapter');
+
+        const tool = new LlmTaskTool(new MockAdapter(async () => ({ content: 'Hello world', model: 'gpt-4', usage: { totalTokens: 10 } })));
+        const result = await tool.invoke({ prompt: 'hello', system: 'be concise', model: 'gpt-4', temperature: 0.5, maxTokens: 100 }, createSessionContext());
+        expect(result.content).toEqual('Hello world');
+        expect(result.model).toEqual('gpt-4');
+        expect(result.usage.totalTokens).toEqual(10);
+    }
+
+    @Test('screenshot requires adapter')
+    async screenshotRequiresAdapter() {
+        let adapter: Error | undefined;
+        try {
+            await new ScreenshotTool().invoke({ url: 'https://example.com' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('ScreenshotAdapter');
+
+        const tool = new ScreenshotTool(new MockAdapter(async () => ({ imageUrl: 'https://example.com/shot.png', format: 'png', width: 1920, height: 1080 })));
+        const result = await tool.invoke({ url: 'https://example.com', fullPage: true, format: 'jpeg', quality: 80 }, createSessionContext());
+        expect(result.imageUrl).toContain('shot.png');
+        expect(result.format).toEqual('png');
+        expect(result.width).toEqual(1920);
+    }
+
+    @Test('canvas requires adapter and supports CRUD')
+    async canvasRequiresAdapterAndSupportsCRUD() {
+        let adapter: Error | undefined;
+        try {
+            await new CanvasTool().invoke({ action: 'list' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('CanvasAdapter');
+
+        const mockData = { id: 'c1', title: 'Design', entries: [], createdAt: 1, updatedAt: 1 };
+        const tool = new CanvasTool({
+            async create(c: any) { return { ...mockData, title: c.title }; },
+            async get(id: string) { return id === 'c1' ? mockData : null; },
+            async update(_id: string, u: any) { return { ...mockData, ...u }; },
+            async delete(id: string) { return id === 'c1'; },
+            async list() { return [{ id: 'c1', title: 'Design', entryCount: 0, updatedAt: 1 }]; }
+        } as any);
+
+        const listResult = await tool.invoke({ action: 'list' }, createSessionContext());
+        expect(listResult.total).toEqual(1);
+
+        const createResult = await tool.invoke({ action: 'create', title: 'New Canvas', entries: [{ type: 'text', title: 'Note', content: 'hello' }] }, createSessionContext());
+        expect(createResult.created).toEqual(true);
+
+        const getResult = await tool.invoke({ action: 'get', id: 'c1' }, createSessionContext());
+        expect(getResult.canvas.id).toEqual('c1');
+
+        const deleteResult = await tool.invoke({ action: 'delete', id: 'c1' }, createSessionContext());
+        expect(deleteResult.deleted).toEqual(true);
+
+        let actionError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'bad' }, createSessionContext());
+        } catch (err) {
+            actionError = err as Error;
+        }
+        expect(actionError?.message).toContain('Invalid action');
+    }
+
+    @Test('approval requires adapter and manages request lifecycle')
+    async approvalRequiresAdapterAndManagesRequestLifecycle() {
+        let adapter: Error | undefined;
+        try {
+            await new ApprovalTool().invoke({ action: 'pending' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('ApprovalAdapter');
+
+        const requests: any[] = [];
+        const tool = new ApprovalTool({
+            requestApproval(r: any) { requests.push(r); return { approved: true }; },
+            pendingRequests() { return requests; },
+            cancelRequest(t: string) { return requests.some((r: any) => r.toolName === t); }
+        } as any);
+
+        const reqResult = await tool.invoke({ action: 'request', tool: 'delete_file', input: { path: '/tmp/x' }, reason: 'cleanup' }, createSessionContext());
+        expect(reqResult.approved).toEqual(true);
+
+        const pending = await tool.invoke({ action: 'pending' }, createSessionContext());
+        expect(pending.total).toEqual(1);
+
+        const cancelResult = await tool.invoke({ action: 'cancel', tool: 'delete_file' }, createSessionContext());
+        expect(cancelResult.cancelled).toEqual(true);
+    }
+
+    @Test('checkpoint saves and lists with memory store fallback')
+    async checkpointSavesAndListsWithMemoryStoreFallback() {
+        const store = new InMemoryMemoryStore();
+        const sessions = new InMemorySessionStore();
+        await sessions.append('s1', { id: 'm1', role: 'user', content: 'hello', createdAt: 1 });
+        const tool = new CheckpointTool(sessions, store);
+
+        const saved = await tool.invoke({ action: 'save', label: 'before-refactor' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(saved.saved).toEqual(true);
+        expect(saved.checkpoint.label).toEqual('before-refactor');
+
+        const listed = await tool.invoke({ action: 'list' }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(listed.total).toEqual(1);
+        expect(listed.checkpoints[0].label).toEqual('before-refactor');
+
+        const restored = await tool.invoke({ action: 'restore', id: saved.checkpoint.id }, createSessionContext({ sessionId: 's1', memory: store }));
+        expect(restored.restored).toEqual(true);
+
+        let actionError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'bad' }, createSessionContext());
+        } catch (err) {
+            actionError = err as Error;
+        }
+        expect(actionError?.message).toContain('Invalid action');
+    }
+
+    @Test('pipeline requires adapter and validates step definitions')
+    async pipelineRequiresAdapterAndValidatesStepDefinitions() {
+        let adapter: Error | undefined;
+        try {
+            await new PipelineTool().invoke({ action: 'list' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('PipelineAdapter');
+
+        const tool = new PipelineTool({
+            async list() { return [{ id: 'p1', name: 'Deploy', stepCount: 2 }]; },
+            async define(p: any) { return { ...p, id: 'p1' }; },
+            async execute(id: string) { return { pipelineId: id, status: 'completed', stepResults: [], startedAt: 1, completedAt: 2 }; },
+            async get(id: string) { return id === 'p1' ? { id: 'p1', name: 'Deploy', steps: [] } : null; },
+            async delete(id: string) { return id === 'p1'; }
+        } as any);
+
+        const listResult = await tool.invoke({ action: 'list' }, createSessionContext());
+        expect(listResult.total).toEqual(1);
+
+        const defined = await tool.invoke({
+            action: 'define', name: 'Deploy',
+            steps: [{ name: 'build', tool: 'shell', input: { command: 'make' } }]
+        }, createSessionContext());
+        expect(defined.defined).toEqual(true);
+        expect(defined.pipeline.name).toEqual('Deploy');
+
+        const execResult = await tool.invoke({ action: 'execute', pipeline_id: 'p1' }, createSessionContext());
+        expect(execResult.status).toEqual('completed');
+
+        let invalidActionError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'bad' }, createSessionContext());
+        } catch (err) {
+            invalidActionError = err as Error;
+        }
+        expect(invalidActionError?.message).toContain('Invalid action');
+    }
+
+    @Test('group tool registration includes all new phase-3 groups')
+    groupToolRegistrationIncludesAllNewPhase3Groups() {
+        expect(AGENT_TOOL_GROUPS.llm).toEqual(['llm_task']);
+        expect(AGENT_TOOL_GROUPS.capture).toEqual(['screenshot']);
+        expect(AGENT_TOOL_GROUPS.canvas).toEqual(['canvas']);
+        expect(AGENT_TOOL_GROUPS.approval).toEqual(['approval', 'checkpoint']);
+        expect(AGENT_TOOL_GROUPS.pipeline).toEqual(['pipeline']);
+    }
+
+    @Test('kanban requires adapter and operates board lifecycle')
+    async kanbanRequiresAdapterAndOperatesBoardLifecycle() {
+        let adapter: Error | undefined;
+        try {
+            await new KanbanTool().invoke({ action: 'list' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('KanbanAdapter');
+
+        const mockBoard = { id: 'b1', name: 'Sprint', columns: ['todo', 'done'], cards: [] };
+        const mockCard = { id: 'c1', title: 'Task', status: 'todo', createdAt: 1, updatedAt: 1 };
+        const tool = new KanbanTool({
+            listBoards() { return [{ id: 'b1', name: 'Sprint', cardCount: 0 }]; },
+            getBoard(id: string) { return id === 'b1' ? { ...mockBoard, cards: [mockCard] } : null; },
+            createCard(_bid: string, c: any) { return { ...mockCard, ...c, id: 'c-new', createdAt: 1, updatedAt: 1 }; },
+            updateCard(_bid: string, _cid: string, u: any) { return { ...mockCard, ...u, updatedAt: 2 }; },
+            addComment(_bid: string, _cid: string, text: string) { return { ...mockCard, comments: [{ id: 'cm1', text, createdAt: 1 }] }; },
+            linkCards() { return; }
+        } as any);
+
+        const listResult = await tool.invoke({ action: 'list' }, createSessionContext());
+        expect(listResult.total).toEqual(1);
+
+        const showResult = await tool.invoke({ action: 'show', board_id: 'b1' }, createSessionContext());
+        expect(showResult.board.name).toEqual('Sprint');
+
+        const createResult = await tool.invoke({ action: 'create', board_id: 'b1', title: 'New Task', status: 'in_progress', priority: 'high', tags: ['urgent'] }, createSessionContext());
+        expect(createResult.created).toEqual(true);
+        expect(createResult.card.priority).toEqual('high');
+
+        const blockResult = await tool.invoke({ action: 'block', board_id: 'b1', card_id: 'c1', blocked_reason: 'waiting' }, createSessionContext());
+        expect(blockResult.blocked).toEqual(true);
+        expect(blockResult.card.status).toEqual('blocked');
+
+        const unblockResult = await tool.invoke({ action: 'unblock', board_id: 'b1', card_id: 'c1' }, createSessionContext());
+        expect(unblockResult.unblocked).toEqual(true);
+
+        const commentResult = await tool.invoke({ action: 'comment', board_id: 'b1', card_id: 'c1', text: 'looks good' }, createSessionContext());
+        expect(commentResult.commented).toEqual(true);
+
+        const linkResult = await tool.invoke({ action: 'link', board_id: 'b1', card_id: 'c1', target_card_id: 'c2' }, createSessionContext());
+        expect(linkResult.linked).toEqual(true);
+    }
+
+    @Test('backup requires adapter and manages backup lifecycle')
+    async backupRequiresAdapterAndManagesBackupLifecycle() {
+        let adapter: Error | undefined;
+        try {
+            await new BackupTool().invoke({ action: 'list' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('BackupAdapter');
+
+        const tool = new BackupTool({
+            listBackups() { return [{ id: 'b1', label: 'pre-refactor', createdAt: 1, size: 100, entryCount: 3 }]; },
+            createBackup(label: string) { return { id: 'b-new', label, entries: [], createdAt: 1, size: 0 }; },
+            getBackup(id: string) { return id === 'b1' ? { id: 'b1', label: 'pre-refactor', entries: [{ type: 'memory' }], createdAt: 1, size: 100 } : null; },
+            deleteBackup(id: string) { return id === 'b1'; },
+            restoreBackup(_id: string, _types?: string[]) { return { restored: 3, errors: [] }; }
+        } as any);
+
+        const listResult = await tool.invoke({ action: 'list' }, createSessionContext());
+        expect(listResult.total).toEqual(1);
+
+        const createResult = await tool.invoke({ action: 'create', label: 'pre-refactor' }, createSessionContext());
+        expect(createResult.created).toEqual(true);
+
+        const getResult = await tool.invoke({ action: 'get', id: 'b1' }, createSessionContext());
+        expect(getResult.backup.label).toEqual('pre-refactor');
+
+        const restoreResult = await tool.invoke({ action: 'restore', id: 'b1' }, createSessionContext());
+        expect(restoreResult.restored).toEqual(3);
+
+        const deleteResult = await tool.invoke({ action: 'delete', id: 'b1' }, createSessionContext());
+        expect(deleteResult.deleted).toEqual(true);
+    }
+
+    @Test('model routing requires adapter and manages routes')
+    async modelRoutingRequiresAdapterAndManagesRoutes() {
+        let adapter: Error | undefined;
+        try {
+            await new ModelRoutingTool().invoke({ action: 'list' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('ModelRoutingAdapter');
+
+        const tool = new ModelRoutingTool({
+            listRoutes() { return [{ id: 'r1', name: 'code review', matcher: [{ field: 'type', pattern: 'review' }], model: 'gpt-4' }]; },
+            getRoute(id: string) { return id === 'r1' ? { id: 'r1', name: 'code review', matcher: [{ field: 'type', pattern: 'review' }], model: 'gpt-4' } : null; },
+            setRoute(r: any) { return { ...r, id: 'r-new' }; },
+            deleteRoute(id: string) { return id === 'r1'; },
+            resolve(_input: string) { return { model: 'gpt-4', route: { id: 'r1', name: 'default', matcher: [], model: 'gpt-4' } }; }
+        } as any);
+
+        const listResult = await tool.invoke({ action: 'list' }, createSessionContext());
+        expect(listResult.total).toEqual(1);
+
+        const setResult = await tool.invoke({ action: 'set', name: 'code', matchers: [{ field: 'type', pattern: 'code' }], model: 'claude-3', provider: 'anthropic' }, createSessionContext());
+        expect(setResult.set).toEqual(true);
+
+        const resolveResult = await tool.invoke({ action: 'resolve', input: 'review this code' }, createSessionContext());
+        expect(resolveResult.model).toEqual('gpt-4');
+
+        const deleteResult = await tool.invoke({ action: 'delete', id: 'r1' }, createSessionContext());
+        expect(deleteResult.deleted).toEqual(true);
+    }
+
+    @Test('poll requires adapter and manages poll lifecycle')
+    async pollRequiresAdapterAndManagesPollLifecycle() {
+        let adapter: Error | undefined;
+        try {
+            await new PollTool().invoke({ action: 'list' }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter?.message).toContain('PollAdapter');
+
+        const mockPoll = { id: 'p1', question: 'Best framework?', options: [{ label: 'React', count: 5 }, { label: 'Vue', count: 3 }], totalVotes: 8, createdAt: 1 };
+        const tool = new PollTool({
+            listPolls() { return [{ id: 'p1', question: 'Best framework?', totalVotes: 8, closed: false }]; },
+            createPoll(q: string, opts: string[]) { return { id: 'p-new', question: q, options: opts.map(o => ({ label: o, count: 0 })), totalVotes: 0, createdAt: 1 }; },
+            vote(_pid: string, option: string) { return { ...mockPoll, options: mockPoll.options.map(o => o.label === option ? { ...o, count: o.count + 1 } : o), totalVotes: mockPoll.totalVotes + 1 }; },
+            closePoll(_pid: string) { return { ...mockPoll, closedAt: Date.now() }; },
+            getPoll(id: string) { return id === 'p1' ? mockPoll : null; }
+        } as any);
+
+        const listResult = await tool.invoke({ action: 'list' }, createSessionContext());
+        expect(listResult.total).toEqual(1);
+
+        const createResult = await tool.invoke({ action: 'create', question: 'Best framework?', options: ['React', 'Vue'] }, createSessionContext());
+        expect(createResult.created).toEqual(true);
+
+        const voteResult = await tool.invoke({ action: 'vote', poll_id: 'p1', option: 'React' }, createSessionContext());
+        expect(voteResult.voted).toEqual(true);
+
+        const closeResult = await tool.invoke({ action: 'close', poll_id: 'p1' }, createSessionContext());
+        expect(closeResult.closed).toEqual(true);
+
+        const getResult = await tool.invoke({ action: 'get', poll_id: 'p1' }, createSessionContext());
+        expect(getResult.poll.question).toContain('framework');
+    }
+
+    @Test('group tool registration includes all new phase-4 groups')
+    groupToolRegistrationIncludesAllNewPhase4Groups() {
+        expect(AGENT_TOOL_GROUPS.kanban).toEqual(['kanban']);
+        expect(AGENT_TOOL_GROUPS.backup).toEqual(['backup']);
+        expect(AGENT_TOOL_GROUPS.model_routing).toEqual(['model_routing']);
+        expect(AGENT_TOOL_GROUPS.poll).toEqual(['poll']);
+    }
+
+    @Test('ai cli validates cli name and delegates to adapter')
+    async aiCliValidatesCliNameAndDelegatesToAdapter() {
+        let cliError: Error | undefined;
+        try {
+            await new AiCliTool().invoke({ prompt: 'hello', cli: 'invalid' }, createSessionContext());
+        } catch (err) {
+            cliError = err as Error;
+        }
+        expect(cliError?.message).toContain('claude_code, opencode, gemini_cli, codex_cli');
+
+        const tool = new AiCliTool({
+            async execute(_req: any) {
+                return { stdout: 'refactored code', stderr: '', exitCode: 0, sessionId: 'sess-1' };
+            }
+        } as any);
+        const result = await tool.invoke({ prompt: 'refactor this', cli: 'claude_code', working_directory: '/tmp', timeout_ms: 60000, system_prompt: 'be concise', resume_session_id: 'sess-0' }, createSessionContext());
+        expect(result.stdout).toEqual('refactored code');
+        expect(result.exitCode).toEqual(0);
+        expect(result.sessionId).toEqual('sess-1');
+        expect(result.cli).toContain('sess-1');
+
+        const failTool = new AiCliTool({
+            async execute(_request: any) {
+                return { stdout: '', stderr: 'CLI not found', exitCode: 1 };
+            }
+        } as any);
+        const failResult = await failTool.invoke({ prompt: 'test', cli: 'opencode' }, createSessionContext());
+        expect(failResult.exitCode).toEqual(1);
+        expect(failResult.stderr).toContain('CLI not found');
+    }
+
+    @Test('group tool registration includes ai_cli group')
+    groupToolRegistrationIncludesAiCliGroup() {
+        expect(AGENT_TOOL_GROUPS.ai_cli).toEqual(['ai_cli']);
+    }
+}
+
+class MockAdapter {
+    constructor(private fn: (...args: any[]) => any) {}
+    async execute(...args: any[]): Promise<any> { return this.fn(...args); }
+    async search(...args: any[]): Promise<any> { return this.fn(...args); }
+    async store(...args: any[]): Promise<any> { return this.fn(...args); }
+    async spawn(...args: any[]): Promise<any> { return this.fn(...args); }
+    async getCurrentWeather(...args: any[]): Promise<any> { return this.fn(...args); }
+    async analyze(...args: any[]): Promise<any> { return this.fn(...args); }
+    async generate(...args: any[]): Promise<any> { return this.fn(...args); }
+    async send(...args: any[]): Promise<any> { return this.fn(...args); }
+    async transcribe(...args: any[]): Promise<any> { return this.fn(...args); }
+    async synthesize(...args: any[]): Promise<any> { return this.fn(...args); }
+    async verify(...args: any[]): Promise<any> { return this.fn(...args); }
+    async scan(...args: any[]): Promise<any> { return this.fn(...args); }
+    async capture(...args: any[]): Promise<any> { return this.fn(...args); }
+    async create(...args: any[]): Promise<any> { return this.fn(...args); }
+    async get(...args: any[]): Promise<any> { return this.fn(...args); }
+    async update(...args: any[]): Promise<any> { return this.fn(...args); }
+    async delete(...args: any[]): Promise<any> { return this.fn(...args); }
+    async list(...args: any[]): Promise<any> { return this.fn(...args); }
+    async requestApproval(...args: any[]): Promise<any> { return this.fn(...args); }
+    async pendingRequests(...args: any[]): Promise<any> { return this.fn(...args); }
+    async cancelRequest(...args: any[]): Promise<any> { return this.fn(...args); }
+    async define(...args: any[]): Promise<any> { return this.fn(...args); }
 }

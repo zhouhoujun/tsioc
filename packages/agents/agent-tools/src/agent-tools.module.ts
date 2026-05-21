@@ -45,6 +45,33 @@ import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
 import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
+import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
+import { ImageGenerateTool } from '../media/image-generate.tool';
+import { SpawnAgentTool } from '../agent/spawn-agent.tool';
+import { ExecuteCodeTool } from '../code-execution/execute-code.tool';
+import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
+import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
+import { GitOperationsTool } from '../git/git-operations.tool';
+import { WeatherTool } from '../utility/weather.tool';
+import { SessionSearchTool } from '../sessions/session-search.tool';
+import { SendMessageTool } from '../communication/send-message.tool';
+import { AudioTranscribeTool } from '../audio/audio-transcribe.tool';
+import { TextToSpeechTool } from '../audio/text-to-speech.tool';
+import { VerifiableIntentTool } from '../security/verifiable-intent.tool';
+import { SecurityScanTool } from '../security/security-scan.tool';
+import { CronManageTool } from '../cron/cron-manage.tool';
+import { DataManageTool } from '../data/data-manage.tool';
+import { LlmTaskTool } from '../llm/llm-task.tool';
+import { ScreenshotTool } from '../capture/screenshot.tool';
+import { CanvasTool } from '../canvas/canvas.tool';
+import { ApprovalTool } from '../approval/approval.tool';
+import { CheckpointTool } from '../approval/checkpoint.tool';
+import { PipelineTool } from '../pipeline/pipeline.tool';
+import { KanbanTool } from '../kanban/kanban.tool';
+import { BackupTool } from '../backup/backup.tool';
+import { ModelRoutingTool } from '../model-routing/model-routing.tool';
+import { PollTool } from '../poll/poll.tool';
+import { AiCliTool } from '../ai-cli/ai-cli.tool';
 import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './provider';
 
 @Module({
@@ -101,6 +128,33 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ProjectIntelTool,
         ImageInfoTool,
         PdfReadTool,
+        VisionAnalyzeTool,
+        ImageGenerateTool,
+        SpawnAgentTool,
+        ExecuteCodeTool,
+        KnowledgeSearchTool,
+        KnowledgeStoreTool,
+        GitOperationsTool,
+        WeatherTool,
+        SessionSearchTool,
+        SendMessageTool,
+        AudioTranscribeTool,
+        TextToSpeechTool,
+        VerifiableIntentTool,
+        SecurityScanTool,
+        CronManageTool,
+        DataManageTool,
+        LlmTaskTool,
+        ScreenshotTool,
+        CanvasTool,
+        ApprovalTool,
+        CheckpointTool,
+        PipelineTool,
+        KanbanTool,
+        BackupTool,
+        ModelRoutingTool,
+        PollTool,
+        AiCliTool,
         {
             provider(injector) {
                 const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
@@ -152,7 +206,34 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ToolInspectTool,
         ProjectIntelTool,
         ImageInfoTool,
-        PdfReadTool
+        PdfReadTool,
+        VisionAnalyzeTool,
+        ImageGenerateTool,
+        SpawnAgentTool,
+        ExecuteCodeTool,
+        KnowledgeSearchTool,
+        KnowledgeStoreTool,
+        GitOperationsTool,
+        WeatherTool,
+        SessionSearchTool,
+        SendMessageTool,
+        AudioTranscribeTool,
+        TextToSpeechTool,
+        VerifiableIntentTool,
+        SecurityScanTool,
+        CronManageTool,
+        DataManageTool,
+        LlmTaskTool,
+        ScreenshotTool,
+        CanvasTool,
+        ApprovalTool,
+        CheckpointTool,
+        PipelineTool,
+        KanbanTool,
+        BackupTool,
+        ModelRoutingTool,
+        PollTool,
+        AiCliTool
     ]
 })
 export class AgentToolsModule {

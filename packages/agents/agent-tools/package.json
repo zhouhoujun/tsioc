@@ -94,6 +94,82 @@
     "./terminal": {
       "types": "./terminal/index.d.ts",
       "default": "./terminal/index.js"
+    },
+    "./agent": {
+      "types": "./agent/index.d.ts",
+      "default": "./agent/index.js"
+    },
+    "./code-execution": {
+      "types": "./code-execution/index.d.ts",
+      "default": "./code-execution/index.js"
+    },
+    "./knowledge": {
+      "types": "./knowledge/index.d.ts",
+      "default": "./knowledge/index.js"
+    },
+    "./git": {
+      "types": "./git/index.d.ts",
+      "default": "./git/index.js"
+    },
+    "./communication": {
+      "types": "./communication/index.d.ts",
+      "default": "./communication/index.js"
+    },
+    "./audio": {
+      "types": "./audio/index.d.ts",
+      "default": "./audio/index.js"
+    },
+    "./security": {
+      "types": "./security/index.d.ts",
+      "default": "./security/index.js"
+    },
+    "./cron": {
+      "types": "./cron/index.d.ts",
+      "default": "./cron/index.js"
+    },
+    "./data": {
+      "types": "./data/index.d.ts",
+      "default": "./data/index.js"
+    },
+    "./llm": {
+      "types": "./llm/index.d.ts",
+      "default": "./llm/index.js"
+    },
+    "./capture": {
+      "types": "./capture/index.d.ts",
+      "default": "./capture/index.js"
+    },
+    "./canvas": {
+      "types": "./canvas/index.d.ts",
+      "default": "./canvas/index.js"
+    },
+    "./approval": {
+      "types": "./approval/index.d.ts",
+      "default": "./approval/index.js"
+    },
+    "./pipeline": {
+      "types": "./pipeline/index.d.ts",
+      "default": "./pipeline/index.js"
+    },
+    "./kanban": {
+      "types": "./kanban/index.d.ts",
+      "default": "./kanban/index.js"
+    },
+    "./backup": {
+      "types": "./backup/index.d.ts",
+      "default": "./backup/index.js"
+    },
+    "./model-routing": {
+      "types": "./model-routing/index.d.ts",
+      "default": "./model-routing/index.js"
+    },
+    "./poll": {
+      "types": "./poll/index.d.ts",
+      "default": "./poll/index.js"
+    },
+    "./ai-cli": {
+      "types": "./ai-cli/index.d.ts",
+      "default": "./ai-cli/index.js"
     }
   },
   "dependencies": {

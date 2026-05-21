@@ -46,6 +46,33 @@ import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
 import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
+import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
+import { ImageGenerateTool } from '../media/image-generate.tool';
+import { SpawnAgentTool } from '../agent/spawn-agent.tool';
+import { ExecuteCodeTool } from '../code-execution/execute-code.tool';
+import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
+import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
+import { GitOperationsTool } from '../git/git-operations.tool';
+import { WeatherTool } from '../utility/weather.tool';
+import { SessionSearchTool } from '../sessions/session-search.tool';
+import { SendMessageTool } from '../communication/send-message.tool';
+import { AudioTranscribeTool } from '../audio/audio-transcribe.tool';
+import { TextToSpeechTool } from '../audio/text-to-speech.tool';
+import { VerifiableIntentTool } from '../security/verifiable-intent.tool';
+import { SecurityScanTool } from '../security/security-scan.tool';
+import { CronManageTool } from '../cron/cron-manage.tool';
+import { DataManageTool } from '../data/data-manage.tool';
+import { LlmTaskTool } from '../llm/llm-task.tool';
+import { ScreenshotTool } from '../capture/screenshot.tool';
+import { CanvasTool } from '../canvas/canvas.tool';
+import { ApprovalTool } from '../approval/approval.tool';
+import { CheckpointTool } from '../approval/checkpoint.tool';
+import { PipelineTool } from '../pipeline/pipeline.tool';
+import { KanbanTool } from '../kanban/kanban.tool';
+import { BackupTool } from '../backup/backup.tool';
+import { ModelRoutingTool } from '../model-routing/model-routing.tool';
+import { PollTool } from '../poll/poll.tool';
+import { AiCliTool } from '../ai-cli/ai-cli.tool';
 import { provideMcpTools } from '../mcp/provider';
 
 const toolItems = {
@@ -90,28 +117,74 @@ const toolItems = {
     tool_inspect: ToolInspectTool,
     http_fetch: HttpFetchTool,
     http_request: HttpRequestTool,
-    terminal: TerminalTool
+    terminal: TerminalTool,
+    vision_analyze: VisionAnalyzeTool,
+    image_generate: ImageGenerateTool,
+    spawn_agent: SpawnAgentTool,
+    execute_code: ExecuteCodeTool,
+    knowledge_search: KnowledgeSearchTool,
+    knowledge_store: KnowledgeStoreTool,
+    git_operations: GitOperationsTool,
+    weather: WeatherTool,
+    session_search: SessionSearchTool,
+    send_message: SendMessageTool,
+    audio_transcribe: AudioTranscribeTool,
+    text_to_speech: TextToSpeechTool,
+    verifiable_intent: VerifiableIntentTool,
+    security_scan: SecurityScanTool,
+    cron_manage: CronManageTool,
+    data_manage: DataManageTool,
+    llm_task: LlmTaskTool,
+    screenshot: ScreenshotTool,
+    canvas: CanvasTool,
+    approval: ApprovalTool,
+    checkpoint: CheckpointTool,
+    pipeline: PipelineTool,
+    kanban: KanbanTool,
+    backup: BackupTool,
+    model_routing: ModelRoutingTool,
+    poll: PollTool,
+    ai_cli: AiCliTool
 } as const satisfies Record<AgentToolItem, ProvdierOf<AgentTool>>;
 
 const toolGroups = {
     filesystem: ['read_file', 'list_dir', 'stat', 'glob_search', 'content_search'],
     filesystem_write: ['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file'],
-    utility: ['calculator'],
+    utility: ['calculator', 'weather'],
     web: ['web_search', 'web_extract'],
     browser: ['browser_open', 'text_browser'],
-    sessions: ['sessions_current', 'sessions_list', 'sessions_history'],
+    sessions: ['sessions_current', 'sessions_list', 'sessions_history', 'session_search'],
     planning: ['todo', 'ask_user', 'escalate'],
     process: ['process.start', 'process.poll', 'process.kill'],
     scheduling: ['schedule'],
     memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete'],
     project: ['project_intel'],
-    media: ['image_info', 'pdf_read'],
+    media: ['image_info', 'pdf_read', 'vision_analyze', 'image_generate'],
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
-    terminal: ['terminal']
+    terminal: ['terminal'],
+    agent: ['spawn_agent'],
+    code_execution: ['execute_code'],
+    knowledge: ['knowledge_search', 'knowledge_store'],
+    git: ['git_operations'],
+    communication: ['send_message'],
+    audio: ['audio_transcribe', 'text_to_speech'],
+    security: ['verifiable_intent', 'security_scan'],
+    cron: ['cron_manage'],
+    data: ['data_manage'],
+    llm: ['llm_task'],
+    capture: ['screenshot'],
+    canvas: ['canvas'],
+    approval: ['approval', 'checkpoint'],
+    pipeline: ['pipeline'],
+    kanban: ['kanban'],
+    backup: ['backup'],
+    model_routing: ['model_routing'],
+    poll: ['poll'],
+    ai_cli: ['ai_cli']
 } as const satisfies Record<AgentToolGroup, AgentToolItem[]>;
 
-const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry'];
+const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry', 'agent', 'knowledge', 'git', 'cron', 'llm', 'canvas', 'approval', 'pipeline', 'kanban', 'backup', 'model_routing', 'poll', 'ai_cli'];
 const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
 const allToolProviders = Array.from(new Set(Object.values(toolItems)));
 const bundleDescriptions: Record<AgentToolGroup, string> = {
@@ -129,9 +202,28 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     media: 'Image and document inspection tools.',
     registry: 'Tool discovery and activation tools.',
     http: 'HTTP fetch and request tools.',
-    terminal: 'Terminal command execution tools.'
+    terminal: 'Terminal command execution tools.',
+    agent: 'Sub-agent delegation and isolated task execution tools.',
+    code_execution: 'Sandboxed code execution across multiple languages.',
+    knowledge: 'Knowledge base query and store tools.',
+    git: 'Git repository operations and history inspection tools.',
+    communication: 'Multi-platform messaging and notification tools.',
+    audio: 'Audio transcription and text-to-speech tools.',
+    security: 'Intent verification and security scanning tools.',
+    cron: 'Cron job management and scheduling tools.',
+    data: 'Session data, memory, and knowledge export/import tools.',
+    llm: 'Standalone LLM inference task execution tools.',
+    capture: 'Screen capture and screenshot tools.',
+    canvas: 'Structured visual canvas for planning and design.',
+    approval: 'Approval requests and session checkpoint tools.',
+    pipeline: 'Multi-step pipeline definition and execution tools.',
+    kanban: 'Kanban board for structured task tracking.',
+    backup: 'Session, memory, and configuration backup and restore.',
+    model_routing: 'Model routing rule configuration and resolution.',
+    poll: 'Poll creation, voting, and consensus management.',
+    ai_cli: 'External AI coding CLI tool invocation (Claude Code, OpenCode, Gemini CLI, Codex CLI).'
 };
-const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal']);
+const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal', 'media', 'agent', 'code_execution', 'git', 'communication', 'audio', 'security', 'data', 'capture', 'pipeline', 'backup', 'poll', 'ai_cli']);
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -254,6 +346,82 @@ export function withTerminalAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.terminal.map(name => toolItems[name]));
 }
 
+export function withAgentDelegationTools(): Provider[] {
+    return withAgentTools(...toolGroups.agent.map(name => toolItems[name]));
+}
+
+export function withCodeExecutionTools(): Provider[] {
+    return withAgentTools(...toolGroups.code_execution.map(name => toolItems[name]));
+}
+
+export function withKnowledgeTools(): Provider[] {
+    return withAgentTools(...toolGroups.knowledge.map(name => toolItems[name]));
+}
+
+export function withGitTools(): Provider[] {
+    return withAgentTools(...toolGroups.git.map(name => toolItems[name]));
+}
+
+export function withCommunicationTools(): Provider[] {
+    return withAgentTools(...toolGroups.communication.map(name => toolItems[name]));
+}
+
+export function withAudioTools(): Provider[] {
+    return withAgentTools(...toolGroups.audio.map(name => toolItems[name]));
+}
+
+export function withSecurityTools(): Provider[] {
+    return withAgentTools(...toolGroups.security.map(name => toolItems[name]));
+}
+
+export function withCronTools(): Provider[] {
+    return withAgentTools(...toolGroups.cron.map(name => toolItems[name]));
+}
+
+export function withDataTools(): Provider[] {
+    return withAgentTools(...toolGroups.data.map(name => toolItems[name]));
+}
+
+export function withLlmTools(): Provider[] {
+    return withAgentTools(...toolGroups.llm.map(name => toolItems[name]));
+}
+
+export function withCaptureTools(): Provider[] {
+    return withAgentTools(...toolGroups.capture.map(name => toolItems[name]));
+}
+
+export function withCanvasTools(): Provider[] {
+    return withAgentTools(...toolGroups.canvas.map(name => toolItems[name]));
+}
+
+export function withApprovalTools(): Provider[] {
+    return withAgentTools(...toolGroups.approval.map(name => toolItems[name]));
+}
+
+export function withPipelineTools(): Provider[] {
+    return withAgentTools(...toolGroups.pipeline.map(name => toolItems[name]));
+}
+
+export function withKanbanTools(): Provider[] {
+    return withAgentTools(...toolGroups.kanban.map(name => toolItems[name]));
+}
+
+export function withBackupTools(): Provider[] {
+    return withAgentTools(...toolGroups.backup.map(name => toolItems[name]));
+}
+
+export function withModelRoutingTools(): Provider[] {
+    return withAgentTools(...toolGroups.model_routing.map(name => toolItems[name]));
+}
+
+export function withPollTools(): Provider[] {
+    return withAgentTools(...toolGroups.poll.map(name => toolItems[name]));
+}
+
+export function withAiCliTools(): Provider[] {
+    return withAgentTools(...toolGroups.ai_cli.map(name => toolItems[name]));
+}
+
 export function withDefaultAgentTools(): Provider[] {
     return withResolvedAgentTools();
 }
@@ -300,6 +468,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,
+        SessionSearchTool,
         TodoTool,
         AskUserTool,
         EscalateTool,
@@ -324,6 +493,32 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ProjectIntelTool,
         ImageInfoTool,
         PdfReadTool,
+        VisionAnalyzeTool,
+        ImageGenerateTool,
+        SpawnAgentTool,
+        ExecuteCodeTool,
+        KnowledgeSearchTool,
+        KnowledgeStoreTool,
+        GitOperationsTool,
+        WeatherTool,
+        SendMessageTool,
+        AudioTranscribeTool,
+        TextToSpeechTool,
+        VerifiableIntentTool,
+        SecurityScanTool,
+        CronManageTool,
+        DataManageTool,
+        LlmTaskTool,
+        ScreenshotTool,
+        CanvasTool,
+        ApprovalTool,
+        CheckpointTool,
+        PipelineTool,
+        KanbanTool,
+        BackupTool,
+        ModelRoutingTool,
+        PollTool,
+        AiCliTool,
         {
             provide: 'AGENT_TOOLS_PDF_READ_ADAPTER',
             useValue: merged.pdf?.adapter ?? null
