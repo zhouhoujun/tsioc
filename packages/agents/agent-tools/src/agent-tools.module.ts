@@ -5,6 +5,8 @@ import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } f
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
+import { ListDirTool } from '../files/list-dir.tool';
+import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
@@ -55,6 +57,8 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ReadFileTool,
         WriteFileTool,
         EditFileTool,
+        ListDirTool,
+        StatTool,
         GlobSearchTool,
         ContentSearchTool,
         CalculatorTool,
@@ -102,6 +106,8 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ReadFileTool,
         WriteFileTool,
         EditFileTool,
+        ListDirTool,
+        StatTool,
         GlobSearchTool,
         ContentSearchTool,
         CalculatorTool,

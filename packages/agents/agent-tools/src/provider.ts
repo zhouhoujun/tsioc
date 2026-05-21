@@ -6,6 +6,8 @@ import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
+import { ListDirTool } from '../files/list-dir.tool';
+import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
@@ -46,6 +48,8 @@ const toolItems = {
     read_file: ReadFileTool,
     write_file: WriteFileTool,
     edit_file: EditFileTool,
+    list_dir: ListDirTool,
+    stat: StatTool,
     glob_search: GlobSearchTool,
     content_search: ContentSearchTool,
     calculator: CalculatorTool,
@@ -82,7 +86,7 @@ const toolItems = {
 } as const satisfies Record<AgentToolItem, ProvdierOf<AgentTool>>;
 
 const toolGroups = {
-    filesystem: ['read_file', 'glob_search', 'content_search'],
+    filesystem: ['read_file', 'list_dir', 'stat', 'glob_search', 'content_search'],
     filesystem_write: ['write_file', 'edit_file'],
     utility: ['calculator'],
     web: ['web_search', 'web_extract'],
@@ -272,6 +276,8 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ReadFileTool,
         WriteFileTool,
         EditFileTool,
+        ListDirTool,
+        StatTool,
         GlobSearchTool,
         ContentSearchTool,
         CalculatorTool,

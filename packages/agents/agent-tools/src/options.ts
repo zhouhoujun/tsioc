@@ -75,6 +75,8 @@ export type AgentToolItem =
     | 'read_file'
     | 'write_file'
     | 'edit_file'
+    | 'list_dir'
+    | 'stat'
     | 'glob_search'
     | 'content_search'
     | 'calculator'

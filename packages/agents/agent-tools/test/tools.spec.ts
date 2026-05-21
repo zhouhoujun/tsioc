@@ -10,6 +10,8 @@ import { CalculatorTool } from '../utility/calculator.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
+import { ListDirTool } from '../files/list-dir.tool';
+import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
 import { WebSearchTool } from '../web/web-search.tool';
@@ -54,7 +56,7 @@ import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { ProcessStartTool as ExportedProcessStartTool, ProcessPollTool as ExportedProcessPollTool, ProcessKillTool as ExportedProcessKillTool } from '../process';
 import { ImageInfoTool as ExportedImageInfoTool, PdfReadTool as ExportedPdfReadTool } from '../media';
-import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool } from '../files';
+import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool, ListDirTool as ExportedListDirTool, StatTool as ExportedStatTool } from '../files';
 import * as ExportedMemoryModule from '../memory';
 const ExportedMemory: any = ExportedMemoryModule;
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
@@ -353,6 +355,101 @@ export class AgentToolsPackageTest {
         expect(await fs.readFile(path.join(workspace, 'src', 'repeated.txt'), 'utf8')).toEqual('done done done');
     }
 
+    @Test('list dir returns visible entries honors limits and validates paths')
+    async listDirReturnsVisibleEntriesHonorsLimitsAndValidatesPaths() {
+        const workspace = await this.createWorkspace();
+        await fs.mkdir(path.join(workspace, 'src', 'nested'), { recursive: true });
+        await fs.writeFile(path.join(workspace, 'src', '.hidden.txt'), 'hidden', 'utf8');
+        const tool = new ListDirTool({ file: { rootDir: workspace, maxSearchResults: 10 } } as any);
+
+        const result = await tool.invoke({ path: 'src', limit: 2 }, createSessionContext());
+        expect(result.path).toEqual('src');
+        expect(result.entries.map((entry: any) => entry.name)).toEqual(['alpha.txt', 'beta.ts']);
+        expect(result.entries[0].path).toEqual('src/alpha.txt');
+        expect(result.entries[0].kind).toEqual('file');
+        expect(typeof result.entries[0].size).toEqual('number');
+        expect(typeof result.entries[0].mtime).toEqual('number');
+        expect(result.truncated).toEqual(true);
+        expect(tool.execution?.readOnly).toEqual(true);
+
+        const withHidden = await tool.invoke({ path: 'src', includeHidden: true, limit: 10 }, createSessionContext());
+        expect(withHidden.entries.map((entry: any) => entry.name)).toEqual(['.hidden.txt', 'alpha.txt', 'beta.ts', 'nested']);
+        expect(withHidden.entries[3].kind).toEqual('directory');
+        expect(withHidden.truncated).toEqual(false);
+
+        const capped = new ListDirTool({ file: { rootDir: workspace, maxSearchResults: 2 } } as any);
+        const cappedResult = await capped.invoke({ path: 'src', includeHidden: true, limit: 99 }, createSessionContext());
+        expect(cappedResult.entries.map((entry: any) => entry.name)).toEqual(['.hidden.txt', 'alpha.txt']);
+        expect(cappedResult.truncated).toEqual(true);
+
+        let pathError: Error | undefined;
+        try {
+            await tool.invoke({ path: '' }, createSessionContext());
+        } catch (err) {
+            pathError = err as Error;
+        }
+        expect(pathError?.message).toContain('path');
+
+        let limitError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src', limit: 0 }, createSessionContext());
+        } catch (err) {
+            limitError = err as Error;
+        }
+        expect(limitError?.message).toContain('limit');
+
+        let fileError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/alpha.txt' }, createSessionContext());
+        } catch (err) {
+            fileError = err as Error;
+        }
+        expect(fileError?.message).toContain('directory');
+
+        let outsideError: Error | undefined;
+        try {
+            await tool.invoke({ path: '../outside' }, createSessionContext());
+        } catch (err) {
+            outsideError = err as Error;
+        }
+        expect(outsideError?.message).toContain('outside');
+    }
+
+    @Test('stat returns file and directory metadata and rejects unsafe paths')
+    async statReturnsFileAndDirectoryMetadataAndRejectsUnsafePaths() {
+        const workspace = await this.createWorkspace();
+        const tool = new StatTool({ file: { rootDir: workspace } } as any);
+
+        const fileResult = await tool.invoke({ path: 'src/alpha.txt' }, createSessionContext());
+        expect(fileResult.path).toEqual('src/alpha.txt');
+        expect(fileResult.type).toEqual('file');
+        expect(typeof fileResult.size).toEqual('number');
+        expect(typeof fileResult.ctime).toEqual('number');
+        expect(typeof fileResult.mtime).toEqual('number');
+        expect(typeof fileResult.atime).toEqual('number');
+        expect(tool.execution?.readOnly).toEqual(true);
+
+        const dirResult = await tool.invoke({ path: 'src' }, createSessionContext());
+        expect(dirResult.path).toEqual('src');
+        expect(dirResult.type).toEqual('directory');
+
+        let pathError: Error | undefined;
+        try {
+            await tool.invoke({ path: '' }, createSessionContext());
+        } catch (err) {
+            pathError = err as Error;
+        }
+        expect(pathError?.message).toContain('path');
+
+        let outsideError: Error | undefined;
+        try {
+            await tool.invoke({ path: '../outside.txt' }, createSessionContext());
+        } catch (err) {
+            outsideError = err as Error;
+        }
+        expect(outsideError?.message).toContain('outside');
+    }
+
     @Test('glob search returns relative workspace matches')
     async globSearchFindsFiles() {
         const workspace = await this.createWorkspace();
@@ -379,6 +476,8 @@ export class AgentToolsPackageTest {
         symlinkSync(outsideFile, path.join(workspace, 'src', 'linked.txt'));
 
         const reader = new ReadFileTool({ file: { rootDir: workspace } });
+        const lister = new ListDirTool({ file: { rootDir: workspace } } as any);
+        const stater = new StatTool({ file: { rootDir: workspace } } as any);
         const globber = new GlobSearchTool({ file: { rootDir: workspace } });
         const searcher = new ContentSearchTool({ file: { rootDir: workspace } });
 
@@ -389,6 +488,22 @@ export class AgentToolsPackageTest {
             readError = err as Error;
         }
         expect(readError?.message).toContain('symbolic link');
+
+        let listError: Error | undefined;
+        try {
+            await lister.invoke({ path: 'src' }, createSessionContext());
+        } catch (err) {
+            listError = err as Error;
+        }
+        expect(listError?.message).toContain('symbolic link');
+
+        let statError: Error | undefined;
+        try {
+            await stater.invoke({ path: 'src/linked.txt' }, createSessionContext());
+        } catch (err) {
+            statError = err as Error;
+        }
+        expect(statError?.message).toContain('symbolic link');
 
         let globError: Error | undefined;
         try {
@@ -750,6 +865,8 @@ export class AgentToolsPackageTest {
         expect(ExportedPdfReadTool).toEqual(PdfReadTool);
         expect(ExportedWriteFileTool).toEqual(WriteFileTool);
         expect(ExportedEditFileTool).toEqual(EditFileTool);
+        expect(ExportedListDirTool).toEqual(ListDirTool);
+        expect(ExportedStatTool).toEqual(StatTool);
         expect(ExportedMemory.MemoryListTool).toEqual(MemoryListTool);
         expect(ExportedMemory.MemoryPutTool).toEqual(MemoryPutTool);
         expect(ExportedMemory.MemorySearchTool).toEqual(MemorySearchTool);
@@ -768,7 +885,7 @@ export class AgentToolsPackageTest {
 
     @Test('provider tools expose grouped registrations and defaults')
     provideToolsExposeGroupedRegistrationsAndDefaults() {
-        expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'glob_search', 'content_search']);
+        expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
         expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read']);
@@ -778,6 +895,8 @@ export class AgentToolsPackageTest {
         expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
         expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel']);
         expect(resolveAgentToolNames()).toContain('read_file');
+        expect(resolveAgentToolNames()).toContain('list_dir');
+        expect(resolveAgentToolNames()).toContain('stat');
         expect(resolveAgentToolNames()).toContain('ask_user');
         expect(resolveAgentToolNames()).toContain('project_intel');
         expect(resolveAgentToolNames()).not.toContain('browser_open');
@@ -818,7 +937,7 @@ export class AgentToolsPackageTest {
         const planning = bundles.find(bundle => bundle.name === 'planning');
         const project = bundles.find(bundle => bundle.name === 'project');
         const terminal = bundles.find(bundle => bundle.name === 'terminal');
-        expect(filesystem?.tools).toEqual(['read_file', 'glob_search', 'content_search']);
+        expect(filesystem?.tools).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search']);
         expect(filesystem?.defaultEnabled).toEqual(true);
         expect(filesystem?.deferredActivation).toEqual(true);
         expect(filesystem?.enabled).toEqual(true);
@@ -876,6 +995,40 @@ export class AgentToolsPackageTest {
             expect(names).not.toContain('web_extract');
         } finally {
             await ctx.close();
+        }
+    }
+
+    @Test('provideTools expose filesystem metadata tools through defaults and module options')
+    async provideToolsExposeFilesystemMetadataToolsThroughDefaultsAndModuleOptions() {
+        const workspace = await this.createWorkspace();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                file: { rootDir: workspace }
+            })]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names).toContain('list_dir');
+            expect(names).toContain('stat');
+        } finally {
+            await ctx.close();
+        }
+
+        const moduleCtx = await Application.run(AgentToolsModule, {
+            providers: [
+                ...AgentToolsModule.withOptions({
+                    file: { rootDir: workspace }
+                }).providers!
+            ]
+        });
+        try {
+            const registry = moduleCtx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names).toContain('list_dir');
+            expect(names).toContain('stat');
+        } finally {
+            await moduleCtx.close();
         }
     }
 
