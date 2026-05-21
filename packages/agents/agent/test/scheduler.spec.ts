@@ -20,6 +20,13 @@ class RuntimeStub {
     }
 }
 
+class NeverSettlingRuntimeStub extends RuntimeStub {
+    async runTurn(sessionId: string, input: string): Promise<any> {
+        this.calls.push(`${sessionId}:${input}`);
+        return new Promise(() => undefined);
+    }
+}
+
 class FakeApp {
     async publishEvent(): Promise<void> {
         return;
@@ -52,6 +59,46 @@ export class SchedulerTest {
         try {
             const scheduler = ctx.get(IntervalAgentScheduler);
             expect(!!scheduler).toEqual(true);
+            await scheduler.stop();
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('disabled scheduler skips persisted task reload on start')
+    async disabledSchedulerSkipsPersistedTaskReloadOnStart() {
+        const ctx = await Application.run(SchedulerOrmTestModule, {
+            providers: [
+                ...AgentModule.withOptions({ scheduler: { enabled: false } }).providers!
+            ]
+        });
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const now = Date.now();
+            await adapter.getRepository(AgentScheduledTaskEntity).save({
+                id: 'disabled-persisted',
+                sessionId: 's-disabled',
+                prompt: 'disabled',
+                runAt: now + 10,
+                nextRunAt: now + 10,
+                cancelled: false,
+                running: false,
+                createdAt: now,
+                updatedAt: now,
+                runCount: 0,
+                failureCount: 0
+            } as any);
+
+            const runtime = new RuntimeStub();
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any, { scheduler: { enabled: false } } as any);
+            (scheduler as any).adapter = adapter;
+            await scheduler.start();
+            await new Promise(resolve => setTimeout(resolve, 60));
+
+            expect(runtime.calls).toEqual([]);
+            expect(scheduler.getTasks()).toEqual([]);
+            const stored = await adapter.getRepository(AgentScheduledTaskEntity).findOne({ where: { id: 'disabled-persisted' } as any });
+            expect(stored?.running).toEqual(false);
             await scheduler.stop();
         } finally {
             await ctx.close();
@@ -257,6 +304,61 @@ export class SchedulerTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('stop waits for running persisted one-shot and avoids duplicate execution after restart')
+    async stopWaitsForRunningPersistedOneShotAndAvoidsDuplicateExecutionAfterRestart() {
+        const ctx = await Application.run(SchedulerOrmTestModule);
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const runtime = new RuntimeStub();
+            let release!: () => void;
+            runtime.blocker = new Promise<void>(resolve => {
+                release = resolve;
+            });
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any);
+            (scheduler as any).adapter = adapter;
+            await scheduler.schedule({
+                id: 'persisted-stop-once',
+                sessionId: 's-stop',
+                prompt: 'once',
+                runAt: Date.now()
+            });
+            await new Promise(resolve => setTimeout(resolve, 20));
+
+            const runningStored = await adapter.getRepository(AgentScheduledTaskEntity).findOne({ where: { id: 'persisted-stop-once' } as any });
+            expect(runningStored?.running).toEqual(true);
+            const stopPromise = scheduler.stop();
+            await new Promise(resolve => setTimeout(resolve, 20));
+            expect(runtime.calls).toEqual(['s-stop:once']);
+
+            release();
+            await stopPromise;
+
+            const restartedRuntime = new RuntimeStub();
+            const restarted = new IntervalAgentScheduler(restartedRuntime as any, ctx as any);
+            (restarted as any).adapter = adapter;
+            await restarted.start();
+            await new Promise(resolve => setTimeout(resolve, 40));
+            expect(restartedRuntime.calls).toEqual([]);
+            const remaining = await adapter.getRepository(AgentScheduledTaskEntity).find();
+            expect(remaining.length).toEqual(0);
+            await restarted.stop();
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('stop respects shutdown timeout for stuck in-flight task')
+    async stopRespectsShutdownTimeoutForStuckInFlightTask() {
+        const runtime = new NeverSettlingRuntimeStub();
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, { scheduler: { shutdownTimeoutMs: 20 } } as any);
+        await scheduler.schedule({ id: 'stop-timeout', sessionId: 's-timeout', prompt: 'hang', runAt: Date.now() });
+        await new Promise(resolve => setTimeout(resolve, 20));
+        const started = Date.now();
+        await scheduler.stop();
+        expect(Date.now() - started).toBeLessThan(200);
+        expect(runtime.calls).toEqual(['s-timeout:hang']);
     }
 
     @Test('persists paused state and skips paused task reload until resumed')

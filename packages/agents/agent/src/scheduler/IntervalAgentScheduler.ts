@@ -7,23 +7,32 @@ import { NextRunCalculator } from './NextRunCalculator';
 import { AgentRuntime } from '../runtime/AgentRuntime';
 import { AgentErrorEvent, AgentTaskScheduledEvent } from '../runtime/AgentEvents';
 import { AgentScheduledTaskEntity } from '../memory/entities';
+import { AGENT_OPTIONS } from '../tokens';
+import { AgentOptions, defaultAgentOptions } from '../options';
 
 @Injectable()
 export class IntervalAgentScheduler extends AgentScheduler {
     private tasks = new Map<string, ScheduledAgentTask>();
     private timers = new Map<string, ReturnType<typeof setTimeout> | ReturnType<typeof setInterval>>();
+    private inFlight = new Map<string, Promise<void>>();
+    private stopping = false;
 
     private adapter?: TypeormAdapter | null;
 
     constructor(
         private runtime: AgentRuntime,
-        @Inject(ApplicationContext) private app: ApplicationContext
+        @Inject(ApplicationContext) private app: ApplicationContext,
+        @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions
     ) {
         super();
     }
 
     @Runner()
     async start(): Promise<void> {
+        this.stopping = false;
+        if (!this.isEnabled()) {
+            return;
+        }
         await this.ensureAdapter();
         const persisted = await this.loadPersistedTasks();
         for (const task of persisted) {
@@ -34,13 +43,26 @@ export class IntervalAgentScheduler extends AgentScheduler {
 
     @Shutdown()
     async stop(): Promise<void> {
+        this.stopping = true;
         this.timers.forEach(timer => clearTimeout(timer as ReturnType<typeof setTimeout>));
         this.timers.forEach(timer => clearInterval(timer as ReturnType<typeof setInterval>));
         this.timers.clear();
+        const pending = Array.from(this.inFlight.values());
+        if (pending.length) {
+            const timeoutMs = Math.max(this.options.scheduler?.shutdownTimeoutMs ?? 10000, 0);
+            await Promise.race([
+                Promise.allSettled(pending),
+                new Promise(resolve => setTimeout(resolve, timeoutMs))
+            ]);
+        }
         this.tasks.clear();
+        this.inFlight.clear();
     }
 
     async schedule(task: ScheduledAgentTask): Promise<ScheduledAgentTask> {
+        if (!this.isEnabled()) {
+            throw new Error('Agent scheduler is disabled.');
+        }
         const normalized = this.normalizeTask(task);
         this.tasks.set(normalized.id, normalized);
         await this.persistTask(normalized);
@@ -81,10 +103,16 @@ export class IntervalAgentScheduler extends AgentScheduler {
     }
 
     getTasks(): ScheduledAgentTask[] {
+        if (!this.isEnabled()) {
+            return [];
+        }
         return Array.from(this.tasks.values()).filter(task => !task.cancelled);
     }
 
     getTask(taskId: string): ScheduledAgentTask | undefined {
+        if (!this.isEnabled()) {
+            return undefined;
+        }
         const task = this.tasks.get(taskId);
         return task && !task.cancelled ? { ...task } : undefined;
     }
@@ -160,6 +188,10 @@ export class IntervalAgentScheduler extends AgentScheduler {
     }
 
     private armTimer(task: ScheduledAgentTask): void {
+        if (!this.isEnabled() || this.stopping) {
+            this.timers.delete(task.id);
+            return;
+        }
         const existing = this.timers.get(task.id);
         if (existing) {
             clearTimeout(existing as ReturnType<typeof setTimeout>);
@@ -179,7 +211,16 @@ export class IntervalAgentScheduler extends AgentScheduler {
     }
 
     private fireAndForget(taskId: string): void {
-        void this.executeById(taskId).catch(error => this.handleBackgroundError(taskId, error));
+        if (!this.isEnabled() || this.stopping) {
+            this.timers.delete(taskId);
+            return;
+        }
+        const running = this.executeById(taskId)
+            .catch(error => this.handleBackgroundError(taskId, error))
+            .finally(() => {
+                this.inFlight.delete(taskId);
+            });
+        this.inFlight.set(taskId, running);
     }
 
     private async executeById(taskId: string): Promise<void> {
@@ -219,7 +260,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             }
 
             const now = Date.now();
-            const latestTask = this.tasks.get(runningTask.id);
+            const latestTask = this.tasks.get(runningTask.id) ?? await this.findPersistedTask(runningTask.id);
             if (!latestTask || latestTask.cancelled) {
                 return;
             }
@@ -262,7 +303,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             await this.deleteTask(completedTask.id);
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
-            const latestTask = this.tasks.get(runningTask.id);
+            const latestTask = this.tasks.get(runningTask.id) ?? await this.findPersistedTask(runningTask.id);
             if (!latestTask || latestTask.cancelled) {
                 return;
             }
@@ -458,6 +499,10 @@ export class IntervalAgentScheduler extends AgentScheduler {
 
     private shouldRepeat(task: ScheduledAgentTask): boolean {
         return task.scheduleType === 'interval' || task.scheduleType === 'cron' || !!(task.intervalMs && task.intervalMs > 0) || !!task.cronExpr;
+    }
+
+    private isEnabled(): boolean {
+        return this.options.scheduler?.enabled !== false;
     }
 
     private detectScheduleType(task: ScheduledAgentTask): ScheduledAgentTask['scheduleType'] {

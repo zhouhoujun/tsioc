@@ -37,6 +37,8 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
+import { ImageInfoTool } from '../media/image-info.tool';
+import { PdfReadTool } from '../media/pdf-read.tool';
 import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './provider';
 
 @Module({
@@ -85,6 +87,14 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        ImageInfoTool,
+        PdfReadTool,
+        {
+            provider(injector) {
+                const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
+                return [{ provide: 'AGENT_TOOLS_PDF_READ_ADAPTER', useValue: options?.pdf?.adapter ?? null }];
+            }
+        },
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles()
     ],
@@ -122,7 +132,9 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         HttpRequestTool,
         ToolSearchTool,
         ToolInspectTool,
-        ProjectIntelTool
+        ProjectIntelTool,
+        ImageInfoTool,
+        PdfReadTool
     ]
 })
 export class AgentToolsModule {

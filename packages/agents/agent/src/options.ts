@@ -29,6 +29,7 @@ export interface AgentToolOptions {
 
 export interface AgentSchedulerOptions {
     enabled?: boolean;
+    shutdownTimeoutMs?: number;
 }
 
 export interface AgentUIOptions {
@@ -74,7 +75,8 @@ export const defaultAgentOptions: AgentOptions = {
         approvalTimeoutMs: 30000
     },
     scheduler: {
-        enabled: true
+        enabled: true,
+        shutdownTimeoutMs: 10000
     },
     ui: {
         title: 'Hermes Agent Console'

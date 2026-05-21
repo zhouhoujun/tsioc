@@ -83,6 +83,10 @@
       "types": "./process/index.d.ts",
       "default": "./process/index.js"
     },
+    "./media": {
+      "types": "./media/index.d.ts",
+      "default": "./media/index.js"
+    },
     "./scheduling": {
       "types": "./scheduling/index.d.ts",
       "default": "./scheduling/index.js"

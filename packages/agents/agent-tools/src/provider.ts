@@ -38,6 +38,8 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
+import { ImageInfoTool } from '../media/image-info.tool';
+import { PdfReadTool } from '../media/pdf-read.tool';
 import { provideMcpTools } from '../mcp/provider';
 
 const toolItems = {
@@ -70,6 +72,8 @@ const toolItems = {
     'memory.purge': MemoryPurgeTool,
     'memory.delete': MemoryDeleteTool,
     project_intel: ProjectIntelTool,
+    image_info: ImageInfoTool,
+    pdf_read: PdfReadTool,
     tool_search: ToolSearchTool,
     tool_inspect: ToolInspectTool,
     http_fetch: HttpFetchTool,
@@ -89,6 +93,7 @@ const toolGroups = {
     scheduling: ['schedule'],
     memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete'],
     project: ['project_intel'],
+    media: ['image_info', 'pdf_read'],
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
     terminal: ['terminal']
@@ -109,6 +114,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     scheduling: 'Prompt scheduling and recurring task tools.',
     memory: 'Session and global memory management tools.',
     project: 'Project summarization and risk/handoff intelligence tools.',
+    media: 'Image and document inspection tools.',
     registry: 'Tool discovery and activation tools.',
     http: 'HTTP fetch and request tools.',
     terminal: 'Terminal command execution tools.'
@@ -298,6 +304,12 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        ImageInfoTool,
+        PdfReadTool,
+        {
+            provide: 'AGENT_TOOLS_PDF_READ_ADAPTER',
+            useValue: merged.pdf?.adapter ?? null
+        },
         ...(merged.mcp?.servers?.length ? provideMcpTools(merged.mcp) : []),
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles(),

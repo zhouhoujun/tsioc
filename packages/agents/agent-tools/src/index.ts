@@ -18,4 +18,5 @@ export * from '../terminal';
 export * from '../memory';
 export * from '../project';
 export * from '../process';
+export * from '../media';
 export * from '../mcp';

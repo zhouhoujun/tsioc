@@ -1,6 +1,7 @@
 import expect = require('expect');
 import * as os from 'os';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
 import { promises as fs } from 'fs';
 import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
@@ -52,12 +53,14 @@ import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { ProcessStartTool as ExportedProcessStartTool, ProcessPollTool as ExportedProcessPollTool, ProcessKillTool as ExportedProcessKillTool } from '../process';
+import { ImageInfoTool as ExportedImageInfoTool, PdfReadTool as ExportedPdfReadTool } from '../media';
 import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool } from '../files';
 import * as ExportedMemoryModule from '../memory';
 const ExportedMemory: any = ExportedMemoryModule;
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
 import { ProjectIntelTool as ExportedProjectIntelTool } from '../project';
+import { ImageInfoTool, PdfReadTool } from '../media';
 import { provideSkills, LocalSkillRegistry, ListSkillTool, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
 import { LocalMcpClientRegistry } from '../mcp';
 
@@ -173,6 +176,33 @@ export class AgentToolsPackageTest {
             await new Promise(resolve => setTimeout(resolve, 25));
         }
         throw new Error(`Timed out after ${timeoutMs}ms waiting for condition.`);
+    }
+
+    private pngFixture(width: number, height: number): Buffer {
+        const buffer = Buffer.alloc(33);
+        Buffer.from('89504e470d0a1a0a', 'hex').copy(buffer, 0);
+        buffer.writeUInt32BE(13, 8);
+        buffer.write('IHDR', 12, 'ascii');
+        buffer.writeUInt32BE(width, 16);
+        buffer.writeUInt32BE(height, 20);
+        buffer[24] = 8;
+        buffer[25] = 2;
+        buffer[26] = 0;
+        buffer[27] = 0;
+        buffer[28] = 0;
+        return buffer;
+    }
+
+    private jpegFixture(width: number, height: number): Buffer {
+        return Buffer.from([
+            0xff, 0xd8,
+            0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+            0xff, 0xc0, 0x00, 0x11, 0x08,
+            (height >> 8) & 0xff, height & 0xff,
+            (width >> 8) & 0xff, width & 0xff,
+            0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
+            0xff, 0xd9
+        ]);
     }
 
     private async createSkillRoot(): Promise<string> {
@@ -510,6 +540,197 @@ export class AgentToolsPackageTest {
         expect(metadataError?.message).toContain('blocked internal host');
     }
 
+    @Test('image info reads png and jpeg headers and validates invalid inputs')
+    async imageInfoReadsHeadersAndValidatesInvalidInputs() {
+        const workspace = await this.createWorkspace();
+        const pngPath = path.join(workspace, 'src', 'image.png');
+        const jpegPath = path.join(workspace, 'src', 'photo.jpg');
+        const invalidPath = path.join(workspace, 'src', 'not-image.bin');
+        const truncatedPath = path.join(workspace, 'src', 'truncated.jpg');
+        await fs.writeFile(pngPath, this.pngFixture(320, 240));
+        await fs.writeFile(jpegPath, this.jpegFixture(640, 480));
+        await fs.writeFile(invalidPath, Buffer.from('hello world', 'utf8'));
+        await fs.writeFile(truncatedPath, Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0x00]));
+        const tool = new ImageInfoTool({ file: { rootDir: workspace } } as any);
+
+        const png = await tool.invoke({ path: 'src/image.png' }, createSessionContext());
+        expect(png).toEqual({ path: 'src/image.png', format: 'png', width: 320, height: 240 });
+        expect(tool.execution?.readOnly).toEqual(true);
+
+        const jpeg = await tool.invoke({ path: 'src/photo.jpg' }, createSessionContext());
+        expect(jpeg).toEqual({ path: 'src/photo.jpg', format: 'jpeg', width: 640, height: 480 });
+
+        let invalidError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/not-image.bin' }, createSessionContext());
+        } catch (err) {
+            invalidError = err as Error;
+        }
+        expect(invalidError?.message).toContain('Unsupported image format');
+
+        let truncatedError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/truncated.jpg' }, createSessionContext());
+        } catch (err) {
+            truncatedError = err as Error;
+        }
+        expect(truncatedError?.message).toContain('Invalid JPEG image');
+
+        let outsideError: Error | undefined;
+        try {
+            await tool.invoke({ path: '../outside.png' }, createSessionContext());
+        } catch (err) {
+            outsideError = err as Error;
+        }
+        expect(outsideError?.message).toContain('outside');
+
+        const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-tools-image-outside-'));
+        const linked = path.join(workspace, 'src', 'linked.png');
+        await fs.writeFile(path.join(outside, 'image.png'), this.pngFixture(1, 1));
+        symlinkSync(path.join(outside, 'image.png'), linked);
+        let symlinkError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/linked.png' }, createSessionContext());
+        } catch (err) {
+            symlinkError = err as Error;
+        }
+        expect(symlinkError?.message).toContain('symbolic link');
+
+        if (process.platform !== 'win32') {
+            const fifoPath = path.join(workspace, 'src', 'image.pipe');
+            let fifoCreated = false;
+            try {
+                execFileSync('mkfifo', [fifoPath]);
+                fifoCreated = true;
+            } catch {
+                fifoCreated = false;
+            }
+            if (fifoCreated) {
+                let fifoError: Error | undefined;
+                try {
+                    await tool.invoke({ path: 'src/image.pipe' }, createSessionContext());
+                } catch (err) {
+                    fifoError = err as Error;
+                }
+                expect(fifoError?.message).toContain('regular file');
+            }
+        }
+    }
+
+    @Test('pdf read validates adapter path pages and large-file guard')
+    async pdfReadValidatesAdapterPathPagesAndLargeFileGuard() {
+        const workspace = await this.createWorkspace();
+        const pdfPath = path.join(workspace, 'src', 'sample.pdf');
+        await fs.writeFile(pdfPath, Buffer.from('%PDF-1.7\nmock\n', 'utf8'));
+
+        let countCalls = 0;
+        const adapter = {
+            async getPageCount(filePath: string) {
+                expect(filePath).toEqual(pdfPath);
+                countCalls++;
+                return 2;
+            },
+            async read(filePath: string, options?: { pages?: number[]; }) {
+                expect(filePath).toEqual(pdfPath);
+                if (options?.pages?.length) {
+                    return {
+                        pageCount: 12,
+                        pages: options.pages.map(pageNumber => ({ pageNumber, text: `page-${pageNumber}` }))
+                    };
+                }
+                return {
+                    pageCount: 2,
+                    pages: [{ pageNumber: 1, text: 'page-1' }, { pageNumber: 2, text: 'page-2' }]
+                };
+            }
+        };
+        const tool = new PdfReadTool({ file: { rootDir: workspace }, pdf: { adapter } } as any, adapter as any);
+
+        const allPages = await tool.invoke({ path: 'src/sample.pdf' }, createSessionContext());
+        expect(allPages).toEqual({
+            path: 'src/sample.pdf',
+            pageCount: 2,
+            pages: [{ pageNumber: 1, text: 'page-1' }, { pageNumber: 2, text: 'page-2' }]
+        });
+        expect(countCalls).toEqual(1);
+        expect(tool.execution?.readOnly).toEqual(true);
+
+        const ranged = await tool.invoke({ path: 'src/sample.pdf', pages: '2-3' }, createSessionContext());
+        expect(ranged.pages).toEqual([{ pageNumber: 2, text: 'page-2' }, { pageNumber: 3, text: 'page-3' }]);
+
+        let pageError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/sample.pdf', pages: '3-1' }, createSessionContext());
+        } catch (err) {
+            pageError = err as Error;
+        }
+        expect(pageError?.message).toContain('ascending range');
+
+        let shapeError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/sample.pdf', pages: 'a-b' }, createSessionContext());
+        } catch (err) {
+            shapeError = err as Error;
+        }
+        expect(shapeError?.message).toContain('like');
+
+        let spanError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/sample.pdf', pages: '1-21' }, createSessionContext());
+        } catch (err) {
+            spanError = err as Error;
+        }
+        expect(spanError?.message).toContain('20 pages');
+
+        let largeReadCalls = 0;
+        let largeCountCalls = 0;
+        const largeAdapter = {
+            async getPageCount() {
+                largeCountCalls++;
+                return 11;
+            },
+            async read() {
+                largeReadCalls++;
+                return {
+                    pageCount: 11,
+                    pages: [{ pageNumber: 1, text: 'page-1' }]
+                };
+            }
+        };
+        const guardedTool = new PdfReadTool({ file: { rootDir: workspace }, pdf: { adapter: largeAdapter } } as any, largeAdapter as any);
+        let guardError: Error | undefined;
+        try {
+            await guardedTool.invoke({ path: 'src/sample.pdf' }, createSessionContext());
+        } catch (err) {
+            guardError = err as Error;
+        }
+        expect(guardError?.message).toContain('requires pages');
+        expect(largeCountCalls).toEqual(1);
+        expect(largeReadCalls).toEqual(0);
+
+        let headerError: Error | undefined;
+        await fs.writeFile(path.join(workspace, 'src', 'bad.pdf'), Buffer.from('not-pdf', 'utf8'));
+        try {
+            await tool.invoke({ path: 'src/bad.pdf' }, createSessionContext());
+        } catch (err) {
+            headerError = err as Error;
+        }
+        expect(headerError?.message).toContain('%PDF');
+
+        const optionsOnlyTool = new PdfReadTool({ file: { rootDir: workspace }, pdf: { adapter } } as any, null as any);
+        const optionsOnlyPages = await optionsOnlyTool.invoke({ path: 'src/sample.pdf' }, createSessionContext());
+        expect(optionsOnlyPages.pageCount).toEqual(2);
+
+        let adapterError: Error | undefined;
+        const noAdapterTool = new PdfReadTool({ file: { rootDir: workspace } } as any, null as any);
+        try {
+            await noAdapterTool.invoke({ path: 'src/sample.pdf' }, createSessionContext());
+        } catch (err) {
+            adapterError = err as Error;
+        }
+        expect(adapterError?.message).toContain('requires a configured PDF read adapter');
+    }
+
     @Test('grouped tool entrypoints export tool classes')
     groupedToolEntrypointsExportToolClasses() {
         expect(ExportedTodoTool).toEqual(TodoTool);
@@ -525,6 +746,8 @@ export class AgentToolsPackageTest {
         expect(ExportedProcessStartTool).toEqual(ProcessStartTool);
         expect(ExportedProcessPollTool).toEqual(ProcessPollTool);
         expect(ExportedProcessKillTool).toEqual(ProcessKillTool);
+        expect(ExportedImageInfoTool).toEqual(ImageInfoTool);
+        expect(ExportedPdfReadTool).toEqual(PdfReadTool);
         expect(ExportedWriteFileTool).toEqual(WriteFileTool);
         expect(ExportedEditFileTool).toEqual(EditFileTool);
         expect(ExportedMemory.MemoryListTool).toEqual(MemoryListTool);
@@ -548,6 +771,7 @@ export class AgentToolsPackageTest {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'glob_search', 'content_search']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
+        expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read']);
         expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history']);
         expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
         expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
@@ -1523,6 +1747,30 @@ export class AgentToolsPackageTest {
         expect(finished.process.running).toEqual(false);
         expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
         expect(resolveAgentToolBundles().find(bundle => bundle.name === 'process')?.activation).toEqual({ kind: 'deferred', scope: 'session' });
+    }
+
+    @Test('provider and module expose media tools')
+    async providerAndModuleExposeMediaTools() {
+        expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read']);
+        expect(resolveAgentToolBundles().find(bundle => bundle.name === 'media')?.activation).toEqual({ kind: 'always', scope: 'global' });
+
+        const workspace = await this.createWorkspace();
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [
+                ...AgentToolsModule.withOptions({
+                    file: { rootDir: workspace },
+                    registration: { groups: { media: true } }
+                }).providers!
+            ]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names).toContain('image_info');
+            expect(names).toContain('pdf_read');
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('process start rejects symlink workdir inside workspace')

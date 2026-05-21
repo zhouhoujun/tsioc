@@ -42,6 +42,10 @@ export interface AgentToolsHttpOptions {
     maxResponseChars?: number;
 }
 
+export interface AgentToolsPdfOptions {
+    adapter?: import('../media').PdfReadAdapter;
+}
+
 export interface AgentToolsScheduleOptions {
     maxTasksPerSession?: number;
     maxPromptLength?: number;
@@ -64,7 +68,8 @@ export type AgentToolGroup =
     | 'project'
     | 'registry'
     | 'http'
-    | 'terminal';
+    | 'terminal'
+    | 'media';
 
 export type AgentToolItem =
     | 'read_file'
@@ -100,7 +105,9 @@ export type AgentToolItem =
     | 'tool_inspect'
     | 'http_fetch'
     | 'http_request'
-    | 'terminal';
+    | 'terminal'
+    | 'image_info'
+    | 'pdf_read';
 
 export interface AgentToolsRegistrationOptions {
     preset?: 'default' | 'none' | 'all';
@@ -114,6 +121,7 @@ export interface AgentToolsOptions {
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
     process?: AgentToolsProcessOptions;
+    pdf?: AgentToolsPdfOptions;
     schedule?: AgentToolsScheduleOptions;
     roots?: string[];
     mcp?: AgentMcpOptions;
@@ -165,6 +173,9 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         },
         process: {
             ...(options?.process ?? {})
+        },
+        pdf: {
+            ...(options?.pdf ?? {})
         },
         schedule: {
             ...(options?.schedule ?? {})
