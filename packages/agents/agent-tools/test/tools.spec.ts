@@ -10,6 +10,10 @@ import { CalculatorTool } from '../utility/calculator.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
+import { MkdirTool } from '../files/mkdir.tool';
+import { CopyFileTool } from '../files/copy-file.tool';
+import { MoveFileTool } from '../files/move-file.tool';
+import { DeleteFileTool } from '../files/delete-file.tool';
 import { ListDirTool } from '../files/list-dir.tool';
 import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
@@ -56,7 +60,7 @@ import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { ProcessStartTool as ExportedProcessStartTool, ProcessPollTool as ExportedProcessPollTool, ProcessKillTool as ExportedProcessKillTool } from '../process';
 import { ImageInfoTool as ExportedImageInfoTool, PdfReadTool as ExportedPdfReadTool } from '../media';
-import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool, ListDirTool as ExportedListDirTool, StatTool as ExportedStatTool } from '../files';
+import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool, MkdirTool as ExportedMkdirTool, CopyFileTool as ExportedCopyFileTool, MoveFileTool as ExportedMoveFileTool, DeleteFileTool as ExportedDeleteFileTool, ListDirTool as ExportedListDirTool, StatTool as ExportedStatTool } from '../files';
 import * as ExportedMemoryModule from '../memory';
 const ExportedMemory: any = ExportedMemoryModule;
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
@@ -321,6 +325,138 @@ export class AgentToolsPackageTest {
             error = err as Error;
         }
         expect(error?.message).toContain('outside');
+    }
+
+    @Test('mkdir creates nested directories and validates collisions')
+    async mkdirCreatesNestedDirectoriesAndValidatesCollisions() {
+        const workspace = await this.createWorkspace();
+        const tool = new MkdirTool({ file: { rootDir: workspace } } as any);
+
+        const created = await tool.invoke({ path: 'nested/deep' }, createSessionContext());
+        expect(created.path).toEqual('nested/deep');
+        expect(created.created).toEqual(true);
+        expect(created.recursive).toEqual(true);
+        expect(tool.execution?.readOnly).toEqual(false);
+        const stat = await fs.lstat(path.join(workspace, 'nested', 'deep'));
+        expect(stat.isDirectory()).toEqual(true);
+
+        const repeated = await tool.invoke({ path: 'nested/deep' }, createSessionContext());
+        expect(repeated.created).toEqual(false);
+
+        let collisionError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/alpha.txt' }, createSessionContext());
+        } catch (err) {
+            collisionError = err as Error;
+        }
+        expect(collisionError?.message).toContain('not a directory');
+    }
+
+    @Test('copy file copies regular files and protects destinations')
+    async copyFileCopiesRegularFilesAndProtectsDestinations() {
+        const workspace = await this.createWorkspace();
+        const tool = new CopyFileTool({ file: { rootDir: workspace } } as any);
+
+        const copied = await tool.invoke({ from: 'src/alpha.txt', to: 'copies/alpha.txt' }, createSessionContext());
+        expect(copied.from).toEqual('src/alpha.txt');
+        expect(copied.to).toEqual('copies/alpha.txt');
+        expect(copied.overwritten).toEqual(false);
+        expect(await fs.readFile(path.join(workspace, 'copies', 'alpha.txt'), 'utf8')).toEqual('alpha\nbeta\ngamma\n');
+
+        let existsError: Error | undefined;
+        try {
+            await tool.invoke({ from: 'src/alpha.txt', to: 'copies/alpha.txt' }, createSessionContext());
+        } catch (err) {
+            existsError = err as Error;
+        }
+        expect(existsError?.message).toContain('already exists');
+
+        const overwritten = await tool.invoke({ from: 'src/alpha.txt', to: 'copies/alpha.txt', overwrite: true }, createSessionContext());
+        expect(overwritten.overwritten).toEqual(true);
+
+        let samePathError: Error | undefined;
+        try {
+            await tool.invoke({ from: 'src/alpha.txt', to: 'src/alpha.txt' }, createSessionContext());
+        } catch (err) {
+            samePathError = err as Error;
+        }
+        expect(samePathError?.message).toContain('different paths');
+
+        let sourceError: Error | undefined;
+        try {
+            await tool.invoke({ from: 'src', to: 'copies/src' }, createSessionContext());
+        } catch (err) {
+            sourceError = err as Error;
+        }
+        expect(sourceError?.message).toContain('regular file');
+    }
+
+    @Test('move file renames regular files and protects destinations')
+    async moveFileRenamesRegularFilesAndProtectsDestinations() {
+        const workspace = await this.createWorkspace();
+        const tool = new MoveFileTool({ file: { rootDir: workspace } } as any);
+
+        const moved = await tool.invoke({ from: 'src/alpha.txt', to: 'moved/alpha.txt' }, createSessionContext());
+        expect(moved.from).toEqual('src/alpha.txt');
+        expect(moved.to).toEqual('moved/alpha.txt');
+        expect(moved.overwritten).toEqual(false);
+        expect(await fs.readFile(path.join(workspace, 'moved', 'alpha.txt'), 'utf8')).toEqual('alpha\nbeta\ngamma\n');
+
+        let missingSource: Error | undefined;
+        try {
+            await tool.invoke({ from: 'src/alpha.txt', to: 'moved/again.txt' }, createSessionContext());
+        } catch (err) {
+            missingSource = err as Error;
+        }
+        expect(!!missingSource).toEqual(true);
+
+        await fs.writeFile(path.join(workspace, 'src', 'gamma.txt'), 'gamma', 'utf8');
+        await fs.writeFile(path.join(workspace, 'moved', 'existing.txt'), 'existing', 'utf8');
+        let existsError: Error | undefined;
+        try {
+            await tool.invoke({ from: 'src/gamma.txt', to: 'moved/existing.txt' }, createSessionContext());
+        } catch (err) {
+            existsError = err as Error;
+        }
+        expect(existsError?.message).toContain('already exists');
+
+        const overwritten = await tool.invoke({ from: 'src/gamma.txt', to: 'moved/existing.txt', overwrite: true }, createSessionContext());
+        expect(overwritten.overwritten).toEqual(true);
+        expect(await fs.readFile(path.join(workspace, 'moved', 'existing.txt'), 'utf8')).toEqual('gamma');
+    }
+
+    @Test('delete file removes regular files and requires confirmation')
+    async deleteFileRemovesRegularFilesAndRequiresConfirmation() {
+        const workspace = await this.createWorkspace();
+        const tool = new DeleteFileTool({ file: { rootDir: workspace } } as any);
+
+        let confirmError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src/alpha.txt' }, createSessionContext());
+        } catch (err) {
+            confirmError = err as Error;
+        }
+        expect(confirmError?.message).toContain('confirm');
+
+        const deleted = await tool.invoke({ path: 'src/alpha.txt', confirm: true }, createSessionContext());
+        expect(deleted.path).toEqual('src/alpha.txt');
+        expect(deleted.deleted).toEqual(true);
+
+        let missingError: Error | undefined;
+        try {
+            await fs.lstat(path.join(workspace, 'src', 'alpha.txt'));
+        } catch (err) {
+            missingError = err as Error;
+        }
+        expect((missingError as any)?.code).toEqual('ENOENT');
+
+        let typeError: Error | undefined;
+        try {
+            await tool.invoke({ path: 'src', confirm: true }, createSessionContext());
+        } catch (err) {
+            typeError = err as Error;
+        }
+        expect(typeError?.message).toContain('regular file');
     }
 
     @Test('edit file replaces exact text and validates matches')
@@ -865,6 +1001,10 @@ export class AgentToolsPackageTest {
         expect(ExportedPdfReadTool).toEqual(PdfReadTool);
         expect(ExportedWriteFileTool).toEqual(WriteFileTool);
         expect(ExportedEditFileTool).toEqual(EditFileTool);
+        expect(ExportedMkdirTool).toEqual(MkdirTool);
+        expect(ExportedCopyFileTool).toEqual(CopyFileTool);
+        expect(ExportedMoveFileTool).toEqual(MoveFileTool);
+        expect(ExportedDeleteFileTool).toEqual(DeleteFileTool);
         expect(ExportedListDirTool).toEqual(ListDirTool);
         expect(ExportedStatTool).toEqual(StatTool);
         expect(ExportedMemory.MemoryListTool).toEqual(MemoryListTool);
@@ -886,7 +1026,7 @@ export class AgentToolsPackageTest {
     @Test('provider tools expose grouped registrations and defaults')
     provideToolsExposeGroupedRegistrationsAndDefaults() {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search']);
-        expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file']);
+        expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
         expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read']);
         expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history']);
@@ -906,6 +1046,10 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames()).not.toContain('sessions_history');
         expect(resolveAgentToolNames()).not.toContain('memory.purge');
         expect(resolveAgentToolNames()).not.toContain('write_file');
+        expect(resolveAgentToolNames()).not.toContain('mkdir');
+        expect(resolveAgentToolNames()).not.toContain('copy_file');
+        expect(resolveAgentToolNames()).not.toContain('move_file');
+        expect(resolveAgentToolNames()).not.toContain('delete_file');
         expect(resolveAgentToolNames()).not.toContain('process.start');
         expect(resolveAgentToolNames()).not.toContain('http_fetch');
         expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
@@ -917,6 +1061,10 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames({ registration: { groups: { process: true } } })).toContain('process.start');
         expect(resolveAgentToolNames({ registration: { groups: { process: true } } })).toContain('process.poll');
         expect(resolveAgentToolNames({ registration: { groups: { process: true } } })).toContain('process.kill');
+        expect(resolveAgentToolNames({ registration: { groups: { filesystem_write: true } } })).toContain('mkdir');
+        expect(resolveAgentToolNames({ registration: { groups: { filesystem_write: true } } })).toContain('copy_file');
+        expect(resolveAgentToolNames({ registration: { groups: { filesystem_write: true } } })).toContain('move_file');
+        expect(resolveAgentToolNames({ registration: { groups: { filesystem_write: true } } })).toContain('delete_file');
         expect(resolveAgentToolNames({ registration: { items: { 'memory.purge': true } } })).toContain('memory.purge');
         expect(resolveAgentToolNames({ registration: { preset: 'none' } })).toEqual([]);
         expect(resolveAgentToolNames({ registration: { groups: { http: true } } })).toContain('http_fetch');
@@ -944,7 +1092,7 @@ export class AgentToolsPackageTest {
         expect(filesystem?.source).toEqual('builtin');
         expect(filesystem?.providerId).toEqual('@tsdi/agent-tools');
         expect(filesystem?.activation).toEqual({ kind: 'deferred', scope: 'session' });
-        expect(filesystemWrite?.tools).toEqual(['write_file', 'edit_file']);
+        expect(filesystemWrite?.tools).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
         expect(filesystemWrite?.defaultEnabled).toEqual(false);
         expect(filesystemWrite?.enabled).toEqual(false);
         expect(filesystemWrite?.activation).toEqual({ kind: 'deferred', scope: 'session' });
@@ -1029,6 +1177,29 @@ export class AgentToolsPackageTest {
             expect(names).toContain('stat');
         } finally {
             await moduleCtx.close();
+        }
+    }
+
+    @Test('provideTools enable filesystem write tools through module options')
+    async provideToolsEnableFilesystemWriteToolsThroughModuleOptions() {
+        const workspace = await this.createWorkspace();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                file: { rootDir: workspace },
+                registration: {
+                    groups: { filesystem_write: true }
+                }
+            })]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names).toContain('mkdir');
+            expect(names).toContain('copy_file');
+            expect(names).toContain('move_file');
+            expect(names).toContain('delete_file');
+        } finally {
+            await ctx.close();
         }
     }
 

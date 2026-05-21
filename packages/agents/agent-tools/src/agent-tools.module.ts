@@ -5,6 +5,10 @@ import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } f
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
+import { MkdirTool } from '../files/mkdir.tool';
+import { CopyFileTool } from '../files/copy-file.tool';
+import { MoveFileTool } from '../files/move-file.tool';
+import { DeleteFileTool } from '../files/delete-file.tool';
 import { ListDirTool } from '../files/list-dir.tool';
 import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
@@ -57,6 +61,10 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ReadFileTool,
         WriteFileTool,
         EditFileTool,
+        MkdirTool,
+        CopyFileTool,
+        MoveFileTool,
+        DeleteFileTool,
         ListDirTool,
         StatTool,
         GlobSearchTool,
@@ -106,6 +114,10 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ReadFileTool,
         WriteFileTool,
         EditFileTool,
+        MkdirTool,
+        CopyFileTool,
+        MoveFileTool,
+        DeleteFileTool,
         ListDirTool,
         StatTool,
         GlobSearchTool,
