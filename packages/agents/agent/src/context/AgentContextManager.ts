@@ -39,7 +39,8 @@ export class AgentContextManager {
 
     /**
      * Prune history to fit within the token budget.
-     * Keeps the most recent messages, drops old tool result pairs first.
+     * Keeps the most recent messages, drops old tool-call pairs (assistant + tool messages)
+     * together to avoid orphaned references.
      */
     pruneHistory(messages: AgentMessage[]): AgentMessage[] {
         if (this.estimateMessages(messages) <= this.budget.maxHistoryTokens) {
@@ -58,19 +59,55 @@ export class AgentContextManager {
             return pruned;
         }
 
-        // Phase 2: remove oldest tool pairs (assistant+tool message pairs)
-        const kept: AgentMessage[] = [];
+        // Phase 2: remove oldest assistant+tool pairs together to avoid orphaned references.
+        // An assistant message that made tool calls is followed by one or more tool-role messages.
+        // We collect IDs of tool-role messages that belong to tool-calling assistants,
+        // then drop the entire pair from the old section.
+        const droppedToolIds = new Set<string>();
+        const assistantToolCallIds = new Set<string>();
         const recentThreshold = Math.max(pruned.length - 20, 0);
+        for (let i = 0; i < recentThreshold; i++) {
+            const msgMeta = pruned[i].metadata;
+            if (pruned[i].role === 'assistant' && msgMeta?.toolCalls) {
+                const toolCalls: Array<{ id: string }> = msgMeta.toolCalls as any;
+                for (const tc of toolCalls) {
+                    assistantToolCallIds.add(tc.id);
+                }
+            }
+        }
+        // Mark tool-role messages from old sections that belong to tool-calling assistants
+        for (let i = 0; i < recentThreshold; i++) {
+            const toolCallId = pruned[i].toolCallId;
+            if (pruned[i].role === 'tool' && toolCallId && assistantToolCallIds.has(toolCallId)) {
+                droppedToolIds.add(toolCallId);
+            }
+        }
+
+        const kept: AgentMessage[] = [];
         for (let i = 0; i < pruned.length; i++) {
             if (i >= recentThreshold) {
                 kept.push(pruned[i]);
                 continue;
             }
-            // Keep system messages and non-tool messages
-            if (pruned[i].role === 'system' || pruned[i].role === 'user' || pruned[i].role === 'assistant') {
+            // Keep system/user messages
+            if (pruned[i].role === 'system' || pruned[i].role === 'user') {
                 kept.push(pruned[i]);
+                continue;
             }
-            // Drop old tool pairs (assistant+tool)
+            // Drop assistant messages that had tool calls (their pairs are dropped too)
+            if (pruned[i].role === 'assistant' && pruned[i].metadata?.toolCalls) {
+                continue;
+            }
+            // Drop tool messages that are paired with dropped assistants
+            const tcId = pruned[i].toolCallId;
+            if (pruned[i].role === 'tool' && tcId && droppedToolIds.has(tcId)) {
+                continue;
+            }
+            // Keep non-tool-calling assistant messages
+            if (pruned[i].role === 'assistant') {
+                kept.push(pruned[i]);
+                continue;
+            }
         }
 
         if (kept.length < 4) {

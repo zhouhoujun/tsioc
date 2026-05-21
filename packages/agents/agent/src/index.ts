@@ -48,6 +48,7 @@ export * from './memory/InMemorySessionStore';
 export * from './memory/TypeOrmMemoryStore';
 export * from './memory/TypeOrmSessionStore';
 export * from './memory/SimpleSessionSummarizer';
+export * from './memory/LLMSessionSummarizer';
 export * from './memory/entities';
 
 export * from './scheduler/AgentScheduler';

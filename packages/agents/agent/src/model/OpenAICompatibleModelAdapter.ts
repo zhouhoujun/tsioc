@@ -4,6 +4,7 @@ import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse } from './ModelResponse';
+import { StreamChunk } from './StreamChunk';
 import { AgentModelOptions } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
 
@@ -36,6 +37,8 @@ interface OpenAIToolDefinition {
 interface OpenAIChatCompletionRequest {
     model: string;
     messages: OpenAIMessage[];
+    stream?: boolean;
+    stream_options?: { include_usage?: boolean };
     tools?: OpenAIToolDefinition[];
     tool_choice?: 'auto';
     temperature?: number;
@@ -69,6 +72,33 @@ interface OpenAIChatCompletionResponse {
     };
 }
 
+interface SSEDelta {
+    content?: string | null;
+    reasoning_content?: string;
+    tool_calls?: Array<{
+        index: number;
+        id?: string;
+        type?: string;
+        function?: {
+            name?: string;
+            arguments?: string;
+        };
+    }>;
+}
+
+interface SSEChoice {
+    delta: SSEDelta;
+    finish_reason?: string | null;
+}
+
+interface SSEEvent {
+    choices?: SSEChoice[];
+    usage?: OpenAIChatCompletionResponse['usage'];
+}
+
+const MAX_RETRIES = 3;
+const BASE_RETRY_MS = 1000;
+
 export class OpenAICompatibleModelAdapter extends ModelAdapter {
     protected appArgs?: ApplicationArguments;
 
@@ -77,7 +107,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         this.appArgs = appArgs;
     }
 
-    async complete(request: ModelRequest): Promise<ModelResponse> {
+    async complete(request: ModelRequest, attempt = 1): Promise<ModelResponse> {
         const apiKey = this.resolveApiKey();
         if (!apiKey) {
             throw new Error(`Missing API key for ${this.options.provider ?? 'model provider'}.`);
@@ -97,16 +127,20 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             });
 
             if (!response.ok) {
+                if (this.isRetryable(response.status) && attempt <= MAX_RETRIES) {
+                    cleanup();
+                    return this.retry(request, attempt, response.status);
+                }
                 throw new Error(`Model request failed with ${response.status}`);
             }
 
             const body = await response.json() as OpenAIChatCompletionResponse;
-        const choice = body.choices?.[0];
-        const message = choice?.message;
-        const toolCalls = this.parseToolCalls(message?.tool_calls);
-        const text = this.extractText(message?.content);
-        const reasoningContent = message?.reasoning_content;
-        const finishReason = choice?.finish_reason;
+            const choice = body.choices?.[0];
+            const message = choice?.message;
+            const toolCalls = this.parseToolCalls(message?.tool_calls);
+            const text = this.extractText(message?.content);
+            const reasoningContent = message?.reasoning_content;
+            const finishReason = choice?.finish_reason;
 
             return {
                 message: text,
@@ -120,6 +154,138 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     usage: body.usage
                 }
             };
+        } finally {
+            cleanup();
+        }
+    }
+
+    async *stream(request: ModelRequest): AsyncGenerator<StreamChunk> {
+        const apiKey = this.resolveApiKey();
+        if (!apiKey) {
+            throw new Error(`Missing API key for ${this.options.provider ?? 'model provider'}.`);
+        }
+
+        const { signal, cleanup } = this.createTimeoutContext();
+        const url = this.resolveUrl('/chat/completions');
+        const reqBody = this.createStreamRequest(request);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json',
+                    authorization: `Bearer ${apiKey}`,
+                    accept: 'text/event-stream',
+                    ...(this.options.headers ?? {})
+                },
+                body: JSON.stringify(reqBody),
+                signal
+            });
+
+            if (!response.ok) {
+                throw new Error(`Model streaming request failed with ${response.status}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('Model streaming response has no readable body.');
+            }
+
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let accumulatedText = '';
+            let accumulatedReasoning = '';
+            const accumulatedToolCalls = new Map<number, {
+                id?: string;
+                name?: string;
+                args: string;
+            }>();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop() ?? '';
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) {
+                        continue;
+                    }
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') {
+                        break;
+                    }
+
+                    let event: SSEEvent;
+                    try {
+                        event = JSON.parse(payload);
+                    } catch {
+                        continue;
+                    }
+
+                    const choice = event.choices?.[0];
+                    if (!choice) {
+                        if (event.usage) {
+                            yield { type: 'done', usage: event.usage as any };
+                        }
+                        continue;
+                    }
+
+                    // Text content delta
+                    const delta = choice.delta?.content;
+                    if (delta) {
+                        accumulatedText += delta;
+                        yield { type: 'text', content: delta };
+                    }
+
+                    // Reasoning content delta
+                    const reasoningDelta = choice.delta?.reasoning_content;
+                    if (reasoningDelta) {
+                        accumulatedReasoning += reasoningDelta;
+                        yield { type: 'reasoning', content: reasoningDelta };
+                    }
+
+                    // Tool call deltas (streamed as chunks with index)
+                    const toolCallDeltas = choice.delta?.tool_calls;
+                    if (toolCallDeltas) {
+                        for (const tc of toolCallDeltas) {
+                            const existing = accumulatedToolCalls.get(tc.index) ?? { args: '' };
+                            if (tc.id) { existing.id = tc.id; }
+                            if (tc.function?.name) { existing.name = tc.function.name; }
+                            if (tc.function?.arguments) { existing.args += tc.function.arguments; }
+                            accumulatedToolCalls.set(tc.index, existing);
+                        }
+                    }
+
+                    // Finish reason signals end of this choice
+                    if (choice.finish_reason) {
+                        const toolCalls: AgentToolCall[] = [];
+                        for (const [, val] of accumulatedToolCalls) {
+                            if (val.name) {
+                                toolCalls.push({
+                                    id: val.id ?? `tc-${Date.now()}-${toolCalls.length}`,
+                                    name: val.name,
+                                    input: this.parseToolInput(val.args)
+                                });
+                            }
+                        }
+                        yield {
+                            type: 'done',
+                            toolCalls: toolCalls.length ? toolCalls : undefined,
+                            usage: event.usage as any,
+                            metadata: {
+                                finishReason: choice.finish_reason,
+                                provider: this.options.provider,
+                                model: this.resolveModel()
+                            }
+                        };
+                    }
+                }
+            }
         } finally {
             cleanup();
         }
@@ -146,6 +312,16 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return `${this.resolveBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
     }
 
+    private isRetryable(status: number): boolean {
+        return status === 429 || status === 500 || status === 502 || status === 503;
+    }
+
+    private async retry(request: ModelRequest, attempt: number, _lastStatus: number): Promise<ModelResponse> {
+        const delay = Math.min(BASE_RETRY_MS * Math.pow(2, attempt - 1) + Math.random() * 500, 15000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.complete(request, attempt + 1);
+    }
+
     protected createRequest(request: ModelRequest): OpenAIChatCompletionRequest {
         return {
             model: this.resolveModel(),
@@ -154,6 +330,14 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             tool_choice: request.tools.length ? 'auto' : undefined,
             temperature: this.options.temperature,
             max_tokens: this.options.maxTokens
+        };
+    }
+
+    protected createStreamRequest(request: ModelRequest): OpenAIChatCompletionRequest {
+        return {
+            ...this.createRequest(request),
+            stream: true,
+            stream_options: { include_usage: true }
         };
     }
 

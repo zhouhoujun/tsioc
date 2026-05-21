@@ -11,7 +11,7 @@ import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { AgentContextManager } from '../context/AgentContextManager';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
-import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TURN_HANDLER } from '../tokens';
+import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TURN_HANDLER } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { AgentMessage } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -55,14 +55,39 @@ export class AgentRuntime {
         this.toolApprovalManager = this.resolveApprovalManager(approvalManager);
     }
 
+    private _stopped = false;
+
     @Runner()
     async start(): Promise<void> {
+        this._stopped = false;
         const bootstrapTurn = this.options.bootstrapTurn;
         if (!bootstrapTurn?.enabled || !bootstrapTurn.input?.trim()) {
             return;
         }
         const result = await this.runTurn(bootstrapTurn.sessionId || 'default', bootstrapTurn.input);
         bootstrapTurn.output = result.message.content;
+    }
+
+    async stop(): Promise<void> {
+        if (this._stopped) {
+            return;
+        }
+        this._stopped = true;
+        const timeout = this.options.scheduler?.shutdownTimeoutMs ?? 10000;
+        const timer = setTimeout(() => {
+            this.app.publishEvent(new AgentErrorEvent(this, 'system', new Error(`Forced shutdown after ${timeout}ms`)))
+                .catch(() => {});
+        }, timeout);
+        try {
+            const shutdownEvents = this.app.get(AGENT_SCHEDULER, null);
+            if (shutdownEvents && typeof (shutdownEvents as any).stop === 'function') {
+                await (shutdownEvents as any).stop();
+            }
+        } catch {
+            // scheduler may not be configured
+        } finally {
+            clearTimeout(timer);
+        }
     }
 
     async runTurn(sessionId: string, input: string): Promise<AgentTurnResult> {
@@ -157,15 +182,20 @@ export class AgentRuntime {
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
-            if (handled.error) {
-                throw handled.error;
-            }
 
             round++;
         }
 
-        const fallback = this.createMessage('assistant', 'Stopped after reaching the tool round limit.');
-        return { sessionId, message: fallback };
+        // Append a feedback message so the LLM knows it hit the limit and can respond appropriately.
+        const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
+        await this.sessions.append(sessionId, limitMessage);
+
+        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+        const finalResponse = await this.modelAdapter.complete(finalRequest);
+        await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
+
+        const finalMessage = this.createMessage('assistant', finalResponse.message ?? '', undefined, undefined, finalResponse.metadata);
+        return { sessionId, message: finalMessage };
     }
 
     private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string }, AgentTurnResult, void> {
@@ -182,15 +212,19 @@ export class AgentRuntime {
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
-            if (handled.error) {
-                throw handled.error;
-            }
 
             round++;
         }
 
-        const fallback = this.createMessage('assistant', 'Stopped after reaching the tool round limit.');
-        return { sessionId, message: fallback };
+        yield { type: 'text', content: '\n\n[Reached tool round limit. Requesting final answer...]\n\n' };
+        const limitMessage = this.createMessage('user', 'You have reached the maximum number of tool call rounds. Please provide your best answer now based on the results you have so far.');
+        await this.sessions.append(sessionId, limitMessage);
+
+        const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId);
+        const finalResponse = yield* this.collectStreamingResponse(sessionId, finalRequest);
+
+        const finalMessage = this.createMessage('assistant', finalResponse.message ?? '', undefined, undefined, finalResponse.metadata);
+        return { sessionId, message: finalMessage };
     }
 
     private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string): Promise<ModelRequest> {
@@ -290,7 +324,7 @@ export class AgentRuntime {
         sessionId: string,
         response: ModelResponse,
         loopDetector: ToolLoopDetector
-    ): Promise<{ message?: AgentMessage; error?: Error }> {
+    ): Promise<{ message?: AgentMessage }> {
         if (response.toolCalls?.length) {
             const assistantToolCallMessage = this.createMessage('assistant', response.message ?? '', undefined, undefined, {
                 toolCalls: response.toolCalls.map(toolCall => ({ id: toolCall.id, name: toolCall.name })),
@@ -302,8 +336,10 @@ export class AgentRuntime {
             });
             await this.sessions.append(sessionId, assistantToolCallMessage);
 
-            const toolError = await this.executeTools(sessionId, response.toolCalls, loopDetector);
-            return { error: toolError };
+            // Execute all tools, feeding results (including errors) back as tool messages.
+            // Individual tool failures do not abort the turn — the model sees the error and can retry.
+            await this.executeTools(sessionId, response.toolCalls, loopDetector);
+            return {};
         }
 
         return {
@@ -315,13 +351,14 @@ export class AgentRuntime {
         sessionId: string,
         toolCalls: AgentToolCall[],
         loopDetector: ToolLoopDetector
-    ): Promise<Error | undefined> {
+    ): Promise<void> {
         const toolOpts = this.options.tools ?? defaultAgentOptions.tools!;
 
         if (toolOpts.parallelExecution && toolCalls.length > 1 && this.canParallelize(toolCalls, toolOpts.parallelSafeTools ?? [])) {
-            return this.executeToolsParallel(sessionId, toolCalls, loopDetector);
+            await this.executeToolsParallel(sessionId, toolCalls, loopDetector);
+        } else {
+            await this.executeToolsSequential(sessionId, toolCalls, loopDetector);
         }
-        return this.executeToolsSequential(sessionId, toolCalls, loopDetector);
     }
 
     private canParallelize(toolCalls: Array<{ name: string; input?: any }>, safeTools: string[]): boolean {
@@ -350,34 +387,17 @@ export class AgentRuntime {
         sessionId: string,
         toolCalls: AgentToolCall[],
         loopDetector: ToolLoopDetector
-    ): Promise<Error | undefined> {
-        let toolError: Error | undefined;
+    ): Promise<void> {
         for (const toolCall of toolCalls) {
-            if (toolError) {
-                const reason = 'Skipped because a previous tool call failed.';
-                const receipt = this.createSkippedReceipt(toolCall, 'sequential', reason);
-                await this.app.publishEvent(new AgentToolSkippedEvent(this, sessionId, toolCall.name, reason, receipt));
-                await this.sessions.append(sessionId, this.createMessage('tool',
-                    JSON.stringify({ error: reason }),
-                    toolCall.name, toolCall.id,
-                    {
-                        inputSummary: this.summarizeToolInput(toolCall.input),
-                        error: reason,
-                        receipt
-                    }
-                ));
-                continue;
-            }
-            toolError = await this.invokeSingleTool(sessionId, toolCall, loopDetector, 'sequential');
+            await this.invokeSingleTool(sessionId, toolCall, loopDetector, 'sequential');
         }
-        return toolError;
     }
 
     private async executeToolsParallel(
         sessionId: string,
         toolCalls: AgentToolCall[],
         loopDetector: ToolLoopDetector
-    ): Promise<Error | undefined> {
+    ): Promise<void> {
         const maxParallel = this.options.tools?.maxParallelTools ?? defaultAgentOptions.tools!.maxParallelTools!;
         for (let i = 0; i < toolCalls.length; i += maxParallel) {
             const batch = toolCalls.slice(i, i + maxParallel);
@@ -385,23 +405,20 @@ export class AgentRuntime {
                 batch.map(tc => this.performToolInvocation(sessionId, tc, loopDetector, 'parallel'))
             );
 
-            const finalized: ToolInvocationResult[] = [];
-            for (let j = 0; j < results.length; j++) {
-                const result = results[j];
-                if (result.status === 'rejected') {
-                    return result.reason instanceof Error ? result.reason : new Error(String(result.reason));
-                }
-                finalized.push(result.value);
-            }
-
-            for (const result of finalized) {
-                await this.finalizeToolInvocation(sessionId, result);
-                if (result.error) {
-                    return result.error;
+            for (const result of results) {
+                if (result.status === 'fulfilled') {
+                    await this.finalizeToolInvocation(sessionId, result.value);
+                } else {
+                    const err = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
+                    await this.sessions.append(sessionId, this.createMessage(
+                        'tool',
+                        JSON.stringify({ error: err.message }),
+                        'unknown', undefined,
+                        { error: err.message }
+                    ));
                 }
             }
         }
-        return undefined;
     }
 
     private async invokeSingleTool(
@@ -595,22 +612,6 @@ export class AgentRuntime {
         };
     }
 
-    private createSkippedReceipt(
-        toolCall: { id: string; name: string },
-        executionMode: 'sequential' | 'parallel',
-        error: string
-    ): AgentToolExecutionReceipt {
-        return {
-            receiptId: randomUUID(),
-            toolCallId: toolCall.id,
-            toolName: toolCall.name,
-            executionMode,
-            status: 'skipped',
-            durationMs: 0,
-            error
-        };
-    }
-
     private resolveApprovalManager(approvalManager?: ToolApprovalManager): ToolApprovalManager | undefined {
         if (approvalManager?.isConfigured()) {
             return approvalManager;
@@ -624,7 +625,7 @@ export class AgentRuntime {
             new DefaultApprovalStrategy(required),
             {
                 defaultTimeoutMs: this.options.tools?.approvalTimeoutMs ?? defaultAgentOptions.tools?.approvalTimeoutMs,
-                autoDeny: true
+                autoDeny: false
             }
         );
     }
