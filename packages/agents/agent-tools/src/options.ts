@@ -31,6 +31,11 @@ export interface AgentToolsTerminalOptions {
     maxTimeoutMs?: number;
 }
 
+export interface AgentToolsProcessOptions {
+    maxProcessesPerSession?: number;
+    maxOutputChars?: number;
+}
+
 export interface AgentToolsHttpOptions {
     fetch?: typeof fetch;
     timeoutMs?: number;
@@ -53,6 +58,7 @@ export type AgentToolGroup =
     | 'browser'
     | 'sessions'
     | 'planning'
+    | 'process'
     | 'scheduling'
     | 'memory'
     | 'project'
@@ -77,6 +83,9 @@ export type AgentToolItem =
     | 'todo'
     | 'ask_user'
     | 'escalate'
+    | 'process.start'
+    | 'process.poll'
+    | 'process.kill'
     | 'schedule'
     | 'memory.list'
     | 'memory.put'
@@ -104,6 +113,7 @@ export interface AgentToolsOptions {
     web?: AgentToolsWebOptions;
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
+    process?: AgentToolsProcessOptions;
     schedule?: AgentToolsScheduleOptions;
     roots?: string[];
     mcp?: AgentMcpOptions;
@@ -152,6 +162,9 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         },
         terminal: {
             ...(options?.terminal ?? {})
+        },
+        process: {
+            ...(options?.process ?? {})
         },
         schedule: {
             ...(options?.schedule ?? {})

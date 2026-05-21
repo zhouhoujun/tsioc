@@ -20,6 +20,10 @@ import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
+import { ProcessRegistry } from '../process/ProcessRegistry';
+import { ProcessStartTool } from '../process/process-start.tool';
+import { ProcessPollTool } from '../process/process-poll.tool';
+import { ProcessKillTool } from '../process/process-kill.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
 import { MemoryPutTool } from '../memory/memory-put.tool';
 import { MemorySearchTool } from '../memory/memory-search.tool';
@@ -62,6 +66,10 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         TodoTool,
         AskUserTool,
         EscalateTool,
+        ProcessRegistry,
+        ProcessStartTool,
+        ProcessPollTool,
+        ProcessKillTool,
         ScheduleTool,
         TerminalTool,
         MemoryListTool,
@@ -97,6 +105,9 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         TodoTool,
         AskUserTool,
         EscalateTool,
+        ProcessStartTool,
+        ProcessPollTool,
+        ProcessKillTool,
         ScheduleTool,
         TerminalTool,
         MemoryListTool,

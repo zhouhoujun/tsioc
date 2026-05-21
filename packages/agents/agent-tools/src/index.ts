@@ -17,4 +17,5 @@ export * from '../scheduling';
 export * from '../terminal';
 export * from '../memory';
 export * from '../project';
+export * from '../process';
 export * from '../mcp';

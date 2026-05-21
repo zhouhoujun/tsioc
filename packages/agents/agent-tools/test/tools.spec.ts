@@ -24,6 +24,10 @@ import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
+import { ProcessRegistry } from '../process/ProcessRegistry';
+import { ProcessStartTool } from '../process/process-start.tool';
+import { ProcessPollTool } from '../process/process-poll.tool';
+import { ProcessKillTool } from '../process/process-kill.tool';
 import { MemoryDeleteTool } from '../memory/memory-delete.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
 import { MemoryPutTool } from '../memory/memory-put.tool';
@@ -37,7 +41,8 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
-import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS, withProjectAgentTools } from '../src/provider';
+import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS, withProjectAgentTools, withProcessAgentTools } from '../src/provider';
+import { AgentToolsModule } from '../src/agent-tools.module';
 import { resolveAgentRootSettings } from '../src/settings';
 import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AGENT_MODEL_ADAPTER, AgentModule } from '@tsdi/agent';
@@ -46,17 +51,22 @@ import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as Exported
 import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as ExportedSessionsListTool, SessionsHistoryTool as ExportedSessionsHistoryTool } from '../sessions';
 import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
+import { ProcessStartTool as ExportedProcessStartTool, ProcessPollTool as ExportedProcessPollTool, ProcessKillTool as ExportedProcessKillTool } from '../process';
 import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool } from '../files';
-import { MemoryDeleteTool as ExportedMemoryDeleteTool, MemoryListTool as ExportedMemoryListTool, MemoryPutTool as ExportedMemoryPutTool, MemorySearchTool as ExportedMemorySearchTool, MemoryRecallTool as ExportedMemoryRecallTool, MemoryForgetTool as ExportedMemoryForgetTool, MemoryExportTool as ExportedMemoryExportTool, MemoryPurgeTool as ExportedMemoryPurgeTool } from '../memory';
+import * as ExportedMemoryModule from '../memory';
+const ExportedMemory: any = ExportedMemoryModule;
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
 import { ProjectIntelTool as ExportedProjectIntelTool } from '../project';
-import { provideSkills, LocalSkillRegistry, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
+import { provideSkills, LocalSkillRegistry, ListSkillTool, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
 import { LocalMcpClientRegistry } from '../mcp';
 
 class FakeScheduler extends AgentScheduler {
     scheduled: ScheduledAgentTask[] = [];
     cancelled: string[] = [];
+    paused: string[] = [];
+    resumed: string[] = [];
+    updated: Array<{ id: string; patch: Partial<ScheduledAgentTask>; }> = [];
 
     async start(): Promise<void> {
         return;
@@ -74,6 +84,59 @@ class FakeScheduler extends AgentScheduler {
     async cancel(taskId: string): Promise<void> {
         this.cancelled.push(taskId);
         this.scheduled = this.scheduled.map(task => task.id === taskId ? { ...task, cancelled: true } : task);
+    }
+
+    getTask(taskId: string): ScheduledAgentTask | undefined {
+        const task = this.scheduled.find(item => item.id === taskId && !item.cancelled);
+        return task ? { ...task } : undefined;
+    }
+
+    async pause(taskId: string): Promise<ScheduledAgentTask | undefined> {
+        let next: ScheduledAgentTask | undefined;
+        this.scheduled = this.scheduled.map(task => {
+            if (task.id !== taskId || task.cancelled) {
+                return task;
+            }
+            const updated = { ...task, paused: true as any, updatedAt: Date.now() } as ScheduledAgentTask;
+            next = updated;
+            return updated;
+        });
+        if (next) {
+            this.paused.push(taskId);
+        }
+        return next ? { ...next } : undefined;
+    }
+
+    async resume(taskId: string): Promise<ScheduledAgentTask | undefined> {
+        let next: ScheduledAgentTask | undefined;
+        this.scheduled = this.scheduled.map(task => {
+            if (task.id !== taskId || task.cancelled) {
+                return task;
+            }
+            const updated = { ...(task as any), paused: false, updatedAt: Date.now() } as ScheduledAgentTask;
+            next = updated;
+            return updated;
+        });
+        if (next) {
+            this.resumed.push(taskId);
+        }
+        return next ? { ...next } : undefined;
+    }
+
+    async update(taskId: string, patch: Partial<ScheduledAgentTask>): Promise<ScheduledAgentTask | undefined> {
+        let next: ScheduledAgentTask | undefined;
+        this.scheduled = this.scheduled.map(task => {
+            if (task.id !== taskId || task.cancelled) {
+                return task;
+            }
+            const updated = { ...task, ...patch, id: task.id, sessionId: task.sessionId, updatedAt: Date.now() };
+            next = updated;
+            return updated;
+        });
+        if (next) {
+            this.updated.push({ id: taskId, patch: { ...patch } });
+        }
+        return next ? { ...next } : undefined;
     }
 
     getTasks(): ScheduledAgentTask[] {
@@ -99,6 +162,17 @@ export class AgentToolsPackageTest {
         await fs.mkdir(path.join(workspace, 'node_modules', 'pkg'), { recursive: true });
         await fs.writeFile(path.join(workspace, 'node_modules', 'pkg', 'ignored.txt'), 'ignored', 'utf8');
         return workspace;
+    }
+
+    private async waitFor(predicate: () => Promise<boolean>, timeoutMs = 2000): Promise<void> {
+        const started = Date.now();
+        while (Date.now() - started < timeoutMs) {
+            if (await predicate()) {
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        throw new Error(`Timed out after ${timeoutMs}ms waiting for condition.`);
     }
 
     private async createSkillRoot(): Promise<string> {
@@ -448,21 +522,25 @@ export class AgentToolsPackageTest {
         expect(ExportedEscalateTool).toEqual(EscalateTool);
         expect(ExportedScheduleTool).toEqual(ScheduleTool);
         expect(ExportedTerminalTool).toEqual(TerminalTool);
+        expect(ExportedProcessStartTool).toEqual(ProcessStartTool);
+        expect(ExportedProcessPollTool).toEqual(ProcessPollTool);
+        expect(ExportedProcessKillTool).toEqual(ProcessKillTool);
         expect(ExportedWriteFileTool).toEqual(WriteFileTool);
         expect(ExportedEditFileTool).toEqual(EditFileTool);
-        expect(ExportedMemoryListTool).toEqual(MemoryListTool);
-        expect(ExportedMemoryPutTool).toEqual(MemoryPutTool);
-        expect(ExportedMemorySearchTool).toEqual(MemorySearchTool);
-        expect(ExportedMemoryRecallTool).toEqual(MemoryRecallTool);
-        expect(ExportedMemoryForgetTool).toEqual(MemoryForgetTool);
-        expect(ExportedMemoryExportTool).toEqual(MemoryExportTool);
-        expect(ExportedMemoryPurgeTool).toEqual(MemoryPurgeTool);
-        expect(ExportedMemoryDeleteTool).toEqual(MemoryDeleteTool);
+        expect(ExportedMemory.MemoryListTool).toEqual(MemoryListTool);
+        expect(ExportedMemory.MemoryPutTool).toEqual(MemoryPutTool);
+        expect(ExportedMemory.MemorySearchTool).toEqual(MemorySearchTool);
+        expect(ExportedMemory.MemoryRecallTool).toEqual(MemoryRecallTool);
+        expect(ExportedMemory.MemoryForgetTool).toEqual(MemoryForgetTool);
+        expect(ExportedMemory.MemoryExportTool).toEqual(MemoryExportTool);
+        expect(ExportedMemory.MemoryPurgeTool).toEqual(MemoryPurgeTool);
+        expect(ExportedMemory.MemoryDeleteTool).toEqual(MemoryDeleteTool);
         expect(ExportedHttpFetchTool).toEqual(HttpFetchTool);
         expect(ExportedHttpRequestTool).toEqual(HttpRequestTool);
         expect(ExportedToolSearchTool).toEqual(ToolSearchTool);
         expect(ExportedToolInspectTool).toEqual(ToolInspectTool);
         expect(ExportedProjectIntelTool).toEqual(ProjectIntelTool);
+        expect(ListSkillTool).toBeTruthy();
     }
 
     @Test('provider tools expose grouped registrations and defaults')
@@ -473,6 +551,7 @@ export class AgentToolsPackageTest {
         expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history']);
         expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
         expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
+        expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
         expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel']);
         expect(resolveAgentToolNames()).toContain('read_file');
         expect(resolveAgentToolNames()).toContain('ask_user');
@@ -484,6 +563,7 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames()).not.toContain('sessions_history');
         expect(resolveAgentToolNames()).not.toContain('memory.purge');
         expect(resolveAgentToolNames()).not.toContain('write_file');
+        expect(resolveAgentToolNames()).not.toContain('process.start');
         expect(resolveAgentToolNames()).not.toContain('http_fetch');
         expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
         expect(resolveAgentToolNames({ registration: { groups: { browser: true } } })).toContain('browser_open');
@@ -491,6 +571,9 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_current');
         expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_list');
         expect(resolveAgentToolNames({ registration: { groups: { sessions: true } } })).toContain('sessions_history');
+        expect(resolveAgentToolNames({ registration: { groups: { process: true } } })).toContain('process.start');
+        expect(resolveAgentToolNames({ registration: { groups: { process: true } } })).toContain('process.poll');
+        expect(resolveAgentToolNames({ registration: { groups: { process: true } } })).toContain('process.kill');
         expect(resolveAgentToolNames({ registration: { items: { 'memory.purge': true } } })).toContain('memory.purge');
         expect(resolveAgentToolNames({ registration: { preset: 'none' } })).toEqual([]);
         expect(resolveAgentToolNames({ registration: { groups: { http: true } } })).toContain('http_fetch');
@@ -498,6 +581,7 @@ export class AgentToolsPackageTest {
         expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).toContain('terminal');
         expect(resolveAgentToolNames({ registration: { items: { terminal: true, web_extract: false } } })).not.toContain('web_extract');
         expect(typeof withProjectAgentTools).toEqual('function');
+        expect(typeof withProcessAgentTools).toEqual('function');
     }
 
     @Test('provider tools resolve capability bundle metadata')
@@ -566,6 +650,50 @@ export class AgentToolsPackageTest {
             expect(names).toContain('http_request');
             expect(names).toContain('terminal');
             expect(names).not.toContain('web_extract');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('provideTools enables process tools through module options')
+    async provideToolsEnablesProcessToolsThroughModuleOptions() {
+        const workspace = await this.createWorkspace();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                file: { rootDir: workspace },
+                registration: {
+                    groups: { process: true }
+                }
+            })]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names).toContain('process.start');
+            expect(names).toContain('process.poll');
+            expect(names).toContain('process.kill');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('agent tools module registers process tools through withOptions')
+    async agentToolsModuleRegistersProcessToolsThroughWithOptions() {
+        const workspace = await this.createWorkspace();
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [
+                ...AgentToolsModule.withOptions({
+                    file: { rootDir: workspace },
+                    registration: { groups: { process: true } }
+                }).providers!
+            ]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const names = registry.getToolDefinitions().map(tool => tool.name);
+            expect(names).toContain('process.start');
+            expect(names).toContain('process.poll');
+            expect(names).toContain('process.kill');
         } finally {
             await ctx.close();
         }
@@ -1267,6 +1395,58 @@ export class AgentToolsPackageTest {
         expect(created.task.scheduleType).toEqual('cron');
     }
 
+    @Test('schedule tool gets pauses resumes and updates session tasks')
+    async scheduleToolGetsPausesResumesAndUpdatesSessionTasks() {
+        const scheduler = new FakeScheduler();
+        const tool = new ScheduleTool({ get: () => scheduler } as any);
+
+        const created = await tool.invoke({ action: 'create', prompt: 'ping', delayMs: 1000 }, createSessionContext({ sessionId: 'sched-life' }));
+        const id = created.task.id;
+
+        const fetched = await tool.invoke({ action: 'get', id }, createSessionContext({ sessionId: 'sched-life' }));
+        expect(fetched.task.id).toEqual(id);
+
+        const paused = await tool.invoke({ action: 'pause', id }, createSessionContext({ sessionId: 'sched-life' }));
+        expect(paused.paused).toEqual(true);
+        expect((paused.task as any).paused).toEqual(true);
+        expect(scheduler.paused).toEqual([id]);
+
+        const resumed = await tool.invoke({ action: 'resume', id }, createSessionContext({ sessionId: 'sched-life' }));
+        expect(resumed.resumed).toEqual(true);
+        expect((resumed.task as any).paused).toEqual(false);
+        expect(scheduler.resumed).toEqual([id]);
+
+        const updated = await tool.invoke({ action: 'update', id, prompt: 'pong', intervalMs: 60000 }, createSessionContext({ sessionId: 'sched-life' }));
+        expect(updated.updated).toEqual(true);
+        expect(updated.task.prompt).toEqual('pong');
+        expect(updated.task.intervalMs).toEqual(60000);
+        expect(updated.task.scheduleType).toEqual('interval');
+        expect(scheduler.updated[0].id).toEqual(id);
+    }
+
+    @Test('schedule lifecycle actions enforce session ownership and mutable input')
+    async scheduleLifecycleActionsEnforceSessionOwnershipAndMutableInput() {
+        const scheduler = new FakeScheduler();
+        const tool = new ScheduleTool({ get: () => scheduler } as any);
+        const created = await tool.invoke({ action: 'create', prompt: 'ping', delayMs: 1000 }, createSessionContext({ sessionId: 'sched-owner' }));
+
+        let notFoundError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'get', id: created.task.id }, createSessionContext({ sessionId: 'sched-other' }));
+        } catch (err) {
+            notFoundError = err as Error;
+        }
+        expect(notFoundError?.message).toContain('not found');
+
+        let updateError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'update', id: created.task.id }, createSessionContext({ sessionId: 'sched-owner' }));
+        } catch (err) {
+            updateError = err as Error;
+        }
+        expect(updateError?.message).toContain('mutable field');
+    }
+
     @Test('schedule tool rejects cron tasks below min interval and unschedulable cron')
     async scheduleToolRejectsInvalidCronCadence() {
         const scheduler = new FakeScheduler();
@@ -1291,6 +1471,95 @@ export class AgentToolsPackageTest {
             impossibleCronError = err as Error;
         }
         expect(impossibleCronError?.message).toContain('cron');
+    }
+
+    @Test('process tools start poll and isolate session access')
+    async processToolsStartPollAndIsolateSessionAccess() {
+        const workspace = await this.createWorkspace();
+        const start = new ProcessStartTool(new ProcessRegistry(), { file: { rootDir: workspace } } as any);
+        const processes = (start as any).processes;
+        const poll = new ProcessPollTool(processes);
+
+        const started = await start.invoke({ command: 'node -e "process.stdout.write(\'ok\')"' }, createSessionContext({ sessionId: 'proc-1' }));
+        expect(started.process.id).toBeTruthy();
+        expect(started.process.running).toEqual(true);
+
+        await this.waitFor(async () => {
+            const current = await poll.invoke({ id: started.process.id }, createSessionContext({ sessionId: 'proc-1' }));
+            return current.process.running === false;
+        });
+
+        const finished = await poll.invoke({ id: started.process.id }, createSessionContext({ sessionId: 'proc-1' }));
+        expect(finished.process.running).toEqual(false);
+        expect(finished.process.stdout).toContain('ok');
+
+        let sessionError: Error | undefined;
+        try {
+            await poll.invoke({ id: started.process.id }, createSessionContext({ sessionId: 'proc-2' }));
+        } catch (err) {
+            sessionError = err as Error;
+        }
+        expect(sessionError?.message).toContain('not found');
+    }
+
+    @Test('process tools kill running commands and provider exposes process group')
+    async processToolsKillRunningCommandsAndProviderExposesProcessGroup() {
+        const workspace = await this.createWorkspace();
+        const registry = new ProcessRegistry();
+        const start = new ProcessStartTool(registry, { file: { rootDir: workspace } } as any);
+        const poll = new ProcessPollTool(registry);
+        const kill = new ProcessKillTool(registry);
+
+        const started = await start.invoke({ command: 'node -e "setTimeout(() => process.stdout.write(\'later\'), 400)"' }, createSessionContext({ sessionId: 'proc-kill' }));
+        const killed = await kill.invoke({ id: started.process.id }, createSessionContext({ sessionId: 'proc-kill' }));
+        expect(killed.signalled).toEqual(true);
+
+        await this.waitFor(async () => {
+            const current = await poll.invoke({ id: started.process.id }, createSessionContext({ sessionId: 'proc-kill' }));
+            return current.process.running === false;
+        });
+
+        const finished = await poll.invoke({ id: started.process.id }, createSessionContext({ sessionId: 'proc-kill' }));
+        expect(finished.process.running).toEqual(false);
+        expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
+        expect(resolveAgentToolBundles().find(bundle => bundle.name === 'process')?.activation).toEqual({ kind: 'deferred', scope: 'session' });
+    }
+
+    @Test('process start rejects symlink workdir inside workspace')
+    async processStartRejectsSymlinkWorkdirInsideWorkspace() {
+        const workspace = await this.createWorkspace();
+        const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-tools-proc-outside-'));
+        const linkedDir = path.join(workspace, 'linked-workdir');
+        symlinkSync(outside, linkedDir);
+        const tool = new ProcessStartTool(new (require('../process/ProcessRegistry').ProcessRegistry)(), { file: { rootDir: workspace } } as any);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ command: 'node -e "process.stdout.write(\'ok\')"', workdir: 'linked-workdir' }, createSessionContext({ sessionId: 'proc-symlink' }));
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('symbolic link');
+    }
+
+    @Test('process start enforces per-session process limit')
+    async processStartEnforcesPerSessionProcessLimit() {
+        const workspace = await this.createWorkspace();
+        const registry = new ProcessRegistry();
+        const tool = new ProcessStartTool(registry, { file: { rootDir: workspace }, process: { maxProcessesPerSession: 1 } } as any);
+
+        const first = await tool.invoke({ command: 'node -e "setTimeout(() => {}, 400)"' }, createSessionContext({ sessionId: 'proc-limit' }));
+        expect(first.process.running).toEqual(true);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ command: 'node -e "setTimeout(() => {}, 400)"' }, createSessionContext({ sessionId: 'proc-limit' }));
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('Process limit reached');
+
+        await new ProcessKillTool(registry).invoke({ id: first.process.id }, createSessionContext({ sessionId: 'proc-limit' }));
     }
 
     @Test('terminal tool executes command within workspace')
@@ -1344,6 +1613,63 @@ export class AgentToolsPackageTest {
         expect(builtins[0].tools?.map(tool => tool.name)).toEqual(['read_file', 'glob_search', 'content_search', 'todo']);
         expect(builtins[1].promptFull).toContain('Use this skill when the user wants an implementation plan');
         expect(getBuiltinSkills().map(skill => skill.id)).toEqual(['codebase', 'plan', 'web-research']);
+    }
+
+    @Test('skill list returns projected skills and filters by query')
+    async skillListReturnsProjectedSkillsAndFiltersByQuery() {
+        const tool = new ListSkillTool(new LocalSkillRegistry([
+            {
+                id: 'router',
+                title: 'Router skill',
+                summary: 'Use router diagnostics patterns.',
+                promptFull: 'Prefer tool-assisted router diagnostics.',
+                aliases: ['router-skill'],
+                tools: [{ name: 'read_file' }, { name: 'content_search', activation: 'deferred' }],
+                metadata: { source: 'test-suite', category: 'networking' }
+            },
+            {
+                id: 'planner',
+                title: 'Planner skill',
+                summary: 'Write step-by-step plans.',
+                promptFull: 'Plan carefully first.',
+                metadata: { source: 'workspace', category: 'planning' }
+            }
+        ] as any));
+
+        const listed = await tool.invoke({}, createSessionContext());
+        expect(listed.skills.length).toEqual(2);
+        expect(listed.skills[0]).toEqual({
+            id: 'router',
+            title: 'Router skill',
+            summary: 'Use router diagnostics patterns.',
+            aliases: ['router-skill'],
+            tools: [{ name: 'read_file' }, { name: 'content_search', activation: 'deferred' }],
+            category: 'networking',
+            source: 'test-suite'
+        });
+        expect((listed.skills[0] as any).promptFull).toEqual(undefined);
+        expect((listed.skills[0] as any).metadata).toEqual(undefined);
+        expect(tool.execution?.readOnly).toEqual(true);
+
+        const aliasMatch = await tool.invoke({ query: 'ROUTER-SKILL' }, createSessionContext());
+        expect(aliasMatch.skills.map((skill: any) => skill.id)).toEqual(['router']);
+
+        const toolMatch = await tool.invoke({ query: 'content_search' }, createSessionContext());
+        expect(toolMatch.skills.map((skill: any) => skill.id)).toEqual(['router']);
+
+        const metadataMatch = await tool.invoke({ query: 'planning' }, createSessionContext());
+        expect(metadataMatch.skills.map((skill: any) => skill.id)).toEqual(['planner']);
+
+        const none = await tool.invoke({ query: 'missing' }, createSessionContext());
+        expect(none.skills).toEqual([]);
+
+        let queryError: Error | undefined;
+        try {
+            await tool.invoke({ query: 1 as any }, createSessionContext());
+        } catch (err) {
+            queryError = err as Error;
+        }
+        expect(queryError?.message).toContain('query must be a string');
     }
 
     @Test('builtin skill assets copy to output tree')
@@ -1539,6 +1865,7 @@ export class AgentToolsPackageTest {
             const registry = ctx.get(ToolRegistry);
             const skillRegistry = ctx.get(LocalSkillRegistry);
             expect(registry.getToolDefinitions('s1').some(tool => tool.name === 'read_skill')).toEqual(true);
+            expect(registry.getToolDefinitions('s1').some(tool => tool.name === 'skill_list')).toEqual(true);
             expect(skillRegistry.list().map(skill => skill.id).sort()).toEqual(['codebase', 'plan', 'router', 'web-research']);
 
             const runtime = ctx.get(AgentRuntime);

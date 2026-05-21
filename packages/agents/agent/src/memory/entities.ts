@@ -114,6 +114,9 @@ export class AgentScheduledTaskEntity {
     cancelled!: boolean;
 
     @Column({ type: 'boolean', default: false })
+    paused!: boolean;
+
+    @Column({ type: 'boolean', default: false })
     running!: boolean;
 
     @Column({ type: 'bigint', nullable: true })

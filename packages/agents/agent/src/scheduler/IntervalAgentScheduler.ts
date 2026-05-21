@@ -84,6 +84,81 @@ export class IntervalAgentScheduler extends AgentScheduler {
         return Array.from(this.tasks.values()).filter(task => !task.cancelled);
     }
 
+    getTask(taskId: string): ScheduledAgentTask | undefined {
+        const task = this.tasks.get(taskId);
+        return task && !task.cancelled ? { ...task } : undefined;
+    }
+
+    async pause(taskId: string): Promise<ScheduledAgentTask | undefined> {
+        const task = this.tasks.get(taskId);
+        if (!task || task.cancelled) {
+            return undefined;
+        }
+        const pausedTask: ScheduledAgentTask = {
+            ...task,
+            paused: true,
+            updatedAt: Date.now()
+        };
+        this.tasks.set(taskId, pausedTask);
+        if (!pausedTask.running) {
+            const timer = this.timers.get(taskId);
+            if (timer) {
+                clearTimeout(timer as ReturnType<typeof setTimeout>);
+                clearInterval(timer as ReturnType<typeof setInterval>);
+                this.timers.delete(taskId);
+            }
+        }
+        await this.persistTask(pausedTask);
+        return { ...pausedTask };
+    }
+
+    async resume(taskId: string): Promise<ScheduledAgentTask | undefined> {
+        const task = this.tasks.get(taskId);
+        if (!task || task.cancelled) {
+            return undefined;
+        }
+        const now = Date.now();
+        const resumedTask: ScheduledAgentTask = {
+            ...task,
+            paused: false,
+            updatedAt: now,
+            nextRunAt: task.running
+                ? task.nextRunAt
+                : (task.scheduleType === 'once'
+                    ? (task.runAt && task.runAt > now ? task.runAt : now)
+                    : this.resolveNextRun(task, now))
+        };
+        this.tasks.set(taskId, resumedTask);
+        await this.persistTask(resumedTask);
+        if (!resumedTask.running) {
+            this.armTimer(resumedTask);
+        }
+        return { ...resumedTask };
+    }
+
+    async update(taskId: string, patch: Partial<ScheduledAgentTask>): Promise<ScheduledAgentTask | undefined> {
+        const task = this.tasks.get(taskId);
+        if (!task || task.cancelled) {
+            return undefined;
+        }
+        const timingChanged = patch.runAt !== undefined || patch.intervalMs !== undefined || patch.cronExpr !== undefined || patch.scheduleType !== undefined;
+        const updatedTask = this.normalizeTask({
+            ...task,
+            ...patch,
+            id: task.id,
+            sessionId: task.sessionId,
+            createdAt: task.createdAt,
+            updatedAt: Date.now(),
+            nextRunAt: patch.nextRunAt ?? (timingChanged ? undefined : task.nextRunAt)
+        });
+        this.tasks.set(taskId, updatedTask);
+        await this.persistTask(updatedTask);
+        if (!updatedTask.paused && !updatedTask.running) {
+            this.armTimer(updatedTask);
+        }
+        return { ...updatedTask };
+    }
+
     private armTimer(task: ScheduledAgentTask): void {
         const existing = this.timers.get(task.id);
         if (existing) {
@@ -91,7 +166,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             clearInterval(existing as ReturnType<typeof setInterval>);
         }
 
-        if (task.cancelled) {
+        if (task.cancelled || task.paused) {
             this.timers.delete(task.id);
             return;
         }
@@ -117,7 +192,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
     }
 
     private async execute(task: ScheduledAgentTask): Promise<void> {
-        if (task.cancelled || task.running) {
+        if (task.cancelled || task.paused || task.running) {
             return;
         }
 
@@ -150,14 +225,21 @@ export class IntervalAgentScheduler extends AgentScheduler {
             }
 
             const completedTask: ScheduledAgentTask = {
-                ...runningTask,
+                ...latestTask,
                 running: false,
                 lastRunAt: now,
-                runCount: (runningTask.runCount ?? 0) + 1,
+                runCount: (latestTask.runCount ?? 0) + 1,
                 failureCount: 0,
                 lastError: undefined,
                 updatedAt: now
             };
+
+            if (completedTask.paused) {
+                await this.persistTask(completedTask);
+                this.tasks.set(completedTask.id, completedTask);
+                this.timers.delete(completedTask.id);
+                return;
+            }
 
             if (this.shouldRepeat(completedTask)) {
                 const rescheduledTask: ScheduledAgentTask = {
@@ -233,6 +315,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             ...task,
             scheduleType,
             cancelled: task.cancelled ?? false,
+            paused: task.paused ?? false,
             running: task.running ?? false,
             createdAt: task.createdAt ?? now,
             updatedAt: task.updatedAt ?? now,
@@ -338,6 +421,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             cronExpr: task.cronExpr,
             scheduleType: task.scheduleType,
             cancelled: task.cancelled ?? false,
+            paused: task.paused ?? false,
             running: task.running ?? false,
             createdAt: task.createdAt,
             updatedAt: task.updatedAt,
@@ -422,6 +506,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
             cronExpr: record.cronExpr ?? undefined,
             scheduleType: (record.scheduleType as any) ?? undefined,
             cancelled: !!record.cancelled,
+            paused: !!record.paused,
             running: !!record.running,
             createdAt: record.createdAt == null ? undefined : Number(record.createdAt),
             updatedAt: record.updatedAt == null ? undefined : Number(record.updatedAt),

@@ -259,6 +259,83 @@ export class SchedulerTest {
         }
     }
 
+    @Test('persists paused state and skips paused task reload until resumed')
+    async persistsPausedStateAndSkipsPausedTaskReloadUntilResumed() {
+        const ctx = await Application.run(SchedulerOrmTestModule);
+        try {
+            const adapter = ctx.get(TypeormAdapter) as TypeormAdapter;
+            const runtime = new RuntimeStub();
+            const scheduler = new IntervalAgentScheduler(runtime as any, ctx as any);
+            (scheduler as any).adapter = adapter;
+
+            const scheduled = await scheduler.schedule({
+                id: 'persisted-paused',
+                sessionId: 's-paused',
+                prompt: 'pause-me',
+                runAt: Date.now() + 200
+            });
+            const paused = await scheduler.pause('persisted-paused');
+            expect(paused?.paused).toEqual(true);
+
+            const storedPaused = await adapter.getRepository(AgentScheduledTaskEntity).findOne({ where: { id: 'persisted-paused' } as any });
+            expect(storedPaused?.paused).toEqual(true);
+            await scheduler.stop();
+
+            const restarted = new IntervalAgentScheduler(runtime as any, ctx as any);
+            (restarted as any).adapter = adapter;
+            await restarted.start();
+            await new Promise(resolve => setTimeout(resolve, 250));
+            expect(runtime.calls).toEqual([]);
+            expect(restarted.getTask('persisted-paused')?.paused).toEqual(true);
+
+            const resumed = await restarted.resume('persisted-paused');
+            expect(resumed?.paused).toEqual(false);
+            await new Promise(resolve => setTimeout(resolve, 80));
+            expect(runtime.calls).toEqual(['s-paused:pause-me']);
+            const remaining = await adapter.getRepository(AgentScheduledTaskEntity).find();
+            expect(remaining.length).toEqual(0);
+            await restarted.stop();
+            expect(scheduled.id).toEqual('persisted-paused');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('pause while running prevents repeat reschedule after completion')
+    async pauseWhileRunningPreventsRepeatRescheduleAfterCompletion() {
+        const runtime = new RuntimeStub();
+        let release!: () => void;
+        runtime.blocker = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        await scheduler.schedule({ id: 'pause-running', sessionId: 's5', prompt: 'hold', intervalMs: 10, runAt: Date.now() });
+        await new Promise(resolve => setTimeout(resolve, 20));
+        const paused = await scheduler.pause('pause-running');
+        expect(paused?.paused).toEqual(true);
+        expect(paused?.running).toEqual(true);
+        release();
+        await new Promise(resolve => setTimeout(resolve, 40));
+        expect(runtime.calls).toEqual(['s5:hold']);
+        const task = scheduler.getTask('pause-running');
+        expect(task?.paused).toEqual(true);
+        expect(task?.running).toEqual(false);
+        await new Promise(resolve => setTimeout(resolve, 40));
+        expect(runtime.calls).toEqual(['s5:hold']);
+        await scheduler.stop();
+    }
+
+    @Test('prompt-only update preserves interval next run')
+    async promptOnlyUpdatePreservesIntervalNextRun() {
+        const runtime = new RuntimeStub();
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any);
+        const task = await scheduler.schedule({ id: 'update-prompt-only', sessionId: 's6', prompt: 'before', intervalMs: 1000, runAt: Date.now() + 5000 });
+        const updated = await scheduler.update('update-prompt-only', { prompt: 'after' });
+        expect(updated?.prompt).toEqual('after');
+        expect(updated?.nextRunAt).toEqual(task.nextRunAt);
+        await scheduler.stop();
+    }
+
     @Test('persists cron task metadata and computes next run')
     async persistsCronTaskMetadata() {
         const ctx = await Application.run(SchedulerOrmTestModule);

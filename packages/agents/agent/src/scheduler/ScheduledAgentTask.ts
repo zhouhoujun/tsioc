@@ -9,6 +9,7 @@ export interface ScheduledAgentTask {
     cronExpr?: string;
     scheduleType?: AgentScheduleType;
     cancelled?: boolean;
+    paused?: boolean;
     running?: boolean;
     createdAt?: number;
     updatedAt?: number;

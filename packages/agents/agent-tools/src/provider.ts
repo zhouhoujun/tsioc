@@ -21,6 +21,10 @@ import { AskUserTool } from '../planning/ask-user.tool';
 import { EscalateTool } from '../planning/escalate.tool';
 import { ScheduleTool } from '../scheduling/schedule.tool';
 import { TerminalTool } from '../terminal/terminal.tool';
+import { ProcessRegistry } from '../process/ProcessRegistry';
+import { ProcessStartTool } from '../process/process-start.tool';
+import { ProcessPollTool } from '../process/process-poll.tool';
+import { ProcessKillTool } from '../process/process-kill.tool';
 import { MemoryListTool } from '../memory/memory-list.tool';
 import { MemoryPutTool } from '../memory/memory-put.tool';
 import { MemorySearchTool } from '../memory/memory-search.tool';
@@ -53,6 +57,9 @@ const toolItems = {
     todo: TodoTool,
     ask_user: AskUserTool,
     escalate: EscalateTool,
+    'process.start': ProcessStartTool,
+    'process.poll': ProcessPollTool,
+    'process.kill': ProcessKillTool,
     schedule: ScheduleTool,
     'memory.list': MemoryListTool,
     'memory.put': MemoryPutTool,
@@ -78,6 +85,7 @@ const toolGroups = {
     browser: ['browser_open', 'text_browser'],
     sessions: ['sessions_current', 'sessions_list', 'sessions_history'],
     planning: ['todo', 'ask_user', 'escalate'],
+    process: ['process.start', 'process.poll', 'process.kill'],
     scheduling: ['schedule'],
     memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete'],
     project: ['project_intel'],
@@ -97,6 +105,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     browser: 'Lightweight browser open and text browsing tools.',
     sessions: 'Read-only session listing and history inspection tools.',
     planning: 'Planning, task tracking, and collaboration prompt tools.',
+    process: 'Background process lifecycle tools.',
     scheduling: 'Prompt scheduling and recurring task tools.',
     memory: 'Session and global memory management tools.',
     project: 'Project summarization and risk/handoff intelligence tools.',
@@ -104,7 +113,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     http: 'HTTP fetch and request tools.',
     terminal: 'Terminal command execution tools.'
 };
-const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'http', 'terminal']);
+const deferredActivationBundles = new Set<AgentToolGroup>(['filesystem', 'filesystem_write', 'web', 'browser', 'sessions', 'process', 'http', 'terminal']);
 
 export function withAgentToolsOptions(options?: AgentToolsOptions): Provider[] {
     return [{
@@ -203,6 +212,10 @@ export function withPlanningAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.planning.map(name => toolItems[name]));
 }
 
+export function withProcessAgentTools(): Provider[] {
+    return withAgentTools(...toolGroups.process.map(name => toolItems[name]));
+}
+
 export function withMemoryAgentTools(): Provider[] {
     return withAgentTools(...toolGroups.memory.map(name => toolItems[name]));
 }
@@ -266,6 +279,10 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         TodoTool,
         AskUserTool,
         EscalateTool,
+        ProcessRegistry,
+        ProcessStartTool,
+        ProcessPollTool,
+        ProcessKillTool,
         ScheduleTool,
         TerminalTool,
         MemoryListTool,

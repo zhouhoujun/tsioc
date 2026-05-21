@@ -79,6 +79,10 @@
       "types": "./project/index.d.ts",
       "default": "./project/index.js"
     },
+    "./process": {
+      "types": "./process/index.d.ts",
+      "default": "./process/index.js"
+    },
     "./scheduling": {
       "types": "./scheduling/index.d.ts",
       "default": "./scheduling/index.js"

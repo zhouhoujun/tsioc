@@ -14,11 +14,11 @@ const DEFAULT_MAX_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 @Injectable()
 export class ScheduleTool implements AgentTool {
     name = 'schedule';
-    description = 'Create, list, or cancel scheduled prompts for the current session.';
+    description = 'Create, inspect, update, pause, resume, list, or cancel scheduled prompts for the current session.';
     inputSchema = {
         type: 'object',
         properties: {
-            action: { type: 'string', enum: ['create', 'list', 'cancel'] },
+            action: { type: 'string', enum: ['create', 'list', 'get', 'cancel', 'pause', 'resume', 'update'] },
             id: { type: 'string' },
             prompt: { type: 'string' },
             runAt: { type: 'number' },
@@ -51,14 +51,34 @@ export class ScheduleTool implements AgentTool {
                 tasks: scheduler.getTasks().filter((task: ScheduledAgentTask) => task.sessionId === context.sessionId)
             };
         }
+        if (action === 'get') {
+            const task = this.requireTaskForSession(scheduler, this.requireString(input?.id, 'schedule get id'), context.sessionId);
+            return { task };
+        }
         if (action === 'cancel') {
             const id = this.requireString(input?.id, 'schedule cancel id');
-            const task = scheduler.getTasks().find((item: ScheduledAgentTask) => item.id === id && item.sessionId === context.sessionId);
-            if (!task) {
-                throw new Error(`Scheduled task '${id}' was not found for this session.`);
-            }
+            this.requireTaskForSession(scheduler, id, context.sessionId);
             await scheduler.cancel(id);
             return { cancelled: true, id };
+        }
+        if (action === 'pause') {
+            const id = this.requireString(input?.id, 'schedule pause id');
+            this.requireTaskForSession(scheduler, id, context.sessionId);
+            const paused = await this.requireSchedulerMethod(scheduler, 'pause', id);
+            return { paused: true, task: paused };
+        }
+        if (action === 'resume') {
+            const id = this.requireString(input?.id, 'schedule resume id');
+            this.requireTaskForSession(scheduler, id, context.sessionId);
+            const resumed = await this.requireSchedulerMethod(scheduler, 'resume', id);
+            return { resumed: true, task: resumed };
+        }
+        if (action === 'update') {
+            const id = this.requireString(input?.id, 'schedule update id');
+            const task = this.requireTaskForSession(scheduler, id, context.sessionId);
+            const patch = this.resolveUpdatePatch(input, task);
+            const updated = await this.requireSchedulerUpdate(scheduler, id, patch);
+            return { updated: true, task: updated };
         }
         if (action === 'create') {
             const prompt = this.requirePrompt(input?.prompt);
@@ -78,13 +98,46 @@ export class ScheduleTool implements AgentTool {
             const scheduled = await scheduler.schedule(task);
             return { scheduled: true, task: scheduled };
         }
-        throw new Error('Invalid schedule input: action must be create, list, or cancel.');
+        throw new Error('Invalid schedule input: action must be create, list, get, cancel, pause, resume, or update.');
     }
 
     private resolveScheduler(): AgentScheduler | undefined {
         return this.app && typeof (this.app as any).get === 'function'
             ? (this.app as any).get(AGENT_SCHEDULER, null) as AgentScheduler | undefined
             : undefined;
+    }
+
+    private requireTaskForSession(scheduler: AgentScheduler, id: string, sessionId: string): ScheduledAgentTask {
+        const task = typeof scheduler.getTask === 'function'
+            ? scheduler.getTask(id)
+            : scheduler.getTasks().find((item: ScheduledAgentTask) => item.id === id);
+        if (!task || task.sessionId !== sessionId || task.cancelled) {
+            throw new Error(`Scheduled task '${id}' was not found for this session.`);
+        }
+        return task;
+    }
+
+    private async requireSchedulerMethod(scheduler: AgentScheduler, method: 'pause' | 'resume', id: string): Promise<ScheduledAgentTask> {
+        const fn = scheduler[method];
+        if (typeof fn !== 'function') {
+            throw new Error(`Schedule tool requires scheduler.${method}() support.`);
+        }
+        const task = await fn.call(scheduler, id);
+        if (!task) {
+            throw new Error(`Scheduled task '${id}' was not found for this session.`);
+        }
+        return task;
+    }
+
+    private async requireSchedulerUpdate(scheduler: AgentScheduler, id: string, patch: Partial<ScheduledAgentTask>): Promise<ScheduledAgentTask> {
+        if (typeof scheduler.update !== 'function') {
+            throw new Error('Schedule tool requires scheduler.update() support.');
+        }
+        const task = await scheduler.update(id, patch);
+        if (!task) {
+            throw new Error(`Scheduled task '${id}' was not found for this session.`);
+        }
+        return task;
     }
 
     private requireString(value: unknown, field: string): string {
@@ -101,6 +154,36 @@ export class ScheduleTool implements AgentTool {
             throw new Error(`Invalid schedule create prompt: must not exceed ${maxPromptLength} characters.`);
         }
         return prompt;
+    }
+
+    private resolveUpdatePatch(input: any, currentTask: ScheduledAgentTask): Partial<ScheduledAgentTask> {
+        const patch: Partial<ScheduledAgentTask> = {};
+        if (input?.prompt !== undefined) {
+            patch.prompt = this.requirePrompt(input.prompt);
+        }
+        const cronExpr = this.resolveCronExpr(input?.cronExpr);
+        const runAt = cronExpr ? undefined : this.resolveRunAt(input?.runAt, input?.delayMs);
+        const intervalMs = cronExpr ? undefined : this.resolveInterval(input?.intervalMs);
+        if (input?.cronExpr !== undefined) {
+            patch.cronExpr = cronExpr;
+            patch.intervalMs = undefined;
+            patch.runAt = undefined;
+            patch.scheduleType = 'cron';
+        } else if (input?.intervalMs !== undefined) {
+            patch.intervalMs = intervalMs;
+            patch.cronExpr = undefined;
+            patch.runAt = runAt ?? currentTask.runAt;
+            patch.scheduleType = 'interval';
+        } else if (input?.runAt !== undefined || input?.delayMs !== undefined) {
+            patch.runAt = runAt;
+            patch.cronExpr = undefined;
+            patch.intervalMs = undefined;
+            patch.scheduleType = 'once';
+        }
+        if (!Object.keys(patch).length) {
+            throw new Error('Invalid schedule update input: provide at least one mutable field.');
+        }
+        return patch;
     }
 
     private ensureSessionCapacity(scheduler: AgentScheduler, sessionId: string): void {

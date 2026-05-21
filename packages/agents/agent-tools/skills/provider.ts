@@ -5,8 +5,8 @@ import { AgentSkillDefinition } from './types';
 import { LocalSkillRegistry } from './LocalSkillRegistry';
 import { SkillSessionStore } from './SkillSessionStore';
 import { ReadSkillTool } from './read-skill.tool';
-import { SkillsCatalogSection } from './SkillsCatalogSection';
-import { ActiveSkillsSection } from './ActiveSkillsSection';
+import { ListSkillTool } from './list-skill.tool';
+import { SkillsCatalogSection } from './SkillsCatalogSection';import { ActiveSkillsSection } from './ActiveSkillsSection';
 import { SkillTurnInterceptor } from './SkillTurnInterceptor';
 import { getBuiltinSkills } from './builtin-skills';
 import { loadAgentSkillsFromRootsSync } from './local-skill-loader';
@@ -46,12 +46,14 @@ export function provideSkills(options: AgentSkillsOptions = {}): Provider[] {
         LocalSkillRegistry,
         SkillSessionStore,
         ReadSkillTool,
+        ListSkillTool,
         SkillsCatalogSection,
         ActiveSkillsSection,
         SkillTurnInterceptor,
         { provide: AGENT_PROMPT_SECTIONS, useExisting: SkillsCatalogSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useExisting: ActiveSkillsSection, multi: true },
         { provide: AGENT_TOOLS, useExisting: ReadSkillTool, multi: true },
+        { provide: AGENT_TOOLS, useExisting: ListSkillTool, multi: true },
         { provide: AGENT_TURN_INTERCEPTORS, useExisting: SkillTurnInterceptor, multi: true }
     ];
 }

@@ -5,7 +5,7 @@ import { copyBuiltinSkillAssets } from './skills/builtin-skills';
 if (process.cwd() === __dirname) {
     Workflow.run(CompilerModule, {
         baseURL: __dirname,
-        src: ['src/**/*.ts', 'files/**/*.ts', 'web/**/*.ts', 'browser/**/*.ts', 'sessions/**/*.ts', 'utility/**/*.ts', 'planning/**/*.ts', 'skills/**/*.ts', 'mcp/**/*.ts', 'memory/**/*.ts', 'http/**/*.ts', 'registry/**/*.ts', 'scheduling/**/*.ts', 'terminal/**/*.ts'],
+        src: ['src/**/*.ts', 'files/**/*.ts', 'web/**/*.ts', 'browser/**/*.ts', 'sessions/**/*.ts', 'utility/**/*.ts', 'planning/**/*.ts', 'skills/**/*.ts', 'mcp/**/*.ts', 'memory/**/*.ts', 'http/**/*.ts', 'registry/**/*.ts', 'project/**/*.ts', 'process/**/*.ts', 'scheduling/**/*.ts', 'terminal/**/*.ts'],
         outDir: '../../dist/agent-tools',
         options: {
             target: 'es2020',
