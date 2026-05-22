@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery } from '@tsdi/agent-tools';
 
@@ -9,6 +10,13 @@ export interface AgentCliOptions {
     channels?: string | string[];
     defaultChannels?: boolean;
     json?: boolean;
+    provider?: string;
+    model?: string;
+    baseUrl?: string;
+    apiKey?: string;
+    apiKeyEnv?: string;
+    timeout?: string;
+    workspace?: string;
 }
 
 export interface AgentCliResolvedConfig {
@@ -32,10 +40,13 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     const toolNames = parseAgentSettingsList(options.tools ?? settings.tools?.values);
     const channelNames = parseAgentSettingsList(options.channels ?? settings.channels?.values);
     const skillRoots = resolved.skillRoots;
-    const workspace = resolved.workspace;
+    const workspace = options.workspace || resolved.workspace;
+    const fileRootDir = options.workspace
+        ? path.resolve(options.workspace)
+        : toolSettings.file?.rootDir ?? resolved.workspace;
     const tools: AgentToolsOptions = {
         ...toolSettings,
-        file: { ...(toolSettings.file ?? {}) },
+        file: { ...(toolSettings.file ?? {}), rootDir: fileRootDir },
         roots: (toolSettings.roots ?? []).slice(),
         registration: {
             ...(toolSettings.registration ?? {}),

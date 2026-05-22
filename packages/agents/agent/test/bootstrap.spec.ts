@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
-import { Application, ApplicationContext, RunContext } from '@tsdi/core';
+import { Application, ApplicationContext, RunContext, Runner } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 import { AgentModule, AgentConsoleComponent, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord } from '../src';
 
@@ -12,6 +12,7 @@ class CustomBootstrapRuntime extends AgentRuntime {
         throw new Error('not implemented');
     }
 
+    @Runner()
     async start(): Promise<void> {
         this.started++;
     }

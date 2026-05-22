@@ -10,6 +10,7 @@ export * from './model/ModelResponse';
 export * from './model/StreamChunk';
 export * from './model/ModelProviderOptions';
 export * from './model/OpenAICompatibleModelAdapter';
+export * from './model/AnthropicModelAdapter';
 export * from './model/EchoModelAdapter';
 
 export * from './runtime/AgentMessage';

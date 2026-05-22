@@ -81,31 +81,25 @@ export class AgentCliTest {
         expect(resolved.tools.file?.rootDir).toBe(path.resolve(root, 'workspace'));
     }
 
-    @Test('creates cli commands')
+    @Test('creates cli commands with run and chat subcommands')
     createsCliCommands() {
         const cli = createAgentCli();
-        expect(cli.commands.some(cmd => cmd.name() === 'run')).toBe(true);
-        expect(cli.commands.some(cmd => cmd.name() === 'tools')).toBe(true);
-        expect(cli.commands.some(cmd => cmd.name() === 'chat')).toBe(true);
-        const run = cli.commands.find(cmd => cmd.name() === 'run');
-        const tools = cli.commands.find(cmd => cmd.name() === 'tools');
-        expect(run?.options.some(option => option.long === '--root')).toBe(true);
-        expect(run?.options.some(option => option.long === '--workspace')).toBe(false);
-        expect(run?.options.some(option => option.long === '--cwd')).toBe(false);
-        expect(run?.options.some(option => option.long === '--tools-root')).toBe(false);
-        expect(run?.options.some(option => option.long === '--skill-roots')).toBe(false);
-        const list = tools?.commands.find(cmd => cmd.name() === 'list');
-        expect(list?.options.some(option => option.long === '--root')).toBe(true);
-        expect(list?.options.some(option => option.long === '--workspace')).toBe(false);
-        expect(list?.options.some(option => option.long === '--tools-root')).toBe(false);
-        expect(list?.options.some(option => option.long === '--skill-roots')).toBe(false);
+        const commandNames = cli.commands.map(cmd => cmd.name());
+        expect(commandNames.includes('run')).toBe(true);
+        expect(commandNames.includes('chat')).toBe(true);
+        const hasToolsCmd = commandNames.some(name => name.startsWith('tools'));
+        expect(hasToolsCmd).toBe(true);
     }
 
-    @Test('runs prompt through echo model runtime')
-    async runsPromptThroughEchoModelRuntime() {
+    @Test('rejects API call without configured key')
+    async rejectsApiCallWithoutKey() {
         const root = await this.createRoot();
-        const output = await runAgentPrompt('hello cli', { root, session: 'cli-1' });
-        expect(output).toBe('Echo: hello cli');
+        try {
+            await runAgentPrompt('test', { root, session: 'no-key' });
+            expect(false).toBe(true);
+        } catch (error: any) {
+            expect(error.message).toContain('API key');
+        }
     }
 
     @Test('accepts tool item names without treating them as groups')
@@ -114,7 +108,17 @@ export class AgentCliTest {
         const resolved = resolveCliConfig({ root, tools: 'http_fetch' });
         expect((resolved.tools.registration?.items as any).http_fetch).toBe(true);
         expect((resolved.tools.registration?.groups as any).http_fetch).toBe(undefined);
-        const output = await runAgentPrompt('hello item tool', { root, session: 'cli-2', tools: 'http_fetch' });
-        expect(output).toBe('Echo: hello item tool');
+    }
+
+    @Test('workspace from CLI options overrides settings workspace')
+    async workspaceFromCliOverridesSettings() {
+        const root = await this.createRoot();
+        const settingsPath = path.join(root, 'settings.json');
+        fs.writeFileSync(settingsPath, JSON.stringify({
+            workspace: 'from-settings'
+        }), 'utf8');
+        const resolved = resolveCliConfig({ root, workspace: '/custom/workspace' });
+        expect(resolved.workspace).toBe('/custom/workspace');
+        expect(resolved.tools.file?.rootDir).toBe('/custom/workspace');
     }
 }

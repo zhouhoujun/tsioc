@@ -831,7 +831,10 @@ function processProvider(injector: Injector, provider: StaticProvider | DynamicP
                 }
             }
         } else {
-            injector[RECORDS].set(token, record);
+            const asDefault = !isFunction(provider) && (provider as ProviderExts).asDefault;
+            if (!asDefault || !injector[RECORDS].has(token)) {
+                injector[RECORDS].set(token, record);
+            }
         }
         if (record.onRegister) {
             record.onRegister();

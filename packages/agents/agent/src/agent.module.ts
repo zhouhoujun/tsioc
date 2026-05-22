@@ -106,7 +106,7 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         { provide: ExperienceDistiller, useExisting: DeterministicExperienceDistiller },
         { provide: AgentScheduler, useClass: IntervalAgentScheduler },
         DefaultAgentRuntime,
-        { provide: AgentRuntime, useExisting: DefaultAgentRuntime },
+        { provide: AgentRuntime, useExisting: DefaultAgentRuntime, asDefault: true },
         TurnHandler,
         AgentRequestHandler,
         AgentServer,
