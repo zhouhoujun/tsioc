@@ -3,6 +3,7 @@ export * from './settings';
 export * from './tokens';
 export * from './provider';
 export * from './agent-tools.module';
+export * from './env-loader';
 
 export * from '../files';
 export * from '../web';

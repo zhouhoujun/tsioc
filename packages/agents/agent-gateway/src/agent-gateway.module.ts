@@ -3,6 +3,7 @@ import { AgentModule } from '@tsdi/agent';
 import { GATEWAY_CONFIG } from './tokens';
 import { defaultGatewayConfig } from './contracts/GatewayConfig';
 import { GatewayServer } from './gateway/GatewayServer';
+import { GatewayBootstrap } from './gateway/GatewayBootstrap';
 import { AuthMiddleware } from './auth/AuthMiddleware';
 import { PairingStore } from './auth/PairingStore';
 import { RateLimiter } from './auth/RateLimiter';
@@ -17,6 +18,7 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
 
 @Module({
     imports: [AgentModule],
+    bootstrap: [GatewayBootstrap],
     providers: [
         { provide: GATEWAY_CONFIG, useValue: defaultGatewayConfig },
         AuthMiddleware,
@@ -25,6 +27,7 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
         SessionQueue,
         SessionOwnerStore,
         GatewayServer,
+        GatewayBootstrap,
         HealthHandler,
         SessionHandler,
         MemoryHandler,
@@ -34,6 +37,7 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
     ],
     exports: [
         GatewayServer,
+        GatewayBootstrap,
         AuthMiddleware,
         PairingStore,
         RateLimiter,

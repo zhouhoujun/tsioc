@@ -405,7 +405,7 @@ export class ToolsHandlerTest {
         expect(data[0].canonicalName).toEqual(null);
         expect(data[0].aliases).toEqual(null);
         expect(data[0].tags).toEqual(null);
-        expect(data[0].activation).toEqual(null);
+        expect(data[0].activation).toEqual({ kind: 'deferred', scope: 'session', activated: false });
         expect(data[0].provenance).toEqual(null);
 
         const bundleRoute = handler.getRoutes().find(route => route.path === '/api/tool-bundles' && route.method === 'GET')!;

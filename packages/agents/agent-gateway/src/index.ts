@@ -9,6 +9,7 @@ export * from './contracts/SessionInfo';
 export * from './contracts/PairingCode';
 
 export * from './gateway/GatewayServer';
+export * from './gateway/GatewayBootstrap';
 export * from './gateway/RouteMatcher';
 
 export * from './auth/AuthMiddleware';

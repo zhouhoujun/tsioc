@@ -6,9 +6,14 @@ export interface AiCliRequest {
     workingDirectory?: string;
     timeoutMs?: number;
     systemPrompt?: string;
+    model?: string;
     allowedTools?: string[];
     resumeSessionId?: string;
+    maxTurns?: number;
+    skipPermissions?: boolean;
     outputFormat?: 'text' | 'json';
+    env?: Record<string, string>;
+    contextFiles?: string[];
 }
 
 export interface AiCliResult {
@@ -24,3 +29,14 @@ export interface AiCliAdapter {
 }
 
 export const AGENT_AI_CLI_ADAPTER = 'AGENT_AI_CLI_ADAPTER';
+
+export interface AgentAiCliOptions {
+    /** Default model to pass to the spawned CLI */
+    defaultModel?: string;
+    /** Environment variables to forward to subprocesses */
+    forwardEnv?: string[];
+    /** Whether to auto-discover CLAUDE.md / AGENTS.md in the working directory */
+    autoContextFiles?: boolean;
+    /** Default timeout in ms */
+    defaultTimeoutMs?: number;
+}

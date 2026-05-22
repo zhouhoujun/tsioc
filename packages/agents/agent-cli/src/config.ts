@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
-import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery } from '@tsdi/agent-tools';
+import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
 
 export interface AgentCliOptions {
     session?: string;
@@ -33,14 +33,20 @@ function isKnownGroup(name: string, groups: Record<string, unknown>): boolean {
     return Object.prototype.hasOwnProperty.call(groups, name);
 }
 
+/**
+ * Resolve CLI config, loading .env files from workspace and root directories.
+ */
 export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConfig {
     const resolved = resolveAgentToolDiscovery(options.root);
     const settings: AgentRootSettings = resolved.settings;
+
+    // Load .env files early so subsequent code can read process.env
+    const workspace = options.workspace || resolved.workspace;
+    loadEnvFiles(workspace, resolved.root, { verbose: true });
     const toolSettings = resolved.tools;
     const toolNames = parseAgentSettingsList(options.tools ?? settings.tools?.values);
     const channelNames = parseAgentSettingsList(options.channels ?? settings.channels?.values);
     const skillRoots = resolved.skillRoots;
-    const workspace = options.workspace || resolved.workspace;
     const fileRootDir = options.workspace
         ? path.resolve(options.workspace)
         : toolSettings.file?.rootDir ?? resolved.workspace;
