@@ -1,7 +1,49 @@
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
-import { Application, ApplicationContext } from '@tsdi/core';
-import { AgentModule, AgentConsoleComponent, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS } from '../src';
+import { Application, ApplicationContext, RunContext } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
+import { AgentModule, AgentConsoleComponent, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord } from '../src';
+
+@Injectable()
+class CustomBootstrapRuntime extends AgentRuntime {
+    started = 0;
+
+    async runTurn(_sessionId: string, _input: string): Promise<AgentTurnResult> {
+        throw new Error('not implemented');
+    }
+
+    async start(): Promise<void> {
+        this.started++;
+    }
+
+    async stop(): Promise<void> {
+        return;
+    }
+
+    async executeTurn(_input: AgentTurnInput, _context: RunContext): Promise<AgentTurnResult> {
+        throw new Error('not implemented');
+    }
+
+    async processTurn(_input: AgentTurnInput): Promise<AgentTurnResult> {
+        throw new Error('not implemented');
+    }
+
+    async *runStreamingTurn(_sessionId: string, _input: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string; }> {
+        yield { type: 'done' };
+    }
+
+    async putMemory(_sessionId: string, _key: string, _value: string, _scope?: AgentMemoryRecord['scope']): Promise<AgentMemoryRecord> {
+        throw new Error('not implemented');
+    }
+
+    async searchMemory(_sessionId: string, _query: string): Promise<AgentMemoryRecord[]> {
+        return [];
+    }
+
+    async getMessages(_sessionId: string): Promise<AgentMessage[]> {
+        return [];
+    }
+}
 
 @Suite('Agents bootstrap')
 export class BootstrapTest {
@@ -60,6 +102,24 @@ export class BootstrapTest {
             const resolvedOptions = ctx.get(AGENT_OPTIONS) as any;
             expect(runtime).toBeInstanceOf(DefaultAgentRuntime);
             expect(resolvedOptions.bootstrapTurn?.output).toEqual('boot:hello');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('bootstraps custom AgentRuntime replacement through abstract token')
+    async bootstrapsCustomAgentRuntimeReplacementThroughAbstractToken() {
+        const ctx = await Application.run({
+            module: AgentModule,
+            providers: [
+                CustomBootstrapRuntime,
+                { provide: AgentRuntime, useExisting: CustomBootstrapRuntime }
+            ]
+        });
+        try {
+            const runtime = ctx.get(AgentRuntime);
+            expect(runtime).toBeInstanceOf(CustomBootstrapRuntime);
+            expect((runtime as CustomBootstrapRuntime).started).toEqual(1);
         } finally {
             await ctx.close();
         }

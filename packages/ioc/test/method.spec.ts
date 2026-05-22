@@ -137,6 +137,22 @@ describe('method exec test', () => {
         expect(typeRef.invoke('sayHello')).toEqual('I love you.');
     });
 
+    it('recomputes abstract token method injector after concrete instance is known', () => {
+        container = createInjector([
+            Person,
+            Child,
+            ConcreteGreeter,
+            { provide: AbstractGreeter, useExisting: ConcreteGreeter }
+        ]);
+        const concreteRef = getClassRef(ConcreteGreeter);
+        concreteRef.setMethodOptions('sayHello', {
+            providers: [{ provide: Person, useClass: Child }]
+        });
+        const typeRef = container.get(InvocationFactory).create(AbstractGreeter);
+        typeRef.getInjector('sayHello');
+        expect(typeRef.invoke('sayHello')).toEqual('Mama');
+    });
+
     it('show exec with many params', () => {
         // container.register(Person);
         InjectUtil.register(container, MethodTest3);
