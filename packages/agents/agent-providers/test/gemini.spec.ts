@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AgentModule, AGENT_MODEL_ADAPTER, AgentMessage } from '@tsdi/agent';
+import { AgentModule, ModelAdapter, AgentMessage } from '@tsdi/agent';
 import { GeminiProvider, withGeminiProvider } from '@tsdi/agent-providers/gemini';
 
 const testMsg = (role: AgentMessage['role'], content: string): AgentMessage => ({
@@ -21,7 +21,7 @@ export class GeminiProviderTest {
             providers: withGeminiProvider({ apiKey: 'ai-test-key' })
         });
         try {
-            const adapter = ctx.get(AGENT_MODEL_ADAPTER);
+            const adapter = ctx.get(ModelAdapter);
             expect(adapter).toBeTruthy();
             expect(adapter).toBeInstanceOf(GeminiProvider);
         } finally {

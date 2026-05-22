@@ -1,4 +1,4 @@
-import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory, createInjector, getType, InjectUtil } from '../src';
+import { Abstract, Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory, createInjector, getType, InjectUtil } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -33,6 +33,19 @@ describe('method exec test', () => {
 
         @Autowired()
         sayHello(person: Person) {
+            return person.say();
+        }
+    }
+
+    @Abstract()
+    abstract class AbstractGreeter {
+        abstract sayHello(person: Person): string;
+    }
+
+    @Injectable()
+    class ConcreteGreeter extends AbstractGreeter {
+        @Autowired()
+        override sayHello(person: Person) {
             return person.say();
         }
     }
@@ -112,6 +125,16 @@ describe('method exec test', () => {
         const typeRef = container.get(InvocationFactory).create(MethodTest2);
         expect(typeRef.invoke(t => t.sayHello)).toEqual('Mama');
 
+    });
+
+    it('resolves abstract token method metadata from concrete instance class', () => {
+        container = createInjector([
+            Person,
+            ConcreteGreeter,
+            { provide: AbstractGreeter, useExisting: ConcreteGreeter }
+        ]);
+        const typeRef = container.get(InvocationFactory).create(AbstractGreeter);
+        expect(typeRef.invoke('sayHello')).toEqual('I love you.');
     });
 
     it('show exec with many params', () => {

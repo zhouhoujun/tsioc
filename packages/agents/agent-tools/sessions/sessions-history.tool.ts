@@ -1,5 +1,5 @@
-import { AgentMessage, AgentTool, AgentToolContext, AGENT_SESSION_STORE, SessionStore } from '@tsdi/agent';
-import { Inject, Injectable } from '@tsdi/ioc';
+import { AgentMessage, AgentTool, AgentToolContext, SessionStore } from '@tsdi/agent';
+import { Injectable } from '@tsdi/ioc';
 
 @Injectable()
 export class SessionsHistoryTool implements AgentTool {
@@ -17,7 +17,7 @@ export class SessionsHistoryTool implements AgentTool {
     source = 'local';
     execution = { readOnly: true };
 
-    constructor(@Inject(AGENT_SESSION_STORE) private sessions: SessionStore) {
+    constructor(private sessions: SessionStore) {
     }
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {

@@ -20,6 +20,7 @@ export * from './runtime/AgentTurnInput';
 export * from './runtime/AgentTurnResult';
 export * from './runtime/TurnHandler';
 export * from './runtime/AgentRuntime';
+export * from './runtime/DefaultAgentRuntime';
 
 export * from './tools/AgentTool';
 export * from './tools/ToolRegistry';
@@ -42,6 +43,7 @@ export * from './memory/MemoryStore';
 export * from './memory/SessionStore';
 export * from './memory/SessionSummarizer';
 export * from './memory/ExperienceDistiller';
+export * from './memory/AgentMemoryRetriever';
 export * from './memory/DeterministicExperienceDistiller';
 export * from './memory/InMemoryMemoryStore';
 export * from './memory/InMemorySessionStore';

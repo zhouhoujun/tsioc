@@ -1,6 +1,5 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ModelAdapter, ModelRequest, ModelResponse, AgentToolCall } from '@tsdi/agent';
-import { AGENT_MODEL_ADAPTER } from '@tsdi/agent';
 import { ApplicationArguments } from '@tsdi/core';
 import { GEMINI_PROVIDER_OPTIONS } from './gemini-tokens';
 import { GeminiProviderOptions, defaultGeminiProviderOptions } from './gemini-options';
@@ -210,8 +209,7 @@ export class GeminiProvider extends ModelAdapter {
 @Module({
     providers: [
         { provide: GEMINI_PROVIDER_OPTIONS, useValue: defaultGeminiProviderOptions },
-        { provide: AGENT_MODEL_ADAPTER, useClass: GeminiProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: GeminiProvider }
     ],
     exports: [GeminiProvider]
 })
@@ -229,7 +227,6 @@ export class GeminiProviderModule {
 export function withGeminiProvider(options?: GeminiProviderOptions): any[] {
     return [
         { provide: GEMINI_PROVIDER_OPTIONS, useValue: { ...defaultGeminiProviderOptions, ...(options ?? {}) } },
-        { provide: AGENT_MODEL_ADAPTER, useClass: GeminiProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: GeminiProvider }
     ];
 }

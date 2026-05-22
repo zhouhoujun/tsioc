@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application, createRunContext, RunContext } from '@tsdi/core';
 import { AgentRuntime } from '../src/runtime/AgentRuntime';
+import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
 import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
 import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
@@ -11,14 +12,15 @@ import { defaultAgentOptions } from '../src/options';
 import { TurnHandler } from '../src/runtime/TurnHandler';
 import { AgentTurnResult } from '../src/runtime/AgentTurnResult';
 import { AgentModule } from '../src/agent.module';
-import { AGENT_MODEL_ADAPTER } from '../src/tokens';
+import { ModelAdapter } from '../src/model/ModelAdapter';
 import { withAgentTurnFilters, withAgentTurnGuards, withAgentTurnInterceptors } from '../src/provider';
 import { ExperienceDistiller } from '../src/memory/ExperienceDistiller';
 import { ExperienceDistillationInput } from '../src/memory/ExperienceDistiller';
+import { AgentMemoryRetriever } from '../src/memory/AgentMemoryRetriever';
 import { AgentMemoryRecord } from '../src/memory/MemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
-import { AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent } from '../src/runtime/AgentEvents';
+import { AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent } from '../src/runtime/AgentEvents';
 
 class FakeApp {
     events: any[] = [];
@@ -28,6 +30,15 @@ class FakeApp {
             this.events.push(event);
         }
         return;
+    }
+}
+
+class ThrowOnMemoryRetrievedApp extends FakeApp {
+    async publishEvent(event?: any): Promise<void> {
+        await super.publishEvent(event);
+        if (event instanceof AgentMemoryRetrievedEvent) {
+            throw new Error('memory event failed');
+        }
     }
 }
 
@@ -183,9 +194,53 @@ class DeferredRuntimeTool implements AgentTool {
     toolset = 'custom';
     source = 'test';
     execution = { readOnly: true };
+    invocations = 0;
 
     async invoke(input: any): Promise<any> {
+        this.invocations++;
         return input;
+    }
+}
+
+class PermissiveToolRegistry extends ToolRegistry {
+    invocations: Array<{ name: string; input: any; sessionId: string; }> = [];
+
+    getTools() {
+        return [{
+            name: 'echo',
+            description: 'echo input',
+            inputSchema: { type: 'object', properties: { value: { type: 'string' } } },
+            toolset: 'test',
+            source: 'test',
+            execution: { readOnly: true }
+        } as any];
+    }
+
+    getTool(name: string) {
+        return this.getTools().find((tool: any) => tool.name === name) as any;
+    }
+
+    async invoke(name: string, input: any, sessionId: string): Promise<any> {
+        this.invocations.push({ name, input, sessionId });
+        return { name, input };
+    }
+}
+
+class UnknownToolModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-unknown', name: 'shell.exec', input: { cmd: 'whoami' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'completed',
+            stopReason: 'end'
+        };
     }
 }
 
@@ -219,6 +274,25 @@ class SearchOnlyMemoryStore extends InMemoryMemoryStore {
     async getAll(sessionId?: string): Promise<any[]> {
         this.getAllCalls++;
         return [{ id: 'irrelevant', sessionId, key: 'other', value: 'unrelated', scope: 'session', createdAt: 1 }];
+    }
+}
+
+class CapturingMemoryRetriever extends AgentMemoryRetriever {
+    calls: Array<{ sessionId: string; query: string }> = [];
+
+    constructor(private records: AgentMemoryRecord[]) {
+        super();
+    }
+
+    async retrieve(input: { sessionId: string; query: string }): Promise<AgentMemoryRecord[]> {
+        this.calls.push(input);
+        return this.records;
+    }
+}
+
+class FailingMemoryRetriever extends AgentMemoryRetriever {
+    async retrieve(): Promise<AgentMemoryRecord[]> {
+        throw new Error('retrieval failed');
     }
 }
 
@@ -471,7 +545,7 @@ class PutFailingMemoryStore extends InMemoryMemoryStore {
 export class RuntimeLoopTest {
     @Test('can answer one user turn')
     async runTurn() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new EchoModelAdapter(),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
@@ -530,7 +604,7 @@ export class RuntimeLoopTest {
 
     @Test('runs tool loop and stores tool message')
     async runsToolLoop() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -563,7 +637,7 @@ export class RuntimeLoopTest {
         for (let index = 1; index <= 5; index++) {
             await sessions.append('s1', { id: `${index}`, role: 'user', content: `old-${index}`, createdAt: index });
         }
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             model,
             new EmptyToolRegistry(),
             sessions,
@@ -584,7 +658,7 @@ export class RuntimeLoopTest {
     async sendsRelevantMemorySearchResultsToModel() {
         const model = new CapturingModelAdapter();
         const memory = new SearchOnlyMemoryStore();
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
@@ -605,14 +679,15 @@ export class RuntimeLoopTest {
     async doesNotSearchMemoryForBlankInput() {
         const model = new CapturingModelAdapter();
         const memory = new SearchOnlyMemoryStore();
-        const runtime = new AgentRuntime(
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
             model,
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
             memory,
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            app as any
         );
 
         await runtime.runTurn('s1', '   ');
@@ -620,12 +695,101 @@ export class RuntimeLoopTest {
         expect(memory.searchCalls).toEqual([]);
         expect(memory.getAllCalls).toEqual(0);
         expect(model.requests[0].memory).toEqual([]);
+        expect(app.events.some(event => event instanceof AgentMemoryRetrievalStartedEvent)).toEqual(false);
+        expect(app.events.some(event => event instanceof AgentMemoryRetrievedEvent)).toEqual(false);
+        expect(app.events.some(event => event instanceof AgentMemoryRetrievalFailedEvent)).toEqual(false);
+    }
+
+    @Test('publishes memory retrieval lifecycle events on success')
+    async publishesMemoryRetrievalLifecycleEventsOnSuccess() {
+        const model = new CapturingModelAdapter();
+        const app = new FakeApp();
+        const retriever = new CapturingMemoryRetriever([
+            { id: 'relevant', sessionId: 's1', key: 'topic', value: 'router', scope: 'session', createdAt: 1 }
+        ]);
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new SearchOnlyMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            retriever
+        );
+
+        await runtime.runTurn('s1', 'router question');
+
+        expect(retriever.calls).toEqual([{ sessionId: 's1', query: 'router question' }]);
+        expect(model.requests[0].memory.map((record: any) => record.id)).toEqual(['relevant']);
+        const started = app.events.find(event => event instanceof AgentMemoryRetrievalStartedEvent);
+        const completed = app.events.find(event => event instanceof AgentMemoryRetrievedEvent);
+        expect(started?.sessionId).toEqual('s1');
+        expect(started?.query).toEqual('router question');
+        expect(completed?.sessionId).toEqual('s1');
+        expect(completed?.query).toEqual('router question');
+        expect(completed?.records.map((record: any) => record.id)).toEqual(['relevant']);
+    }
+
+    @Test('keeps turn successful when memory retrieval fails')
+    async keepsTurnSuccessfulWhenMemoryRetrievalFails() {
+        const model = new CapturingModelAdapter();
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new SearchOnlyMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            new FailingMemoryRetriever()
+        );
+
+        const result = await runtime.runTurn('s1', 'router question');
+
+        expect(result.message.content).toEqual('captured');
+        expect(model.requests[0].memory).toEqual([]);
+        const failed = app.events.find(event => event instanceof AgentMemoryRetrievalFailedEvent);
+        expect(failed?.sessionId).toEqual('s1');
+        expect(failed?.query).toEqual('router question');
+        expect(failed?.error?.message).toEqual('retrieval failed');
+    }
+
+    @Test('keeps retrieved memory when retrieval lifecycle event publishing fails')
+    async keepsRetrievedMemoryWhenRetrievalLifecycleEventPublishingFails() {
+        const model = new CapturingModelAdapter();
+        const app = new ThrowOnMemoryRetrievedApp();
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new SearchOnlyMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        const result = await runtime.runTurn('s1', 'router question');
+
+        expect(result.message.content).toEqual('captured');
+        expect(model.requests[0].memory.map((record: any) => record.id)).toEqual(['relevant']);
+        expect(app.events.some(event => event instanceof AgentMemoryRetrievedEvent)).toEqual(true);
+        expect(app.events.some(event => event instanceof AgentMemoryRetrievalFailedEvent)).toEqual(false);
     }
 
     @Test('preserves current user message across tool rounds')
     async preservesCurrentUserMessageAcrossToolRounds() {
         const model = new PreservingUserToolLoopModelAdapter();
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             model,
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -656,7 +820,7 @@ export class RuntimeLoopTest {
                 createdAt: 1
             }
         ]);
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
@@ -682,7 +846,7 @@ export class RuntimeLoopTest {
     async doesNotPersistMemoryWhenDistillerReturnsNoExperiences() {
         const memory = new InMemoryMemoryStore();
         const distiller = new CapturingExperienceDistiller();
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
@@ -703,7 +867,7 @@ export class RuntimeLoopTest {
 
     @Test('keeps runTurn successful when experience distillation fails')
     async keepsRunTurnSuccessfulWhenExperienceDistillationFails() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
@@ -734,7 +898,7 @@ export class RuntimeLoopTest {
                 createdAt: 1
             }
         ]);
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new StaticModelAdapter('learned'),
             new EmptyToolRegistry(),
             new InMemorySessionStore(),
@@ -754,7 +918,7 @@ export class RuntimeLoopTest {
 
     @Test('stops after reaching tool round limit and requests final answer')
     async stopsAfterToolRoundLimit() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new EndlessToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -775,7 +939,7 @@ export class RuntimeLoopTest {
 
     @Test('stores assistant tool call history before tool results')
     async storesAssistantToolCallHistory() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -800,7 +964,7 @@ export class RuntimeLoopTest {
     @Test('streaming turn yields incrementally through tool loop and persists final message')
     async streamingTurnExecutesToolLoop() {
         const model = new StreamingToolLoopModelAdapter();
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             model,
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -847,7 +1011,7 @@ export class RuntimeLoopTest {
 
     @Test('stores tool error result and continues turn')
     async storesToolErrorResultAndContinuesTurn() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new ToolLoopModelAdapter(),
             new FailingToolRegistry(),
             new InMemorySessionStore(),
@@ -870,7 +1034,7 @@ export class RuntimeLoopTest {
 
     @Test('stores each tool result independently after tool failure')
     async storesEachToolResultIndependentlyAfterToolFailure() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new MultiToolLoopModelAdapter(),
             new FailFirstToolRegistry(),
             new InMemorySessionStore(),
@@ -896,7 +1060,7 @@ export class RuntimeLoopTest {
     @Test('forces sequential execution when tool metadata requires it')
     async forcesSequentialExecutionWhenToolMetadataRequiresIt() {
         const registry = new MetadataDrivenToolRegistry();
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new MetadataParallelModelAdapter(),
             registry,
             new InMemorySessionStore(),
@@ -921,7 +1085,7 @@ export class RuntimeLoopTest {
 
     @Test('forces sequential execution when a tool requires approval')
     async forcesSequentialExecutionForApprovalGatedTools() {
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new MultiToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -948,7 +1112,24 @@ export class RuntimeLoopTest {
         expect(toolMessages.length).toBeGreaterThan(0);
     }
 
-    @Test('runtime sends stubbed tools before activation and full schema after activation')
+    @Test('runtime keeps builtin tools callable by default')
+    async runtimeKeepsBuiltinToolsCallableByDefault() {
+        const model = new CapturingModelAdapter();
+        const ctx = await Application.run(AgentModule, {
+            providers: [{ provide: ModelAdapter, useValue: model }]
+        });
+        try {
+            const runtime = ctx.get(AgentRuntime);
+            await runtime.runTurn('s1', 'hello');
+            const toolNames = model.requests[0].tools.map((tool: any) => tool.name);
+            expect(toolNames).toContain('echo');
+            expect(toolNames).toContain('time');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('runtime sends only callable tools before activation and full schema after activation')
     async runtimeSendsDeferredToolDefinitions() {
         const model = new CapturingModelAdapter();
         const registry = new LocalToolRegistry([
@@ -956,7 +1137,7 @@ export class RuntimeLoopTest {
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
         ], new InMemoryMemoryStore());
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             model,
             registry,
             new InMemorySessionStore(),
@@ -967,13 +1148,8 @@ export class RuntimeLoopTest {
         );
 
         await runtime.runTurn('s1', 'hello');
-        expect(model.requests[0].tools.find((tool: any) => tool.name === 'heavy_tool')).toEqual({
-            name: 'heavy_tool',
-            description: 'heavy runtime tool',
-            toolset: 'custom',
-            source: 'test',
-            execution: { readOnly: true }
-        });
+        expect(model.requests[0].tools.map((tool: any) => tool.name)).toEqual(['tool_search', 'tool_inspect']);
+        expect(model.requests[0].tools.find((tool: any) => tool.name === 'heavy_tool')).toEqual(undefined);
         expect(model.requests[0].tools.find((tool: any) => tool.name === 'tool_search')?.inputSchema).toEqual({
             type: 'object',
             properties: {
@@ -1001,7 +1177,7 @@ export class RuntimeLoopTest {
             new RegistryInspectToolStub(),
             new DeferredRuntimeTool()
         ], new InMemoryMemoryStore());
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             model,
             registry,
             new InMemorySessionStore(),
@@ -1026,34 +1202,40 @@ export class RuntimeLoopTest {
         expect(model.requests[1].tools.find((tool: any) => tool.name === 'heavy_tool')?.inputSchema).toEqual(undefined);
     }
 
-    @Test('runtime rejects deferred tool invocation before activation and allows it after activation')
+    @Test('runtime skips inactive deferred tool calls before invoking registry and allows them after activation')
     async runtimeRequiresActivationForDeferredToolInvocation() {
+        const app = new FakeApp();
+        const deferredTool = new DeferredRuntimeTool();
         const registry = new LocalToolRegistry([
             new RegistrySearchToolStub(),
             new RegistryInspectToolStub(),
-            new DeferredRuntimeTool()
+            deferredTool
         ], new InMemoryMemoryStore());
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new DeferredInvokeModelAdapter(),
             registry,
             new InMemorySessionStore(),
             new InMemoryMemoryStore(),
             new SimpleSessionSummarizer(),
             defaultAgentOptions,
-            new FakeApp() as any
+            app as any
         );
 
-        // Deferred tool error is now fed back as a tool message, not thrown.
         const result = await runtime.runTurn('s1', 'hello');
         expect(result.message).toBeDefined();
+        expect(deferredTool.invocations).toEqual(0);
         const blockedMessages = await runtime.getMessages('s1');
         const toolMessages = blockedMessages.filter(m => m.role === 'tool');
         expect(toolMessages.length).toBeGreaterThan(0);
+        expect(toolMessages[0].metadata?.receipt?.status).toEqual('skipped');
         const errorMsg = toolMessages[0].metadata?.error ?? '';
         expect(errorMsg).toContain('heavy_tool');
+        expect(errorMsg).toContain('not available');
+        expect(app.events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'heavy_tool')).toEqual(true);
+        expect(app.events.some(event => event instanceof AgentToolInvokedEvent && event.toolName === 'heavy_tool')).toEqual(false);
 
         await registry.activateTool('s1', 'heavy_tool');
-        const activatedRuntime = new AgentRuntime(
+        const activatedRuntime = new DefaultAgentRuntime(
             new DeferredInvokeModelAdapter(),
             registry,
             new InMemorySessionStore(),
@@ -1064,12 +1246,39 @@ export class RuntimeLoopTest {
         );
         const result2 = await activatedRuntime.runTurn('s1', 'hello');
         expect(result2.message.content).toEqual('activated');
+        expect(deferredTool.invocations).toEqual(1);
+    }
+
+    @Test('runtime skips tool calls not exposed in the current model request')
+    async runtimeSkipsUnexposedToolCalls() {
+        const app = new FakeApp();
+        const registry = new PermissiveToolRegistry();
+        const runtime = new DefaultAgentRuntime(
+            new UnknownToolModelAdapter(),
+            registry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            app as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        expect(result.message.content).toEqual('completed');
+        expect(registry.invocations).toEqual([]);
+        const messages = await runtime.getMessages('s1');
+        const toolMessages = messages.filter(m => m.role === 'tool');
+        expect(toolMessages.length).toEqual(1);
+        expect(toolMessages[0].metadata?.receipt?.status).toEqual('skipped');
+        expect(toolMessages[0].metadata?.error).toContain('shell.exec');
+        expect(toolMessages[0].metadata?.error).toContain('not available');
+        expect(app.events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'shell.exec')).toEqual(true);
     }
 
     @Test('stores successful tool execution receipt metadata and events')
     async storesSuccessfulToolExecutionReceiptMetadataAndEvents() {
         const app = new FakeApp();
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new ToolLoopModelAdapter(),
             new EchoToolRegistry(),
             new InMemorySessionStore(),
@@ -1106,7 +1315,7 @@ export class RuntimeLoopTest {
     @Test('stores failed tool execution receipt metadata and events')
     async storesFailedToolExecutionReceiptMetadataAndEvents() {
         const app = new FakeApp();
-        const runtime = new AgentRuntime(
+        const runtime = new DefaultAgentRuntime(
             new ToolLoopModelAdapter(),
             new FailingToolRegistry(),
             new InMemorySessionStore(),
@@ -1144,7 +1353,7 @@ export class RuntimeLoopTest {
 
     @Test('records sequential and parallel execution mode in tool receipts')
     async recordsSequentialAndParallelExecutionModeInToolReceipts() {
-        const sequentialRuntime = new AgentRuntime(
+        const sequentialRuntime = new DefaultAgentRuntime(
             new MetadataParallelModelAdapter(),
             new MetadataDrivenToolRegistry(),
             new InMemorySessionStore(),
@@ -1166,7 +1375,7 @@ export class RuntimeLoopTest {
         expect(sequentialMessages[3].metadata?.receipt?.executionMode).toEqual('sequential');
 
         const parallelRegistry = new ParallelReadOnlyToolRegistry();
-        const parallelRuntime = new AgentRuntime(
+        const parallelRuntime = new DefaultAgentRuntime(
             new ParallelReadOnlyModelAdapter(),
             parallelRegistry,
             new InMemorySessionStore(),
@@ -1193,7 +1402,7 @@ export class RuntimeLoopTest {
     async runtimeUsesProviderGuard() {
         const ctx = await Application.run(AgentModule, {
             providers: [
-                { provide: AGENT_MODEL_ADAPTER, useValue: new StaticModelAdapter('guarded') },
+                { provide: ModelAdapter, useValue: new StaticModelAdapter('guarded') },
                 ...withAgentTurnGuards(() => false)
             ]
         });
@@ -1216,7 +1425,7 @@ export class RuntimeLoopTest {
     async runtimeUsesProviderInterceptor() {
         const ctx = await Application.run(AgentModule, {
             providers: [
-                { provide: AGENT_MODEL_ADAPTER, useValue: new StaticModelAdapter('hello') },
+                { provide: ModelAdapter, useValue: new StaticModelAdapter('hello') },
                 ...withAgentTurnInterceptors(async (input, next, context) => {
                     const result = await next(input, context);
                     result.message.content = `${result.message.content}!`;

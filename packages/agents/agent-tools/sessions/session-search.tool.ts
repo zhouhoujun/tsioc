@@ -1,6 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_SESSION_STORE, SessionStore } from '@tsdi/agent';
+import { SessionStore } from '@tsdi/agent';
 
 @Injectable()
 export class SessionSearchTool implements AgentTool {
@@ -34,7 +34,7 @@ export class SessionSearchTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_SESSION_STORE, { defaultValue: null })
+        @Optional() @Inject(SessionStore)
         private sessionStore?: SessionStore | null
     ) {
     }
@@ -42,7 +42,7 @@ export class SessionSearchTool implements AgentTool {
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const query = this.requireString(input?.query, 'session_search query');
         if (!this.sessionStore) {
-            throw new Error('session_search requires a SessionStore. Ensure AGENT_SESSION_STORE is provided.');
+            throw new Error('session_search requires a SessionStore. Ensure SessionStore is provided.');
         }
 
         const limit = typeof input?.limit === 'number' ? Math.min(Math.max(1, input.limit), 20) : 5;

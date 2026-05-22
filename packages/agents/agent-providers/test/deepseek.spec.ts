@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AgentModule, AGENT_MODEL_ADAPTER } from '@tsdi/agent';
+import { AgentModule, ModelAdapter } from '@tsdi/agent';
 import { DeepSeekProvider, withDeepSeekProvider } from '@tsdi/agent-providers/deepseek';
 
 @Suite('DeepSeek provider')
@@ -14,7 +14,7 @@ export class DeepSeekProviderTest {
             providers: withDeepSeekProvider({ apiKey: 'sk-ds-test' })
         });
         try {
-            const adapter = ctx.get(AGENT_MODEL_ADAPTER);
+            const adapter = ctx.get(ModelAdapter);
             expect(adapter).toBeTruthy();
             expect(adapter).toBeInstanceOf(DeepSeekProvider);
         } finally {

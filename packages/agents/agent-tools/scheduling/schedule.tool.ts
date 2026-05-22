@@ -1,4 +1,4 @@
-import { AGENT_SCHEDULER, AgentScheduler, AgentTool, AgentToolContext, NextRunCalculator, ScheduledAgentTask } from '@tsdi/agent';
+import { AgentScheduler, AgentTool, AgentToolContext, NextRunCalculator, ScheduledAgentTask } from '@tsdi/agent';
 import { ApplicationContext } from '@tsdi/core';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { randomUUID } from 'crypto';
@@ -103,7 +103,7 @@ export class ScheduleTool implements AgentTool {
 
     private resolveScheduler(): AgentScheduler | undefined {
         return this.app && typeof (this.app as any).get === 'function'
-            ? (this.app as any).get(AGENT_SCHEDULER, null) as AgentScheduler | undefined
+            ? (this.app as any).get(AgentScheduler, null) as AgentScheduler | undefined
             : undefined;
     }
 

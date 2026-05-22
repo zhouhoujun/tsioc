@@ -79,7 +79,7 @@ import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOO
 import { AgentToolsModule } from '../src/agent-tools.module';
 import { resolveAgentRootSettings } from '../src/settings';
 import { Application } from '@tsdi/core';
-import { ToolRegistry, AgentRuntime, EchoModelAdapter, AGENT_MODEL_ADAPTER, AgentModule } from '@tsdi/agent';
+import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter } from '@tsdi/agent';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
 import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool } from '../browser';
 import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as ExportedSessionsListTool, SessionsHistoryTool as ExportedSessionsHistoryTool } from '../sessions';
@@ -1173,6 +1173,49 @@ export class AgentToolsPackageTest {
         }
     }
 
+    @Test('provideTools applies per-tool activation policy to registry definitions')
+    async provideToolsAppliesPerToolActivationPolicyToRegistryDefinitions() {
+        const workspace = await this.createWorkspace();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                file: { rootDir: workspace }
+            })]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const toolSearch = registry.getToolDefinition('tool_search', 's1');
+            expect(toolSearch?.inputSchema).toBeTruthy();
+            expect(toolSearch?.activation).toEqual({ kind: 'always', scope: 'global', activated: true });
+
+            const calculator = registry.getToolDefinition('calculator', 's1');
+            expect(calculator?.inputSchema).toBeTruthy();
+            expect(calculator?.activation).toEqual({ kind: 'always', scope: 'global', activated: true });
+            expect(await registry.isToolActive?.('s1', 'calculator')).toEqual(true);
+            const calculatorResult = await registry.invoke('calculator', { expression: '1 + 2' }, 's1');
+            expect(calculatorResult.value).toEqual(3);
+
+            const readFile = registry.getToolDefinition('read_file', 's1');
+            expect(readFile?.inputSchema).toEqual(undefined);
+            expect(readFile?.activation).toEqual({ kind: 'deferred', scope: 'session', activated: false });
+            expect(await registry.isToolActive?.('s1', 'read_file')).toEqual(false);
+
+            let error: Error | undefined;
+            try {
+                await registry.invoke('read_file', { path: 'src/alpha.txt' }, 's1');
+            } catch (err) {
+                error = err as Error;
+            }
+            expect(error?.message).toContain('not activated');
+
+            await registry.activateTool?.('s1', 'read_file');
+            const activatedReadFile = registry.getToolDefinition('read_file', 's1');
+            expect(activatedReadFile?.inputSchema).toBeTruthy();
+            expect(activatedReadFile?.activation).toEqual({ kind: 'deferred', scope: 'session', activated: true });
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('provideTools expose filesystem metadata tools through defaults and module options')
     async provideToolsExposeFilesystemMetadataToolsThroughDefaultsAndModuleOptions() {
         const workspace = await this.createWorkspace();
@@ -1762,6 +1805,40 @@ export class AgentToolsPackageTest {
             missingError = err as Error;
         }
         expect(missingError?.message).toContain('missing.tool');
+    }
+
+    @Test('tool_search returns inactive deferred tools as discovery results')
+    async toolSearchReturnsInactiveDeferredToolsAsDiscoveryResults() {
+        const workspace = await this.createWorkspace();
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                file: { rootDir: workspace }
+            })]
+        });
+        try {
+            const app = { get(token: any) { return ctx.get(token); } } as any;
+            const search = new ToolSearchTool(app);
+
+            const before = await search.invoke({ query: 'read_file' }, createSessionContext());
+            expect(before.tools.length).toBeGreaterThan(0);
+            const deferred = before.tools.find((tool: any) => tool.name === 'read_file');
+            expect(deferred).toBeTruthy();
+            expect(deferred.active).toEqual(false);
+            expect(deferred.inputSchema).toEqual(undefined);
+            expect(deferred.activation).toEqual({ kind: 'deferred', scope: 'session', activated: false });
+
+            const registry = ctx.get(ToolRegistry);
+            await registry.activateTool?.('s1', 'read_file');
+
+            const after = await search.invoke({ query: 'read_file' }, createSessionContext());
+            const activated = after.tools.find((tool: any) => tool.name === 'read_file');
+            expect(activated).toBeTruthy();
+            expect(activated.active).toEqual(true);
+            expect(activated.inputSchema).toBeTruthy();
+            expect(activated.activation).toEqual({ kind: 'deferred', scope: 'session', activated: true });
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('tool search and inspect expose dynamic MCP discovery hints')
@@ -2447,7 +2524,7 @@ export class AgentToolsPackageTest {
         const model = new CapturingModelAdapter();
         const ctx = await Application.run(AgentModule, {
             providers: [
-                { provide: AGENT_MODEL_ADAPTER, useValue: model },
+                { provide: ModelAdapter, useValue: model },
                 ...provideSkills({
                     skills: [{
                         id: 'router',

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AGENT_SCHEDULER } from '../tokens';
+import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { AgentRuntime } from '../runtime/AgentRuntime';
 import { AgentMessage } from '../runtime/AgentMessage';
@@ -15,7 +15,7 @@ export class AgentConsoleViewModel {
 
     constructor(
         private runtime: AgentRuntime,
-        @Inject(AGENT_SCHEDULER) private scheduler: AgentScheduler,
+        private scheduler: AgentScheduler,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions
     ) {
         this.title = this.options.ui?.title ?? defaultAgentOptions.ui!.title!;

@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application, Handler, RunContext } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { AGENT_MODEL_ADAPTER, AGENT_PROMPT_SECTIONS, AGENT_TURN_INTERCEPTORS, AgentModule, AgentRuntime, AgentTurnInput, AgentTurnResult, EchoModelAdapter } from '../src';
+import { AGENT_PROMPT_SECTIONS, AGENT_TURN_INTERCEPTORS, AgentModule, AgentRuntime, AgentTurnInput, AgentTurnResult, EchoModelAdapter, ModelAdapter } from '../src';
 
 @Injectable()
 class StaticPromptSection {
@@ -44,7 +44,7 @@ export class AgentExtensionHooksTest {
         const model = new CapturingModelAdapter();
         const ctx = await Application.run(AgentModule, {
             providers: [
-                { provide: AGENT_MODEL_ADAPTER, useValue: model },
+                { provide: ModelAdapter, useValue: model },
                 StaticPromptSection,
                 { provide: AGENT_PROMPT_SECTIONS, useExisting: StaticPromptSection, multi: true }
             ]
@@ -73,7 +73,7 @@ export class AgentExtensionHooksTest {
         const model = new CapturingModelAdapter();
         const ctx = await Application.run(AgentModule, {
             providers: [
-                { provide: AGENT_MODEL_ADAPTER, useValue: model },
+                { provide: ModelAdapter, useValue: model },
                 SlashCommandInterceptor,
                 { provide: AGENT_TURN_INTERCEPTORS, useExisting: SlashCommandInterceptor, multi: true }
             ]

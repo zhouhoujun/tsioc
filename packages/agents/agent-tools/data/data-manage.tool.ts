@@ -1,6 +1,5 @@
-import { AgentTool, AgentToolContext } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, MemoryStore } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_MEMORY_STORE, MemoryStore } from '@tsdi/agent';
 
 export interface DataExportAdapter {
     exportData(data: ExportRequest): Promise<ExportResult>;
@@ -72,7 +71,7 @@ export class DataManageTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true };
 
     constructor(
-        @Optional() @Inject(AGENT_MEMORY_STORE, { defaultValue: null })
+        @Optional() @Inject(MemoryStore)
         private memory?: MemoryStore | null,
         @Optional() @Inject(AGENT_DATA_ADAPTER, { defaultValue: null })
         private adapter?: DataExportAdapter | null

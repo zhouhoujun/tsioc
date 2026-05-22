@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AgentModule, AGENT_MODEL_ADAPTER } from '@tsdi/agent';
+import { AgentModule, ModelAdapter } from '@tsdi/agent';
 import { OpenAICompatibleProvider, withOpenAICompatibleProvider } from '@tsdi/agent-providers/openai-compatible';
 
 @Suite('OpenAI-Compatible provider')
@@ -18,7 +18,7 @@ export class OpenAICompatibleProviderTest {
             })
         });
         try {
-            const adapter = ctx.get(AGENT_MODEL_ADAPTER);
+            const adapter = ctx.get(ModelAdapter);
             expect(adapter).toBeTruthy();
             expect(adapter).toBeInstanceOf(OpenAICompatibleProvider);
         } finally {

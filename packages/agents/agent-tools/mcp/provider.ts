@@ -18,10 +18,10 @@ export function withAgentMcpOptions(options?: AgentMcpOptions): Provider[] {
 
 export function provideResolvedMcpTools(): Provider {
     return {
-        async provider(injector: Injector) {
+        provider(injector: Injector) {
             const registry = injector.get(LocalMcpClientRegistry);
             const providerId = registry.getProviderId();
-            const resolved = await registry.listAllTools();
+            const resolved = registry.getStaticManifestToolRefs();
             return toProviders(AGENT_TOOLS, resolved.map(ref => new McpServerTool(registry, ref.server, ref.tool, providerId)), true);
         }
     };
@@ -29,15 +29,15 @@ export function provideResolvedMcpTools(): Provider {
 
 export function provideResolvedMcpToolBundles(): Provider {
     return {
-        async provider(injector: Injector) {
+        provider(injector: Injector) {
             const registry = injector.get(LocalMcpClientRegistry);
             const providerId = registry.getProviderId();
-            const resolved = await registry.listAllTools();
             const grouped = new Map<string, McpServerTool[]>();
-            resolved.forEach(ref => {
-                const tools = grouped.get(ref.server.id) ?? [];
-                tools.push(new McpServerTool(registry, ref.server, ref.tool, providerId));
-                grouped.set(ref.server.id, tools);
+            registry.getStaticManifestServers().forEach(server => {
+                const tools = (server.tools ?? []).map(tool => new McpServerTool(registry, server, tool, providerId));
+                if (tools.length) {
+                    grouped.set(server.id, tools);
+                }
             });
             return toProviders(AGENT_TOOL_BUNDLES, Array.from(grouped.entries()).map(([serverId, tools]) => toMcpBundle(serverId, tools, providerId)), true);
         }

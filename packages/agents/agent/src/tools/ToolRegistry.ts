@@ -11,6 +11,10 @@ export abstract class ToolRegistry {
         return this.getTools().map(tool => this.toDefinition(tool, sessionId));
     }
 
+    getCallableToolDefinitions(sessionId?: string): AgentToolDefinition[] {
+        return this.getToolDefinitions(sessionId);
+    }
+
     getToolDefinition(name: string, sessionId?: string): AgentToolDefinition | undefined {
         const tool = this.getTool(name);
         return tool ? this.toDefinition(tool, sessionId) : undefined;

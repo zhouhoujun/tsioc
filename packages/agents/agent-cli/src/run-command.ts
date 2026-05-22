@@ -1,5 +1,5 @@
 import { Application } from '@tsdi/core';
-import { AgentModule, EchoModelAdapter, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, mergeAgentOptions } from '@tsdi/agent';
+import { AgentModule, EchoModelAdapter, AGENT_OPTIONS, ModelAdapter, mergeAgentOptions } from '@tsdi/agent';
 import { provideSkills, provideTools } from '@tsdi/agent-tools';
 import { provideChannels } from '@tsdi/agent-channels';
 import { AgentCliOptions, resolveCliConfig } from './config';
@@ -20,7 +20,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
             ...provideSkills({ root: resolved.root }),
             ...provideChannels(resolved.channels),
             { provide: AGENT_OPTIONS, useValue: agentOptions },
-            { provide: AGENT_MODEL_ADAPTER, useClass: EchoModelAdapter }
+            { provide: ModelAdapter, useClass: EchoModelAdapter }
         ]
     });
     try {

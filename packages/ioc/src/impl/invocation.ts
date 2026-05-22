@@ -5,6 +5,7 @@ import { isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk
 import { getType } from '../metadata/type';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { ClassRef, getClassify } from '../metadata/class';
+import { getDef } from '../metadata/type.def';
 import { createInjector, Injector, isInjector, MethodType, RECORDS } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, TokenOf } from '../tokens';
@@ -56,6 +57,26 @@ export abstract class AbstractInvocation<T = any,
 
     get classRef(): ClassRef<T> {
         return this._classRef;
+    }
+
+    protected get invokeClassRef(): ClassRef<T> {
+        return this.resolveInvokeClassRef();
+    }
+
+    protected resolveInvokeClassRef(forceInstance = false): ClassRef<T> {
+        const classRef = this._classRef;
+        if (!classRef || !getDef(classRef.type).abstract) {
+            return classRef;
+        }
+        const instance = this._instance ?? (forceInstance ? this.instance : undefined);
+        if (!instance) {
+            return classRef;
+        }
+        const instanceType = getType(instance) as AbstractType<T> | undefined;
+        if (!instanceType || instanceType === classRef.type) {
+            return classRef;
+        }
+        return getClassify(instanceType);
     }
 
     get instance(): T {
@@ -159,7 +180,7 @@ export abstract class AbstractInvocation<T = any,
     protected abstract process(context?: TInj | InvokeOptions, resolveCtx?: RunContext): any;
 
     protected invokeMethod(name: string | symbol, options?: TInj | InvokeOptions, args?: any[], resolveCtx?: RunContext): any {
-
+        const instance = this.instance;
         const [context, destroy, payload] = args ? [this.injector] : this.createInvokeContext(name, options);
         const isNetRCtx = !resolveCtx;
         if (isNetRCtx) {
@@ -169,11 +190,12 @@ export abstract class AbstractInvocation<T = any,
             resolveCtx!.setInjector(context);
         }
 
+        const classRef = this.resolveInvokeClassRef(true);
         if (!args) {
-            args = this.classRef.resolveArguments(name, context, resolveCtx);
+            args = classRef.resolveArguments(name, context, resolveCtx);
         }
 
-        const result = this.classRef.invoke(name, context, this.instance, args);
+        const result = classRef.invoke(name, context, instance, args);
 
         if (destroy || isNetRCtx) {
             const act = isNetRCtx ? () => {
@@ -201,7 +223,7 @@ export abstract class AbstractInvocation<T = any,
         if (propertyKey === ctorName) return this.injector;
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
-            const opts = this.classRef.getMethodOptions(propertyKey);
+            const opts = this.invokeClassRef.getMethodOptions(propertyKey);
             if (hasContextOptions(opts)) {
                 ctx = this.createInjector(this.injector, opts);
                 this.injector.onDestroy(ctx);
@@ -317,14 +339,15 @@ export class DefaultInvocation<T = any,
     }
 
     protected process(option?: TInj | InvokeOptions, resolveCtx?: RunContext) {
-        const runnables = this.classRef.runnables.filter(r => !r.auto);
+        const classRef = this.resolveInvokeClassRef(true);
+        const runnables = classRef.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
                 return (option) => this.invokeMethod(runnable.propertyKey, option, undefined, resolveCtx)
             }));
             return handler(this.injector, resolveCtx);
         } else {
-            throw new ArgumentException(this.classRef.className + ' is invaild runnable, can not invocation without method param.');
+            throw new ArgumentException(classRef.className + ' is invaild runnable, can not invocation without method param.');
         }
     }
 

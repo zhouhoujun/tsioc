@@ -107,6 +107,24 @@ export class AgentToolSkippedEvent extends ApplicationEvent {
     }
 }
 
+export class AgentMemoryRetrievalStartedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly query: string) {
+        super(source);
+    }
+}
+
+export class AgentMemoryRetrievedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly query: string, readonly records: AgentMemoryRecord[]) {
+        super(source);
+    }
+}
+
+export class AgentMemoryRetrievalFailedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly query: string, readonly error: Error) {
+        super(source);
+    }
+}
+
 export class AgentMemoryUpdatedEvent extends ApplicationEvent {
     constructor(source: Object, readonly sessionId: string, readonly record: AgentMemoryRecord) {
         super(source);

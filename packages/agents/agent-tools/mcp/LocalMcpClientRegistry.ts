@@ -69,6 +69,22 @@ export class LocalMcpClientRegistry implements OnDestroy {
         return this.getServers().filter(server => !!server.tools?.length);
     }
 
+    getStaticManifestToolRefs(): McpResolvedToolRef[] {
+        const refs = this.getStaticManifestServers().flatMap(server =>
+            this.normalizeTools(server.id, server.tools ?? []).map(tool => ({ server, tool }))
+        );
+        const seen = new Map<string, string>();
+        refs.forEach(ref => {
+            const resolvedName = toMcpToolName(ref.server.id, ref.tool.name);
+            const existing = seen.get(resolvedName);
+            if (existing) {
+                throw new Error(`Duplicate MCP tool name '${resolvedName}' generated from '${existing}' and '${ref.server.id}.${ref.tool.name}'.`);
+            }
+            seen.set(resolvedName, `${ref.server.id}.${ref.tool.name}`);
+        });
+        return refs;
+    }
+
     private async resolveServerTools(server: AgentMcpServerOptions): Promise<McpToolDescriptor[]> {
         if (server.tools?.length) {
             return this.normalizeTools(server.id, server.tools);

@@ -1,6 +1,5 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ModelAdapter } from '../model/ModelAdapter';
-import { AGENT_MODEL_ADAPTER } from '../tokens';
 import { SessionSummarizer } from './SessionSummarizer';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { ModelRequest } from '../model/ModelRequest';
@@ -14,7 +13,7 @@ import { ModelRequest } from '../model/ModelRequest';
 @Injectable()
 export class LLMSessionSummarizer extends SessionSummarizer {
     constructor(
-        @Optional() @Inject(AGENT_MODEL_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(ModelAdapter)
         private modelAdapter?: ModelAdapter | null
     ) {
         super();

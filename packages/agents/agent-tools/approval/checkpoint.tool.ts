@@ -1,4 +1,4 @@
-import { AGENT_MEMORY_STORE, AGENT_SESSION_STORE, AgentTool, AgentToolContext, MemoryStore, SessionStore } from '@tsdi/agent';
+import { AgentTool, AgentToolContext, MemoryStore, SessionStore } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface CheckpointAdapter {
@@ -38,9 +38,9 @@ export class CheckpointTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true, requiresSequential: true };
 
     constructor(
-        @Optional() @Inject(AGENT_SESSION_STORE, { defaultValue: null })
+        @Optional() @Inject(SessionStore)
         private sessions?: SessionStore | null,
-        @Optional() @Inject(AGENT_MEMORY_STORE, { defaultValue: null })
+        @Optional() @Inject(MemoryStore)
         private memory?: MemoryStore | null,
         @Optional() @Inject(AGENT_CHECKPOINT_ADAPTER, { defaultValue: null })
         private adapter?: CheckpointAdapter | null

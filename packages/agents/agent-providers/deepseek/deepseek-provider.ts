@@ -1,6 +1,5 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { OpenAICompatibleModelAdapter, ModelAdapter, ModelRequest, ModelResponse } from '@tsdi/agent';
-import { AGENT_MODEL_ADAPTER } from '@tsdi/agent';
 import { DEEPSEEK_PROVIDER_OPTIONS } from './deepseek-tokens';
 import { DeepSeekProviderOptions, defaultDeepSeekProviderOptions } from './deepseek-options';
 
@@ -41,8 +40,7 @@ export class DeepSeekProvider extends OpenAICompatibleModelAdapter {
 @Module({
     providers: [
         { provide: DEEPSEEK_PROVIDER_OPTIONS, useValue: defaultDeepSeekProviderOptions },
-        { provide: AGENT_MODEL_ADAPTER, useClass: DeepSeekProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: DeepSeekProvider }
     ],
     exports: [DeepSeekProvider]
 })
@@ -60,7 +58,6 @@ export class DeepSeekProviderModule {
 export function withDeepSeekProvider(options?: DeepSeekProviderOptions): any[] {
     return [
         { provide: DEEPSEEK_PROVIDER_OPTIONS, useValue: { ...defaultDeepSeekProviderOptions, ...(options ?? {}) } },
-        { provide: AGENT_MODEL_ADAPTER, useClass: DeepSeekProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: DeepSeekProvider }
     ];
 }

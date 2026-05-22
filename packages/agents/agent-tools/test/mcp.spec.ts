@@ -299,6 +299,46 @@ export class AgentMcpToolsTest {
         }
     }
 
+    @Test('manifest-backed MCP tools reject duplicate generated tool names')
+    async manifestBackedMcpToolsRejectDuplicateGeneratedToolNames() {
+        let error: Error | undefined;
+        try {
+            await Application.run(AgentModule, {
+                providers: [...provideMcpTools({
+                    servers: [{
+                        id: 'demo',
+                        client: new FakeMcpClient(),
+                        tools: [
+                            {
+                                name: 'echo',
+                                description: 'Echo input back.',
+                                inputSchema: {
+                                    type: 'object',
+                                    properties: {
+                                        value: { type: 'string' }
+                                    }
+                                }
+                            },
+                            {
+                                name: 'echo',
+                                description: 'Echo input back.',
+                                inputSchema: {
+                                    type: 'object',
+                                    properties: {
+                                        value: { type: 'string' }
+                                    }
+                                }
+                            }
+                        ]
+                    }]
+                })]
+            });
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain("MCP server 'demo' returned duplicate tool 'echo'.");
+    }
+
     @Test('invalid MCP server configuration is rejected')
     async invalidMcpServerConfigurationIsRejected() {
         let error: Error | undefined;

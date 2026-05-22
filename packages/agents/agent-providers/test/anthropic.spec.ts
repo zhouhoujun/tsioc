@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AgentModule, AGENT_MODEL_ADAPTER, AgentMessage } from '@tsdi/agent';
+import { AgentModule, ModelAdapter, AgentMessage } from '@tsdi/agent';
 import { AnthropicProvider, withAnthropicProvider } from '@tsdi/agent-providers/anthropic';
 
 const testMsg = (role: AgentMessage['role'], content: string): AgentMessage => ({
@@ -21,7 +21,7 @@ export class AnthropicProviderTest {
             providers: withAnthropicProvider({ apiKey: 'sk-ant-test' })
         });
         try {
-            const adapter = ctx.get(AGENT_MODEL_ADAPTER);
+            const adapter = ctx.get(ModelAdapter);
             expect(adapter).toBeTruthy();
             expect(adapter).toBeInstanceOf(AnthropicProvider);
         } finally {

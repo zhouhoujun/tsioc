@@ -1,6 +1,5 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ModelAdapter, ModelRequest, ModelResponse, AgentToolCall } from '@tsdi/agent';
-import { AGENT_MODEL_ADAPTER } from '@tsdi/agent';
 import { ApplicationArguments } from '@tsdi/core';
 import { ANTHROPIC_PROVIDER_OPTIONS } from './anthropic-tokens';
 import { AnthropicProviderOptions, defaultAnthropicProviderOptions } from './anthropic-options';
@@ -232,8 +231,7 @@ export class AnthropicProvider extends ModelAdapter {
 @Module({
     providers: [
         { provide: ANTHROPIC_PROVIDER_OPTIONS, useValue: defaultAnthropicProviderOptions },
-        { provide: AGENT_MODEL_ADAPTER, useClass: AnthropicProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: AnthropicProvider }
     ],
     exports: [AnthropicProvider]
 })
@@ -251,7 +249,6 @@ export class AnthropicProviderModule {
 export function withAnthropicProvider(options?: AnthropicProviderOptions): any[] {
     return [
         { provide: ANTHROPIC_PROVIDER_OPTIONS, useValue: { ...defaultAnthropicProviderOptions, ...(options ?? {}) } },
-        { provide: AGENT_MODEL_ADAPTER, useClass: AnthropicProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: AnthropicProvider }
     ];
 }

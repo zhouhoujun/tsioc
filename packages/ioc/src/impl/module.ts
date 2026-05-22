@@ -43,7 +43,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             ps = mergePromise(ps, () => processProviders(this, providers))
         }
 
-        return mergePromise(ps, () => this.ininModule(dedupStack, option))
+        return this.ininModule(dedupStack, option, ps)
     }
 
 

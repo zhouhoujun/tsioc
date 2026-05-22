@@ -3,7 +3,7 @@ import { ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ConfigModule } from '@tsdi/microservices/config';
 import { AgentOptions, defaultAgentOptions, mergeAgentOptions } from './options';
-import { AGENT_EXPERIENCE_DISTILLER, AGENT_MEMORY_STORE, AGENT_MODEL_ADAPTER, AGENT_OPTIONS, AGENT_RUNTIME, AGENT_SCHEDULER, AGENT_SESSION_STORE, AGENT_SESSION_SUMMARIZER, AGENT_TOOLS, AGENT_TOOL_ACTIVATION_STORE, AGENT_TURN_HANDLER } from './tokens';
+import { AGENT_OPTIONS, AGENT_TOOLS } from './tokens';
 import { OpenAICompatibleModelAdapter } from './model/OpenAICompatibleModelAdapter';
 import { ModelAdapter } from './model/ModelAdapter';
 import { ToolRegistry } from './tools/ToolRegistry';
@@ -23,10 +23,12 @@ import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
 import { SessionSummarizer } from './memory/SessionSummarizer';
 import { SimpleSessionSummarizer } from './memory/SimpleSessionSummarizer';
 import { ExperienceDistiller } from './memory/ExperienceDistiller';
+import { AgentMemoryRetriever, DefaultAgentMemoryRetriever } from './memory/AgentMemoryRetriever';
 import { DeterministicExperienceDistiller } from './memory/DeterministicExperienceDistiller';
 import { AgentScheduler } from './scheduler/AgentScheduler';
 import { IntervalAgentScheduler } from './scheduler/IntervalAgentScheduler';
 import { AgentRuntime } from './runtime/AgentRuntime';
+import { DefaultAgentRuntime } from './runtime/DefaultAgentRuntime';
 import { TurnHandler } from './runtime/TurnHandler';
 import { AgentRequestHandler } from './channels/AgentRequestHandler';
 import { AgentServer } from './channels/AgentServer';
@@ -55,11 +57,11 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         },
         {
             provider(injector) {
-                if (injector.has(AGENT_MODEL_ADAPTER)) {
+                if (injector.has(ModelAdapter)) {
                     return;
                 }
                 return [{
-                    provide: AGENT_MODEL_ADAPTER,
+                    provide: ModelAdapter,
                     useFactory: () => new OpenAICompatibleModelAdapter({
                         provider: 'deepseek',
                         model: 'deepseek-chat',
@@ -70,14 +72,12 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
                 }];
             }
         },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER },
         AgentContextManager,
         ToolLoopDetector,
         SystemPromptBuilder,
         ToolApprovalManager,
         InMemoryToolActivationStore,
-        { provide: AGENT_TOOL_ACTIVATION_STORE, useExisting: InMemoryToolActivationStore },
-        { provide: ToolActivationStore, useExisting: AGENT_TOOL_ACTIVATION_STORE },
+        { provide: ToolActivationStore, useExisting: InMemoryToolActivationStore },
         { provide: AGENT_PROMPT_SECTIONS, useClass: DateTimeSection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: IdentitySection, multi: true },
         { provide: AGENT_PROMPT_SECTIONS, useClass: ToolsSection, multi: true },
@@ -88,21 +88,26 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         TimeTool,
         MemoryPutTool,
         MemorySearchTool,
-        { provide: AGENT_SESSION_STORE, useClass: InMemorySessionStore },
-        { provide: SessionStore, useExisting: AGENT_SESSION_STORE },
-        { provide: AGENT_MEMORY_STORE, useClass: InMemoryMemoryStore },
-        { provide: MemoryStore, useExisting: AGENT_MEMORY_STORE },
-        { provide: AGENT_SESSION_SUMMARIZER, useClass: SimpleSessionSummarizer },
-        { provide: SessionSummarizer, useExisting: AGENT_SESSION_SUMMARIZER },
+        { provide: SessionStore, useClass: InMemorySessionStore },
+        { provide: MemoryStore, useClass: InMemoryMemoryStore },
+        {
+            provider(injector) {
+                if (injector.has(AgentMemoryRetriever)) {
+                    return;
+                }
+                return [
+                    DefaultAgentMemoryRetriever,
+                    { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever }
+                ];
+            }
+        },
+        { provide: SessionSummarizer, useClass: SimpleSessionSummarizer },
         DeterministicExperienceDistiller,
-        { provide: AGENT_EXPERIENCE_DISTILLER, useClass: DeterministicExperienceDistiller },
-        { provide: ExperienceDistiller, useExisting: AGENT_EXPERIENCE_DISTILLER },
-        { provide: AGENT_SCHEDULER, useClass: IntervalAgentScheduler },
-        { provide: AgentScheduler, useExisting: AGENT_SCHEDULER },
-        { provide: AGENT_RUNTIME, useClass: AgentRuntime },
-        { provide: AgentRuntime, useExisting: AGENT_RUNTIME },
+        { provide: ExperienceDistiller, useExisting: DeterministicExperienceDistiller },
+        { provide: AgentScheduler, useClass: IntervalAgentScheduler },
+        DefaultAgentRuntime,
+        { provide: AgentRuntime, useExisting: DefaultAgentRuntime },
         TurnHandler,
-        { provide: AGENT_TURN_HANDLER, useExisting: TurnHandler },
         AgentRequestHandler,
         AgentServer,
         { provide: AgentClient, useClass: LocalAgentClient },
@@ -116,7 +121,7 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         { provide: AGENT_TOOLS, useExisting: MemorySearchTool, multi: true }
     ],
     exports: [
-        AgentRuntime,
+        DefaultAgentRuntime,
         AgentConsoleComponent,
         LocalToolRegistry,
         InMemorySessionStore,

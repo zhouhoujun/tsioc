@@ -1,6 +1,5 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { OpenAICompatibleModelAdapter, ModelAdapter } from '@tsdi/agent';
-import { AGENT_MODEL_ADAPTER } from '@tsdi/agent';
 import { OPENAI_COMPATIBLE_PROVIDER_OPTIONS } from './openai-compatible-tokens';
 import { OpenAICompatibleProviderOptions, defaultOpenAICompatibleProviderOptions } from './openai-compatible-options';
 
@@ -48,8 +47,7 @@ export class OpenAICompatibleProvider extends OpenAICompatibleModelAdapter {
 @Module({
     providers: [
         { provide: OPENAI_COMPATIBLE_PROVIDER_OPTIONS, useValue: defaultOpenAICompatibleProviderOptions },
-        { provide: AGENT_MODEL_ADAPTER, useClass: OpenAICompatibleProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: OpenAICompatibleProvider }
     ],
     exports: [OpenAICompatibleProvider]
 })
@@ -67,7 +65,6 @@ export class OpenAICompatibleProviderModule {
 export function withOpenAICompatibleProvider(options?: OpenAICompatibleProviderOptions): any[] {
     return [
         { provide: OPENAI_COMPATIBLE_PROVIDER_OPTIONS, useValue: { ...defaultOpenAICompatibleProviderOptions, ...(options ?? {}) } },
-        { provide: AGENT_MODEL_ADAPTER, useClass: OpenAICompatibleProvider },
-        { provide: ModelAdapter, useExisting: AGENT_MODEL_ADAPTER }
+        { provide: ModelAdapter, useClass: OpenAICompatibleProvider }
     ];
 }

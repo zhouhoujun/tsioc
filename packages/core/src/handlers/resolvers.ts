@@ -106,7 +106,7 @@ export function createMessageResolveInterceptors(
 
             const resolvedFactory = factoryInstance ?? injector.get(token, null);
             const reader = resolvedFactory?.create(context.getPayload());
-            const implicitWholeSection = parameter.scope === 'body' || parameter.scope === 'payload';
+            const implicitWholeSection = parameter.scope === 'body';
             const field = isDefined(parameter.field) ? parameter.field : (implicitWholeSection ? undefined : parameter.name);
 
             let payload: any;

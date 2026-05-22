@@ -1,8 +1,7 @@
 import expect = require('expect');
 import { After, Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AGENT_MODEL_ADAPTER } from '../src/tokens';
-import { AgentModule, OpenAICompatibleModelAdapter, provideAgent } from '../src';
+import { AgentModule, ModelAdapter, OpenAICompatibleModelAdapter, provideAgent } from '../src';
 
 @Suite('Agent model providers')
 export class ModelProviderTest {
@@ -17,7 +16,7 @@ export class ModelProviderTest {
     async createDefaultAdapter() {
         const ctx = await Application.run(AgentModule);
         try {
-            const adapter = ctx.get(AGENT_MODEL_ADAPTER);
+            const adapter = ctx.get(ModelAdapter);
             expect(adapter).toBeTruthy();
         } finally {
             await ctx.close();
@@ -87,7 +86,7 @@ export class ModelProviderTest {
             model: { provider: 'echo', model: 'echo' }
         }));
         try {
-            const adapter = ctx.get(AGENT_MODEL_ADAPTER);
+            const adapter = ctx.get(ModelAdapter);
             expect(adapter).toBeTruthy();
         } finally {
             await ctx.close();
