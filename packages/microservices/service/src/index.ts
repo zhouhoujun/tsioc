@@ -36,14 +36,5 @@ export {
     provideServiceFromDi
 } from './provider';
 
-// Re-export core request context types from @tsdi/endpoints.
-// Consumers (security, oidc-auth, services/* protocols) import
-// these from @tsdi/service so they have a single dependency.
-export {
-    AbstractRequestContext,
-    RestfulRequestContext,
-    RouteMappingMetadata,
-    Router,
-    getRouter,
-    SetupServices
-} from '@tsdi/endpoints';
+export * from './AbstractRequestContext';
+export * from './RestfulRequestContext';
