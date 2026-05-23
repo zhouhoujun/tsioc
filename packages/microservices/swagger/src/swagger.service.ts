@@ -2,7 +2,7 @@ import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, Tr
 import { AbstractType, Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath, ContentType } from '@tsdi/common';
-import { RouteMappingMetadata, Router, getRouter, SetupServices } from '@tsdi/endpoints';
+import { RouteMappingMetadata, Router, getRouter, SetupServices } from '@tsdi/service';
 import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
 import { getAbsoluteFSPath } from 'swagger-ui-dist';

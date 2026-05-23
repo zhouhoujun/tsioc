@@ -1,4 +1,4 @@
-import { Controller, Get } from '@tsdi/endpoints';
+import { Controller, Get } from '@tsdi/service';
 import { Injectable } from '@tsdi/ioc';
 import { MetricsCollector } from './collector';
 import { PrometheusExporter } from './exporters/prometheus';

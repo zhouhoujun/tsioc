@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders, Provider, token } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, Provider, token, Type } from '@tsdi/ioc';
 import { Tracer } from './tracer';
 import { DefaultTracer } from './default.tracer';
 import { TracingInterceptor } from './interceptors/tracing.interceptor';
@@ -47,7 +47,7 @@ export class TracingModule {
      * use custom exporter.
      * @param exporter trace exporter.
      */
-    static withExporter(exporter: typeof ConsoleTraceExporter): ModuleWithProviders<TracingModule> {
+    static withExporter(exporter: Type<ConsoleTraceExporter> = ConsoleTraceExporter): ModuleWithProviders<TracingModule> {
         return {
             module: TracingModule,
             providers: [
