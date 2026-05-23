@@ -144,6 +144,24 @@ export function invokeTails<T = any, TContext = any>(invoke: () => any, ...nexts
     return fn();
 }
 
+/**
+ * Sync-only variant of invokeTail. Does not check for Observable or Promise.
+ * Use when the invocation result is guaranteed to be synchronous.
+ */
+export function invokeTailSync<T = any, TContext = any>(invoke: (input?: any, context?: TContext) => T, tail: TailNext<any, TContext>, input?: any, context?: TContext): T {
+    try {
+        const res$ = invoke(input, context);
+        return processSync(input, res$, tail, context);
+    } catch (err) {
+        if (!isFunction(tail) && isFunction(tail.error)) return handleError(err, tail);
+        throw err;
+    } finally {
+        if (!isFunction(tail) && isFunction(tail.finally)) {
+            tail.finally();
+        }
+    }
+}
+
 function processObservableFn<T, TContext>(input: any, obs$: Observable<T>, next: (res: T, context?: TContext) => Observable<T>, context?: TContext) {
     return obs$.pipe(
         mergeMap(res => {

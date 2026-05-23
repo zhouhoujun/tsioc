@@ -142,9 +142,9 @@ export function createResolveHandler<TInput, TOutput = any, TContext extends Run
 function tryResolve(injector: Injector, token: Token, flags?: InjectFlags, context?: RunContext) {
     if(context?.has(token)) return context.get(token, flags);
 
-    if (injector.has(token, flags)) {
-        return injector.get(token, UNRESOLVED, flags, context)
-    }
+    const value = injector.get(token, UNRESOLVED, flags, context);
+    if (isResolved(value)) return value;
+
     if (!isType(token) || getDef(token).abstract) {
         return UNRESOLVED;
     }

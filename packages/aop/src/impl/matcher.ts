@@ -271,11 +271,20 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (!boolOper.test(strExp)) return this.expressToFunc(strExp, metadata);
         const exp = new BoolExpression(strExp, isAdviceToken);
         const fns = exp.tokens.map(t => this.expressToFunc(t, metadata));
-        const argnames = exp.tokens.map((t, i) => 'arg' + i);
-        const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
+        const operators = exp.getOperators();
         return (method: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions) => {
-            const args = fns.map(fn => () => fn(method, fullName, targetRef, target, options));
-            return boolexp(...args)
+            let result = fns[0](method, fullName, targetRef, target, options);
+            for (let i = 0; i < operators.length; i++) {
+                const op = operators[i];
+                if (op === '&&') {
+                    if (!result) return false;
+                    result = fns[i + 1](method, fullName, targetRef, target, options);
+                } else if (op === '||') {
+                    if (result) return true;
+                    result = fns[i + 1](method, fullName, targetRef, target, options);
+                }
+            }
+            return result;
         }
     }
 }
@@ -336,6 +345,16 @@ export class BoolExpression {
                 .filter(Boolean) as string[]
         }
         return this._tokens
+    }
+
+    getOperators(): string[] {
+        const ops: string[] = [];
+        for (const item of this._parsed) {
+            if (item.type === 'operator' && (item.value === '&&' || item.value === '||')) {
+                ops.push(item.value);
+            }
+        }
+        return ops;
     }
 
     toString(map?: (token: string, idx?: number, tokenIdx?: number, exp?: ExpToken[]) => string) {
