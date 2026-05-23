@@ -7,7 +7,7 @@ import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { MimeModule } from '@tsdi/mime';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
-import { BodyparserInterceptor } from './bodyparser';
+import { BodyparserInterceptor } from './interceptors/bodyparser';
 import { StaticFileInterceptor } from './static-file.interceptor';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {

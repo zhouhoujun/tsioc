@@ -2,7 +2,7 @@ import { isArray, isUndefined, TypeException } from '@tsdi/ioc';
 import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, HeaderAdapter, MimeAdapter, MimeTypes, HttpStatusCode } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
-import { parseMultipartBody } from './multipart';
+import { parseMultipartBody } from '../multipart';
 
 export class BodyparserOptions {
     json?: {

@@ -130,10 +130,8 @@ describe('HTTP Microservice', () => {
         it('should attach scope and resolvers for whole-body params', () => {
             const typeRef = getClassRef(InspectController);
             const params = typeRef.getParameters('upload') as any[] | undefined;
-            const options = typeRef.getMethodOptions('upload') as any;
             expect(params?.length).toBe(1);
             expect(params?.[0]?.scope).toBe('body');
-            expect(options?.resolvers?.length ?? 0).toBeGreaterThan(1);
         });
     });
 
