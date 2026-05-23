@@ -1,6 +1,6 @@
 import { Injectable, Injector, createInjector, Module, RunContext } from '@tsdi/ioc';
 import expect = require('expect');
-import { Vaildator, VaildatorFn, VaildatorLike, ValidateResult } from '../src/vaildator';
+import { Vaildator, VaildatorFn, VaildatorLike, ValidateResult } from '../src/validator';
 
 @Injectable()
 class StringValidator implements Vaildator<string> {

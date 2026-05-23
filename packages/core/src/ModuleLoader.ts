@@ -31,7 +31,7 @@ export abstract class ModuleLoader {
      * get modules.
      * @param mdty
      */
-    abstract getMoudle(mdty: LoadType): Promise<Modules[]>;
+    abstract getModule(mdty: LoadType): Promise<Modules[]>;
     /**
      * load all class types in modules
      *

@@ -1,4 +1,4 @@
-import { createResolveHandler, Injector, isDefined, Provider, SCOPE_PRODIDERS } from '@tsdi/ioc';
+import { createResolveHandler, Injector, isDefined, Provider, SCOPE_PROVIDERS } from '@tsdi/ioc';
 import { ApplicationContextFactory } from './ApplicationContext';
 import { ApplicationRunners } from './ApplicationRunners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
@@ -9,7 +9,7 @@ import { DefaultEventMulticaster } from './impl/events';
 import { InterceptorResolver } from './interceptor';
 import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
-import { ExceptionHandlerFilter } from './filters/execption.filter';
+import { ExceptionHandlerFilter } from './filters/exception.filter';
 import { getResolveHandlerToken } from './handlers/resolver';
 import { PayloadApplicationEvent } from './events';
 import { createMessageResolveInterceptors } from './handlers/resolvers';
@@ -34,7 +34,7 @@ export const RESOLVER_PROVIDERS = [
 ]
 
 
-SCOPE_PRODIDERS.push(RESOLVER_PROVIDERS);
+SCOPE_PROVIDERS.push(RESOLVER_PROVIDERS);
 
 /**
  * Application root dependence providers

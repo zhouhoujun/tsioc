@@ -22,7 +22,7 @@ import { getDef, ModuleDef } from '../metadata/type.def';
 import { createRunContext, RunContext } from '../handlers/contexts';
 
 
-export const SCOPE_PRODIDERS: Provider[] = [];
+export const SCOPE_PROVIDERS: Provider[] = [];
 
 /**
  * Default Injector
@@ -371,7 +371,7 @@ export class DefaultInjector extends AbstractInjector {
         if (scope === 'root') {
             this.records.set(INJECTOR, val);
         } else if (scope) {
-            SCOPE_PRODIDERS.length && processProviders(this, SCOPE_PRODIDERS);
+            SCOPE_PROVIDERS.length && processProviders(this, SCOPE_PROVIDERS);
         }
     }
 

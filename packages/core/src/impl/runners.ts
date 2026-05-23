@@ -10,9 +10,9 @@ import { CanHandle } from '../guard';
 import { Handler, createRunContext, RunContext } from '../handler';
 import { Interceptor } from '../interceptor';
 import { Filter } from '../filters/filter';
-import { ExceptionHandlerFilter } from '../filters/execption.filter';
+import { ExceptionHandlerFilter } from '../filters/exception.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
-import { NotHandleException } from '../execptions';
+import { NotHandleException } from '../exceptions';
 import { InvocationHandlerOptions } from '../invocation';
 import { createInvocationHandler } from './invocation';
 import { ApplicationContext } from '../ApplicationContext';
@@ -159,7 +159,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     async stop(signls?: string): Promise<void> {
         try {
-            await this.onShuwdown(signls);
+            await this.onShutdown(signls);
             await this.onDispose();
         } finally {
             this.onDestroy()
@@ -203,7 +203,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this.multicaster.emit(new ApplicationStartedEvent(this));
     }
 
-    protected onShuwdown(signls?: string) {
+    protected onShutdown(signls?: string) {
         return this.multicaster.emit(new ApplicationShutdownEvent(this, signls));
     }
 

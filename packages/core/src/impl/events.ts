@@ -7,7 +7,7 @@ import { CanHandle } from '../guard';
 import { Interceptor } from '../interceptor';
 import { Handler, createRunContext, RunContext } from '../handler';
 import { Filter } from '../filters/filter';
-import { ExceptionHandlerFilter } from '../filters/execption.filter';
+import { ExceptionHandlerFilter } from '../filters/exception.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster, EventInterceptorLike } from '../ApplicationEventMulticaster';

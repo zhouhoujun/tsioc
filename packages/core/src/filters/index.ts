@@ -1,3 +1,3 @@
 export * from './filter';
-export * from './execption.filter';
+export * from './exception.filter';
 export * from './filter.impl';

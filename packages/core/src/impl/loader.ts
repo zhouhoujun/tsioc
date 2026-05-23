@@ -33,14 +33,14 @@ export class DefaultModuleLoader extends ModuleLoader {
      */
     load(modules: LoadType[]): Promise<Modules[]> {
         if (modules.length) {
-            return Promise.all(modules.map(mdty => this.getMoudle(mdty)))
+            return Promise.all(modules.map(mdty => this.getModule(mdty)))
                 .then(mds => mds.reduce((prv, m) => prv.concat(m), []))
         } else {
             return Promise.resolve([])
         }
     }
 
-    getMoudle(mdty: LoadType): Promise<Modules[]> {
+    getModule(mdty: LoadType): Promise<Modules[]> {
         if (isString(mdty)) {
             return this.isFile(mdty) ? this.loadFile(mdty) : this.require(mdty).then(m => m ? [m] : [])
         } else if (isPathModules(mdty)) {
@@ -57,7 +57,7 @@ export class DefaultModuleLoader extends ModuleLoader {
      * @returns {Promise<Type[]>}
      */
     async loadType(mdl: LoadType): Promise<Type[]> {
-        const mdls = await this.getMoudle(mdl);
+        const mdls = await this.getModule(mdl);
         return lang.getTypes(mdls)
     }
 

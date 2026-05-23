@@ -125,11 +125,11 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
 });
 
 /**
- * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
+ * `Bean` decorator. bean provider, provider the value of the method or property for `Configuration`.
  */
 export interface BeanDecorator {
     /**
-     * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
+     * `Bean` decorator. bean provider, provider the value of the method or property for `Configuration`.
      * 
      * 配置项修饰器，用于声明该方法或属性是输出的配置项内容。
      * @param {Token} provide the value of the method or property for the provide token.
@@ -139,7 +139,7 @@ export interface BeanDecorator {
 }
 
 /**
- * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
+ * `Bean` decorator. bean provider, provider the value of the method or property for `Configuration`.
  */
 export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
     props: (provide: Token, options?: Omit<BeanMetadata, 'provide'>) => ({ ...options, provide }),
@@ -155,7 +155,7 @@ export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
     }
 });
 
-export interface ConfgiurationMetadata extends InjectableMetadata {
+export interface ConfigurationMetadata extends InjectableMetadata {
     /**
      * imports dependens modules
      *
@@ -174,18 +174,18 @@ export interface ConfigurationDecorator {
      * 配置修饰器，声明该类为配置提供者。
      * @Configuartion
      */
-    (option?: ConfgiurationMetadata): ClassDecorator;
+    (option?: ConfigurationMetadata): ClassDecorator;
 }
 /**
  * `Configuartion` decorator, define the class as auto Configuration provider.
  * @Configuartion
  */
-export const Configuration: ConfigurationDecorator = createDecorator<ConfgiurationMetadata>('Configuration', {
+export const Configuration: ConfigurationDecorator = createDecorator<ConfigurationMetadata>('Configuration', {
     actionType: ActionType.annoation,
     design: {
         afterAnnoation: (typeRef, ctx) => {
             const injector = ctx.injector
-            const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor!);
+            const meta = typeRef.getMetadata<ConfigurationMetadata>(ctx.currDecor!);
             if (meta.imports) {
                 InjectUtil.provider(injector, {
                     provider: async (injector) => {
@@ -206,7 +206,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
     }
 });
 
-function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: ConfgiurationMetadata, invocation?: Invocation<any>) {
+function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: ConfigurationMetadata, invocation?: Invocation<any>) {
     if (!invocation) {
         invocation = typeRef.createInvocation(injector);
     }

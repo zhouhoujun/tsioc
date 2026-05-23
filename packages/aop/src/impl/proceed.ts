@@ -11,9 +11,6 @@ import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
 import { Advicer } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
-import e = require('express');
-
-
 const POINTCUT = new ContextToken(() => false);
 
 /**
@@ -68,7 +65,7 @@ export class ProceedingScope implements Proceeding {
 
     protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: Injector) {
         const descriptors = typeRef?.getPropertyDescriptors();
-        const weekMap = new WeakMap();
+        const weakMap = new WeakMap();
         const runtime = this.runtime;
         const proxy: any = new Proxy(instance, {
             get: (target, name, receiver) => {
@@ -81,10 +78,10 @@ export class ProceedingScope implements Proceeding {
                     if (!isObject(result)) {
                         return result;
                     }
-                    let vpxy = weekMap.get(result);
+                    let vpxy = weakMap.get(result);
                     if (!vpxy) {
                         vpxy = this.createProxy(fullName, rootRef, root, getClassify(result), result, advisor, parent);
-                        weekMap.set(result, vpxy);
+                        weakMap.set(result, vpxy);
                     }
                     return vpxy;
                 }
@@ -92,14 +89,14 @@ export class ProceedingScope implements Proceeding {
                 const descriptor = descriptors?.[name];
                 if (isFunction(descriptor?.value)) {
                     const result = target[name];
-                    let cachedFn = weekMap.get(result);
+                    let cachedFn = weakMap.get(result);
                     if (!cachedFn) {
                         if (advisor.match(name, fullName, rootRef, instance)) {
                             cachedFn = this.proxy(result, name, fullName, advisor, receiver ?? proxy, root, rootRef, parent);
                         } else {
                             cachedFn = result;
                         }
-                        weekMap.set(result, cachedFn);
+                        weakMap.set(result, cachedFn);
                     }
                     return cachedFn;
                 }
@@ -214,7 +211,7 @@ export function getAdvicesLifeScope(runtime: Runtime): RuntimeHandler<JoinPoint,
 
 
 
-export const afterReturningIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
+export const afterReturningInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(next, (res) => {
         jp.state = JoinpointState.AfterReturning;
         if (isDefined(res) && res !== jp) jp.returning = res;
@@ -238,7 +235,7 @@ export const afterThrowingInterceptor = (jp: JoinPoint, next: HandlerFn, context
     }, jp, context);
 }
 
-export const beforeIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
+export const beforeInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(() => {
         jp.state = JoinpointState.Before;
         const advicers = jp.advisor.getBefore(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
@@ -248,7 +245,7 @@ export const beforeIterceptor = (jp: JoinPoint, next: HandlerFn, context: Runtim
     }, () => next(jp, context));
 }
 
-export const pointcutIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
+export const pointcutInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(() => {
         jp.state = JoinpointState.Pointcut;
         const advicers = jp.advisor.getPointcut(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
@@ -258,7 +255,7 @@ export const pointcutIterceptor = (jp: JoinPoint, next: HandlerFn, context: Runt
     }, () => next(jp, context));
 }
 
-export const afterIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
+export const afterInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(next, (res) => {
         jp.state = JoinpointState.After;
         if (isDefined(res) && res !== jp) jp.returning = res;
@@ -291,10 +288,10 @@ export const adviceHanlder = (jp: JoinPoint, context: RuntimeContext) => {
 
 const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
     afterThrowingInterceptor,
-    afterReturningIterceptor,
-    afterIterceptor,
-    beforeIterceptor,
-    pointcutIterceptor,
+    afterReturningInterceptor,
+    afterInterceptor,
+    beforeInterceptor,
+    pointcutInterceptor,
 ];
 
 
