@@ -1,4 +1,4 @@
-import { AbstractRequestContext } from '@tsdi/endpoints';
+import { AbstractRequestContext } from '@tsdi/service';
 
 export abstract class Authenticator {
     abstract login(ctx: AbstractRequestContext, user: any): Promise<void>;

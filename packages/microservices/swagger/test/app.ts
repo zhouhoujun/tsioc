@@ -1,14 +1,15 @@
 import { Module } from '@tsdi/ioc';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ConnectionOptions } from '@tsdi/repository';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
+import {  provideService } from '@tsdi/service';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/common';
+import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { SwaggerModule } from '../src/swagger.module';
+import { withHttpClientTransport, withHttpTransport } from '@tsdi/http';
 
 
 export const option = <ConnectionOptions>{
@@ -42,19 +43,20 @@ export const option = <ConnectionOptions>{
     baseURL: __dirname,
     imports: [
         ServerModule,
-        ServerEndpointModule,
+        ServerCommonModule,
         HttpClientModule,
-        EndpointModule.register({
-            transport: 'http',
-            config: {
-                majorVersion: 2,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor
-                ]
-            }
-        }),
+        // EndpointModule.register({
+        //     transport: 'http',
+        //     config: {
+        //         majorVersion: 2,
+        //         interceptors: [
+        //             ContentInterceptor,
+        //             JsonInterceptor,
+        //             BodyparserInterceptorp
+        //         ]
+        //     }
+        // }),
+        
         TypeOrmModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
@@ -65,6 +67,14 @@ export const option = <ConnectionOptions>{
             version: 'v1',
             prefix: 'api-docs'
         }),
+    ],
+    providers: [
+        provideService(
+            // withContent(),
+            // withJson(),
+            // withBodyparser(),
+            withHttpTransport()
+        ),
     ],
     declarations: [
         // RouteStartup,

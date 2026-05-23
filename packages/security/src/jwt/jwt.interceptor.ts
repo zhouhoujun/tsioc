@@ -1,7 +1,7 @@
 import * as jwt from 'jsonwebtoken';
 import { Injectable, lang } from '@tsdi/ioc';
 import { OutgoingMessage, RequestInterceptor, RequestHandler } from '@tsdi/common';
-import { AbstractRequestContext } from '@tsdi/endpoints';
+import { AbstractRequestContext } from '@tsdi/service';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { InvalidTokenException } from '../exceptions';
 import { Authenticator } from '../Authenticator';

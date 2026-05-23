@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { RequestHandler, RequestInterceptor } from '@tsdi/common';
-import { RestfulRequestContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/service';
 import { Observable, defer, mergeMap } from 'rxjs';
 import { Authenticator } from '../Authenticator';
 import { OAuth2Options } from './oauth2.options';

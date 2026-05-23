@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { OAuth2Interceptor } from '../oauth2/oauth2.interceptor';
 import { OIDCOptions } from './oidc.options';
 import { OIDCService } from './oidc.service';
-import { RestfulRequestContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/service';
 import { NoOpenIDException } from '../exceptions';
 import { Authenticator } from '../Authenticator';
 

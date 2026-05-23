@@ -1,4 +1,4 @@
-import { Controller, Get, RequestParam, RestfulRequestContext } from '@tsdi/endpoints';
+import { Controller, Get, RequestParam, RestfulRequestContext } from '@tsdi/service';
 import { OIDCService } from '../auth/OIDCService';
 
 @Controller('/auth')

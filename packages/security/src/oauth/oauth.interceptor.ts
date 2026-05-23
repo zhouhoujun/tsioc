@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { RequestHandler, RequestInterceptor, UnauthorizedException } from '@tsdi/common';
-import { RestfulRequestContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '@tsdi/service';
 import { Observable, from, throwError } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Authenticator } from '../Authenticator';

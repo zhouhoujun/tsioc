@@ -1,6 +1,6 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { OutgoingMessage, RequestHandler, RequestInterceptor } from '@tsdi/common';
-import { Middleware, AbstractRequestContext } from '@tsdi/endpoints';
+import { Middleware, AbstractRequestContext } from '@tsdi/service';
 import { defer, finalize, mergeMap, Observable } from 'rxjs';
 
 

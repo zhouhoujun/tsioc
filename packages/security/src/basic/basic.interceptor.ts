@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Incoming, OutgoingMessage, RequestHandler, RequestInterceptor, UnauthorizedException } from '@tsdi/common';
-import { AbstractRequestContext } from '@tsdi/endpoints';
+import { AbstractRequestContext } from '@tsdi/service';
 import { Observable, defer, mergeMap, throwError } from 'rxjs';
 import { Authenticator } from '../Authenticator';
 import { BasicAuthOptions } from './basic.config';

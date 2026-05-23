@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AbstractRequestContext, Controller, Get } from '@tsdi/endpoints';
+import { AbstractRequestContext, Controller, Get } from '@tsdi/service';
 import { fetch } from 'cross-fetch';
 import { OAuthOption } from './oauth.options';
 

@@ -1,5 +1,5 @@
-import { Inject, Injector, lang } from '@tsdi/ioc';
-import { RouteMapping } from '@tsdi/endpoints';
+import { getTypeName, Inject, Injector, lang } from '@tsdi/ioc';
+import { RouteMapping } from '@tsdi/service';
 import { ApiOperation, ApiParam } from '@tsdi/swagger';
 import { InjectRepository } from '@tsdi/repository';
 import { Repository } from 'typeorm';
@@ -24,7 +24,7 @@ export class UserController {
     @RouteMapping('/', 'POST')
     @RouteMapping('/', 'PUT')
     async modify(user: User) {
-        console.log(lang.getTypeName(this.repo), user);
+        console.log(getTypeName(this.repo), user);
         const val = await this.repo.save(user);
         console.log(val);
         return val;
