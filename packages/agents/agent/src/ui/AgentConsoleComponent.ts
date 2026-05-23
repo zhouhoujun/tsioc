@@ -1,5 +1,4 @@
 import { Component } from '@tsdi/components';
-import { Inject } from '@tsdi/ioc';
 import { AgentConsoleViewModel } from './AgentConsoleViewModel';
 import { AgentMessage } from '../runtime/AgentMessage';
 
@@ -21,7 +20,7 @@ import { AgentMessage } from '../runtime/AgentMessage';
 export class AgentConsoleComponent {
     input = '';
 
-    constructor(@Inject(AgentConsoleViewModel) private vm: AgentConsoleViewModel) {
+    constructor(private vm: AgentConsoleViewModel) {
     }
 
     get title(): string {

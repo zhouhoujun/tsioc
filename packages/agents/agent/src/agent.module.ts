@@ -47,30 +47,17 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
     declarations: [AgentConsoleComponent],
     bootstrap: [AgentRuntime],
     providers: [
+        { provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true },
         {
-            provider(injector) {
-                if (injector.has(AGENT_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: AGENT_OPTIONS, useValue: defaultAgentOptions }];
-            }
-        },
-        {
-            provider(injector) {
-                if (injector.has(ModelAdapter)) {
-                    return;
-                }
-                return [{
-                    provide: ModelAdapter,
-                    useFactory: () => new OpenAICompatibleModelAdapter({
-                        provider: 'deepseek',
-                        model: 'deepseek-chat',
-                        baseUrl: 'https://api.deepseek.com',
-                        apiKeyEnv: 'DEEPSEEK_API_KEY',
-                        timeoutMs: 120000
-                    })
-                }];
-            }
+            provide: ModelAdapter,
+            useFactory: () => new OpenAICompatibleModelAdapter({
+                provider: 'deepseek',
+                model: 'deepseek-flash',
+                baseUrl: 'https://api.deepseek.com',
+                apiKeyEnv: 'DEEPSEEK_API_KEY',
+                timeoutMs: 120000
+            }),
+            asDefault: true
         },
         AgentContextManager,
         ToolLoopDetector,
@@ -90,17 +77,7 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         MemorySearchTool,
         { provide: SessionStore, useClass: InMemorySessionStore },
         { provide: MemoryStore, useClass: InMemoryMemoryStore },
-        {
-            provider(injector) {
-                if (injector.has(AgentMemoryRetriever)) {
-                    return;
-                }
-                return [
-                    DefaultAgentMemoryRetriever,
-                    { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever }
-                ];
-            }
-        },
+        { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever, asDefault: true },
         { provide: SessionSummarizer, useClass: SimpleSessionSummarizer },
         DeterministicExperienceDistiller,
         { provide: ExperienceDistiller, useExisting: DeterministicExperienceDistiller },
