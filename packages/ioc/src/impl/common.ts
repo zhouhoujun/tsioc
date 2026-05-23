@@ -141,16 +141,19 @@ export function resolveToken(token: Token, rd: InjectorRecord, injector: Injecto
         const hasParent = parent && !(flags & InjectFlags.Self);
         const values = hasParent ? parent.get(token, null, flags, context) : null;
         const factory = rd.factory;
-        
+
         if (values || factory) {
-            const result: any[] = [];
-            if (values) {
-                result.push(...values);
+            if (values && factory) {
+                const factoryResult = factory(context, flags);
+                const vLen = values.length;
+                const fLen = factoryResult ? factoryResult.length : 0;
+                const result = new Array(vLen + fLen);
+                for (let i = 0; i < vLen; i++) result[i] = values[i];
+                for (let i = 0; i < fLen; i++) result[vLen + i] = factoryResult[i];
+                return result;
             }
-            if (factory) {
-                result.push(...factory(context, flags));
-            }
-            return result;
+            if (values) return values;
+            return factory!(context, flags) ?? multi;
         }
         return multi;
     }

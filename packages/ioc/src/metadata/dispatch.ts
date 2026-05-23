@@ -143,8 +143,17 @@ const decorRunnable = (ctx: DecorContext, next: DecorHandlerFn) => {
         (metadata as any).decorType = ctx.define.decorType;
         if (!metadata.propertyKey) metadata.propertyKey = ctx.define.propertyKey;
         metadata.order = ctx.define.decorType === Decors.CLASS ? 0 : metadata.order;
-        ctx.classRef.runnables.push(ctx.define.metadata);
-        ctx.classRef.runnables.sort((au1, au2) => au1.order! - au2.order!)
+        const runnables = ctx.classRef.runnables;
+        const order = metadata.order!;
+        let inserted = false;
+        for (let i = 0; i < runnables.length; i++) {
+            if (runnables[i].order! > order) {
+                runnables.splice(i, 0, ctx.define.metadata);
+                inserted = true;
+                break;
+            }
+        }
+        if (!inserted) runnables.push(ctx.define.metadata);
     }
     return next(ctx)
 }
