@@ -1,27 +1,25 @@
 {
-  "name": "core-simple",
+  "name": "@tsdi/oidc-auth",
   "version": "6.0.31",
-  "description": "Application bootstrap. base on AOP, Ioc container, via @tsdi/core .",
+  "description": "OIDC unified authentication service based on @tsdi/security and @tsdi/http-microservice.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "test": "tsdi test",
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c",
     "start": "ts-node -r tsconfig-paths/register main.ts"
   },
   "keywords": [
-    "boot",
-    "frameworks",
-    "Application",
-    "AOP",
-    "aop",
+    "oidc",
+    "openid",
+    "authentication",
+    "auth",
+    "sso",
+    "security",
     "tsdi",
     "@tsdi",
     "tsioc",
     "ioc",
-    "IoC",
-    "type",
-    "container",
-    "dependency",
-    "injection"
+    "IoC"
   ],
   "author": "houjun",
   "license": "MIT",
@@ -36,19 +34,20 @@
   "dependencies": {
     "@tsdi/ioc": "latest",
     "@tsdi/core": "latest",
-    "@tsdi/security": "6.0.31",
-    "@types/node": "^14.14.7",
+    "@tsdi/aop": "latest",
+    "@tsdi/security": "latest",
+    "@tsdi/service": "latest",
+    "@tsdi/http-microservice": "latest",
     "jsonwebtoken": "^9.0.0",
-    "class-transformer": "^0.5.1",
-    "uuid": "^9.0.0"
+    "cross-fetch": "^4.1.0"
   },
   "directories": {
-    "lib": "lib",
+    "lib": "dist",
     "test": "test"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.0",
-    "@types/uuid": "^9.0.0",
+    "@tsdi/unit": "latest",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^4.9.0"

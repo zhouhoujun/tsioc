@@ -1,52 +1,28 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Exclude } from 'class-transformer';
+export interface UserProfile {
+    sub: string;
+    username?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
 
-@Entity()
-export class User {
-    @PrimaryGeneratedColumn('uuid')
-    id!: string;
+    oidcId?: string;
+    oidcProvider?: string;
+    oidcProfile?: Record<string, unknown>;
 
-    @Column({ unique: true })
-    username!: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
 
-    @Column({ nullable: true })
-    @Exclude()
-    password!: string;
-
-    @Column({ nullable: true })
-    email!: string;
-
-    @Column({ nullable: true })
-    firstName!: string;
-
-    @Column({ nullable: true })
-    lastName!: string;
-
-    @Column({ nullable: true })
-    avatar!: string;
-
-    // OIDC相关字段
-    @Column({ nullable: true, unique: true })
-    oidcId!: string;
-
-    @Column({ nullable: true })
-    oidcProvider!: string;
-
-    @Column({ type: 'json', nullable: true })
-    oidcProfile!: any;
-
-    @Column({ nullable: true })
-    accessToken!: string;
-
-    @Column({ nullable: true })
-    refreshToken!: string;
-
-    @Column({ type: 'timestamp', nullable: true })
-    tokenExpiresAt!: Date;
-
-    @CreateDateColumn()
-    createdAt!: Date;
-
-    @UpdateDateColumn()
-    updatedAt!: Date;
+export interface UserSession {
+    sub: string;
+    name?: string;
+    email?: string;
+    emailVerified?: boolean;
+    picture?: string;
+    provider: string;
+    accessToken?: string;
+    refreshToken?: string;
+    idToken?: string;
+    expiresAt?: Date;
 }
