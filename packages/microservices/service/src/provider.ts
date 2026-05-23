@@ -12,7 +12,7 @@ import {
 export * from './options';
 import { ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
-import { SetupMicroServices } from './SetupMicroServices';
+import { SetupServices } from './SetupMicroServices';
 
 
 /**
@@ -70,7 +70,7 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
     const providers: Provider[] = [
         provideIncomings(),
         provideOutgoings(),
-        SetupMicroServices,
+        SetupServices,
         LoggerInterceptor
     ];
 

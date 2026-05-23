@@ -19,7 +19,7 @@ export const REGISTER_MICRO_SERVICES = token<RegisterMicroService[]>('REGISTER_M
  * 在根容器中设置和注册微服务，包含注册和健康检查生命周期
  */
 @Injectable()
-export class SetupMicroServices {
+export class SetupServices {
 
     private context!: ApplicationContext;
 
