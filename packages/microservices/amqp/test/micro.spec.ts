@@ -1,0 +1,82 @@
+import { Application, ApplicationContext } from '@tsdi/core';
+import { Injectable, Module } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
+import expect = require('expect');
+import { AmqpClient } from '../src';
+import { withAmqpTransport } from '../src/server';
+import { withAmqpClientTransport } from '../src/client';
+import { Transport } from '@tsdi/common';
+import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideClient } from '@tsdi/client';
+
+
+@Injectable()
+export class AMQPService {
+
+    @Handle({ cmd: 'xxx' }, Transport.AMQP)
+    async handleMessage(@Payload() message: string) {
+        return message;
+    }
+
+    @Handle({ cmd: 'ping' }, Transport.AMQP)
+    async ping() {
+        return 'pong';
+    }
+}
+
+@Module({
+    baseURL: __dirname,
+    imports: [
+        LoggerModule,
+    ],
+    providers: [
+        ...provideService(
+            withServiceRouter(),
+            withAmqpTransport({
+                microservice: true,
+                bootstrap: false,
+                asDefault: true
+            })
+        ),
+        ...provideClient(
+            withAmqpClientTransport({
+                microservice: true,
+                asDefault: true
+            })
+        )
+    ],
+    declarations: [
+        AMQPService
+    ]
+})
+export class MicroTestModule {
+
+}
+
+
+describe('AMQP Micro Service', () => {
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(MicroTestModule);
+        await new Promise(r => setTimeout(r, 200));
+    });
+
+    it('should create context with AMQP transport', () => {
+        expect(ctx).toBeDefined();
+    });
+
+    it('should resolve AmqpClient', () => {
+        const client = ctx.get(AmqpClient);
+        expect(client).toBeDefined();
+    });
+
+    it('should resolve AMQPService', () => {
+        const svc = ctx.get(AMQPService);
+        expect(svc).toBeDefined();
+    });
+
+    after(async () => {
+        if (ctx) await ctx.destroy();
+    });
+});

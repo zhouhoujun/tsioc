@@ -33,7 +33,12 @@ export enum ServiceFeatureKind {
     Transport,
     Registration,
     Health,
-    GracefulShutdown
+    GracefulShutdown,
+    BodyParser,
+    BodySerializer,
+    Content,
+    Json,
+    Session
 }
 
 
@@ -155,6 +160,22 @@ export function withServiceFeatures(options?: ServiceFeatureOptions): ServiceFea
         }
 
         features.push(withServiceTransfers(...opts.transfers ?? [])(config));
+
+        if (opts.bodyparser) {
+            features.push(withBodyParser(isBoolean(opts.bodyparser) ? undefined : opts.bodyparser)(config));
+        }
+        if (opts.bodySerializer) {
+            features.push(withBodySerializer(isBoolean(opts.bodySerializer) ? undefined : opts.bodySerializer)(config));
+        }
+        if (opts.content) {
+            features.push(withContent(isBoolean(opts.content) ? undefined : opts.content)(config));
+        }
+        if (opts.json) {
+            features.push(withJson(isBoolean(opts.json) ? undefined : opts.json)(config));
+        }
+        if (opts.session) {
+            features.push(withSession(isBoolean(opts.session) ? undefined : opts.session)(config));
+        }
 
         if (opts.registration) {
             features.push(withRegistration(opts.registration)(config));
@@ -385,10 +406,96 @@ export function withServiceControllers(controllers: Type[]): ServiceFeatureFn<Se
 }
 
 
+/**
+ * Adds body parser to micro service.
+ * Protocol implementations handle the actual parsing.
+ * @publicApi
+ */
+export function withBodyParser(options?: any): ServiceFeatureFn<ServiceFeatureKind.BodyParser> {
+    return (config) => {
+        return makeServiceFeature(
+            ServiceFeatureKind.BodyParser,
+            [
+                { provide: SERVICE_BODY_PARSER_OPTIONS, useValue: options ?? {} }
+            ],
+            config
+        );
+    };
+}
+
+/**
+ * Adds body serializer to micro service.
+ * @publicApi
+ */
+export function withBodySerializer(options?: any): ServiceFeatureFn<ServiceFeatureKind.BodySerializer> {
+    return (config) => {
+        return makeServiceFeature(
+            ServiceFeatureKind.BodySerializer,
+            [
+                { provide: SERVICE_BODY_SERIALIZER_OPTIONS, useValue: options ?? {} }
+            ],
+            config
+        );
+    };
+}
+
+/**
+ * Adds content negotiation to micro service.
+ * @publicApi
+ */
+export function withContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.Content> {
+    return (config) => {
+        return makeServiceFeature(
+            ServiceFeatureKind.Content,
+            [
+                { provide: SERVICE_CONTENT_OPTIONS, useValue: options ?? {} }
+            ],
+            config
+        );
+    };
+}
+
+/**
+ * Adds JSON serialization to micro service.
+ * @publicApi
+ */
+export function withJson(options?: any): ServiceFeatureFn<ServiceFeatureKind.Json> {
+    return (config) => {
+        return makeServiceFeature(
+            ServiceFeatureKind.Json,
+            [
+                { provide: SERVICE_JSON_OPTIONS, useValue: options ?? {} }
+            ],
+            config
+        );
+    };
+}
+
+/**
+ * Adds session management to micro service.
+ * @publicApi
+ */
+export function withSession(options?: any): ServiceFeatureFn<ServiceFeatureKind.Session> {
+    return (config) => {
+        return makeServiceFeature(
+            ServiceFeatureKind.Session,
+            [
+                { provide: SERVICE_SESSION_OPTIONS, useValue: options ?? {} }
+            ],
+            config
+        );
+    };
+}
+
 export const SERVICE_REGISTRATION_OPTIONS = token<RegistrationOptions>('SERVICE_REGISTRATION_OPTIONS');
 export const SERVICE_HEALTH_OPTIONS = token<HealthOptions>('SERVICE_HEALTH_OPTIONS');
 export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>('SERVICE_GRACEFUL_SHUTDOWN_OPTIONS');
 
+export const SERVICE_CONTENT_OPTIONS = token<any>('SERVICE_CONTENT_OPTIONS');
+export const SERVICE_BODY_PARSER_OPTIONS = token<any>('SERVICE_BODY_PARSER_OPTIONS');
+export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZER_OPTIONS');
+export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');
+export const SERVICE_SESSION_OPTIONS = token<any>('SERVICE_SESSION_OPTIONS');
 export const SERVICE_CONFIGS = token<ServiceOptions[]>('SERVICE_CONFIGS');
 export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS');
 

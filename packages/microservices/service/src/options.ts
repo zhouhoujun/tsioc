@@ -27,6 +27,10 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, TContext>>[];
     logger?: boolean;
     bodyparser?: boolean;
+    bodySerializer?: boolean;
+    content?: boolean;
+    json?: boolean;
+    session?: boolean;
     router?: boolean | RouteOpts;
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;
