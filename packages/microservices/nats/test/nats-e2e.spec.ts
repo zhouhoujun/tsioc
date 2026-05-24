@@ -2,12 +2,13 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { withNatsTransport } from '../src/server';
 import { withNatsClientTransport, NatsClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import { connect, StringCodec, NatsConnection } from 'nats';
 import expect = require('expect');
+import { lastValueFrom } from 'rxjs';
 
 @Controller('/api/test')
 class TestController {
@@ -200,5 +201,56 @@ describe('NATS E2E with provideService + provideClient (microservice:false)', ()
         })), { timeout: 10000 });
         const response = JSON.parse(sc.decode(msg.data));
         expect(response).toBeDefined();
+    });
+});
+
+// ----- NATS pattern routing -----
+class NatsPatternService {
+    @Handle({ cmd: 'echo' })
+    echo(@Payload() msg: string) { return msg; }
+
+    @Handle('sensor.message.*')
+    topic(@Payload() msg: string) { return msg; }
+
+    @Subscribe('sensor.*.start', undefined as any)
+    subscribe(@Payload() msg: string) { return msg; }
+}
+
+describe('NATS pattern routing', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [NatsPatternService],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withNatsTransport({ url: 'nats://127.0.0.1:4222' })),
+            ...provideClient(
+                withNatsClientTransport({ url: 'nats://127.0.0.1:4222', microservice: true, asDefault: true }))
+        ]
+    })
+    class NatsPatternModule { }
+
+    let ctx: ApplicationContext;
+    let client: NatsClient;
+
+    before(async () => {
+        ctx = await Application.run(NatsPatternModule);
+        client = ctx.get(NatsClient);
+        await new Promise(r => setTimeout(r, 1000));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('routes object cmd patterns', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        expect(result.payload).toEqual('hello');
+    });
+
+    it('routes wildcard topic patterns', async () => {
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        expect(result.payload).toEqual('world');
+    });
+
+    it('routes subscribe patterns with wildcard', async () => {
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
+        expect(result.payload).toEqual('foo');
     });
 });

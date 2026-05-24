@@ -3,6 +3,7 @@ import { MessageReaderFactory } from '@tsdi/core';
 import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { RedisServer } from './redis-server';
+import { RedisPatternFormatter } from './pattern';
 import { RedisServOptions, REDIS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
@@ -16,7 +17,11 @@ export function redisTransportFactory(option: Partial<RedisServOptions>, asDefau
         ...option,
         features: {
             defaultTransfer: useJsonPacket(),
-            ...option.features
+            ...option.features,
+            router: option.features?.router === false ? false : {
+                ...(typeof option.features?.router === 'object' ? option.features.router : {}),
+                formatter: (typeof option.features?.router === 'object' && option.features.router.formatter) || RedisPatternFormatter
+            }
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
         channels: option.channels ? [...option.channels] : undefined,
@@ -37,6 +42,7 @@ export function redisTransportFactory(option: Partial<RedisServOptions>, asDefau
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        RedisPatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         {
             provide: backendToken,
@@ -93,7 +99,5 @@ export function redisTransportFactory(option: Partial<RedisServOptions>, asDefau
 }
 
 export function withRedisTransport(...options: Partial<RedisServOptions>[]): ServiceTransportFeature[] {
-    return options.map(option => {
-        return redisTransportFactory(option, options.length === 1 && option.asDefault);
-    });
+    return options.map(o => redisTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }

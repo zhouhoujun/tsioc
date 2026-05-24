@@ -101,9 +101,17 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             parsed = data;
         }
 
-        const url = parsed.url || '/' + topic.replace(/\//g, '/');
-        const method = parsed.method || 'GET';
-        const requestData = { ...parsed, url, method };
+        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
+        const url = requestSource.url || '/' + topic.replace(/\//g, '/');
+        const method = requestSource.method || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        const requestData = {
+            ...requestSource,
+            url,
+            method,
+            body,
+            payload: body,
+        };
 
         const outgoing = this.injector.get(OutgoingFactory).create({});
 
@@ -111,8 +119,8 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             [REQUEST, requestData],
             [RESPONSE, outgoing],
             ['topic', topic],
-            ['payload', data],
         ]);
+        context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
@@ -121,7 +129,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 if (response && this.client) {
                     const ctxResponse = context.get(RESPONSE);
                     const body = ctxResponse?.body ?? response;
-                    const msg = typeof body === 'string' ? body : JSON.stringify(body);
+                    const msg = JSON.stringify({ payload: body });
                     this.client.publish(topic + '/response', msg);
                 }
             });

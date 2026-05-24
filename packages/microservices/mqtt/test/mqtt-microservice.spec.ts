@@ -81,12 +81,12 @@ describe('MQTT Microservice', () => {
             expect(hasInConfig || hasInMain).toBe(true);
         });
 
-        it('should use json packet transfer by default', () => {
+        it('should not set a default transfer on server side', () => {
             const feature = mqttTransportFactory({
                 url: 'mqtt://localhost:1883'
             });
 
-            expect(feature.config.features?.defaultTransfer).toBeDefined();
+            expect(feature.config.features?.defaultTransfer).toBeUndefined();
         });
 
         it('should preserve an explicit default transfer override', () => {

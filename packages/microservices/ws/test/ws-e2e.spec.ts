@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { withWsTransport } from '../src/server';
 import { withWsClientTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
@@ -183,5 +183,56 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
             responseType: 'text' as any
         }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
+    });
+});
+
+// ----- WS pattern routing -----
+class WsPatternService {
+    @Handle({ cmd: 'echo' })
+    echo(@Payload() msg: string) { return msg; }
+
+    @Handle('sensor.message.+')
+    topic(@Payload() msg: string) { return msg; }
+
+    @Subscribe('sensor.+.start', undefined as any)
+    subscribe(@Payload() msg: string) { return msg; }
+}
+
+describe('WS pattern routing', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [WsPatternService],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withWsTransport({ listenOpts: { port: 21900, host: '127.0.0.1' } })),
+            ...provideClient(
+                withWsClientTransport({ url: 'ws://127.0.0.1:21900', microservice: true, asDefault: true }))
+        ]
+    })
+    class WsPatternModule { }
+
+    let ctx: ApplicationContext;
+    let client: WsClient;
+
+    before(async () => {
+        ctx = await Application.run(WsPatternModule);
+        client = ctx.get(WsClient);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('routes object cmd patterns', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        expect(result.payload).toEqual('hello');
+    });
+
+    it('routes wildcard topic patterns', async () => {
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        expect(result.payload).toEqual('world');
+    });
+
+    it('routes subscribe patterns with wildcard', async () => {
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
+        expect(result.payload).toEqual('foo');
     });
 });

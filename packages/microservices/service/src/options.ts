@@ -1,7 +1,7 @@
-import { ProvdierOf, Provider, Token } from '@tsdi/ioc';
+import { InstanceOf, ProvdierOf, Provider, Token } from '@tsdi/ioc';
 import { GuardLike, MessageReaderFactory, VaildatorLike } from '@tsdi/core';
 import {
-    Incoming, Outgoing, RequestContext, RequestFilterLike,
+    Incoming, Outgoing, PatternFormatter, RequestContext, RequestFilterLike,
     RequestInterceptorLike, TransferConfig, TransferSide, TransferInterceptorFactory
 } from '@tsdi/common';
 import { ServiceFeatureKind } from './provider';
@@ -14,6 +14,7 @@ import { ServiceHandlerOptions } from './ServiceHandler';
 
 export interface RouteOpts {
     microservice?: boolean;
+    formatter?: InstanceOf<PatternFormatter>;
 }
 
 /**

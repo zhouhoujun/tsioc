@@ -1,9 +1,10 @@
 import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
+import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpClient } from './client';
+import { AmqpPatternFormatter } from '../server';
 import { MessageReaderFactory } from '@tsdi/core';
 
 
@@ -17,6 +18,7 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
             ...option.features
         },
     } as AmqpClientOptions;
+    config.formatter ??= AmqpPatternFormatter;
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
     config.providers.push(
@@ -58,7 +60,14 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
         providers.push({
             provide: AmqpClient,
             useExisting: clientToken
-        })
+        });
+        if (config.formatter) {
+            providers.push({
+                provide: PatternFormatter,
+                useFactory: (injector: Injector) => injector.get(config.formatter!),
+                deps: [Injector]
+            });
+        }
     }
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 

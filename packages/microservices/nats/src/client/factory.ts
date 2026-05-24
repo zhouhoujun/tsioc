@@ -1,9 +1,10 @@
 import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
+import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { NATS_CLIENT_OPTIONS, NatsClientOptions } from './options';
 import { NatsClient } from './client';
+import { NatsPatternFormatter } from '../server';
 import { MessageReaderFactory } from '@tsdi/core';
 
 
@@ -18,6 +19,7 @@ function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefaul
         },
         servers: option.servers ? [...option.servers] : undefined,
     } as NatsClientOptions;
+    config.formatter ??= NatsPatternFormatter;
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
     config.providers.push(
@@ -59,7 +61,14 @@ function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefaul
         providers.push({
             provide: NatsClient,
             useExisting: clientToken
-        })
+        });
+        if (config.formatter) {
+            providers.push({
+                provide: PatternFormatter,
+                useFactory: (injector: Injector) => injector.get(config.formatter!),
+                deps: [Injector]
+            });
+        }
     }
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 

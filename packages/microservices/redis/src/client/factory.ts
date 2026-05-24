@@ -1,9 +1,10 @@
 import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
+import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisClient } from './client';
+import { RedisPatternFormatter } from '../server';
 import { MessageReaderFactory } from '@tsdi/core';
 
 
@@ -18,6 +19,7 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as RedisClientOptions;
+    config.formatter ??= RedisPatternFormatter;
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
     config.providers.push(
@@ -59,7 +61,14 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
         providers.push({
             provide: RedisClient,
             useExisting: clientToken
-        })
+        });
+        if (config.formatter) {
+            providers.push({
+                provide: PatternFormatter,
+                useFactory: (injector: Injector) => injector.get(config.formatter!),
+                deps: [Injector]
+            });
+        }
     }
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 

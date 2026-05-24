@@ -354,10 +354,11 @@ export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatur
     return (config) => {
         const tk = getServiceInterceptorsToken(config);
         const routerToken = getServiceRouterToken(config);
+        const routerOptions = options ?? (isBoolean(config.features.router) ? undefined : config.features.router);
         return makeServiceFeature(
             ServiceFeatureKind.Router,
             [
-                ...createRouteProviders(config, routerToken, options),
+                ...createRouteProviders(config, routerToken, routerOptions),
                 {
                     provide: tk,
                     useExisting: routerToken,

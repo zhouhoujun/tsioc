@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { withCoapTransport } from '../src/server';
 import { withCoapClientTransport } from '../src/client';
 import { CoapClient } from '../src/client/client';
@@ -273,5 +273,56 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
             observe: 'response' as any
         }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
+    });
+});
+
+// ----- CoAP pattern routing -----
+class CoapPatternService {
+    @Handle({ cmd: 'echo' })
+    echo(@Payload() msg: string) { return msg; }
+
+    @Handle('sensor.message.+')
+    topic(@Payload() msg: string) { return msg; }
+
+    @Subscribe('sensor.+.start', undefined as any)
+    subscribe(@Payload() msg: string) { return msg; }
+}
+
+describe('CoAP pattern routing', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [CoapPatternService],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withCoapTransport({ listenOpts: { port: 21600, host: '127.0.0.1' } })),
+            ...provideClient(
+                withCoapClientTransport({ host: '127.0.0.1', port: 21600, microservice: true, asDefault: true }))
+        ]
+    })
+    class CoapPatternModule { }
+
+    let ctx: ApplicationContext;
+    let client: CoapClient;
+
+    before(async () => {
+        ctx = await Application.run(CoapPatternModule);
+        client = ctx.get(CoapClient);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('routes object cmd patterns', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        expect(result.payload).toEqual('hello');
+    });
+
+    it('routes wildcard topic patterns', async () => {
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        expect(result.payload).toEqual('world');
+    });
+
+    it('routes subscribe patterns with wildcard', async () => {
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
+        expect(result.payload).toEqual('foo');
     });
 });

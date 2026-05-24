@@ -5,7 +5,6 @@ import { of } from 'rxjs';
 import { MqttServer } from './mqtt-server';
 import { MqttServOptions, MQTT_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
 export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault?: boolean): ServiceTransportFeature {
@@ -15,7 +14,6 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
             ...option.features
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
@@ -93,7 +91,5 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
 }
 
 export function withMqttTransport(...options: Partial<MqttServOptions>[]): ServiceTransportFeature[] {
-    return options.map(option => {
-        return mqttTransportFactory(option, options.length === 1 && option.asDefault);
-    });
+    return options.map(o => mqttTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }

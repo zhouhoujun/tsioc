@@ -103,6 +103,7 @@ export class ContextInjector<TParent extends Injector = Injector> extends Abstra
                 for (let i = 0, len = resls.length; i < len; i++) {
                     const r = resls[i];
                     const resolved = isToken(r) ? this.get(r) : r;
+                    if (resolved == null) continue;
                     if (Array.isArray(resolved)) {
                         resolvers.push(...resolved);
                     } else {

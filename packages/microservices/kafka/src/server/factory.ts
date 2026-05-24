@@ -3,6 +3,7 @@ import { MessageReaderFactory } from '@tsdi/core';
 import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { KafkaServer } from './kafka-server';
+import { KafkaPatternFormatter } from './pattern';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
@@ -12,7 +13,14 @@ export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefau
     const config = {
         transport: Transport.Kafka, side: TransferSide.server, microservice: true,
         ...option,
-        features: { defaultTransfer: useJsonPacket(), ...option.features },
+        features: {
+            defaultTransfer: useJsonPacket(),
+            ...option.features,
+            router: option.features?.router === false ? false : {
+                ...(typeof option.features?.router === 'object' ? option.features.router : {}),
+                formatter: (typeof option.features?.router === 'object' && option.features.router.formatter) || KafkaPatternFormatter
+            }
+        },
         brokers: option.brokers ? [...option.brokers] : undefined,
         topics: option.topics ? [...option.topics] : undefined,
     } as KafkaServOptions;
@@ -30,6 +38,7 @@ export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefau
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        KafkaPatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const r = context.getResponse(); const s = context.get(StatusAdapter);

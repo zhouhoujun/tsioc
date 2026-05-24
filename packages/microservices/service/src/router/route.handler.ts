@@ -7,15 +7,26 @@ import { Observable } from 'rxjs';
  */
 export class RouteHandler implements RequestHandler {
 
+    private invokeOpts?: { resolvers?: any[] };
+
     constructor(
         readonly injector: Injector,
         readonly invocation: Invocation,
-        readonly propertyKey: string | symbol
+        readonly propertyKey: string | symbol,
+        options?: any
     ) {
+        if (options?.resolvers) {
+            this.invokeOpts = { resolvers: options.resolvers };
+        }
     }
 
     handle(input: ReadableLike<Incoming>, context: RequestContext): Observable<any> {
-        const result = this.invocation.invoke(this.propertyKey, context);
+        const result = this.invokeOpts
+            ? this.invocation.invoke(this.propertyKey, {
+                resolvers: this.invokeOpts.resolvers,
+                payload: (context as any).getPayload?.()
+            } as any)
+            : this.invocation.invoke(this.propertyKey, context);
         return toObservable(result);
     }
 }
@@ -24,5 +35,5 @@ export class RouteHandler implements RequestHandler {
  * create route handler from invocation.
  */
 export function createRouteHandler(invocation: Invocation, options: any, propertyKey: string | symbol): RouteHandler {
-    return new RouteHandler(invocation.injector, invocation, propertyKey);
+    return new RouteHandler(invocation.injector, invocation, propertyKey, options);
 }

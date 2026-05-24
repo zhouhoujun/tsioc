@@ -2,12 +2,13 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { withAmqpTransport } from '../src/server';
 import { withAmqpClientTransport, AmqpClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as amqp from 'amqplib';
 import expect = require('expect');
+import { lastValueFrom } from 'rxjs';
 
 @Controller('/api/test')
 class TestController {
@@ -240,5 +241,58 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
         });
 
         expect(result).toBeDefined();
+    });
+});
+
+// ----- AMQP pattern routing -----
+class AmqpPatternService {
+    @Handle({ cmd: 'echo' })
+    echo(@Payload() msg: string) { return msg; }
+
+    @Handle('sensor.message.*')
+    topic(@Payload() msg: string) { return msg; }
+
+    @Subscribe('sensor.*.start', undefined as any)
+    subscribe(@Payload() msg: string) { return msg; }
+}
+
+describe('AMQP pattern routing', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [AmqpPatternService],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withAmqpTransport({
+                    url: AMQP_URL
+                })),
+            ...provideClient(
+                withAmqpClientTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
+        ]
+    })
+    class AmqpPatternModule { }
+
+    let ctx: ApplicationContext;
+    let client: AmqpClient;
+
+    before(async () => {
+        ctx = await Application.run(AmqpPatternModule);
+        client = ctx.get(AmqpClient);
+        await new Promise(r => setTimeout(r, 1000));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('routes object cmd patterns', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        expect(result.payload).toEqual('hello');
+    });
+
+    it('routes wildcard topic patterns', async () => {
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        expect(result.payload).toEqual('world');
+    });
+
+    it('routes subscribe patterns with wildcard', async () => {
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
+        expect(result.payload).toEqual('foo');
     });
 });

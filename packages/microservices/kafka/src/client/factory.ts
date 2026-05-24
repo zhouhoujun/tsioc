@@ -1,9 +1,10 @@
 import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
+import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { KAFKA_CLIENT_OPTIONS, KafkaClientOptions } from './options';
 import { KafkaClient } from './client';
+import { KafkaPatternFormatter } from '../server';
 import { MessageReaderFactory } from '@tsdi/core';
 
 function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefault?: boolean): ClientTransportFeature {
@@ -12,6 +13,7 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
         ...option, features: { defaultTransfer: useJsonPacket(), ...option.features },
         brokers: option.brokers ? [...option.brokers] : undefined,
     } as KafkaClientOptions;
+    config.formatter ??= KafkaPatternFormatter;
     config.providers ??= [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
     config.providers.push(
@@ -27,7 +29,16 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
         { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
         { provide: clientToken, useFactory: (h: ClientHandler<any, any>) => new KafkaClient(h, config), deps: [hanlderToken] }
     ];
-    if (asDefault) providers.push({ provide: KafkaClient, useExisting: clientToken });
+    if (asDefault) {
+        providers.push({ provide: KafkaClient, useExisting: clientToken });
+        if (config.formatter) {
+            providers.push({
+                provide: PatternFormatter,
+                useFactory: (injector: Injector) => injector.get(config.formatter!),
+                deps: [Injector]
+            });
+        }
+    }
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 }
 

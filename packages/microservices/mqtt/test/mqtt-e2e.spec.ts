@@ -2,12 +2,13 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { withMqttTransport } from '../src/server';
 import { withMqttClientTransport, MqttClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as mqtt from 'mqtt';
 import expect = require('expect');
+import { lastValueFrom } from 'rxjs';
 
 @Controller('/api/test')
 class TestController {
@@ -22,6 +23,17 @@ class RouteCtrl {
 }
 
 const MQTT_URL = 'mqtt://127.0.0.1:1883';
+
+class MqttPatternService {
+    @Handle({ cmd: 'xxx' })
+    cmd(@Payload() message: string) { return message; }
+
+    @Handle('sensor/message/+')
+    topic(@Payload() message: string) { return message; }
+
+    @Subscribe('sensor/+/start', undefined as any)
+    subscribe(@Payload() message: string) { return message; }
+}
 
 describe('MQTT E2E microservice:true', () => {
     @Module({
@@ -108,6 +120,52 @@ describe('MQTT @RouteMapping', () => {
     after(async () => { if (ctx) await ctx.close(); });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
+});
+
+describe('MQTT pattern routing', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [MqttPatternService],
+        providers: [
+            ...provideService(withServiceRouter(),
+                withMqttTransport({
+                    url: MQTT_URL,
+                    subscribeTopics: [
+                        { topic: 'cmd:xxx', qos: 0 },
+                        { topic: 'sensor/message/+', qos: 0 },
+                        { topic: 'sensor/+/start', qos: 0 }
+                    ]
+                })),
+            ...provideClient(
+                withMqttClientTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
+        ]
+    })
+    class MqttPatternModule { }
+
+    let ctx: ApplicationContext;
+    let client: MqttClient;
+
+    before(async () => {
+        ctx = await Application.run(MqttPatternModule);
+        client = ctx.get(MqttClient);
+        await new Promise(r => setTimeout(r, 1500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('routes object cmd patterns through the default formatter', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' } }));
+        expect(result.payload).toEqual('ble');
+    });
+
+    it('routes wildcard mqtt topics', async () => {
+        const result = await lastValueFrom(client.send('sensor/message/update', { payload: { message: 'ble' } }));
+        expect(result.payload).toEqual('ble');
+    });
+
+    it('routes subscribe patterns via MQTT wildcard topic', async () => {
+        const result = await lastValueFrom(client.send('sensor/sensor01/start', { payload: { message: 'ble' } }));
+        expect(result.payload).toEqual('ble');
+    });
 });
 
 // ----- MQTT E2E request/response via native client -----

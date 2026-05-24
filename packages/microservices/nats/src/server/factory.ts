@@ -3,6 +3,7 @@ import { MessageReaderFactory } from '@tsdi/core';
 import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { NatsServer } from './nats-server';
+import { NatsPatternFormatter } from './pattern';
 import { NatsServOptions, NATS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
@@ -16,7 +17,11 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
         ...option,
         features: {
             defaultTransfer: useJsonPacket(),
-            ...option.features
+            ...option.features,
+            router: option.features?.router === false ? false : {
+                ...(typeof option.features?.router === 'object' ? option.features.router : {}),
+                formatter: (typeof option.features?.router === 'object' && option.features.router.formatter) || NatsPatternFormatter
+            }
         },
         servers: option.servers ? [...option.servers] : undefined,
         subjects: option.subjects ? [...option.subjects] : undefined,
@@ -37,6 +42,7 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        NatsPatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         {
             provide: backendToken,
@@ -93,7 +99,5 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
 }
 
 export function withNatsTransport(...options: Partial<NatsServOptions>[]): ServiceTransportFeature[] {
-    return options.map(option => {
-        return natsTransportFactory(option, options.length === 1 && option.asDefault);
-    });
+    return options.map(o => natsTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }
