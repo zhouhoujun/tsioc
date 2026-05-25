@@ -20,15 +20,18 @@ import { RoleController } from './mapping/RoleController';
 export const option = {
     entities: [],
     async initDb(connection: DataSource) {
-        const userRep = connection.getRepository(User);
-        const c = await userRep.count();
-        if (c < 1) {
-            const newUr = new User();
-            newUr.name = 'admin';
-            newUr.account = 'admin';
-            newUr.password = '111111';
-            await userRep.save(newUr);
-        }
+        try {
+            if (!connection.hasMetadata(User)) return;
+            const userRep = connection.getRepository(User);
+            const c = await userRep.count();
+            if (c < 1) {
+                const newUr = new User();
+                newUr.name = 'admin';
+                newUr.account = 'admin';
+                newUr.password = '111111';
+                await userRep.save(newUr);
+            }
+        } catch { /* entities may not be loaded yet */ }
     },
     name: 'xx',
     type: 'postgres',
@@ -50,6 +53,24 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
     imports: [
         ServerModule,
         LoggerModule,
+        TypeOrmModule.withConnection({
+            ...option,
+            entities: [
+                Role,
+                User
+            ],
+        })
+    ]
+})
+export class MockBootTest {
+
+}
+
+
+@Module({
+    imports: [
+        ServerModule,
+        LoggerModule,
         HttpClientModule,
         ServerHttpClientModule,
         TypeOrmModule.withConnection({
@@ -61,8 +82,8 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         })
     ],
     providers: [
-        provideService(
-            ...withHttpTransport({}),
+        ...provideService(
+            ...withHttpTransport({ bootstrap: false }),
             withServiceFeatures({
                 router: true,
                 interceptors: [
@@ -75,7 +96,7 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
     ],
     declarations: [UserController, RoleController],
 })
-export class MockBootTest {
+export class MockBootHttpTest {
 
 }
 
@@ -95,8 +116,8 @@ export class MockBootTest {
         })
     ],
     providers: [
-        provideService(
-            ...withHttpTransport({}),
+        ...provideService(
+            ...withHttpTransport({ bootstrap: false }),
             withServiceFeatures({
                 router: true,
                 interceptors: [
@@ -129,8 +150,8 @@ export class MockBootLoadTest {
         })
     ],
     providers: [
-        provideService(
-            ...withHttpTransport({}),
+        ...provideService(
+            ...withHttpTransport({ bootstrap: false }),
             withServiceFeatures({
                 router: true,
                 interceptors: [
@@ -159,18 +180,20 @@ export class MockTransBootTest {
         })
     ],
     providers: [
-        provideClient(
+        ...provideClient(
             ...withHttpClientTransport({
                 authority: 'https://localhost:3000',
-                connectOpts: { ca: cert }
-            }),
+                connectOpts: { ca: cert },
+                bootstrap: false,
+            } as any),
             withClientFeatures({}),
         ),
-        provideService(
+        ...provideService(
             ...withHttpTransport({
                 listenOpts: { port: 3000 },
-                serverOpts: { key, cert } as any,
-            }),
+                serverOpts: { key, cert },
+                bootstrap: false,
+            } as any),
             withServiceFeatures({
                 router: true,
                 interceptors: [

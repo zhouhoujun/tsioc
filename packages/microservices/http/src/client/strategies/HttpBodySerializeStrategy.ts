@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { IBodySerializeStrategy } from '@tsdi/common/client';
+import { IBodySerializeStrategy } from '@tsdi/client';
 import { RequestContext } from '@tsdi/common';
 
 @Injectable()

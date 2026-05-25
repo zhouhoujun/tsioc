@@ -7,7 +7,7 @@ import { lastValueFrom } from 'rxjs';
 import { Role, User } from './models/models';
 import { TypeormAdapter } from '../src';
 // import { UserRepository } from './repositories/UserRepository';
-import { option, MockBootTest } from './app';
+import { option, MockBootHttpTest } from './app';
 import { Repository } from 'typeorm';
 
 @Suite('load Repository test')
@@ -18,7 +18,7 @@ export class LoadReposTest {
     @Before()
     async beforeInit() {
         this.ctx = await Application.run({
-            module: MockBootTest,
+            module: MockBootHttpTest,
             baseURL: __dirname
         });
 

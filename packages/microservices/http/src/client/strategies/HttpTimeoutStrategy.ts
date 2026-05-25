@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { ITimeoutStrategy, DEFAULT_TIMEOUT } from '@tsdi/common/client';
+import { ITimeoutStrategy, DEFAULT_TIMEOUT } from '@tsdi/client';
 import { RequestContext } from '@tsdi/common';
 
 @Injectable()

@@ -27,7 +27,6 @@ export {
     withServiceTransfers,
     withServiceLogger,
     withServiceRouter,
-    withServiceControllers,
     withBodyParser,
     withBodySerializer,
     withContent,
