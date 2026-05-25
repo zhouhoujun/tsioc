@@ -23,7 +23,7 @@ describe('TCP Microservice Parameter Decorators', () => {
         @Module({
             declarations: [TestController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({
                         listenOpts: { port: 0 },
                         asDefault: true
@@ -54,7 +54,7 @@ describe('TCP Microservice Parameter Decorators', () => {
         @Module({
             declarations: [UserController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
@@ -80,7 +80,7 @@ describe('TCP Microservice Parameter Decorators', () => {
         @Module({
             declarations: [SearchController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
@@ -109,7 +109,7 @@ describe('TCP Microservice Parameter Decorators', () => {
         @Module({
             declarations: [UserController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
@@ -153,7 +153,7 @@ describe('TCP Microservice Parameter Decorators', () => {
         @Module({
             declarations: [UserController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
@@ -205,7 +205,7 @@ describe('TCP Microservice Parameter Decorators', () => {
         @Module({
             declarations: [ItemController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
@@ -232,7 +232,7 @@ describe('TCP Microservice Parameter Decorators', () => {
         @Module({
             declarations: [PaginationController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]

@@ -148,7 +148,7 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         imports: [LoggerModule],
         declarations: [UserController],
         providers: [
-            ...provideService(
+            provideService(
                 withServiceRouter(),
                 withTcpTransport({
                     listenOpts: { port: SERVER_PORT, host: '127.0.0.1' },

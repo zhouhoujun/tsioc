@@ -25,7 +25,7 @@ describe('HTTP/1.1 Routing', () => {
         imports: [LoggerModule],
         declarations: [DeviceController],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withHttpTransport({ listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true }))
         ]
     })

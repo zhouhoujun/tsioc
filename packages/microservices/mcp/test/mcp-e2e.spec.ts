@@ -28,9 +28,9 @@ describe('MCP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withMcpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.ms}`, microservice: true, asDefault: true }))
         ]
     })
@@ -53,9 +53,9 @@ describe('MCP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withMcpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
         ]
     })
@@ -84,9 +84,9 @@ describe('MCP E2E with provideService + provideClient (microservice:true)', () =
         imports: [LoggerModule],
         declarations: [McpDataController],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withMcpTransport({ listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.e2e}`, microservice: true, asDefault: true }))
         ]
     })
@@ -151,9 +151,9 @@ describe('MCP E2E with provideService + provideClient (microservice:false)', () 
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withMcpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.hostE2e}`, microservice: false, asDefault: true }))
         ]
     })

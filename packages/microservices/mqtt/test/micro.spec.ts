@@ -30,7 +30,7 @@ export class MQTTService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withMqttTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class MQTTService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withMqttClientTransport({
                 microservice: true,
                 asDefault: true

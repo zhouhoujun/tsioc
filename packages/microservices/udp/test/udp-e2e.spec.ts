@@ -29,9 +29,9 @@ describe('UDP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withUdpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withUdpClientTransport({ port: PORTS.ms, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -54,9 +54,9 @@ describe('UDP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withUdpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withUdpClientTransport({ port: PORTS.host, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
     })
@@ -78,7 +78,7 @@ describe('UDP @Controller / @Get / @Post', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withUdpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
     })
     class UdpCtrlModule { }
@@ -99,7 +99,7 @@ describe('UDP @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withUdpTransport({ listenOpts: { port: PORTS.route, host: '127.0.0.1' }, asDefault: true }))]
     })
     class UdpRouteModule { }
@@ -126,9 +126,9 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
         imports: [LoggerModule],
         declarations: [UdpDataController],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withUdpTransport({ listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withUdpClientTransport({ port: PORTS.e2e, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -195,9 +195,9 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withUdpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withUdpClientTransport({ port: PORTS.hostE2e, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
     })
@@ -271,9 +271,9 @@ describe('UDP pattern routing', () => {
         imports: [LoggerModule],
         declarations: [UdpPatternService],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withUdpTransport({ listenOpts: { port: 21800, host: '127.0.0.1' } })),
-            ...provideClient(
+            provideClient(
                 withUdpClientTransport({ host: '127.0.0.1', port: 21800, microservice: true, asDefault: true }))
         ]
     })

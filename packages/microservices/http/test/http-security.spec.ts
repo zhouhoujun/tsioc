@@ -27,11 +27,11 @@ describe('HTTP Security', () => {
                         credentials: false
                     } as CorsOptions
                 },
-                ...provideService(
+                provideService(
                     withServiceRouter(),
                     withServiceInterceptors(Cors),
                     withHttpTransport({ listenOpts: { port: CORS_PORT, host: '127.0.0.1' }, asDefault: true })),
-                ...provideClient(
+                provideClient(
                     withHttpClientTransport({ url: `http://127.0.0.1:${CORS_PORT}`, asDefault: true }))
             ]
         })
@@ -101,11 +101,11 @@ describe('HTTP Security', () => {
                         xssProtection: {}
                     } as HelmetOptions
                 },
-                ...provideService(
+                provideService(
                     withServiceRouter(),
                     withServiceInterceptors(HelmetMiddleware),
                     withHttpTransport({ listenOpts: { port: HELMET_PORT, host: '127.0.0.1' }, asDefault: true })),
-                ...provideClient(
+                provideClient(
                     withHttpClientTransport({ url: `http://127.0.0.1:${HELMET_PORT}`, asDefault: true }))
             ]
         })

@@ -30,7 +30,7 @@ export class COAPService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withCoapTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class COAPService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withCoapClientTransport({
                 microservice: true,
                 asDefault: true

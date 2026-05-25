@@ -26,9 +26,9 @@ describe('Redis E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withRedisTransport({ url: REDIS_URL, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withRedisClientTransport({ url: REDIS_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -50,9 +50,9 @@ describe('Redis E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withRedisTransport({ microservice: false as any, url: REDIS_URL, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withRedisClientTransport({ url: REDIS_URL, microservice: false, asDefault: true }))
         ]
     })
@@ -73,7 +73,7 @@ describe('Redis @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withRedisTransport({ url: REDIS_URL, asDefault: true }))]
     })
     class RedisCtrlModule { }
@@ -93,7 +93,7 @@ describe('Redis @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withRedisTransport({ url: REDIS_URL, asDefault: true }))]
     })
     class RedisRouteModule { }

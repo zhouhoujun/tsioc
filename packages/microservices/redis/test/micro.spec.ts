@@ -30,7 +30,7 @@ export class REDISService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withRedisTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class REDISService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withRedisClientTransport({
                 microservice: true,
                 asDefault: true

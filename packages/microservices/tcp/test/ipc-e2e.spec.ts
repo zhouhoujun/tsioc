@@ -20,7 +20,7 @@ describe('TCP Microservice IPC (UNIX Domain Socket) Tests', () => {
             @Module({
                 declarations: [TestController],
                 providers: [
-                    ...provideService(
+                    provideService(
                         withServiceRouter(),
                         withTcpTransport({
                             listenOpts: { path: '/tmp/test.sock' },

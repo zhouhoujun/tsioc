@@ -18,7 +18,7 @@ describe('TCP Microservice Integration', () => {
         @Module({
             declarations: [TestController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport({
                         listenOpts: { port: 0, host: 'localhost' },
                         asDefault: true
@@ -50,7 +50,7 @@ describe('TCP Microservice Integration', () => {
         @Module({
             declarations: [FirstController, SecondController],
             providers: [
-                ...provideService(
+                provideService(
                     withTcpTransport(
                         { listenOpts: { port: 8080 }, name: 'service1' },
                         { listenOpts: { port: 8081 }, name: 'service2' }

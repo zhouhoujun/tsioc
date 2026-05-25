@@ -30,7 +30,7 @@ export class UdpService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withUdpTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class UdpService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withUdpClientTransport({
                 microservice: true,
                 asDefault: true

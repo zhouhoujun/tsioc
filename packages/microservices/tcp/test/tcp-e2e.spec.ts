@@ -29,9 +29,9 @@ describe('TCP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withTcpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withTcpClientTransport({ connectOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true }))
         ]
     })
@@ -53,9 +53,9 @@ describe('TCP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withTcpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withTcpClientTransport({ connectOpts: { port: PORTS.host, host: '127.0.0.1' }, microservice: false, asDefault: true }))
         ]
     })
@@ -77,7 +77,7 @@ describe('TCP @Controller / @Get / @Post', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withTcpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
     })
     class CtrlModule { }
@@ -98,7 +98,7 @@ describe('TCP @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withTcpTransport({ listenOpts: { port: PORTS.route, host: '127.0.0.1' }, asDefault: true }))]
     })
     class RouteModule { }
@@ -129,9 +129,9 @@ describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
         imports: [LoggerModule],
         declarations: [TcpEchoHandler],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withTcpTransport({ listenOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withTcpClientTransport({ connectOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true }))
         ]
     })
@@ -182,9 +182,9 @@ describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
         imports: [LoggerModule],
         declarations: [TcpHostHandler],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withTcpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostClient, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withTcpClientTransport({ connectOpts: { port: PORTS.hostClient, host: '127.0.0.1' }, microservice: false, asDefault: true }))
         ]
     })

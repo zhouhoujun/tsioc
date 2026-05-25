@@ -30,7 +30,7 @@ export class KafkaService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withKafkaTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class KafkaService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withKafkaClientTransport({
                 microservice: true,
                 asDefault: true

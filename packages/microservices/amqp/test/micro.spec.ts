@@ -30,7 +30,7 @@ export class AMQPService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withAmqpTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class AMQPService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withAmqpClientTransport({
                 microservice: true,
                 asDefault: true

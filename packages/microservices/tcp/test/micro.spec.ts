@@ -30,7 +30,7 @@ export class TcpService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withTcpTransport({
                 microservice: true,
@@ -39,7 +39,7 @@ export class TcpService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withTcpClientTransport({
                 microservice: true,
                 connectOpts: { port: 11900, host: '127.0.0.1' },

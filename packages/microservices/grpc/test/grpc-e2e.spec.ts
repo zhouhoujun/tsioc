@@ -27,9 +27,9 @@ describe('gRPC E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withGrpcTransport({ port: PORTS.ms, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withGrpcClientTransport({ url: `localhost:${PORTS.ms}`, microservice: true, asDefault: true }))
         ]
     })
@@ -52,9 +52,9 @@ describe('gRPC E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withGrpcTransport({ microservice: false as any, port: PORTS.host, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withGrpcClientTransport({ url: `localhost:${PORTS.host}`, microservice: false, asDefault: true }))
         ]
     })
@@ -76,7 +76,7 @@ describe('gRPC @Controller / @Get / @Post', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withGrpcTransport({ port: PORTS.ctrl, asDefault: true }))]
     })
     class GrpcCtrlModule { }
@@ -97,7 +97,7 @@ describe('gRPC @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withGrpcTransport({ port: PORTS.route, asDefault: true }))]
     })
     class GrpcRouteModule { }
@@ -121,9 +121,9 @@ describe('gRPC E2E with provideService + provideClient (microservice:true)', () 
         imports: [LoggerModule],
         declarations: [TestController],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withGrpcTransport({ port: E2E_PORT, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withGrpcClientTransport({ url: `localhost:${E2E_PORT}`, microservice: true, asDefault: true }))
         ]
     })
@@ -149,9 +149,9 @@ describe('gRPC E2E with provideService + provideClient (microservice:false)', ()
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withGrpcTransport({ microservice: false as any, port: E2E_HOST_PORT, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withGrpcClientTransport({ url: `localhost:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
         ]
     })

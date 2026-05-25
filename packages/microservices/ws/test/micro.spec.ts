@@ -30,7 +30,7 @@ export class WSService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withWsTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class WSService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withWsClientTransport({
                 microservice: true,
                 asDefault: true

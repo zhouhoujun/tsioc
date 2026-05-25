@@ -57,7 +57,7 @@ describe('TCP Microservice Full Scenario Tests', () => {
             @Module({
                 declarations: [UserController],
                 providers: [
-                    ...provideService(
+                    provideService(
                         withServiceRouter(),
                         withTcpTransport({
                             listenOpts: { port: 0, host: '127.0.0.1' },
@@ -129,7 +129,7 @@ describe('TCP Microservice Full Scenario Tests', () => {
             @Module({
                 declarations: [FirstController, SecondController],
                 providers: [
-                    ...provideService(
+                    provideService(
                         withServiceRouter(),
                         withTcpTransport({
                             listenOpts: { port: 0 },

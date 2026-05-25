@@ -20,7 +20,7 @@ describe('WS All HTTP methods', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [MC],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class MMod {}
@@ -38,7 +38,7 @@ describe('WS @RestController', () => {
     @RestController('/api') class RC { @Get('/i') i() { return 'ok'; } }
     @Module({
         imports: [LoggerModule], declarations: [RC],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class RMod {}
@@ -57,7 +57,7 @@ describe('WS Parameter decorators', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [PC],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class PMod {}
@@ -77,7 +77,7 @@ describe('WS Parameter pipes', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [PPC],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class PPMod {}
@@ -97,7 +97,7 @@ describe('WS @RouteMapping', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [RMC],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class RMMod {}
@@ -114,7 +114,7 @@ describe('WS Default params', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [OC],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class OMod {}
@@ -130,7 +130,7 @@ describe('WS Multiple controllers', () => {
     @Controller('/b') class BC { @Get('/') b() { return 'b'; } }
     @Module({
         imports: [LoggerModule], declarations: [AC, BC],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class MCM {}
@@ -148,7 +148,7 @@ describe('WS @Subscribe', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [SH],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class SMod {}
@@ -166,7 +166,7 @@ describe('WS @Handle cmd', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [HH],
-        providers: [...provideService(withServiceRouter(),
+        providers: [provideService(withServiceRouter(),
             withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class HMod {}

@@ -30,7 +30,7 @@ export class NATSService {
         LoggerModule,
     ],
     providers: [
-        ...provideService(
+        provideService(
             withServiceRouter(),
             withNatsTransport({
                 microservice: true,
@@ -38,7 +38,7 @@ export class NATSService {
                 asDefault: true
             })
         ),
-        ...provideClient(
+        provideClient(
             withNatsClientTransport({
                 microservice: true,
                 asDefault: true

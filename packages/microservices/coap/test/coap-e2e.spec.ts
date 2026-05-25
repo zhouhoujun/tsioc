@@ -30,9 +30,9 @@ describe('CoAP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withCoapTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withCoapClientTransport({ port: PORTS.ms, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -54,9 +54,9 @@ describe('CoAP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withCoapTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withCoapClientTransport({ port: PORTS.host, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
     })
@@ -86,9 +86,9 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
         imports: [LoggerModule],
         declarations: [E2eController],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withCoapTransport({ listenOpts: { port: E2E_PORT, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withCoapClientTransport({ port: E2E_PORT, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -149,9 +149,9 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withCoapTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withCoapClientTransport({ port: E2E_HOST_PORT, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
     })
@@ -206,9 +206,9 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withCoapTransport({ listenOpts: { port: 21320, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withCoapClientTransport({ port: 21320, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -245,9 +245,9 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withCoapTransport({ listenOpts: { port: P, host: '127.0.0.1' }, asDefault: true })),
-            ...provideClient(
+            provideClient(
                 withCoapClientTransport({ port: P, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -293,9 +293,9 @@ describe('CoAP pattern routing', () => {
         imports: [LoggerModule],
         declarations: [CoapPatternService],
         providers: [
-            ...provideService(withServiceRouter(),
+            provideService(withServiceRouter(),
                 withCoapTransport({ listenOpts: { port: 21600, host: '127.0.0.1' } })),
-            ...provideClient(
+            provideClient(
                 withCoapClientTransport({ host: '127.0.0.1', port: 21600, microservice: true, asDefault: true }))
         ]
     })
