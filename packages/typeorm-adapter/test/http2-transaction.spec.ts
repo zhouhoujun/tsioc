@@ -1,5 +1,5 @@
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Http, HttpClientConfig } from '@tsdi/http';
+import { HttpClient } from '@tsdi/common/http';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -13,7 +13,7 @@ import { Role, User } from './models/models';
 export class Http2TransactionTest {
 
     private ctx!: ApplicationContext;
-    private client!: Http;
+    private client!: HttpClient;
 
     @Before()
     async beforeInit() {
@@ -22,21 +22,13 @@ export class Http2TransactionTest {
             baseURL: __dirname
         });
 
-        this.client = this.ctx.resolve(Http);
+        this.client = this.ctx.resolve(HttpClient);
 
-        const mgr = this.ctx.get(TypeormAdapter).getConnection().manager;
-       
-        await mgr.createQueryBuilder()
-            .delete()
-            .from(User)
-            .where('account IN (:...acs)', { acs: ['test_111', 'post_test', 'test_112'] })
-            .execute();
-
-        await mgr.createQueryBuilder()
-            .delete()
-            .from(Role)
-            .where('name IN (:...acs)', { acs: ['opter_1', 'opter_2'] })
-            .execute();
+        const em = this.ctx.get(TypeormAdapter).getConnection().manager;
+        try {
+            await em.query(`DELETE FROM "user" WHERE account IN ('test_111', 'post_test', 'test_112')`);
+            await em.query(`DELETE FROM "role" WHERE name IN ('opter_1', 'opter_2')`);
+        } catch { /* ignore */ }
 
         console.log('clean data');
     }

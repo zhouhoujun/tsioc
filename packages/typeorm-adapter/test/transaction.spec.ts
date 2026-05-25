@@ -21,19 +21,11 @@ export class TransactionTest {
             baseURL: __dirname
         });
 
-        const mgr = this.ctx.get(TypeormAdapter).getConnection().manager;
-       
-        await mgr.createQueryBuilder()
-            .delete()
-            .from(User)
-            .where('account IN (:...acs)', { acs: ['test_111', 'post_test', 'test_112'] })
-            .execute();
-
-        await mgr.createQueryBuilder()
-            .delete()
-            .from(Role)
-            .where('name IN (:...acs)', { acs: ['opter_1', 'opter_2'] })
-            .execute();
+        const em = this.ctx.get(TypeormAdapter).getConnection().manager;
+        try {
+            await em.query(`DELETE FROM "user" WHERE account IN ('test_111', 'post_test', 'test_112')`);
+            await em.query(`DELETE FROM "role" WHERE name IN ('opter_1', 'opter_2')`);
+        } catch { /* ignore */ }
 
         console.log('clean data');
     }

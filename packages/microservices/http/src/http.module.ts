@@ -11,6 +11,8 @@ import { Csrf, CsrfTokensFactory } from './server/interceptors/csrf';
 import { HttpLoggerInterceptor } from './server/interceptors/logger';
 import { HttpSessionInterceptor } from './server/interceptors/session';
 import { BodyparserInterceptor } from './server/interceptors/bodyparser';
+import { ContentInterceptor } from './server/interceptors/content';
+import { JsonInterceptor } from './server/interceptors/json';
 import { StaticFileInterceptor } from './server/static-file.interceptor';
 
 @Module({
@@ -30,6 +32,8 @@ import { StaticFileInterceptor } from './server/static-file.interceptor';
         HttpLoggerInterceptor,
         HttpSessionInterceptor,
         BodyparserInterceptor,
+        ContentInterceptor,
+        JsonInterceptor,
         StaticFileInterceptor,
     ]
 })

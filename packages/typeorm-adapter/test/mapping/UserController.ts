@@ -1,6 +1,6 @@
-import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/endpoints';
-import { lang } from '@tsdi/ioc';
-import { InternalServerException } from '@tsdi/transport';
+import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/service';
+import { getTypeName } from '@tsdi/ioc';
+import { InternalServerException } from '@tsdi/common';
 import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
 import { Repository as TypeormRepository } from 'typeorm';
@@ -31,7 +31,7 @@ export class UserController {
     @Post('/')
     @Put('/')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getTypeName(this.usrService), user);
+        this.logger.log(getTypeName(this.usrService), user);
         const val = await this.usrService.save(user, check);
         this.logger.log(val);
         return val;
@@ -41,7 +41,7 @@ export class UserController {
     @Post('/save')
     @Put('/save')
     async modify2(user: User, @Repository(User) userRepo: TypeormRepository<User>, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getTypeName(this.usrService), user);
+        this.logger.log(getTypeName(this.usrService), user);
         const val = await userRepo.save(user);
         if (check) throw new InternalServerException('check');
         this.logger.log(val);

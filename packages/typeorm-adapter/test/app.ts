@@ -1,21 +1,20 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import { ClientModule } from '@tsdi/common/client';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { ServerEndpointModule } from '@tsdi/platform-server/common';
+import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, withHttpTransport } from '@tsdi/http';
+import { provideService, withServiceFeatures } from '@tsdi/service';
+import { provideClient, withClientFeatures } from '@tsdi/client';
+import { withHttpClientTransport } from '@tsdi/http';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DataSource } from 'typeorm';
-import { TypeormModule, TypeormOptions } from '../src';
+import { TypeOrmModule, TypeormOptions } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
-// import { UserRepository } from './repositories/UserRepository';
-
 
 
 export const option = {
@@ -38,9 +37,8 @@ export const option = {
     username: 'postgres',
     password: 'postgres',
     database: 'testdb',
-    // useNewUrlParser: true,
-    synchronize: true, // 同步数据库
-    logging: false  // 日志
+    synchronize: true,
+    logging: false
 } as TypeormOptions;
 
 
@@ -49,39 +47,33 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
 
 
 @Module({
-    // baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
         HttpClientModule,
         ServerHttpClientModule,
-        EndpointModule.register({
-            transport: 'http',
-            config: {
-                majorVersion: 1,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            }
-        }),
-        TypeormModule.withConnection({
+        TypeOrmModule.withConnection({
             ...option,
             entities: [
                 Role,
                 User
             ],
-            // repositories: [
-            //     UserRepository
-            // ]
         })
     ],
-    declarations: [
-        UserController,
-        RoleController
-    ]
+    providers: [
+        provideService(
+            ...withHttpTransport({}),
+            withServiceFeatures({
+                router: true,
+                interceptors: [
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
+                ]
+            })
+        ),
+    ],
+    declarations: [UserController, RoleController],
 })
 export class MockBootTest {
 
@@ -93,31 +85,29 @@ export class MockBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
-        EndpointModule.register({
-            transport: 'http',
-            config: {
-                majorVersion: 1,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            }
-        }),
         HttpClientModule,
         ServerHttpClientModule,
         TransactionModule,
-        TypeormModule.withConnection({
+        TypeOrmModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
         })
     ],
-    declarations: [
-        UserController,
-        RoleController
-    ]
+    providers: [
+        provideService(
+            ...withHttpTransport({}),
+            withServiceFeatures({
+                router: true,
+                interceptors: [
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
+                ]
+            })
+        ),
+    ],
+    declarations: [UserController, RoleController],
 })
 export class MockBootLoadTest {
 
@@ -126,84 +116,73 @@ export class MockBootLoadTest {
 
 
 @Module({
-    // baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
-        EndpointModule.register({
-            transport: 'http',
-            config: {
-                majorVersion: 1,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            }
-        }),
         HttpClientModule,
         ServerHttpClientModule,
         TransactionModule,
-        TypeormModule.withConnection({
+        TypeOrmModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
         })
     ],
-    declarations: [
-        UserController,
-        RoleController
-    ]
+    providers: [
+        provideService(
+            ...withHttpTransport({}),
+            withServiceFeatures({
+                router: true,
+                interceptors: [
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
+                ]
+            })
+        ),
+    ],
+    declarations: [UserController, RoleController],
 })
 export class MockTransBootTest {
 
 }
 
 @Module({
-    // baseURL: __dirname,
     imports: [
         ServerModule,
         LoggerModule,
-        ServerEndpointModule,
         TransactionModule,
-        TypeormModule.withConnection({
+        TypeOrmModule.withConnection({
             ...option,
             entities: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts']
-        }),
-        ClientModule.register({
-            transport: 'http',
-            config: {
+        })
+    ],
+    providers: [
+        provideClient(
+            ...withHttpClientTransport({
                 authority: 'https://localhost:3000',
-                connectOpts: {
-                    ca: cert
-                }
-            }
-        }),
-        EndpointModule.register({
-            transport: 'https',
-            config: {
-                majorVersion: 2,
-                secure: true,
-                serverOpts: {
-                    key,
-                    cert
-                },
+                connectOpts: { ca: cert }
+            }),
+            withClientFeatures({}),
+        ),
+        provideService(
+            ...withHttpTransport({
+                listenOpts: { port: 3000 },
+                serverOpts: { key, cert } as any,
+            }),
+            withServiceFeatures({
+                router: true,
                 interceptors: [
                     ContentInterceptor,
                     JsonInterceptor,
                     BodyparserInterceptor,
                 ]
-            }
-        })
+            })
+        ),
     ],
-    declarations: [
-        UserController,
-        RoleController
-    ]
+    declarations: [UserController, RoleController],
 })
 export class Http2TransBootTest {
 
 }
-

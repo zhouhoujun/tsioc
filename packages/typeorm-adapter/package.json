@@ -40,5 +40,8 @@
   "dependencies": {
     "typeorm": "^0.3.20"
   },
-  "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter#readme#readme"
+  "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter#readme#readme",
+  "devDependencies": {
+    "better-sqlite3": "^12.10.0"
+  }
 }

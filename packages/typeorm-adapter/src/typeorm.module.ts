@@ -22,29 +22,51 @@ export interface TypeormOptions extends ConnectionOptions {
     repositories?: Array<string | Type>;
 }
 
-@Module({
-    imports: [
-        LoggerModule
-    ],
-    providers: [
+const providers: Provider[] = [
         TypeormAdapter,
         ParseObjectIdPipe,
         { provide: RepositoryArgumentResolver, useClass: TypeormRepositoryArgumentResolver },
         { provide: TransactionResolver, useClass: TypeormTransactionResolver },
         { provide: TransactionManager, useClass: TypeormTransactionManager }
+    ];
+
+@Module({
+    imports: [
+        LoggerModule
+    ],
+    providers: [
+        ...providers
     ]
 })
 export class TypeOrmModule {
     /**
      * typeorm module with connections.
-     * @param connections 
-     * @returns 
+     * @param connections
+     * @returns
      */
     static withConnection(...connections: ProvdierOf<TypeormOptions | DataSourceOptions>[]): ModuleWithProviders<TypeOrmModule> {
         return {
             module: TypeOrmModule,
             providers: connections.map(c => toProvider(CONNECTIONS, c, true))
         }
+    }
+
+    /**
+     * Alias for withConnection - register root connections.
+     */
+    static forRoot(...connections: ProvdierOf<TypeormOptions | DataSourceOptions>[]): ModuleWithProviders<TypeOrmModule> {
+        return TypeOrmModule.withConnection(...connections);
+    }
+
+    /**
+     * Register entities for a specific feature module.
+     * @param entities entity classes to register
+     */
+    static forFeature(entities: Type[]): Provider[] {
+        return entities.map(entity => ({
+            provide: entity,
+            useValue: entity,
+        }));
     }
 }
 
@@ -57,6 +79,6 @@ export class TypeOrmModule {
 export function provideTypeOrm(...connections: ProvdierOf<TypeormOptions | DataSourceOptions>[]): Provider[] {
     return [
         ...connections.map(c => toProvider(CONNECTIONS, c, true)),
-        importProvidersFrom(TypeOrmModule)
+        ...providers
     ]
 }

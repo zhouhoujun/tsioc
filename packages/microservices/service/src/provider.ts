@@ -391,20 +391,6 @@ export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatur
     };
 }
 
-/**
- * Adds controllers to micro service.
- * @publicApi
- */
-export function withServiceControllers(controllers: Type[]): ServiceFeatureFn<ServiceFeatureKind.Controller> {
-    return (config) => {
-        return makeServiceFeature(
-            ServiceFeatureKind.Controller,
-            controllers,
-            config
-        );
-    };
-}
-
 
 /**
  * Adds body parser to micro service.

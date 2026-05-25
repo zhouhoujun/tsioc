@@ -208,7 +208,55 @@ export class TypeormAdapter {
      * @returns {Connection}
      */
     getConnection(connectName?: string): DataSource {
-        return this.sources.get(connectName ?? this.options.name!)!;
+        const name = connectName ?? this.options?.name!;
+        const source = this.sources.get(name);
+        if (!source) {
+            throw new Error(`DataSource "${name}" not found. Available: ${Array.from(this.sources.keys()).join(', ') || 'none'}`);
+        }
+        return source;
+    }
+
+    /**
+     * check if a connection exists and is initialized.
+     */
+    hasConnection(connectName?: string): boolean {
+        const name = connectName ?? this.options?.name ?? 'default';
+        const source = this.sources.get(name);
+        return !!source && source.isInitialized;
+    }
+
+    /**
+     * get all connection names.
+     */
+    getConnectionNames(): string[] {
+        return Array.from(this.sources.keys());
+    }
+
+    /**
+     * get connection status.
+     */
+    getConnectionStatus(connectName?: string): { name: string; initialized: boolean; connected: boolean } {
+        const name = connectName ?? this.options?.name!;
+        const source = this.sources.get(name);
+        if (!source) {
+            return { name, initialized: false, connected: false };
+        }
+        return {
+            name,
+            initialized: source.isInitialized,
+            connected: source.isInitialized,
+        };
+    }
+
+    /**
+     * get all connections status.
+     */
+    getAllConnectionStatus(): { name: string; initialized: boolean; connected: boolean }[] {
+        return Array.from(this.sources.entries()).map(([name, source]) => ({
+            name,
+            initialized: source.isInitialized,
+            connected: source.isInitialized,
+        }));
     }
 
     /**
