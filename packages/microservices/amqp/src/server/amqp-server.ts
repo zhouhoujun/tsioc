@@ -1,4 +1,4 @@
-import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
+import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
@@ -117,9 +117,17 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         }
 
         const routingKey = msg.fields.routingKey;
-        const url = parsed.url || '/' + routingKey.replace(/\./g, '/');
-        const method = parsed.method || 'GET';
-        const requestData = { ...parsed, url, method };
+        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
+        const url = requestSource.url || '/' + routingKey.replace(/\./g, '/');
+        const method = requestSource.method || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        const requestData = {
+            ...requestSource,
+            url,
+            method,
+            body,
+            payload: body,
+        };
 
         const outgoing = this.injector.get(OutgoingFactory).create({});
 
@@ -130,6 +138,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ['routingKey', routingKey],
             ['content', content],
         ]);
+        context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
@@ -141,9 +150,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                         const body = ctxResponse?.body ?? response;
                         const replyTo = msg.properties.replyTo;
                         if (replyTo) {
-                            const buf = Buffer.from(
-                                typeof body === 'string' ? body : JSON.stringify(body)
-                            );
+                            const buf = Buffer.from(JSON.stringify({ payload: body }));
                             this.channel.sendToQueue(replyTo, buf, {
                                 correlationId: msg.properties.correlationId
                             });

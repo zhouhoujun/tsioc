@@ -1,7 +1,6 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
-import { InjectLog, Logger } from '@tsdi/logger';
 import { defer, Observable } from 'rxjs';
 import { COAP_CLIENT_OPTIONS, CoapClientOptions } from './options';
 import { CoapRequest } from './request';
@@ -37,9 +36,11 @@ export class CoapClient extends AbstractClient<CoapRequest<any>, ResponseEvent<a
         }
         const defaultMethod = this.options.microservice ? undefined : 'GET';
         if (isString(first)) {
-            return new CoapRequest(first, null, options, defaultMethod);
+            const url = this.options.compatibility && first.includes('.') ? first.replace(/\./g, '/') : first;
+            return new CoapRequest(url, first, options, defaultMethod);
         } else {
-            return new CoapRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
+            const formatter = this.handler.injector.get(PatternFormatter, defaultFormatter);
+            return new CoapRequest(formatter.format(first), first, options, defaultMethod);
         }
     }
 

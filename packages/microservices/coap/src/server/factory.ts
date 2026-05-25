@@ -3,6 +3,7 @@ import { MessageReaderFactory } from '@tsdi/core';
 import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
+import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
@@ -16,7 +17,12 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         ...option,
         features: {
             defaultTransfer: useJsonPacket(),
-            ...option.features
+            ...option.features,
+            router: option.features?.router === false ? false : {
+                ...(typeof option.features?.router === 'object' ? option.features.router : {}),
+                formatter: (typeof option.features?.router === 'object' && option.features.router.formatter)
+                    || (option.compatibility ? CoapCompatiblePatternFormatter : CoapPatternFormatter)
+            }
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
     } as CoapServOptions;
@@ -36,6 +42,8 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        CoapPatternFormatter,
+        CoapCompatiblePatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         {
             provide: backendToken,

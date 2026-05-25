@@ -277,7 +277,18 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
 });
 
 // ----- CoAP pattern routing -----
-class CoapPatternService {
+class CoapNativePatternService {
+    @Handle({ cmd: 'echo' })
+    echo(@Payload() msg: string) { return msg; }
+
+    @Handle('sensor/message/+')
+    topic(@Payload() msg: string) { return msg; }
+
+    @Subscribe('sensor/+/start', undefined as any)
+    subscribe(@Payload() msg: string) { return msg; }
+}
+
+class CoapCompatPatternService {
     @Handle({ cmd: 'echo' })
     echo(@Payload() msg: string) { return msg; }
 
@@ -291,7 +302,7 @@ class CoapPatternService {
 describe('CoAP pattern routing', () => {
     @Module({
         imports: [LoggerModule],
-        declarations: [CoapPatternService],
+        declarations: [CoapNativePatternService],
         providers: [
             provideService(withServiceRouter(),
                 withCoapTransport({ listenOpts: { port: 21600, host: '127.0.0.1' } })),
@@ -316,12 +327,52 @@ describe('CoAP pattern routing', () => {
         expect(result.payload).toEqual('hello');
     });
 
-    it('routes wildcard topic patterns', async () => {
+    it('routes native CoAP path patterns', async () => {
+        const result = await lastValueFrom(client.send('sensor/message/update', { payload: { msg: 'world' } }));
+        expect(result.payload).toEqual('world');
+    });
+
+    it('routes native CoAP subscribe patterns', async () => {
+        const result = await lastValueFrom(client.send('sensor/temp/start', { payload: { msg: 'foo' } }));
+        expect(result.payload).toEqual('foo');
+    });
+
+    it('does not convert other topic patterns by default', async () => {
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        expect(result.payload?._message).toEqual('Not Found');
+        expect(result.payload?._error?.name).toEqual('NotFoundException');
+    });
+});
+
+describe('CoAP pattern routing compatibility', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [CoapCompatPatternService],
+        providers: [
+            provideService(withServiceRouter(),
+                withCoapTransport({ compatibility: true, listenOpts: { port: 21601, host: '127.0.0.1' } })),
+            provideClient(
+                withCoapClientTransport({ host: '127.0.0.1', port: 21601, microservice: true, compatibility: true, asDefault: true }))
+        ]
+    })
+    class CoapPatternCompatModule { }
+
+    let ctx: ApplicationContext;
+    let client: CoapClient;
+
+    before(async () => {
+        ctx = await Application.run(CoapPatternCompatModule);
+        client = ctx.get(CoapClient);
+        await new Promise(r => setTimeout(r, 500));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('converts topic patterns when compatibility is enabled', async () => {
         const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
         expect(result.payload).toEqual('world');
     });
 
-    it('routes subscribe patterns with wildcard', async () => {
+    it('converts subscribe patterns when compatibility is enabled', async () => {
         const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
         expect(result.payload).toEqual('foo');
     });

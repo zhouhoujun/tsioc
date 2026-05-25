@@ -296,3 +296,42 @@ describe('AMQP pattern routing', () => {
         expect(result.payload).toEqual('foo');
     });
 });
+
+describe('AMQP pattern routing with custom routingKey', () => {
+    const ROUTING_KEY = 'custom.pattern.route';
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [AmqpPatternService],
+        providers: [
+            provideService(withServiceRouter(),
+                withAmqpTransport({
+                    url: AMQP_URL,
+                    routingKey: ROUTING_KEY
+                })),
+            provideClient(
+                withAmqpClientTransport({
+                    url: AMQP_URL,
+                    routingKey: ROUTING_KEY,
+                    microservice: true,
+                    asDefault: true
+                }))
+        ]
+    })
+    class AmqpPatternRoutingKeyModule { }
+
+    let ctx: ApplicationContext;
+    let client: AmqpClient;
+
+    before(async () => {
+        ctx = await Application.run(AmqpPatternRoutingKeyModule);
+        client = ctx.get(AmqpClient);
+        await new Promise(r => setTimeout(r, 1000));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('routes object cmd patterns with custom routingKey', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        expect(result.payload).toEqual('hello');
+    });
+});

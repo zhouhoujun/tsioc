@@ -6,6 +6,7 @@ export interface CoapClientOptions extends ClientOptions {
     transport: Transport.CoAP;
     side: TransferSide.client;
     microservice?: boolean;
+    compatibility?: boolean;
     url?: string;
     port?: number;
     host?: string;

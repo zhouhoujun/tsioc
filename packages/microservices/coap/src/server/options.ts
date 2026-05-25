@@ -5,6 +5,7 @@ import { ServiceOptions } from '@tsdi/service';
 export interface CoapServOptions extends ServiceOptions {
     transport: Transport.CoAP;
     providers?: Provider[];
+    compatibility?: boolean;
     listenOpts?: ListenOpts;
 }
 

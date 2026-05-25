@@ -88,14 +88,22 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private handleRequest(req: coap.IncomingMessage, res: coap.OutgoingMessage) {
-        let payload: any = req.payload?.toString() || '';
+        let parsed: any = req.payload?.toString() || '';
         try {
-            payload = JSON.parse(payload);
+            parsed = JSON.parse(parsed);
         } catch { /* keep as string */ }
 
-        const url = req.url || '/';
-        const method = req.code || 'GET';
-        const requestData = { payload, url, method };
+        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
+        const url = requestSource.url || req.url || '/';
+        const method = requestSource.method || req.code || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        const requestData = {
+            ...requestSource,
+            body,
+            payload: body,
+            url,
+            method
+        };
 
         const outgoing = this.injector.get(OutgoingFactory).create({});
 
@@ -108,7 +116,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ['url', url],
             ['method', method],
         ]);
-        context.setPayload({ ...requestData });
+        context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
@@ -117,9 +125,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 const ctxResponse = context.get(RESPONSE);
                 const body = ctxResponse?.body ?? response;
                 if (body != null) {
-                    const buf = Buffer.from(
-                        typeof body === 'string' ? body : JSON.stringify(body)
-                    );
+                    const buf = Buffer.from(JSON.stringify({ payload: body }));
                     res.end(buf);
                 } else {
                     res.end();

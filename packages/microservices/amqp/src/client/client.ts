@@ -1,5 +1,5 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, Events, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
+import { Pattern, Events, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -60,7 +60,8 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
         if (isString(first)) {
             return new AmqpRequest(first, null, options, defaultMethod);
         } else {
-            return new AmqpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
+            const formatter = this.handler.injector.get(PatternFormatter, defaultFormatter);
+            return new AmqpRequest(formatter.format(first), first, options, defaultMethod);
         }
     }
 
