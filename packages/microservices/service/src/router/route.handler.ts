@@ -24,7 +24,7 @@ export class RouteHandler implements RequestHandler {
         const result = this.invokeOpts
             ? this.invocation.invoke(this.propertyKey, {
                 resolvers: this.invokeOpts.resolvers,
-                payload: (context as any).getPayload?.()
+                payload: context.getPayload?.() ?? input
             } as any)
             : this.invocation.invoke(this.propertyKey, context);
         return toObservable(result);

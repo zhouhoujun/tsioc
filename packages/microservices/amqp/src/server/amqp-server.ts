@@ -118,7 +118,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         const routingKey = msg.fields.routingKey;
         const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || '/' + routingKey.replace(/\./g, '/');
+        const url = requestSource.url || routingKey;
         const method = requestSource.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         const requestData = {

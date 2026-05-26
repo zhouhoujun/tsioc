@@ -101,7 +101,10 @@ function createCoapClientBackend(config: CoapClientOptions) {
         const formatter = context.get(PatternFormatter, defaultFormatter);
         const payload = Buffer.isBuffer(input)
             ? input
-            : JSON.stringify(request.toJson({ formatter, payloadKey: 'payload' }));
+            : JSON.stringify({
+                ...request.toJson({ formatter, payloadKey: 'payload' }),
+                method: request.method
+            });
         const client = coap.request({
             host: config.host ?? '127.0.0.1',
             port: config.port ?? 5683,

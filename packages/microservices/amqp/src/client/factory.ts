@@ -106,7 +106,10 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
         const formatter = context.get(PatternFormatter, defaultFormatter);
         const publishPayload = Buffer.isBuffer(input)
             ? input
-            : Buffer.from(JSON.stringify(request.toJson({ formatter, payloadKey: 'payload' })));
+            : Buffer.from(JSON.stringify({
+                ...request.toJson({ formatter, payloadKey: 'payload' }),
+                method: request.method
+            }));
         let consumerTag: string | undefined;
         let settled = false;
         let timer: NodeJS.Timeout | undefined;

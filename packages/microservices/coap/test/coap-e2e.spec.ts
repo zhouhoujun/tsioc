@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { provideService, withServiceRouter, withBodyParser, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { withCoapTransport } from '../src/server';
 import { withCoapClientTransport } from '../src/client';
 import { CoapClient } from '../src/client/client';
@@ -84,9 +84,10 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
 
     @Module({
         imports: [LoggerModule],
-        declarations: [E2eController],
+        declarations: [E2eController, TestController, RouteCtrl],
         providers: [
             provideService(withServiceRouter(),
+                withBodyParser(),
                 withCoapTransport({ listenOpts: { port: E2E_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withCoapClientTransport({ port: E2E_PORT, host: '127.0.0.1', microservice: true, asDefault: true }))
@@ -117,7 +118,8 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
             req.on('response', (res: any) => {
                 const body = res.payload?.toString() || '';
                 try {
-                    resolve(JSON.parse(body));
+                    const parsed = JSON.parse(body);
+                    resolve(parsed?.payload ?? parsed);
                 } catch {
                     resolve(body);
                 }
@@ -140,6 +142,19 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
         const res = await sendCoapRequest('GET', '/api/test/info');
         expect(res).toBeDefined();
     });
+
+    it('should handle POST request via CoAP protocol', async () => {
+        const res = await sendCoapRequest('POST', '/api/test/echo', { value: 'hello' });
+        expect(res.received).toEqual({ value: 'hello' });
+    });
+
+    it('should preserve request method in envelope', async () => {
+        const client = ctx.get(CoapClient);
+        const result = await lastValueFrom(client.send('/api/test/echo', { method: 'POST', payload: { value: 'hello' } }));
+        expect(result).toBeDefined();
+        expect(result.payload).toBeDefined();
+        expect(result.payload.received).toEqual({ value: 'hello' });
+    });
 });
 
 // ----- microservice:false full e2e -----
@@ -148,8 +163,10 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
 
     @Module({
         imports: [LoggerModule],
+        declarations: [TestController, RouteCtrl],
         providers: [
             provideService(withServiceRouter(),
+                withServiceRouter({ microservice: true }),
                 withCoapTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withCoapClientTransport({ port: E2E_HOST_PORT, host: '127.0.0.1', microservice: false, asDefault: true }))

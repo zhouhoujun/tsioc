@@ -181,6 +181,12 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
         expect(result).toBeDefined();
         expect(result).toBeDefined();
     });
+
+    it('should preserve request method in envelope', async () => {
+        const client = ctx.get(AmqpClient);
+        const result = await lastValueFrom(client.send('/e2e/echo', { method: 'POST', payload: { value: 'hello' } }));
+        expect(result.payload.received).toEqual({ value: 'hello' });
+    });
 });
 
 // ----- microservice:false -----

@@ -376,16 +376,21 @@ export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatur
         const tk = getServiceInterceptorsToken(config);
         const routerToken = getServiceRouterToken(config);
         const routerOptions = options ?? (isBoolean(config.features.router) ? undefined : config.features.router);
+        const providers: Provider[] = [
+            ...createRouteProviders(config, routerToken, routerOptions),
+            {
+                provide: tk,
+                useExisting: routerToken,
+                multi: true
+            }
+        ];
+        if (isBoolean(options?.microservice) && config.microservice !== options.microservice) {
+            const cfg = { ...config, microservice: options.microservice };
+            providers.push(...createRouteProviders(cfg, undefined, routerOptions));
+        }
         return makeServiceFeature(
             ServiceFeatureKind.Router,
-            [
-                ...createRouteProviders(config, routerToken, routerOptions),
-                {
-                    provide: tk,
-                    useExisting: routerToken,
-                    multi: true
-                }
-            ],
+            providers,
             config
         );
     };

@@ -20,3 +20,6 @@ import { NodeStreamAdapter } from './stream';
 export class ServerCommonModule {
 
 }
+
+export class ServerEndpointModule extends ServerCommonModule {
+}

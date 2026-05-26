@@ -43,7 +43,10 @@ export function getResolveHandlerToken(type: TypeOf<any>, propertyKey?: string):
 }
 
 
-export const typeResolveInterceptor: ResolveInterceptorFn = (input, next, context) => {
+export const typeResolveInterceptor: ResolveInterceptorFn = (input: TransportParameter, next, context) => {
+    if (input.scope) {
+        return next(input, context);
+    }
     const payload = context.getPayload();
     if (payload) {
         const payloadType = getType(payload);

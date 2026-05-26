@@ -95,7 +95,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
         const url = requestSource.url || req.url || '/';
-        const method = requestSource.method || req.code || 'GET';
+        const method = requestSource.method || req.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         const requestData = {
             ...requestSource,

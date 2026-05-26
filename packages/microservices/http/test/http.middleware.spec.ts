@@ -1,0 +1,283 @@
+import { Module, isString } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { ErrorResponse } from '@tsdi/common';
+import { ClientModule } from '@tsdi/common/client';
+import { BodyparserInterceptor, ContentInterceptor, convertToInterceptor, EndpointModule, JsonInterceptor, SetupServices } from '@tsdi/endpoints';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerEndpointModule } from '@tsdi/platform-server/common';
+import { WsClient, WsClientConfig } from '@tsdi/ws';
+import expect = require('expect');
+import { catchError, lastValueFrom, of } from 'rxjs';
+import * as net from 'net';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Http, HttpServer } from '../src';
+import { SENSORS, WsService } from './demo';
+
+
+
+const key = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
+
+@Module({
+    imports: [
+        ServerModule,
+        LoggerModule,
+        ServerEndpointModule,
+        ClientModule.register([
+            {
+                transport: 'ws',
+                config: {
+                    url: 'wss://localhost:3200',
+                    // host: 'localhost:3200',
+                    connectOpts: {
+                        ca: cert
+                    }
+                } as WsClientConfig      
+            },
+            {
+                transport: 'http',
+                config: {
+                    authority: 'https://localhost:3200',
+                    connectOpts: {
+                        ca: cert
+                    }
+                }
+            }
+        ]),
+        EndpointModule.register([
+            {
+                bootstrap: false,
+                transport: 'ws',
+                config: {
+                    heybird: true,
+                    interceptors:[
+                        JsonInterceptor,
+                        ContentInterceptor,
+                        BodyparserInterceptor
+                    ]
+                }
+            },
+            {
+                transport: 'https',
+                bootstrap: false,
+                config: {
+                    majorVersion: 2,
+                    serverOpts: {
+                        allowHTTP1: true,
+                        key,
+                        cert
+                    },
+                    listenOpts: {
+                        port: 3200
+                    }
+                }
+            }
+        ])
+    ],
+
+    providers: [
+        { provide: SENSORS, useValue: 'sensor01', multi: true },
+        { provide: SENSORS, useValue: 'sensor02', multi: true },
+    ],
+    declarations: [
+        WsService
+    ]
+
+})
+class ModuleB {
+
+}
+
+describe('middleware', () => {
+
+    let ctx: ApplicationContext;
+    let client: WsClient;
+
+    before(async () => {
+        ctx = await Application.run(ModuleB);
+        const runable = ctx.runners.getRef(HttpServer);
+
+        // // use interceptor
+        // runable.instance.use((ctx, next) => {
+        //     console.log('ctx.url:', ctx.url);
+        //     if (ctx.url.startsWith('/test')) {
+        //         console.log('message queue test: ' + ctx.query);
+        //     }
+
+        //     ctx.body = ctx.query.hi;
+        //     console.log(ctx.body, ctx.query);
+        //     return next(ctx);
+        // }, 0);
+
+        // use middleware
+        runable.instance.use(convertToInterceptor((ctx, next) => {
+            console.log('ctx.url:', ctx.url);
+            if (ctx.url.startsWith('/test')) {
+                console.log('message queue test: ' + ctx.query);
+            }
+
+            ctx.body = ctx.query.hi;
+            console.log(ctx.body, ctx.query);
+            return next();
+        }), 0);
+
+        //run services
+        // await ctx.runners.run([WsServer, HttpServer]);
+        //or
+        await ctx.get(SetupServices).run();
+
+        client = ctx.get(WsClient);
+
+    })
+
+    it('use in http server.', async () => {
+
+        const http = ctx.get(Http);
+
+        // has no parent.
+        const rep = await lastValueFrom(http.get('test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+        expect(rep.body).toEqual('hello');
+        expect(rep.status).toEqual(200);
+    });
+
+    it('cmd message', async () => {
+        const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor.message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor.message', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect(a.statusText).toEqual('Not Found');
+    });
+
+    it('sensor.message/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor.message/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor/message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor/message', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect(a.statusText).toEqual('Not Found');
+    });
+
+    it('sensor/message/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor/message/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('sensor/submessage/+ message', async () => {
+        const a = await lastValueFrom(client.send('sensor/submessage/update', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('Subscribe sensor message', async () => {
+        const a = await lastValueFrom(client.send('sensor/sensor01/start', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(isString(a)).toBeTruthy();
+        expect(a).toEqual('ble');
+    });
+
+    it('Subscribe sensor message not found', async () => {
+        const a = await lastValueFrom(client.send('sensor/sensor03/start', {
+            payload: {
+                message: 'ble'
+            }
+        })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                })));
+
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect(a.statusMessage).toEqual('Not Found');
+    });
+
+    after(async () => {
+        await ctx?.destroy();
+    })
+
+});
+
