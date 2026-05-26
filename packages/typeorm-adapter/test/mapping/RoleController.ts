@@ -1,4 +1,4 @@
-import { RequestParam, Controller, Post, Put, Get, Delete, RequestPath } from '@tsdi/service';
+import { RequestParam, Controller, Post, Put, Get, Delete } from '@tsdi/service';
 import { Log, Logger } from '@tsdi/logger';
 import { InternalServerException } from '@tsdi/common';
 import { InjectRepository, Transactional } from '@tsdi/repository';
@@ -15,7 +15,7 @@ export class RoleController {
     @Transactional()
     @Post('/')
     @Put('/')
-    async save(role: Role, @RequestParam({ nullable: true }) check?: boolean) {
+    async save(role: Role, @RequestParam('check', { nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         const value = await this.repo.save(role);
@@ -27,7 +27,7 @@ export class RoleController {
     @Transactional()
     @Post('/save2')
     @Put('/save2')
-    async save2(role: Role, @InjectRepository(Role) roleRepo: Repository<Role>, @RequestParam({ nullable: true }) check?: boolean) {
+    async save2(role: Role, @InjectRepository(Role) roleRepo: Repository<Role>, @RequestParam('check', { nullable: true }) check?: boolean) {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);
@@ -36,16 +36,16 @@ export class RoleController {
         return value;
     }
 
-    @Get('/:name')
-    async getRole(@RequestPath() name: string) {
+    @Get('/')
+    async getRole(@RequestParam('name', { nullable: true }) name: string) {
         this.logger.log('name:', name);
         console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         return await this.repo.findOne({ where: { name } });
     }
 
     @Transactional()
-    @Delete('/:id')
-    async del(@RequestPath() id: string) {
+    @Delete('/')
+    async del(@RequestParam('id', { nullable: true }) id: string) {
         this.logger.log('id:', id);
         console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         await this.repo.delete(id);

@@ -1,4 +1,4 @@
-import { HttpClient } from '@tsdi/common/http';
+import { HttpClient } from '@tsdi/http';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import expect = require('expect');
@@ -45,7 +45,7 @@ export class TransactionTest {
         expect(rep.error).toEqual('check');
         expect(rep.body).toBeNull();
 
-        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_111', { observe: 'response' })
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'test_111' } })
             .pipe(
                 catchError((err, caught) => {
                     this.ctx.getLogger().error(err);
@@ -72,7 +72,7 @@ export class TransactionTest {
         expect(rep.error).toEqual('check');
         expect(rep.body).toBeNull();
 
-        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/test_112', { observe: 'response' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'test_112' } }));
         expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
@@ -87,7 +87,7 @@ export class TransactionTest {
         expect(rep.body?.name).toEqual('post_test');
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/post_test', { observe: 'response' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep2.status).toEqual(200);
         expect(rep2.body).toBeDefined();
         expect(rep2.body?.account).toEqual('post_test');
@@ -95,11 +95,11 @@ export class TransactionTest {
 
     @Test()
     async clearUser() {
-        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/post_test', { observe: 'response' }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeDefined();
         expect(rep1.body?.id).toBeDefined();
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/users/' + rep1.body?.id, { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/users', { observe: 'response', params: { id: rep1.body?.id } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
@@ -120,7 +120,7 @@ export class TransactionTest {
         expect(rep.body).toBeNull();
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter_1', { observe: 'response' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter_1' } }));
         expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
@@ -142,7 +142,7 @@ export class TransactionTest {
         expect(rep.body).toBeNull();
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter_2', { observe: 'response' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter_2' } }));
         expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
@@ -156,7 +156,7 @@ export class TransactionTest {
         expect(rep.body).toBeDefined();
         expect(rep.body?.name).toEqual('opter');
 
-        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter', { observe: 'response' }));
+        const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep2.status).toEqual(200);
         expect(rep2.body).toBeDefined();
         expect(rep2.body?.name).toEqual('opter');
@@ -164,10 +164,10 @@ export class TransactionTest {
 
     @Test()
     async clearRole() {
-        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter', { observe: 'response' }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toHaveProperty('id');
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/roles/' + rep1.body?.id, { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/roles', { observe: 'response', params: { id: rep1.body?.id } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }

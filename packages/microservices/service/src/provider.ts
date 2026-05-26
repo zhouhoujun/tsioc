@@ -431,6 +431,22 @@ export function withBodySerializer(options?: any): ServiceFeatureFn<ServiceFeatu
 }
 
 /**
+ * Abstract content interceptor. Transport protocols bind concrete implementations via useClass.
+ * The abstract class itself acts as the IoC token.
+ */
+export abstract class ContentInterceptor {
+    abstract intercept(input: any, next: any, context: any): any;
+}
+
+/**
+ * Abstract JSON interceptor. Transport protocols bind concrete implementations via useClass.
+ * The abstract class itself acts as the IoC token.
+ */
+export abstract class JsonInterceptor {
+    abstract intercept(input: any, next: any, context: any): any;
+}
+
+/**
  * Adds content negotiation to micro service.
  * @publicApi
  */
@@ -439,7 +455,8 @@ export function withContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.
         return makeServiceFeature(
             ServiceFeatureKind.Content,
             [
-                { provide: SERVICE_CONTENT_OPTIONS, useValue: options ?? {} }
+                { provide: SERVICE_CONTENT_OPTIONS, useValue: options ?? {} },
+                { provide: config.features.interceptorsToken!, useClass: ContentInterceptor, multi: true, multiOrder: 0 } as any
             ],
             config
         );
@@ -455,7 +472,8 @@ export function withJson(options?: any): ServiceFeatureFn<ServiceFeatureKind.Jso
         return makeServiceFeature(
             ServiceFeatureKind.Json,
             [
-                { provide: SERVICE_JSON_OPTIONS, useValue: options ?? {} }
+                { provide: SERVICE_JSON_OPTIONS, useValue: options ?? {} },
+                { provide: config.features.interceptorsToken!, useClass: JsonInterceptor, multi: true, multiOrder: 1000 } as any
             ],
             config
         );

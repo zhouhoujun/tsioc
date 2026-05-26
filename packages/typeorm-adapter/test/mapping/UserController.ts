@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/service';
+import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/service';
 import { getTypeName } from '@tsdi/ioc';
 import { InternalServerException } from '@tsdi/common';
 import { Log, Logger } from '@tsdi/logger';
@@ -14,13 +14,13 @@ export class UserController {
 
     }
 
-    @Get('/')
-    search(@RequestParam({ nullable: true }) name: string) {
+    @Get('/search')
+    search(@RequestParam('name', { nullable: true }) name: string) {
         return this.usrService.search(name);
     }
 
-    @Get('/:name')
-    getUser(@RequestPath() name: string) {
+    @Get('/')
+    getUser(@RequestParam('name', { nullable: true }) name: string) {
         this.logger.log('name:', name);
         if (name == 'error') {
             throw new InternalServerException('error');
@@ -30,7 +30,7 @@ export class UserController {
 
     @Post('/')
     @Put('/')
-    async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
+    async modify(user: User, @RequestParam('check', { nullable: true }) check?: boolean) {
         this.logger.log(getTypeName(this.usrService), user);
         const val = await this.usrService.save(user, check);
         this.logger.log(val);
@@ -40,7 +40,7 @@ export class UserController {
     @Transactional()
     @Post('/save')
     @Put('/save')
-    async modify2(user: User, @Repository(User) userRepo: TypeormRepository<User>, @RequestParam({ nullable: true }) check?: boolean) {
+    async modify2(user: User, @Repository(User) userRepo: TypeormRepository<User>, @RequestParam('check', { nullable: true }) check?: boolean) {
         this.logger.log(getTypeName(this.usrService), user);
         const val = await userRepo.save(user);
         if (check) throw new InternalServerException('check');
@@ -48,8 +48,8 @@ export class UserController {
         return val;
     }
 
-    @Delete('/:id')
-    async del(@RequestPath() id: string, @RequestParam({ nullable: true }) check?: boolean) {
+    @Delete('/')
+    async del(@RequestParam('id', { nullable: true }) id: string, @RequestParam('check', { nullable: true }) check?: boolean) {
         this.logger.log('id:', id);
         await this.usrService.delete(id, check);
         return true;

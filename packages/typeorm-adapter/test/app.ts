@@ -1,9 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import { HttpClientModule } from '@tsdi/common/http';
-import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { withHttpTransport } from '@tsdi/http';
-import { provideService, withServiceRouter } from '@tsdi/service';
+import { withHttpTransport, withHttpClientTransport } from '@tsdi/http';
+import { provideService, withServiceRouter, withContent, withJson } from '@tsdi/service';
+import { provideClient } from '@tsdi/client';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
 import * as fs from 'fs';
@@ -53,10 +52,7 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         LoggerModule,
         TypeOrmModule.withConnection({
             ...option,
-            entities: [
-                Role,
-                User
-            ],
+            entities: [Role, User],
         })
     ]
 })
@@ -69,20 +65,20 @@ export class MockBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpClientModule,
-        ServerHttpClientModule,
         TypeOrmModule.withConnection({
             ...option,
-            entities: [
-                Role,
-                User
-            ],
+            entities: [Role, User],
         })
     ],
     providers: [
         provideService(
             withServiceRouter(),
+            withContent(),
+            withJson(),
             ...withHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
+        ),
+        provideClient(
+            ...withHttpClientTransport({ url: 'http://127.0.0.1:3000', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -97,19 +93,21 @@ export class MockBootHttpTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpClientModule,
-        ServerHttpClientModule,
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
-            entities: ['./models/**/*.ts'],
-            repositories: ['./repositories/**/*.ts']
+            entities: [Role, User],
         })
     ],
     providers: [
         provideService(
             withServiceRouter(),
-            ...withHttpTransport({ listenOpts: { port: 3101, host: '127.0.0.1' }, asDefault: true }),
+            withContent(),
+            withJson(),
+            ...withHttpTransport({ listenOpts: { port: 3001, host: '127.0.0.1' }, asDefault: true }),
+        ),
+        provideClient(
+            ...withHttpClientTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -124,19 +122,21 @@ export class MockBootLoadTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpClientModule,
-        ServerHttpClientModule,
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
-            entities: ['./models/**/*.ts'],
-            repositories: ['./repositories/**/*.ts']
+            entities: [Role, User],
         })
     ],
     providers: [
         provideService(
             withServiceRouter(),
-            ...withHttpTransport({ listenOpts: { port: 3102, host: '127.0.0.1' }, asDefault: true }),
+            withContent(),
+            withJson(),
+            ...withHttpTransport({ listenOpts: { port: 3002, host: '127.0.0.1' }, asDefault: true }),
+        ),
+        provideClient(
+            ...withHttpClientTransport({ url: 'http://127.0.0.1:3002', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -149,21 +149,28 @@ export class MockTransBootTest {
     imports: [
         ServerModule,
         LoggerModule,
-        HttpClientModule,
-        ServerHttpClientModule,
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
-            entities: ['./models/**/*.ts'],
-            repositories: ['./repositories/**/*.ts']
+            entities: [Role, User],
         })
     ],
     providers: [
         provideService(
             withServiceRouter(),
+            withContent(),
+            withJson(),
             ...withHttpTransport({
-                listenOpts: { port: 3000, host: '127.0.0.1' },
+                listenOpts: { port: 3003, host: '127.0.0.1' },
                 serverOpts: { key, cert },
+                majorVersion: 2,
+                asDefault: true,
+            } as any),
+        ),
+        provideClient(
+            ...withHttpClientTransport({
+                authority: 'https://127.0.0.1:3003',
+                connectOpts: { ca: cert, rejectUnauthorized: false },
                 asDefault: true,
             } as any),
         ),

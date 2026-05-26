@@ -1,5 +1,5 @@
 import { ApplicationContext, Application } from '@tsdi/core';
-import { HttpClient } from '@tsdi/common/http';
+import { HttpClient } from '@tsdi/http';
 import { Suite, Before, Test, After } from '@tsdi/unit';
 import * as expect from 'expect';
 import { lastValueFrom } from 'rxjs';
@@ -54,7 +54,7 @@ export class LoadReposTest {
     async getUser0() {
         const usrRep = this.ctx.get(TypeormAdapter).getRepository(User);
         expect(usrRep).toBeInstanceOf(Repository);
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/admin----test', { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'admin----test' } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.account).toEqual('admin----test');
@@ -84,7 +84,7 @@ export class LoadReposTest {
 
     @Test()
     async getUser() {
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/post_test', { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.account).toEqual('post_test');
@@ -92,11 +92,11 @@ export class LoadReposTest {
 
     @Test()
     async detUser() {
-        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/post_test', { observe: 'response' }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeDefined();
         expect(rep1.body?.id).toBeDefined();
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete<User>('/users/' + rep1.body?.id, { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete<User>('/users', { observe: 'response', params: { id: rep1.body?.id } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
@@ -112,7 +112,7 @@ export class LoadReposTest {
 
     @Test()
     async getRole() {
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter', { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.name).toEqual('opter');
@@ -120,11 +120,11 @@ export class LoadReposTest {
 
     @Test()
     async detRole() {
-        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles/opter', { observe: 'response' }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeDefined();
         expect(rep1.body?.id).toBeDefined();
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete<Role>('/roles/' + rep1.body?.id, { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete<Role>('/roles', { observe: 'response', params: { id: rep1.body?.id } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }

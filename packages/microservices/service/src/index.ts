@@ -42,7 +42,9 @@ export {
     SERVICE_SESSION_OPTIONS,
     SERVICE_CONFIGS,
     SERV_OPTIONS,
-    provideServiceFromDi
+    provideServiceFromDi,
+    ContentInterceptor,
+    JsonInterceptor
 } from './provider';
 
 export * from './AbstractRequestContext';

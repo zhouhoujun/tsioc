@@ -1,4 +1,5 @@
 import { Module } from '@tsdi/ioc';
+import { ContentInterceptor as AbstractContentInterceptor, JsonInterceptor as AbstractJsonInterceptor } from '@tsdi/service';
 import { HttpClient } from './client/client';
 import { HttpServer } from './server/http-server';
 import { HttpResponseEventFactory } from './client/response.factory';
@@ -22,6 +23,8 @@ import { StaticFileInterceptor } from './server/static-file.interceptor';
         HttpTransportStrategy,
         HttpTimeoutStrategy,
         CsrfTokensFactory,
+        { provide: AbstractContentInterceptor, useClass: ContentInterceptor },
+        { provide: AbstractJsonInterceptor, useClass: JsonInterceptor },
     ],
     declarations: [
         HttpClient,

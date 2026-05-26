@@ -8,7 +8,10 @@ import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServic
 import { MimeModule } from '@tsdi/mime';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { BodyparserInterceptor } from './interceptors/bodyparser';
+import { ContentInterceptor as HttpContentInterceptor } from './interceptors/content';
+import { JsonInterceptor as HttpJsonInterceptor } from './interceptors/json';
 import { StaticFileInterceptor } from './static-file.interceptor';
+import { ContentInterceptor, JsonInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -42,6 +45,8 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         importProvidersFrom(MimeModule),
         { provide: HeaderAdapter, useClass: DefaultHeaderAdapter },
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        { provide: ContentInterceptor, useClass: HttpContentInterceptor },
+        { provide: JsonInterceptor, useClass: HttpJsonInterceptor },
         { provide: config.features.interceptorsToken, useFactory: () => new StaticFileInterceptor(config.static), multi: true, multiOrder: -2000 },
         { provide: config.features.interceptorsToken, useFactory: () => new BodyparserInterceptor({
             multipart: typeof config.upload === 'object' ? { limit: config.upload.limit ?? '10mb' } : undefined,
