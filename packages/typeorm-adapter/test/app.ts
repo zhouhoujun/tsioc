@@ -2,10 +2,8 @@ import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, withHttpTransport } from '@tsdi/http';
-import { provideService, withServiceFeatures } from '@tsdi/service';
-import { provideClient, withClientFeatures } from '@tsdi/client';
-import { withHttpClientTransport } from '@tsdi/http';
+import { withHttpTransport } from '@tsdi/http';
+import { provideService, withServiceRouter } from '@tsdi/service';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
 import * as fs from 'fs';
@@ -82,16 +80,9 @@ export class MockBootTest {
         })
     ],
     providers: [
-        ...provideService(
-            ...withHttpTransport({ bootstrap: false }),
-            withServiceFeatures({
-                router: true,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            })
+        provideService(
+            withServiceRouter(),
+            ...withHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -116,16 +107,9 @@ export class MockBootHttpTest {
         })
     ],
     providers: [
-        ...provideService(
-            ...withHttpTransport({ bootstrap: false }),
-            withServiceFeatures({
-                router: true,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            })
+        provideService(
+            withServiceRouter(),
+            ...withHttpTransport({ listenOpts: { port: 3101, host: '127.0.0.1' }, asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -150,16 +134,9 @@ export class MockBootLoadTest {
         })
     ],
     providers: [
-        ...provideService(
-            ...withHttpTransport({ bootstrap: false }),
-            withServiceFeatures({
-                router: true,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            })
+        provideService(
+            withServiceRouter(),
+            ...withHttpTransport({ listenOpts: { port: 3102, host: '127.0.0.1' }, asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -172,6 +149,8 @@ export class MockTransBootTest {
     imports: [
         ServerModule,
         LoggerModule,
+        HttpClientModule,
+        ServerHttpClientModule,
         TransactionModule,
         TypeOrmModule.withConnection({
             ...option,
@@ -180,28 +159,13 @@ export class MockTransBootTest {
         })
     ],
     providers: [
-        ...provideClient(
-            ...withHttpClientTransport({
-                authority: 'https://localhost:3000',
-                connectOpts: { ca: cert },
-                bootstrap: false,
-            } as any),
-            withClientFeatures({}),
-        ),
-        ...provideService(
+        provideService(
+            withServiceRouter(),
             ...withHttpTransport({
-                listenOpts: { port: 3000 },
+                listenOpts: { port: 3000, host: '127.0.0.1' },
                 serverOpts: { key, cert },
-                bootstrap: false,
+                asDefault: true,
             } as any),
-            withServiceFeatures({
-                router: true,
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            })
         ),
     ],
     declarations: [UserController, RoleController],
