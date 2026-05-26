@@ -13,7 +13,7 @@ export abstract class JsonOptions {
 
 
 @Injectable()
-export class JsonInterceptor implements RequestInterceptor<ReadableLike<Incoming>> {
+export class HttpJsonInterceptor implements RequestInterceptor<ReadableLike<Incoming>> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;

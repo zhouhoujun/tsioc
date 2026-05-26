@@ -13,7 +13,7 @@ export const CONTENT_OPTIONS = token<ContentOptions>('CONTENT_OPTIONS');
  * static content resources.
  */
 @Injectable()
-export class ContentInterceptor implements Interceptor<ReadableLike<Incoming>> {
+export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming>> {
 
     private options: ContentOptions;
 

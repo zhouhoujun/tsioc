@@ -9,51 +9,11 @@ import {
     getServiceFiltersToken, getServiceGuardsToken, getServiceInterceptorsToken,
     getServiceMiddlewaresToken, getServiceTransfersToken, getServiceRouterToken
 } from './tokens';
-export * from './options';
-import { ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
+
+import { ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
 import { SetupServices } from './SetupMicroServices';
 
-
-/**
- * Identifies a particular kind of `ServiceFeature`.
- * @publicApi
- */
-export enum ServiceFeatureKind {
-    Configure,
-    Transfer,
-    Logger,
-    Exception,
-    Filters,
-    Guards,
-    Interceptors,
-    Middlewares,
-    Router,
-    Controller,
-    Transport,
-    Registration,
-    Health,
-    GracefulShutdown,
-    BodyParser,
-    BodySerializer,
-    Content,
-    Json,
-    Session
-}
-
-
-export interface ServiceFeature<Kind extends ServiceFeatureKind = ServiceFeatureKind> {
-    kind: Kind;
-    config?: ServiceConfig;
-    providers: Provider[];
-}
-
-
-export interface ServiceTransportFeature {
-    kind: ServiceFeatureKind.Transport;
-    config: ServiceConfig;
-    providers: Provider[];
-}
 
 
 export type ServiceFeatureFn<Kind extends Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>> = (config: ServiceConfig) => ServiceFeature<Kind> | ServiceFeature<Kind>[];
@@ -443,6 +403,10 @@ export abstract class ContentInterceptor {
  * The abstract class itself acts as the IoC token.
  */
 export abstract class JsonInterceptor {
+    abstract intercept(input: any, next: any, context: any): any;
+}
+
+export abstract class BodyParserInterceptor {
     abstract intercept(input: any, next: any, context: any): any;
 }
 

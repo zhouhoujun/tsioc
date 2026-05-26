@@ -1,4 +1,4 @@
-import { isArray, isUndefined, TypeException } from '@tsdi/ioc';
+import { Injectable, isArray, isUndefined, TypeException } from '@tsdi/ioc';
 import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, HeaderAdapter, MimeAdapter, MimeTypes, HttpStatusCode } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -26,7 +26,8 @@ export class BodyparserOptions {
     enableTypes?: string[];
 }
 
-export class BodyparserInterceptor implements RequestInterceptor<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext> {
+@Injectable()
+export class HttpBodyParserInterceptor implements RequestInterceptor<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext> {
 
     private options: {
         json: {

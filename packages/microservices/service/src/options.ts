@@ -1,16 +1,58 @@
 import { InstanceOf, ProvdierOf, Provider, Token } from '@tsdi/ioc';
 import { GuardLike, MessageReaderFactory, VaildatorLike } from '@tsdi/core';
 import {
-    Incoming, Outgoing, PatternFormatter, RequestContext, RequestFilterLike,
-    RequestInterceptorLike, TransferConfig, TransferSide, TransferInterceptorFactory
+    Incoming, Outgoing, PatternFormatter, RequestContext, TransferConfig, 
+    TransferSide, TransferInterceptorFactory
 } from '@tsdi/common';
-import { ServiceFeatureKind } from './provider';
 export * from './features/index';
 export * from './middleware';
 import { RegistrationOptions } from './features/RegistrationOptions';
 import { HealthOptions } from './features/HealthOptions';
 import { GracefulShutdownOptions } from './features/GracefulShutdownOptions';
 import { ServiceHandlerOptions } from './ServiceHandler';
+
+
+
+/**
+ * Identifies a particular kind of `ServiceFeature`.
+ * @publicApi
+ */
+export enum ServiceFeatureKind {
+    Configure,
+    Transfer,
+    Logger,
+    Exception,
+    Filters,
+    Guards,
+    Interceptors,
+    Middlewares,
+    Router,
+    Controller,
+    Transport,
+    Registration,
+    Health,
+    GracefulShutdown,
+    BodyParser,
+    BodySerializer,
+    Content,
+    Json,
+    Session
+}
+
+
+export interface ServiceFeature<Kind extends ServiceFeatureKind = ServiceFeatureKind> {
+    kind: Kind;
+    config?: ServiceConfig;
+    providers: Provider[];
+}
+
+
+export interface ServiceTransportFeature {
+    kind: ServiceFeatureKind.Transport;
+    config: ServiceConfig;
+    providers: Provider[];
+}
+
 
 export interface RouteOpts {
     microservice?: boolean;
@@ -80,11 +122,6 @@ export interface ServiceConfig<TReq = any, TRes = any, TContext extends RequestC
     serviceName?: string;
 }
 
-export interface ServiceTransportFeature {
-    kind: ServiceFeatureKind.Transport;
-    config: ServiceConfig;
-    providers: Provider[];
-}
 
 export interface ServiceOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceConfig<TReq, TRes, TContext> {
     asDefault?: boolean;
