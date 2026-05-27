@@ -4,14 +4,20 @@ import { Observable, from } from 'rxjs';
 import { join } from 'path';
 import * as fs from 'fs';
 import { promisify } from 'util';
-import { AbstractRequestContext } from '@tsdi/endpoints';
+import { AbstractRequestContext } from '@tsdi/service';
 
 const statify = promisify(fs.stat);
 
+type BigFileRequestContext = AbstractRequestContext & {
+    url?: string;
+    length?: number;
+    type?: any;
+    body?: NodeJS.ReadableStream;
+};
 
 @Injectable()
 export class BigFileInterceptor implements RequestInterceptor {
-    intercept(req: Incoming, next: RequestHandler<any, any>, context: AbstractRequestContext): Observable<any> {
+    intercept(req: Incoming, next: RequestHandler<any, any>, context: BigFileRequestContext): Observable<any> {
 
         if (context.url == '/content/big.json') {
             return from(this.genedata(context))
@@ -19,7 +25,7 @@ export class BigFileInterceptor implements RequestInterceptor {
         return next.handle(req, context);
     }
 
-    async genedata(input: AbstractRequestContext) {
+    async genedata(input: BigFileRequestContext) {
         const filename = join(__dirname, './public/big-temp.json');
         if (!fs.existsSync(filename)) {
             const defer = lang.defer();

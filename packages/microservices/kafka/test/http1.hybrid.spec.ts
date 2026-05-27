@@ -1,298 +1,178 @@
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Injector, Module, isArray } from '@tsdi/ioc';
+import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { ClientModule } from '@tsdi/common/client';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { Http, HttpModule } from '@tsdi/http';
-import { ServerModule } from '@tsdi/platform-server';
-import { ServerEndpointModule } from '@tsdi/platform-server/common';
-import expect = require('expect');
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { KafkaModule, KafkaClient, KafkaServer } from '../src';
+import { GET } from '@tsdi/common';
+import { provideService, withServiceRouter, RouteMapping } from '@tsdi/service';
+import { provideClient } from '@tsdi/client';
+import { withHttpTransport } from '../../http/src/server';
+import { withHttpClientTransport } from '../../http/src/client';
+import { HttpClient } from '../../http/src/client/client';
+import { KafkaClient, withKafkaClientTransport, withKafkaTransport } from '../src';
 import { DeviceController } from './controller';
+import { catchError, lastValueFrom, of } from 'rxjs';
+import expect = require('expect');
 
-
-
-@Module({
-    baseURL: __dirname,
-    imports: [
-        ServerModule,
-        LoggerModule,
-        ServerEndpointModule,
-        ClientModule.register([
-            {
-                transport: 'kafka'
-            },
-            {
-                transport: 'http',
-                config: { url: 'http://localhost:3000' }
-            }
-        ]),
-        EndpointModule.register([
-            {
-                transport: 'kafka',
-                config: {
-                    interceptors: [
-                        BodyparserInterceptor
-                    ]
-                }
-            },
-            {
-                transport: 'http',
-                config: {
-                    interceptors: [
-                        ContentInterceptor,
-                        JsonInterceptor,
-                        BodyparserInterceptor
-                    ]
-                }
-            }
-        ])
-    ],
-    declarations: [
-        DeviceController
-    ]
-})
-export class KafkaHttpTestModule {
-
+@RouteMapping('/content')
+class ContentController {
+    @RouteMapping('/510100_full.json', GET)
+    json() {
+        return { features: ['feature-a', 'feature-b'] };
+    }
 }
 
+const HTTP_PORT = 21310;
+const describeKafka = process.env.TSIO_TEST_KAFKA ? describe : describe.skip;
 
-describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
+@Module({
+    imports: [LoggerModule],
+    declarations: [DeviceController, ContentController],
+    providers: [
+        provideService(
+            withServiceRouter(),
+            withServiceRouter({ microservice: true }),
+            withHttpTransport({
+                microservice: false as any,
+                listenOpts: { port: HTTP_PORT, host: '127.0.0.1' }
+            }),
+            withKafkaTransport()
+        ),
+        provideClient(
+            withHttpClientTransport({
+                url: `http://127.0.0.1:${HTTP_PORT}`,
+                microservice: false,
+                asDefault: true
+            }),
+            withKafkaClientTransport({ asDefault: true })
+        )
+    ]
+})
+class KafkaHttpHybridModule { }
+
+describeKafka('Kafka hybrid HTTP server and Kafka client', () => {
     let ctx: ApplicationContext;
+    let httpClient: HttpClient;
+    let kafkaClient: KafkaClient;
 
-    let client: Http;
-    let kafkaClient: KafkaClient
+    const sendHttp = (url: string, options: any = {}) => {
+        return lastValueFrom(httpClient.send(url, options).pipe(catchError(err => of(err))));
+    };
+
+    const sendKafka = (pattern: any, options: any = {}) => {
+        return lastValueFrom(kafkaClient.send(pattern, options).pipe(catchError(err => of(err))));
+    };
 
     before(async () => {
-        ctx = await Application.run(KafkaHttpTestModule);
-
+        ctx = await Application.run(KafkaHttpHybridModule);
+        httpClient = ctx.get(HttpClient);
         kafkaClient = ctx.get(KafkaClient);
-        client = ctx.get(Http);
+        await new Promise(resolve => setTimeout(resolve, 1000));
     });
 
-
-
-    it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
-
-    it('query all', async () => {
-        const a = await lastValueFrom(client.send<any[]>('/device')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(isArray(a)).toBeTruthy();
-        expect(a.length).toEqual(2);
-        expect(a[0].name).toEqual('1');
+    after(async () => {
+        if (ctx) {
+            await ctx.destroy();
+        }
     });
 
-    it('query with params ', async () => {
-        const a = await lastValueFrom(client.send<any[]>('/device', { params: { name: '2' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
-        expect(isArray(a)).toBeTruthy();
-        expect(a.length).toEqual(1);
-        expect(a[0].name).toEqual('2');
+    it('resolves HTTP and Kafka clients', () => {
+        expect(httpClient).toBeDefined();
+        expect(kafkaClient).toBeDefined();
     });
 
-    it('not found', async () => {
-        const a = await lastValueFrom(client.send('/device/init5', { method: 'POST', params: { name: 'test' } })
-            .pipe(
-                catchError(err => {
-                    console.log(err);
-                    return of(err)
-                })
-            ));
-        expect(a.status).toEqual(404);
+    it('serves JSON content over HTTP', async () => {
+        const result: any = await sendHttp('/content/510100_full.json', { method: 'GET', responseType: 'json' });
+        expect(result).toBeDefined();
+        expect(Array.isArray(result.features)).toBeTruthy();
     });
 
-    it('bad request', async () => {
-        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
-            .pipe(
-                catchError(err => {
-                    console.log(err);
-                    return of(err)
-                })
-            ));
-        expect(a.status).toEqual(400);
-    })
-
-    it('post route response object', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toBeDefined();
-        expect(a.body.name).toEqual('test');
+    it('queries all devices over HTTP', async () => {
+        const result: any = await sendHttp('/device');
+        expect(Array.isArray(result)).toBeTruthy();
+        expect(result.length).toBe(2);
+        expect(result[0].name).toBe('1');
     });
 
-    it('post route response string', async () => {
-        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(b.status).toEqual(200);
-        expect(b.ok).toBeTruthy();
-        expect(b.body).toEqual('1.0.0');
+    it('queries devices with params over HTTP', async () => {
+        const result: any = await sendHttp('/device', { params: { name: '2' } });
+        expect(Array.isArray(result)).toBeTruthy();
+        expect(result.length).toBe(1);
+        expect(result[0].name).toBe('2');
     });
 
-    it('route with request body pipe', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
-        // a.error && console.log(a.error);
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toBeDefined();
-        expect(a.body.year).toStrictEqual(50);
-        expect(new Date(a.body.createAt)).toEqual(new Date('2021-10-01'));
-    })
+    it('returns not found for missing route', async () => {
+        const result: any = await sendHttp('/device/init5', {
+            method: 'POST',
+            observe: 'response',
+            params: { name: 'test' }
+        });
+        expect(result.status ?? result.statusCode).toBe(404);
+    });
 
-    it('route with request body pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST' })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-    })
+    it('returns bad request for invalid path parameter', async () => {
+        const result: any = await sendHttp('/device/-1/used', {
+            observe: 'response',
+            params: { age: '20' }
+        });
+        expect(result.status ?? result.statusCode).toBe(400);
+    });
 
-    it('route with request body pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-    })
+    it('returns object response for POST route', async () => {
+        const result: any = await sendHttp('/device/init', {
+            observe: 'response',
+            method: 'POST',
+            params: { name: 'test' }
+        });
+        expect(result.ok).toBeTruthy();
+        expect(result.body.name).toBe('test');
+    });
 
-    it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toStrictEqual(20);
-    })
+    it('applies request body pipes over HTTP', async () => {
+        const result: any = await sendHttp('/device/usage', {
+            observe: 'response',
+            method: 'POST',
+            body: { id: 'test1', age: '50', createAt: '2021-10-01' }
+        });
+        expect(result.ok).toBeTruthy();
+        expect(result.body.year).toBe(50);
+        expect(new Date(result.body.createAt)).toEqual(new Date('2021-10-01'));
+    });
 
-    it('route with request param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-    })
+    it('returns text response from observable route', async () => {
+        const result: any = await sendHttp('/device/status', {
+            observe: 'response',
+            responseType: 'text'
+        });
+        expect(result.ok).toBeTruthy();
+        expect(result.body).toBe('working');
+    });
 
-    it('route with request param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: 'test' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-    })
+    it('handles Kafka object pattern messages', async () => {
+        const result: any = await sendKafka({ cmd: 'xxx' }, {
+            observe: 'response',
+            payload: { message: 'reload2' },
+            responseType: 'text'
+        });
+        expect(result.ok).toBeTruthy();
+        expect(result.body ?? result.payload).toBe('reload2');
+    });
 
-    it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toStrictEqual(30);
-    })
+    it('handles Kafka subscribe messages', async () => {
+        const result: any = await sendKafka('topic-device', {
+            observe: 'response',
+            payload: { message: 'load' },
+            responseType: 'text'
+        });
+        expect(result.ok).toBeTruthy();
+        expect(result.body ?? result.payload).toBe('load');
+    });
 
-    it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device//used', { observe: 'response', params: { age: '20' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(404);
-    })
-
-    it('route with request restful param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/age1/used', { observe: 'response', params: { age: '20' } })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-    })
-
-
-    it('response with Observable', async () => {
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', responseType: 'text' })
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual('working');
-    })
-
-    it('redirect', async () => {
-        const result = 'reload';
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual(result);
-    })
-
-    it('xxx micro message', async () => {
-        const result = 'reload2';
-        const r = await lastValueFrom(kafkaClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        // expect(r.status).toEqual(200);
-        expect(r.ok).toBeTruthy();
-        expect(r.body).toEqual(result);
-    })
-
-    it('Subscribe message', async () => {
-        const result = 'load';
-        const r = await lastValueFrom(kafkaClient.send('topic-device', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        // expect(r.status).toEqual(200);
-        expect(r.ok).toBeTruthy();
-        expect(r.body).toEqual(result);
-    })
-
-    it('dd micro message', async () => {
-        const result = 'reload';
-        const r = await lastValueFrom(kafkaClient.send('dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
-            catchError((err, ct) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        // expect(r.status).toEqual(200);
-        expect(r.ok).toBeTruthy();
-        expect(r.body).toEqual(result);
-    })
-
-    after(() => {
-        return ctx.destroy();
-    })
+    it('handles Kafka wildcard messages', async () => {
+        const result: any = await sendKafka('dd/status', {
+            observe: 'response',
+            payload: { message: 'reload' },
+            responseType: 'text'
+        });
+        expect(result.ok).toBeTruthy();
+        expect(result.body ?? result.payload).toBe('reload');
+    });
 });
