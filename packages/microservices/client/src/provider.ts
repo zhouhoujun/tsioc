@@ -5,49 +5,8 @@ import {
     UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike,
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
-import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions } from './options';
+import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions, ClientFeature, ClientFeatureFn, ClientFeatureKind, ClientFeatureLike, ClientOptions, ClientTransportFeature } from './options';
 
-
-
-/**
- * Identifies a particular kind of `ClientFeature`.
- * 标识特定类型的微客户端特性
- * @publicApi
- */
-export enum ClientFeatureKind {
-    Configure,
-    Guards,
-    Filters,
-    Interceptors,
-    BodySerialize,
-    Fetch,
-    Response,
-    Transfer,
-    Transport,
-    Discovery,
-    LoadBalance,
-    CircuitBreaker,
-    Retry
-}
-
-
-export interface ClientFeature<Kind extends ClientFeatureKind = ClientFeatureKind> {
-    kind: Kind;
-    config?: ClientConfig;
-    providers: Provider[];
-}
-
-export interface ClientTransportFeature {
-    kind: ClientFeatureKind.Transport;
-    config: ClientConfig;
-    providers: Provider[];
-}
-
-
-export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: ClientConfig) => ClientFeature<Kind> | ClientFeature<Kind>[];
-
-
-export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ClientFeature<Kind>[] | ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> | ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>>[];
 
 
 /**
@@ -321,11 +280,6 @@ export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatur
 
         return features;
     }
-}
-
-
-export interface ClientOptions<TReq = any, TRes = any> extends ClientConfig<TReq, TRes> {
-    transportFeature?: (options: ClientOptions<TReq, TRes>, asDefault?: boolean) => ClientTransportFeature;
 }
 
 

@@ -1,7 +1,7 @@
 import {
-    ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike,
+    ArgumentException, AbstractType, isArray, isString, Parameter,
     ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName,
-    createResolveHandler, isResolved, isNil, isObject, isDefined,
+    createResolveHandler, isResolved, isNil, isObject, isDefined, getClassRef,
     ResolveInterceptorFn, Type
 } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
@@ -106,8 +106,14 @@ export function createMessageResolveInterceptors(
 
             const resolvedFactory = factoryInstance ?? injector.get(token, null);
             const reader = resolvedFactory?.create(context.getPayload());
-            const implicitWholeSection = parameter.scope === 'body';
-            const field = isDefined(parameter.field) ? parameter.field : (implicitWholeSection ? undefined : parameter.name);
+            const methodParameters = parameter.target ? getClassRef(parameter.target)?.getParameters(parameter.propertyKey) : undefined;
+            const bodyParameters = methodParameters?.filter(param => (param as TransportParameter).scope === 'body') ?? [];
+            const implicitWholeSection = parameter.scope === 'body' && bodyParameters.length <= 1;
+            const field = isDefined(parameter.field)
+                ? parameter.field
+                : (parameter.scope === 'body'
+                    ? (implicitWholeSection ? undefined : parameter.name)
+                    : parameter.name);
 
             let payload: any;
             if (reader) {

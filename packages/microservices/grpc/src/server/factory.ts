@@ -1,6 +1,6 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { GrpcServer } from './grpc-server';
 import { GrpcServOptions, GRPC_SERV_OPTIONS } from './options';
@@ -30,8 +30,9 @@ export function grpcTransportFactory(option: Partial<GrpcServOptions>, asDefault
         importProvidersFrom(ServerCommonModule),
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const r = context.getResponse(); const s = context.get(StatusAdapter);
-            r.error = new NotFoundException(); if (s) { r.statusCode = s.notFound; r.statusMessage = r.error.message; } return of(r);
+            const r = context.getResponse();
+            const error = new NotFoundException('Not Found', 404);
+            r.error = error; r.statusCode = error.statusCode; r.statusMessage = error.message; return of(r);
         }, multi: true },
         { provide: serviceToken, useFactory: (inj: Injector) => getClassRef(GrpcServer).createInvocation(inj, {
             providers: [{ provide: GRPC_SERV_OPTIONS, useValue: config }, { provide: ServiceHandler, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] }]

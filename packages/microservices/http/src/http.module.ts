@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { ContentInterceptor as AbstractContentInterceptor, JsonInterceptor as AbstractJsonInterceptor } from '@tsdi/service';
+import { BodyParserInterceptor as AbstractBodyParserInterceptor, ContentInterceptor as AbstractContentInterceptor, JsonInterceptor as AbstractJsonInterceptor, SessionInterceptor as AbstractSessionInterceptor } from '@tsdi/service';
 import { HttpClient } from './client/client';
 import { HttpServer } from './server/http-server';
 import { HttpResponseEventFactory } from './client/response.factory';
@@ -11,9 +11,9 @@ import { HelmetMiddleware } from './server/interceptors/helmet';
 import { Csrf, CsrfTokensFactory } from './server/interceptors/csrf';
 import { HttpLoggerInterceptor } from './server/interceptors/logger';
 import { HttpSessionInterceptor } from './server/interceptors/session';
-import { BodyparserInterceptor } from './server/interceptors/bodyparser';
-import { ContentInterceptor } from './server/interceptors/content';
-import { JsonInterceptor } from './server/interceptors/json';
+import { HttpBodyParserInterceptor } from './server/interceptors/bodyparser';
+import { HttpContentInterceptor } from './server/interceptors/content';
+import { HttpJsonInterceptor } from './server/interceptors/json';
 import { StaticFileInterceptor } from './server/static-file.interceptor';
 
 @Module({
@@ -23,8 +23,10 @@ import { StaticFileInterceptor } from './server/static-file.interceptor';
         HttpTransportStrategy,
         HttpTimeoutStrategy,
         CsrfTokensFactory,
-        { provide: AbstractContentInterceptor, useClass: ContentInterceptor },
-        { provide: AbstractJsonInterceptor, useClass: JsonInterceptor },
+        { provide: AbstractContentInterceptor, useClass: HttpContentInterceptor },
+        { provide: AbstractJsonInterceptor, useClass: HttpJsonInterceptor },
+        { provide: AbstractBodyParserInterceptor, useClass: HttpBodyParserInterceptor },
+        { provide: AbstractSessionInterceptor, useClass: HttpSessionInterceptor },
     ],
     declarations: [
         HttpClient,
@@ -34,9 +36,9 @@ import { StaticFileInterceptor } from './server/static-file.interceptor';
         Csrf,
         HttpLoggerInterceptor,
         HttpSessionInterceptor,
-        BodyparserInterceptor,
-        ContentInterceptor,
-        JsonInterceptor,
+        HttpBodyParserInterceptor,
+        HttpContentInterceptor,
+        HttpJsonInterceptor,
         StaticFileInterceptor,
     ]
 })

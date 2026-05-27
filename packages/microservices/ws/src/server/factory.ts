@@ -1,6 +1,6 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, TransferInterceptorFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, TransferInterceptorFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
@@ -37,12 +37,10 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         { provide: WS_SERV_OPTIONS, useValue: config },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const response = context.getResponse();
-            const statusAdapter = context.get(StatusAdapter);
-            response.error = new NotFoundException();
-            if (statusAdapter) {
-                response.statusCode = statusAdapter.notFound;
-                response.statusMessage = response.error.message;
-            }
+            const error = new NotFoundException('Not Found', 404);
+            response.error = error;
+            response.statusCode = error.statusCode;
+            response.statusMessage = error.message;
             return of(response);
         }, multi: true },
         toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
@@ -75,12 +73,10 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
                         { provide: WS_SERV_OPTIONS, useValue: config },
                         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
                             const response = context.getResponse();
-                            const statusAdapter = context.get(StatusAdapter);
-                            response.error = new NotFoundException();
-                            if (statusAdapter) {
-                                response.statusCode = statusAdapter.notFound;
-                                response.statusMessage = response.error.message;
-                            }
+                            const error = new NotFoundException('Not Found', 404);
+                            response.error = error;
+                            response.statusCode = error.statusCode;
+                            response.statusMessage = error.message;
                             return of(response);
                         }, multi: true },
                         ...transferProviders,

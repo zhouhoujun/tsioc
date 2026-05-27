@@ -1,8 +1,8 @@
 import { InstanceOf, ProvdierOf, Provider, Token } from '@tsdi/ioc';
-import { GuardLike, MessageReaderFactory, VaildatorLike } from '@tsdi/core';
+import { MessageReaderFactory, VaildatorLike } from '@tsdi/core';
 import {
-    Incoming, Outgoing, PatternFormatter, RequestContext, TransferConfig, 
-    TransferSide, TransferInterceptorFactory
+    Incoming, Outgoing, PatternFormatter, RequestContext, TransferConfig,
+    TransferSide, TransferInterceptorFactory, RequestInterceptorLike, FindOptions
 } from '@tsdi/common';
 export * from './features/index';
 export * from './middleware';
@@ -36,7 +36,8 @@ export enum ServiceFeatureKind {
     BodySerializer,
     Content,
     Json,
-    Session
+    Session,
+    Cookie
 }
 
 
@@ -63,16 +64,70 @@ export interface RouteOpts {
  * Microservice feature options.
  * 微服务特性选项
  */
+export interface FeatureInterceptorOptions {
+    interceptor?: ProvdierOf<RequestInterceptorLike>;
+    multiOrder?: number;
+}
+
+export interface ContentOptions<TStats = any> extends FindOptions, FeatureInterceptorOptions {
+    setHeaders?: (outgoing: Outgoing, path: string, stats: TStats) => void;
+    defer?: boolean;
+}
+
+export interface BodyparserOptions extends FeatureInterceptorOptions {
+    json?: {
+        strict?: boolean;
+        limit: string;
+    };
+    form?: {
+        limit: string;
+        qs?: { parse: Function };
+        queryString?: {
+            allowDots?: boolean;
+        };
+    };
+    text?: {
+        limit: string;
+    };
+    multipart?: {
+        limit: string;
+    };
+    encoding?: string;
+    enableTypes?: string[];
+}
+
+export interface JsonOptions extends FeatureInterceptorOptions {
+    strict?: boolean;
+}
+
+export interface SessionOptions extends FeatureInterceptorOptions {
+    key?: string;
+    overwrite?: boolean;
+    httpOnly?: boolean;
+    signed?: boolean;
+    autoCommit?: boolean;
+    maxAge?: number;
+    encode?: (body: any) => string;
+    decode?: (str: string) => any;
+}
+
+export interface CookieOptions extends FeatureInterceptorOptions {
+    keys?: string[];
+    secure?: boolean;
+    signed?: boolean;
+}
+
 export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {
     timeout?: number;
     requestVaildators?: ProvdierOf<VaildatorLike<Incoming, TContext>>[];
     responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, TContext>>[];
     logger?: boolean;
-    bodyparser?: boolean;
+    bodyparser?: boolean | BodyparserOptions;
     bodySerializer?: boolean;
-    content?: boolean;
-    json?: boolean;
-    session?: boolean;
+    content?: boolean | ContentOptions;
+    json?: boolean | JsonOptions;
+    session?: boolean | SessionOptions;
+    cookie?: boolean | CookieOptions;
     router?: boolean | RouteOpts;
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;

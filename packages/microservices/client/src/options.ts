@@ -1,9 +1,41 @@
-import { ProvdierOf, Token } from '@tsdi/ioc';
+import { ProvdierOf, Provider, Token } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
 import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig, TransferInterceptorFactory, TransferSide } from '@tsdi/common';
 import { ConnectionPoolOptions } from './pool';
 
 
+
+export enum ClientFeatureKind {
+    Configure,
+    Guards,
+    Filters,
+    Interceptors,
+    BodySerialize,
+    Fetch,
+    Response,
+    Transfer,
+    Transport,
+    Discovery,
+    LoadBalance,
+    CircuitBreaker,
+    Retry
+}
+
+export interface ClientFeature<Kind extends ClientFeatureKind = ClientFeatureKind> {
+    kind: Kind;
+    config?: ClientConfig;
+    providers: Provider[];
+}
+
+export interface ClientTransportFeature {
+    kind: ClientFeatureKind.Transport;
+    config: ClientConfig;
+    providers: Provider[];
+}
+
+export type ClientFeatureFn<Kind extends Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> = (config: ClientConfig) => ClientFeature<Kind> | ClientFeature<Kind>[];
+
+export type ClientFeatureLike<Kind extends ClientFeatureKind> = ClientFeature<Kind> | ClientFeature<Kind>[] | ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> | ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>>[];
 
 export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends RequestHandlerOptions<TReq, TRes, TContext> {
     /**
@@ -193,4 +225,8 @@ export interface RetryOptions {
      * 指数退避乘数
      */
     backoffMultiplier?: number;
+}
+
+export interface ClientOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ClientConfig<TReq, TRes, TContext> {
+    transportFeature?: (options: ClientOptions<TReq, TRes, TContext>, asDefault?: boolean) => ClientTransportFeature;
 }

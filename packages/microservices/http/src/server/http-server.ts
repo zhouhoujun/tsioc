@@ -139,6 +139,16 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             method,
             headers: req.headers,
             query: this.parseQuery(url),
+            getHeader(name: string) {
+                const value = req.headers?.[name.toLowerCase()] ?? req.headers?.[name as keyof typeof req.headers];
+                return Array.isArray(value) ? value[0] : value;
+            },
+            hasHeader(name: string) {
+                return this.getHeader(name) != null;
+            },
+            getHeaderNames() {
+                return Object.keys(req.headers ?? {});
+            }
         };
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],

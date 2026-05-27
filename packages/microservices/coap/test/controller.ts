@@ -1,5 +1,5 @@
 import { lang } from '@tsdi/ioc';
-import { BadRequestException } from '@tsdi/common';
+import { BadRequestException, Transport } from '@tsdi/common';
 import { Get, Handle, Payload, Post, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/service';
 import { of } from 'rxjs';
 
@@ -64,7 +64,7 @@ export class DeviceController {
 
 
 
-    @Handle({ cmd: 'xxx' }, 'coap')
+    @Handle({ cmd: 'xxx' }, Transport.CoAP)
     async subMessage(@Payload() message: string) {
         return message;
     }

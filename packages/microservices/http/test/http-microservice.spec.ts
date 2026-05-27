@@ -2,7 +2,7 @@ import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, H
 import { withHttpClientTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
-import { Controller, Post, RequestBody } from '@tsdi/service';
+import { BodyParserInterceptor, ContentInterceptor, Controller, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
 import { getClassRef } from '@tsdi/ioc';
 import expect = require('expect');
 
@@ -59,12 +59,20 @@ describe('HTTP Microservice', () => {
         it('should enable bodyparser by default', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 } });
             expect(feature.config.features?.bodyparser).toBe(true);
-            expect(feature.providers.some((p: any) => p.useFactory && String(p.useFactory).includes('BodyparserInterceptor'))).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useClass?.name === 'HttpBodyParserInterceptor')).toBe(true);
         });
 
-        it('should register static interceptor factory', () => {
+        it('should keep static configuration on transport config', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 }, static: true });
-            expect(feature.providers.some((p: any) => p.useFactory && String(p.useFactory).includes('StaticFileInterceptor'))).toBe(true);
+            expect((feature.config as HttpServOptions).static).toBe(true);
+        });
+
+        it('should bind abstract feature interceptors to HTTP defaults', () => {
+            const feature = httpTransportFactory({ listenOpts: { port: 3000 } });
+            expect(feature.providers.some((p: any) => p.provide === ContentInterceptor && p.useClass?.name === 'HttpContentInterceptor')).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === JsonInterceptor && p.useClass?.name === 'HttpJsonInterceptor')).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useClass?.name === 'HttpBodyParserInterceptor')).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === SessionInterceptor && p.useClass?.name === 'HttpSessionInterceptor')).toBe(true);
         });
 
         it('should preserve http2 server configuration', () => {
@@ -167,7 +175,7 @@ describe('HTTP Microservice', () => {
         it('httpTransportFactory should have bodyparser enabled for h2', () => {
             const feature = httpTransportFactory({ majorVersion: 2, listenOpts: { port: 3000 } });
             expect(feature.config.features?.bodyparser).toBe(true);
-            expect(feature.providers.some((p: any) => p.useFactory && String(p.useFactory).includes('BodyparserInterceptor'))).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useClass?.name === 'HttpBodyParserInterceptor')).toBe(true);
         });
 
         it('withHttpClientTransport should handle authority without asDefault', () => {

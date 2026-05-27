@@ -2,7 +2,6 @@ import expect = require('expect');
 import { Transport, TransferSide } from '@tsdi/common';
 import {
     CLIENT_CONFIGS,
-    ClientFeatureKind,
     MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS,
     MICRO_CLIENT_DISCOVERY_OPTIONS,
     MICRO_CLIENT_LOADBALANCE_OPTIONS,
@@ -14,6 +13,7 @@ import {
     withDiscovery,
     withLoadBalance
 } from '../src/provider';
+import { ClientFeatureKind } from '../src/options';
 
 const createConfig = (name = 'alpha') => ({
     name,

@@ -1,6 +1,6 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory, DefaultHeaderAdapter, HeaderAdapter } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
@@ -9,7 +9,8 @@ import { MimeModule } from '@tsdi/mime';
 import { HttpBodyParserInterceptor } from './interceptors/bodyparser';
 import { HttpContentInterceptor } from './interceptors/content';
 import { HttpJsonInterceptor } from './interceptors/json';
-import { ContentInterceptor, JsonInterceptor, BodyParserInterceptor } from '@tsdi/service';
+import { HttpSessionInterceptor } from './interceptors/session';
+import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -40,14 +41,18 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(MimeModule),
-        { provide: HeaderAdapter, useClass: DefaultHeaderAdapter },
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         { provide: ContentInterceptor, useClass: HttpContentInterceptor },
         { provide: JsonInterceptor, useClass: HttpJsonInterceptor },
         { provide: BodyParserInterceptor, useClass: HttpBodyParserInterceptor },
+        { provide: SessionInterceptor, useClass: HttpSessionInterceptor },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const r = context.getResponse(); const s = context.get(StatusAdapter);
-            r.error = new NotFoundException(); if (s) { r.statusCode = s.notFound; r.statusMessage = r.error.message; } return of(r);
+            const r = context.getResponse();
+            const error = new NotFoundException('Not Found', 404);
+            r.error = error;
+            r.statusCode = error.statusCode;
+            r.statusMessage = error.message;
+            return of(r);
         }, multi: true },
         { provide: serviceToken, useFactory: (inj: Injector) => getClassRef(HttpServer).createInvocation(inj, {
             providers: [{ provide: HTTP_SERV_OPTIONS, useValue: config }, { provide: ServiceHandler, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] }]

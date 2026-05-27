@@ -1,4 +1,4 @@
-import { BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HeaderAdapter, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common';
+import { BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common';
 import { basename } from 'node:path';
 import { HttpFileResult, HttpFileResultOptions } from './file-result';
 
@@ -75,17 +75,16 @@ export async function resolveFileResult(result: HttpFileResult, input: any, cont
     if (result.options.statusCode) {
         outgoing.statusCode = result.options.statusCode;
     }
-    const headerAdapter = context.get(HeaderAdapter);
     const mimeAdapter = context.get(MimeAdapter);
     const contentType = result.options.contentType ?? inferContentType(mimeAdapter, result.options.filename);
-    if (contentType && !headerAdapter.hasContentType(outgoing)) {
-        headerAdapter.setContentType(outgoing, contentType);
+    if (contentType && !outgoing.hasHeader('content-type')) {
+        outgoing.setHeader('content-type', contentType);
     }
     if (result.options.filename) {
-        headerAdapter.setContentDisposition(outgoing, createContentDisposition(result.options.filename, result.options.disposition ?? 'attachment'));
+        outgoing.setHeader('content-disposition', createContentDisposition(result.options.filename, result.options.disposition ?? 'attachment'));
     }
     if (Buffer.isBuffer(result.value)) {
-        headerAdapter.setContentLength(outgoing, result.value.length);
+        outgoing.setHeader('content-length', result.value.length);
     }
     outgoing.statusCode ||= HttpStatusCode.Ok;
     outgoing.body = method === 'HEAD' ? null : result.value;
@@ -98,7 +97,6 @@ export function isHttpFileResult(value: any): value is HttpFileResult {
 
 function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, method: string, options: HttpFileResultOptions & { setHeaders?: (outgoing: Outgoing, path: string, stats: IStats) => void } = {}): Outgoing<any> {
     const outgoing = context.get(OutgoingFactory).create({});
-    const headerAdapter = context.get(HeaderAdapter);
     const mimeAdapter = context.get(MimeAdapter);
     const fileAdapter = context.get(FileAdapter);
     const size = Number(file.stats.size ?? 0);
@@ -106,37 +104,37 @@ function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, me
 
     applyResponseHeaders(outgoing, options.headers);
     options.setHeaders?.(outgoing, file.filename, file.stats);
-    if (!headerAdapter.getLastModified(outgoing)) {
-        headerAdapter.setLastModified(outgoing, file.stats.mtime.toUTCString());
+    if (!outgoing.hasHeader('last-modified')) {
+        outgoing.setHeader('last-modified', file.stats.mtime.toUTCString());
     }
-    if (!headerAdapter.getCacheControl(outgoing)) {
-        headerAdapter.setCacheControl(outgoing, 'max-age=0');
+    if (!outgoing.hasHeader('cache-control')) {
+        outgoing.setHeader('cache-control', 'max-age=0');
     }
     if (!outgoing.hasHeader('accept-ranges')) {
         outgoing.setHeader('accept-ranges', 'bytes');
     }
-    if (!headerAdapter.hasContentType(outgoing)) {
-        headerAdapter.setContentType(outgoing, options.contentType ?? inferContentType(mimeAdapter, file.filename, file.encodingExt));
+    if (!outgoing.hasHeader('content-type')) {
+        outgoing.setHeader('content-type', options.contentType ?? inferContentType(mimeAdapter, file.filename, file.encodingExt));
     }
-    if (file.encodingExt && !headerAdapter.hasContentEncoding(outgoing)) {
-        headerAdapter.setContentEncoding(outgoing, getContentEncoding(file.encodingExt));
+    if (file.encodingExt && !outgoing.hasHeader('content-encoding')) {
+        outgoing.setHeader('content-encoding', getContentEncoding(file.encodingExt));
     }
 
     const dispositionName = options.filename ?? basename(file.filename, file.encodingExt ?? '');
     if (options.disposition && dispositionName) {
-        headerAdapter.setContentDisposition(outgoing, createContentDisposition(dispositionName, options.disposition));
+        outgoing.setHeader('content-disposition', createContentDisposition(dispositionName, options.disposition));
     }
 
     if (range) {
         outgoing.statusCode = HttpStatusCode.PartialContent;
         outgoing.setHeader('content-range', `bytes ${range.start}-${range.end}/${size}`);
-        headerAdapter.setContentLength(outgoing, range.end - range.start + 1);
+        outgoing.setHeader('content-length', range.end - range.start + 1);
         outgoing.body = method === 'HEAD' ? null : fileAdapter.read(file.filename, { start: range.start, end: range.end });
         return outgoing;
     }
 
     outgoing.statusCode = options.statusCode ?? HttpStatusCode.Ok;
-    headerAdapter.setContentLength(outgoing, size);
+    outgoing.setHeader('content-length', size);
     outgoing.body = method === 'HEAD' ? null : fileAdapter.read(file.filename);
     return outgoing;
 }
@@ -149,8 +147,14 @@ function inferContentType(mimeAdapter: MimeAdapter | null | undefined, filename?
 }
 
 function getHeader(context: RequestContext, name: string): string | undefined {
-    const headerAdapter = context.get(HeaderAdapter);
-    return headerAdapter?.getHeader(context.getRequest(), name) as string | undefined;
+    const request = context.getRequest() as any;
+    const value = typeof request?.getHeader === 'function'
+        ? request.getHeader(name)
+        : request?.headers?.[name.toLowerCase()] ?? request?.headers?.[name];
+    if (Array.isArray(value)) {
+        return value.length ? String(value[0]) : undefined;
+    }
+    return value == null ? undefined : String(value);
 }
 
 function getPathname(path?: string): string {

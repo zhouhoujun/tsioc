@@ -1,4 +1,4 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
@@ -10,8 +10,9 @@ import {
     getServiceMiddlewaresToken, getServiceTransfersToken, getServiceRouterToken
 } from './tokens';
 
-import { ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
+import { CookieOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
+import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, JsonInterceptor, SessionInterceptor } from './interceptors';
 import { SetupServices } from './SetupMicroServices';
 
 
@@ -81,6 +82,27 @@ export function makeServiceFeature<T extends ServiceFeatureKind>(kind: T, provid
     };
 }
 
+function resolveFeatureOptions<T extends FeatureInterceptorOptions>(options?: T): { featureOptions: Omit<T, 'interceptor' | 'multiOrder'>; interceptor?: ProvdierOf<RequestInterceptorLike>; multiOrder?: number } {
+    if (!isPlainObject(options)) {
+        return { featureOptions: (options ?? {}) as Omit<T, 'interceptor' | 'multiOrder'> };
+    }
+    const { interceptor, multiOrder, ...featureOptions } = options as T;
+    return { featureOptions, interceptor, multiOrder };
+}
+
+function createFeatureInterceptorProvider(config: ServiceConfig, fallback: any, interceptor: ProvdierOf<RequestInterceptorLike> | undefined, multiOrder: number): Provider {
+    if (!interceptor) {
+        return {
+            provide: getServiceInterceptorsToken(config),
+            useExisting: fallback,
+            multi: true,
+            multiOrder
+        } as any;
+    }
+    const provider = toProvider(getServiceInterceptorsToken(config), interceptor, true) as Provider & { multiOrder?: number };
+    provider.multiOrder = multiOrder;
+    return provider;
+}
 
 const defaultServiceOptions: Partial<ServiceFeatureOptions> = {
     logger: true,
@@ -135,6 +157,9 @@ export function withServiceFeatures(options?: ServiceFeatureOptions): ServiceFea
         }
         if (opts.session) {
             features.push(withSession(isBoolean(opts.session) ? undefined : opts.session)(config));
+        }
+        if (opts.cookie) {
+            features.push(withCookie(isBoolean(opts.cookie) ? undefined : opts.cookie)(config));
         }
 
         if (opts.registration) {
@@ -364,10 +389,12 @@ export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatur
  */
 export function withBodyParser(options?: any): ServiceFeatureFn<ServiceFeatureKind.BodyParser> {
     return (config) => {
+        const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
             ServiceFeatureKind.BodyParser,
             [
-                { provide: SERVICE_BODY_PARSER_OPTIONS, useValue: options ?? {} }
+                { provide: SERVICE_BODY_PARSER_OPTIONS, useValue: resolved.featureOptions },
+                createFeatureInterceptorProvider(config, BodyParserInterceptor, resolved.interceptor, resolved.multiOrder ?? -1000)
             ],
             config
         );
@@ -391,36 +418,17 @@ export function withBodySerializer(options?: any): ServiceFeatureFn<ServiceFeatu
 }
 
 /**
- * Abstract content interceptor. Transport protocols bind concrete implementations via useClass.
- * The abstract class itself acts as the IoC token.
- */
-export abstract class ContentInterceptor {
-    abstract intercept(input: any, next: any, context: any): any;
-}
-
-/**
- * Abstract JSON interceptor. Transport protocols bind concrete implementations via useClass.
- * The abstract class itself acts as the IoC token.
- */
-export abstract class JsonInterceptor {
-    abstract intercept(input: any, next: any, context: any): any;
-}
-
-export abstract class BodyParserInterceptor {
-    abstract intercept(input: any, next: any, context: any): any;
-}
-
-/**
  * Adds content negotiation to micro service.
  * @publicApi
  */
 export function withContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.Content> {
     return (config) => {
+        const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
             ServiceFeatureKind.Content,
             [
-                { provide: SERVICE_CONTENT_OPTIONS, useValue: options ?? {} },
-                { provide: config.features.interceptorsToken!, useClass: ContentInterceptor, multi: true, multiOrder: 0 } as any
+                { provide: SERVICE_CONTENT_OPTIONS, useValue: resolved.featureOptions },
+                createFeatureInterceptorProvider(config, ContentInterceptor, resolved.interceptor, resolved.multiOrder ?? 0)
             ],
             config
         );
@@ -433,11 +441,12 @@ export function withContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.
  */
 export function withJson(options?: any): ServiceFeatureFn<ServiceFeatureKind.Json> {
     return (config) => {
+        const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
             ServiceFeatureKind.Json,
             [
-                { provide: SERVICE_JSON_OPTIONS, useValue: options ?? {} },
-                { provide: config.features.interceptorsToken!, useClass: JsonInterceptor, multi: true, multiOrder: 1000 } as any
+                { provide: SERVICE_JSON_OPTIONS, useValue: resolved.featureOptions },
+                createFeatureInterceptorProvider(config, JsonInterceptor, resolved.interceptor, resolved.multiOrder ?? 1000)
             ],
             config
         );
@@ -450,10 +459,30 @@ export function withJson(options?: any): ServiceFeatureFn<ServiceFeatureKind.Jso
  */
 export function withSession(options?: any): ServiceFeatureFn<ServiceFeatureKind.Session> {
     return (config) => {
+        const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
             ServiceFeatureKind.Session,
             [
-                { provide: SERVICE_SESSION_OPTIONS, useValue: options ?? {} }
+                { provide: SERVICE_SESSION_OPTIONS, useValue: resolved.featureOptions },
+                createFeatureInterceptorProvider(config, SessionInterceptor, resolved.interceptor, resolved.multiOrder ?? -500)
+            ],
+            config
+        );
+    };
+}
+
+/**
+ * Adds cookie handling to micro service.
+ * @publicApi
+ */
+export function withCookie(options?: CookieOptions): ServiceFeatureFn<ServiceFeatureKind.Cookie> {
+    return (config) => {
+        const resolved = resolveFeatureOptions(options);
+        return makeServiceFeature(
+            ServiceFeatureKind.Cookie,
+            [
+                { provide: SERVICE_COOKIE_OPTIONS, useValue: resolved.featureOptions },
+                createFeatureInterceptorProvider(config, CookieInterceptor, resolved.interceptor, resolved.multiOrder ?? -400)
             ],
             config
         );
@@ -469,6 +498,7 @@ export const SERVICE_BODY_PARSER_OPTIONS = token<any>('SERVICE_BODY_PARSER_OPTIO
 export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZER_OPTIONS');
 export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');
 export const SERVICE_SESSION_OPTIONS = token<any>('SERVICE_SESSION_OPTIONS');
+export const SERVICE_COOKIE_OPTIONS = token<any>('SERVICE_COOKIE_OPTIONS');
 export const SERVICE_CONFIGS = token<ServiceOptions[]>('SERVICE_CONFIGS');
 export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS');
 

@@ -1,6 +1,6 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
 import { of } from 'rxjs';
 import { MqttServer } from './mqtt-server';
 import { MqttServOptions, MQTT_SERV_OPTIONS } from './options';
@@ -40,12 +40,10 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
                 const response = context.getResponse();
-                const statusAdapter = context.get(StatusAdapter);
-                response.error = new NotFoundException();
-                if (statusAdapter) {
-                    response.statusCode = statusAdapter.notFound;
-                    response.statusMessage = response.error.message;
-                }
+                const error = new NotFoundException('Not Found', 404);
+                response.error = error;
+                response.statusCode = error.statusCode;
+                response.statusMessage = error.message;
                 return of(response);
             },
             multi: true

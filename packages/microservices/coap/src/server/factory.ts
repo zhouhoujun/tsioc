@@ -1,13 +1,15 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, StatusAdapter, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common';
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, BodyParserInterceptor, ContentInterceptor, JsonInterceptor } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
+import { CoapMessageReaderFactory } from './message-reader';
 
 export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -34,7 +36,7 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
     getServiceGuardsToken(config);
 
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messagerReaderFactory ??= CoapMessageReaderFactory;
     config.providers.push(
         { provide: COAP_SERV_OPTIONS, useValue: config },
         toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
@@ -45,16 +47,16 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         CoapPatternFormatter,
         CoapCompatiblePatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        { provide: ContentInterceptor, useClass: CoapContentInterceptor },
+        { provide: JsonInterceptor, useClass: CoapJsonInterceptor },
+        { provide: BodyParserInterceptor, useClass: CoapBodyParserInterceptor },
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
                 const response = context.getResponse();
-                const statusAdapter = context.get(StatusAdapter);
-                response.error = new NotFoundException();
-                if (statusAdapter) {
-                    response.statusCode = statusAdapter.notFound;
-                    response.statusMessage = response.error.message;
-                }
+                response.error = { message: 'Not Found' };
+                response.statusCode = '4.04';
+                response.statusMessage = 'Not Found';
                 return of(response);
             },
             multi: true

@@ -1,5 +1,5 @@
 import { Injectable, isArray, isUndefined, TypeException } from '@tsdi/ioc';
-import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, HeaderAdapter, MimeAdapter, MimeTypes, HttpStatusCode } from '@tsdi/common';
+import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, MimeAdapter, MimeTypes, HttpStatusCode } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { parseMultipartBody } from '../multipart';
@@ -104,16 +104,15 @@ export class HttpBodyParserInterceptor implements RequestInterceptor<ReadableLik
 
     private parseBody(input: ReadableLike<Incoming>, context: RequestContext): Promise<{ raw?: any; body?: any; fields?: Record<string, string>; files?: Record<string, any> }> {
         const types = context.get(MimeTypes);
-        const headerAdapter = context.get(HeaderAdapter);
         const mimeAdapter = context.get(MimeAdapter);
-        if (!headerAdapter) {
+        const ctype = this.getHeader(input, 'content-type');
+        if (!ctype) {
             return this.parseBodyWithoutHeaders(input, context);
         }
 
-        let encoding = headerAdapter.getContentEncoding(input);
-        const len = headerAdapter.getContentLength(input);
-        const ctype = headerAdapter.getContentType(input);
-        if (!ctype || (encoding && !len)) {
+        let encoding = this.getHeader(input, 'content-encoding');
+        const len = this.getContentLength(input);
+        if (encoding && !len) {
             return Promise.resolve({});
         }
 
@@ -122,27 +121,23 @@ export class HttpBodyParserInterceptor implements RequestInterceptor<ReadableLik
         if (this.enableMultipart && this.isMultipart(ctype, mimeAdapter)) {
             return this.parseMultipart(input, ctype, encoding, len, streamAdapter);
         }
-        if (this.enableJson && this.is(types?.json ?? 'json', input, headerAdapter, mimeAdapter)) {
+        if (this.enableJson && this.is(types?.json ?? 'json', ctype, mimeAdapter)) {
             return this.parseJson(input, encoding, len, streamAdapter);
         }
-        if (this.enableForm && this.is(types?.form ?? 'form', input, headerAdapter, mimeAdapter)) {
+        if (this.enableForm && this.is(types?.form ?? 'form', ctype, mimeAdapter)) {
             return this.parseForm(input, encoding, len, streamAdapter);
         }
-        if (this.enableText && this.is(types?.text ?? 'text', input, headerAdapter, mimeAdapter)) {
+        if (this.enableText && this.is(types?.text ?? 'text', ctype, mimeAdapter)) {
             return this.parseText(input, encoding, len, streamAdapter);
         }
-        if (this.enableXml && this.is(types?.xml ?? 'xml', input, headerAdapter, mimeAdapter)) {
+        if (this.enableXml && this.is(types?.xml ?? 'xml', ctype, mimeAdapter)) {
             return this.parseText(input, encoding, len, streamAdapter);
         }
 
         return Promise.resolve({});
     }
 
-    private is(type: string | string[], input: ReadableLike<Incoming>, headerAdapter: HeaderAdapter, mimeAdapter: MimeAdapter): string | null | false {
-        const ctype = headerAdapter.getContentType(input);
-        if (!ctype) {
-            return false;
-        }
+    private is(type: string | string[], ctype: string, mimeAdapter: MimeAdapter): string | null | false {
         if (!mimeAdapter) {
             const expected = isArray(type) ? type[0] : type;
             return ctype.indexOf(expected) >= 0 || expected.indexOf(ctype) >= 0 ? expected : false;
@@ -256,6 +251,26 @@ export class HttpBodyParserInterceptor implements RequestInterceptor<ReadableLik
             return input.pipe(streamAdapter.createGunzip());
         }
         throw new UnsupportedMediaTypeException('incoming message not support streamable', HttpStatusCode.UnsupportedMediaType);
+    }
+
+    private getHeader(input: ReadableLike<Incoming>, name: string): string | undefined {
+        const message = input as any;
+        const value = typeof message.getHeader === 'function'
+            ? message.getHeader(name)
+            : message.headers?.[name.toLowerCase()] ?? message.headers?.[name];
+        if (isArray(value)) {
+            return value.length ? String(value[0]) : undefined;
+        }
+        return value == null ? undefined : String(value);
+    }
+
+    private getContentLength(input: ReadableLike<Incoming>): number {
+        const value = this.getHeader(input, 'content-length');
+        if (!value) {
+            return 0;
+        }
+        const length = Number(value);
+        return Number.isFinite(length) ? length : 0;
     }
 
     private jsonify(str: string, strict?: boolean) {

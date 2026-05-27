@@ -1,8 +1,8 @@
-import { Inject, Injectable, isDefined, Optional, token } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, token } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import {
-    FileAdapter, FileStats, FindOptions, GET, HEAD, HeaderAdapter, Incoming, IStats, NotFoundException,
-    Outgoing, ReadableLike, RequestContext, StatusAdapter, TopicIncoming, UrlIncoming
+    FileAdapter, FileStats, FindOptions, GET, HEAD, Incoming, IStats, NotFoundException,
+    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming
 } from '@tsdi/common';
 import { Observable, from, mergeMap, throwError } from 'rxjs';
 
@@ -30,12 +30,11 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
 
         const options = this.options;
         const fileAdapter = context.get(FileAdapter);
-        const statusAdapter = context.get(StatusAdapter);
         if (options.defer) {
             return next.handle(input, context)
                 .pipe(
                     mergeMap(async (res: Outgoing) => {
-                        const file = await this.find(path, res, statusAdapter, fileAdapter, options)
+                        const file = await this.find(path, res, fileAdapter, options)
                         if (!file) {
                             return throwError(() => new NotFoundException())
                         }
@@ -43,7 +42,7 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
                     })
                 )
         } else {
-            return from(this.find(path, context.getResponse(), statusAdapter, fileAdapter, options))
+            return from(this.find(path, context.getResponse(), fileAdapter, options))
                 .pipe(
                     mergeMap(file => {
                         if (!file || !file.filename) return next.handle(input, context)
@@ -58,23 +57,22 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         if (this.options.setHeaders) {
             this.options.setHeaders(res, file.filename, file.stats);
         }
-        const headerAdapter = context.get(HeaderAdapter);
         const fileAdapter = context.get(FileAdapter);
-        headerAdapter.setContentLength(res, file.stats.size);
-        if (!headerAdapter.getLastModified(res)) {
-            headerAdapter.setLastModified(res, file.stats.mtime.toUTCString())
+        res.setHeader('content-length', file.stats.size);
+        if (!res.hasHeader('last-modified')) {
+            res.setHeader('last-modified', file.stats.mtime.toUTCString())
         }
 
-        if (!headerAdapter.getCacheControl(res)) {
+        if (!res.hasHeader('cache-control')) {
             const maxAge = this.options.maxAge ?? 0;
             const directives = [`max-age=${(maxAge / 1000 | 0)}`];
             if (this.options.immutable) {
                 directives.push('immutable')
             }
-            headerAdapter.setCacheControl(res, directives.join(','))
+            res.setHeader('cache-control', directives.join(','))
         }
-        if (!headerAdapter.hasContentType(res)) {
-            headerAdapter.setContentType(res, fileAdapter.extname(file.filename, file.encodingExt))
+        if (!res.hasHeader('content-type')) {
+            res.setHeader('content-type', fileAdapter.extname(file.filename, file.encodingExt))
         }
 
         res.body = fileAdapter.read(file.filename);
@@ -82,8 +80,8 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
 
     }
 
-    protected find(path: string, res: Outgoing, statusAdapter: StatusAdapter, fileAdapter: FileAdapter, options: ContentOptions) {
-        if (statusAdapter && (isDefined(res.statusCode) && !statusAdapter.isNotFound(res.statusCode))) return Promise.resolve(null);
+    protected find(path: string, res: Outgoing, fileAdapter: FileAdapter, options: ContentOptions) {
+        if (res.statusCode && !(res.error instanceof NotFoundException)) return Promise.resolve(null);
         return fileAdapter.find(path, options);
     }
 
