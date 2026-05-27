@@ -1,8 +1,10 @@
-import { Injectable, isArray, isUndefined, TypeException } from '@tsdi/ioc';
+import { Injectable, isArray, isUndefined, TypeException, Inject } from '@tsdi/ioc';
 import { Incoming, Outgoing, RequestHandler, BadRequestException, UnsupportedMediaTypeException, RequestInterceptor, RequestContext, ReadableLike, WritableLike, StreamAdapter, MimeAdapter, MimeTypes, HttpStatusCode } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 import { parseMultipartBody } from '../multipart';
+import { HTTP_SERV_OPTIONS, HttpServOptions } from '../options';
+import { SERVICE_BODY_PARSER_OPTIONS } from '@tsdi/service';
 
 export class BodyparserOptions {
     json?: {
@@ -58,12 +60,23 @@ export class HttpBodyParserInterceptor implements RequestInterceptor<ReadableLik
     private enableXml: boolean;
     private enableMultipart: boolean;
 
-    constructor(options?: BodyparserOptions) {
+    constructor(
+        @Inject(SERVICE_BODY_PARSER_OPTIONS, { nullable: true }) options?: BodyparserOptions,
+        @Inject(HTTP_SERV_OPTIONS, { nullable: true }) serverOptions?: HttpServOptions,
+    ) {
+        const uploadConfig = serverOptions?.upload;
+        const uploadOptions = uploadConfig && typeof uploadConfig === 'object' ? uploadConfig : {};
+        const uploadEnabled = uploadConfig === true
+            || (typeof uploadConfig === 'object' && uploadConfig.enabled !== false);
+        const mergedEnableTypes = [...(options?.enableTypes ?? defaults.enableTypes)];
+        if (uploadEnabled && !mergedEnableTypes.includes('multipart')) {
+            mergedEnableTypes.push('multipart');
+        }
         const json = { ...defaults.json, ...options?.json };
         const form = { ...defaults.form, ...options?.form };
         const text = { ...defaults.text, ...options?.text };
-        const multipart = { ...defaults.multipart, ...options?.multipart };
-        this.options = { ...defaults, ...options, json, form, text, multipart };
+        const multipart = { ...defaults.multipart, ...options?.multipart, ...(uploadOptions.limit ? { limit: uploadOptions.limit } : {}) };
+        this.options = { ...defaults, ...options, json, form, text, multipart, enableTypes: mergedEnableTypes };
         this.enableForm = this.enableType('form');
         this.enableJson = this.enableType('json');
         this.enableText = this.enableType('text');

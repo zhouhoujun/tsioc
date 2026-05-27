@@ -12,6 +12,7 @@ import { HttpContentInterceptor } from './interceptors/content';
 import { HttpJsonInterceptor } from './interceptors/json';
 import { HttpSessionInterceptor } from './interceptors/session';
 import { Cors } from './interceptors/cors';
+import { StaticFileInterceptor } from './static-file.interceptor';
 import { BodyParserInterceptor, ContentInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
@@ -48,8 +49,20 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         { provide: ContentInterceptor, useClass: HttpContentInterceptor },
         { provide: JsonInterceptor, useClass: HttpJsonInterceptor },
         { provide: BodyParserInterceptor, useClass: HttpBodyParserInterceptor },
+        {
+            provide: config.features.interceptorsToken,
+            useExisting: BodyParserInterceptor,
+            multi: true,
+            multiOrder: -1000
+        } as any,
         { provide: SessionInterceptor, useClass: HttpSessionInterceptor },
         { provide: CorsInterceptor, useClass: Cors },
+        {
+            provide: config.features.interceptorsToken,
+            useFactory: () => new StaticFileInterceptor(config.static),
+            multi: true,
+            multiOrder: -50
+        } as any,
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const r = context.getResponse();
             const error = new NotFoundException('Not Found', 404);

@@ -1,4 +1,5 @@
 import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult } from '../src/server';
+import { StaticFileInterceptor } from '../src/server/static-file.interceptor';
 import { withHttpClientTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
@@ -60,6 +61,7 @@ describe('HTTP Microservice', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 } });
             expect(feature.config.features?.bodyparser).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useClass?.name === 'HttpBodyParserInterceptor')).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === feature.config.features?.interceptorsToken && p.useExisting === BodyParserInterceptor && p.multiOrder === -1000)).toBe(true);
         });
 
         it('should keep static configuration on transport config', () => {
@@ -74,6 +76,14 @@ describe('HTTP Microservice', () => {
             expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useClass?.name === 'HttpBodyParserInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === SessionInterceptor && p.useClass?.name === 'HttpSessionInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === CorsInterceptor && p.useClass?.name === 'Cors')).toBe(true);
+        });
+
+        it('should register static file interceptor when static config is enabled', () => {
+            const feature = httpTransportFactory({ listenOpts: { port: 3000 }, static: true });
+            const staticProvider = feature.providers.find((p: any) => p.useFactory && p.multiOrder === -50) as any;
+            expect(staticProvider).toBeDefined();
+            expect(staticProvider.provide).toBe(feature.config.features?.interceptorsToken);
+            expect(staticProvider.useFactory()).toBeInstanceOf(StaticFileInterceptor);
         });
 
         it('should preserve http2 server configuration', () => {
@@ -124,6 +134,11 @@ describe('HTTP Microservice', () => {
 
         it('should export HttpFileResult', () => {
             expect(new HttpFileResult(Buffer.from('x'))).toBeInstanceOf(HttpFileResult);
+        });
+
+        it('should preserve upload limit on transport config for multipart body parsing', () => {
+            const feature = httpTransportFactory({ listenOpts: { port: 3000 }, upload: { limit: '5mb' } });
+            expect((feature.config as HttpServOptions).upload).toEqual({ limit: '5mb' });
         });
     });
 
