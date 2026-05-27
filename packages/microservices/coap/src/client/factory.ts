@@ -131,16 +131,31 @@ function createCoapClientBackend(config: CoapClientOptions) {
         };
 
         client.on('response', (res: any) => {
-            const body = res.payload?.toString() ?? '';
+            const raw = res.payload?.toString() ?? '';
             finish(() => {
-                if (request.responseType === 'text') {
-                    observer.next(body);
-                } else {
+                let parsed: any = raw;
+                if (request.responseType !== 'text') {
                     try {
-                        observer.next(JSON.parse(body));
+                        parsed = JSON.parse(raw);
                     } catch {
-                        observer.next(body);
+                        parsed = raw;
                     }
+                }
+                if (request.observe === 'response') {
+                    if (parsed && typeof parsed === 'object' && 'status' in parsed) {
+                        observer.next(parsed);
+                    } else {
+                        observer.next({
+                            ok: true,
+                            status: '2.05',
+                            body: parsed,
+                            headers: {}
+                        });
+                    }
+                } else if (parsed && typeof parsed === 'object' && ('body' in parsed || 'payload' in parsed) && 'status' in parsed) {
+                    observer.next(parsed.body ?? parsed.payload);
+                } else {
+                    observer.next(parsed);
                 }
                 observer.complete();
             });
