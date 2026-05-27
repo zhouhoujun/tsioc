@@ -6,11 +6,13 @@ import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { MimeModule } from '@tsdi/mime';
+import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { HttpBodyParserInterceptor } from './interceptors/bodyparser';
 import { HttpContentInterceptor } from './interceptors/content';
 import { HttpJsonInterceptor } from './interceptors/json';
 import { HttpSessionInterceptor } from './interceptors/session';
-import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor, SessionInterceptor } from '@tsdi/service';
+import { Cors } from './interceptors/cors';
+import { BodyParserInterceptor, ContentInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -41,11 +43,13 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(MimeModule),
+        importProvidersFrom(ServerCommonModule),
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         { provide: ContentInterceptor, useClass: HttpContentInterceptor },
         { provide: JsonInterceptor, useClass: HttpJsonInterceptor },
         { provide: BodyParserInterceptor, useClass: HttpBodyParserInterceptor },
         { provide: SessionInterceptor, useClass: HttpSessionInterceptor },
+        { provide: CorsInterceptor, useClass: Cors },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const r = context.getResponse();
             const error = new NotFoundException('Not Found', 404);

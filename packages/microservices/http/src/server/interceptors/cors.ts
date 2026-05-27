@@ -1,8 +1,9 @@
-import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
+import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable, Inject } from '@tsdi/ioc';
 import { InternalServerException, HttpStatusCode, RequestInterceptor, RequestHandler, RequestContext } from '@tsdi/common';
 import { defer, lastValueFrom, Observable } from 'rxjs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
+import { SERVICE_CORS_OPTIONS } from '@tsdi/service';
 
 type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 
@@ -27,10 +28,14 @@ export class Cors implements RequestInterceptor {
 
     private options: Options;
 
-    constructor(@Nullable() options: CorsOptions) {
+    constructor(
+        @Nullable() options: CorsOptions,
+        @Inject(SERVICE_CORS_OPTIONS, { nullable: true }) sharedOptions?: CorsOptions
+    ) {
         this.options = this.parseOption({
             allowMethods,
-            ...options
+            ...(sharedOptions ?? {}),
+            ...(options ?? {})
         });
     }
 
@@ -74,8 +79,13 @@ export class Cors implements RequestInterceptor {
                 if (!origin) {
                     return await lastValueFrom(next.handle(input, context));
                 }
+            } else if (options.origin) {
+                origin = options.origin;
             } else {
-                origin = options.origin || requestOrigin;
+                if (options.credentials === true) {
+                    return await lastValueFrom(next.handle(input, context));
+                }
+                origin = requestOrigin;
             }
 
             const headersSet: Record<string, any> = {};
@@ -107,10 +117,10 @@ export class Cors implements RequestInterceptor {
                         vary: varyWithOrigin,
                     };
                     if (err.status) {
-                        err.statusMessage = err.message || err.toString() || '';
+                        err.statusMessage = Number(err.status) >= 500 ? 'Internal Server Error' : (err.message || err.toString() || '');
                         throw err;
                     }
-                    throw new InternalServerException(err.message || err.toString() || '');
+                    throw new InternalServerException();
                 }
             } else {
                 if (!(req.headers[ACCESS_CONTROL_REQUEST_METHOD] || req.headers[ACCESS_CONTROL_REQUEST_METHOD.toLowerCase()])) {

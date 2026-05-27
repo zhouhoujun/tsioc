@@ -141,22 +141,27 @@ function createCoapClientBackend(config: CoapClientOptions) {
                         parsed = raw;
                     }
                 }
-                if (request.observe === 'response') {
-                    if (parsed && typeof parsed === 'object' && 'status' in parsed) {
-                        observer.next(parsed);
-                    } else {
-                        observer.next({
-                            ok: true,
-                            status: '2.05',
-                            body: parsed,
-                            headers: {}
-                        });
+                const status = res.code ?? '2.05';
+                const body = parsed;
+                const response = {
+                    ok: typeof status === 'string' ? status.startsWith('2.') : true,
+                    status,
+                    body,
+                    headers: {
+                        ...((res as any).headers ?? {}),
+                        options: (res as any).options ?? []
                     }
-                } else if (parsed && typeof parsed === 'object' && ('body' in parsed || 'payload' in parsed) && 'status' in parsed) {
-                    observer.next(parsed.body ?? parsed.payload);
-                } else {
-                    observer.next(parsed);
+                };
+                if (request.observe === 'response') {
+                    observer.next(response);
+                    observer.complete();
+                    return;
                 }
+                if (!response.ok) {
+                    observer.error(response);
+                    return;
+                }
+                observer.next(body);
                 observer.complete();
             });
         });

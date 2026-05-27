@@ -37,7 +37,8 @@ export enum ServiceFeatureKind {
     Content,
     Json,
     Session,
-    Cookie
+    Cookie,
+    Cors
 }
 
 
@@ -117,6 +118,16 @@ export interface CookieOptions extends FeatureInterceptorOptions {
     signed?: boolean;
 }
 
+export interface CorsOptions extends FeatureInterceptorOptions {
+    origin?: string | ((req: any) => string | Promise<string>);
+    credentials?: boolean;
+    exposeHeaders?: string | string[];
+    keepHeadersOnError?: boolean;
+    allowMethods?: string | (string | number)[];
+    allowHeaders?: string | string[];
+    maxAge?: number | string;
+}
+
 export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {
     timeout?: number;
     requestVaildators?: ProvdierOf<VaildatorLike<Incoming, TContext>>[];
@@ -128,6 +139,7 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     json?: boolean | JsonOptions;
     session?: boolean | SessionOptions;
     cookie?: boolean | CookieOptions;
+    cors?: boolean | CorsOptions;
     router?: boolean | RouteOpts;
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;

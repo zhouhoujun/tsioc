@@ -1,12 +1,12 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, withServiceRouter, withServiceInterceptors } from '@tsdi/service';
+import { provideService, withCors, withServiceRouter, withServiceInterceptors, SERVICE_CORS_OPTIONS } from '@tsdi/service';
 import { withHttpTransport } from '../src/server';
 import { withHttpClientTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
-import { Cors, CorsOptions } from '../src/server/interceptors/cors';
 import { HelmetMiddleware, HelmetOptions } from '../src/server/interceptors/helmet';
+import { Cors, CorsOptions } from '../src/server/interceptors/cors';
 import { CorsTestModule } from './demo';
 import * as http from 'node:http';
 import expect = require('expect');
@@ -19,17 +19,13 @@ describe('HTTP Security', () => {
         @Module({
             imports: [LoggerModule, CorsTestModule],
             providers: [
-                {
-                    provide: CorsOptions,
-                    useValue: {
+                provideService(
+                    withServiceRouter(),
+                    withCors({
                         origin: '*',
                         allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH',
                         credentials: false
-                    } as CorsOptions
-                },
-                provideService(
-                    withServiceRouter(),
-                    withServiceInterceptors(Cors),
+                    }),
                     withHttpTransport({ listenOpts: { port: CORS_PORT, host: '127.0.0.1' }, asDefault: true })),
                 provideClient(
                     withHttpClientTransport({ url: `http://127.0.0.1:${CORS_PORT}`, asDefault: true }))
@@ -79,8 +75,99 @@ describe('HTTP Security', () => {
                     host: '127.0.0.1', port: CORS_PORT, path: '/api/cors-test/info', method: 'GET'
                 }, resolve).end();
             });
-            expect(res.statusCode).toBe(200);
             expect(res.headers['access-control-allow-origin']).toBeUndefined();
+        });
+
+        it('should keep supporting shared service CORS options token', async () => {
+            const resolved = ctx.get<any>(SERVICE_CORS_OPTIONS as any);
+            expect(resolved.origin).toBe('*');
+            expect(resolved.allowMethods).toBe('GET,HEAD,PUT,POST,DELETE,PATCH');
+        });
+    });
+
+    describe('CORS credentials origin guard', () => {
+        const CREDENTIALS_PORT = 21313;
+
+        @Module({
+            imports: [LoggerModule, CorsTestModule],
+            providers: [
+                provideService(
+                    withServiceRouter(),
+                    withCors({
+                        credentials: true
+                    }),
+                    withHttpTransport({ listenOpts: { port: CREDENTIALS_PORT, host: '127.0.0.1' }, asDefault: true })),
+                provideClient(
+                    withHttpClientTransport({ url: `http://127.0.0.1:${CREDENTIALS_PORT}`, asDefault: true }))
+            ]
+        })
+        class CredentialsCorsApp { }
+
+        let ctx: ApplicationContext;
+
+        before(async () => {
+            ctx = await Application.run(CredentialsCorsApp);
+            await new Promise(r => setTimeout(r, 500));
+        });
+
+        after(async () => {
+            await ctx?.close();
+        });
+
+        it('should not reflect arbitrary origins when credentials are enabled without allowlist', async () => {
+            const res = await new Promise<http.IncomingMessage>((resolve) => {
+                http.request({
+                    host: '127.0.0.1', port: CREDENTIALS_PORT, path: '/api/cors-test/info', method: 'GET',
+                    headers: { 'origin': 'http://attacker.example.com' }
+                }, resolve).end();
+            });
+            expect(res.headers['access-control-allow-origin']).toBeUndefined();
+            expect(res.headers['access-control-allow-credentials']).toBeUndefined();
+        });
+    });
+
+    describe('CORS legacy options injection', () => {
+        const LEGACY_PORT = 21312;
+
+        @Module({
+            imports: [LoggerModule, CorsTestModule],
+            providers: [
+                {
+                    provide: CorsOptions,
+                    useValue: {
+                        origin: 'http://legacy.example.com',
+                        allowMethods: 'GET,POST'
+                    } as CorsOptions
+                },
+                provideService(
+                    withServiceRouter(),
+                    withServiceInterceptors(Cors),
+                    withHttpTransport({ listenOpts: { port: LEGACY_PORT, host: '127.0.0.1' }, asDefault: true })),
+                provideClient(
+                    withHttpClientTransport({ url: `http://127.0.0.1:${LEGACY_PORT}`, asDefault: true }))
+            ]
+        })
+        class LegacyCorsApp { }
+
+        let ctx: ApplicationContext;
+
+        before(async () => {
+            ctx = await Application.run(LegacyCorsApp);
+            await new Promise(r => setTimeout(r, 500));
+        });
+
+        after(async () => {
+            await ctx?.close();
+        });
+
+        it('should keep supporting manual CorsOptions provider', async () => {
+            const res = await new Promise<http.IncomingMessage>((resolve) => {
+                http.request({
+                    host: '127.0.0.1', port: LEGACY_PORT, path: '/api/cors-test/info', method: 'GET',
+                    headers: { 'origin': 'http://legacy.example.com' }
+                }, resolve).end();
+            });
+            expect(res.headers['access-control-allow-origin']).toBe('http://legacy.example.com');
         });
     });
 

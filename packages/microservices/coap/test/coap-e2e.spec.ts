@@ -3,6 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, withServiceRouter, withBodyParser, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { InternalServerException } from '@tsdi/common';
 import { withCoapTransport } from '../src/server';
 import { withCoapClientTransport } from '../src/client';
 import { CoapClient } from '../src/client/client';
@@ -14,6 +15,8 @@ import expect = require('expect');
 @Controller('/api/test')
 class TestController {
     @Get('/info') info() { return { status: 'ok' }; }
+    @Get('/zero') zero() { return 0; }
+    @Get('/flag') flag() { return false; }
     @Post('/echo') echo(@RequestBody() body: any) { return { received: body }; }
 }
 
@@ -21,6 +24,19 @@ class TestController {
 class RouteCtrl {
     @RouteMapping('/hello', GET) hello() { return 'hi'; }
     @RouteMapping('/data', POST) data(@RequestBody() b: any) { return { received: b }; }
+}
+
+@Controller('/api/error')
+class ErrorController {
+    @Get('/boom')
+    boom() {
+        throw new Error('secret internal detail');
+    }
+
+    @Get('/bad-request')
+    badRequest() {
+        throw new InternalServerException('bad request', 400);
+    }
 }
 
 const PORTS = { ms: 21300, host: 21301, ctrl: 21302, route: 21303 };
@@ -84,7 +100,7 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
 
     @Module({
         imports: [LoggerModule],
-        declarations: [E2eController, TestController, RouteCtrl],
+        declarations: [E2eController, TestController, RouteCtrl, ErrorController],
         providers: [
             provideService(withServiceRouter(),
                 withBodyParser(),
@@ -118,8 +134,7 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
             req.on('response', (res: any) => {
                 const body = res.payload?.toString() || '';
                 try {
-                    const parsed = JSON.parse(body);
-                    resolve(parsed?.payload ?? parsed);
+                    resolve(JSON.parse(body));
                 } catch {
                     resolve(body);
                 }
@@ -135,12 +150,12 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
 
     it('should respond to CoAP request (server is running)', async () => {
         const res = await sendCoapRequest('GET', '/api/e2e/ping');
-        expect(res).toBeDefined();
+        expect(res).toEqual({ result: 'pong' });
     });
 
     it('should handle GET request via CoAP protocol', async () => {
         const res = await sendCoapRequest('GET', '/api/test/info');
-        expect(res).toBeDefined();
+        expect(res).toEqual({ status: 'ok' });
     });
 
     it('should handle POST request via CoAP protocol', async () => {
@@ -152,8 +167,42 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
         const client = ctx.get(CoapClient);
         const result = await lastValueFrom(client.send('/api/test/echo', { method: 'POST', payload: { value: 'hello' } }));
         expect(result).toBeDefined();
-        expect(result.payload).toBeDefined();
-        expect(result.payload.received).toEqual({ value: 'hello' });
+        expect(result.received).toEqual({ value: 'hello' });
+    });
+
+    it('should preserve native status and response metadata for observe response', async () => {
+        const client = ctx.get(CoapClient);
+        const result = await lastValueFrom(client.send('/api/test/info', { observe: 'response' as any }));
+        expect(result.status).toEqual('2.05');
+        expect(result.ok).toBe(true);
+        expect(result.body).toEqual({ status: 'ok' });
+        expect(result.headers).toBeDefined();
+        expect(Array.isArray(result.headers.options)).toBe(true);
+    });
+
+    it('should preserve falsy scalar response bodies', async () => {
+        const client = ctx.get(CoapClient);
+        const zero = await lastValueFrom(client.send('/api/test/zero', { observe: 'response' as any }));
+        const flag = await lastValueFrom(client.send('/api/test/flag', { observe: 'response' as any }));
+        expect(zero.body).toBe(0);
+        expect(flag.body).toBe(false);
+    });
+
+    it('should not leak internal server error details', async () => {
+        const client = ctx.get(CoapClient);
+        const result = await lastValueFrom(client.send('/api/error/boom', { observe: 'response' as any }).pipe(catchError(err => of(err))));
+        expect(result.status).toEqual('5.00');
+        expect(result.ok).toBe(false);
+        expect(result.body.statusCode).toEqual(500);
+        expect(result.body.message).not.toContain('secret internal detail');
+    });
+
+    it('should preserve safe client error details', async () => {
+        const client = ctx.get(CoapClient);
+        const result = await lastValueFrom(client.send('/api/error/bad-request', { observe: 'response' as any }).pipe(catchError(err => of(err))));
+        expect(result.status).toEqual('4.00');
+        expect(result.ok).toBe(false);
+        expect(result.body.message).toContain('bad request');
     });
 });
 
@@ -213,7 +262,7 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
 
     it('should respond to CoAP request in host mode', async () => {
         const res = await sendCoapRequest('GET', '/api/test/info');
-        expect(res).toBeDefined();
+        expect(res).toEqual({ status: 'ok' });
     });
 });
 
@@ -341,23 +390,23 @@ describe('CoAP pattern routing', () => {
 
     it('routes object cmd patterns', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
-        expect(result.payload).toEqual('hello');
+        expect(result).toEqual('hello');
     });
 
     it('routes native CoAP path patterns', async () => {
         const result = await lastValueFrom(client.send('sensor/message/update', { payload: { msg: 'world' } }));
-        expect(result.payload).toEqual('world');
+        expect(result).toEqual('world');
     });
 
     it('routes native CoAP subscribe patterns', async () => {
         const result = await lastValueFrom(client.send('sensor/temp/start', { payload: { msg: 'foo' } }));
-        expect(result.payload).toEqual('foo');
+        expect(result).toEqual('foo');
     });
 
     it('does not convert other topic patterns by default', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
-        expect(result.payload?._message).toEqual('Not Found');
-        expect(result.payload?._error?.name).toEqual('NotFoundException');
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, observe: 'response' as any }));
+        expect(result.status).toEqual('4.04');
+        expect(result.ok).toBe(false);
     });
 });
 
@@ -386,11 +435,11 @@ describe('CoAP pattern routing compatibility', () => {
 
     it('converts topic patterns when compatibility is enabled', async () => {
         const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
-        expect(result.payload).toEqual('world');
+        expect(result).toEqual('world');
     });
 
     it('converts subscribe patterns when compatibility is enabled', async () => {
         const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
-        expect(result.payload).toEqual('foo');
+        expect(result).toEqual('foo');
     });
 });

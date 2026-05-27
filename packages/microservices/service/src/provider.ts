@@ -10,9 +10,9 @@ import {
     getServiceMiddlewaresToken, getServiceTransfersToken, getServiceRouterToken
 } from './tokens';
 
-import { CookieOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
+import { CookieOptions, CorsOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
-import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, JsonInterceptor, SessionInterceptor } from './interceptors';
+import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from './interceptors';
 import { SetupServices } from './SetupMicroServices';
 
 
@@ -160,6 +160,9 @@ export function withServiceFeatures(options?: ServiceFeatureOptions): ServiceFea
         }
         if (opts.cookie) {
             features.push(withCookie(isBoolean(opts.cookie) ? undefined : opts.cookie)(config));
+        }
+        if (opts.cors) {
+            features.push(withCors(isBoolean(opts.cors) ? undefined : opts.cors)(config));
         }
 
         if (opts.registration) {
@@ -489,6 +492,24 @@ export function withCookie(options?: CookieOptions): ServiceFeatureFn<ServiceFea
     };
 }
 
+/**
+ * Adds CORS handling to micro service.
+ * @publicApi
+ */
+export function withCors(options?: CorsOptions): ServiceFeatureFn<ServiceFeatureKind.Cors> {
+    return (config) => {
+        const resolved = resolveFeatureOptions(options);
+        return makeServiceFeature(
+            ServiceFeatureKind.Cors,
+            [
+                { provide: SERVICE_CORS_OPTIONS, useValue: resolved.featureOptions },
+                createFeatureInterceptorProvider(config, CorsInterceptor, resolved.interceptor, resolved.multiOrder ?? -900)
+            ],
+            config
+        );
+    };
+}
+
 export const SERVICE_REGISTRATION_OPTIONS = token<RegistrationOptions>('SERVICE_REGISTRATION_OPTIONS');
 export const SERVICE_HEALTH_OPTIONS = token<HealthOptions>('SERVICE_HEALTH_OPTIONS');
 export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>('SERVICE_GRACEFUL_SHUTDOWN_OPTIONS');
@@ -499,6 +520,7 @@ export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZ
 export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');
 export const SERVICE_SESSION_OPTIONS = token<any>('SERVICE_SESSION_OPTIONS');
 export const SERVICE_COOKIE_OPTIONS = token<any>('SERVICE_COOKIE_OPTIONS');
+export const SERVICE_CORS_OPTIONS = token<any>('SERVICE_CORS_OPTIONS');
 export const SERVICE_CONFIGS = token<ServiceOptions[]>('SERVICE_CONFIGS');
 export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS');
 

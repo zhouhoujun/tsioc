@@ -2,7 +2,7 @@ import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, H
 import { withHttpClientTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
-import { BodyParserInterceptor, ContentInterceptor, Controller, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
+import { BodyParserInterceptor, ContentInterceptor, Controller, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
 import { getClassRef } from '@tsdi/ioc';
 import expect = require('expect');
 
@@ -73,6 +73,7 @@ describe('HTTP Microservice', () => {
             expect(feature.providers.some((p: any) => p.provide === JsonInterceptor && p.useClass?.name === 'HttpJsonInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useClass?.name === 'HttpBodyParserInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === SessionInterceptor && p.useClass?.name === 'HttpSessionInterceptor')).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === CorsInterceptor && p.useClass?.name === 'Cors')).toBe(true);
         });
 
         it('should preserve http2 server configuration', () => {

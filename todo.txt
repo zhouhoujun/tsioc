@@ -1,3 +1,14 @@
+1. @packages/microservices/ 基于client的provideClient 和 service的prvoideService，提供的feature
+  特征及特征抽象拦截器，统一终端和服务提供入口（withSession(), withJson(), withBodyParser(), withContent(),
+  withCors(), withHealth() 等等等），让各协议最终实现拦截器默认的拦截器及MessageReader; 
+2. 继续实现CoAP， Http协议服务，并完成功通过能测试代码；
+3. 继续完成其他协议的功能测试，并让验证测试通过；
+4. HeaderAdapter, StatusAdapter移除了, 让具体协议直接通过MessageReader 读取
+5. @packages/services/ 下的所有包已经过时，后面会删除， 不能直接引用这里面的代码，只参考
+
+
+
+
 参考 @../hermes-agent/ 和 @../zeroclaw/ 这两个智能体， 继续完善 @packages/agents/agent-tools/  的工具，并参考添加这个两个智能体已有的工具
 
 
