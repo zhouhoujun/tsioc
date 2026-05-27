@@ -4,7 +4,7 @@ import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext,
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, SERVICE_BODY_PARSER_OPTIONS } from '@tsdi/service';
 import { MimeModule } from '@tsdi/mime';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { HttpBodyParserInterceptor } from './interceptors/bodyparser';
@@ -35,7 +35,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     config.features.filtersToken ??= getServiceFiltersToken(config);
     config.features.guardsToken ??= getServiceGuardsToken(config);
 
-    config.providers ??= [];
+    config.providers = option.providers ? [...option.providers] : [];
     config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
     config.providers.push(
         { provide: HTTP_SERV_OPTIONS, useValue: config },
@@ -48,21 +48,28 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         { provide: ContentInterceptor, useClass: HttpContentInterceptor },
         { provide: JsonInterceptor, useClass: HttpJsonInterceptor },
-        { provide: BodyParserInterceptor, useClass: HttpBodyParserInterceptor },
         {
+            provide: BodyParserInterceptor,
+            useFactory: (inj: Injector) => new HttpBodyParserInterceptor(
+                inj.get(SERVICE_BODY_PARSER_OPTIONS, null),
+                config,
+            ),
+            deps: [Injector]
+        },
+        { provide: SessionInterceptor, useClass: HttpSessionInterceptor },
+        { provide: CorsInterceptor, useClass: Cors },
+        ...(config.features.bodyparser ? [{
             provide: config.features.interceptorsToken,
             useExisting: BodyParserInterceptor,
             multi: true,
             multiOrder: -1000
-        } as any,
-        { provide: SessionInterceptor, useClass: HttpSessionInterceptor },
-        { provide: CorsInterceptor, useClass: Cors },
-        {
+        } as any] : []),
+        ...(config.static ? [{
             provide: config.features.interceptorsToken,
             useFactory: () => new StaticFileInterceptor(config.static),
             multi: true,
             multiOrder: -50
-        } as any,
+        } as any] : []),
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const r = context.getResponse();
             const error = new NotFoundException('Not Found', 404);
