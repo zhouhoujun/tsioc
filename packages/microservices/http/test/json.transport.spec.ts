@@ -15,6 +15,7 @@ type HttpResponse<T = any> = {
     status: number;
     ok?: boolean;
     body: T;
+    headers?: Record<string, unknown>;
 };
 
 @Controller()
@@ -368,7 +369,7 @@ describe('http server json transport, HttpClient', () => {
                 )
             )
         );
-        expect(response.status).toEqual(200);
-        expect(response.body).toEqual('reload');
+        expect(response.status).toEqual(302);
+        expect(response.headers?.location).toEqual('/device/reload');
     });
 });

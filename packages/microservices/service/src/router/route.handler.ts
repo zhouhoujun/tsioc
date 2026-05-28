@@ -1,6 +1,7 @@
 import { Injector, Invocation, toObservable } from '@tsdi/ioc';
+import { ResultValue } from '@tsdi/core';
 import { RequestHandler, RequestContext, ReadableLike, Incoming } from '@tsdi/common';
-import { Observable } from 'rxjs';
+import { mergeMap, Observable } from 'rxjs';
 
 /**
  * route handler.
@@ -27,7 +28,9 @@ export class RouteHandler implements RequestHandler {
                 payload: context.getPayload?.() ?? input
             } as any)
             : this.invocation.invoke(this.propertyKey, context);
-        return toObservable(result);
+        return toObservable(result).pipe(
+            mergeMap(value => toObservable(value instanceof ResultValue ? value.sendValue(context as any) : value))
+        );
     }
 }
 

@@ -1,10 +1,10 @@
-import { getTypeName, Inject, isNumber, isString, promisify, Injectable, isNil } from '@tsdi/ioc';
+import { getTypeName, Inject, isNumber, isString, promisify, Injectable, isNil, ArgumentException } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
     InternalServerException, ListenOpts, Transport, RESPONSE, REQUEST,
-    StreamAdapter, ContentType, Outgoing, OutgoingFactory
+    StreamAdapter, ContentType, Outgoing, OutgoingFactory, BadRequestException
 } from '@tsdi/common';
 import { HttpRequestMessage } from './http-context';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
@@ -174,13 +174,14 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private writeResponse(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, response: any) {
-        if (isNil(response)) {
+        const outgoing = this.toOutgoing(response, context);
+        const hasOutgoingState = !!outgoing && (!isNil(outgoing.body) || !isNil(outgoing.statusCode) || (outgoing.getHeaderNames?.().length ?? 0) > 0);
+        if (isNil(response) && !hasOutgoingState) {
             res.statusCode = 204;
             res.end();
             return;
         }
 
-        const outgoing = this.toOutgoing(response, context);
         const streamAdapter = context.get(StreamAdapter);
         const status = outgoing ? outgoing.statusCode ?? 200 : 200;
         const contentType = outgoing?.getHeader?.('content-type') ?? context.getContentType();
@@ -228,7 +229,8 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private writeError(req: HttpRequestLike, res: HttpResponseLike, err: any) {
         this.logger.error(err);
-        const status = err?.statusCode ?? err?.status ?? 500;
+        const status = err?.statusCode ?? err?.status
+            ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException' ? 400 : 500);
         res.statusCode = status;
         if (req.httpVersionMajor < 2 && err?.statusMessage) {
             res.statusMessage = err.statusMessage;
@@ -251,15 +253,23 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private toOutgoing(response: any, context: RequestContext): Outgoing<any> | null {
+        const outgoing = context.getResponse();
         if (!response) {
-            return null;
+            return outgoing;
         }
         if (typeof response.getHeader === 'function' && typeof response.setHeader === 'function') {
             return response as Outgoing<any>;
         }
-        const outgoing = context.getResponse();
         if (response === outgoing) {
             return outgoing;
+        }
+        if (!isNil(outgoing.body) || !isNil(outgoing.statusCode) || (outgoing.getHeaderNames?.().length ?? 0) > 0) {
+            return outgoing;
+        }
+        if (response && typeof response === 'object'
+            && typeof (response as any).getHeader === 'function'
+            && typeof (response as any).setHeader === 'function') {
+            return response as Outgoing<any>;
         }
         outgoing.body = response;
         return outgoing;
