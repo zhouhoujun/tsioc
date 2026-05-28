@@ -38,7 +38,7 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
                     { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
                     { provide: ClientHandler, useExisting: hanlderToken }
                 ]
-            }),
+            }).instance,
             deps: [Injector]
         },
         { provide: interceptorsToken, useValue: (req: any, next: any, context: any) => next(req, context), multi: true }

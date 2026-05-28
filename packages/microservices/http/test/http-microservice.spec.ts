@@ -6,6 +6,7 @@ import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, Controller, CookieInterceptor, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
 import { createInjector, getClassRef } from '@tsdi/ioc';
+import { HttpClient } from '../src/client/client';
 import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
 import * as http from 'node:http';
 import expect = require('expect');
@@ -123,6 +124,15 @@ describe('HTTP Microservice', () => {
             const config = feature.config as HttpClientOptions;
             expect(config.authority).toBe('http://localhost:3000');
             expect(config.requestOptions).toBeDefined();
+        });
+
+        it('should resolve default HttpClient instance from providers', () => {
+            const feature = withHttpClientTransport({ url: 'http://localhost:3000', asDefault: true })[0];
+            const injector = createInjector([
+                ...(feature.config.providers ?? []),
+                ...feature.providers
+            ]);
+            expect(injector.get(HttpClient)).toBeInstanceOf(HttpClient);
         });
     });
 
