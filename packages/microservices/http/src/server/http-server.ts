@@ -132,12 +132,15 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private handleRequest(req: HttpRequestLike, res: HttpResponseLike) {
-        const url = this.getRequestUrl(req);
+        const rawUrl = this.getRequestUrl(req);
+        const url = this.getRequestPath(rawUrl);
         const method = this.getRequestMethod(req);
         const request = req as HttpRequestMessage;
         request.rawRequest = req;
+        request.rawUrl = rawUrl;
+        request.url = url;
         request.body = null;
-        request.query = this.parseQuery(url);
+        request.query = this.parseQuery(rawUrl);
         request.getHeader = (name: string) => {
             const value = req.headers?.[name.toLowerCase()] ?? req.headers?.[name as keyof typeof req.headers];
             return Array.isArray(value) ? String(value[0]) : value == null ? undefined : String(value);
@@ -150,6 +153,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ['request', request],
             ['response', res],
             ['url', url],
+            ['rawUrl', rawUrl],
             ['method', method],
             ['headers', req.headers],
         ]);
@@ -268,6 +272,14 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private getRequestMethod(req: HttpRequestLike): string | undefined {
         return req.method ?? (req.headers[':method'] as string | undefined);
+    }
+
+    private getRequestPath(url?: string | null): string | undefined {
+        if (!url) {
+            return undefined;
+        }
+        const idx = url.indexOf('?');
+        return idx >= 0 ? url.slice(0, idx) : url;
     }
 
     private parseQuery(url?: string | null) {

@@ -86,55 +86,33 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         return !connection.closed && !connection.destroyed;
     }
 
-    get<T>(url: string, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
-        let reqUrl = url;
-        if (options?.params) {
-            const qs = Object.entries(options.params).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
-            if (qs) reqUrl = `${url}?${qs}`;
-        }
-        return this.send(new HttpRequest(reqUrl, null, {
-            method: 'GET',
-            observe: options?.observe ?? 'body',
-            responseType: options?.responseType ?? 'json',
+    get(url: string, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
+        return this.send(new HttpRequest(url, null, {
+            ...options,
+            method: 'GET'
         } as any));
     }
 
-    post<T>(url: string, body: any, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
-        let reqUrl = url;
-        if (options?.params) {
-            const qs = Object.entries(options.params).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
-            if (qs) reqUrl = `${url}?${qs}`;
-        }
-        return this.send(new HttpRequest(reqUrl, body, {
-            method: 'POST',
-            observe: options?.observe ?? 'body',
-            responseType: options?.responseType ?? 'json',
+    post(url: string, body: any, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
+        return this.send(new HttpRequest(url, null, {
+            ...options,
+            body,
+            method: 'POST'
         } as any));
     }
 
-    put<T>(url: string, body: any, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
-        let reqUrl = url;
-        if (options?.params) {
-            const qs = Object.entries(options.params).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
-            if (qs) reqUrl = `${url}?${qs}`;
-        }
-        return this.send(new HttpRequest(reqUrl, body, {
-            method: 'PUT',
-            observe: options?.observe ?? 'body',
-            responseType: options?.responseType ?? 'json',
+    put(url: string, body: any, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
+        return this.send(new HttpRequest(url, null, {
+            ...options,
+            body,
+            method: 'PUT'
         } as any));
     }
 
-    delete<T>(url: string, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
-        let reqUrl = url;
-        if (options?.params) {
-            const qs = Object.entries(options.params).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
-            if (qs) reqUrl = `${url}?${qs}`;
-        }
-        return this.send(new HttpRequest(reqUrl, null, {
-            method: 'DELETE',
-            observe: options?.observe ?? 'body',
-            responseType: options?.responseType ?? 'json',
+    delete(url: string, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
+        return this.send(new HttpRequest(url, null, {
+            ...options,
+            method: 'DELETE'
         } as any));
     }
 }

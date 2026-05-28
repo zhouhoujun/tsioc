@@ -16,6 +16,7 @@ export interface HttpCookieStore {
 export type HttpRequestMessage<TBody = any> = HttpServRequest & {
     body?: TBody | null;
     rawBody?: string | Buffer;
+    rawUrl?: string;
     rawRequest?: HttpServRequest;
     query: Record<string, string>;
     params?: Record<string, unknown>;
