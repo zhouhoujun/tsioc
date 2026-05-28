@@ -13,6 +13,21 @@ export class CoapMessageReaderFactory extends MessageReaderFactory {
 export class CoapMessageReader<TBody = any> extends AbstractMessageReader<TBody> {
     private incoming?: Incoming<TBody> & Record<string, any>;
 
+    override field(section: any, name?: string): any {
+        if (section) {
+            return super.field(section, name);
+        }
+        const direct = [
+            name ? this.query(name) : undefined,
+            name ? this.path(name) : undefined,
+            name ? this.param(name) : undefined,
+            name ? this.body(name) : undefined,
+            name ? this.payload(name) : undefined,
+            name ? this.header(name) : undefined
+        ].find(value => value !== undefined && value !== null);
+        return direct;
+    }
+
     constructor(incoming?: Incoming<TBody> & Record<string, any>) {
         super();
         this.incoming = incoming;

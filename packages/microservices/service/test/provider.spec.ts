@@ -1,5 +1,6 @@
 import expect = require('expect');
-import { Transport, TransferSide } from '@tsdi/common';
+import { Observable } from 'rxjs';
+import { RequestContext, RequestHandler, RequestInterceptor, Transport, TransferSide } from '@tsdi/common';
 import {
     BodyParserInterceptor,
     ContentInterceptor,
@@ -39,6 +40,58 @@ describe('service provider', () => {
         expect(SessionInterceptor).toBeDefined();
         expect(CookieInterceptor).toBeDefined();
         expect(CorsInterceptor).toBeDefined();
+    });
+
+    it('supports typed abstract interceptor specializations', () => {
+        interface TypedReq {
+            id: string;
+        }
+        interface TypedRes {
+            ok: true;
+        }
+        class TypedContext extends RequestContext { }
+        class TypedContentInterceptor extends ContentInterceptor<TypedReq, TypedRes, TypedContext> {
+            intercept(input: TypedReq, next: RequestHandler<TypedReq, TypedRes, TypedContext>, context: TypedContext): Observable<TypedRes> {
+                return next.handle(input, context);
+            }
+        }
+        class TypedJsonInterceptor extends JsonInterceptor<TypedReq, TypedRes, TypedContext> {
+            intercept(input: TypedReq, next: RequestHandler<TypedReq, TypedRes, TypedContext>, context: TypedContext): Observable<TypedRes> {
+                return next.handle(input, context);
+            }
+        }
+        class TypedBodyParserInterceptor extends BodyParserInterceptor<TypedReq, TypedRes, TypedContext> {
+            intercept(input: TypedReq, next: RequestHandler<TypedReq, TypedRes, TypedContext>, context: TypedContext): Observable<TypedRes> {
+                return next.handle(input, context);
+            }
+        }
+        class TypedSessionInterceptor extends SessionInterceptor<TypedReq, TypedRes, TypedContext> {
+            intercept(input: TypedReq, next: RequestHandler<TypedReq, TypedRes, TypedContext>, context: TypedContext): Observable<TypedRes> {
+                return next.handle(input, context);
+            }
+        }
+        class TypedCookieInterceptor extends CookieInterceptor<TypedReq, TypedRes, TypedContext> {
+            intercept(input: TypedReq, next: RequestHandler<TypedReq, TypedRes, TypedContext>, context: TypedContext): Observable<TypedRes> {
+                return next.handle(input, context);
+            }
+        }
+        class TypedCorsInterceptor extends CorsInterceptor<TypedReq, TypedRes, TypedContext> {
+            intercept(input: TypedReq, next: RequestHandler<TypedReq, TypedRes, TypedContext>, context: TypedContext): Observable<TypedRes> {
+                return next.handle(input, context);
+            }
+        }
+
+        const interceptors: RequestInterceptor<TypedReq, TypedRes, TypedContext>[] = [
+            new TypedContentInterceptor(),
+            new TypedJsonInterceptor(),
+            new TypedBodyParserInterceptor(),
+            new TypedSessionInterceptor(),
+            new TypedCookieInterceptor(),
+            new TypedCorsInterceptor()
+        ];
+
+        expect(interceptors).toHaveLength(6);
+        expect(interceptors.every(interceptor => typeof interceptor.intercept === 'function')).toBe(true);
     });
 
     it('registers default interceptors and option tokens', () => {

@@ -6,6 +6,7 @@ import {
     InternalServerException, ListenOpts, Transport, RESPONSE, REQUEST,
     StreamAdapter, ContentType, Outgoing, OutgoingFactory
 } from '@tsdi/common';
+import { HttpRequestMessage } from './http-context';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
@@ -133,35 +134,28 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private handleRequest(req: HttpRequestLike, res: HttpResponseLike) {
         const url = this.getRequestUrl(req);
         const method = this.getRequestMethod(req);
-        const requestData = {
-            body: this.hasRequestBody(req) ? req : null,
-            url,
-            method,
-            headers: req.headers,
-            query: this.parseQuery(url),
-            getHeader(name: string) {
-                const value = req.headers?.[name.toLowerCase()] ?? req.headers?.[name as keyof typeof req.headers];
-                return Array.isArray(value) ? value[0] : value;
-            },
-            hasHeader(name: string) {
-                return this.getHeader(name) != null;
-            },
-            getHeaderNames() {
-                return Object.keys(req.headers ?? {});
-            }
+        const request = req as HttpRequestMessage;
+        request.rawRequest = req;
+        request.body = null;
+        request.query = this.parseQuery(url);
+        request.getHeader = (name: string) => {
+            const value = req.headers?.[name.toLowerCase()] ?? req.headers?.[name as keyof typeof req.headers];
+            return Array.isArray(value) ? String(value[0]) : value == null ? undefined : String(value);
         };
+        request.hasHeader = (name: string) => request.getHeader(name) != null;
+        request.getHeaderNames = () => Object.keys(req.headers ?? {});
         const context = createRequestContext(this.injector, [
-            [REQUEST, requestData],
+            [REQUEST, request],
             [RESPONSE, this.createOutgoing(req)],
-            ['request', req],
+            ['request', request],
             ['response', res],
             ['url', url],
             ['method', method],
             ['headers', req.headers],
         ]);
-        context.setPayload(requestData);
+        context.setPayload(request);
 
-        this.handler.handle(requestData as TReq, context)
+        this.handler.handle(request as TReq, context)
             .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
             .subscribe({
                 next: (response: any) => this.writeResponse(req, res, context, response),
@@ -267,11 +261,6 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         return outgoing;
     }
 
-
-    private hasRequestBody(req: HttpRequestLike) {
-        const method = this.getRequestMethod(req)?.toUpperCase();
-        return method !== 'GET' && method !== 'HEAD';
-    }
 
     private getRequestUrl(req: HttpRequestLike): string | undefined {
         return req.url ?? (req.headers[':path'] as string | undefined);

@@ -1,26 +1,29 @@
 import { Injectable } from '@tsdi/ioc';
 import { RequestInterceptor, RequestHandler, RequestContext } from '@tsdi/common';
 import { Observable, defer } from 'rxjs';
+import { HttpHandlerOutput, HttpRequestMessage } from '../http-context';
 
 export interface Session {
     id: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     secret?: string;
     createdAt: number;
     updatedAt: number;
 }
 
-@Injectable()
-export class HttpSessionInterceptor implements RequestInterceptor {
+type HttpSessionRequest = HttpRequestMessage & { _session?: Session | null };
 
-    intercept(input: any, next: RequestHandler, context: RequestContext): Observable<any> {
-        const req = context.get('request') as any;
+@Injectable()
+export class HttpSessionInterceptor implements RequestInterceptor<HttpRequestMessage, HttpHandlerOutput, RequestContext> {
+
+    intercept(input: HttpRequestMessage, next: RequestHandler<HttpRequestMessage, HttpHandlerOutput, RequestContext>, context: RequestContext): Observable<HttpHandlerOutput> {
+        const req = context.get('request') as HttpSessionRequest;
 
         if (!req._session) {
             req._session = this.createSession();
         }
 
-        const session = req._session;
+        const session = req._session!;
         session.updatedAt = Date.now();
 
         context.set('session', session);
@@ -31,12 +34,12 @@ export class HttpSessionInterceptor implements RequestInterceptor {
     }
 
     getSession(context: RequestContext): Session | null {
-        const req = context.get('request') as any;
+        const req = context.get('request') as HttpSessionRequest | null;
         return req?._session ?? null;
     }
 
     setSession(context: RequestContext, session: Session): void {
-        const req = context.get('request') as any;
+        const req = context.get('request') as HttpSessionRequest | null;
         if (req) {
             req._session = session;
             context.set('session', session);
@@ -53,7 +56,7 @@ export class HttpSessionInterceptor implements RequestInterceptor {
     }
 
     destroySession(context: RequestContext): void {
-        const req = context.get('request') as any;
+        const req = context.get('request') as HttpSessionRequest | null;
         if (req) {
             req._session = null;
             context.set('session', null);

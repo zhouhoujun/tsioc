@@ -1,4 +1,4 @@
-import { getTypeName, Inject, isNumber, promisify, Injectable, isNil } from '@tsdi/ioc';
+import { getTypeName, Inject, isNumber, promisify, Injectable, isNil, ArgumentException, MissingParameterException } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
@@ -6,7 +6,7 @@ import {
     InternalServerException, Transport, REQUEST, RESPONSE, OutgoingFactory, Outgoing
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
-import { Subject, race, take, takeUntil } from 'rxjs';
+import { Subject, race, take, takeUntil, mergeMap, isObservable, from, of } from 'rxjs';
 import * as coap from 'coap';
 import { CoapServOptions, COAP_SERV_OPTIONS, COAP_BIND_INTERCEPTORS, COAP_BIND_FILTERS, COAP_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
@@ -89,7 +89,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private handleRequest(req: coap.IncomingMessage, res: coap.OutgoingMessage) {
         const requestData = this.normalizeRequest(req);
-        const outgoing = this.injector.get(OutgoingFactory).create({} as any);
+        const outgoing = this.injector.get(OutgoingFactory).create({ url: requestData.url, incoming: requestData } as any);
 
         const context = createRequestContext(this.injector, [
             [SOCKET, req],
@@ -105,10 +105,19 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
+                mergeMap((response: any) => {
+                    if (isObservable(response)) {
+                        return response;
+                    }
+                    if (response instanceof Promise) {
+                        return from(response);
+                    }
+                    return of(response);
+                }),
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe({
                 next: (response: any) => this.writeResponse(res, context, response),
-                error: (err: any) => this.writeError(res, err)
+                error: (err: any) => this.writeError(res, context, err)
             });
     }
 
@@ -118,20 +127,23 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const parsed = this.tryParseJson(rawText);
         const requestSource = this.isEnvelope(parsed) ? parsed : {};
         const body = requestSource.body ?? requestSource.payload ?? parsed;
-        const url = req.url || '/';
-        const method = String(req.method || 'GET').toUpperCase();
+        const rawUrl = String(requestSource.url ?? req.url ?? '/');
+        const url = rawUrl.split('?', 1)[0] || '/';
+        const method = String(requestSource.method || req.method || 'GET').toUpperCase();
         const headers = {
             ...this.toHeaderRecord((req as any).headers),
             ...this.toHeaderRecord((req as any).options)
         };
-        const query = this.parseQuery(url);
+        const query = this.parseQuery(rawUrl);
 
         return {
             id: requestSource.id,
             pattern: requestSource.pattern,
+            observe: requestSource.observe,
             url,
             method,
             headers,
+            params: requestSource.params ?? query,
             query,
             body,
             payload: body,
@@ -184,6 +196,17 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const code = this.toCoapCode(outgoing?.statusCode ?? (outgoing?.error ? 500 : 200));
         (res as any).code = code;
         this.applyResponseHeaders(res, outgoing);
+        const request = context.getRequest() as Record<string, any>;
+        const wantsResponse = request?.observe === 'response' || request?.headers?.observe === 'response' || request?.headers?.observe === 'true';
+        if (wantsResponse) {
+            const packet = this.toResponsePacket(outgoing, response, code);
+            if (isNil(packet.body) && !packet.error) {
+                res.end();
+                return;
+            }
+            res.end(this.serializeBody(packet));
+            return;
+        }
         const body = this.resolveBody(outgoing, response);
         if (isNil(body)) {
             res.end();
@@ -192,15 +215,31 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         res.end(this.serializeBody(body));
     }
 
-    private writeError(res: coap.OutgoingMessage, err: any) {
+    private writeError(res: coap.OutgoingMessage, context: RequestContext, err: any) {
         this.logger.error('CoAP request error:', err);
-        const statusCode = Number(err?.statusCode ?? err?.status ?? 500) || 500;
-        (res as any).code = this.toCoapCode(statusCode);
-        const payload = {
-            statusCode,
-            message: statusCode >= 500 ? 'Internal Server Error' : (err?.message ?? String(err))
+        const rawStatus = err instanceof MissingParameterException || err instanceof ArgumentException
+            ? 400
+            : (err?.statusCode ?? err?.status ?? (err?.name === 'BadRequestException' ? 400 : 500));
+        const code = this.toCoapCode(rawStatus);
+        (res as any).code = code;
+        const request = context.getRequest() as Record<string, any>;
+        const wantsResponse = request?.observe === 'response' || request?.headers?.observe === 'response' || request?.headers?.observe === 'true';
+        const body = {
+            statusCode: Number(rawStatus) || 500,
+            message: code.startsWith('5.') ? 'Internal Server Error' : (err?.message ?? String(err))
         };
-        res.end(this.serializeBody(payload));
+        if (wantsResponse) {
+            res.end(this.serializeBody({
+                ok: false,
+                status: code,
+                statusCode: code,
+                statusMessage: body.message,
+                headers: {},
+                body
+            }));
+            return;
+        }
+        res.end(this.serializeBody(body));
     }
 
     private toOutgoing(response: any, context: RequestContext): Outgoing<any> | null {
@@ -215,6 +254,13 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             return outgoing;
         }
         outgoing.body = response;
+        if (outgoing.error) {
+            outgoing.error = undefined;
+            if (Number(outgoing.statusCode) >= 400 || (typeof outgoing.statusCode === 'string' && /^([45])\./.test(outgoing.statusCode))) {
+                outgoing.statusCode = undefined as any;
+                outgoing.statusMessage = undefined as any;
+            }
+        }
         return outgoing;
     }
 
@@ -226,16 +272,29 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             return outgoing.body;
         }
         if (outgoing.error) {
-            return {
-                statusCode: outgoing.statusCode,
-                message: outgoing.statusMessage ?? outgoing.error?.message ?? 'Error'
-            };
+            return undefined;
         }
         return response === outgoing ? undefined : response;
     }
 
+    private toResponsePacket(outgoing: Outgoing<any> | null, response: any, code: string): Record<string, any> {
+        const body = this.resolveBody(outgoing, response);
+        return {
+            ok: !outgoing?.error && code.startsWith('2.'),
+            status: code,
+            statusCode: code,
+            statusMessage: outgoing?.statusMessage,
+            headers: outgoing?.getHeaders?.() ?? {},
+            error: outgoing?.error,
+            body
+        };
+    }
+
     private serializeBody(body: any): Buffer | string {
-        if (Buffer.isBuffer(body) || typeof body === 'string') {
+        if (Buffer.isBuffer(body)) {
+            return body;
+        }
+        if (typeof body === 'string') {
             return body;
         }
         return JSON.stringify(body);

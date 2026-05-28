@@ -1,10 +1,13 @@
-import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult } from '../src/server';
+import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse } from '../src/server';
 import { StaticFileInterceptor } from '../src/server/static-file.interceptor';
 import { withHttpClientTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
-import { BodyParserInterceptor, ContentInterceptor, Controller, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
-import { getClassRef } from '@tsdi/ioc';
+import { BodyParserInterceptor, ContentInterceptor, Controller, CookieInterceptor, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
+import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
+import { createInjector, getClassRef } from '@tsdi/ioc';
+import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
+import * as http from 'node:http';
 import expect = require('expect');
 
 describe('HTTP Microservice', () => {
@@ -79,6 +82,7 @@ describe('HTTP Microservice', () => {
             expect(feature.providers.some((p: any) => p.provide === JsonInterceptor && p.useClass?.name === 'HttpJsonInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useFactory)).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === SessionInterceptor && p.useClass?.name === 'HttpSessionInterceptor')).toBe(true);
+            expect(feature.providers.some((p: any) => p.provide === CookieInterceptor && p.useClass?.name === 'HttpCookieInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === CorsInterceptor && p.useClass?.name === 'Cors')).toBe(true);
         });
 
@@ -148,6 +152,68 @@ describe('HTTP Microservice', () => {
         it('should preserve upload limit on transport config for multipart body parsing', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 }, upload: { limit: '5mb' } });
             expect((feature.config as HttpServOptions).upload).toEqual({ limit: '5mb' });
+        });
+    });
+
+    describe('HttpCookieInterceptor', () => {
+        it('should use real http request and response types and append set-cookie headers', async () => {
+            const interceptor = new HttpCookieInterceptor();
+            const injector = createInjector();
+            const requestHeaders = { cookie: 'sid=abc; theme=dark' };
+            const request = {
+                headers: requestHeaders,
+                query: {},
+                getHeader(name: string) {
+                    const value = requestHeaders[name.toLowerCase() as keyof typeof requestHeaders];
+                    return Array.isArray(value) ? value[0] : value;
+                },
+                hasHeader(name: string) {
+                    return request.getHeader(name) != null;
+                },
+                rawRequest: null,
+                getHeaderNames() {
+                    return Object.keys(requestHeaders);
+                }
+            } as unknown as HttpRequestMessage;
+            const headers: Record<string, string | readonly string[]> = {
+                'set-cookie': ['existing=1']
+            };
+            const response = {
+                headersSent: false,
+                getHeader(name: string) {
+                    return headers[name.toLowerCase()];
+                },
+                setHeader(name: string, value: string | readonly string[]) {
+                    headers[name.toLowerCase()] = Array.isArray(value) ? [...value] : value;
+                }
+            } as Pick<http.ServerResponse, 'headersSent' | 'getHeader' | 'setHeader'> as HttpServResponse;
+            const context = createRequestContext(injector, [
+                [REQUEST, request],
+                [RESPONSE, response],
+                ['request', request],
+                ['response', response]
+            ]);
+            const next: any = {
+                handle(value: HttpRequestMessage) {
+                    return {
+                        subscribe() {
+                            return value;
+                        }
+                    } as any;
+                }
+            };
+
+            interceptor.intercept(request, next, context);
+            const cookies = context.get('cookies') as { get(name: string): string | undefined; set(name: string, value?: string, opts?: Record<string, unknown>): void };
+            cookies.set('token', 'a b', { httpOnly: true, sameSite: 'Lax' });
+
+            expect(cookies.get('sid')).toBe('abc');
+            expect(Array.isArray(headers['set-cookie'])).toBe(true);
+            expect(headers['set-cookie']).toEqual([
+                'existing=1',
+                'token=a%20b; Path=/; HttpOnly; SameSite=Lax'
+            ]);
+            expect((request as any).cookies).toBe(cookies);
         });
     });
 

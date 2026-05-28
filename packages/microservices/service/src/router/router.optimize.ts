@@ -179,6 +179,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         if (!context.has(REQUEST)) {
             context.set(REQUEST, req as Incoming);
         }
+        context.setPayload(req as Incoming);
         const res = context.getResponse();
         if (res.headersSent || (res.statusCode && !(res.error instanceof NotFoundException))) return of(null);
 

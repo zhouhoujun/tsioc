@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { ContentType, encodeUrl, escapeHtml, NotSupportedException, RequestContext, StatusAdapter } from '@tsdi/common';
+import { ContentType, encodeUrl, escapeHtml, RequestContext } from '@tsdi/common';
 
 export class RedirectResult extends ResultValue {
     constructor(private url: string, private referrer?: string, private alt?: string) {
@@ -7,11 +7,6 @@ export class RedirectResult extends ResultValue {
     }
 
     async sendValue(ctx: RequestContext) {
-        const statusAdapter = ctx.get(StatusAdapter);
-        if (!statusAdapter) {
-            throw new NotSupportedException();
-        }
-
         let url = this.url;
         if (url === 'back') {
             url = this.referrer || this.alt || '/';
@@ -20,8 +15,9 @@ export class RedirectResult extends ResultValue {
         const response = ctx.getResponse();
         response.setHeader('location', encodeUrl(url));
 
-        if (!statusAdapter.isRedirect(response.statusCode)) {
-            response.statusCode = statusAdapter.found;
+        const statusCode = Number(response.statusCode);
+        if (!(statusCode >= 300 && statusCode < 400)) {
+            response.statusCode = 302 as any;
         }
 
         if (ctx.accepts('html')) {

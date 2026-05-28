@@ -6,6 +6,7 @@ export * from './helmet';
 export { HelmetMiddleware as Helmet } from './helmet';
 export * from './logger';
 export * from './session';
+export * from './cookie';
 export * from './bodyparser';
 export * from './content';
 export * from './json';

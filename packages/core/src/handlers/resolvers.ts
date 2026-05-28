@@ -119,10 +119,24 @@ export function createMessageResolveInterceptors(
             if (reader) {
                 payload = reader.field(parameter.scope as any, field as any);
             } else {
-                const input = context.getPayload();
-                if (parameter.scope && input) {
-                    const scopeVal = input[parameter.scope];
-                    payload = field && scopeVal ? scopeVal[field] : scopeVal;
+                const input = context.getPayload() as Record<string, any> | undefined;
+                if (input) {
+                    if (parameter.scope) {
+                        const scopeVal = parameter.scope === 'path'
+                            ? (input.paths ?? input.path)
+                            : parameter.scope === 'query'
+                                ? (input.query ?? input.params)
+                                : input[parameter.scope];
+                        payload = field && scopeVal ? scopeVal[field] : scopeVal;
+                    } else if (field) {
+                        const sources = [input.query, input.params, input.paths, input.path, input.body, input.payload, input.headers];
+                        for (const source of sources) {
+                            if (isDefined(source?.[field])) {
+                                payload = source[field];
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 

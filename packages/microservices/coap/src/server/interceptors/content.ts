@@ -7,9 +7,9 @@ import { from, mergeMap, Observable } from 'rxjs';
 @Injectable()
 export class CoapContentInterceptor implements RequestInterceptor<any> {
     intercept(input: any, next: RequestHandler<any, any, RequestContext>, context: RequestContext): Observable<any> {
-        const url = input?.url ?? input?.topic ?? input?.pattern;
+        const url = input?.url;
         const method = String(input?.method ?? 'GET').toUpperCase();
-        if (!url || (method !== 'GET' && method !== 'HEAD')) {
+        if (!url || (!input?.url && input?.pattern) || (method !== 'GET' && method !== 'HEAD')) {
             return next.handle(input, context);
         }
 
@@ -42,11 +42,17 @@ export class CoapContentInterceptor implements RequestInterceptor<any> {
         if (response.statusCode && !(response.error instanceof NotFoundException)) {
             return null;
         }
-        const baseURL = context.getInjector().get(ApplicationContext, null)?.baseURL;
+        const appContext = context.getInjector().get(ApplicationContext, null) as any;
+        let baseURL: string | undefined;
+        try {
+            baseURL = appContext?.getArguments?.()?.baseURL;
+        } catch {
+            baseURL = undefined;
+        }
         const fileAdapter = context.get(FileAdapter);
         const pathname = path.split('?', 1)[0].replace(/^\//, '');
         return fileAdapter.find(pathname, {
-            root: 'public',
+            root: ['public', 'test/public'],
             index: 'index.html',
             maxAge: 0,
             format: true,

@@ -103,7 +103,8 @@ function createCoapClientBackend(config: CoapClientOptions) {
             ? input
             : JSON.stringify({
                 ...request.toJson({ formatter, payloadKey: 'payload' }),
-                method: request.method
+                method: request.method,
+                observe: request.observe
             });
         const client = coap.request({
             host: config.host ?? '127.0.0.1',
@@ -133,25 +134,50 @@ function createCoapClientBackend(config: CoapClientOptions) {
         client.on('response', (res: any) => {
             const raw = res.payload?.toString() ?? '';
             finish(() => {
+                const shouldParseEnvelope = request.observe === 'response';
+                const shouldParseJson = shouldParseEnvelope || request.responseType !== 'text';
                 let parsed: any = raw;
-                if (request.responseType !== 'text') {
+                if (raw && shouldParseJson) {
                     try {
                         parsed = JSON.parse(raw);
                     } catch {
                         parsed = raw;
                     }
                 }
-                const status = res.code ?? '2.05';
-                const body = parsed;
-                const response = {
-                    ok: typeof status === 'string' ? status.startsWith('2.') : true,
-                    status,
-                    body,
-                    headers: {
-                        ...((res as any).headers ?? {}),
-                        options: (res as any).options ?? []
+                const parsedStatus = parsed && typeof parsed === 'object'
+                    ? (parsed.status ?? parsed.statusCode)
+                    : undefined;
+                const status = res.code ?? parsedStatus ?? '2.05';
+                const responseOptions = parsed && typeof parsed === 'object' && parsed.headers
+                    ? parsed.headers.options
+                    : (res as any).options;
+                const normalizedOptions = Array.isArray(responseOptions)
+                    ? responseOptions
+                    : responseOptions == null
+                        ? []
+                        : [responseOptions];
+                const response = parsed && typeof parsed === 'object' && 'status' in parsed
+                    ? {
+                        ...parsed,
+                        status,
+                        statusCode: parsed.statusCode ?? status,
+                        ok: parsed.ok ?? (typeof status === 'string' ? status.startsWith('2.') : true),
+                        headers: {
+                            ...((res as any).headers ?? {}),
+                            ...(parsed.headers ?? {}),
+                            options: normalizedOptions
+                        }
                     }
-                };
+                    : {
+                        ok: typeof status === 'string' ? status.startsWith('2.') : true,
+                        status,
+                        statusCode: status,
+                        body: parsed,
+                        headers: {
+                            ...((res as any).headers ?? {}),
+                            options: normalizedOptions
+                        }
+                    };
                 if (request.observe === 'response') {
                     observer.next(response);
                     observer.complete();
@@ -161,7 +187,7 @@ function createCoapClientBackend(config: CoapClientOptions) {
                     observer.error(response);
                     return;
                 }
-                observer.next(body);
+                observer.next(response.body ?? response.payload ?? parsed);
                 observer.complete();
             });
         });

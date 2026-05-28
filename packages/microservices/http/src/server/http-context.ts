@@ -1,11 +1,35 @@
 import { isString } from '@tsdi/ioc';
-import { RequestContext } from '@tsdi/common';
+import { Outgoing, RequestContext, WritableLike } from '@tsdi/common';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
 import { TLSSocket } from 'node:tls';
+import { HttpUploadFile } from './multipart';
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
 export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
+
+export interface HttpCookieStore {
+    get(name: string): string | undefined;
+    set(name: string, value?: string, opts?: Record<string, unknown>): void;
+}
+
+export type HttpRequestMessage<TBody = any> = HttpServRequest & {
+    body?: TBody | null;
+    rawBody?: string | Buffer;
+    rawRequest?: HttpServRequest;
+    query: Record<string, string>;
+    params?: Record<string, unknown>;
+    paths?: Record<string, string>;
+    fields?: Record<string, string>;
+    files?: Record<string, HttpUploadFile>;
+    cookies?: HttpCookieStore;
+    _session?: unknown;
+    getHeader(name: string): string | undefined;
+    hasHeader(name: string): boolean;
+    getHeaderNames(): string[];
+};
+
+export type HttpHandlerOutput = WritableLike<Outgoing> | string | Buffer | object | null | undefined;
 
 export const CONTENT_TYPE = 'content-type';
 export const IF_MODIFIED_SINCE = 'if-modified-since';
