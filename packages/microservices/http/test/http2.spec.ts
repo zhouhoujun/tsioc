@@ -166,7 +166,6 @@ describe('http2 server, HttpClient', () => {
     before(async () => {
         ctx = await Application.run(MainApp);
         client = ctx.get(HttpClient);
-        await new Promise(resolve => setTimeout(resolve, 500));
     });
 
     after(async () => {

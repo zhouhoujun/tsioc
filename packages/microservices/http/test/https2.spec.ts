@@ -173,7 +173,6 @@ describe('http2 Secure server, HttpClient', () => {
     before(async () => {
         ctx = await Application.run(SecureMainApp);
         client = ctx.get(HttpClient);
-        await new Promise(resolve => setTimeout(resolve, 500));
     });
 
     after(async () => {
