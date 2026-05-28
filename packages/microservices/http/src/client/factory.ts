@@ -1,9 +1,9 @@
-import { asProvider, getClassRef, Injector, Provider, toProvider } from '@tsdi/ioc';
+import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport, ContentType } from '@tsdi/common';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
-import { MessageReaderFactory } from '@tsdi/core';
+import { ApplicationEventMulticaster, ApplicationShutdownEvent, MessageReaderFactory } from '@tsdi/core';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
@@ -32,14 +32,20 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
         { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
         {
             provide: clientToken,
-            useFactory: (injector: Injector) => getClassRef(HttpClient).createInvocation(injector, {
-                providers: [
-                    { provide: HTTP_CLIENT_OPTIONS, useValue: config },
-                    { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
-                    { provide: ClientHandler, useExisting: hanlderToken }
-                ]
-            }).instance,
-            deps: [Injector]
+            useFactory: (injector: Injector, handler: ClientHandler<any, any>) => {
+                const client = new HttpClient(handler, config);
+                const multicaster = injector.get(ApplicationEventMulticaster, null);
+                if (multicaster) {
+                    const shutdownHandler = {
+                        handle: () => client.close(),
+                        equals: (target: any) => target === shutdownHandler
+                    };
+                    multicaster.addListener(ApplicationShutdownEvent, shutdownHandler, 0);
+                    injector.onDestroy(() => multicaster.removeListener(ApplicationShutdownEvent, shutdownHandler));
+                }
+                return client;
+            },
+            deps: [Injector, hanlderToken]
         },
         { provide: interceptorsToken, useValue: (req: any, next: any, context: any) => next(req, context), multi: true }
     ];
@@ -60,7 +66,7 @@ function createHttpBackend(config: HttpClientOptions) {
         const target = new URL(url, baseUrl);
         const headers = { ...(req.headers?.getHeaders?.() ?? {}) };
         const finish = (statusCode: number, statusMessage: string, responseHeaders: Record<string, any>, responseBody: any) => {
-            observer.next({
+            const response = {
                 url: target.toString(),
                 headers: responseHeaders,
                 statusCode,
@@ -70,7 +76,8 @@ function createHttpBackend(config: HttpClientOptions) {
                 ok: statusCode >= 200 && statusCode < 300,
                 body: responseBody,
                 payload: responseBody,
-            });
+            };
+            observer.next(req.observe === 'response' ? response : responseBody);
             observer.complete();
         };
         const parseBody = (raw: Buffer) => {
@@ -122,7 +129,7 @@ function createHttpBackend(config: HttpClientOptions) {
                 accept: headers.accept ?? ContentType.REQUEST_ACCEPT,
             } as http2.OutgoingHttpHeaders;
             const stream = session.request(requestHeaders, config.requestOptions);
-            const chunks: Buffer[] = [];
+            const chunks: Uint8Array[] = [];
             let statusCode = 0;
             let statusMessage = '';
             let responseHeaders: Record<string, any> = {};
@@ -131,7 +138,7 @@ function createHttpBackend(config: HttpClientOptions) {
                 statusCode = Number(resHeaders[':status'] ?? 0);
                 delete responseHeaders[':status'];
             });
-            stream.on('data', (chunk: Buffer) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+            stream.on('data', (chunk: Buffer) => chunks.push(Uint8Array.from(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))));
             stream.on('end', () => finish(statusCode, statusMessage, responseHeaders, parseBody(Buffer.concat(chunks))));
             stream.on('error', err => observer.error(err));
             writeBody(stream);
@@ -143,7 +150,7 @@ function createHttpBackend(config: HttpClientOptions) {
             headers,
         };
         const request = target.protocol === 'https:' ? https.request(target, requestOptions) : http.request(target, requestOptions);
-        const chunks: Buffer[] = [];
+        const chunks: Uint8Array[] = [];
         let statusCode = 0;
         let statusMessage = '';
         let responseHeaders: Record<string, any> = {};
@@ -151,7 +158,7 @@ function createHttpBackend(config: HttpClientOptions) {
             responseHeaders = { ...res.headers };
             statusCode = res.statusCode ?? 0;
             statusMessage = res.statusMessage ?? '';
-            res.on('data', (chunk: Buffer) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+            res.on('data', (chunk: Buffer) => chunks.push(Uint8Array.from(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))));
             res.on('end', () => finish(statusCode, statusMessage, responseHeaders, parseBody(Buffer.concat(chunks))));
         });
         request.on('error', err => observer.error(err));

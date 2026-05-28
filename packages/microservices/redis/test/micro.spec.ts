@@ -53,9 +53,7 @@ export class MicroTestModule {
 
 }
 
-const describeRedis = process.env.TSIO_TEST_REDIS ? describe : describe.skip;
-
-describeRedis('REDIS Micro Service', () => {
+if (process.env.TSIO_TEST_REDIS) describe('REDIS Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

@@ -53,9 +53,7 @@ export class MicroTestModule {
 
 }
 
-const describeKafka = process.env.TSIO_TEST_KAFKA ? describe : describe.skip;
-
-describeKafka('KAFKA Micro Service', () => {
+if (process.env.TSIO_TEST_KAFKA) describe('KAFKA Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

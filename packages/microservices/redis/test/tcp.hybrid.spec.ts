@@ -23,7 +23,6 @@ class ContentController {
 
 const TCP_PORT = 21411;
 const REDIS_URL = 'redis://127.0.0.1:6379';
-const describeRedis = process.env.TSIO_TEST_REDIS ? describe : describe.skip;
 
 @Module({
     imports: [LoggerModule],
@@ -52,7 +51,7 @@ const describeRedis = process.env.TSIO_TEST_REDIS ? describe : describe.skip;
 })
 class RedisTcpHybridModule { }
 
-describeRedis('Redis hybrid TCP server and Redis client', () => {
+if (process.env.TSIO_TEST_REDIS) describe('Redis hybrid TCP server and Redis client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let redisClient: RedisClient;

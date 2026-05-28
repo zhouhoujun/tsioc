@@ -194,9 +194,12 @@ export abstract class AbstractClient<
     protected abstract initContext(context: Context, req: TRequest): void;
 
     @Shutdown()
-    close(): Promise<void> {
-        this.injector.onDestroy();
-        return this.strategyOnShutdown();
+    async close(): Promise<void> {
+        try {
+            await this.strategyOnShutdown();
+        } finally {
+            this.injector.onDestroy();
+        }
     }
 
     /**

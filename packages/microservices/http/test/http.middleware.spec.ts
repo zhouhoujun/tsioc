@@ -25,6 +25,7 @@ describe('middleware', () => {
         providers: [
             provideService(
                 withServiceRouter(),
+                withServiceRouter({ microservice: true }),
                 withServiceMiddlewares(async (ctx, next) => {
                     const request = ctx.getRequest() as HttpRequestMessage;
                     if (request.url?.startsWith('/test')) {
@@ -34,6 +35,7 @@ describe('middleware', () => {
                     await next();
                 }),
                 withHttpTransport({
+                    microservice: false as any,
                     listenOpts: {
                         port: PORT,
                         host: '127.0.0.1'
@@ -44,6 +46,7 @@ describe('middleware', () => {
             provideClient(
                 withHttpClientTransport({
                     url: `http://127.0.0.1:${PORT}`,
+                    microservice: false,
                     asDefault: true
                 })
             )

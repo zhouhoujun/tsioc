@@ -110,21 +110,24 @@ class Https2DeviceController {
     providers: [
         provideService(
             withServiceRouter(),
+            withServiceRouter({ microservice: true }),
             withHttpTransport({
+                microservice: false as any,
                 majorVersion: 2,
                 secure: true,
                 serverOpts: { key, cert, allowHTTP1: true } as any,
                 listenOpts: {
                     port: PORT,
-                    host: '127.0.0.1'
+                    host: 'localhost'
                 },
                 asDefault: true
             })
         ),
         provideClient(
             withHttpClientTransport({
-                authority: `https://127.0.0.1:${PORT}`,
+                authority: `https://localhost:${PORT}`,
                 connectOpts: { ca: cert },
+                microservice: false,
                 asDefault: true
             })
         )
@@ -142,7 +145,7 @@ describe('http2 Secure server, HttpClient', () => {
 
     function rawH2Get(pathname: string): Promise<{ status: number; headers: http2.IncomingHttpHeaders; body: string }> {
         return new Promise((resolve, reject) => {
-            const session = http2.connect(`https://127.0.0.1:${PORT}`, { ca: cert });
+            const session = http2.connect(`https://localhost:${PORT}`, { ca: cert });
             const req = session.request({
                 ':method': 'GET',
                 ':path': pathname,

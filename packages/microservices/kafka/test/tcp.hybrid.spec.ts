@@ -22,7 +22,6 @@ class ContentController {
 }
 
 const TCP_PORT = 21410;
-const describeKafka = process.env.TSIO_TEST_KAFKA ? describe : describe.skip;
 
 @Module({
     imports: [LoggerModule],
@@ -51,7 +50,7 @@ const describeKafka = process.env.TSIO_TEST_KAFKA ? describe : describe.skip;
 })
 class KafkaTcpHybridModule { }
 
-describeKafka('Kafka hybrid TCP server and Kafka client', () => {
+if (process.env.TSIO_TEST_KAFKA) describe('Kafka hybrid TCP server and Kafka client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let kafkaClient: KafkaClient;

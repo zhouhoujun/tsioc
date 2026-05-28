@@ -106,7 +106,9 @@ class DeviceController {
     providers: [
         provideService(
             withServiceRouter(),
+            withServiceRouter({ microservice: true }),
             withHttpTransport({
+                microservice: false as any,
                 listenOpts: {
                     port: PORT,
                     host: '127.0.0.1'
@@ -117,6 +119,7 @@ class DeviceController {
         provideClient(
             withHttpClientTransport({
                 url: `http://127.0.0.1:${PORT}`,
+                microservice: false,
                 asDefault: true
             })
         )

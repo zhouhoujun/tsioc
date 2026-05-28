@@ -86,6 +86,9 @@ export class DefaultInvocationHandler<
     // protected defaultRespond(input: TInput, res: any, context: TContext): void { }
 
     equals(other: InvocationHandler): boolean {
+        if (!other || !(other as DefaultInvocationHandler).invocation) {
+            return false;
+        }
         return this.invocation.type === other.invocation.type
             && this.injector === other.injector
             && this.options.response === (other as DefaultInvocationHandler).options.response
