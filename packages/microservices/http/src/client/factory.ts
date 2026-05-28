@@ -1,4 +1,4 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
+import { asProvider, getClassRef, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport, ContentType } from '@tsdi/common';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
@@ -30,7 +30,17 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({ provide: backendToken, useFactory: () => createHttpBackend(config), multi: true }),
         { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
-        { provide: clientToken, useFactory: (h: ClientHandler<any, any>) => new HttpClient(h, config), deps: [hanlderToken] },
+        {
+            provide: clientToken,
+            useFactory: (injector: Injector) => getClassRef(HttpClient).createInvocation(injector, {
+                providers: [
+                    { provide: HTTP_CLIENT_OPTIONS, useValue: config },
+                    { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
+                    { provide: ClientHandler, useExisting: hanlderToken }
+                ]
+            }),
+            deps: [Injector]
+        },
         { provide: interceptorsToken, useValue: (req: any, next: any, context: any) => next(req, context), multi: true }
     ];
     if (asDefault) providers.push({ provide: HttpClient, useExisting: clientToken });

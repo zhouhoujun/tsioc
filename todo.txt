@@ -22,6 +22,9 @@
   我下一步会直接沿这个点查 HttpClient 的创建/托管方式，确认为什么 @Shutdown close() 没被触发，然后修这个退出问题并再跑整包。
 
 
+我按你的方向把 HTTP client 接入 IoC 生命周期，然后重新复验整包测试。
+
+
 参考 @../hermes-agent/ 和 @../zeroclaw/ 这两个智能体， 继续完善 @packages/agents/agent-tools/  的工具，并参考添加这个两个智能体已有的工具
 
 
