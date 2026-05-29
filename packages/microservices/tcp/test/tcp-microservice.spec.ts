@@ -1,5 +1,5 @@
 import { TcpServer, TcpServOptions, tcpTransportFactory, useTcpTransport, TCP_SERV_OPTIONS } from '../src/server';
-import { Transport, TransferSide } from '@tsdi/common';
+import { IncomingMessageReaderFactory, Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 import * as net from 'node:net';
 
@@ -100,6 +100,27 @@ describe('TCP Microservice', () => {
             expect(feature.config.microservice).toBe(false);
         });
 
+        it('should use top-level custom message reader factory', () => {
+            class CustomTcpServerReaderFactory extends IncomingMessageReaderFactory { }
+            const feature = tcpTransportFactory({
+                listenOpts: { port: 8080 },
+                messageReaderFactory: CustomTcpServerReaderFactory,
+            });
+
+            expect(feature.config.features?.messageReaderFactory).toBe(CustomTcpServerReaderFactory);
+            expect(feature.config.features?.messagerReaderFactory).toBe(CustomTcpServerReaderFactory);
+        });
+
+        it('should preserve legacy nested message reader factory option', () => {
+            class LegacyTcpServerReaderFactory extends IncomingMessageReaderFactory { }
+            const feature = tcpTransportFactory({
+                listenOpts: { port: 8080 },
+                features: { messagerReaderFactory: LegacyTcpServerReaderFactory } as any,
+            });
+
+            expect(feature.config.features?.messageReaderFactory).toBe(LegacyTcpServerReaderFactory);
+            expect(feature.config.features?.messagerReaderFactory).toBe(LegacyTcpServerReaderFactory);
+        });
 
         it('should create multiple transport features for multiple options', () => {
             const features = useTcpTransport(

@@ -143,7 +143,8 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     router?: boolean | RouteOpts;
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;
-    gracefulShutdown?: boolean | GracefulShutdownOptions;    
+    gracefulShutdown?: boolean | GracefulShutdownOptions;
+    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
     messagerReaderFactory?: ProvdierOf<MessageReaderFactory>;
     defaultTransfer?: TransferInterceptorFactory;
 }
@@ -192,5 +193,16 @@ export interface ServiceConfig<TReq = any, TRes = any, TContext extends RequestC
 
 export interface ServiceOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceConfig<TReq, TRes, TContext> {
     asDefault?: boolean;
+    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
     transportFeature?: (options: ServiceOptions<TReq, TRes, TContext>, asDefault?: boolean) => ServiceTransportFeature;
+}
+
+export function resolveServiceMessageReaderFactory<TReq = any, TRes = any, TContext extends RequestContext = RequestContext>(
+    options: Partial<ServiceOptions<TReq, TRes, TContext>>,
+    defaultFactory: ProvdierOf<MessageReaderFactory>
+): ProvdierOf<MessageReaderFactory> {
+    return options.messageReaderFactory
+        ?? options.features?.messageReaderFactory
+        ?? options.features?.messagerReaderFactory
+        ?? defaultFactory;
 }

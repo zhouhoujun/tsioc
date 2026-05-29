@@ -2,6 +2,7 @@ import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisClient } from './client';
 import { RedisPatternFormatter } from '../server';
@@ -21,10 +22,11 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
     } as RedisClientOptions;
     config.formatter ??= RedisPatternFormatter;
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: REDIS_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);

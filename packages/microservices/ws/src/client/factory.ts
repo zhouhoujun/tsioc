@@ -2,6 +2,7 @@ import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsClient } from './client';
 import { MessageReaderFactory } from '@tsdi/core';
@@ -20,10 +21,11 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as WsClientOptions;
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: WS_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);

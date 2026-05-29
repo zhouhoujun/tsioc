@@ -2,6 +2,7 @@ import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { GRPC_CLIENT_OPTIONS, GrpcClientOptions } from './options';
 import { GrpcClient } from './client';
 import { MessageReaderFactory } from '@tsdi/core';
@@ -12,10 +13,11 @@ function grpcClientTransportFactory(option: Partial<GrpcClientOptions>, asDefaul
         ...option, features: { defaultTransfer: useJsonPacket(), ...option.features },
     } as GrpcClientOptions;
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: GRPC_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);

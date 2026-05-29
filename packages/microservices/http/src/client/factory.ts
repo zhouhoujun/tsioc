@@ -1,6 +1,7 @@
 import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport, ContentType } from '@tsdi/common';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
 import { ApplicationEventMulticaster, ApplicationShutdownEvent, MessageReaderFactory } from '@tsdi/core';
@@ -17,10 +18,11 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
         features: { ...option.features },
     } as HttpClientOptions;
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: HTTP_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);

@@ -2,6 +2,7 @@ import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { KAFKA_CLIENT_OPTIONS, KafkaClientOptions } from './options';
 import { KafkaClient } from './client';
 import { KafkaPatternFormatter } from '../server';
@@ -15,10 +16,11 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
     } as KafkaClientOptions;
     config.formatter ??= KafkaPatternFormatter;
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: KAFKA_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);

@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
+import { resolveServiceMessageReaderFactory } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { useWsPacket } from '../transfer';
 
@@ -32,7 +33,8 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
 
 
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveServiceMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: WS_SERV_OPTIONS, useValue: config },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
@@ -43,7 +45,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
             response.statusMessage = error.message;
             return of(response);
         }, multi: true },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
 
     const transferProviders: Provider[] = [];

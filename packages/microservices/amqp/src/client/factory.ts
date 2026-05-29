@@ -2,6 +2,7 @@ import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, REQUEST, TransferSide, Transport, defaultFormatter, useSimpleJson } from '@tsdi/common';
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpClient } from './client';
 import { AmqpPatternFormatter } from '../server';
@@ -31,10 +32,11 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
     } as AmqpClientOptions;
     config.formatter ??= AmqpPatternFormatter;
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: AMQP_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);

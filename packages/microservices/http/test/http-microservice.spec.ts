@@ -1,7 +1,8 @@
 import { HttpServer, HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse } from '../src/server';
+import { HttpMessageReaderFactory } from '../src/server/message-reader';
 import { StaticFileInterceptor } from '../src/server/static-file.interceptor';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
-import { Transport, TransferSide } from '@tsdi/common';
+import { IncomingMessageReaderFactory, Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, Controller, CookieInterceptor, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
@@ -106,6 +107,31 @@ describe('HTTP Microservice', () => {
             expect(config.majorVersion).toBe(2);
             expect((config.serverOpts as any).allowHTTP1).toBe(true);
         });
+
+        it('should use top-level custom message reader factory', () => {
+            class CustomHttpReaderFactory extends IncomingMessageReaderFactory { }
+            const feature = httpTransportFactory({ listenOpts: { port: 3000 }, messageReaderFactory: CustomHttpReaderFactory });
+            expect(feature.config.features?.messageReaderFactory).toBe(CustomHttpReaderFactory);
+            expect(feature.config.features?.messagerReaderFactory).toBe(CustomHttpReaderFactory);
+        });
+
+        it('should prefer top-level message reader factory over nested legacy feature option', () => {
+            class TopLevelReaderFactory extends IncomingMessageReaderFactory { }
+            class LegacyReaderFactory extends IncomingMessageReaderFactory { }
+            const feature = httpTransportFactory({
+                listenOpts: { port: 3000 },
+                messageReaderFactory: TopLevelReaderFactory,
+                features: { messagerReaderFactory: LegacyReaderFactory } as any,
+            });
+            expect(feature.config.features?.messageReaderFactory).toBe(TopLevelReaderFactory);
+            expect(feature.config.features?.messagerReaderFactory).toBe(TopLevelReaderFactory);
+        });
+
+        it('should keep default HTTP message reader factory when no override is provided', () => {
+            const feature = httpTransportFactory({ listenOpts: { port: 3000 } });
+            expect(feature.config.features?.messageReaderFactory).toBe(HttpMessageReaderFactory);
+            expect(feature.config.features?.messagerReaderFactory).toBe(HttpMessageReaderFactory);
+        });
     });
 
     describe('useHttpTransport', () => {
@@ -133,6 +159,23 @@ describe('HTTP Microservice', () => {
                 ...feature.providers
             ]);
             expect(injector.get(HttpClient)).toBeInstanceOf(HttpClient);
+        });
+
+        it('should use top-level custom message reader factory', () => {
+            class CustomHttpClientReaderFactory extends IncomingMessageReaderFactory { }
+            const feature = withHttpTransport({ url: 'http://localhost:3000', messageReaderFactory: CustomHttpClientReaderFactory })[0];
+            expect(feature.config.features?.messageReaderFactory).toBe(CustomHttpClientReaderFactory);
+            expect(feature.config.features?.messagerReaderFactory).toBe(CustomHttpClientReaderFactory);
+        });
+
+        it('should still support legacy nested message reader factory option', () => {
+            class LegacyHttpClientReaderFactory extends IncomingMessageReaderFactory { }
+            const feature = withHttpTransport({
+                url: 'http://localhost:3000',
+                features: { messagerReaderFactory: LegacyHttpClientReaderFactory } as any
+            })[0];
+            expect(feature.config.features?.messageReaderFactory).toBe(LegacyHttpClientReaderFactory);
+            expect(feature.config.features?.messagerReaderFactory).toBe(LegacyHttpClientReaderFactory);
         });
     });
 

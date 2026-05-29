@@ -1,6 +1,6 @@
 import { TcpClientOptions, TCP_CLIENT_OPTIONS } from '../src/client/options';
 import { withTcpTransport, TcpClient } from '../src/client';
-import { Transport, TransferSide } from '@tsdi/common';
+import { IncomingMessageReaderFactory, Transport, TransferSide } from '@tsdi/common';
 import { NetConnectOpts } from 'node:net';
 import expect = require('expect');
 
@@ -187,6 +187,17 @@ describe('withTcpTransport', () => {
 
         expect(features.length).toBe(1);
         expect((features[0].config as TcpClientOptions).keepalive).toBe(60000);
+    });
+
+    it('should use top-level custom message reader factory', () => {
+        class CustomTcpClientReaderFactory extends IncomingMessageReaderFactory { }
+        const feature = withTcpTransport({
+            connectOpts: { port: 8080 },
+            messageReaderFactory: CustomTcpClientReaderFactory,
+        })[0];
+
+        expect(feature.config.features?.messageReaderFactory).toBe(CustomTcpClientReaderFactory);
+        expect(feature.config.features?.messagerReaderFactory).toBe(CustomTcpClientReaderFactory);
     });
 
 });

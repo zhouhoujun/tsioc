@@ -47,6 +47,7 @@ export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends R
     loadBalance?: boolean | LoadBalanceOptions;
     circuitBreaker?: boolean | CircuitBreakerOptions;
     retry?: boolean | RetryOptions;
+    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
     messagerReaderFactory?: ProvdierOf<MessageReaderFactory>;
 }
 
@@ -228,5 +229,16 @@ export interface RetryOptions {
 }
 
 export interface ClientOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ClientConfig<TReq, TRes, TContext> {
+    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
     transportFeature?: (options: ClientOptions<TReq, TRes, TContext>, asDefault?: boolean) => ClientTransportFeature;
+}
+
+export function resolveClientMessageReaderFactory<TReq = any, TRes = any, TContext extends RequestContext = RequestContext>(
+    options: Partial<ClientOptions<TReq, TRes, TContext>>,
+    defaultFactory: ProvdierOf<MessageReaderFactory>
+): ProvdierOf<MessageReaderFactory> {
+    return options.messageReaderFactory
+        ?? options.features?.messageReaderFactory
+        ?? options.features?.messagerReaderFactory
+        ?? defaultFactory;
 }

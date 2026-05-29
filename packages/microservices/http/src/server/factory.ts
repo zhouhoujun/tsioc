@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, SERVICE_BODY_PARSER_OPTIONS } from '@tsdi/service';
+import { resolveServiceMessageReaderFactory } from '@tsdi/service';
 import { MimeModule } from '@tsdi/mime';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { HttpBodyParserInterceptor } from './interceptors/bodyparser';
@@ -38,10 +39,11 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     config.features.guardsToken ??= getServiceGuardsToken(config);
 
     config.providers = option.providers ? [...option.providers] : [];
-    config.features.messagerReaderFactory ??= HttpMessageReaderFactory;
+    config.features.messageReaderFactory = resolveServiceMessageReaderFactory(option, HttpMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: HTTP_SERV_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
 
     const providers: Provider[] = [

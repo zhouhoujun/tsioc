@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { GrpcServer } from './grpc-server';
 import { GrpcServOptions, GRPC_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { resolveServiceMessageReaderFactory } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
@@ -20,10 +21,11 @@ export function grpcTransportFactory(option: Partial<GrpcServOptions>, asDefault
     getServiceInterceptorsToken(config); getServiceFiltersToken(config); getServiceGuardsToken(config);
 
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveServiceMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: GRPC_SERV_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
 
     const providers: Provider[] = [

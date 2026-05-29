@@ -6,6 +6,7 @@ import { CoapServer } from './coap-server';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, BodyParserInterceptor, ContentInterceptor, JsonInterceptor } from '@tsdi/service';
+import { resolveServiceMessageReaderFactory } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
@@ -36,10 +37,11 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
     getServiceGuardsToken(config);
 
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= CoapMessageReaderFactory;
+    config.features.messageReaderFactory = resolveServiceMessageReaderFactory(option, CoapMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: COAP_SERV_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
 
     const providers: Provider[] = [

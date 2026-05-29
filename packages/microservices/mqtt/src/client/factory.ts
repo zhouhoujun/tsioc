@@ -2,6 +2,7 @@ import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
 import { AbstractRequest, createRequestHandler, Events, IncomingMessageReaderFactory, PatternFormatter, REQUEST, TransferSide, Transport, defaultFormatter, useSimpleJson } from '@tsdi/common';
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
 import { MqttClient } from './client';
 import { MqttRequest } from './request';
@@ -32,10 +33,11 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as MqttClientOptions;
     config.providers ??= [];
-    config.features.messagerReaderFactory ??= IncomingMessageReaderFactory;
+    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
+    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: MQTT_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messagerReaderFactory),
+        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
