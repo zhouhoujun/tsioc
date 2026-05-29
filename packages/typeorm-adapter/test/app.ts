@@ -75,10 +75,10 @@ export class MockBootTest {
             useRouter(),
             useContent(),
             useJson(),
-            ...useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
+            useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
         ),
         provideClient(
-            ...withHttpTransport({ url: 'http://127.0.0.1:3000', asDefault: true }),
+            withHttpTransport({ url: 'http://127.0.0.1:3000', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -104,10 +104,10 @@ export class MockBootHttpTest {
             useRouter(),
             useContent(),
             useJson(),
-            ...useHttpTransport({ listenOpts: { port: 3001, host: '127.0.0.1' }, asDefault: true }),
+            useHttpTransport({ listenOpts: { port: 3001, host: '127.0.0.1' }, asDefault: true }),
         ),
         provideClient(
-            ...withHttpTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
+            ithHttpTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -133,10 +133,10 @@ export class MockBootLoadTest {
             useRouter(),
             useContent(),
             useJson(),
-            ...useHttpTransport({ listenOpts: { port: 3002, host: '127.0.0.1' }, asDefault: true }),
+            useHttpTransport({ listenOpts: { port: 3002, host: '127.0.0.1' }, asDefault: true }),
         ),
         provideClient(
-            ...withHttpTransport({ url: 'http://127.0.0.1:3002', asDefault: true }),
+            withHttpTransport({ url: 'http://127.0.0.1:3002', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -160,7 +160,7 @@ export class MockTransBootTest {
             useRouter(),
             useContent(),
             useJson(),
-            ...useHttpTransport({
+            useHttpTransport({
                 listenOpts: { port: 3003, host: '127.0.0.1' },
                 serverOpts: { key, cert },
                 majorVersion: 2,
@@ -168,7 +168,7 @@ export class MockTransBootTest {
             } as any),
         ),
         provideClient(
-            ...withHttpTransport({
+            withHttpTransport({
                 authority: 'https://127.0.0.1:3003',
                 connectOpts: { ca: cert, rejectUnauthorized: false },
                 asDefault: true,
