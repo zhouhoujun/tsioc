@@ -2,12 +2,12 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, ErrorResponse } from '@tsdi/common';
-import { provideService, withServiceInterceptors, withServiceRouter, RouteMapping } from '@tsdi/service';
+import { provideService, useInterceptors, useRouter, RouteMapping } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
-import { withTcpTransport } from '../../tcp/src/server';
-import { withTcpClientTransport } from '../../tcp/src/client';
+import { useTcpTransport } from '../../tcp/src/server';
+import { withTcpTransport } from '../../tcp/src/client';
 import { TcpClient } from '../../tcp/src/client/client';
-import { KafkaClient, withKafkaClientTransport, withKafkaTransport } from '../src';
+import { KafkaClient, withKafkaTransport, useKafkaTransport } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -28,23 +28,23 @@ const TCP_PORT = 21410;
     declarations: [DeviceController, ContentController],
     providers: [
         provideService(
-            withServiceRouter(),
-            withServiceRouter({ microservice: true }),
-            withServiceInterceptors(BigFileInterceptor),
-            withTcpTransport({
+            useRouter(),
+            useRouter({ microservice: true }),
+            useInterceptors(BigFileInterceptor),
+            useTcpTransport({
                 microservice: false as any,
                 listenOpts: { port: TCP_PORT, host: '127.0.0.1' },
                 asDefault: true
             }),
-            withKafkaTransport()
+            useKafkaTransport()
         ),
         provideClient(
-            withTcpClientTransport({
+            withTcpTransport({
                 connectOpts: { port: TCP_PORT, host: '127.0.0.1' },
                 microservice: false,
                 asDefault: true
             }),
-            withKafkaClientTransport({ asDefault: true })
+            withKafkaTransport({ asDefault: true })
         )
     ]
 })

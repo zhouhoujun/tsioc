@@ -16,13 +16,13 @@ import {
     SERVICE_JSON_OPTIONS,
     SERVICE_SESSION_OPTIONS,
     getServiceInterceptorsToken,
-    withBodyParser,
-    withContent,
-    withCookie,
-    withCors,
-    withJson,
-    withServiceFeatures,
-    withSession,
+    useBodyParser,
+    useContent,
+    useCookie,
+    useCors,
+    useJson,
+    useFeatures,
+    useSession,
 } from '../src';
 
 const createConfig = () => ({
@@ -97,12 +97,12 @@ describe('service provider', () => {
     it('registers default interceptors and option tokens', () => {
         const config = createConfig();
         const interceptorToken = getServiceInterceptorsToken(config);
-        const content = withContent()(config) as any;
-        const json = withJson()(config) as any;
-        const body = withBodyParser()(config) as any;
-        const session = withSession()(config) as any;
-        const cookie = withCookie()(config) as any;
-        const cors = withCors()(config) as any;
+        const content = useContent()(config) as any;
+        const json = useJson()(config) as any;
+        const body = useBodyParser()(config) as any;
+        const session = useSession()(config) as any;
+        const cookie = useCookie()(config) as any;
+        const cors = useCors()(config) as any;
 
         expect(content.providers.some((provider: any) => provider.provide === SERVICE_CONTENT_OPTIONS)).toBe(true);
         expect(content.providers.some((provider: any) => provider.provide === interceptorToken && provider.useExisting === ContentInterceptor)).toBe(true);
@@ -127,7 +127,7 @@ describe('service provider', () => {
         }
         const config = createConfig();
         const interceptorToken = getServiceInterceptorsToken(config);
-        const feature = withJson({ strict: true, interceptor: CustomJsonInterceptor, multiOrder: 1200 })(config) as any;
+        const feature = useJson({ strict: true, interceptor: CustomJsonInterceptor, multiOrder: 1200 })(config) as any;
         const optionProvider = feature.providers.find((provider: any) => provider.provide === SERVICE_JSON_OPTIONS);
         const interceptorProvider = feature.providers.find((provider: any) => provider.provide === interceptorToken);
 
@@ -145,10 +145,10 @@ describe('service provider', () => {
         }
         const config = createConfig();
         const interceptorToken = getServiceInterceptorsToken(config);
-        const feature = withCors({ origin: '*', credentials: true, interceptor: CustomCorsInterceptor, multiOrder: 123 })(config) as any;
+        const feature = useCors({ origin: '*', credentials: true, interceptor: CustomCorsInterceptor, multiOrder: 123 })(config) as any;
         const optionProvider = feature.providers.find((provider: any) => provider.provide === SERVICE_CORS_OPTIONS);
         const interceptorProvider = feature.providers.find((provider: any) => provider.provide === interceptorToken);
-        const combined = withServiceFeatures({ cors: { origin: 'https://example.com' } } as any)(config) as any[];
+        const combined = useFeatures({ cors: { origin: 'https://example.com' } } as any)(config) as any[];
 
         expect(optionProvider.useValue).toEqual({ origin: '*', credentials: true });
         expect(interceptorProvider.useClass).toBe(CustomCorsInterceptor);

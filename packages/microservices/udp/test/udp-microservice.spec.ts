@@ -1,5 +1,5 @@
-import { UdpServer, UdpServOptions, udpTransportFactory, withUdpTransport, UDP_SERV_OPTIONS } from '../src/server';
-import { withUdpClientTransport, UDP_CLIENT_OPTIONS } from '../src/client';
+import { UdpServer, UdpServOptions, udpTransportFactory, useUdpTransport, UDP_SERV_OPTIONS } from '../src/server';
+import { withUdpTransport, UDP_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -52,16 +52,16 @@ describe('UDP Microservice', () => {
         });
     });
 
-    describe('withUdpTransport', () => {
+    describe('useUdpTransport', () => {
         it('should create multiple transport features', () => {
-            const features = withUdpTransport({ listenOpts: { port: 41234 } }, { listenOpts: { port: 41235 } });
+            const features = useUdpTransport({ listenOpts: { port: 41234 } }, { listenOpts: { port: 41235 } });
             expect(features.length).toBe(2);
         });
     });
 
-    describe('withUdpClientTransport', () => {
+    describe('withUdpTransport', () => {
         it('should use json packet transfer by default', () => {
-            const features = withUdpClientTransport({ port: 41234 });
+            const features = withUdpTransport({ port: 41234 });
             expect(features[0].config.features?.defaultTransfer).toBeDefined();
         });
     });

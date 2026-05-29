@@ -74,7 +74,7 @@ function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefaul
 
 }
 
-export function withNatsClientTransport(...options: Partial<NatsClientOptions>[]): ClientTransportFeature[] {
+export function withNatsTransport(...options: Partial<NatsClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
         const asDefault = option.asDefault ?? (idx === 0);
         return natsClientTransportFactory(option, asDefault);

@@ -2,9 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST, PUT, DELETE, Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, Put, Delete, RouteMapping,
+import { provideService, useRouter, Controller, Get, Post, Put, Delete, RouteMapping,
     RequestHeader, RequestPath, RequestParam, RequestBody, RestController, Handle, Payload, Subscribe } from '@tsdi/service';
-import { withWsTransport } from '../src/server';
+import { useWsTransport } from '../src/server';
 import expect = require('expect');
 
 let port = 11800;
@@ -20,8 +20,8 @@ describe('WS All HTTP methods', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [MC],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class MMod {}
     let ctx: ApplicationContext;
@@ -38,8 +38,8 @@ describe('WS @RestController', () => {
     @RestController('/api') class RC { @Get('/i') i() { return 'ok'; } }
     @Module({
         imports: [LoggerModule], declarations: [RC],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class RMod {}
     let ctx: ApplicationContext;
@@ -57,8 +57,8 @@ describe('WS Parameter decorators', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [PC],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class PMod {}
     let ctx: ApplicationContext;
@@ -77,8 +77,8 @@ describe('WS Parameter pipes', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [PPC],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class PPMod {}
     let ctx: ApplicationContext;
@@ -97,8 +97,8 @@ describe('WS @RouteMapping', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [RMC],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class RMMod {}
     let ctx: ApplicationContext;
@@ -114,8 +114,8 @@ describe('WS Default params', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [OC],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class OMod {}
     let ctx: ApplicationContext;
@@ -130,8 +130,8 @@ describe('WS Multiple controllers', () => {
     @Controller('/b') class BC { @Get('/') b() { return 'b'; } }
     @Module({
         imports: [LoggerModule], declarations: [AC, BC],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class MCM {}
     let ctx: ApplicationContext;
@@ -148,8 +148,8 @@ describe('WS @Subscribe', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [SH],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class SMod {}
     let ctx: ApplicationContext;
@@ -166,8 +166,8 @@ describe('WS @Handle cmd', () => {
     }
     @Module({
         imports: [LoggerModule], declarations: [HH],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class HMod {}
     let ctx: ApplicationContext;

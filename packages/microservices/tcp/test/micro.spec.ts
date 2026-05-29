@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { TcpClient } from '../src';
-import { withTcpTransport } from '../src/server';
-import { withTcpClientTransport } from '../src/client';
+import { useTcpTransport } from '../src/server';
+import { withTcpTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,8 +31,8 @@ export class TcpService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withTcpTransport({
+            useRouter(),
+            useTcpTransport({
                 microservice: true,
                 listenOpts: { port: 11900, host: '127.0.0.1' },
                 bootstrap: false,
@@ -40,7 +40,7 @@ export class TcpService {
             })
         ),
         provideClient(
-            withTcpClientTransport({
+            withTcpTransport({
                 microservice: true,
                 connectOpts: { port: 11900, host: '127.0.0.1' },
                 asDefault: true

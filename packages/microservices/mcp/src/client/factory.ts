@@ -30,6 +30,6 @@ function mcpClientTransportFactory(option: Partial<McpClientOptions>, asDefault?
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 }
 
-export function withMcpClientTransport(...options: Partial<McpClientOptions>[]): ClientTransportFeature[] {
+export function withMcpTransport(...options: Partial<McpClientOptions>[]): ClientTransportFeature[] {
     return options.map((o, i) => mcpClientTransportFactory(o, o.asDefault ?? (i === 0)));
 }

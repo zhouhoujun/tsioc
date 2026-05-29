@@ -94,7 +94,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     };
 }
 
-export function withTcpTransport(...options: Partial<TcpServOptions>[]): ServiceTransportFeature[] {
+export function useTcpTransport(...options: Partial<TcpServOptions>[]): ServiceTransportFeature[] {
     return options.map(option => {
         return tcpTransportFactory(option, options.length === 1 && option.asDefault);
     });

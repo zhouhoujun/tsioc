@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { AmqpClient } from '../src';
-import { withAmqpTransport } from '../src/server';
-import { withAmqpClientTransport } from '../src/client';
+import { useAmqpTransport } from '../src/server';
+import { withAmqpTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class AMQPService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withAmqpTransport({
+            useRouter(),
+            useAmqpTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withAmqpClientTransport({
+            withAmqpTransport({
                 microservice: true,
                 asDefault: true
             })

@@ -1,5 +1,5 @@
-import { AmqpServer, AmqpServOptions, amqpTransportFactory, withAmqpTransport, AMQP_SERV_OPTIONS } from '../src/server';
-import { withAmqpClientTransport, AMQP_CLIENT_OPTIONS } from '../src/client';
+import { AmqpServer, AmqpServOptions, amqpTransportFactory, useAmqpTransport, AMQP_SERV_OPTIONS } from '../src/server';
+import { withAmqpTransport, AMQP_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -102,9 +102,9 @@ describe('AMQP Microservice', () => {
         });
     });
 
-    describe('withAmqpTransport', () => {
+    describe('useAmqpTransport', () => {
         it('should create multiple transport features for multiple options', () => {
-            const features = withAmqpTransport(
+            const features = useAmqpTransport(
                 { url: 'amqp://localhost:5672' },
                 { url: 'amqp://localhost:5673' }
             );
@@ -112,9 +112,9 @@ describe('AMQP Microservice', () => {
         });
     });
 
-    describe('withAmqpClientTransport', () => {
+    describe('withAmqpTransport', () => {
         it('should use json packet transfer by default', () => {
-            const features = withAmqpClientTransport({
+            const features = withAmqpTransport({
                 url: 'amqp://localhost:5672'
             });
 
@@ -122,7 +122,7 @@ describe('AMQP Microservice', () => {
         });
 
         it('should preserve host client mode when microservice is false', () => {
-            const features = withAmqpClientTransport({
+            const features = withAmqpTransport({
                 microservice: false,
                 url: 'amqp://localhost:5672'
             });

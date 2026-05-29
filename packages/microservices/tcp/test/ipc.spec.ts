@@ -2,13 +2,13 @@
 // import { Application, ApplicationContext, Payload } from '@tsdi/core';
 // import { LoggerModule } from '@tsdi/logger';
 // import { BadRequestException, ErrorResponse, Response, Transport, useSimpleJson } from '@tsdi/common';
-// import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
+// import { provideClient, withInterceptors, withTransfers } from '@tsdi/common/client';
 // import { ServerModule } from '@tsdi/platform-server';
 // import { ServerEndpointModule } from '@tsdi/platform-server/common';
 // import {
 //     RequestBody, RequestParam, RequestPath, RouteMapping, Handle,
-//     RedirectResult, provideService, withInterceptors, withJson, withBodyparser, withRouter,
-//     withLogger, withContent,
+//     RedirectResult, provideService, withInterceptors, useJson, withBodyparser, useRouter,
+//     useLogger, useContent,
 //     withTransfers,
 // } from '@tsdi/endpoints';
 // import { catchError, lastValueFrom, of } from 'rxjs';
@@ -16,7 +16,7 @@
 // import expect = require('expect');
 // import path = require('path');
 // import { rm } from 'shelljs';
-// import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, withTcpClientTransport, withTcpTransport } from '../src';
+// import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, withTcpTransport, useTcpTransport } from '../src';
 // import { BigFileInterceptor } from './BigFileInterceptor';
 
 
@@ -146,9 +146,9 @@
 //         ],
 //         providers: [            
 //             provideClient(
-//                 withClientInterceptors(),
-//                 withClientTransfers(),
-//                 withTcpClientTransport({
+//                 withInterceptors(),
+//                 withTransfers(),
+//                 withTcpTransport({
 //                     connectOpts: {
 //                         path: ipcpath
 //                     }
@@ -156,14 +156,14 @@
 //             ),
 //             provideService(
 //                 withInterceptors(BigFileInterceptor),
-//                 withJson(),
+//                 useJson(),
 //                 withBodyparser(),
-//                 withContent(),
-//                 withRouter(),
-//                 withRouter({microservice: true}),
-//                 withLogger(),
+//                 useContent(),
+//                 useRouter(),
+//                 useRouter({microservice: true}),
+//                 useLogger(),
 //                 withTransfers(),
-//                 withTcpTransport({
+//                 useTcpTransport({
 //                     listenOpts: {
 //                         path: ipcpath
 //                     }

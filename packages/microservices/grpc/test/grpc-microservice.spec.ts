@@ -1,5 +1,5 @@
-import { GrpcServer, GrpcServOptions, grpcTransportFactory, withGrpcTransport, GRPC_SERV_OPTIONS } from '../src/server';
-import { withGrpcClientTransport, GRPC_CLIENT_OPTIONS } from '../src/client';
+import { GrpcServer, GrpcServOptions, grpcTransportFactory, useGrpcTransport, GRPC_SERV_OPTIONS } from '../src/server';
+import { withGrpcTransport, GRPC_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -30,15 +30,15 @@ describe('gRPC Microservice', () => {
         });
     });
 
-    describe('withGrpcTransport', () => {
+    describe('useGrpcTransport', () => {
         it('should create multiple transport features', () => {
-            expect(withGrpcTransport({ port: 50051 }, { port: 50052 }).length).toBe(2);
+            expect(useGrpcTransport({ port: 50051 }, { port: 50052 }).length).toBe(2);
         });
     });
 
-    describe('withGrpcClientTransport', () => {
+    describe('withGrpcTransport', () => {
         it('should use json packet transfer by default', () => {
-            expect(withGrpcClientTransport({ url: 'localhost:50051' })[0].config.features?.defaultTransfer).toBeDefined();
+            expect(withGrpcTransport({ url: 'localhost:50051' })[0].config.features?.defaultTransfer).toBeDefined();
         });
     });
 

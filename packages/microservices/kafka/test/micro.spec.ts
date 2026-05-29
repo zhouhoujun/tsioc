@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { KafkaClient } from '../src';
-import { withKafkaTransport } from '../src/server';
-import { withKafkaClientTransport } from '../src/client';
+import { useKafkaTransport } from '../src/server';
+import { withKafkaTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class KafkaService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withKafkaTransport({
+            useRouter(),
+            useKafkaTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withKafkaClientTransport({
+            withKafkaTransport({
                 microservice: true,
                 asDefault: true
             })

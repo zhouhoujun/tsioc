@@ -53,7 +53,7 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 }
 
-export function withHttpClientTransport(...options: Partial<HttpClientOptions>[]): ClientTransportFeature[] {
+export function withHttpTransport(...options: Partial<HttpClientOptions>[]): ClientTransportFeature[] {
     return options.map((o, i) => httpClientTransportFactory(o, o.asDefault ?? (i === 0)));
 }
 

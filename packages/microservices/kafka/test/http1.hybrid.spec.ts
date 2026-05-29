@@ -2,12 +2,12 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { GET } from '@tsdi/common';
-import { provideService, withServiceRouter, RouteMapping } from '@tsdi/service';
+import { provideService, useRouter, RouteMapping } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
-import { withHttpTransport } from '../../http/src/server';
-import { withHttpClientTransport } from '../../http/src/client';
+import { useHttpTransport } from '../../http/src/server';
+import { withHttpTransport } from '../../http/src/client';
 import { HttpClient } from '../../http/src/client/client';
-import { KafkaClient, withKafkaClientTransport, withKafkaTransport } from '../src';
+import { KafkaClient, withKafkaTransport, useKafkaTransport } from '../src';
 import { DeviceController } from './controller';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -27,21 +27,21 @@ const HTTP_PORT = 21310;
     declarations: [DeviceController, ContentController],
     providers: [
         provideService(
-            withServiceRouter(),
-            withServiceRouter({ microservice: true }),
-            withHttpTransport({
+            useRouter(),
+            useRouter({ microservice: true }),
+            useHttpTransport({
                 microservice: false as any,
                 listenOpts: { port: HTTP_PORT, host: '127.0.0.1' }
             }),
-            withKafkaTransport()
+            useKafkaTransport()
         ),
         provideClient(
-            withHttpClientTransport({
+            withHttpTransport({
                 url: `http://127.0.0.1:${HTTP_PORT}`,
                 microservice: false,
                 asDefault: true
             }),
-            withKafkaClientTransport({ asDefault: true })
+            withKafkaTransport({ asDefault: true })
         )
     ]
 })

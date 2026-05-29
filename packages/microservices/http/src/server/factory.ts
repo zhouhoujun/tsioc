@@ -89,6 +89,6 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     return { kind: ServiceFeatureKind.Transport, config, providers };
 }
 
-export function withHttpTransport(...options: Partial<HttpServOptions>[]): ServiceTransportFeature[] {
+export function useHttpTransport(...options: Partial<HttpServOptions>[]): ServiceTransportFeature[] {
     return options.map((o, i) => httpTransportFactory(o, o.asDefault ?? (options.length === 1 && i === 0)));
 }

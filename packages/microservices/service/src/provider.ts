@@ -61,6 +61,19 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
             });
         });
 
+        if (!kinds.has(ServiceFeatureKind.Transfer)) {
+            const transferFeature = useTransfers()(config);
+            const transfers = Array.isArray(transferFeature) ? transferFeature : [transferFeature];
+            transfers.forEach(feature => {
+                const pdrs = kinds.get(feature.kind);
+                if (pdrs) {
+                    pdrs.push(...feature.providers);
+                } else {
+                    kinds.set(feature.kind, feature.providers.slice(0));
+                }
+            });
+        }
+
         Array.from(kinds.keys()).sort((a, b) => a - b).forEach(k => {
             providers.push(...kinds.get(k)!);
         });
@@ -117,62 +130,62 @@ const defaultServiceOptions: Partial<ServiceFeatureOptions> = {
  * Combined feature builder for micro service, like Spring Cloud EnableEurekaClient.
  * @publicApi
  */
-export function withServiceFeatures(options?: ServiceFeatureOptions): ServiceFeatureFn<Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>> {
+export function useFeatures(options?: ServiceFeatureOptions): ServiceFeatureFn<Exclude<ServiceFeatureKind, ServiceFeatureKind.Transport>> {
     return (config) => {
         const features: any[] = [];
         const opts = { ...defaultServiceOptions, ...options };
 
         if (opts.filters) {
-            features.push(withServiceFilters(...opts.filters)(config));
+            features.push(useFilters(...opts.filters)(config));
         }
         if (opts.interceptors) {
-            features.push(withServiceInterceptors(...opts.interceptors)(config));
+            features.push(useInterceptors(...opts.interceptors)(config));
         }
         if (opts.middlewares) {
-            features.push(withServiceMiddlewares(...opts.middlewares)(config));
+            features.push(useMiddlewares(...opts.middlewares)(config));
         }
         if (opts.guards) {
-            features.push(withServiceGuards(...opts.guards)(config));
+            features.push(useGuards(...opts.guards)(config));
         }
         if (opts.logger) {
-            features.push(withServiceLogger(isBoolean(opts.logger) ? undefined : opts.logger)(config));
+            features.push(useLogger(isBoolean(opts.logger) ? undefined : opts.logger)(config));
         }
         if (opts.router) {
-            features.push(withServiceRouter(isBoolean(opts.router) ? undefined : opts.router)(config));
+            features.push(useRouter(isBoolean(opts.router) ? undefined : opts.router)(config));
         }
 
-        features.push(withServiceTransfers(...opts.transfers ?? [])(config));
+        features.push(useTransfers(...(opts.transfers ?? []))(config));
 
         if (opts.bodyparser) {
-            features.push(withBodyParser(isBoolean(opts.bodyparser) ? undefined : opts.bodyparser)(config));
+            features.push(useBodyParser(isBoolean(opts.bodyparser) ? undefined : opts.bodyparser)(config));
         }
         if (opts.bodySerializer) {
-            features.push(withBodySerializer(isBoolean(opts.bodySerializer) ? undefined : opts.bodySerializer)(config));
+            features.push(useBodySerializer(isBoolean(opts.bodySerializer) ? undefined : opts.bodySerializer)(config));
         }
         if (opts.content) {
-            features.push(withContent(isBoolean(opts.content) ? undefined : opts.content)(config));
+            features.push(useContent(isBoolean(opts.content) ? undefined : opts.content)(config));
         }
         if (opts.json) {
-            features.push(withJson(isBoolean(opts.json) ? undefined : opts.json)(config));
+            features.push(useJson(isBoolean(opts.json) ? undefined : opts.json)(config));
         }
         if (opts.session) {
-            features.push(withSession(isBoolean(opts.session) ? undefined : opts.session)(config));
+            features.push(useSession(isBoolean(opts.session) ? undefined : opts.session)(config));
         }
         if (opts.cookie) {
-            features.push(withCookie(isBoolean(opts.cookie) ? undefined : opts.cookie)(config));
+            features.push(useCookie(isBoolean(opts.cookie) ? undefined : opts.cookie)(config));
         }
         if (opts.cors) {
-            features.push(withCors(isBoolean(opts.cors) ? undefined : opts.cors)(config));
+            features.push(useCors(isBoolean(opts.cors) ? undefined : opts.cors)(config));
         }
 
         if (opts.registration) {
-            features.push(withRegistration(opts.registration)(config));
+            features.push(useRegistration(opts.registration)(config));
         }
         if (opts.health) {
-            features.push(withHealth(opts.health)(config));
+            features.push(useHealth(opts.health)(config));
         }
         if (opts.gracefulShutdown) {
-            features.push(withGracefulShutdown(opts.gracefulShutdown)(config));
+            features.push(useGracefulShutdown(opts.gracefulShutdown)(config));
         }
 
         return features.flatMap(r => r);
@@ -184,7 +197,7 @@ export function withServiceFeatures(options?: ServiceFeatureOptions): ServiceFea
  * Adds service registration, like Spring Cloud Eureka/Consul.
  * @publicApi
  */
-export function withRegistration(options?: boolean | RegistrationOptions): ServiceFeatureFn<ServiceFeatureKind.Registration> {
+export function useRegistration(options?: boolean | RegistrationOptions): ServiceFeatureFn<ServiceFeatureKind.Registration> {
     return (config) => {
         return makeServiceFeature(
             ServiceFeatureKind.Registration,
@@ -200,7 +213,7 @@ export function withRegistration(options?: boolean | RegistrationOptions): Servi
  * Adds health check, like Spring Cloud Health Actuator.
  * @publicApi
  */
-export function withHealth(options?: boolean | HealthOptions): ServiceFeatureFn<ServiceFeatureKind.Health> {
+export function useHealth(options?: boolean | HealthOptions): ServiceFeatureFn<ServiceFeatureKind.Health> {
     return (config) => {
         return makeServiceFeature(
             ServiceFeatureKind.Health,
@@ -216,7 +229,7 @@ export function withHealth(options?: boolean | HealthOptions): ServiceFeatureFn<
  * Adds graceful shutdown, like Spring Cloud graceful shutdown.
  * @publicApi
  */
-export function withGracefulShutdown(options?: boolean | GracefulShutdownOptions): ServiceFeatureFn<ServiceFeatureKind.GracefulShutdown> {
+export function useGracefulShutdown(options?: boolean | GracefulShutdownOptions): ServiceFeatureFn<ServiceFeatureKind.GracefulShutdown> {
     return (config) => {
         return makeServiceFeature(
             ServiceFeatureKind.GracefulShutdown,
@@ -232,7 +245,7 @@ export function withGracefulShutdown(options?: boolean | GracefulShutdownOptions
  * Adds interceptors to micro service.
  * @publicApi
  */
-export function withServiceInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
+export function useInterceptors(...interceptors: ProvdierOf<RequestInterceptorLike>[]): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
     return (config) => {
         const tk = getServiceInterceptorsToken(config);
         return makeServiceFeature(
@@ -247,7 +260,7 @@ export function withServiceInterceptors(...interceptors: ProvdierOf<RequestInter
  * Adds guards to micro service.
  * @publicApi
  */
-export function withServiceGuards(...guards: ProvdierOf<GuardLike>[]): ServiceFeatureFn<ServiceFeatureKind.Guards> {
+export function useGuards(...guards: ProvdierOf<GuardLike>[]): ServiceFeatureFn<ServiceFeatureKind.Guards> {
     return (config) => {
         const tk = getServiceGuardsToken(config);
         return makeServiceFeature(
@@ -262,7 +275,7 @@ export function withServiceGuards(...guards: ProvdierOf<GuardLike>[]): ServiceFe
  * Adds filters to micro service.
  * @publicApi
  */
-export function withServiceFilters(...filters: ProvdierOf<RequestFilterLike>[]): ServiceFeatureFn<ServiceFeatureKind.Filters> {
+export function useFilters(...filters: ProvdierOf<RequestFilterLike>[]): ServiceFeatureFn<ServiceFeatureKind.Filters> {
     return (config) => {
         const tk = getServiceFiltersToken(config);
         return makeServiceFeature(
@@ -279,7 +292,7 @@ import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middl
  * Adds middlewares to micro service.
  * @publicApi
  */
-export function withServiceMiddlewares(...middlewares: ProvdierOf<MiddlewareLike>[]): ServiceFeatureFn<ServiceFeatureKind.Middlewares> {
+export function useMiddlewares(...middlewares: ProvdierOf<MiddlewareLike>[]): ServiceFeatureFn<ServiceFeatureKind.Middlewares> {
     return (config) => {
         const tk = getServiceMiddlewaresToken(config);
         const providers = middlewares.map((u) => toProvider(tk, u, true)) as Provider[];
@@ -305,7 +318,7 @@ export function withServiceMiddlewares(...middlewares: ProvdierOf<MiddlewareLike
  * Adds transfer interceptors to micro service.
  * @publicApi
  */
-export function withServiceTransfers(...selectors: TransferInterceptorFactory[]): ServiceFeatureFn<ServiceFeatureKind.Transfer> {
+export function useTransfers(...selectors: TransferInterceptorFactory[]): ServiceFeatureFn<ServiceFeatureKind.Transfer> {
     return (config) => {
         const tk = getServiceTransfersToken(config);
         const providers: Provider[] = [];
@@ -332,7 +345,7 @@ export function withServiceTransfers(...selectors: TransferInterceptorFactory[])
  * Adds logger to micro service.
  * @publicApi
  */
-export function withServiceLogger(options?: LoggerOptions): ServiceFeatureFn<ServiceFeatureKind.Logger> {
+export function useLogger(options?: LoggerOptions): ServiceFeatureFn<ServiceFeatureKind.Logger> {
     return (config) => {
         const tk = getServiceFiltersToken(config);
         return makeServiceFeature(
@@ -359,7 +372,7 @@ import { createRouteProviders } from './router/router.providers';
  * Adds router to micro service.
  * @publicApi
  */
-export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatureKind.Router> {
+export function useRouter(options?: any): ServiceFeatureFn<ServiceFeatureKind.Router> {
     return (config) => {
         const tk = getServiceInterceptorsToken(config);
         const routerToken = getServiceRouterToken(config);
@@ -390,7 +403,7 @@ export function withServiceRouter(options?: any): ServiceFeatureFn<ServiceFeatur
  * Protocol implementations handle the actual parsing.
  * @publicApi
  */
-export function withBodyParser(options?: any): ServiceFeatureFn<ServiceFeatureKind.BodyParser> {
+export function useBodyParser(options?: any): ServiceFeatureFn<ServiceFeatureKind.BodyParser> {
     return (config) => {
         const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
@@ -408,7 +421,7 @@ export function withBodyParser(options?: any): ServiceFeatureFn<ServiceFeatureKi
  * Adds body serializer to micro service.
  * @publicApi
  */
-export function withBodySerializer(options?: any): ServiceFeatureFn<ServiceFeatureKind.BodySerializer> {
+export function useBodySerializer(options?: any): ServiceFeatureFn<ServiceFeatureKind.BodySerializer> {
     return (config) => {
         return makeServiceFeature(
             ServiceFeatureKind.BodySerializer,
@@ -424,7 +437,7 @@ export function withBodySerializer(options?: any): ServiceFeatureFn<ServiceFeatu
  * Adds content negotiation to micro service.
  * @publicApi
  */
-export function withContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.Content> {
+export function useContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.Content> {
     return (config) => {
         const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
@@ -442,7 +455,7 @@ export function withContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.
  * Adds JSON serialization to micro service.
  * @publicApi
  */
-export function withJson(options?: any): ServiceFeatureFn<ServiceFeatureKind.Json> {
+export function useJson(options?: any): ServiceFeatureFn<ServiceFeatureKind.Json> {
     return (config) => {
         const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
@@ -460,7 +473,7 @@ export function withJson(options?: any): ServiceFeatureFn<ServiceFeatureKind.Jso
  * Adds session management to micro service.
  * @publicApi
  */
-export function withSession(options?: any): ServiceFeatureFn<ServiceFeatureKind.Session> {
+export function useSession(options?: any): ServiceFeatureFn<ServiceFeatureKind.Session> {
     return (config) => {
         const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
@@ -478,7 +491,7 @@ export function withSession(options?: any): ServiceFeatureFn<ServiceFeatureKind.
  * Adds cookie handling to micro service.
  * @publicApi
  */
-export function withCookie(options?: CookieOptions): ServiceFeatureFn<ServiceFeatureKind.Cookie> {
+export function useCookie(options?: CookieOptions): ServiceFeatureFn<ServiceFeatureKind.Cookie> {
     return (config) => {
         const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
@@ -496,7 +509,7 @@ export function withCookie(options?: CookieOptions): ServiceFeatureFn<ServiceFea
  * Adds CORS handling to micro service.
  * @publicApi
  */
-export function withCors(options?: CorsOptions): ServiceFeatureFn<ServiceFeatureKind.Cors> {
+export function useCors(options?: CorsOptions): ServiceFeatureFn<ServiceFeatureKind.Cors> {
     return (config) => {
         const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
@@ -539,7 +552,7 @@ export function provideServiceFromDi(options: TransportConfig): Provider[] {
                 const transports: ServiceTransportFeature[] = [];
                 configs.forEach(config => {
                     if (!config.transportFeature) throw new ArgumentException(`missing transportFeature ${options.transport} microservice service configuration` + (options.name ? `, alias with name ${options.name}` : ''));
-                    features.push(withServiceFeatures(config.features));
+                    features.push(useFeatures(config.features));
                     transports.push(config.transportFeature(config, configs.length == 1 && config.asDefault));
                 });
 

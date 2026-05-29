@@ -1,9 +1,9 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, withServiceRouter, Controller, Get, Post, RequestBody, MESSAGE_ROUTERS } from '@tsdi/service';
-import { withHttpTransport, HttpFileResult } from '../src/server';
-import { withHttpClientTransport } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RequestBody, MESSAGE_ROUTERS } from '@tsdi/service';
+import { useHttpTransport, HttpFileResult } from '../src/server';
+import { withHttpTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import { HttpClient } from '../src/client/client';
 import { HttpRequest } from '../src/client/request';
@@ -42,10 +42,10 @@ describe('HTTP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withHttpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useHttpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withHttpClientTransport({ url: `http://127.0.0.1:${PORTS.ms}`, asDefault: true }))
+                withHttpTransport({ url: `http://127.0.0.1:${PORTS.ms}`, asDefault: true }))
         ]
     })
     class HttpMsModule { }
@@ -65,10 +65,10 @@ describe('HTTP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withHttpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useHttpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withHttpClientTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
+                withHttpTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
         ]
     })
     class HttpHostModule { }
@@ -88,8 +88,8 @@ describe('HTTP @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [HttpTestController],
-        providers: [provideService(withServiceRouter(),
-            withHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
     })
     class HttpCtrlModule { }
 
@@ -135,8 +135,8 @@ describe('HTTP @Controller', () => {
 describe('HTTP static/media support', () => {
     @Module({
         imports: [LoggerModule], declarations: [HttpTestController],
-        providers: [provideService(withServiceRouter(),
-            withHttpTransport({
+        providers: [provideService(useRouter(),
+            useHttpTransport({
                 listenOpts: { port: PORTS.static, host: '127.0.0.1' },
                 static: { root: path.resolve(__dirname, 'fixtures') },
                 upload: { limit: '1mb' },
@@ -242,8 +242,8 @@ describe('HTTP/2 over h2c (plaintext)', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [HttpTestController],
-        providers: [provideService(withServiceRouter(),
-            withHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2, host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2, host: '127.0.0.1' }, asDefault: true }))]
     })
     class Http2Module { }
 
@@ -294,10 +294,10 @@ describe('HTTP/2 via microservice client pipeline', () => {
         imports: [LoggerModule],
         declarations: [HttpTestController],
         providers: [
-            provideService(withServiceRouter(),
-                withHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2client, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2client, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withHttpClientTransport({ authority: `http://127.0.0.1:${PORTS.h2client}`, asDefault: true }))
+                withHttpTransport({ authority: `http://127.0.0.1:${PORTS.h2client}`, asDefault: true }))
         ]
     })
     class Http2ClientModule { }
@@ -334,8 +334,8 @@ describe('HTTP/2 over TLS (HTTPS/2)', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [HttpTestController],
-        providers: [provideService(withServiceRouter(),
-            withHttpTransport({
+        providers: [provideService(useRouter(),
+            useHttpTransport({
                 majorVersion: 2,
                 secure: true,
                 serverOpts: { key, cert, allowHTTP1: true } as any,
@@ -415,8 +415,8 @@ describe('HTTP/2 concurrent streams', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [HttpTestController],
-        providers: [provideService(withServiceRouter(),
-            withHttpTransport({
+        providers: [provideService(useRouter(),
+            useHttpTransport({
                 majorVersion: 2,
                 listenOpts: { port: PORTS.h2 + 20, host: '127.0.0.1' },
                 asDefault: true
@@ -480,8 +480,8 @@ describe('HTTP content negotiation', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [NegotiateController],
-        providers: [provideService(withServiceRouter(),
-            withHttpTransport({
+        providers: [provideService(useRouter(),
+            useHttpTransport({
                 listenOpts: { port: NEG_PORT, host: '127.0.0.1' },
                 asDefault: true
             }))]
@@ -542,8 +542,8 @@ describe('HTTP error handling', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [HttpTestController],
-        providers: [provideService(withServiceRouter(),
-            withHttpTransport({
+        providers: [provideService(useRouter(),
+            useHttpTransport({
                 listenOpts: { port: ERR_PORT, host: '127.0.0.1' },
                 asDefault: true
             }))]

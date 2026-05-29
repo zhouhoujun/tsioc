@@ -96,6 +96,6 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
     };
 }
 
-export function withNatsTransport(...options: Partial<NatsServOptions>[]): ServiceTransportFeature[] {
+export function useNatsTransport(...options: Partial<NatsServOptions>[]): ServiceTransportFeature[] {
     return options.map(o => natsTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }

@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
-import { Controller, Get, RequestPath, provideService, withServiceRouter } from '@tsdi/service';
-import { withTcpTransport } from '../src/server';
+import { Controller, Get, RequestPath, provideService, useRouter } from '@tsdi/service';
+import { useTcpTransport } from '../src/server';
 import * as net from 'node:net';
 import * as fs from 'node:fs';
 import expect = require('expect');
@@ -21,8 +21,8 @@ describe('TCP Microservice IPC (UNIX Domain Socket) Tests', () => {
                 declarations: [TestController],
                 providers: [
                     provideService(
-                        withServiceRouter(),
-                        withTcpTransport({
+                        useRouter(),
+                        useTcpTransport({
                             listenOpts: { path: '/tmp/test.sock' },
                             asDefault: true
                         })
@@ -34,8 +34,8 @@ describe('TCP Microservice IPC (UNIX Domain Socket) Tests', () => {
             expect(IpcModule).toBeDefined();
 
             const providers = provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { path: '/tmp/test.sock' },
                     asDefault: true
                 })
@@ -46,8 +46,8 @@ describe('TCP Microservice IPC (UNIX Domain Socket) Tests', () => {
 
         it('should create transport with IPC path', () => {
             const providers = provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { path: '/tmp/another.sock' },
                     asDefault: true
                 })

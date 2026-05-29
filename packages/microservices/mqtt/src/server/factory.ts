@@ -88,6 +88,6 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
     };
 }
 
-export function withMqttTransport(...options: Partial<MqttServOptions>[]): ServiceTransportFeature[] {
+export function useMqttTransport(...options: Partial<MqttServOptions>[]): ServiceTransportFeature[] {
     return options.map(o => mqttTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }

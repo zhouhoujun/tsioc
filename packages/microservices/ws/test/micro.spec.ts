@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { WsClient } from '../src';
-import { withWsTransport } from '../src/server';
-import { withWsClientTransport } from '../src/client';
+import { useWsTransport } from '../src/server';
+import { withWsTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class WSService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withWsTransport({
+            useRouter(),
+            useWsTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withWsClientTransport({
+            withWsTransport({
                 microservice: true,
                 asDefault: true
             })

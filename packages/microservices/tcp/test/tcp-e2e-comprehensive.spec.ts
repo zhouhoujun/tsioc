@@ -5,9 +5,9 @@ import { BadRequestException } from '@tsdi/common';
 import {
     Controller, Get, Post, Put, Delete,
     RequestHeader, RequestPath, RequestParam, RequestBody,
-    provideService, withServiceRouter
+    provideService, useRouter
 } from '@tsdi/service';
-import { withTcpTransport } from '../src/server';
+import { useTcpTransport } from '../src/server';
 import * as net from 'node:net';
 import expect = require('expect');
 
@@ -149,8 +149,8 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         declarations: [UserController],
         providers: [
             provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { port: SERVER_PORT, host: '127.0.0.1' },
                     asDefault: true
                 })
@@ -418,9 +418,12 @@ function sendTcpRequest(port: number, requestObj: Record<string, unknown>): Prom
     return new Promise((resolve, reject) => {
         const socket = new net.Socket();
         let response = '';
+        const payload = ('path' in requestObj && !('url' in requestObj))
+            ? { ...requestObj, url: requestObj.path, path: undefined }
+            : requestObj;
 
         socket.connect(port, '127.0.0.1', () => {
-            socket.write(JSON.stringify(requestObj) + '\r\n');
+            socket.write(JSON.stringify(payload) + '\r\n');
         });
 
         socket.on('data', (chunk) => {

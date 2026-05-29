@@ -74,7 +74,7 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
 
 }
 
-export function withRedisClientTransport(...options: Partial<RedisClientOptions>[]): ClientTransportFeature[] {
+export function withRedisTransport(...options: Partial<RedisClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
         const asDefault = option.asDefault ?? (idx === 0);
         return redisClientTransportFactory(option, asDefault);

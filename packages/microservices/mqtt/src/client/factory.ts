@@ -81,7 +81,7 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
 
 }
 
-export function withMqttClientTransport(...options: Partial<MqttClientOptions>[]): ClientTransportFeature[] {
+export function withMqttTransport(...options: Partial<MqttClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
         const asDefault = option.asDefault ?? (idx === 0);
         return mqttClientTransportFactory(option, asDefault);

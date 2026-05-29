@@ -1,4 +1,4 @@
-import { TcpServer, TcpServOptions, tcpTransportFactory, withTcpTransport, TCP_SERV_OPTIONS } from '../src/server';
+import { TcpServer, TcpServOptions, tcpTransportFactory, useTcpTransport, TCP_SERV_OPTIONS } from '../src/server';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 import * as net from 'node:net';
@@ -102,7 +102,7 @@ describe('TCP Microservice', () => {
 
 
         it('should create multiple transport features for multiple options', () => {
-            const features = withTcpTransport(
+            const features = useTcpTransport(
                 { listenOpts: { port: 8080 } },
                 { listenOpts: { port: 8081 } }
             );

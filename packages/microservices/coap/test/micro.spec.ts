@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { CoapClient } from '../src';
-import { withCoapTransport } from '../src/server';
-import { withCoapClientTransport } from '../src/client';
+import { useCoapTransport } from '../src/server';
+import { withCoapTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class COAPService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withCoapTransport({
+            useRouter(),
+            useCoapTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withCoapClientTransport({
+            withCoapTransport({
                 microservice: true,
                 asDefault: true
             })

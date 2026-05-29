@@ -43,6 +43,6 @@ export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?:
     return { kind: ServiceFeatureKind.Transport, config, providers };
 }
 
-export function withMcpTransport(...options: Partial<McpServOptions>[]): ServiceTransportFeature[] {
+export function useMcpTransport(...options: Partial<McpServOptions>[]): ServiceTransportFeature[] {
     return options.map((o, i) => mcpTransportFactory(o, o.asDefault ?? (options.length === 1 && i === 0)));
 }

@@ -42,6 +42,6 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 }
 
-export function withKafkaClientTransport(...options: Partial<KafkaClientOptions>[]): ClientTransportFeature[] {
+export function withKafkaTransport(...options: Partial<KafkaClientOptions>[]): ClientTransportFeature[] {
     return options.map((o, i) => kafkaClientTransportFactory(o, o.asDefault ?? (i === 0)));
 }

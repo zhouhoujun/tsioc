@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { UdpClient } from '../src';
-import { withUdpTransport } from '../src/server';
-import { withUdpClientTransport } from '../src/client';
+import { useUdpTransport } from '../src/server';
+import { withUdpTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class UdpService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withUdpTransport({
+            useRouter(),
+            useUdpTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withUdpClientTransport({
+            withUdpTransport({
                 microservice: true,
                 asDefault: true
             })

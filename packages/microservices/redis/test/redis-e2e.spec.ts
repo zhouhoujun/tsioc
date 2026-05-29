@@ -2,9 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
-import { withRedisTransport } from '../src/server';
-import { withRedisClientTransport, RedisClient } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { useRedisTransport } from '../src/server';
+import { withRedisTransport, RedisClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import expect = require('expect');
 
@@ -26,10 +26,10 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withRedisTransport({ url: REDIS_URL, asDefault: true })),
+            provideService(useRouter(),
+                useRedisTransport({ url: REDIS_URL, asDefault: true })),
             provideClient(
-                withRedisClientTransport({ url: REDIS_URL, microservice: true, asDefault: true }))
+                withRedisTransport({ url: REDIS_URL, microservice: true, asDefault: true }))
         ]
     })
     class RedisMsModule { }
@@ -50,10 +50,10 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withRedisTransport({ microservice: false as any, url: REDIS_URL, asDefault: true })),
+            provideService(useRouter(),
+                useRedisTransport({ microservice: false as any, url: REDIS_URL, asDefault: true })),
             provideClient(
-                withRedisClientTransport({ url: REDIS_URL, microservice: false, asDefault: true }))
+                withRedisTransport({ url: REDIS_URL, microservice: false, asDefault: true }))
         ]
     })
     class RedisHostModule { }
@@ -73,8 +73,8 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [provideService(withServiceRouter(),
-            withRedisTransport({ url: REDIS_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useRedisTransport({ url: REDIS_URL, asDefault: true }))]
     })
     class RedisCtrlModule { }
 
@@ -93,8 +93,8 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [provideService(withServiceRouter(),
-            withRedisTransport({ url: REDIS_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useRedisTransport({ url: REDIS_URL, asDefault: true }))]
     })
     class RedisRouteModule { }
 

@@ -47,6 +47,19 @@ export function provideClient(...features: ClientFeatureLike<ClientFeatureKind>[
             });
         });
 
+        if (!kinds.has(ClientFeatureKind.Transfer)) {
+            const transferFeature = withTransfers()(config);
+            const transfers = Array.isArray(transferFeature) ? transferFeature : [transferFeature];
+            transfers.forEach(feature => {
+                const pdrs = kinds.get(feature.kind);
+                if (pdrs) {
+                    pdrs.push(...feature.providers);
+                } else {
+                    kinds.set(feature.kind, feature.providers.slice(0));
+                }
+            });
+        }
+
         Array.from(kinds.keys()).sort((a, b) => a - b).forEach(k => {
             providers.push(...kinds.get(k)!);
         });
@@ -148,7 +161,7 @@ export function withRetry(options?: boolean | RetryOptions): ClientFeatureFn<Cli
  * @see {@link provideClient}
  * @publicApi
  */
-export function withClientInterceptors(
+export function withInterceptors(
     ...interceptors: ProvdierOf<RequestInterceptorLike>[]
 ): ClientFeatureFn<ClientFeatureKind.Interceptors> {
     return (config) => {
@@ -167,7 +180,7 @@ export function withClientInterceptors(
  * @see {@link provideClient}
  * @publicApi
  */
-export function withClientGuards(...guards: ProvdierOf<GuardLike>[]): ClientFeatureFn<ClientFeatureKind.Guards> {
+export function withGuards(...guards: ProvdierOf<GuardLike>[]): ClientFeatureFn<ClientFeatureKind.Guards> {
     return (config) => {
         const tk = getClientGuardsToken(config);
         return makeClientFeature(
@@ -184,7 +197,7 @@ export function withClientGuards(...guards: ProvdierOf<GuardLike>[]): ClientFeat
  * @see {@link provideClient}
  * @publicApi
  */
-export function withClientFilters(...filters: ProvdierOf<RequestFilterLike>[]): ClientFeatureFn<ClientFeatureKind.Filters> {
+export function withFilters(...filters: ProvdierOf<RequestFilterLike>[]): ClientFeatureFn<ClientFeatureKind.Filters> {
     return (config) => {
         const tk = getClientFiltersToken(config);
         return makeClientFeature(
@@ -201,7 +214,7 @@ export function withClientFilters(...filters: ProvdierOf<RequestFilterLike>[]): 
  * @see {@link provideClient}
  * @publicApi
  */
-export function withClientTransfers(
+export function withTransfers(
     ...selectors: TransferInterceptorFactory[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
@@ -250,18 +263,18 @@ const defaultClientOptions: Partial<ClientFeatureOptions> = {
  * @see {@link provideClient}
  * @publicApi
  */
-export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> {
+export function withFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Exclude<ClientFeatureKind, ClientFeatureKind.Transport>> {
     const opts = { ...defaultClientOptions, ...options };
     return (config) => {
         const features: any[] = [];
         if (opts.filters) {
-            features.push(withClientFilters(...opts.filters)(config));
+            features.push(withFilters(...opts.filters)(config));
         }
         if (opts.interceptors) {
-            features.push(withClientInterceptors(...opts.interceptors)(config));
+            features.push(withInterceptors(...opts.interceptors)(config));
         }
         if (opts.guards) {
-            features.push(withClientGuards(...opts.guards)(config));
+            features.push(withGuards(...opts.guards)(config));
         }
         if (opts.discovery) {
             features.push(withDiscovery(opts.discovery)(config));
@@ -276,7 +289,7 @@ export function withClientFeatures(options?: ClientFeatureOptions): ClientFeatur
             features.push(withRetry(opts.retry)(config));
         }
 
-        features.push(withClientTransfers(...(isArray(opts.transfers) ? opts.transfers : []))(config));
+        features.push(withTransfers(...(isArray(opts.transfers) ? opts.transfers : []))(config));
 
         return features;
     }
@@ -300,7 +313,7 @@ export function provideClientFromDi(options: TransportConfig): Provider[] {
                 const transports: ClientTransportFeature[] = [];
                 configs.forEach(config => {
                     if (!config.transportFeature) throw new ArgumentException(`messings transportFeature ${options.transport} microservice client configure` + (options.name ? `, ailas with name ${options.name}` : ''));
-                    features.push(withClientFeatures(config.features));
+                    features.push(withFeatures(config.features));
                     transports.push(config.transportFeature(config, configs.length == 1 && config.asDefault));
                 });
 

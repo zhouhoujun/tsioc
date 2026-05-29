@@ -1,5 +1,5 @@
-import { NatsServer, NatsServOptions, natsTransportFactory, withNatsTransport, NATS_SERV_OPTIONS } from '../src/server';
-import { withNatsClientTransport, NATS_CLIENT_OPTIONS } from '../src/client';
+import { NatsServer, NatsServOptions, natsTransportFactory, useNatsTransport, NATS_SERV_OPTIONS } from '../src/server';
+import { withNatsTransport, NATS_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -99,9 +99,9 @@ describe('NATS Microservice', () => {
         });
     });
 
-    describe('withNatsTransport', () => {
+    describe('useNatsTransport', () => {
         it('should create multiple transport features for multiple options', () => {
-            const features = withNatsTransport(
+            const features = useNatsTransport(
                 { url: 'nats://localhost:4222' },
                 { url: 'nats://localhost:4223' }
             );
@@ -109,9 +109,9 @@ describe('NATS Microservice', () => {
         });
     });
 
-    describe('withNatsClientTransport', () => {
+    describe('withNatsTransport', () => {
         it('should use json packet transfer by default', () => {
-            const features = withNatsClientTransport({
+            const features = withNatsTransport({
                 url: 'nats://localhost:4222'
             });
 
@@ -119,7 +119,7 @@ describe('NATS Microservice', () => {
         });
 
         it('should preserve host client mode when microservice is false', () => {
-            const features = withNatsClientTransport({
+            const features = withNatsTransport({
                 microservice: false,
                 url: 'nats://localhost:4222'
             });

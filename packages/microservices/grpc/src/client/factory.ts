@@ -30,6 +30,6 @@ function grpcClientTransportFactory(option: Partial<GrpcClientOptions>, asDefaul
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 }
 
-export function withGrpcClientTransport(...options: Partial<GrpcClientOptions>[]): ClientTransportFeature[] {
+export function withGrpcTransport(...options: Partial<GrpcClientOptions>[]): ClientTransportFeature[] {
     return options.map((o, i) => grpcClientTransportFactory(o, o.asDefault ?? (i === 0)));
 }

@@ -4,7 +4,7 @@ import {
     RequestHeader, RequestPath, RequestParam, RequestBody,
     provideService
 } from '@tsdi/service';
-import { withTcpTransport } from '../src/server';
+import { useTcpTransport } from '../src/server';
 import expect = require('expect');
 
 describe('TCP Microservice Parameter Decorators', () => {
@@ -24,7 +24,7 @@ describe('TCP Microservice Parameter Decorators', () => {
             declarations: [TestController],
             providers: [
                 provideService(
-                    withTcpTransport({
+                    useTcpTransport({
                         listenOpts: { port: 0 },
                         asDefault: true
                     })
@@ -35,7 +35,7 @@ describe('TCP Microservice Parameter Decorators', () => {
 
         expect(TestHeaderModule).toBeDefined();
         const providers = provideService(
-            withTcpTransport({ listenOpts: { port: 0 } })
+            useTcpTransport({ listenOpts: { port: 0 } })
         );
         expect(Array.isArray(providers)).toBe(true);
     });
@@ -55,7 +55,7 @@ describe('TCP Microservice Parameter Decorators', () => {
             declarations: [UserController],
             providers: [
                 provideService(
-                    withTcpTransport({ listenOpts: { port: 0 } })
+                    useTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
         })
@@ -81,7 +81,7 @@ describe('TCP Microservice Parameter Decorators', () => {
             declarations: [SearchController],
             providers: [
                 provideService(
-                    withTcpTransport({ listenOpts: { port: 0 } })
+                    useTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
         })
@@ -110,7 +110,7 @@ describe('TCP Microservice Parameter Decorators', () => {
             declarations: [UserController],
             providers: [
                 provideService(
-                    withTcpTransport({ listenOpts: { port: 0 } })
+                    useTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
         })
@@ -154,7 +154,7 @@ describe('TCP Microservice Parameter Decorators', () => {
             declarations: [UserController],
             providers: [
                 provideService(
-                    withTcpTransport({ listenOpts: { port: 0 } })
+                    useTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
         })
@@ -206,7 +206,7 @@ describe('TCP Microservice Parameter Decorators', () => {
             declarations: [ItemController],
             providers: [
                 provideService(
-                    withTcpTransport({ listenOpts: { port: 0 } })
+                    useTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
         })
@@ -233,7 +233,7 @@ describe('TCP Microservice Parameter Decorators', () => {
             declarations: [PaginationController],
             providers: [
                 provideService(
-                    withTcpTransport({ listenOpts: { port: 0 } })
+                    useTcpTransport({ listenOpts: { port: 0 } })
                 )
             ]
         })

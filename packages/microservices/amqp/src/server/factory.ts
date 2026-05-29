@@ -94,6 +94,6 @@ export function amqpTransportFactory(option: Partial<AmqpServOptions>, asDefault
     };
 }
 
-export function withAmqpTransport(...options: Partial<AmqpServOptions>[]): ServiceTransportFeature[] {
+export function useAmqpTransport(...options: Partial<AmqpServOptions>[]): ServiceTransportFeature[] {
     return options.map(o => amqpTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }

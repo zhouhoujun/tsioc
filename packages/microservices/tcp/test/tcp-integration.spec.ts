@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { Controller, Get, provideService, provideServiceFromDi } from '@tsdi/service';
-import { withTcpTransport } from '../src/server';
+import { useTcpTransport } from '../src/server';
 import expect = require('expect');
 import { Transport } from '@tsdi/common';
 
@@ -19,7 +19,7 @@ describe('TCP Microservice Integration', () => {
             declarations: [TestController],
             providers: [
                 provideService(
-                    withTcpTransport({
+                    useTcpTransport({
                         listenOpts: { port: 0, host: 'localhost' },
                         asDefault: true
                     })
@@ -31,7 +31,7 @@ describe('TCP Microservice Integration', () => {
         expect(TestModule).toBeDefined();
         // Just verify the providers can be created without error
         const providers = provideService(
-            withTcpTransport({
+            useTcpTransport({
                 listenOpts: { port: 0, host: 'localhost' },
                 asDefault: true
             })
@@ -51,7 +51,7 @@ describe('TCP Microservice Integration', () => {
             declarations: [FirstController, SecondController],
             providers: [
                 provideService(
-                    withTcpTransport(
+                    useTcpTransport(
                         { listenOpts: { port: 8080 }, name: 'service1' },
                         { listenOpts: { port: 8081 }, name: 'service2' }
                     )
@@ -63,7 +63,7 @@ describe('TCP Microservice Integration', () => {
         expect(MultiServiceModule).toBeDefined();
         // Just verify the providers can be created without error
         const providers = provideService(
-            withTcpTransport(
+            useTcpTransport(
                 { listenOpts: { port: 8080 }, name: 'service1' },
                 { listenOpts: { port: 8081 }, name: 'service2' }
             )

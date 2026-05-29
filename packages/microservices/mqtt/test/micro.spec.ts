@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { MqttClient } from '../src';
-import { withMqttTransport } from '../src/server';
-import { withMqttClientTransport } from '../src/client';
+import { useMqttTransport } from '../src/server';
+import { withMqttTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class MQTTService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withMqttTransport({
+            useRouter(),
+            useMqttTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withMqttClientTransport({
+            withMqttTransport({
                 microservice: true,
                 asDefault: true
             })

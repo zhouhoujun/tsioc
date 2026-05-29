@@ -53,6 +53,6 @@ export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefau
     return { kind: ServiceFeatureKind.Transport, config, providers };
 }
 
-export function withKafkaTransport(...options: Partial<KafkaServOptions>[]): ServiceTransportFeature[] {
+export function useKafkaTransport(...options: Partial<KafkaServOptions>[]): ServiceTransportFeature[] {
     return options.map(o => kafkaTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }

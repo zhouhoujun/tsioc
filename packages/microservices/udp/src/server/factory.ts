@@ -76,6 +76,6 @@ export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?:
     return { kind: ServiceFeatureKind.Transport, config, providers };
 }
 
-export function withUdpTransport(...options: Partial<UdpServOptions>[]): ServiceTransportFeature[] {
+export function useUdpTransport(...options: Partial<UdpServOptions>[]): ServiceTransportFeature[] {
     return options.map(option => udpTransportFactory(option, options.length === 1 && option.asDefault));
 }

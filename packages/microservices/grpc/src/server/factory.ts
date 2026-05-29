@@ -42,6 +42,6 @@ export function grpcTransportFactory(option: Partial<GrpcServOptions>, asDefault
     return { kind: ServiceFeatureKind.Transport, config, providers };
 }
 
-export function withGrpcTransport(...options: Partial<GrpcServOptions>[]): ServiceTransportFeature[] {
+export function useGrpcTransport(...options: Partial<GrpcServOptions>[]): ServiceTransportFeature[] {
     return options.map((o, i) => grpcTransportFactory(o, o.asDefault ?? (options.length === 1 && i === 0)));
 }

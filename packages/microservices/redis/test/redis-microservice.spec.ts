@@ -1,5 +1,5 @@
-import { RedisServer, RedisServOptions, redisTransportFactory, withRedisTransport, REDIS_SERV_OPTIONS } from '../src/server';
-import { withRedisClientTransport, REDIS_CLIENT_OPTIONS } from '../src/client';
+import { RedisServer, RedisServOptions, redisTransportFactory, useRedisTransport, REDIS_SERV_OPTIONS } from '../src/server';
+import { withRedisTransport, REDIS_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -90,9 +90,9 @@ describe('Redis Microservice', () => {
         });
     });
 
-    describe('withRedisTransport', () => {
+    describe('useRedisTransport', () => {
         it('should create multiple transport features for multiple options', () => {
-            const features = withRedisTransport(
+            const features = useRedisTransport(
                 {},
                 {}
             );
@@ -100,14 +100,14 @@ describe('Redis Microservice', () => {
         });
     });
 
-    describe('withRedisClientTransport', () => {
+    describe('withRedisTransport', () => {
         it('should use json packet transfer by default', () => {
-            const features = withRedisClientTransport({});
+            const features = withRedisTransport({});
             expect(features[0].config.features?.defaultTransfer).toBeDefined();
         });
 
         it('should preserve host client mode when microservice is false', () => {
-            const features = withRedisClientTransport({
+            const features = withRedisTransport({
                 microservice: false
             });
 

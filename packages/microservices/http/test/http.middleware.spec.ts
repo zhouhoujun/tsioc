@@ -4,9 +4,9 @@ import { LoggerModule } from '@tsdi/logger';
 import { lastValueFrom, catchError, of } from 'rxjs';
 import expect = require('expect');
 import { provideClient } from '@tsdi/client';
-import { Controller, Get, provideService, withServiceMiddlewares, withServiceRouter } from '@tsdi/service';
-import { HttpClient, withHttpClientTransport } from '../src/client';
-import { HttpRequestMessage, withHttpTransport } from '../src/server';
+import { Controller, Get, provideService, useMiddlewares, useRouter } from '@tsdi/service';
+import { HttpClient, withHttpTransport } from '../src/client';
+import { HttpRequestMessage, useHttpTransport } from '../src/server';
 
 const PORT = 3200 + Math.floor(Math.random() * 1000);
 
@@ -24,9 +24,9 @@ describe('middleware', () => {
         declarations: [MiddlewareController],
         providers: [
             provideService(
-                withServiceRouter(),
-                withServiceRouter({ microservice: true }),
-                withServiceMiddlewares(async (ctx, next) => {
+                useRouter(),
+                useRouter({ microservice: true }),
+                useMiddlewares(async (ctx, next) => {
                     const request = ctx.getRequest() as HttpRequestMessage;
                     if (request.url?.startsWith('/test')) {
                         ctx.getResponse().body = request.query.hi;
@@ -34,7 +34,7 @@ describe('middleware', () => {
                     }
                     await next();
                 }),
-                withHttpTransport({
+                useHttpTransport({
                     microservice: false as any,
                     listenOpts: {
                         port: PORT,
@@ -44,7 +44,7 @@ describe('middleware', () => {
                 })
             ),
             provideClient(
-                withHttpClientTransport({
+                withHttpTransport({
                     url: `http://127.0.0.1:${PORT}`,
                     microservice: false,
                     asDefault: true

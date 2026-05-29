@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, withServiceRouter, Controller, Get, Post, RequestBody } from '@tsdi/service';
-import { withHttpTransport } from '../src/server';
+import { provideService, useRouter, Controller, Get, Post, RequestBody } from '@tsdi/service';
+import { useHttpTransport } from '../src/server';
 import * as http from 'node:http';
 import expect = require('expect');
 
@@ -25,8 +25,8 @@ describe('HTTP/1.1 Routing', () => {
         imports: [LoggerModule],
         declarations: [DeviceController],
         providers: [
-            provideService(withServiceRouter(),
-                withHttpTransport({ listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true }))
+            provideService(useRouter(),
+                useHttpTransport({ listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true }))
         ]
     })
     class RoutingApp { }

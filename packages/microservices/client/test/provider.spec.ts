@@ -8,8 +8,8 @@ import {
     MICRO_CLIENT_RETRY_OPTIONS,
     provideClient,
     provideClientFromDi,
-    withClientFeatures,
-    withClientTransfers,
+    withFeatures,
+    withTransfers,
     withDiscovery,
     withLoadBalance
 } from '../src/provider';
@@ -67,7 +67,7 @@ describe('client provider', () => {
 
     it('adds default discovery, loadBalance and transfer features', () => {
         const config = createConfig();
-        const features = withClientFeatures()(config) as any[];
+        const features = withFeatures()(config) as any[];
         const kinds = features.map(feature => feature.kind);
         expect(kinds).toContain(ClientFeatureKind.Discovery);
         expect(kinds).toContain(ClientFeatureKind.LoadBalance);
@@ -78,7 +78,7 @@ describe('client provider', () => {
 
     it('normalizes boolean retry and circuit breaker options', () => {
         const config = createConfig();
-        const features = withClientFeatures({ retry: true, circuitBreaker: true })(config) as any[];
+        const features = withFeatures({ retry: true, circuitBreaker: true })(config) as any[];
         const retry = features.find(feature => feature.kind === ClientFeatureKind.Retry);
         const breaker = features.find(feature => feature.kind === ClientFeatureKind.CircuitBreaker);
         expect(retry.providers[0].provide).toBe(MICRO_CLIENT_RETRY_OPTIONS);
@@ -89,7 +89,7 @@ describe('client provider', () => {
 
     it('uses default transfer when no transfer factory is provided', () => {
         const config = createConfig();
-        const transfer = withClientTransfers()({
+        const transfer = withTransfers()({
             ...config,
             features: {
                 defaultTransfer: () => [() => undefined]

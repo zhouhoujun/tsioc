@@ -2,10 +2,10 @@ import { Module } from '@tsdi/ioc';
 import {
     Controller, Get, Post, Put, Delete,
     RequestHeader, RequestPath, RequestParam, RequestBody,
-    provideService, withServiceRouter,
+    provideService, useRouter,
     composeMiddleware, MiddlewareFn
 } from '@tsdi/service';
-import { withTcpTransport } from '../src/server';
+import { useTcpTransport } from '../src/server';
 import expect = require('expect');
 
 describe('TCP Microservice Full Scenario Tests', () => {
@@ -58,8 +58,8 @@ describe('TCP Microservice Full Scenario Tests', () => {
                 declarations: [UserController],
                 providers: [
                     provideService(
-                        withServiceRouter(),
-                        withTcpTransport({
+                        useRouter(),
+                        useTcpTransport({
                             listenOpts: { port: 0, host: '127.0.0.1' },
                             asDefault: true
                         })
@@ -73,8 +73,8 @@ describe('TCP Microservice Full Scenario Tests', () => {
 
         it('should create providers for complete controller', () => {
             const providers = provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { port: 0 },
                     asDefault: true
                 })
@@ -130,8 +130,8 @@ describe('TCP Microservice Full Scenario Tests', () => {
                 declarations: [FirstController, SecondController],
                 providers: [
                     provideService(
-                        withServiceRouter(),
-                        withTcpTransport({
+                        useRouter(),
+                        useTcpTransport({
                             listenOpts: { port: 0 },
                             asDefault: true
                         })
@@ -145,8 +145,8 @@ describe('TCP Microservice Full Scenario Tests', () => {
 
         it('should create providers for multiple controllers', () => {
             const providers = provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { port: 0 },
                     asDefault: true
                 })
@@ -159,8 +159,8 @@ describe('TCP Microservice Full Scenario Tests', () => {
     describe('TLS secured TCP server configuration', () => {
         it('should accept TLS server options', () => {
             const providers = provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { port: 0 },
                     serverOpts: {
                         requestCert: false,
@@ -178,8 +178,8 @@ describe('TCP Microservice Full Scenario Tests', () => {
     describe('IPC / UNIX domain socket support', () => {
         it('should accept IPC path configuration', () => {
             const providers = provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { path: '/tmp/tcp-test.sock' },
                     asDefault: true
                 })

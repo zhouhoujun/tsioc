@@ -2,9 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
-import { withMcpTransport } from '../src/server';
-import { withMcpClientTransport, McpClient } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { useMcpTransport } from '../src/server';
+import { withMcpTransport, McpClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as http from 'node:http';
 import expect = require('expect');
@@ -28,10 +28,10 @@ describe('MCP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withMcpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useMcpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.ms}`, microservice: true, asDefault: true }))
+                withMcpTransport({ url: `http://127.0.0.1:${PORTS.ms}`, microservice: true, asDefault: true }))
         ]
     })
     class McpMsModule { }
@@ -53,10 +53,10 @@ describe('MCP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withMcpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useMcpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
+                withMcpTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
         ]
     })
     class McpHostModule { }
@@ -84,10 +84,10 @@ describe('MCP E2E with provideService + provideClient (microservice:true)', () =
         imports: [LoggerModule],
         declarations: [McpDataController],
         providers: [
-            provideService(withServiceRouter(),
-                withMcpTransport({ listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useMcpTransport({ listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.e2e}`, microservice: true, asDefault: true }))
+                withMcpTransport({ url: `http://127.0.0.1:${PORTS.e2e}`, microservice: true, asDefault: true }))
         ]
     })
     class McpE2eModule { }
@@ -151,10 +151,10 @@ describe('MCP E2E with provideService + provideClient (microservice:false)', () 
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withMcpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useMcpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withMcpClientTransport({ url: `http://127.0.0.1:${PORTS.hostE2e}`, microservice: false, asDefault: true }))
+                withMcpTransport({ url: `http://127.0.0.1:${PORTS.hostE2e}`, microservice: false, asDefault: true }))
         ]
     })
     class McpE2eHostModule { }

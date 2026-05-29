@@ -101,7 +101,7 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
     };
 }
 
-export function withCoapTransport(...options: Partial<CoapServOptions>[]): ServiceTransportFeature[] {
+export function useCoapTransport(...options: Partial<CoapServOptions>[]): ServiceTransportFeature[] {
     return options.map(option => {
         return coapTransportFactory(option, options.length === 1 && option.asDefault);
     });

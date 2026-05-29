@@ -2,9 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
-import { withGrpcTransport } from '../src/server';
-import { withGrpcClientTransport, GrpcClient } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { useGrpcTransport } from '../src/server';
+import { withGrpcTransport, GrpcClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import expect = require('expect');
 
@@ -27,10 +27,10 @@ describe('gRPC E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withGrpcTransport({ port: PORTS.ms, asDefault: true })),
+            provideService(useRouter(),
+                useGrpcTransport({ port: PORTS.ms, asDefault: true })),
             provideClient(
-                withGrpcClientTransport({ url: `localhost:${PORTS.ms}`, microservice: true, asDefault: true }))
+                withGrpcTransport({ url: `localhost:${PORTS.ms}`, microservice: true, asDefault: true }))
         ]
     })
     class GrpcMsModule { }
@@ -52,10 +52,10 @@ describe('gRPC E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withGrpcTransport({ microservice: false as any, port: PORTS.host, asDefault: true })),
+            provideService(useRouter(),
+                useGrpcTransport({ microservice: false as any, port: PORTS.host, asDefault: true })),
             provideClient(
-                withGrpcClientTransport({ url: `localhost:${PORTS.host}`, microservice: false, asDefault: true }))
+                withGrpcTransport({ url: `localhost:${PORTS.host}`, microservice: false, asDefault: true }))
         ]
     })
     class GrpcHostModule { }
@@ -76,8 +76,8 @@ describe('gRPC @Controller / @Get / @Post', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [provideService(withServiceRouter(),
-            withGrpcTransport({ port: PORTS.ctrl, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useGrpcTransport({ port: PORTS.ctrl, asDefault: true }))]
     })
     class GrpcCtrlModule { }
 
@@ -97,8 +97,8 @@ describe('gRPC @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [provideService(withServiceRouter(),
-            withGrpcTransport({ port: PORTS.route, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useGrpcTransport({ port: PORTS.route, asDefault: true }))]
     })
     class GrpcRouteModule { }
 
@@ -121,10 +121,10 @@ describe('gRPC E2E with provideService + provideClient (microservice:true)', () 
         imports: [LoggerModule],
         declarations: [TestController],
         providers: [
-            provideService(withServiceRouter(),
-                withGrpcTransport({ port: E2E_PORT, asDefault: true })),
+            provideService(useRouter(),
+                useGrpcTransport({ port: E2E_PORT, asDefault: true })),
             provideClient(
-                withGrpcClientTransport({ url: `localhost:${E2E_PORT}`, microservice: true, asDefault: true }))
+                withGrpcTransport({ url: `localhost:${E2E_PORT}`, microservice: true, asDefault: true }))
         ]
     })
     class GrpcE2eModule { }
@@ -149,10 +149,10 @@ describe('gRPC E2E with provideService + provideClient (microservice:false)', ()
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withGrpcTransport({ microservice: false as any, port: E2E_HOST_PORT, asDefault: true })),
+            provideService(useRouter(),
+                useGrpcTransport({ microservice: false as any, port: E2E_HOST_PORT, asDefault: true })),
             provideClient(
-                withGrpcClientTransport({ url: `localhost:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
+                withGrpcTransport({ url: `localhost:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
         ]
     })
     class GrpcE2eHostModule { }

@@ -2,9 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
-import { withMqttTransport } from '../src/server';
-import { withMqttClientTransport, MqttClient } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { useMqttTransport } from '../src/server';
+import { withMqttTransport, MqttClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as mqtt from 'mqtt';
 import expect = require('expect');
@@ -39,10 +39,10 @@ describe('MQTT E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withMqttTransport({ url: MQTT_URL, asDefault: true })),
+            provideService(useRouter(),
+                useMqttTransport({ url: MQTT_URL, asDefault: true })),
             provideClient(
-                withMqttClientTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
+                withMqttTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
         ]
     })
     class MqttMsModule { }
@@ -63,10 +63,10 @@ describe('MQTT E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withMqttTransport({ microservice: false as any, url: MQTT_URL, asDefault: true })),
+            provideService(useRouter(),
+                useMqttTransport({ microservice: false as any, url: MQTT_URL, asDefault: true })),
             provideClient(
-                withMqttClientTransport({ url: MQTT_URL, microservice: false, asDefault: true }))
+                withMqttTransport({ url: MQTT_URL, microservice: false, asDefault: true }))
         ]
     })
     class MqttHostModule { }
@@ -86,8 +86,8 @@ describe('MQTT @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [provideService(withServiceRouter(),
-            withMqttTransport({ url: MQTT_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useMqttTransport({ url: MQTT_URL, asDefault: true }))]
     })
     class MqttCtrlModule { }
 
@@ -106,8 +106,8 @@ describe('MQTT @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [provideService(withServiceRouter(),
-            withMqttTransport({ url: MQTT_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useMqttTransport({ url: MQTT_URL, asDefault: true }))]
     })
     class MqttRouteModule { }
 
@@ -127,8 +127,8 @@ describe('MQTT pattern routing', () => {
         imports: [LoggerModule],
         declarations: [MqttPatternService],
         providers: [
-            provideService(withServiceRouter(),
-                withMqttTransport({
+            provideService(useRouter(),
+                useMqttTransport({
                     url: MQTT_URL,
                     subscribeTopics: [
                         { topic: 'cmd:xxx', qos: 0 },
@@ -137,7 +137,7 @@ describe('MQTT pattern routing', () => {
                     ]
                 })),
             provideClient(
-                withMqttClientTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
+                withMqttTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
         ]
     })
     class MqttPatternModule { }
@@ -181,14 +181,14 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
         imports: [LoggerModule],
         declarations: [MqttE2eController],
         providers: [
-            provideService(withServiceRouter(),
-                withMqttTransport({
+            provideService(useRouter(),
+                useMqttTransport({
                     url: MQTT_URL,
                     subscribeTopics: [{ topic: TOPIC, qos: 0 }],
                     asDefault: true
                 })),
             provideClient(
-                withMqttClientTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
+                withMqttTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
         ]
     })
     class MqttE2eModule { }
@@ -244,15 +244,15 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withMqttTransport({
+            provideService(useRouter(),
+                useMqttTransport({
                     microservice: false as any,
                     url: MQTT_URL,
                     subscribeTopics: [{ topic: TOPIC, qos: 0 }],
                     asDefault: true
                 })),
             provideClient(
-                withMqttClientTransport({ url: MQTT_URL, microservice: false, asDefault: true }))
+                withMqttTransport({ url: MQTT_URL, microservice: false, asDefault: true }))
         ]
     })
     class MqttE2eHostModule { }

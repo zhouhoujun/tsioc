@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { RedisClient } from '../src';
-import { withRedisTransport } from '../src/server';
-import { withRedisClientTransport } from '../src/client';
+import { useRedisTransport } from '../src/server';
+import { withRedisTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class REDISService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withRedisTransport({
+            useRouter(),
+            useRedisTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withRedisClientTransport({
+            withRedisTransport({
                 microservice: true,
                 asDefault: true
             })

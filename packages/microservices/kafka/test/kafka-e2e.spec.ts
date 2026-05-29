@@ -1,9 +1,9 @@
 import { Transport, TransferSide } from '@tsdi/common';
-import { provideService, withServiceRouter } from '@tsdi/service';
+import { provideService, useRouter } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 import expect = require('expect');
-import { withKafkaTransport, kafkaTransportFactory, KAFKA_SERV_OPTIONS, KafkaServOptions } from '../src/server';
-import { withKafkaClientTransport, KAFKA_CLIENT_OPTIONS } from '../src/client';
+import { useKafkaTransport, kafkaTransportFactory, KAFKA_SERV_OPTIONS, KafkaServOptions } from '../src/server';
+import { withKafkaTransport, KAFKA_CLIENT_OPTIONS } from '../src/client';
 
 describe('Kafka Transport E2E', () => {
     describe('Microservice Mode (microservice: true)', () => {
@@ -24,7 +24,7 @@ describe('Kafka Transport E2E', () => {
         });
 
         it('client transport factory produces microservice client config', () => {
-            const features = withKafkaClientTransport({ brokers: ['127.0.0.1:29092'], microservice: true });
+            const features = withKafkaTransport({ brokers: ['127.0.0.1:29092'], microservice: true });
             expect(features.length).toBe(1);
             expect(features[0].config.microservice).toBe(true);
             expect(features[0].config.transport).toBe(Transport.Kafka);
@@ -39,42 +39,42 @@ describe('Kafka Transport E2E', () => {
         });
 
         it('client transport factory produces host client config', () => {
-            const features = withKafkaClientTransport({ brokers: ['127.0.0.1:29093'], microservice: false });
+            const features = withKafkaTransport({ brokers: ['127.0.0.1:29093'], microservice: false });
             expect(features[0].config.microservice).toBe(false);
         });
     });
 
     describe('Module Registration', () => {
-        it('provideService with withKafkaTransport creates providers for microservice:true', () => {
-            const transportFeatures = withKafkaTransport({ brokers: ['127.0.0.1:29092'], asDefault: true });
-            const providers = provideService(withServiceRouter(), ...transportFeatures);
+        it('provideService with useKafkaTransport creates providers for microservice:true', () => {
+            const transportFeatures = useKafkaTransport({ brokers: ['127.0.0.1:29092'], asDefault: true });
+            const providers = provideService(useRouter(), ...transportFeatures);
             expect(providers.length).toBeGreaterThan(0);
             expect(transportFeatures[0].config.microservice).toBe(true);
         });
 
-        it('provideService with withKafkaTransport creates providers for microservice:false', () => {
-            const transportFeatures = withKafkaTransport({ microservice: false as any, brokers: ['127.0.0.1:29093'], asDefault: true });
-            const providers = provideService(withServiceRouter(), ...transportFeatures);
+        it('provideService with useKafkaTransport creates providers for microservice:false', () => {
+            const transportFeatures = useKafkaTransport({ microservice: false as any, brokers: ['127.0.0.1:29093'], asDefault: true });
+            const providers = provideService(useRouter(), ...transportFeatures);
             expect(providers.length).toBeGreaterThan(0);
             expect(transportFeatures[0].config.microservice).toBe(false);
         });
 
-        it('provideClient with withKafkaClientTransport creates client providers for microservice:true', () => {
-            const clientFeatures = withKafkaClientTransport({ brokers: ['127.0.0.1:29092'], microservice: true, asDefault: true });
+        it('provideClient with withKafkaTransport creates client providers for microservice:true', () => {
+            const clientFeatures = withKafkaTransport({ brokers: ['127.0.0.1:29092'], microservice: true, asDefault: true });
             const providers = provideClient(...clientFeatures);
             expect(providers.length).toBeGreaterThan(0);
         });
 
-        it('provideClient with withKafkaClientTransport creates client providers for microservice:false', () => {
-            const clientFeatures = withKafkaClientTransport({ brokers: ['127.0.0.1:29093'], microservice: false, asDefault: true });
+        it('provideClient with withKafkaTransport creates client providers for microservice:false', () => {
+            const clientFeatures = withKafkaTransport({ brokers: ['127.0.0.1:29093'], microservice: false, asDefault: true });
             const providers = provideClient(...clientFeatures);
             expect(providers.length).toBeGreaterThan(0);
         });
     });
 
-    describe('withKafkaTransport', () => {
+    describe('useKafkaTransport', () => {
         it('creates multiple features for multiple options', () => {
-            const features = withKafkaTransport(
+            const features = useKafkaTransport(
                 { brokers: ['127.0.0.1:29092'], asDefault: true },
                 { brokers: ['127.0.0.1:29093'] }
             );

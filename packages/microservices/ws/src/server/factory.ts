@@ -114,7 +114,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
     };
 }
 
-export function withWsTransport(...options: Partial<WsServOptions>[]): ServiceTransportFeature[] {
+export function useWsTransport(...options: Partial<WsServOptions>[]): ServiceTransportFeature[] {
     return options.map(option => {
         return wsTransportFactory(option, options.length === 1 && option.asDefault);
     });

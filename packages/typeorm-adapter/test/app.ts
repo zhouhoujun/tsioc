@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
-import { withHttpTransport, withHttpClientTransport } from '@tsdi/http';
-import { provideService, withServiceRouter, withContent, withJson } from '@tsdi/service';
+import { useHttpTransport, withHttpTransport } from '@tsdi/http';
+import { provideService, useRouter, useContent, useJson } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
@@ -72,13 +72,13 @@ export class MockBootTest {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withContent(),
-            withJson(),
-            ...withHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
+            useRouter(),
+            useContent(),
+            useJson(),
+            ...useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
         ),
         provideClient(
-            ...withHttpClientTransport({ url: 'http://127.0.0.1:3000', asDefault: true }),
+            ...withHttpTransport({ url: 'http://127.0.0.1:3000', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -101,13 +101,13 @@ export class MockBootHttpTest {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withContent(),
-            withJson(),
-            ...withHttpTransport({ listenOpts: { port: 3001, host: '127.0.0.1' }, asDefault: true }),
+            useRouter(),
+            useContent(),
+            useJson(),
+            ...useHttpTransport({ listenOpts: { port: 3001, host: '127.0.0.1' }, asDefault: true }),
         ),
         provideClient(
-            ...withHttpClientTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
+            ...withHttpTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -130,13 +130,13 @@ export class MockBootLoadTest {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withContent(),
-            withJson(),
-            ...withHttpTransport({ listenOpts: { port: 3002, host: '127.0.0.1' }, asDefault: true }),
+            useRouter(),
+            useContent(),
+            useJson(),
+            ...useHttpTransport({ listenOpts: { port: 3002, host: '127.0.0.1' }, asDefault: true }),
         ),
         provideClient(
-            ...withHttpClientTransport({ url: 'http://127.0.0.1:3002', asDefault: true }),
+            ...withHttpTransport({ url: 'http://127.0.0.1:3002', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],
@@ -157,10 +157,10 @@ export class MockTransBootTest {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withContent(),
-            withJson(),
-            ...withHttpTransport({
+            useRouter(),
+            useContent(),
+            useJson(),
+            ...useHttpTransport({
                 listenOpts: { port: 3003, host: '127.0.0.1' },
                 serverOpts: { key, cert },
                 majorVersion: 2,
@@ -168,7 +168,7 @@ export class MockTransBootTest {
             } as any),
         ),
         provideClient(
-            ...withHttpClientTransport({
+            ...withHttpTransport({
                 authority: 'https://127.0.0.1:3003',
                 connectOpts: { ca: cert, rejectUnauthorized: false },
                 asDefault: true,

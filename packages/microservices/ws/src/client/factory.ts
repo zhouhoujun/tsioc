@@ -66,7 +66,7 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
 
 }
 
-export function withWsClientTransport(...options: Partial<WsClientOptions>[]): ClientTransportFeature[] {
+export function withWsTransport(...options: Partial<WsClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
         // First option is default unless explicitly specified
         const asDefault = option.asDefault ?? (idx === 0);

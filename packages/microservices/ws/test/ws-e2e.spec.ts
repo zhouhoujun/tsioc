@@ -3,9 +3,9 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
-import { withWsTransport } from '../src/server';
-import { withWsClientTransport } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { useWsTransport } from '../src/server';
+import { withWsTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import { WsClient } from '../src/client/client';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -20,8 +20,8 @@ const E2E_HOST_PORT = 11511;
 describe('WS E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ microservice: true, listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ microservice: true, listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true }))]
     })
     class WsMsModule { }
 
@@ -39,8 +39,8 @@ describe('WS E2E microservice:true', () => {
 describe('WS E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ microservice: false as any, listenOpts: { port: HOST_PORT, host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ microservice: false as any, listenOpts: { port: HOST_PORT, host: '127.0.0.1' }, asDefault: true }))]
     })
     class WsHostModule { }
 
@@ -65,8 +65,8 @@ describe('WS @Controller / @Get / @Post', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [WsTestController],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: CTRL_PORT, host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: CTRL_PORT, host: '127.0.0.1' }, asDefault: true }))]
     })
     class WsCtrlModule { }
 
@@ -91,8 +91,8 @@ describe('WS @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [WsRouteCtrl],
-        providers: [provideService(withServiceRouter(),
-            withWsTransport({ listenOpts: { port: ROUTE_PORT, host: '127.0.0.1' }, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useWsTransport({ listenOpts: { port: ROUTE_PORT, host: '127.0.0.1' }, asDefault: true }))]
     })
     class WsRouteModule { }
 
@@ -118,10 +118,10 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
         imports: [LoggerModule],
         declarations: [WsE2eController],
         providers: [
-            provideService(withServiceRouter(),
-                withWsTransport({ listenOpts: { port: E2E_PORT, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useWsTransport({ listenOpts: { port: E2E_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withWsClientTransport({ url: `ws://127.0.0.1:${E2E_PORT}`, microservice: true, asDefault: true }))
+                withWsTransport({ url: `ws://127.0.0.1:${E2E_PORT}`, microservice: true, asDefault: true }))
         ]
     })
     class WsE2eModule { }
@@ -155,10 +155,10 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withWsTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
+            provideService(useRouter(),
+                useWsTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withWsClientTransport({ url: `ws://127.0.0.1:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
+                withWsTransport({ url: `ws://127.0.0.1:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
         ]
     })
     class WsE2eHostModule { }
@@ -203,10 +203,10 @@ describe('WS pattern routing', () => {
         imports: [LoggerModule],
         declarations: [WsPatternService],
         providers: [
-            provideService(withServiceRouter(),
-                withWsTransport({ listenOpts: { port: 21900, host: '127.0.0.1' } })),
+            provideService(useRouter(),
+                useWsTransport({ listenOpts: { port: 21900, host: '127.0.0.1' } })),
             provideClient(
-                withWsClientTransport({ url: 'ws://127.0.0.1:21900', microservice: true, asDefault: true }))
+                withWsTransport({ url: 'ws://127.0.0.1:21900', microservice: true, asDefault: true }))
         ]
     })
     class WsPatternModule { }

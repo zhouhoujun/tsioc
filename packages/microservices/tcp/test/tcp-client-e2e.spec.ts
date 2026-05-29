@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
-import { Controller, Get, Post, Put, Delete, RequestHeader, RequestPath, RequestParam, RequestBody, provideService, withServiceRouter } from '@tsdi/service';
+import { Controller, Get, Post, Put, Delete, RequestHeader, RequestPath, RequestParam, RequestBody, provideService, useRouter } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
-import { withTcpTransport } from '../src/server';
-import { withTcpClientTransport, TcpClient } from '../src/client';
+import { useTcpTransport } from '../src/server';
+import { withTcpTransport, TcpClient } from '../src/client';
 import expect = require('expect');
 
 describe('TCP Microservice Client Configuration Tests', () => {
@@ -58,13 +58,13 @@ describe('TCP Microservice Client Configuration Tests', () => {
                 declarations: [UserController],
                 providers: [
                     provideService(
-                        withServiceRouter(),
-                        withTcpTransport({
+                        useRouter(),
+                        useTcpTransport({
                             listenOpts: { port: 0, host: '127.0.0.1' },
                         })
                     ),
                     provideClient(
-                        withTcpClientTransport({
+                        withTcpTransport({
                             connectOpts: { port: 0, host: '127.0.0.1' },
                         })
                     )
@@ -77,8 +77,8 @@ describe('TCP Microservice Client Configuration Tests', () => {
 
         it('should create valid server and client providers', () => {
             const serverProviders = provideService(
-                withServiceRouter(),
-                withTcpTransport({
+                useRouter(),
+                useTcpTransport({
                     listenOpts: { port: 0, host: '127.0.0.1' },
                 })
             );
@@ -86,7 +86,7 @@ describe('TCP Microservice Client Configuration Tests', () => {
             expect(serverProviders.length).toBeGreaterThan(0);
 
             const clientProviders = provideClient(
-                withTcpClientTransport({
+                withTcpTransport({
                     connectOpts: { port: 0, host: '127.0.0.1' },
                 })
             );

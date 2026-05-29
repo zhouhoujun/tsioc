@@ -1,5 +1,5 @@
-import { CoapServer, CoapServOptions, coapTransportFactory, withCoapTransport, COAP_SERV_OPTIONS } from '../src/server';
-import { withCoapClientTransport, COAP_CLIENT_OPTIONS } from '../src/client';
+import { CoapServer, CoapServOptions, coapTransportFactory, useCoapTransport, COAP_SERV_OPTIONS } from '../src/server';
+import { withCoapTransport, COAP_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor } from '@tsdi/service';
 import { MessageReaderFactory } from '@tsdi/core';
@@ -103,9 +103,9 @@ describe('CoAP Microservice', () => {
         });
     });
 
-    describe('withCoapTransport', () => {
+    describe('useCoapTransport', () => {
         it('should create multiple transport features for multiple options', () => {
-            const features = withCoapTransport(
+            const features = useCoapTransport(
                 { listenOpts: { port: 5683 } },
                 { listenOpts: { port: 5684 } }
             );
@@ -113,9 +113,9 @@ describe('CoAP Microservice', () => {
         });
     });
 
-    describe('withCoapClientTransport', () => {
+    describe('withCoapTransport', () => {
         it('should use json packet transfer by default', () => {
-            const features = withCoapClientTransport({
+            const features = withCoapTransport({
                 port: 5683
             });
 
@@ -123,7 +123,7 @@ describe('CoAP Microservice', () => {
         });
 
         it('should preserve host client mode when microservice is false', () => {
-            const features = withCoapClientTransport({
+            const features = withCoapTransport({
                 microservice: false,
                 port: 5683
             });

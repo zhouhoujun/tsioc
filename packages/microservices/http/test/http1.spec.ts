@@ -3,9 +3,9 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestException } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logger';
 import { provideClient } from '@tsdi/client';
-import { Controller, Get, Post, RedirectResult, RequestBody, RequestParam, RequestPath, provideService, withServiceRouter } from '@tsdi/service';
-import { HttpClient, withHttpClientTransport } from '../src/client';
-import { withHttpTransport } from '../src/server';
+import { Controller, Get, Post, RedirectResult, RequestBody, RequestParam, RequestPath, provideService, useRouter } from '@tsdi/service';
+import { HttpClient, withHttpTransport } from '../src/client';
+import { useHttpTransport } from '../src/server';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 
@@ -105,9 +105,9 @@ class DeviceController {
     declarations: [HttpRootController, DeviceController],
     providers: [
         provideService(
-            withServiceRouter(),
-            withServiceRouter({ microservice: true }),
-            withHttpTransport({
+            useRouter(),
+            useRouter({ microservice: true }),
+            useHttpTransport({
                 microservice: false as any,
                 listenOpts: {
                     port: PORT,
@@ -117,7 +117,7 @@ class DeviceController {
             })
         ),
         provideClient(
-            withHttpClientTransport({
+            withHttpTransport({
                 url: `http://127.0.0.1:${PORT}`,
                 microservice: false,
                 asDefault: true

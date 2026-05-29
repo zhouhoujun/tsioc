@@ -1,5 +1,5 @@
 import { TcpClientOptions, TCP_CLIENT_OPTIONS } from '../src/client/options';
-import { withTcpClientTransport, TcpClient } from '../src/client';
+import { withTcpTransport, TcpClient } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { NetConnectOpts } from 'node:net';
 import expect = require('expect');
@@ -81,10 +81,10 @@ describe('TcpClientOptions', () => {
     });
 });
 
-describe('withTcpClientTransport', () => {
+describe('withTcpTransport', () => {
 
     it('should create a single client transport feature', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             connectOpts: { port: 8080, host: 'localhost' }
         });
 
@@ -93,7 +93,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should create multiple client transport features', () => {
-        const features = withTcpClientTransport(
+        const features = withTcpTransport(
             { connectOpts: { port: 8080 } },
             { connectOpts: { port: 8081 } }
         );
@@ -102,7 +102,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should create feature with kind Transport and config', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             connectOpts: { port: 8080, host: 'localhost' },
             asDefault: true,
         });
@@ -116,7 +116,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should include CLIENT_CONFIGS provider', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             connectOpts: { port: 8080 }
         });
 
@@ -125,7 +125,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should set first option as default by default', () => {
-        const features = withTcpClientTransport(
+        const features = withTcpTransport(
             { connectOpts: { port: 8080 } },
             { connectOpts: { port: 8081 } }
         );
@@ -134,7 +134,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should handle explicit asDefault option', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             connectOpts: { port: 8080 },
             asDefault: true,
         });
@@ -143,7 +143,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should support microservice option', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             microservice: true,
             connectOpts: { port: 3000 },
         });
@@ -153,7 +153,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should use json packet transfer by default', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             connectOpts: { port: 8080 }
         });
 
@@ -162,7 +162,7 @@ describe('withTcpClientTransport', () => {
 
     it('should preserve an explicit default transfer override', () => {
         const defaultTransfer = () => [];
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             connectOpts: { port: 8080 },
             features: { defaultTransfer }
         });
@@ -171,7 +171,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should preserve host client mode when microservice is false', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             microservice: false,
             connectOpts: { port: 8080 }
         });
@@ -180,7 +180,7 @@ describe('withTcpClientTransport', () => {
     });
 
     it('should support keepalive option', () => {
-        const features = withTcpClientTransport({
+        const features = withTcpTransport({
             keepalive: 60000,
             connectOpts: { port: 8080 },
         });

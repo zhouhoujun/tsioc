@@ -1,9 +1,9 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, withCors, withServiceRouter, withServiceInterceptors, SERVICE_CORS_OPTIONS } from '@tsdi/service';
-import { withHttpTransport } from '../src/server';
-import { withHttpClientTransport } from '../src/client';
+import { provideService, useCors, useInterceptors, useRouter, SERVICE_CORS_OPTIONS } from '@tsdi/service';
+import { useHttpTransport } from '../src/server';
+import { withHttpTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import { HelmetMiddleware, HelmetOptions } from '../src/server/interceptors/helmet';
 import { Cors, CorsOptions } from '../src/server/interceptors/cors';
@@ -20,15 +20,15 @@ describe('HTTP Security', () => {
             imports: [LoggerModule, CorsTestModule],
             providers: [
                 provideService(
-                    withServiceRouter(),
-                    withCors({
+                    useRouter(),
+                    useCors({
                         origin: '*',
                         allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH',
                         credentials: false
                     }),
-                    withHttpTransport({ listenOpts: { port: CORS_PORT, host: '127.0.0.1' }, asDefault: true })),
+                    useHttpTransport({ listenOpts: { port: CORS_PORT, host: '127.0.0.1' }, asDefault: true })),
                 provideClient(
-                    withHttpClientTransport({ url: `http://127.0.0.1:${CORS_PORT}`, asDefault: true }))
+                    withHttpTransport({ url: `http://127.0.0.1:${CORS_PORT}`, asDefault: true }))
             ]
         })
         class CorsApp { }
@@ -92,13 +92,13 @@ describe('HTTP Security', () => {
             imports: [LoggerModule, CorsTestModule],
             providers: [
                 provideService(
-                    withServiceRouter(),
-                    withCors({
+                    useRouter(),
+                    useCors({
                         credentials: true
                     }),
-                    withHttpTransport({ listenOpts: { port: CREDENTIALS_PORT, host: '127.0.0.1' }, asDefault: true })),
+                    useHttpTransport({ listenOpts: { port: CREDENTIALS_PORT, host: '127.0.0.1' }, asDefault: true })),
                 provideClient(
-                    withHttpClientTransport({ url: `http://127.0.0.1:${CREDENTIALS_PORT}`, asDefault: true }))
+                    withHttpTransport({ url: `http://127.0.0.1:${CREDENTIALS_PORT}`, asDefault: true }))
             ]
         })
         class CredentialsCorsApp { }
@@ -140,11 +140,11 @@ describe('HTTP Security', () => {
                     } as CorsOptions
                 },
                 provideService(
-                    withServiceRouter(),
-                    withServiceInterceptors(Cors),
-                    withHttpTransport({ listenOpts: { port: LEGACY_PORT, host: '127.0.0.1' }, asDefault: true })),
+                    useRouter(),
+                    useInterceptors(Cors),
+                    useHttpTransport({ listenOpts: { port: LEGACY_PORT, host: '127.0.0.1' }, asDefault: true })),
                 provideClient(
-                    withHttpClientTransport({ url: `http://127.0.0.1:${LEGACY_PORT}`, asDefault: true }))
+                    withHttpTransport({ url: `http://127.0.0.1:${LEGACY_PORT}`, asDefault: true }))
             ]
         })
         class LegacyCorsApp { }
@@ -189,11 +189,11 @@ describe('HTTP Security', () => {
                     } as HelmetOptions
                 },
                 provideService(
-                    withServiceRouter(),
-                    withServiceInterceptors(HelmetMiddleware),
-                    withHttpTransport({ listenOpts: { port: HELMET_PORT, host: '127.0.0.1' }, asDefault: true })),
+                    useRouter(),
+                    useInterceptors(HelmetMiddleware),
+                    useHttpTransport({ listenOpts: { port: HELMET_PORT, host: '127.0.0.1' }, asDefault: true })),
                 provideClient(
-                    withHttpClientTransport({ url: `http://127.0.0.1:${HELMET_PORT}`, asDefault: true }))
+                    withHttpTransport({ url: `http://127.0.0.1:${HELMET_PORT}`, asDefault: true }))
             ]
         })
         class HelmetApp { }

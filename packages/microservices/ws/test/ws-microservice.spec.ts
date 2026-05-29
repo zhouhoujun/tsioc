@@ -1,5 +1,5 @@
 import { WsServer, WsServOptions, wsTransportFactory, WS_SERV_OPTIONS } from '../src/server';
-import { withWsClientTransport } from '../src/client';
+import { withWsTransport } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 import * as http from 'node:http';
@@ -114,9 +114,9 @@ describe('WebSocket Microservice', () => {
         });
     });
 
-    describe('withWsClientTransport', () => {
+    describe('withWsTransport', () => {
         it('should use ws packet transfer by default', () => {
-            const features = withWsClientTransport({
+            const features = withWsTransport({
                 url: 'ws://localhost:8080'
             });
 
@@ -125,7 +125,7 @@ describe('WebSocket Microservice', () => {
 
         it('should preserve an explicit default transfer override', () => {
             const defaultTransfer = () => [];
-            const features = withWsClientTransport({
+            const features = withWsTransport({
                 url: 'ws://localhost:8080',
                 features: { defaultTransfer }
             });
@@ -134,7 +134,7 @@ describe('WebSocket Microservice', () => {
         });
 
         it('should preserve host client mode when microservice is false', () => {
-            const features = withWsClientTransport({
+            const features = withWsTransport({
                 microservice: false,
                 url: 'ws://localhost:8080'
             });

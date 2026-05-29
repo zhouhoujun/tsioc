@@ -96,6 +96,6 @@ export function redisTransportFactory(option: Partial<RedisServOptions>, asDefau
     };
 }
 
-export function withRedisTransport(...options: Partial<RedisServOptions>[]): ServiceTransportFeature[] {
+export function useRedisTransport(...options: Partial<RedisServOptions>[]): ServiceTransportFeature[] {
     return options.map(o => redisTransportFactory(o, o.asDefault ?? (options.length === 1)));
 }

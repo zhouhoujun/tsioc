@@ -33,6 +33,6 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 }
 
-export function withUdpClientTransport(...options: Partial<UdpClientOptions>[]): ClientTransportFeature[] {
+export function withUdpTransport(...options: Partial<UdpClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => udpClientTransportFactory(option, option.asDefault ?? (idx === 0)));
 }

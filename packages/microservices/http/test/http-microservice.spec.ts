@@ -1,6 +1,6 @@
-import { HttpServer, HttpServOptions, httpTransportFactory, withHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse } from '../src/server';
+import { HttpServer, HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse } from '../src/server';
 import { StaticFileInterceptor } from '../src/server/static-file.interceptor';
-import { withHttpClientTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
+import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, Controller, CookieInterceptor, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
@@ -108,26 +108,26 @@ describe('HTTP Microservice', () => {
         });
     });
 
-    describe('withHttpTransport', () => {
+    describe('useHttpTransport', () => {
         it('should create multiple transport features', () => {
-            expect(withHttpTransport({ listenOpts: { port: 3000 } }, { listenOpts: { port: 3001 } }).length).toBe(2);
+            expect(useHttpTransport({ listenOpts: { port: 3000 } }, { listenOpts: { port: 3001 } }).length).toBe(2);
         });
     });
 
-    describe('withHttpClientTransport', () => {
+    describe('withHttpTransport', () => {
         it('should not use message packet transfer by default', () => {
-            expect(withHttpClientTransport({ url: 'http://localhost:3000' })[0].config.features?.defaultTransfer).toBeUndefined();
+            expect(withHttpTransport({ url: 'http://localhost:3000' })[0].config.features?.defaultTransfer).toBeUndefined();
         });
 
         it('should accept http2 client configuration', () => {
-            const feature = withHttpClientTransport({ authority: 'http://localhost:3000', requestOptions: {} as any })[0];
+            const feature = withHttpTransport({ authority: 'http://localhost:3000', requestOptions: {} as any })[0];
             const config = feature.config as HttpClientOptions;
             expect(config.authority).toBe('http://localhost:3000');
             expect(config.requestOptions).toBeDefined();
         });
 
         it('should resolve default HttpClient instance from providers', () => {
-            const feature = withHttpClientTransport({ url: 'http://localhost:3000', asDefault: true })[0];
+            const feature = withHttpTransport({ url: 'http://localhost:3000', asDefault: true })[0];
             const injector = createInjector([
                 ...(feature.config.providers ?? []),
                 ...feature.providers
@@ -260,13 +260,13 @@ describe('HTTP Microservice', () => {
             expect(((feature.config as HttpServOptions).serverOpts as any).key).toBe('test-key');
         });
 
-        it('withHttpClientTransport should accept http2 authority', () => {
-            const features = withHttpClientTransport({ authority: 'http://localhost:3000', asDefault: true });
+        it('withHttpTransport should accept http2 authority', () => {
+            const features = withHttpTransport({ authority: 'http://localhost:3000', asDefault: true });
             expect((features[0].config as HttpClientOptions).authority).toBe('http://localhost:3000');
         });
 
-        it('withHttpClientTransport should accept http2 requestOptions', () => {
-            const features = withHttpClientTransport({
+        it('withHttpTransport should accept http2 requestOptions', () => {
+            const features = withHttpTransport({
                 authority: 'http://localhost:3000',
                 requestOptions: { endStream: true }
             });
@@ -279,8 +279,8 @@ describe('HTTP Microservice', () => {
             expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useFactory)).toBe(true);
         });
 
-        it('withHttpClientTransport should handle authority without asDefault', () => {
-            const features = withHttpClientTransport({ authority: 'http://localhost:4000' });
+        it('withHttpTransport should handle authority without asDefault', () => {
+            const features = withHttpTransport({ authority: 'http://localhost:4000' });
             expect(features.length).toBe(1);
             expect((features[0].config as HttpClientOptions).authority).toBe('http://localhost:4000');
         });

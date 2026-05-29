@@ -1,5 +1,5 @@
-import { McpServer, McpServOptions, mcpTransportFactory, withMcpTransport, MCP_SERV_OPTIONS } from '../src/server';
-import { withMcpClientTransport, MCP_CLIENT_OPTIONS } from '../src/client';
+import { McpServer, McpServOptions, mcpTransportFactory, useMcpTransport, MCP_SERV_OPTIONS } from '../src/server';
+import { withMcpTransport, MCP_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -30,15 +30,15 @@ describe('MCP Microservice', () => {
         });
     });
 
-    describe('withMcpTransport', () => {
+    describe('useMcpTransport', () => {
         it('should create multiple transport features', () => {
-            expect(withMcpTransport({ listenOpts: { port: 3100 } }, { listenOpts: { port: 3101 } }).length).toBe(2);
+            expect(useMcpTransport({ listenOpts: { port: 3100 } }, { listenOpts: { port: 3101 } }).length).toBe(2);
         });
     });
 
-    describe('withMcpClientTransport', () => {
+    describe('withMcpTransport', () => {
         it('should use json packet transfer by default', () => {
-            expect(withMcpClientTransport({ url: 'http://localhost:3100' })[0].config.features?.defaultTransfer).toBeDefined();
+            expect(withMcpTransport({ url: 'http://localhost:3100' })[0].config.features?.defaultTransfer).toBeDefined();
         });
     });
 

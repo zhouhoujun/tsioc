@@ -4,7 +4,7 @@ import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
 import { TcpClient } from './client';
-import { MessageReaderFactory } from '@tsdi/core';
+import { ApplicationEventMulticaster, ApplicationShutdownEvent, MessageReaderFactory } from '@tsdi/core';
 
 
 function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
@@ -46,10 +46,21 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
         },
         {
             provide: clientToken,
-            useFactory: (handler: ClientHandler<any, any>) => {
-                return new TcpClient(handler, config);
+            useFactory: (injector: Injector, handler: ClientHandler<any, any>) => {
+                const client = new TcpClient(handler, config);
+                const multicaster = injector.get(ApplicationEventMulticaster, null);
+                if (multicaster) {
+                    const shutdownHandler = {
+                        handle: () => client.close(),
+                        equals: (target: any) => target === shutdownHandler
+                    };
+                    multicaster.addListener(ApplicationShutdownEvent, shutdownHandler, 0);
+                    injector.onDestroy(() => multicaster.removeListener(ApplicationShutdownEvent, shutdownHandler));
+                }
+                return client;
             },
             deps: [
+                Injector,
                 hanlderToken
             ]
         }
@@ -65,7 +76,7 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
 
 }
 
-export function withTcpClientTransport(...options: Partial<TcpClientOptions>[]): ClientTransportFeature[] {
+export function withTcpTransport(...options: Partial<TcpClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
         // First option is default unless explicitly specified
         const asDefault = option.asDefault ?? (idx === 0);

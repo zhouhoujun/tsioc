@@ -1,5 +1,5 @@
-import { KafkaServer, KafkaServOptions, kafkaTransportFactory, withKafkaTransport, KAFKA_SERV_OPTIONS } from '../src/server';
-import { withKafkaClientTransport, KAFKA_CLIENT_OPTIONS } from '../src/client';
+import { KafkaServer, KafkaServOptions, kafkaTransportFactory, useKafkaTransport, KAFKA_SERV_OPTIONS } from '../src/server';
+import { withKafkaTransport, KAFKA_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -38,15 +38,15 @@ describe('Kafka Microservice', () => {
         });
     });
 
-    describe('withKafkaTransport', () => {
+    describe('useKafkaTransport', () => {
         it('should create multiple transport features', () => {
-            expect(withKafkaTransport({ brokers: ['localhost:9092'] }, { brokers: ['localhost:9093'] }).length).toBe(2);
+            expect(useKafkaTransport({ brokers: ['localhost:9092'] }, { brokers: ['localhost:9093'] }).length).toBe(2);
         });
     });
 
-    describe('withKafkaClientTransport', () => {
+    describe('withKafkaTransport', () => {
         it('should use json packet transfer by default', () => {
-            expect(withKafkaClientTransport({ brokers: ['localhost:9092'] })[0].config.features?.defaultTransfer).toBeDefined();
+            expect(withKafkaTransport({ brokers: ['localhost:9092'] })[0].config.features?.defaultTransfer).toBeDefined();
         });
     });
 

@@ -1,46 +1,7 @@
-import { Injector, Module, isArray, lang } from '@tsdi/ioc';
-import { Application, ApplicationContext, } from '@tsdi/core';
-import { LoggerModule } from '@tsdi/logger';
-import { ServerModule } from '@tsdi/platform-server';
 import { Transport, LOCALHOST, TransferSide } from '@tsdi/common';
-import { provideClient } from '@tsdi/common/client';
-import { ServerCommonModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
-import { catchError, lastValueFrom, of } from 'rxjs';
-import { provideService, withJson, withBodyparser, withContent, withLogger, withRouter } from '@tsdi/endpoints';
-import { TcpPatternFormatter, TcpClient, TcpRequest, withTcpClientTransport, withTcpTransport, TCP_SERV_OPTIONS, TCP_CLIENT_OPTIONS, TcpServOptions, TcpClientOptions } from '../src';
+import { TcpClient, TcpRequest, TCP_SERV_OPTIONS, TCP_CLIENT_OPTIONS, TcpServOptions, TcpClientOptions } from '../src';
 import * as net from 'node:net';
-import * as tls from 'node:tls';
-import { NetConnectOpts } from 'node:net';
-
-// Unit tests - no full application startup required
-
-describe('Unit: TcpPatternFormatter', () => {
-    let formatter: TcpPatternFormatter;
-
-    before(() => {
-        formatter = new TcpPatternFormatter();
-    });
-
-    it('should format string pattern', () => {
-        const pattern = '/test/path';
-        const result = formatter.format(pattern);
-        expect(result).toBe('/test/path');
-    });
-
-    it('should format object pattern', () => {
-        const pattern = { cmd: 'test', action: 'execute' };
-        const result = formatter.format(pattern);
-        expect(result).toContain('test');
-        expect(result).toContain('execute');
-    });
-
-    it('should handle empty pattern', () => {
-        const pattern = '';
-        const result = formatter.format(pattern);
-        expect(result).toBeDefined();
-    });
-});
 
 describe('Unit: TcpRequest', () => {
     it('should create request with url', () => {
@@ -72,81 +33,79 @@ describe('Unit: TcpRequest', () => {
 
 describe('Unit: TcpServOptions', () => {
     it('should create default options', () => {
-        const opts: TcpServOptions = {
+        const opts = {
             transport: Transport.TCP,
-            side: TransferSide.server
-        };
+            side: TransferSide.server,
+            features: {}
+        } as TcpServOptions;
         expect(opts.transport).toBe(Transport.TCP);
     });
 
     it('should create options with listen config', () => {
-        const opts: TcpServOptions = {
+        const opts = {
             transport: Transport.TCP,
             side: TransferSide.server,
+            features: {},
             listenOpts: {
                 port: 3000,
                 host: LOCALHOST
             }
-        };
+        } as TcpServOptions;
         expect(opts.listenOpts?.port).toBe(3000);
         expect(opts.listenOpts?.host).toBe(LOCALHOST);
     });
 
-    it('should create options with max connections', () => {
-        const opts: TcpServOptions = {
-            transport: Transport.TCP,
-            side: TransferSide.server,
-            maxConnections: 100
-        };
-        expect(opts.maxConnections).toBe(100);
-    });
-
     it('should support microservice mode', () => {
-        const opts: TcpServOptions = {
+        const opts = {
             transport: Transport.TCP,
             side: TransferSide.server,
+            features: {},
             microservice: true
-        };
+        } as TcpServOptions;
         expect(opts.microservice).toBe(true);
     });
 });
 
 describe('Unit: TcpClientOptions', () => {
     it('should create default options', () => {
-        const opts: TcpClientOptions = {
+        const opts = {
             transport: Transport.TCP,
-            side: TransferSide.client
-        };
+            side: TransferSide.client,
+            features: {}
+        } as TcpClientOptions;
         expect(opts.transport).toBe(Transport.TCP);
     });
 
     it('should create options with connect config', () => {
-        const opts: TcpClientOptions = {
+        const opts = {
             transport: Transport.TCP,
             side: TransferSide.client,
+            features: {},
             connectOpts: {
                 port: 3000,
                 host: LOCALHOST
             }
-        };
+        } as TcpClientOptions;
         expect(opts.connectOpts).toBeDefined();
     });
 
     it('should create options with keepalive', () => {
-        const opts: TcpClientOptions = {
+        const opts = {
             transport: Transport.TCP,
             side: TransferSide.client,
+            features: {},
             keepalive: 5000
-        };
+        } as TcpClientOptions;
         expect(opts.keepalive).toBe(5000);
     });
 
     it('should support microservice mode', () => {
-        const opts: TcpClientOptions = {
+        const opts = {
             transport: Transport.TCP,
             side: TransferSide.client,
+            features: {},
             microservice: true
-        };
+        } as TcpClientOptions;
         expect(opts.microservice).toBe(true);
     });
 });
@@ -196,7 +155,6 @@ describe('Unit: TcpServer Lifecycle', () => {
     });
 
     it('should handle multiple connections', (done) => {
-        const clients: net.Socket[] = [];
         let completed = 0;
 
         for (let i = 0; i < 3; i++) {
@@ -211,7 +169,6 @@ describe('Unit: TcpServer Lifecycle', () => {
                     }
                 });
             });
-            clients.push(client);
         }
     });
 

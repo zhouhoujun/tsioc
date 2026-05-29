@@ -1,10 +1,10 @@
 import { Module } from '@tsdi/ioc';
 import { Application } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, withServiceRouter, Controller, Post, RequestBody } from '@tsdi/service';
-import { withCoapTransport } from '../src/server';
+import { provideService, useRouter, Controller, Post, RequestBody } from '@tsdi/service';
+import { useCoapTransport } from '../src/server';
 import { provideClient } from '@tsdi/client';
-import { withCoapClientTransport, CoapClient } from '../src/client';
+import { withCoapTransport, CoapClient } from '../src/client';
 import { lastValueFrom } from 'rxjs';
 import * as coap from 'coap';
 
@@ -24,11 +24,11 @@ const PORT = 21336;
     declarations: [TestController],
     providers: [
         provideService(
-            withServiceRouter(),
-            withCoapTransport({ listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true })
+            useRouter(),
+            useCoapTransport({ listenOpts: { port: PORT, host: '127.0.0.1' }, asDefault: true })
         ),
         provideClient(
-            withCoapClientTransport({ port: PORT, host: '127.0.0.1', microservice: true, asDefault: true })
+            withCoapTransport({ port: PORT, host: '127.0.0.1', microservice: true, asDefault: true })
         )
     ]
 })

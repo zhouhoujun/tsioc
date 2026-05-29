@@ -82,7 +82,7 @@ function coapClientTransportFactory(option: Partial<CoapClientOptions>, asDefaul
 
 }
 
-export function withCoapClientTransport(...options: Partial<CoapClientOptions>[]): ClientTransportFeature[] {
+export function withCoapTransport(...options: Partial<CoapClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
         const asDefault = option.asDefault ?? (idx === 0);
         return coapClientTransportFactory(option, asDefault);

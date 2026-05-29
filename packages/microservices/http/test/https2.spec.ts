@@ -3,9 +3,9 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestException } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logger';
 import { provideClient } from '@tsdi/client';
-import { Controller, Get, Post, RedirectResult, RequestBody, RequestParam, RequestPath, provideService, withServiceRouter } from '@tsdi/service';
-import { HttpClient, withHttpClientTransport } from '../src/client';
-import { withHttpTransport } from '../src/server';
+import { Controller, Get, Post, RedirectResult, RequestBody, RequestParam, RequestPath, provideService, useRouter } from '@tsdi/service';
+import { HttpClient, withHttpTransport } from '../src/client';
+import { useHttpTransport } from '../src/server';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -109,9 +109,9 @@ class Https2DeviceController {
     declarations: [Https2RootController, Https2DeviceController],
     providers: [
         provideService(
-            withServiceRouter(),
-            withServiceRouter({ microservice: true }),
-            withHttpTransport({
+            useRouter(),
+            useRouter({ microservice: true }),
+            useHttpTransport({
                 microservice: false as any,
                 majorVersion: 2,
                 secure: true,
@@ -124,7 +124,7 @@ class Https2DeviceController {
             })
         ),
         provideClient(
-            withHttpClientTransport({
+            withHttpTransport({
                 authority: `https://localhost:${PORT}`,
                 connectOpts: { ca: cert },
                 microservice: false,

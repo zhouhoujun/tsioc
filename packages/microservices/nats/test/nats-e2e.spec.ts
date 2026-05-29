@@ -2,9 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
-import { withNatsTransport } from '../src/server';
-import { withNatsClientTransport, NatsClient } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { useNatsTransport } from '../src/server';
+import { withNatsTransport, NatsClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import { connect, StringCodec, NatsConnection } from 'nats';
 import expect = require('expect');
@@ -28,10 +28,10 @@ describe('NATS E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withNatsTransport({ url: NATS_URL, asDefault: true })),
+            provideService(useRouter(),
+                useNatsTransport({ url: NATS_URL, asDefault: true })),
             provideClient(
-                withNatsClientTransport({ url: NATS_URL, microservice: true, asDefault: true }))
+                withNatsTransport({ url: NATS_URL, microservice: true, asDefault: true }))
         ]
     })
     class NatsMsModule { }
@@ -52,10 +52,10 @@ describe('NATS E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withNatsTransport({ microservice: false as any, url: NATS_URL, asDefault: true })),
+            provideService(useRouter(),
+                useNatsTransport({ microservice: false as any, url: NATS_URL, asDefault: true })),
             provideClient(
-                withNatsClientTransport({ url: NATS_URL, microservice: false, asDefault: true }))
+                withNatsTransport({ url: NATS_URL, microservice: false, asDefault: true }))
         ]
     })
     class NatsHostModule { }
@@ -75,8 +75,8 @@ describe('NATS @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [provideService(withServiceRouter(),
-            withNatsTransport({ url: NATS_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useNatsTransport({ url: NATS_URL, asDefault: true }))]
     })
     class NatsCtrlModule { }
 
@@ -95,8 +95,8 @@ describe('NATS @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [provideService(withServiceRouter(),
-            withNatsTransport({ url: NATS_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useNatsTransport({ url: NATS_URL, asDefault: true }))]
     })
     class NatsRouteModule { }
 
@@ -124,10 +124,10 @@ describe('NATS E2E with provideService + provideClient (microservice:true)', () 
         imports: [LoggerModule],
         declarations: [NatsE2eController],
         providers: [
-            provideService(withServiceRouter(),
-                withNatsTransport({ url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
+            provideService(useRouter(),
+                useNatsTransport({ url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
             provideClient(
-                withNatsClientTransport({ url: NATS_URL, microservice: true, asDefault: true }))
+                withNatsTransport({ url: NATS_URL, microservice: true, asDefault: true }))
         ]
     })
     class NatsE2eModule { }
@@ -168,10 +168,10 @@ describe('NATS E2E with provideService + provideClient (microservice:false)', ()
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withNatsTransport({ microservice: false as any, url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
+            provideService(useRouter(),
+                useNatsTransport({ microservice: false as any, url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
             provideClient(
-                withNatsClientTransport({ url: NATS_URL, microservice: false, asDefault: true }))
+                withNatsTransport({ url: NATS_URL, microservice: false, asDefault: true }))
         ]
     })
     class NatsE2eHostModule { }
@@ -221,10 +221,10 @@ describe('NATS pattern routing', () => {
         imports: [LoggerModule],
         declarations: [NatsPatternService],
         providers: [
-            provideService(withServiceRouter(),
-                withNatsTransport({ url: 'nats://127.0.0.1:4222' })),
+            provideService(useRouter(),
+                useNatsTransport({ url: 'nats://127.0.0.1:4222' })),
             provideClient(
-                withNatsClientTransport({ url: 'nats://127.0.0.1:4222', microservice: true, asDefault: true }))
+                withNatsTransport({ url: 'nats://127.0.0.1:4222', microservice: true, asDefault: true }))
         ]
     })
     class NatsPatternModule { }

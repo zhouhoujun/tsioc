@@ -1,14 +1,14 @@
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
-import { Application, ApplicationContext, } from '@tsdi/core';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { BadRequestException, Transport } from '@tsdi/common';
-import { provideClient, withClientInterceptors, withClientTransfers } from '@tsdi/common/client';
+import { provideClient, withInterceptors, withTransfers } from '@tsdi/client';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { Handle, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, withBodyparser, withContent, withInterceptors, withJson, withLogger, withRouter } from '@tsdi/endpoints';
-import { TcpClient, withTcpClientTransport, withTcpTransport } from '../src';
+import { Handle, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, useBodyParser, useContent, useInterceptors, useJson, useLogger, useRouter } from '@tsdi/service';
+import { TcpClient, withTcpTransport, useTcpTransport } from '../src';
 
 import { BigFileInterceptor } from './BigFileInterceptor';
 
@@ -97,9 +97,9 @@ export class DeviceController {
     ],
     providers: [
         provideClient(
-            withClientInterceptors(),
-            withClientTransfers(),
-            withTcpClientTransport(
+            withInterceptors(),
+            withTransfers(),
+            withTcpTransport(
                 {
                     // name: 'tcp-client',
                     // microservice: true,
@@ -118,13 +118,13 @@ export class DeviceController {
             )
         ),
         provideService(
-            withInterceptors(BigFileInterceptor),
-            withJson(),
-            withBodyparser(),
-            withContent(),
-            withRouter(),
-            withLogger(),
-            withTcpTransport(
+            useInterceptors(BigFileInterceptor),
+            useJson(),
+            useBodyParser(),
+            useContent(),
+            useRouter(),
+            useLogger(),
+            useTcpTransport(
                 {
                     // microservice: true,
                     listenOpts: {
@@ -226,7 +226,7 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('bad request', async () => {
-        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response', params: { age: '20' } })
+        const a = await lastValueFrom(client.send('/device/-1/used', { observe: 'response' as any, params: { age: '20' } })
             .pipe(
                 catchError(err => {
                     console.log(err);
@@ -238,7 +238,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('post route response object', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
+        const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response' as any, method: 'POST', params: { name: 'test' } }));
         // expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
@@ -246,7 +246,7 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('post route response string', async () => {
-        const b = await lastValueFrom(client.send('/device/update', { observe: 'response', responseType: 'text', method: 'POST', params: { version: '1.0.0' } })
+        const b = await lastValueFrom(client.send('/device/update', { observe: 'response' as any, responseType: 'text' as any, method: 'POST', params: { version: '1.0.0' } })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -258,7 +258,7 @@ describe('TCP Server & TCP Client', () => {
     });
 
     it('route with request body pipe', async () => {
-        const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }).pipe(
+        const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response' as any, method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);
@@ -272,7 +272,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request body pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST' })
+        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response' as any, method: 'POST' })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -283,7 +283,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request body pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } })
+        const r = await lastValueFrom(client.send('/device/usage', { observe: 'response' as any, method: 'POST', body: { id: 'test1', age: 'test', createAt: '2021-10-01' } })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -294,14 +294,14 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' as any, params: { age: '20' } }));
         // expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
 
     it('route with request param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' })
+        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' as any })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -312,7 +312,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: 'test' } })
+        const r = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' as any, params: { age: 'test' } })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -323,14 +323,14 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
+        const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response' as any, params: { age: '20' } }));
         // expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
 
     it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(client.send('/device//used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.send('/device//used', { observe: 'response' as any, params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -341,7 +341,7 @@ describe('TCP Server & TCP Client', () => {
     })
 
     it('route with request restful param pipe throw argument err', async () => {
-        const r = await lastValueFrom(client.send('/device/age1/used', { observe: 'response', params: { age: '20' } })
+        const r = await lastValueFrom(client.send('/device/age1/used', { observe: 'response' as any, params: { age: '20' } })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -353,7 +353,7 @@ describe('TCP Server & TCP Client', () => {
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', responseType: 'text' })
+        const r = await lastValueFrom(client.send('/device/status', { observe: 'response' as any, responseType: 'text' as any })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -365,7 +365,7 @@ describe('TCP Server & TCP Client', () => {
 
     it('redirect', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(client.send('/device/status', { observe: 'response' as any, params: { redirect: 'reload' }, responseType: 'text' as any }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);
@@ -377,7 +377,7 @@ describe('TCP Server & TCP Client', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(micclient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(micclient.send({ cmd: 'xxx' }, { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);
@@ -388,7 +388,7 @@ describe('TCP Server & TCP Client', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(micclient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(micclient.send('/dd/status', { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);

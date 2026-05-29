@@ -6,10 +6,10 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { CoapClient, COAP_SERV_INTERCEPTORS } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { provideService, withBodyParser, withContent, withJson, withServiceRouter } from '@tsdi/service';
-import { withCoapTransport } from '../src/server';
+import { provideService, useBodyParser, useContent, useJson, useRouter } from '@tsdi/service';
+import { useCoapTransport } from '../src/server';
 import { provideClient } from '@tsdi/client';
-import { withCoapClientTransport } from '../src/client';
+import { withCoapTransport } from '../src/client';
 
 
 
@@ -20,15 +20,15 @@ import { withCoapClientTransport } from '../src/client';
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withServiceRouter({ microservice: true }),
-            withContent(),
-            withJson(),
-            withBodyParser(),
-            withCoapTransport({ microservice: false as any, asDefault: true })
+            useRouter(),
+            useRouter({ microservice: true }),
+            useContent(),
+            useJson(),
+            useBodyParser(),
+            useCoapTransport({ microservice: false as any, asDefault: true })
         ),
         provideClient(
-            withCoapClientTransport({ microservice: false, asDefault: true })
+            withCoapTransport({ microservice: false, asDefault: true })
         )
     ],
     declarations: [

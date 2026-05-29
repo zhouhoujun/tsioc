@@ -2,9 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, withServiceRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
-import { withAmqpTransport } from '../src/server';
-import { withAmqpClientTransport, AmqpClient } from '../src/client';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { useAmqpTransport } from '../src/server';
+import { withAmqpTransport, AmqpClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as amqp from 'amqplib';
 import expect = require('expect');
@@ -28,10 +28,10 @@ describe('AMQP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withAmqpTransport({ url: AMQP_URL, asDefault: true })),
+            provideService(useRouter(),
+                useAmqpTransport({ url: AMQP_URL, asDefault: true })),
             provideClient(
-                withAmqpClientTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
+                withAmqpTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
         ]
     })
     class AmqpMsModule { }
@@ -52,10 +52,10 @@ describe('AMQP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withAmqpTransport({ microservice: false as any, url: AMQP_URL, asDefault: true })),
+            provideService(useRouter(),
+                useAmqpTransport({ microservice: false as any, url: AMQP_URL, asDefault: true })),
             provideClient(
-                withAmqpClientTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
+                withAmqpTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
         ]
     })
     class AmqpHostModule { }
@@ -75,8 +75,8 @@ describe('AMQP @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
-        providers: [provideService(withServiceRouter(),
-            withAmqpTransport({ url: AMQP_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useAmqpTransport({ url: AMQP_URL, asDefault: true }))]
     })
     class AmqpCtrlModule { }
 
@@ -95,8 +95,8 @@ describe('AMQP @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
-        providers: [provideService(withServiceRouter(),
-            withAmqpTransport({ url: AMQP_URL, asDefault: true }))]
+        providers: [provideService(useRouter(),
+            useAmqpTransport({ url: AMQP_URL, asDefault: true }))]
     })
     class AmqpRouteModule { }
 
@@ -124,10 +124,10 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
         imports: [LoggerModule],
         declarations: [AmqpE2eController],
         providers: [
-            provideService(withServiceRouter(),
-                withAmqpTransport({ url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
+            provideService(useRouter(),
+                useAmqpTransport({ url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
             provideClient(
-                withAmqpClientTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
+                withAmqpTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
         ]
     })
     class AmqpE2eModule { }
@@ -196,10 +196,10 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
     @Module({
         imports: [LoggerModule],
         providers: [
-            provideService(withServiceRouter(),
-                withAmqpTransport({ microservice: false as any, url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
+            provideService(useRouter(),
+                useAmqpTransport({ microservice: false as any, url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
             provideClient(
-                withAmqpClientTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
+                withAmqpTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
         ]
     })
     class AmqpE2eHostModule { }
@@ -267,12 +267,12 @@ describe('AMQP pattern routing', () => {
         imports: [LoggerModule],
         declarations: [AmqpPatternService],
         providers: [
-            provideService(withServiceRouter(),
-                withAmqpTransport({
+            provideService(useRouter(),
+                useAmqpTransport({
                     url: AMQP_URL
                 })),
             provideClient(
-                withAmqpClientTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
+                withAmqpTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
         ]
     })
     class AmqpPatternModule { }
@@ -310,13 +310,13 @@ describe('AMQP pattern routing with custom routingKey', () => {
         imports: [LoggerModule],
         declarations: [AmqpPatternService],
         providers: [
-            provideService(withServiceRouter(),
-                withAmqpTransport({
+            provideService(useRouter(),
+                useAmqpTransport({
                     url: AMQP_URL,
                     routingKey: ROUTING_KEY
                 })),
             provideClient(
-                withAmqpClientTransport({
+                withAmqpTransport({
                     url: AMQP_URL,
                     routingKey: ROUTING_KEY,
                     microservice: true,

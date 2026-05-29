@@ -84,7 +84,7 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
 
 }
 
-export function withAmqpClientTransport(...options: Partial<AmqpClientOptions>[]): ClientTransportFeature[] {
+export function withAmqpTransport(...options: Partial<AmqpClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
         const asDefault = option.asDefault ?? (idx === 0);
         return amqpClientTransportFactory(option, asDefault);

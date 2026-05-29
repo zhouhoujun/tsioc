@@ -1,5 +1,5 @@
-import { MqttServer, MqttServOptions, mqttTransportFactory, withMqttTransport, MQTT_SERV_OPTIONS } from '../src/server';
-import { withMqttClientTransport, MQTT_CLIENT_OPTIONS } from '../src/client';
+import { MqttServer, MqttServOptions, mqttTransportFactory, useMqttTransport, MQTT_SERV_OPTIONS } from '../src/server';
+import { withMqttTransport, MQTT_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 
@@ -100,9 +100,9 @@ describe('MQTT Microservice', () => {
         });
     });
 
-    describe('withMqttTransport', () => {
+    describe('useMqttTransport', () => {
         it('should create multiple transport features for multiple options', () => {
-            const features = withMqttTransport(
+            const features = useMqttTransport(
                 { url: 'mqtt://localhost:1883' },
                 { url: 'mqtt://localhost:1884' }
             );
@@ -110,9 +110,9 @@ describe('MQTT Microservice', () => {
         });
     });
 
-    describe('withMqttClientTransport', () => {
+    describe('withMqttTransport', () => {
         it('should use json packet transfer by default', () => {
-            const features = withMqttClientTransport({
+            const features = withMqttTransport({
                 url: 'mqtt://localhost:1883'
             });
 
@@ -120,7 +120,7 @@ describe('MQTT Microservice', () => {
         });
 
         it('should preserve host client mode when microservice is false', () => {
-            const features = withMqttClientTransport({
+            const features = withMqttTransport({
                 microservice: false,
                 url: 'mqtt://localhost:1883'
             });

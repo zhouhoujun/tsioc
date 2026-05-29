@@ -3,10 +3,10 @@ import { Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { NatsClient } from '../src';
-import { withNatsTransport } from '../src/server';
-import { withNatsClientTransport } from '../src/client';
+import { useNatsTransport } from '../src/server';
+import { withNatsTransport } from '../src/client';
 import { Transport } from '@tsdi/common';
-import { provideService, withServiceRouter, Handle, Payload } from '@tsdi/service';
+import { provideService, useRouter, Handle, Payload } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 
 
@@ -31,15 +31,15 @@ export class NATSService {
     ],
     providers: [
         provideService(
-            withServiceRouter(),
-            withNatsTransport({
+            useRouter(),
+            useNatsTransport({
                 microservice: true,
                 bootstrap: false,
                 asDefault: true
             })
         ),
         provideClient(
-            withNatsClientTransport({
+            withNatsTransport({
                 microservice: true,
                 asDefault: true
             })
