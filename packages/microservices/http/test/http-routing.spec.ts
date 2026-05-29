@@ -35,7 +35,6 @@ describe('HTTP/1.1 Routing', () => {
 
     before(async () => {
         ctx = await Application.run(RoutingApp);
-        await new Promise(r => setTimeout(r, 500));
     });
 
     after(async () => {

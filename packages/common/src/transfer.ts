@@ -123,7 +123,15 @@ export function useSimpleJson(options?: {
                         if (streamAdapter.isReadable(res)) {
                             res = await streamAdapter.read(res);
                         }
-                        const incoming = JSON.parse(res, options?.reviver);
+                        let incoming = res;
+                        if (typeof res === 'string' || Buffer.isBuffer(res)) {
+                            const raw = res.toString();
+                            try {
+                                incoming = JSON.parse(raw, options?.reviver);
+                            } catch {
+                                incoming = raw;
+                            }
+                        }
                         if (isDefined(incoming?.payload)) incoming.body = incoming.payload;
                         return incoming;
 

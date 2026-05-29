@@ -40,7 +40,7 @@ describe('MCP E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(McpMsModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -65,7 +65,7 @@ describe('MCP E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(McpHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -96,7 +96,7 @@ describe('MCP E2E with provideService + provideClient (microservice:true)', () =
 
     before(async () => {
         ctx = await Application.run(McpE2eModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -163,7 +163,7 @@ describe('MCP E2E with provideService + provideClient (microservice:false)', () 
 
     before(async () => {
         ctx = await Application.run(McpE2eHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 

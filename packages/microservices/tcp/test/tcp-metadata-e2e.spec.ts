@@ -26,7 +26,7 @@ describe('All HTTP methods', () => {
     })
     class MMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(MMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(MMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@Get bootstraps', () => expect(ctx).toBeDefined());
     it('@Post bootstraps', () => expect(ctx).toBeDefined());
@@ -45,7 +45,7 @@ describe('@RestController', () => {
     })
     class RMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(RMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(RMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@RestController bootstraps', () => expect(ctx).toBeDefined());
 });
@@ -65,7 +65,7 @@ describe('Parameter decorators', () => {
     })
     class PMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(PMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(PMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@RequestPath', () => expect(ctx).toBeDefined());
     it('@RequestParam', () => expect(ctx).toBeDefined());
@@ -86,7 +86,7 @@ describe('Parameter pipes', () => {
     })
     class PPMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(PPMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(PPMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('int pipe', () => expect(ctx).toBeDefined());
     it('boolean pipe', () => expect(ctx).toBeDefined());
@@ -108,7 +108,7 @@ describe('@RouteMapping methods', () => {
     })
     class RMMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(RMMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(RMMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@RouteMapping methods', () => expect(ctx).toBeDefined());
 });
@@ -126,7 +126,7 @@ describe('Optional params with defaults', () => {
     })
     class OMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(OMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(OMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('optional defaults', () => expect(ctx).toBeDefined());
 });
@@ -142,7 +142,7 @@ describe('Multiple controllers', () => {
     })
     class MCM {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(MCM); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(MCM);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('multi controllers', () => expect(ctx).toBeDefined());
 });
@@ -160,7 +160,7 @@ describe('@Subscribe pattern', () => {
     })
     class SMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(SMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(SMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@Subscribe bootstraps', () => expect(ctx).toBeDefined());
 });
@@ -178,7 +178,7 @@ describe('@Handle cmd pattern', () => {
     })
     class HMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(HMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(HMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@Handle cmd bootstraps', () => expect(ctx).toBeDefined());
 });
@@ -197,7 +197,7 @@ describe('All params combined', () => {
     })
     class XMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(XMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(XMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('all combined', () => expect(ctx).toBeDefined());
 });

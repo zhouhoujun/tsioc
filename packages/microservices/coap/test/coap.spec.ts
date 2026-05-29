@@ -4,6 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { CoapClient, COAP_SERV_INTERCEPTORS } from '../src';
+import { CoapMessageAdapter } from '../src/server/message-reader';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
 import { provideService, useBodyParser, useContent, useJson, useRouter } from '@tsdi/service';
@@ -39,6 +40,68 @@ export class CoapTestModule {
 
 }
 
+
+describe('CoapMessageAdapter', () => {
+    it('should read request data and write status headers body and error', () => {
+        const adapter = new CoapMessageAdapter();
+        const requestHeaders = { accept: 'application/json', 'x-test': '1' };
+        const request = {
+            headers: requestHeaders,
+            body: { id: 'zhou' },
+            payload: { id: 'zhou' },
+            params: { pid: 'p1' },
+            query: { q: 'qq' },
+            paths: { id: '42' },
+            pattern: '/device/adapter',
+            getHeader(name: string) {
+                return requestHeaders[name.toLowerCase() as keyof typeof requestHeaders];
+            },
+            hasHeader(name: string) {
+                return requestHeaders[name.toLowerCase() as keyof typeof requestHeaders] != null;
+            },
+            getHeaderNames() {
+                return Object.keys(requestHeaders);
+            }
+        } as any;
+        const headers = new Map<string, any>();
+        const outgoing = {
+            statusCode: undefined as any,
+            statusMessage: undefined as string | undefined,
+            body: undefined as any,
+            error: undefined as any,
+            setHeader(name: string, value: any) {
+                headers.set(name, value);
+            },
+            getHeader(name: string) {
+                return headers.get(name);
+            },
+            removeHeader(name: string) {
+                headers.delete(name);
+            }
+        } as any;
+        const error = new Error('boom');
+
+        adapter.bind(request);
+        adapter.setOutgoing(outgoing);
+        adapter.setStatus('2.05', 'Content');
+        adapter.setHeader('x-message-adapter', 'coap');
+        adapter.write({ wrapped: true });
+        adapter.writeError(error);
+
+        expect(adapter.read('headers', 'x-test')).toBe('1');
+        expect(adapter.read('body', 'id')).toBe('zhou');
+        expect(adapter.read('payload', 'id')).toBe('zhou');
+        expect(adapter.read('params', 'pid')).toBe('p1');
+        expect(adapter.read('query', 'q')).toBe('qq');
+        expect(adapter.read('path', 'id')).toBe('42');
+        expect(adapter.read('topic')).toBe('/device/adapter');
+        expect(outgoing.statusCode).toBe('2.05');
+        expect(outgoing.statusMessage).toBe('Content');
+        expect(outgoing.getHeader('x-message-adapter')).toBe('coap');
+        expect(outgoing.body).toEqual({ wrapped: true });
+        expect(outgoing.error).toBe(error);
+    });
+});
 
 describe('CoAP Server & CoAP Client', () => {
     let ctx: ApplicationContext;
@@ -254,6 +317,7 @@ describe('CoAP Server & CoAP Client', () => {
         expect(r.status).toEqual('2.05');
         expect(r.body).toEqual(result);
     })
+
 
     it('dd micro message', async () => {
         const result = 'reload';

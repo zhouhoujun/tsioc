@@ -54,6 +54,6 @@ class ReproModule {}
         console.log('client-post-err:', err?.stack || err?.message || err);
     }
 
-    await new Promise(r => setTimeout(r, 500));
+    
     await ctx.destroy();
 })();

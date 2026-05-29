@@ -25,7 +25,7 @@ describe('WS All HTTP methods', () => {
     })
     class MMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(MMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(MMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@Get', () => expect(ctx).toBeDefined());
     it('@Post', () => expect(ctx).toBeDefined());
@@ -43,7 +43,7 @@ describe('WS @RestController', () => {
     })
     class RMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(RMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(RMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@RestController', () => expect(ctx).toBeDefined());
 });
@@ -62,7 +62,7 @@ describe('WS Parameter decorators', () => {
     })
     class PMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(PMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(PMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@RequestPath', () => expect(ctx).toBeDefined());
     it('@RequestParam', () => expect(ctx).toBeDefined());
@@ -82,7 +82,7 @@ describe('WS Parameter pipes', () => {
     })
     class PPMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(PPMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(PPMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('int pipe', () => expect(ctx).toBeDefined());
     it('boolean pipe', () => expect(ctx).toBeDefined());
@@ -102,7 +102,7 @@ describe('WS @RouteMapping', () => {
     })
     class RMMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(RMMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(RMMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@RouteMapping', () => expect(ctx).toBeDefined());
 });
@@ -119,7 +119,7 @@ describe('WS Default params', () => {
     })
     class OMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(OMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(OMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('defaults', () => expect(ctx).toBeDefined());
 });
@@ -135,7 +135,7 @@ describe('WS Multiple controllers', () => {
     })
     class MCM {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(MCM); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(MCM);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('multi', () => expect(ctx).toBeDefined());
 });
@@ -153,7 +153,7 @@ describe('WS @Subscribe', () => {
     })
     class SMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(SMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(SMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@Subscribe', () => expect(ctx).toBeDefined());
 });
@@ -171,7 +171,7 @@ describe('WS @Handle cmd', () => {
     })
     class HMod {}
     let ctx: ApplicationContext;
-    before(async () => { ctx = await Application.run(HMod); await new Promise(r => setTimeout(r, 500)); });
+    before(async () => { ctx = await Application.run(HMod);  });
     after(async () => { if (ctx) await ctx.close(); });
     it('@Handle cmd', () => expect(ctx).toBeDefined());
 });

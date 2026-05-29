@@ -58,7 +58,7 @@ describe('CoAP E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(CoapMsModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -82,7 +82,7 @@ describe('CoAP E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(CoapHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -115,7 +115,7 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
 
     before(async () => {
         ctx = await Application.run(CoapE2eModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -227,7 +227,7 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
 
     before(async () => {
         ctx = await Application.run(CoapE2eHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -284,7 +284,7 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
 
     before(async () => {
         ctx = await Application.run(CoapClientModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -323,7 +323,7 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
 
     before(async () => {
         ctx = await Application.run(CoapGetModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -384,7 +384,7 @@ describe('CoAP pattern routing', () => {
     before(async () => {
         ctx = await Application.run(CoapPatternModule);
         client = ctx.get(CoapClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -429,7 +429,7 @@ describe('CoAP pattern routing compatibility', () => {
     before(async () => {
         ctx = await Application.run(CoapPatternCompatModule);
         client = ctx.get(CoapClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 

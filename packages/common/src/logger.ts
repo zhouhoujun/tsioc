@@ -2,7 +2,6 @@ import { Abstract, Exception, Inject, InjectFlags, Injectable, Nullable, isNumbe
 import { Filter, BytesFormatPipe, HrtimeFormatter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel, ConsoleLog } from '@tsdi/logger';
 import { Observable, catchError, map, throwError } from 'rxjs';
-import { StatusAdapter } from './StatusAdapter';
 import { RequestInterceptor } from './interceptor';
 import { ReadableLike, WritableLike } from './stream';
 import { Incoming, TopicIncoming, UrlIncoming } from './incoming';
@@ -29,7 +28,7 @@ export abstract class ResponseStatusFormater {
 
     }
 
-    abstract format(adapter: StatusAdapter, withColor: boolean, path: string, method?: string, hrtime?: [number, number], statusCode?: string | number | null, statusMessage?: string, contentLength?: number | null, error?: Exception): string[];
+    abstract format(withColor: boolean, path: string, method?: string, hrtime?: [number, number], statusCode?: string | number | null, statusMessage?: string, contentLength?: number | null, error?: Exception): string[];
 
     protected formatSize(size?: number | null, precise = 2) {
         if (!isNumber(size)) return ''
@@ -72,7 +71,6 @@ export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incomi
 
     intercept(req: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<WritableLike<Outgoing>> {
         const logger = context.getInjector().get(Logger, this.logger, InjectFlags.Self);
-        const statusAdapter = context.get(StatusAdapter);
         const level = this.options.level;
         if (!matchLevel(logger.level, level)) {
             return next.handle(req, context);
@@ -81,16 +79,16 @@ export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incomi
         const withColor = logger instanceof ConsoleLog;
         const start = this.formatter.htime.hrtime();
         const path = (req as UrlIncoming)?.url ?? (req as TopicIncoming)?.topic ?? req.pattern;
-        logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method));
+        logger[level](...this.formatter.format(withColor, path, req.method));
         return next.handle(req, context)
             .pipe(
                 map(res => {
-                    logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method,
+                    logger[level](...this.formatter.format(withColor, path, req.method,
                         this.formatter.htime.hrtime(start), res.statusCode, res.statusMessage, context.getContentLength(), res.error));
                     return res
                 }),
                 catchError(err => {
-                    logger[level](...this.formatter.format(statusAdapter, withColor, path, req.method,
+                    logger[level](...this.formatter.format(withColor, path, req.method,
                         this.formatter.htime.hrtime(start), err.statusCode, err.statusMessage, context.getContentLength(), err));
                     return throwError(() => err);
                 })

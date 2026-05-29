@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
+import { isHeaderCapableMessageAdapter, isRequestCapableMessageAdapter, isResponseCapableMessageAdapter, RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { finalize, tap, catchError } from 'rxjs/operators';
 import { Tracer } from '../tracer';
@@ -14,19 +14,17 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
     constructor(private tracer: Tracer) {}
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<WritableLike<Outgoing>> {
-        const request = context.getRequest();
-        const method = request.method || 'UNKNOWN';
-        const path = request.pattern || (request as any).url || '/';
+        const adapter = context.getMessageAdapter();
+        const request = isRequestCapableMessageAdapter(adapter) ? adapter.getRequest() as any : undefined;
+        const method = request?.method || 'UNKNOWN';
+        const path = request?.pattern || request?.url || '/';
 
         // Extract trace context from headers
         const headers: Record<string, string> = {};
-        const headerAdapter = context.get('HeaderAdapter') as any;
-        if (headerAdapter && headerAdapter.getHeaders) {
-            const allHeaders = headerAdapter.getHeaders(request);
-            for (const [key, value] of Object.entries(allHeaders)) {
-                if (typeof value === 'string') {
-                    headers[key.toLowerCase()] = value;
-                }
+        const allHeaders = isHeaderCapableMessageAdapter(adapter) ? adapter.getHeaders() : {};
+        for (const [key, value] of Object.entries(allHeaders)) {
+            if (typeof value === 'string') {
+                headers[key.toLowerCase()] = value;
             }
         }
 
@@ -59,10 +57,10 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
         // Inject trace context into response headers
         const responseHeaders: Record<string, string> = {};
         this.tracer.injectContext(span.context(), responseHeaders);
-        const resp = context.getResponse();
+        const response = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as any : undefined;
         for (const [key, value] of Object.entries(responseHeaders)) {
-            if (resp.setHeader) {
-                resp.setHeader(key, value);
+            if (response?.setHeader) {
+                response.setHeader(key, value);
             }
         }
 

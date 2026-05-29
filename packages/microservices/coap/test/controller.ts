@@ -1,5 +1,5 @@
-import { lang } from '@tsdi/ioc';
-import { BadRequestException, Transport } from '@tsdi/common';
+import { Inject, lang } from '@tsdi/ioc';
+import { BadRequestException, RequestContext, Transport } from '@tsdi/common';
 import { Get, Handle, Payload, Post, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/service';
 import { of } from 'rxjs';
 
@@ -62,7 +62,20 @@ export class DeviceController {
         return 'reload';
     }
 
+    @Post('/adapter/write')
+    adapterWrite(@RequestBody() body: any, @Inject(RequestContext) context: RequestContext) {
+        context.setStatus(201, 'Created');
+        context.setHeader('x-message-adapter', 'coap');
+        context.writeMessage({ wrapped: body });
+        return undefined;
+    }
 
+    @Get('/adapter/error')
+    adapterError(@Inject(RequestContext) context: RequestContext) {
+        const err = new BadRequestException('adapter error');
+        context.writeError(err);
+        throw err;
+    }
 
     @Handle({ cmd: 'xxx' }, Transport.CoAP)
     async subMessage(@Payload() message: string) {

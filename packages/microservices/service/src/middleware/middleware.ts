@@ -1,6 +1,6 @@
 import { Exception, HandlerFn, isFunction, isNil } from '@tsdi/ioc';
 import { from, lastValueFrom, map, Observable } from 'rxjs';
-import { RequestContext, RequestInterceptorFn } from '@tsdi/common';
+import { isResponseCapableMessageAdapter, RequestContext, RequestInterceptorFn } from '@tsdi/common';
 
 
 /**
@@ -48,7 +48,8 @@ export function convertToInterceptor<TInput = any, TOutput = any, TContext exten
 
         return from(isFunction(middleware) ? middleware(context, nextFn) : middleware.invoke(context, nextFn)).pipe(
             map(() => {
-                const response = context.getResponse() as any;
+                const adapter = context.getMessageAdapter();
+                const response = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as any : undefined;
                 if (!isNil(response?.body)) {
                     return response.body as TOutput;
                 }

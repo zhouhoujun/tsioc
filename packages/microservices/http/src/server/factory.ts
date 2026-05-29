@@ -1,6 +1,6 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
 import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, isResponseCapableMessageAdapter, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common';
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
@@ -15,7 +15,7 @@ import { HttpSessionInterceptor } from './interceptors/session';
 import { HttpCookieInterceptor } from './interceptors/cookie';
 import { Cors } from './interceptors/cors';
 import { StaticFileInterceptor } from './static-file.interceptor';
-import { HttpMessageReaderFactory } from './message-reader';
+import { HttpMessageAdapter, HttpMessageReaderFactory } from './message-reader';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
@@ -50,6 +50,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         importProvidersFrom(MimeModule),
         importProvidersFrom(ServerCommonModule),
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        HttpMessageAdapter,
         { provide: ContentInterceptor, useClass: HttpContentInterceptor },
         { provide: JsonInterceptor, useClass: HttpJsonInterceptor },
         {
@@ -76,11 +77,14 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             multiOrder: -50
         } as any] : []),
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const r = context.getResponse();
+            const adapter = context.getMessageAdapter();
+            const r = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as any : undefined;
             const error = new NotFoundException('Not Found', 404);
-            r.error = error;
-            r.statusCode = error.statusCode;
-            r.statusMessage = error.message;
+            if (r) {
+                r.error = error;
+                r.statusCode = error.statusCode;
+                r.statusMessage = error.message;
+            }
             return of(r);
         }, multi: true },
         { provide: serviceToken, useFactory: (inj: Injector) => getClassRef(HttpServer).createInvocation(inj, {

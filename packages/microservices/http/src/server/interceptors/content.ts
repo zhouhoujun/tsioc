@@ -2,7 +2,7 @@ import { Inject, Injectable, Optional, token } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import {
     FileAdapter, FileStats, FindOptions, GET, HEAD, Incoming, IStats, NotFoundException,
-    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming
+    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming, isResponseCapableMessageAdapter
 } from '@tsdi/common';
 import { Observable, from, mergeMap, throwError } from 'rxjs';
 
@@ -42,7 +42,9 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
                     })
                 )
         } else {
-            return from(this.find(path, context.getResponse(), fileAdapter, options))
+            const adapter = context.getMessageAdapter();
+            const response = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as Outgoing<any> : undefined;
+            return from(this.find(path, response as Outgoing<any>, fileAdapter, options))
                 .pipe(
                     mergeMap(file => {
                         if (!file || !file.filename) return next.handle(input, context)
@@ -53,7 +55,11 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
     }
 
     protected async send(context: RequestContext, file: FileStats<IStats>) {
-        const res = context.getResponse();
+        const adapter = context.getMessageAdapter();
+        const res = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as Outgoing<any> : undefined;
+        if (!res) {
+            return null;
+        }
         if (this.options.setHeaders) {
             this.options.setHeaders(res, file.filename, file.stats);
         }

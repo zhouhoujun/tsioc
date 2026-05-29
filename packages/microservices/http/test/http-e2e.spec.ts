@@ -54,7 +54,7 @@ describe('HTTP E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(HttpMsModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -77,7 +77,7 @@ describe('HTTP E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(HttpHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -97,7 +97,7 @@ describe('HTTP @Controller', () => {
 
     before(async () => {
         ctx = await Application.run(HttpCtrlModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -149,7 +149,7 @@ describe('HTTP static/media support', () => {
 
     before(async () => {
         ctx = await Application.run(HttpStaticModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -252,7 +252,7 @@ describe('HTTP/2 over h2c (plaintext)', () => {
 
     before(async () => {
         ctx = await Application.run(Http2Module);
-        await new Promise(r => setTimeout(r, 500));
+        
         http2Client = http2.connect(`http://127.0.0.1:${PORTS.h2}`);
     });
     after(async () => {
@@ -306,7 +306,7 @@ describe('HTTP/2 via microservice client pipeline', () => {
 
     before(async () => {
         ctx = await Application.run(Http2ClientModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -350,7 +350,7 @@ describe('HTTP/2 over TLS (HTTPS/2)', () => {
 
     before(async () => {
         ctx = await Application.run(Https2Module);
-        await new Promise(r => setTimeout(r, 500));
+        
         http2Client = http2.connect(`https://localhost:${PORTS.h2 + 10}`, { ca: cert });
     });
     after(async () => {
@@ -429,7 +429,7 @@ describe('HTTP/2 concurrent streams', () => {
 
     before(async () => {
         ctx = await Application.run(Http2ConcurrentModule);
-        await new Promise(r => setTimeout(r, 500));
+        
         http2Client = http2.connect(`http://127.0.0.1:${PORTS.h2 + 20}`);
     });
     after(async () => {
@@ -492,7 +492,7 @@ describe('HTTP content negotiation', () => {
 
     before(async () => {
         ctx = await Application.run(NegotiateModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -554,7 +554,7 @@ describe('HTTP error handling', () => {
 
     before(async () => {
         ctx = await Application.run(ErrModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 

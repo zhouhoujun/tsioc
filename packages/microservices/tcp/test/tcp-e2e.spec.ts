@@ -41,7 +41,7 @@ describe('TCP E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(MsModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -65,7 +65,7 @@ describe('TCP E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(HostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -86,7 +86,7 @@ describe('TCP @Controller / @Get / @Post', () => {
 
     before(async () => {
         ctx = await Application.run(CtrlModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -107,7 +107,7 @@ describe('TCP @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(RouteModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -143,7 +143,7 @@ describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
     before(async () => {
         ctx = await Application.run(TcpClientModule);
         client = ctx.get(TcpClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -196,7 +196,7 @@ describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
     before(async () => {
         ctx = await Application.run(TcpHostClientModule);
         client = ctx.get(TcpClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 

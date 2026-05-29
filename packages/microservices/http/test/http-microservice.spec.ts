@@ -1,5 +1,5 @@
 import { HttpServer, HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse } from '../src/server';
-import { HttpMessageReaderFactory } from '../src/server/message-reader';
+import { HttpMessageAdapter, HttpMessageReaderFactory } from '../src/server/message-reader';
 import { StaticFileInterceptor } from '../src/server/static-file.interceptor';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { IncomingMessageReaderFactory, Transport, TransferSide } from '@tsdi/common';
@@ -205,6 +205,64 @@ describe('HTTP Microservice', () => {
         it('should preserve upload limit on transport config for multipart body parsing', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 }, upload: { limit: '5mb' } });
             expect((feature.config as HttpServOptions).upload).toEqual({ limit: '5mb' });
+        });
+    });
+
+    describe('HttpMessageAdapter', () => {
+        it('should read request data and write status headers body and error', () => {
+            const adapter = new HttpMessageAdapter();
+            const requestHeaders = { accept: 'application/json', 'x-test': '1' };
+            const request = {
+                headers: requestHeaders,
+                body: { id: 'zhou' },
+                params: { pid: 'p1' },
+                query: { q: 'qq' },
+                paths: { id: '42' },
+                getHeader(name: string) {
+                    return requestHeaders[name.toLowerCase() as keyof typeof requestHeaders];
+                },
+                hasHeader(name: string) {
+                    return requestHeaders[name.toLowerCase() as keyof typeof requestHeaders] != null;
+                },
+                getHeaderNames() {
+                    return Object.keys(requestHeaders);
+                }
+            } as unknown as HttpRequestMessage;
+            const headers = new Map<string, any>();
+            const outgoing = {
+                statusCode: undefined as any,
+                statusMessage: undefined as string | undefined,
+                body: undefined as any,
+                error: undefined as any,
+                setHeader(name: string, value: any) {
+                    headers.set(name, value);
+                },
+                getHeader(name: string) {
+                    return headers.get(name);
+                },
+                removeHeader(name: string) {
+                    headers.delete(name);
+                }
+            } as any;
+            const error = new Error('boom');
+
+            adapter.bind(request, {} as HttpServResponse);
+            adapter.setOutgoing(outgoing);
+            adapter.setStatus(202, 'Accepted');
+            adapter.setHeader('x-message-adapter', 'http');
+            adapter.write({ wrapped: true });
+            adapter.writeError(error);
+
+            expect(adapter.read('headers', 'x-test')).toBe('1');
+            expect(adapter.read('body', 'id')).toBe('zhou');
+            expect(adapter.read('params', 'pid')).toBe('p1');
+            expect(adapter.read('query', 'q')).toBe('qq');
+            expect(adapter.read('path', 'id')).toBe('42');
+            expect(outgoing.statusCode).toBe(202);
+            expect(outgoing.statusMessage).toBe('Accepted');
+            expect(outgoing.getHeader('x-message-adapter')).toBe('http');
+            expect(outgoing.body).toEqual({ wrapped: true });
+            expect(outgoing.error).toBe(error);
         });
     });
 

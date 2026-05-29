@@ -42,6 +42,7 @@ export { LoggerInterceptor as LoggerFilter } from './logger';
 // 新增: 消息类型和编解码器
 export * from './message';
 export * from './MessageReader';
+export * from './MessageAdapter';
 
 
 

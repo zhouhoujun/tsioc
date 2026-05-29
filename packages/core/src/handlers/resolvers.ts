@@ -115,8 +115,17 @@ export function createMessageResolveInterceptors(
                     ? (implicitWholeSection ? undefined : parameter.name)
                     : parameter.name);
 
+            const messageAdapter = isFunction((context as any).getMessageAdapter)
+                ? (context as any).getMessageAdapter()
+                : null;
+            const readMessage = parameter.scope && messageAdapter && isFunction((context as any).readMessage)
+                ? (section: TransportParameter['scope'], name?: string) => (context as any).readMessage(section, name)
+                : undefined;
+
             let payload: any;
-            if (reader) {
+            if (readMessage && parameter.scope) {
+                payload = readMessage(parameter.scope, field as any);
+            } else if (reader) {
                 payload = reader.field(parameter.scope as any, field as any);
             } else {
                 const input = context.getPayload() as Record<string, any> | undefined;
@@ -141,7 +150,16 @@ export function createMessageResolveInterceptors(
             }
 
             if (isNil(payload)) {
-                if (reader) {
+                if (readMessage && parameter.scope) {
+                    const data = readMessage(parameter.scope);
+                    if (isDefined(data) && (!isObject(data) || implicitWholeSection)) {
+                        payload = data;
+                    } else if (parameter.nullable) {
+                        return parameter.defaultValue ?? null;
+                    } else {
+                        return next(parameter, context);
+                    }
+                } else if (reader) {
                     const data = reader.field(parameter.scope as any);
                     if (isDefined(data) && (!isObject(data) || implicitWholeSection)) {
                         payload = data;

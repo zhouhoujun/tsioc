@@ -7,6 +7,7 @@ import {
     StreamAdapter, ContentType, Outgoing, OutgoingFactory, BadRequestException
 } from '@tsdi/common';
 import { HttpRequestMessage } from './http-context';
+import { HttpMessageAdapter } from './message-reader';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
@@ -147,9 +148,10 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         };
         request.hasHeader = (name: string) => request.getHeader(name) != null;
         request.getHeaderNames = () => Object.keys(req.headers ?? {});
+        const outgoing = this.createOutgoing(req);
         const context = createRequestContext(this.injector, [
             [REQUEST, request],
-            [RESPONSE, this.createOutgoing(req)],
+            [RESPONSE, outgoing],
             ['request', request],
             ['response', res],
             ['url', url],
@@ -157,6 +159,10 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ['method', method],
             ['headers', req.headers],
         ]);
+        const adapter = this.injector.get(HttpMessageAdapter);
+        adapter.bind(request, res);
+        adapter.setOutgoing(outgoing);
+        context.setMessageAdapter(adapter);
         context.setPayload(request);
 
         this.handler.handle(request as TReq, context)
@@ -253,7 +259,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private toOutgoing(response: any, context: RequestContext): Outgoing<any> | null {
-        const outgoing = context.getResponse();
+        const outgoing = context.get(RESPONSE) as Outgoing<any>;
         if (!response) {
             return outgoing;
         }

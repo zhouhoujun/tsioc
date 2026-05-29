@@ -39,7 +39,7 @@ describe('gRPC E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(GrpcMsModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -64,7 +64,7 @@ describe('gRPC E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(GrpcHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -85,7 +85,7 @@ describe('gRPC @Controller / @Get / @Post', () => {
 
     before(async () => {
         ctx = await Application.run(GrpcCtrlModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -106,7 +106,7 @@ describe('gRPC @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(GrpcRouteModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -133,7 +133,7 @@ describe('gRPC E2E with provideService + provideClient (microservice:true)', () 
 
     before(async () => {
         ctx = await Application.run(GrpcE2eModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -161,7 +161,7 @@ describe('gRPC E2E with provideService + provideClient (microservice:false)', ()
 
     before(async () => {
         ctx = await Application.run(GrpcE2eHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 

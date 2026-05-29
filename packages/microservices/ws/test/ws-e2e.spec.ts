@@ -29,7 +29,7 @@ describe('WS E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(WsMsModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -48,7 +48,7 @@ describe('WS E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(WsHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -74,7 +74,7 @@ describe('WS @Controller / @Get / @Post', () => {
 
     before(async () => {
         ctx = await Application.run(WsCtrlModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -100,7 +100,7 @@ describe('WS @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(WsRouteModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -132,7 +132,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
     before(async () => {
         ctx = await Application.run(WsE2eModule);
         client = ctx.get(WsClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -169,7 +169,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
     before(async () => {
         ctx = await Application.run(WsE2eHostModule);
         client = ctx.get(WsClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -217,7 +217,7 @@ describe('WS pattern routing', () => {
     before(async () => {
         ctx = await Application.run(WsPatternModule);
         client = ctx.get(WsClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 

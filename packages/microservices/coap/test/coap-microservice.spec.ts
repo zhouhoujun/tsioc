@@ -72,12 +72,12 @@ describe('CoAP Microservice', () => {
             expect(hasInConfig || hasInMain).toBe(true);
         });
 
-        it('should use json packet transfer by default', () => {
+        it('should not use json packet transfer by default on server transport', () => {
             const feature = coapTransportFactory({
                 listenOpts: { port: 5683 }
             });
 
-            expect(feature.config.features?.defaultTransfer).toBeDefined();
+            expect(feature.config.features?.defaultTransfer).toBeUndefined();
         });
 
         it('should preserve an explicit default transfer override', () => {

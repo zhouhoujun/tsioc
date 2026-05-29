@@ -1,6 +1,6 @@
-import { Exception, hasProps, Injectable } from '@tsdi/ioc';
+import { Exception, Injectable } from '@tsdi/ioc';
 import * as chalk from 'chalk';
-import { StatusAdapter, ResponseStatusFormater } from '@tsdi/common';
+import { ResponseStatusFormater } from '@tsdi/common';
 
 
 
@@ -10,10 +10,10 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     readonly incoming = '--->';
     readonly outgoing = '<---';
 
-    format(adapter: StatusAdapter, withColor: boolean, path: string, method?: string, hrtime?: [number, number], statusCode?: string | number | null, statusMessage?: string, contentLength?: number | null, error?: Exception): string[] {
+    format(withColor: boolean, path: string, method?: string, hrtime?: [number, number], statusCode?: string | number | null, statusMessage?: string, contentLength?: number | null, error?: Exception): string[] {
 
         if (hrtime) {
-            const [status, message] = statusCode ? this.formatStatus(adapter, withColor, statusCode, statusMessage) : this.formatState(withColor, error);
+            const [status, message] = statusCode ? this.formatStatus(withColor, statusCode, statusMessage) : this.formatState(withColor, error);
             const hrtimeStr = this.htime.format(hrtime);
             const sizeStr = this.formatSize(contentLength ?? 0);
             return [
@@ -46,31 +46,28 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         return [chalk.green(status), statusMessage ? chalk.green(statusMessage) : '']
     }
 
-    private formatStatus(adapter: StatusAdapter, withColor: boolean, statusCode: number | string, statusMessage?: string): [string, string] {
+    private formatStatus(withColor: boolean, statusCode: number | string, statusMessage?: string): [string, string] {
 
         if (!withColor) return [statusCode?.toString(), statusMessage ?? '']
 
-        if (adapter.isOk(statusCode)) {
-            return [chalk.green(statusCode), statusMessage ? chalk.green(statusMessage) : ''];
+        const statusText = statusCode.toString();
+        if (/^2(?:\.|\d)/.test(statusText)) {
+            return [chalk.green(statusText), statusMessage ? chalk.green(statusMessage) : ''];
         }
 
-        if (adapter.isRedirect(statusCode)) {
-            return [chalk.yellow(statusCode), statusMessage ? chalk.yellow(statusMessage) : ''];
+        if (/^3(?:\.|\d)/.test(statusText)) {
+            return [chalk.yellow(statusText), statusMessage ? chalk.yellow(statusMessage) : ''];
         }
 
-        if (adapter.isRequestFailed(statusCode)) {
-            return [chalk.magentaBright(statusCode), statusMessage ? chalk.magentaBright(statusMessage) : '']
+        if (/^4(?:\.|\d)/.test(statusText)) {
+            return [chalk.magentaBright(statusText), statusMessage ? chalk.magentaBright(statusMessage) : ''];
         }
 
-        if (adapter.isServerError(statusCode)) {
-            return [chalk.red(statusCode), statusMessage ? chalk.red(statusMessage) : '']
+        if (/^5(?:\.|\d)/.test(statusText)) {
+            return [chalk.red(statusText), statusMessage ? chalk.red(statusMessage) : ''];
         }
 
-        if (adapter.isRetry(statusCode)) {
-            return [chalk.yellow(statusCode), statusMessage ? chalk.yellow(statusMessage) : ''];
-        }
-
-        return [chalk.cyan(statusCode), statusMessage ? chalk.cyan(statusMessage) : '']
+        return [chalk.cyan(statusText), statusMessage ? chalk.cyan(statusMessage) : '']
 
     }
 

@@ -139,7 +139,7 @@ describe('NATS E2E with provideService + provideClient (microservice:true)', () 
     before(async () => {
         ctx = await Application.run(NatsE2eModule);
         nc = await connect({ servers: NATS_URL });
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => {
         if (nc) await nc.drain();
@@ -183,7 +183,7 @@ describe('NATS E2E with provideService + provideClient (microservice:false)', ()
     before(async () => {
         ctx = await Application.run(NatsE2eHostModule);
         nc = await connect({ servers: NATS_URL });
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => {
         if (nc) await nc.drain();

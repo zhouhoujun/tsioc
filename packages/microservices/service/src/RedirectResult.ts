@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { ContentType, encodeUrl, escapeHtml, RequestContext } from '@tsdi/common';
+import { isAcceptsCapableMessageAdapter, isResponseCapableMessageAdapter, ContentType, encodeUrl, escapeHtml, RequestContext } from '@tsdi/common';
 
 export class RedirectResult extends ResultValue {
     constructor(private url: string, private referrer?: string, private alt?: string) {
@@ -12,7 +12,11 @@ export class RedirectResult extends ResultValue {
             url = this.referrer || this.alt || '/';
         }
 
-        const response = ctx.getResponse();
+        const adapter = ctx.getMessageAdapter();
+        if (!isResponseCapableMessageAdapter(adapter) || !adapter.getResponse()) {
+            return;
+        }
+        const response = adapter.getResponse();
         response.setHeader('location', encodeUrl(url));
 
         const statusCode = Number(response.statusCode);
@@ -20,7 +24,7 @@ export class RedirectResult extends ResultValue {
             response.statusCode = 302 as any;
         }
 
-        if (ctx.accepts('html')) {
+        if (isAcceptsCapableMessageAdapter(adapter) && adapter.accepts('html')) {
             const html = escapeHtml(url);
             response.type = ContentType.TEXT_HTML_UTF8;
             response.body = `Redirecting to <a href="${html}">${html}</a>.`;

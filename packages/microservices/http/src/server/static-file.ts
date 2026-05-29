@@ -1,4 +1,4 @@
-import { BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common';
+import { isAcceptsCapableMessageAdapter, isRequestCapableMessageAdapter, isResponseCapableMessageAdapter, BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common';
 import { basename } from 'node:path';
 import { HttpFileResult, HttpFileResultOptions } from './file-result';
 
@@ -36,11 +36,12 @@ export async function resolveStaticFile(input: any, context: RequestContext, opt
     }
 
     const fileAdapter = context.get(FileAdapter);
+    const adapter = context.getMessageAdapter();
     for (const option of options) {
         try {
             const file = await fileAdapter.find(pathname, {
                 ...option,
-                acceptsEncodings: (...encodings: string[]) => context.acceptsEncodings(...encodings),
+                acceptsEncodings: (...encodings: string[]) => isAcceptsCapableMessageAdapter(adapter) ? adapter.acceptsEncodings(...encodings) : false,
             });
             if (file?.filename) {
                 return createFileOutgoing(context, file, method, {
@@ -70,7 +71,11 @@ export async function resolveFileResult(result: HttpFileResult, input: any, cont
         }, method, result.options);
     }
 
-    const outgoing = context.getResponse();
+    const adapter = context.getMessageAdapter();
+    const outgoing = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() : undefined;
+    if (!outgoing) {
+        throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
+    }
     applyResponseHeaders(outgoing, result.options.headers);
     if (result.options.statusCode) {
         outgoing.statusCode = result.options.statusCode;
@@ -147,7 +152,8 @@ function inferContentType(mimeAdapter: MimeAdapter | null | undefined, filename?
 }
 
 function getHeader(context: RequestContext, name: string): string | undefined {
-    const request = context.getRequest() as any;
+    const adapter = context.getMessageAdapter();
+    const request = isRequestCapableMessageAdapter(adapter) ? adapter.getRequest() as any : undefined;
     const value = typeof request?.getHeader === 'function'
         ? request.getHeader(name)
         : request?.headers?.[name.toLowerCase()] ?? request?.headers?.[name];

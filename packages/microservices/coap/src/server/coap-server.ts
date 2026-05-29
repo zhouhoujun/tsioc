@@ -10,6 +10,7 @@ import { Subject, race, take, takeUntil, mergeMap, isObservable, from, of } from
 import * as coap from 'coap';
 import { CoapServOptions, COAP_SERV_OPTIONS, COAP_BIND_INTERCEPTORS, COAP_BIND_FILTERS, COAP_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
+import { CoapMessageAdapter } from './message-reader';
 
 /**
  * CoAP server for microservices.
@@ -101,6 +102,10 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ['method', requestData.method],
             ['headers', requestData.headers],
         ]);
+        const adapter = this.injector.get(CoapMessageAdapter);
+        adapter.bind(requestData, res);
+        adapter.setOutgoing(outgoing);
+        context.setMessageAdapter(adapter);
         context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
@@ -196,7 +201,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const code = this.toCoapCode(outgoing?.statusCode ?? (outgoing?.error ? 500 : 200));
         (res as any).code = code;
         this.applyResponseHeaders(res, outgoing);
-        const request = context.getRequest() as Record<string, any>;
+        const request = context.get(REQUEST) as Record<string, any>;
         const wantsResponse = request?.observe === 'response' || request?.headers?.observe === 'response' || request?.headers?.observe === 'true';
         if (wantsResponse) {
             const packet = this.toResponsePacket(outgoing, response, code);
@@ -222,7 +227,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             : (err?.statusCode ?? err?.status ?? (err?.name === 'BadRequestException' ? 400 : 500));
         const code = this.toCoapCode(rawStatus);
         (res as any).code = code;
-        const request = context.getRequest() as Record<string, any>;
+        const request = context.get(REQUEST) as Record<string, any>;
         const wantsResponse = request?.observe === 'response' || request?.headers?.observe === 'response' || request?.headers?.observe === 'true';
         const body = {
             statusCode: Number(rawStatus) || 500,
@@ -243,7 +248,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private toOutgoing(response: any, context: RequestContext): Outgoing<any> | null {
-        const outgoing = context.getResponse();
+        const outgoing = context.get(RESPONSE) as Outgoing<any>;
         if (isNil(response)) {
             return outgoing;
         }

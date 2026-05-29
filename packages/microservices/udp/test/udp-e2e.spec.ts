@@ -41,7 +41,7 @@ describe('UDP E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(UdpMsModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -66,7 +66,7 @@ describe('UDP E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(UdpHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -87,7 +87,7 @@ describe('UDP @Controller / @Get / @Post', () => {
 
     before(async () => {
         ctx = await Application.run(UdpCtrlModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -108,7 +108,7 @@ describe('UDP @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(UdpRouteModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -138,7 +138,7 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
 
     before(async () => {
         ctx = await Application.run(UdpE2eModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -207,7 +207,7 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
 
     before(async () => {
         ctx = await Application.run(UdpE2eHostModule);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -285,7 +285,7 @@ describe('UDP pattern routing', () => {
     before(async () => {
         ctx = await Application.run(UdpPatternModule);
         client = ctx.get(UdpClient);
-        await new Promise(r => setTimeout(r, 500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 

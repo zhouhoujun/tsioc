@@ -37,7 +37,6 @@ describe('HTTP Security', () => {
 
         before(async () => {
             ctx = await Application.run(CorsApp);
-            await new Promise(r => setTimeout(r, 500));
         });
 
         after(async () => {
@@ -107,7 +106,7 @@ describe('HTTP Security', () => {
 
         before(async () => {
             ctx = await Application.run(CredentialsCorsApp);
-            await new Promise(r => setTimeout(r, 500));
+            
         });
 
         after(async () => {
@@ -153,7 +152,7 @@ describe('HTTP Security', () => {
 
         before(async () => {
             ctx = await Application.run(LegacyCorsApp);
-            await new Promise(r => setTimeout(r, 500));
+            
         });
 
         after(async () => {
@@ -202,7 +201,7 @@ describe('HTTP Security', () => {
 
         before(async () => {
             ctx = await Application.run(HelmetApp);
-            await new Promise(r => setTimeout(r, 500));
+            
         });
 
         after(async () => {

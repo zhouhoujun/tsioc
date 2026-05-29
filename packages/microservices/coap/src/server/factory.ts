@@ -7,10 +7,9 @@ import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern'
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, BodyParserInterceptor, ContentInterceptor, JsonInterceptor } from '@tsdi/service';
 import { resolveServiceMessageReaderFactory } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
-import { CoapMessageReaderFactory } from './message-reader';
+import { CoapMessageAdapter, CoapMessageReaderFactory } from './message-reader';
 
 export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -19,7 +18,6 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
             ...option.features,
             router: option.features?.router === false ? false : {
                 ...(typeof option.features?.router === 'object' ? option.features.router : {}),
@@ -46,6 +44,7 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        CoapMessageAdapter,
         CoapPatternFormatter,
         CoapCompatiblePatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
