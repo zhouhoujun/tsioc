@@ -1,7 +1,8 @@
-import { BadRequestException  } from '@tsdi/transport';
+import { BadRequestException } from '@tsdi/common';
 import { lang } from '@tsdi/ioc';
-import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/endpoints';
-import {  of } from 'rxjs';
+import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/service';
+import { Transport } from '@tsdi/common';
+import { of } from 'rxjs';
 import { MqttClient } from '../src';
 
 
@@ -72,7 +73,7 @@ export class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' }, 'mqtt')
+    @Handle({ cmd: 'xxx' }, Transport.MQTT)
     async subMessage(@Payload() message: string) {
         return message;
     }

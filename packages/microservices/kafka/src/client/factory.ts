@@ -1,12 +1,10 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
+import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { KAFKA_CLIENT_OPTIONS, KafkaClientOptions } from './options';
 import { KafkaClient } from './client';
 import { KafkaPatternFormatter } from '../server';
-import { MessageReaderFactory } from '@tsdi/core';
 
 function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
@@ -16,11 +14,8 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
     } as KafkaClientOptions;
     config.formatter ??= KafkaPatternFormatter;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: KAFKA_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -29,7 +24,21 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({ provide: backendToken, useFactory: createSendMessageBackend, multi: true }),
         { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
-        { provide: clientToken, useFactory: (h: ClientHandler<any, any>) => new KafkaClient(h, config), deps: [hanlderToken] }
+        {
+            provide: clientToken,
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: KAFKA_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        KafkaClient
+                    ]
+                });
+                return childInjector.get(KafkaClient);
+            },
+            deps: [Injector]
+        }
     ];
     if (asDefault) {
         providers.push({ provide: KafkaClient, useExisting: clientToken });

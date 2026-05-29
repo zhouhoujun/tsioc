@@ -1,10 +1,8 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport, ContentType } from '@tsdi/common';
+import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, ContentType } from '@tsdi/common';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
-import { ApplicationEventMulticaster, ApplicationShutdownEvent, MessageReaderFactory } from '@tsdi/core';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as http2 from 'node:http2';
@@ -18,11 +16,8 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
         features: { ...option.features },
     } as HttpClientOptions;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: HTTP_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -34,20 +29,18 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
         { provide: hanlderToken, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] },
         {
             provide: clientToken,
-            useFactory: (injector: Injector, handler: ClientHandler<any, any>) => {
-                const client = new HttpClient(handler, config);
-                const multicaster = injector.get(ApplicationEventMulticaster, null);
-                if (multicaster) {
-                    const shutdownHandler = {
-                        handle: () => client.close(),
-                        equals: (target: any) => target === shutdownHandler
-                    };
-                    multicaster.addListener(ApplicationShutdownEvent, shutdownHandler, 0);
-                    injector.onDestroy(() => multicaster.removeListener(ApplicationShutdownEvent, shutdownHandler));
-                }
-                return client;
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: HTTP_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        HttpClient
+                    ]
+                });
+                return childInjector.get(HttpClient);
             },
-            deps: [Injector, hanlderToken]
+            deps: [Injector]
         },
         { provide: interceptorsToken, useValue: (req: any, next: any, context: any) => next(req, context), multi: true }
     ];

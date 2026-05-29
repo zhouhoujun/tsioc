@@ -1,6 +1,6 @@
 import { lang } from '@tsdi/ioc';
 import { BadRequestException } from '@tsdi/transport';
-import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/endpoints';
+import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/service';
 import { of } from 'rxjs';
 
 @RouteMapping('/device')
@@ -70,7 +70,7 @@ export class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' }, 'ws')
+    @Handle({ cmd: 'xxx' }, Transport.WS)
     async subMessage(@Payload() message: string) {
         return message;
     }

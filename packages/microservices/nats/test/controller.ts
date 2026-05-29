@@ -1,6 +1,6 @@
 import { lang } from '@tsdi/ioc';
 import { BadRequestException } from '@tsdi/transport';
-import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/endpoints';
+import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/service';
 import {  of } from 'rxjs';
 import { NatsClient } from '../src';
 
@@ -72,7 +72,7 @@ export class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' }, 'nats')
+    @Handle({ cmd: 'xxx' }, Transport.NATS)
     async subMessage(@Payload() message: string) {
         return message;
     }

@@ -1,11 +1,9 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
+import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter } from '@tsdi/common';
 import { createSendMessageBackend } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsClient } from './client';
-import { MessageReaderFactory } from '@tsdi/core';
 import { useWsPacket } from '../transfer';
 
 
@@ -21,11 +19,8 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as WsClientOptions;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: WS_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -49,12 +44,18 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
         },
         {
             provide: clientToken,
-            useFactory: (handler: ClientHandler<any, any>) => {
-                return new WsClient(handler, config);
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: WS_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        WsClient
+                    ]
+                });
+                return childInjector.get(WsClient);
             },
-            deps: [
-                hanlderToken
-            ]
+            deps: [Injector]
         }
     ];
 

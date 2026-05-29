@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { isHeaderCapableMessageAdapter, isRequestCapableMessageAdapter, isResponseCapableMessageAdapter, RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
+import { isHeaderCapableMessageAdapter, RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike, REQUEST, RESPONSE } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { finalize, tap, catchError } from 'rxjs/operators';
 import { Tracer } from '../tracer';
@@ -15,7 +15,7 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<WritableLike<Outgoing>> {
         const adapter = context.getMessageAdapter();
-        const request = isRequestCapableMessageAdapter(adapter) ? adapter.getRequest() as any : undefined;
+        const request = context.get(REQUEST) as any;
         const method = request?.method || 'UNKNOWN';
         const path = request?.pattern || request?.url || '/';
 
@@ -57,7 +57,7 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
         // Inject trace context into response headers
         const responseHeaders: Record<string, string> = {};
         this.tracer.injectContext(span.context(), responseHeaders);
-        const response = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as any : undefined;
+        const response = context.get(RESPONSE) as any;
         for (const [key, value] of Object.entries(responseHeaders)) {
             if (response?.setHeader) {
                 response.setHeader(key, value);

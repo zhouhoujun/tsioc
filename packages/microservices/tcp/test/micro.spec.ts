@@ -56,7 +56,7 @@ export class MicroTestModule {
 }
 
 
-describe('Tcp Micro Service', () => {
+if (process.env.TSIO_TEST_TCP) describe('Tcp Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

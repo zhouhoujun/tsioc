@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
     InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
-} from '@tsdi/common';
+} from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
@@ -98,8 +98,11 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         if (!this.server) return;
         this.destroy$.next();
         this.destroy$.complete();
-        await promisify(this.server.close.bind(this.server))()
-            .finally(() => { this.server?.removeAllListeners(); this.server = null; });
+        try {
+            await promisify(this.server.close.bind(this.server))();
+        } catch { /* server may already be closed */ }
+        this.server?.removeAllListeners();
+        this.server = null;
     }
 
     private handleJsonRpc(req: http.IncomingMessage, res: http.ServerResponse) {

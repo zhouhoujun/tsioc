@@ -1,7 +1,7 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    AbstractRequest, HeaderAdapter, RequestContext, RequestHandlerFn, RequestInterceptor, RequestInterceptorFn,
+    AbstractRequest, RequestContext, RequestHandlerFn, RequestInterceptor, RequestInterceptorFn,
     PacketLengthException, PacketIdGenerator, IDuplex, IReadable, IncomingMessage, OutgoingMessage, StreamAdapter,
     RequestHandler, Packet
 } from '@tsdi/common';
@@ -147,7 +147,7 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
     intercept(input: Packet<IDuplex>, next: RequestHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
         if (!input.payload) return next.handle(input, context);
         const streamAdapter = context.get(StreamAdapter);
-        const headerAdapter = context.get(HeaderAdapter);
+        const adapter = context.getMessageAdapter();
         // const transport = context.get(Transport) as AbstractTransport;
         const idLen = context.get(PACKET_IDLEN);
         let id: string | number;
@@ -224,7 +224,7 @@ export const deatchPacketIdInterceptor: RequestInterceptorFn<any, IncomingMessag
  * @returns 
  */
 export const messageVaildateInterceptor: RequestInterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: RequestHandlerFn<OutgoingMessage, Packet>, context: RequestContext) => {
-    const headerAdapter = context.get(HeaderAdapter);
+    const adapter = context.getMessageAdapter();
     const length = headerAdapter.getContentLength(input);
     const injector = context.getInjector();
     const maxSize = context.get(PACKET_MAXSIZE);

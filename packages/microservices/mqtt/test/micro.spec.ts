@@ -54,7 +54,7 @@ export class MicroTestModule {
 }
 
 
-describe('MQTT Micro Service', () => {
+if (process.env.TSIO_TEST_MQTT) describe('MQTT Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

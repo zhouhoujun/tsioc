@@ -2,7 +2,6 @@ import { CoapServer, CoapServOptions, coapTransportFactory, useCoapTransport, CO
 import { withCoapTransport, COAP_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor } from '@tsdi/service';
-import { MessageReaderFactory } from '@tsdi/core';
 import expect = require('expect');
 
 describe('CoAP Microservice', () => {
@@ -53,8 +52,8 @@ describe('CoAP Microservice', () => {
             const feature = coapTransportFactory({
                 listenOpts: { port: 5683 }
             });
-
             const configProviders = (feature.config as any).providers || [];
+
             const hasInConfig = configProviders.some((p: any) => {
                 if ('provide' in p) {
                     return p.provide === COAP_SERV_OPTIONS;
@@ -94,12 +93,10 @@ describe('CoAP Microservice', () => {
             const feature = coapTransportFactory({
                 listenOpts: { port: 5683 }
             });
-            const configProviders = (feature.config as any).providers || [];
 
             expect(feature.providers.some((p: any) => p.provide === ContentInterceptor && p.useClass?.name === 'CoapContentInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === JsonInterceptor && p.useClass?.name === 'CoapJsonInterceptor')).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === BodyParserInterceptor && p.useClass?.name === 'CoapBodyParserInterceptor')).toBe(true);
-            expect(configProviders.some((p: any) => p.provide === MessageReaderFactory)).toBe(true);
         });
     });
 

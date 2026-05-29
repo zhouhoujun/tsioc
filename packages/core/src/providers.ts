@@ -13,7 +13,6 @@ import { ExceptionHandlerFilter } from './filters/exception.filter';
 import { getResolveHandlerToken } from './handlers/resolver';
 import { PayloadApplicationEvent } from './events';
 import { createMessageResolveInterceptors } from './handlers/resolvers';
-import { AbstractMessageReader, MessageReaderFactory } from './MessageReader';
 
 
 
@@ -43,20 +42,7 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
     RESOLVER_PROVIDERS,
     {
         provide: getResolveHandlerToken(PayloadApplicationEvent),
-        useValue: createResolveHandler(createMessageResolveInterceptors({
-            create(message: any) {
-                return {
-                    field(section: string, name?: string): any {
-                        if (!message) return undefined;
-                        const scopeVal = message[section];
-                        if (name) {
-                            return isDefined(scopeVal) ? scopeVal[name] : null;
-                        }
-                        return scopeVal;
-                    },
-                };
-            }
-        } as MessageReaderFactory))
+        useValue: createResolveHandler(createMessageResolveInterceptors())
     },
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
 ]

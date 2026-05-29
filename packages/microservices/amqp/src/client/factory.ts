@@ -1,12 +1,10 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, REQUEST, TransferSide, Transport, defaultFormatter, useSimpleJson } from '@tsdi/common';
+import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events } from '@tsdi/common'
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpClient } from './client';
 import { AmqpPatternFormatter } from '../server';
-import { MessageReaderFactory } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import * as amqp from 'amqplib';
 
@@ -32,11 +30,8 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
     } as AmqpClientOptions;
     config.formatter ??= AmqpPatternFormatter;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: AMQP_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -60,12 +55,18 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
         },
         {
             provide: clientToken,
-            useFactory: (handler: ClientHandler<any, any>) => {
-                return new AmqpClient(handler, config);
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: AMQP_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        AmqpClient
+                    ]
+                });
+                return childInjector.get(AmqpClient);
             },
-            deps: [
-                hanlderToken
-            ]
+            deps: [Injector]
         }
     ];
 

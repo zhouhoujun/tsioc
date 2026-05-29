@@ -1,5 +1,5 @@
 import { InstanceOf, ProvdierOf, Provider, Token } from '@tsdi/ioc';
-import { MessageReaderFactory, VaildatorLike } from '@tsdi/core';
+import { VaildatorLike } from '@tsdi/core';
 import {
     Incoming, Outgoing, PatternFormatter, RequestContext, TransferConfig,
     TransferSide, TransferInterceptorFactory, RequestInterceptorLike, FindOptions
@@ -144,8 +144,8 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;
     gracefulShutdown?: boolean | GracefulShutdownOptions;
-    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
-    messagerReaderFactory?: ProvdierOf<MessageReaderFactory>;
+    messageReaderFactory?: any;
+    messagerReaderFactory?: any;
     defaultTransfer?: TransferInterceptorFactory;
 }
 
@@ -193,16 +193,7 @@ export interface ServiceConfig<TReq = any, TRes = any, TContext extends RequestC
 
 export interface ServiceOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceConfig<TReq, TRes, TContext> {
     asDefault?: boolean;
-    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
+    messageReaderFactory?: any;
     transportFeature?: (options: ServiceOptions<TReq, TRes, TContext>, asDefault?: boolean) => ServiceTransportFeature;
 }
 
-export function resolveServiceMessageReaderFactory<TReq = any, TRes = any, TContext extends RequestContext = RequestContext>(
-    options: Partial<ServiceOptions<TReq, TRes, TContext>>,
-    defaultFactory: ProvdierOf<MessageReaderFactory>
-): ProvdierOf<MessageReaderFactory> {
-    return options.messageReaderFactory
-        ?? options.features?.messageReaderFactory
-        ?? options.features?.messagerReaderFactory
-        ?? defaultFactory;
-}

@@ -30,7 +30,7 @@ export * from './outgoing.impl';
 export * from './FileAdapter';
 export * from './MimeAdapter';
 export * from './PacketId';
-export * from './StatusAdapter';
+
 export * from './stream';
 export * from './StreamAdapter';
 export * from './transfer';

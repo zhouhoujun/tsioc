@@ -1,11 +1,10 @@
 import { asProvider, Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { RESPONSE } from '@tsdi/common'
 import { of } from 'rxjs';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { resolveServiceMessageReaderFactory } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
@@ -33,11 +32,8 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     getServiceGuardsToken(config);
 
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveServiceMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: TCP_SERV_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
 
     const providers: Provider[] = [
@@ -46,7 +42,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
         asProvider({
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const response = context.getResponse();
+                const response = context.get(RESPONSE);
                 const error = new NotFoundException('Not Found', 404);
                 response.error = error;
                 response.statusCode = error.statusCode;

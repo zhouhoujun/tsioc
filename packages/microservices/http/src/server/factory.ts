@@ -1,11 +1,9 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, isResponseCapableMessageAdapter, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, RESPONSE } from '@tsdi/common'
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, SERVICE_BODY_PARSER_OPTIONS } from '@tsdi/service';
-import { resolveServiceMessageReaderFactory } from '@tsdi/service';
 import { MimeModule } from '@tsdi/mime';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { HttpBodyParserInterceptor } from './interceptors/bodyparser';
@@ -15,7 +13,7 @@ import { HttpSessionInterceptor } from './interceptors/session';
 import { HttpCookieInterceptor } from './interceptors/cookie';
 import { Cors } from './interceptors/cors';
 import { StaticFileInterceptor } from './static-file.interceptor';
-import { HttpMessageAdapter, HttpMessageReaderFactory } from './message-reader';
+import { HttpMessageAdapter } from './message-reader';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
@@ -39,11 +37,8 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     config.features.guardsToken ??= getServiceGuardsToken(config);
 
     config.providers = option.providers ? [...option.providers] : [];
-    config.features.messageReaderFactory = resolveServiceMessageReaderFactory(option, HttpMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: HTTP_SERV_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
 
     const providers: Provider[] = [
@@ -77,8 +72,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             multiOrder: -50
         } as any] : []),
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const adapter = context.getMessageAdapter();
-            const r = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as any : undefined;
+            const r = context.get(RESPONSE) as any;
             const error = new NotFoundException('Not Found', 404);
             if (r) {
                 r.error = error;

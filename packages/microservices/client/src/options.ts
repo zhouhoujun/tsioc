@@ -1,5 +1,5 @@
 import { ProvdierOf, Provider, Token } from '@tsdi/ioc';
-import { MessageReaderFactory } from '@tsdi/core';
+
 import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig, TransferInterceptorFactory, TransferSide } from '@tsdi/common';
 import { ConnectionPoolOptions } from './pool';
 
@@ -47,8 +47,8 @@ export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends R
     loadBalance?: boolean | LoadBalanceOptions;
     circuitBreaker?: boolean | CircuitBreakerOptions;
     retry?: boolean | RetryOptions;
-    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
-    messagerReaderFactory?: ProvdierOf<MessageReaderFactory>;
+    messageReaderFactory?: any;
+    messagerReaderFactory?: any;
 }
 
 
@@ -229,16 +229,7 @@ export interface RetryOptions {
 }
 
 export interface ClientOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ClientConfig<TReq, TRes, TContext> {
-    messageReaderFactory?: ProvdierOf<MessageReaderFactory>;
+    messageReaderFactory?: any;
     transportFeature?: (options: ClientOptions<TReq, TRes, TContext>, asDefault?: boolean) => ClientTransportFeature;
 }
 
-export function resolveClientMessageReaderFactory<TReq = any, TRes = any, TContext extends RequestContext = RequestContext>(
-    options: Partial<ClientOptions<TReq, TRes, TContext>>,
-    defaultFactory: ProvdierOf<MessageReaderFactory>
-): ProvdierOf<MessageReaderFactory> {
-    return options.messageReaderFactory
-        ?? options.features?.messageReaderFactory
-        ?? options.features?.messagerReaderFactory
-        ?? defaultFactory;
-}

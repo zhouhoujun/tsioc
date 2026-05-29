@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString, lang } from '@tsdi/ioc';
-import { HeaderAdapter, Incoming, MimeAdapter, AcceptsPriority } from '@tsdi/common';
+import { HeaderCapableMessageAdapter, Incoming, MimeAdapter, AcceptsPriority } from '@tsdi/common';
 
 
 
@@ -74,8 +74,8 @@ export class AcceptsPriorityImpl implements AcceptsPriority {
      * @api public
      */
 
-    accepts(incoming: Incoming, headerAdapter: HeaderAdapter, mimeAdapter: MimeAdapter|undefined, ...args: string[]): string | string[] | false {
-        const accepts = headerAdapter.getAccept(incoming) ?? '*';
+    accepts(incoming: Incoming, mimeAdapter: MimeAdapter|undefined, ...args: string[]): string | string[] | false {
+        const accepts = String(incoming.getHeader?.('accept') ?? '') || '*';
         if (!args.length) {
             return accepts ?? false
         }
@@ -95,8 +95,8 @@ export class AcceptsPriorityImpl implements AcceptsPriority {
     * @return {String|Array}
     * @api public
     */
-    acceptsEncodings(incoming: Incoming, headerAdapter: HeaderAdapter, ...encodings: string[]): string | string[] | false {
-        const accepts = headerAdapter.getAcceptEncoding(incoming) ?? '*';
+    acceptsEncodings(incoming: Incoming, ...encodings: string[]): string | string[] | false {
+        const accepts = String(incoming.getHeader?.('accept-encoding') ?? '') || '*';
         if (!encodings.length) {
             return accepts
         }
@@ -114,8 +114,8 @@ export class AcceptsPriorityImpl implements AcceptsPriority {
      * @return {String|Array}
      * @api public
      */
-    acceptsCharsets(incoming: Incoming, headerAdapter: HeaderAdapter, ...charsets: string[]): string | string[] | false {
-        const accepts = headerAdapter.getAcceptCharset(incoming) ?? '*';
+    acceptsCharsets(incoming: Incoming, ...charsets: string[]): string | string[] | false {
+        const accepts = String(incoming.getHeader?.('accept-charset') ?? '') || '*';
         if (!charsets.length) {
             return accepts
         }
@@ -134,8 +134,8 @@ export class AcceptsPriorityImpl implements AcceptsPriority {
      * @return {Array|String}
      * @api public
      */
-    acceptsLanguages(incoming: Incoming, headerAdapter: HeaderAdapter, ...langs: string[]): string | string[] {
-        const accepts = headerAdapter.getAcceptLanguage(incoming) ?? '*';
+    acceptsLanguages(incoming: Incoming, ...langs: string[]): string | string[] {
+        const accepts = String(incoming.getHeader?.('accept-language') ?? '') || '*';
         if (!langs.length) {
             return accepts
         }

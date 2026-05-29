@@ -1,12 +1,11 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { MessageReaderFactory } from '@tsdi/core';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, IncomingMessageReaderFactory } from '@tsdi/common';
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { RESPONSE } from '@tsdi/common'
 import { of } from 'rxjs';
 import { KafkaServer } from './kafka-server';
 import { KafkaPatternFormatter } from './pattern';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { resolveServiceMessageReaderFactory } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
@@ -31,11 +30,8 @@ export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefau
     getServiceInterceptorsToken(config); getServiceFiltersToken(config); getServiceGuardsToken(config);
 
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveServiceMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: KAFKA_SERV_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
 
     const providers: Provider[] = [
@@ -43,7 +39,7 @@ export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefau
         KafkaPatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const r = context.getResponse();
+            const r = context.get(RESPONSE);
             const error = new NotFoundException('Not Found', 404);
             r.error = error; r.statusCode = error.statusCode; r.statusMessage = error.message; return of(r);
         }, multi: true },

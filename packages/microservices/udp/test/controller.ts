@@ -1,9 +1,9 @@
 import { lang } from '@tsdi/ioc';
 import { BadRequestException } from '@tsdi/transport';
-import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
+import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/service';
 import {  of } from 'rxjs';
 import { UdpClient } from '../src';
-import { RedirectResult } from '@tsdi/endpoints';
+import { RedirectResult } from '@tsdi/service';
 
 
 @RouteMapping('/device')
@@ -73,7 +73,7 @@ export class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' }, 'udp')
+    @Handle({ cmd: 'xxx' }, Transport.UDP)
     async subMessage(@Payload() message: string) {
         return message;
     }

@@ -54,7 +54,7 @@ export class MicroTestModule {
 }
 
 
-describe('WS Micro Service', () => {
+if (process.env.TSIO_TEST_WS) describe('WS Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

@@ -1,11 +1,9 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, REQUEST, TransferSide, Transport, defaultFormatter, useSimpleJson } from '@tsdi/common';
+import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson } from '@tsdi/common';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { COAP_CLIENT_OPTIONS, CoapClientOptions } from './options';
 import { CoapClient } from './client';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from '../server/pattern';
-import { MessageReaderFactory } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import * as coap from 'coap';
 
@@ -31,11 +29,8 @@ function coapClientTransportFactory(option: Partial<CoapClientOptions>, asDefaul
         },
     } as CoapClientOptions;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: COAP_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -59,12 +54,18 @@ function coapClientTransportFactory(option: Partial<CoapClientOptions>, asDefaul
         },
         {
             provide: clientToken,
-            useFactory: (handler: ClientHandler<any, any>) => {
-                return new CoapClient(handler, config);
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: COAP_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        CoapClient
+                    ]
+                });
+                return childInjector.get(CoapClient);
             },
-            deps: [
-                hanlderToken
-            ]
+            deps: [Injector]
         }
     ];
 

@@ -2,11 +2,10 @@ import {
     ArgumentException, AbstractType, isArray, isString, Parameter,
     ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName,
     createResolveHandler, isResolved, isNil, isObject, isDefined, getClassRef,
-    ResolveInterceptorFn, Type
+    ResolveInterceptorFn
 } from '@tsdi/ioc';
-import { ParameterScope, TransportParameter } from './resolver';
+import { TransportParameter } from './resolver';
 import { PipeTransform } from '../pipes/pipe';
-import { MessageReaderFactory } from '../MessageReader';
 
 
 export function missingPipeException<T>(parameter: Parameter<T>, type?: AbstractType, method?: string | symbol) {
@@ -63,23 +62,14 @@ export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, P
 /**
  * Create message resolve interceptors.
  *
- * At request time, resolves a {@link MessageReaderFactory} (from the provided type,
- * instance, or the IoC container), calls `factory.create(message)` to create a
- * protocol-specific reader, and uses {@link AbstractMessageReader.field} to extract
- * parameter values.
+ * At request time, resolves parameter values through the protocol's
+ * MessageAdapter attached to the RequestContext.
+ * Each protocol registers its concrete adapter via
+ * `context.setMessageAdapter(adapter)` before the handler chain runs.
  *
- * @param factory - A factory class (resolved from the IoC container), a factory
- *   instance (used directly), or undefined (defaults to resolving
- *   {@link MessageReaderFactory} from the container).
+ * Falls back to direct payload property access when no adapter is set.
  */
-export function createMessageResolveInterceptors(
-    factory?: Type<MessageReaderFactory> | MessageReaderFactory
-): ResolveInterceptorFn<TransportParameter>[] {
-    const factoryInstance = isFunction(factory)
-        ? undefined  // Type — resolve from container at request time
-        : factory;    // instance — use directly
-
-    const token = isFunction(factory) ? factory : MessageReaderFactory;
+export function createMessageResolveInterceptors(): ResolveInterceptorFn<TransportParameter>[] {
 
     return [
         (parameter, next, context) => {
@@ -104,8 +94,6 @@ export function createMessageResolveInterceptors(
                 throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
             }
 
-            const resolvedFactory = factoryInstance ?? injector.get(token, null);
-            const reader = resolvedFactory?.create(context.getPayload());
             const methodParameters = parameter.target ? getClassRef(parameter.target)?.getParameters(parameter.propertyKey) : undefined;
             const bodyParameters = methodParameters?.filter(param => (param as TransportParameter).scope === 'body') ?? [];
             const implicitWholeSection = parameter.scope === 'body' && bodyParameters.length <= 1;
@@ -118,15 +106,13 @@ export function createMessageResolveInterceptors(
             const messageAdapter = isFunction((context as any).getMessageAdapter)
                 ? (context as any).getMessageAdapter()
                 : null;
-            const readMessage = parameter.scope && messageAdapter && isFunction((context as any).readMessage)
-                ? (section: TransportParameter['scope'], name?: string) => (context as any).readMessage(section, name)
+            const readMessage = parameter.scope && messageAdapter && isFunction(messageAdapter.read)
+                ? (section: string, name?: string) => messageAdapter.read(section, name)
                 : undefined;
 
             let payload: any;
             if (readMessage && parameter.scope) {
                 payload = readMessage(parameter.scope, field as any);
-            } else if (reader) {
-                payload = reader.field(parameter.scope as any, field as any);
             } else {
                 const input = context.getPayload() as Record<string, any> | undefined;
                 if (input) {
@@ -159,15 +145,6 @@ export function createMessageResolveInterceptors(
                     } else {
                         return next(parameter, context);
                     }
-                } else if (reader) {
-                    const data = reader.field(parameter.scope as any);
-                    if (isDefined(data) && (!isObject(data) || implicitWholeSection)) {
-                        payload = data;
-                    } else if (parameter.nullable) {
-                        return parameter.defaultValue ?? null;
-                    } else {
-                        return next(parameter, context);
-                    }
                 } else {
                     if (parameter.nullable) {
                         return parameter.defaultValue ?? null;
@@ -193,7 +170,7 @@ export function createMessageResolveInterceptors(
 /**
  * @deprecated Use {@link createMessageResolveInterceptors} instead.
  */
-export function createPayloadResolveInterceptors(_getPayload?: (input: any, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorFn<TransportParameter>[] {
+export function createPayloadResolveInterceptors(): ResolveInterceptorFn<TransportParameter>[] {
     return createMessageResolveInterceptors();
 }
 
@@ -202,8 +179,8 @@ export function createPayloadResolveInterceptors(_getPayload?: (input: any, scop
 
 /**
  * is list or not.
- * @param target 
- * @returns 
+ * @param target
+ * @returns
  */
 export function isList(target: any) {
     return isArray(target) || isString(target);

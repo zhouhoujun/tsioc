@@ -1,12 +1,10 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
+import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisClient } from './client';
 import { RedisPatternFormatter } from '../server';
-import { MessageReaderFactory } from '@tsdi/core';
 
 
 function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefault?: boolean): ClientTransportFeature {
@@ -22,11 +20,8 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
     } as RedisClientOptions;
     config.formatter ??= RedisPatternFormatter;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: REDIS_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -50,12 +45,18 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
         },
         {
             provide: clientToken,
-            useFactory: (handler: ClientHandler<any, any>) => {
-                return new RedisClient(handler, config);
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: REDIS_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        RedisClient
+                    ]
+                });
+                return childInjector.get(RedisClient);
             },
-            deps: [
-                hanlderToken
-            ]
+            deps: [Injector]
         }
     ];
 

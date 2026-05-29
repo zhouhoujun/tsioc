@@ -1,12 +1,10 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { AbstractRequest, createRequestHandler, Events, IncomingMessageReaderFactory, PatternFormatter, REQUEST, TransferSide, Transport, defaultFormatter, useSimpleJson } from '@tsdi/common';
+import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, AbstractRequest, REQUEST, Events } from '@tsdi/common'
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
 import { MqttClient } from './client';
 import { MqttRequest } from './request';
-import { MessageReaderFactory } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import * as mqtt from 'mqtt';
 
@@ -33,11 +31,8 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as MqttClientOptions;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: MQTT_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -61,12 +56,18 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
         },
         {
             provide: clientToken,
-            useFactory: (handler: ClientHandler<any, any>) => {
-                return new MqttClient(handler, config);
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: MQTT_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        MqttClient
+                    ]
+                });
+                return childInjector.get(MqttClient);
             },
-            deps: [
-                hanlderToken
-            ]
+            deps: [Injector]
         }
     ];
 

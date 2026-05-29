@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { isAcceptsCapableMessageAdapter, isResponseCapableMessageAdapter, ContentType, encodeUrl, escapeHtml, RequestContext } from '@tsdi/common';
+import { isAcceptsCapableMessageAdapter, encodeUrl, escapeHtml, RequestContext } from '@tsdi/common';
 
 export class RedirectResult extends ResultValue {
     constructor(private url: string, private referrer?: string, private alt?: string) {
@@ -13,26 +13,20 @@ export class RedirectResult extends ResultValue {
         }
 
         const adapter = ctx.getMessageAdapter();
-        if (!isResponseCapableMessageAdapter(adapter) || !adapter.getResponse()) {
+        if (!adapter) {
+            ctx.setHeader('location', encodeUrl(url));
+            ctx.setStatus(302);
             return;
         }
-        const response = adapter.getResponse();
-        response.setHeader('location', encodeUrl(url));
 
-        const statusCode = Number(response.statusCode);
-        if (!(statusCode >= 300 && statusCode < 400)) {
-            response.statusCode = 302 as any;
-        }
+        adapter.setHeader('location', encodeUrl(url));
+        adapter.setStatus(302);
 
         if (isAcceptsCapableMessageAdapter(adapter) && adapter.accepts('html')) {
-            const html = escapeHtml(url);
-            response.type = ContentType.TEXT_HTML_UTF8;
-            response.body = `Redirecting to <a href="${html}">${html}</a>.`;
+            adapter.write(`Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>.`);
             return;
         }
 
-        response.type = ContentType.TEXT_PLAIN_UTF8;
-        response.body = `Redirecting to ${url}.`;
-        return response;
+        adapter.write(`Redirecting to ${url}.`);
     }
 }

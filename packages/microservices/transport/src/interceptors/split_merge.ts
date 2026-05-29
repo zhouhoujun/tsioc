@@ -1,5 +1,4 @@
 // import { ArgumentException, Injectable, isNumber } from '@tsdi/ioc';
-// import { HeaderAdapter, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 // import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
 // import { StreamAdapter, isBuffer } from '../StreamAdapter';
 // import { IDuplex, IReadable } from '../stream';
@@ -52,7 +51,6 @@
 //             )
 //     }
 
-//     mergePacket(packet: Packet, streamAdapter: StreamAdapter, headerAdapter: HeaderAdapter, noHead?: boolean): CachePacket {
 
 //         if (!packet.id || !(isBuffer(packet.payload) || streamAdapter.isReadable(packet.payload)) || (!noHead && packet.headers && headerAdapter.getContentLength(packet.headers) <= 0)) {
 //             return { packet, completed: true } as CachePacket;

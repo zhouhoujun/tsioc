@@ -4,8 +4,9 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
     InternalServerException, ListenOpts, Transport, RESPONSE, REQUEST,
-    StreamAdapter, ContentType, Outgoing, OutgoingFactory, BadRequestException
-} from '@tsdi/common';
+    StreamAdapter, ContentType, Outgoing, OutgoingFactory, BadRequestException,
+    AcceptsPriority, MimeAdapter
+} from '@tsdi/common'
 import { HttpRequestMessage } from './http-context';
 import { HttpMessageAdapter } from './message-reader';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
@@ -105,8 +106,11 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         if (!this.server) return;
         this.destroy$.next();
         this.destroy$.complete();
-        await promisify(this.server.close.bind(this.server))()
-            .finally(() => { this.server?.removeAllListeners(); this.server = null; });
+        try {
+            await promisify(this.server.close.bind(this.server))();
+        } catch { /* server may already be closed */ }
+        this.server?.removeAllListeners();
+        this.server = null;
     }
 
     private createServer(): HttpServerLike {
@@ -159,7 +163,10 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ['method', method],
             ['headers', req.headers],
         ]);
-        const adapter = this.injector.get(HttpMessageAdapter);
+        const adapter = new HttpMessageAdapter(
+            this.injector.get(AcceptsPriority, undefined),
+            this.injector.get(MimeAdapter, undefined)
+        );
         adapter.bind(request, res);
         adapter.setOutgoing(outgoing);
         context.setMessageAdapter(adapter);

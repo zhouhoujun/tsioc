@@ -4,11 +4,11 @@ import { Observable, from } from 'rxjs';
 import { join } from 'path';
 import * as fs from 'fs';
 import { promisify } from 'util';
-import { AbstractRequestContext } from '@tsdi/service';
+import { RequestContext } from '@tsdi/common';
 
 const statify = promisify(fs.stat);
 
-type BigFileRequestContext = AbstractRequestContext & {
+type BigFileRequestContext = RequestContext & {
     url?: string;
     length?: number;
     type?: any;

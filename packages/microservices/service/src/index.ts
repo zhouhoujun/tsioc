@@ -11,6 +11,5 @@ export * from './Service';
 export * from './SetupMicroServices';
 export * from './provider';
 
-export * from './AbstractRequestContext';
-export * from './RestfulRequestContext';
+
 export * from './RedirectResult';

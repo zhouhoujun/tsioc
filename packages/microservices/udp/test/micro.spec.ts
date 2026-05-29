@@ -54,7 +54,7 @@ export class MicroTestModule {
 }
 
 
-describe('Udp Micro Service', () => {
+if (process.env.TSIO_TEST_UDP) describe('Udp Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

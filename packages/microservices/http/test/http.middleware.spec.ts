@@ -6,8 +6,8 @@ import expect = require('expect');
 import { provideClient } from '@tsdi/client';
 import { Controller, Get, provideService, useMiddlewares, useRouter } from '@tsdi/service';
 import { HttpClient, withHttpTransport } from '../src/client';
-import { HttpRequestMessage, useHttpTransport } from '../src/server';
-import { isRequestCapableMessageAdapter, isResponseCapableMessageAdapter } from '@tsdi/common';
+import { useHttpTransport } from '../src/server';
+import { REQUEST } from '@tsdi/common';
 
 const PORT = 3200 + Math.floor(Math.random() * 1000);
 
@@ -28,11 +28,11 @@ describe('middleware', () => {
                 useRouter(),
                 useRouter({ microservice: true }),
                 useMiddlewares(async (ctx, next) => {
+                    const request = ctx.get(REQUEST) as any;
                     const adapter = ctx.getMessageAdapter();
-                    const request = isRequestCapableMessageAdapter(adapter) ? adapter.getRequest() as HttpRequestMessage : undefined;
-                    const response = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() as any : undefined;
-                    if (request?.url?.startsWith('/test') && response) {
-                        response.body = request.query.hi;
+                    if (request?.url?.startsWith('/test')) {
+                        const hi = adapter?.read('query', 'hi') ?? '';
+                        adapter?.write(hi);
                         return;
                     }
                     await next();

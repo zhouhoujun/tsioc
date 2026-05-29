@@ -54,7 +54,7 @@ export class MicroTestModule {
 }
 
 
-describe('AMQP Micro Service', () => {
+if (process.env.TSIO_TEST_AMQP) describe('AMQP Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

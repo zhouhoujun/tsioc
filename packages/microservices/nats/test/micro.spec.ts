@@ -54,7 +54,7 @@ export class MicroTestModule {
 }
 
 
-describe('NATS Micro Service', () => {
+if (process.env.TSIO_TEST_NATS) describe('NATS Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

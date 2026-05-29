@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport
+    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
@@ -171,7 +171,15 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             this.activeConnections.delete(socket);
         });
 
-        this.handler.handle(socket as TReq, createRequestContext(this.injector, [[SOCKET, socket]]))
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+        const context = createRequestContext(this.injector, [
+            [SOCKET, socket],
+            [REQUEST, socket],
+            [RESPONSE, outgoing],
+        ]);
+        context.setPayload(socket as any);
+
+        this.handler.handle(socket as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$, fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1)))
             ).subscribe();

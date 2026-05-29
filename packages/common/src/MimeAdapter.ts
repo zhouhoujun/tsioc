@@ -1,6 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
 import { Incoming } from './incoming';
-import { HeaderAdapter } from './headers';
 
 /**
  * mime type adapter.
@@ -178,7 +177,7 @@ export abstract class AcceptsPriority {
          * @api public
          */
 
-    abstract accepts(incoming: Incoming, headerAdapter: HeaderAdapter, mimeAdapter: MimeAdapter | undefined, ...args: string[]): string | string[] | false;
+    abstract accepts(incoming: Incoming, mimeAdapter: MimeAdapter | undefined, ...args: string[]): string | string[] | false;
     /**
     * Return accepted encodings or best fit based on `encodings`.
     *
@@ -191,7 +190,7 @@ export abstract class AcceptsPriority {
     * @return {String|Array}
     * @api public
     */
-    abstract acceptsEncodings(incoming: Incoming, headerAdapter: HeaderAdapter, ...encodings: string[]): string | string[] | false;
+    abstract acceptsEncodings(incoming: Incoming, ...encodings: string[]): string | string[] | false;
     /**
      * Return accepted charsets or best fit based on `charsets`.
      *
@@ -204,7 +203,7 @@ export abstract class AcceptsPriority {
      * @return {String|Array}
      * @api public
      */
-    abstract acceptsCharsets(incoming: Incoming, headerAdapter: HeaderAdapter, ...charsets: string[]): string | string[] | false;
+    abstract acceptsCharsets(incoming: Incoming, ...charsets: string[]): string | string[] | false;
 
     /**
      * Return accepted languages or best fit based on `langs`.
@@ -218,6 +217,6 @@ export abstract class AcceptsPriority {
      * @return {Array|String}
      * @api public
      */
-    abstract acceptsLanguages(incoming: Incoming, headerAdapter: HeaderAdapter, ...langs: string[]): string | string[];
+    abstract acceptsLanguages(incoming: Incoming, ...langs: string[]): string | string[];
 }
 

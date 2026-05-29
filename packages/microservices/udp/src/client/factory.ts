@@ -1,11 +1,9 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
+import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { UDP_CLIENT_OPTIONS, UdpClientOptions } from './options';
 import { UdpClient } from './client';
-import { MessageReaderFactory } from '@tsdi/core';
 
 function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
@@ -14,11 +12,8 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
         features: { defaultTransfer: useJsonPacket(), ...option.features },
     } as UdpClientOptions;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: UDP_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -28,7 +23,21 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({ provide: backendToken, useFactory: createSendMessageBackend, multi: true }),
         { provide: hanlderToken, useFactory: (injector: Injector) => createRequestHandler(injector, config), deps: [Injector] },
-        { provide: clientToken, useFactory: (handler: ClientHandler<any, any>) => new UdpClient(handler, config), deps: [hanlderToken] }
+        {
+            provide: clientToken,
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                const childInjector = createInjector(injector, {
+                    providers: [
+                        { provide: UDP_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler },
+                        UdpClient
+                    ]
+                });
+                return childInjector.get(UdpClient);
+            },
+            deps: [Injector]
+        }
     ];
 
     if (asDefault) providers.push({ provide: UdpClient, useExisting: clientToken });

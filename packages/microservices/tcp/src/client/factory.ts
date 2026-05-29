@@ -1,11 +1,9 @@
-import { asProvider, Injector, Provider, toProvider } from '@tsdi/ioc';
-import { createRequestHandler, IncomingMessageReaderFactory, TransferSide, Transport } from '@tsdi/common';
+import { asProvider, getClassRef, Injector, Provider } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
-import { resolveClientMessageReaderFactory } from '@tsdi/client';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
 import { TcpClient } from './client';
-import { ApplicationEventMulticaster, ApplicationShutdownEvent, MessageReaderFactory } from '@tsdi/core';
 
 
 function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
@@ -20,11 +18,8 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,
     } as TcpClientOptions;
     config.providers ??= [];
-    config.features.messageReaderFactory = resolveClientMessageReaderFactory(option, IncomingMessageReaderFactory);
-    config.features.messagerReaderFactory = config.features.messageReaderFactory;
     config.providers.push(
         { provide: TCP_CLIENT_OPTIONS, useValue: config },
-        toProvider(MessageReaderFactory, config.features.messageReaderFactory),
     );
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
@@ -48,22 +43,17 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
         },
         {
             provide: clientToken,
-            useFactory: (injector: Injector, handler: ClientHandler<any, any>) => {
-                const client = new TcpClient(handler, config);
-                const multicaster = injector.get(ApplicationEventMulticaster, null);
-                if (multicaster) {
-                    const shutdownHandler = {
-                        handle: () => client.close(),
-                        equals: (target: any) => target === shutdownHandler
-                    };
-                    multicaster.addListener(ApplicationShutdownEvent, shutdownHandler, 0);
-                    injector.onDestroy(() => multicaster.removeListener(ApplicationShutdownEvent, shutdownHandler));
-                }
-                return client;
+            useFactory: (injector: Injector) => {
+                const handler = injector.get(hanlderToken);
+                return getClassRef(TcpClient).createInvocation(injector, {
+                    providers: [
+                        { provide: TCP_CLIENT_OPTIONS, useValue: config },
+                        { provide: ClientHandler, useValue: handler }
+                    ]
+                }).instance;
             },
             deps: [
-                Injector,
-                hanlderToken
+                Injector
             ]
         }
     ];

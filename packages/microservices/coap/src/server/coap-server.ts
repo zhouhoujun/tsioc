@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     createRequestContext, RequestContext,
     InternalServerException, Transport, REQUEST, RESPONSE, OutgoingFactory, Outgoing
-} from '@tsdi/common';
+} from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil, mergeMap, isObservable, from, of } from 'rxjs';
 import * as coap from 'coap';
@@ -102,7 +102,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ['method', requestData.method],
             ['headers', requestData.headers],
         ]);
-        const adapter = this.injector.get(CoapMessageAdapter);
+        const adapter = new CoapMessageAdapter();
         adapter.bind(requestData, res);
         adapter.setOutgoing(outgoing);
         context.setMessageAdapter(adapter);

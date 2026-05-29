@@ -1,4 +1,5 @@
-import { isAcceptsCapableMessageAdapter, isRequestCapableMessageAdapter, isResponseCapableMessageAdapter, BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common';
+import { isAcceptsCapableMessageAdapter, isHeaderCapableMessageAdapter, isResponseStateCapableMessageAdapter, BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common'
+import { REQUEST, RESPONSE } from '@tsdi/common';
 import { basename } from 'node:path';
 import { HttpFileResult, HttpFileResultOptions } from './file-result';
 
@@ -72,7 +73,7 @@ export async function resolveFileResult(result: HttpFileResult, input: any, cont
     }
 
     const adapter = context.getMessageAdapter();
-    const outgoing = isResponseCapableMessageAdapter(adapter) ? adapter.getResponse() : undefined;
+    const outgoing = context.get(RESPONSE);
     if (!outgoing) {
         throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
     }
@@ -152,8 +153,7 @@ function inferContentType(mimeAdapter: MimeAdapter | null | undefined, filename?
 }
 
 function getHeader(context: RequestContext, name: string): string | undefined {
-    const adapter = context.getMessageAdapter();
-    const request = isRequestCapableMessageAdapter(adapter) ? adapter.getRequest() as any : undefined;
+    const request = context.get(REQUEST);
     const value = typeof request?.getHeader === 'function'
         ? request.getHeader(name)
         : request?.headers?.[name.toLowerCase()] ?? request?.headers?.[name];
