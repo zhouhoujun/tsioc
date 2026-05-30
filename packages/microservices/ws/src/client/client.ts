@@ -1,7 +1,7 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
-import { SOCKET } from '@tsdi/transport';
+import { SOCKET } from '../context';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { defer, Observable, switchMap } from 'rxjs';
 import * as WebSocket from 'ws';

@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, useRouter, Controller, Get, Post, RequestBody, MESSAGE_ROUTERS } from '@tsdi/service';
+import { provideService, useRouter, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, MESSAGE_ROUTERS } from '@tsdi/service';
 import { useHttpTransport, HttpFileResult } from '../src/server';
 import { withHttpTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
@@ -33,6 +33,35 @@ class HttpTestController {
             filename: file?.filename,
             content: file?.buffer?.toString('utf8')
         };
+    }
+
+    @Get('/matrix/query')
+    queryMatrix(
+        @RequestParam('page') page: number = 1,
+        @RequestParam('sort') sort: string = 'name',
+        @RequestParam('active') active: string | null = null,
+        @RequestHeader('accept') accept?: string,
+    ) {
+        return { page, sort, active, accept };
+    }
+
+    @Get('/matrix/path/:id')
+    pathMatrix(@RequestPath('id') id: string) {
+        return { id };
+    }
+
+    @Post('/matrix/body')
+    bodyMatrix(
+        @RequestBody('name') name: string,
+        @RequestBody('age') age: number,
+        @RequestBody('enabled') enabled: boolean,
+    ) {
+        return { name, age, enabled };
+    }
+
+    @Get('/matrix/falsy')
+    falsyMatrix(@RequestParam('zero') zero: number = 0) {
+        return { zero, ok: false, empty: '' };
     }
 }
 
@@ -129,6 +158,51 @@ describe('HTTP @Controller', () => {
         });
         expect(response.status).toBe(200);
         expect(JSON.parse(response.body)).toEqual({ status: 'ok' });
+    });
+});
+
+describe('HTTP parameter coverage matrix', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [HttpTestController],
+        providers: [provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: PORTS.ctrl + 50, host: '127.0.0.1' }, microservice: false as any, asDefault: true })),
+            provideClient(withHttpTransport({ url: `http://127.0.0.1:${PORTS.ctrl + 50}`, microservice: false, asDefault: true }))]
+    })
+    class HttpMatrixModule { }
+
+    let ctx: ApplicationContext;
+    let client: HttpClient;
+
+    before(async () => {
+        ctx = await Application.run(HttpMatrixModule);
+        client = ctx.get(HttpClient);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    it('should resolve query params and header defaults', async () => {
+        const response: any = await lastValueFrom(client.get('/api/test/matrix/query', {
+            observe: 'response' as any,
+            params: { page: '2' },
+            headers: { accept: 'application/json' }
+        } as any));
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ page: 2, sort: 'name', active: null, accept: 'application/json' });
+    });
+
+    it('should resolve path params', async () => {
+        const response: any = await lastValueFrom(client.get('/api/test/matrix/path/abc', { observe: 'response' as any }));
+        expect(response.body).toEqual({ id: 'abc' });
+    });
+
+    it('should resolve named body fields', async () => {
+        const response: any = await lastValueFrom(client.post('/api/test/matrix/body', { name: 'alice', age: 20, enabled: true }, { observe: 'response' as any }));
+        expect(response.body).toEqual({ name: 'alice', age: 20, enabled: true });
+    });
+
+    it('should preserve falsy values in response body', async () => {
+        const response: any = await lastValueFrom(client.get('/api/test/matrix/falsy', { observe: 'response' as any, params: { zero: '0' } }));
+        expect(response.body).toEqual({ zero: 0, ok: false, empty: '' });
     });
 });
 

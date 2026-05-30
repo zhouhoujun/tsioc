@@ -8,6 +8,18 @@ import {
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
 import { PACKET_DELIMITER, PACKET_IDLEN, PACKET_LIMIT, PACKET_MAXSIZE } from '../context';
 
+function getContentLength(message: any): number {
+    const direct = message?.contentLength;
+    if (typeof direct === 'number' && !Number.isNaN(direct)) {
+        return direct;
+    }
+    const header = typeof message?.getHeader === 'function'
+        ? message.getHeader('content-length')
+        : message?.headers?.['content-length'] ?? message?.headers?.['Content-Length'];
+    const parsed = Number(header);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 
 
 
@@ -147,7 +159,6 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
     intercept(input: Packet<IDuplex>, next: RequestHandler<any, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
         if (!input.payload) return next.handle(input, context);
         const streamAdapter = context.get(StreamAdapter);
-        const adapter = context.getMessageAdapter();
         // const transport = context.get(Transport) as AbstractTransport;
         const idLen = context.get(PACKET_IDLEN);
         let id: string | number;
@@ -163,7 +174,7 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
                 }
                 return defer(async () => {
                     streamAdapter.pipeTo(payload, msg.body!);
-                    const contentLength = headerAdapter.getContentLength(msg) || 0;
+                    const contentLength = getContentLength(msg) || 0;
                     msg.contentLength += input.contentLength || 0;
                     if ((contentLength + idLen) === msg.contentLength) {
                         this.msgs.delete(id);
@@ -185,7 +196,7 @@ export class PayloadDeserializeInterceptor implements RequestInterceptor<Packet,
             .pipe(
                 filter(msg => {
                     const incoming = msg as IncomingMessage<IDuplex> & { contentLength: number };
-                    const contentLength = headerAdapter.getContentLength(incoming);
+                    const contentLength = getContentLength(incoming);
                     if (contentLength && incoming.id && !incoming.body) {
                         incoming.contentLength = 0;
                         this.msgs.set(incoming.id, incoming);
@@ -224,8 +235,7 @@ export const deatchPacketIdInterceptor: RequestInterceptorFn<any, IncomingMessag
  * @returns 
  */
 export const messageVaildateInterceptor: RequestInterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: RequestHandlerFn<OutgoingMessage, Packet>, context: RequestContext) => {
-    const adapter = context.getMessageAdapter();
-    const length = headerAdapter.getContentLength(input);
+    const length = getContentLength(input);
     const injector = context.getInjector();
     const maxSize = context.get(PACKET_MAXSIZE);
     const sizeLimit = context.get(PACKET_LIMIT) ?? maxSize;

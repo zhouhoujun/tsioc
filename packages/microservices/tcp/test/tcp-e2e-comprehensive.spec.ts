@@ -138,6 +138,22 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
             return { page, pageSize, sort, order };
         }
 
+        @Get('/nullable')
+        nullable(
+            @RequestParam('q', { nullable: true }) q: string | null,
+            @RequestHeader('x-optional') optional?: string
+        ) {
+            return { q, optional: optional ?? null };
+        }
+
+        @Get('/falsy')
+        falsy(
+            @RequestParam('zero', { pipe: 'int' }) zero: number,
+            @RequestParam('enabled', { pipe: 'boolean' }) enabled: boolean
+        ) {
+            return { zero, enabled, ok: false, empty: '' };
+        }
+
         @Get('/throw-bad-request')
         throwBadRequest() {
             throw new BadRequestException('Invalid input');
@@ -236,6 +252,25 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
             expect(result.enabled).toBe(true);
             expect(typeof result.enabled).toBe('boolean');
             expect(result.typeCheck).toBe(true);
+        });
+
+        it('should return nullable query as null when omitted', async () => {
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/nullable',
+                method: 'GET',
+                query: {}
+            });
+            expect(result.q).toBe(null);
+            expect(result.optional).toBe(null);
+        });
+
+        it('should preserve falsy values in response body', async () => {
+            const result = await sendTcpRequest(SERVER_PORT, {
+                path: '/api/users/falsy',
+                method: 'GET',
+                query: { zero: '0', enabled: 'false' }
+            });
+            expect(result).toEqual({ zero: 0, enabled: false, ok: false, empty: '' });
         });
     });
 

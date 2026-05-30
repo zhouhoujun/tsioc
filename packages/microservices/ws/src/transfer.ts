@@ -1,6 +1,6 @@
 import { AbstractOutgoing, AbstractRequest, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST } from '@tsdi/common';
 import { Provider } from '@tsdi/ioc';
-import { defer, filter, fromEvent, mergeMap, race, take, takeUntil } from 'rxjs';
+import { Observable, defer, filter, mergeMap, race, take, takeUntil } from 'rxjs';
 import { SOCKET } from './context';
 
 export interface WsPacketOptions extends TransferOptions {
@@ -31,11 +31,34 @@ const requestMapping = (req: any, context: RequestContext) => {
     return req;
 }
 
-const outgoingMapping = (res: any, context: RequestContext) => {
+const outgoingMapping = (res: any, _context: RequestContext) => {
     if (res instanceof AbstractOutgoing) {
         return res.toJson()
     }
     return res;
+}
+
+function wsEvent(socket: any, eventName: string): Observable<any> {
+    return new Observable(observer => {
+        const handler = (data: any) => observer.next(data);
+        const errorHandler = (err: any) => observer.error(err);
+        socket.on(eventName, handler);
+        socket.on(Events.ERROR, errorHandler);
+        return () => {
+            socket.off?.(eventName, handler);
+            socket.off?.(Events.ERROR, errorHandler);
+        };
+    });
+}
+
+function wsClose(socket: any): Observable<any> {
+    return new Observable(observer => {
+        const closeHandler = (...args: any[]) => observer.next(args);
+        socket.on(Events.CLOSE, closeHandler);
+        return () => {
+            socket.off?.(Events.CLOSE, closeHandler);
+        };
+    });
 }
 
 /**
@@ -43,7 +66,8 @@ const outgoingMapping = (res: any, context: RequestContext) => {
  * WebSocket 消息传输拦截器
  */
 function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn {
-    return config.side === TransferSide.client ? (req, next, context) => {
+    const eventName = options.eventName || Events.MESSAGE;
+    return config.side === TransferSide.client ? (req: any, next: any, context: any) => {
         return defer(async () => {
             const socket = context.get(SOCKET);
             if (!socket) {
@@ -55,44 +79,44 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
         }).pipe(
             mergeMap(() => {
                 const socket = context.get(SOCKET);
-                return fromEvent(socket, options.eventName || Events.MESSAGE)
+                return wsEvent(socket, eventName)
                     .pipe(
-                        takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+                        takeUntil(race(wsClose(socket)).pipe(take(1))),
                         filter(r => r !== null && r !== undefined),
                         take(1)
                     );
             }),
             mergeMap((data: any) => {
                 try {
-                    // WebSocket data is Buffer or string
                     const str = Buffer.isBuffer(data) ? data.toString() :
                         ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
                             String(data);
                     return next(JSON.parse(str), context);
-                } catch (e) {
+                } catch {
                     return next(data, context);
                 }
             })
         );
-    } : (socket, next, context) => {
-        return fromEvent(socket, options.eventName || Events.MESSAGE).pipe(
-            takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
+    } : (_input: any, next: any, context: any) => {
+        const socket = context.get(SOCKET);
+        if (!socket) {
+            throw new Error('no socket in context');
+        }
+        return wsEvent(socket, eventName).pipe(
+            takeUntil(race(wsClose(socket)).pipe(take(1))),
             filter(r => r !== null && r !== undefined),
             mergeMap(data => {
                 try {
-                    // WebSocket data is Buffer or string
                     const str = Buffer.isBuffer(data) ? data.toString() :
                         ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
                             String(data);
                     const parsed = JSON.parse(str);
                     context.set(REQUEST, parsed);
-                    // Set REQUEST to parsed data for message reader
-                    (context as any).request = parsed;
+                    context.setPayload(parsed);
                     return next(parsed, context);
-                } catch (e) {
-                    // If not JSON, pass as-is
+                } catch {
                     context.set(REQUEST, data);
-                    (context as any).request = data;
+                    context.setPayload(data as any);
                     return next(data, context);
                 }
             }),
@@ -119,10 +143,7 @@ export function useWsPacket(options: WsPacketOptions = {}): TransferInterceptorF
             options.mapping = isClient ? requestMapping : outgoingMapping;
         }
 
-        return isClient ? [
-            useCatch,
-            wsMessage(config, options)
-        ] : [
+        return [
             useCatch,
             wsMessage(config, options)
         ];
