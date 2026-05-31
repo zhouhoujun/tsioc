@@ -40,7 +40,7 @@ describe('NATS E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(NatsMsModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -64,7 +64,7 @@ describe('NATS E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(NatsHostModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -84,7 +84,7 @@ describe('NATS @Controller', () => {
 
     before(async () => {
         ctx = await Application.run(NatsCtrlModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -104,7 +104,7 @@ describe('NATS @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(NatsRouteModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -235,7 +235,7 @@ describe('NATS pattern routing', () => {
     before(async () => {
         ctx = await Application.run(NatsPatternModule);
         client = ctx.get(NatsClient);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 

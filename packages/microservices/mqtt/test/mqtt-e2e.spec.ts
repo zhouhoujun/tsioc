@@ -51,7 +51,7 @@ describe('MQTT E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(MqttMsModule);
-        await new Promise(r => setTimeout(r, 1500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -75,7 +75,7 @@ describe('MQTT E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(MqttHostModule);
-        await new Promise(r => setTimeout(r, 1500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -95,7 +95,7 @@ describe('MQTT @Controller', () => {
 
     before(async () => {
         ctx = await Application.run(MqttCtrlModule);
-        await new Promise(r => setTimeout(r, 1500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -115,7 +115,7 @@ describe('MQTT @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(MqttRouteModule);
-        await new Promise(r => setTimeout(r, 1500));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -148,7 +148,7 @@ describe('MQTT pattern routing', () => {
     before(async () => {
         ctx = await Application.run(MqttPatternModule);
         client = ctx.get(MqttClient);
-        await new Promise(r => setTimeout(r, 1500));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -199,7 +199,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
     before(async () => {
         ctx = await Application.run(MqttE2eModule);
         client = mqtt.connect(MQTT_URL);
-        await new Promise(r => setTimeout(r, 1500));
+        
     });
     after(async () => {
         if (client) client.end(true);
@@ -263,7 +263,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
     before(async () => {
         ctx = await Application.run(MqttE2eHostModule);
         client = mqtt.connect(MQTT_URL);
-        await new Promise(r => setTimeout(r, 1500));
+        
     });
     after(async () => {
         if (client) client.end(true);

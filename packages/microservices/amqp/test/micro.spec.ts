@@ -59,7 +59,7 @@ if (process.env.TSIO_TEST_AMQP) describe('AMQP Micro Service', () => {
 
     before(async () => {
         ctx = await Application.run(MicroTestModule);
-        await new Promise(r => setTimeout(r, 200));
+        
     });
 
     it('should create context with AMQP transport', () => {

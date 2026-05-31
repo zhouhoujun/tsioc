@@ -36,7 +36,6 @@ class ReproModule {}
 
 (async () => {
     const ctx = await Application.run(ReproModule);
-    await new Promise(r => setTimeout(r, 300));
 
     const req = coap.request({ host: '127.0.0.1', port: PORT, pathname: '/api/test/echo', method: 'POST', options: { Accept: 'application/json' } });
     req.on('response', (res: any) => {

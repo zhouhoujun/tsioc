@@ -38,7 +38,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(RedisMsModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -62,7 +62,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(RedisHostModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -82,7 +82,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis @Controller', () => {
 
     before(async () => {
         ctx = await Application.run(RedisCtrlModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -102,7 +102,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(RedisRouteModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 

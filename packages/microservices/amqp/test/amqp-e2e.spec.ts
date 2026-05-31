@@ -40,7 +40,7 @@ describe('AMQP E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(AmqpMsModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -64,7 +64,7 @@ describe('AMQP E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(AmqpHostModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -84,7 +84,7 @@ describe('AMQP @Controller', () => {
 
     before(async () => {
         ctx = await Application.run(AmqpCtrlModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -104,7 +104,7 @@ describe('AMQP @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(AmqpRouteModule);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -140,7 +140,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
         ctx = await Application.run(AmqpE2eModule);
         connection = await amqp.connect(AMQP_URL);
         channel = await connection.createChannel();
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => {
         if (channel) await channel.close();
@@ -212,7 +212,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
         ctx = await Application.run(AmqpE2eHostModule);
         connection = await amqp.connect(AMQP_URL);
         channel = await connection.createChannel();
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => {
         if (channel) await channel.close();
@@ -283,7 +283,7 @@ describe('AMQP pattern routing', () => {
     before(async () => {
         ctx = await Application.run(AmqpPatternModule);
         client = ctx.get(AmqpClient);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -332,7 +332,7 @@ describe('AMQP pattern routing with custom routingKey', () => {
     before(async () => {
         ctx = await Application.run(AmqpPatternRoutingKeyModule);
         client = ctx.get(AmqpClient);
-        await new Promise(r => setTimeout(r, 1000));
+        
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
