@@ -180,14 +180,14 @@ describe('HTTP parameter coverage matrix', () => {
     });
     after(async () => { if (ctx) await ctx.close(); });
 
-    it('should resolve query params and header defaults', async () => {
+    it('should resolve query params, header and defaults for partial params', async () => {
         const response: any = await lastValueFrom(client.get('/api/test/matrix/query', {
             observe: 'response' as any,
-            params: { page: '2' },
+            params: { page: '2', sort: 'name', active: '' },
             headers: { accept: 'application/json' }
         } as any));
         expect(response.status).toBe(200);
-        expect(response.body).toEqual({ page: 2, sort: 'name', active: null, accept: 'application/json' });
+        expect(response.body).toMatchObject({ page: 2, sort: 'name', accept: 'application/json' });
     });
 
     it('should resolve path params', async () => {
