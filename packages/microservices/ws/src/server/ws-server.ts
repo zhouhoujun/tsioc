@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport
+    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
@@ -177,8 +177,16 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             this.logger.error('WebSocket connection error:', err);
         });
 
+        const outgoing = this.injector.get(OutgoingFactory).create({});
+        const context = createRequestContext(this.injector, [
+            [SOCKET, ws],
+            [REQUEST, request],
+            [RESPONSE, outgoing],
+            ['request', request]
+        ]);
+
         // Handle messages through service handler
-        this.handler.handle(ws as TReq, createRequestContext(this.injector, [[SOCKET, ws], ['request', request]]))
+        this.handler.handle(ws as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$, fromEvent(ws, Events.CLOSE)).pipe(take(1)))
             ).subscribe();

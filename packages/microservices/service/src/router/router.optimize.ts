@@ -188,6 +188,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             if (route && !route.handle) {
                 route.handle = this.parse(route);
             }
+            console.log('router.doHandle route:', route?.path ?? route?.pattern ?? null, 'transport:', this.transport, 'micro:', this.microservice);
             return route;
         }).pipe(
             mergeMap(route => {
@@ -597,6 +598,7 @@ function getMicroToPartsBy(protocol: Transport | null): (url: string) => string[
 
         case Transport.AMQP:
         case Transport.NATS:
+        case Transport.WS:
             return dotParts;
 
         default:

@@ -77,7 +77,6 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
                             response.statusMessage = error.message;
                             return of(response);
                         }, multi: true },
-                        ...transferProviders,
                         {
                             provide: ServiceHandler,
                             useFactory: (inj: Injector) => createRequestHandler(inj, config),

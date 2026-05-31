@@ -1,6 +1,6 @@
 import { AbstractOutgoing, AbstractRequest, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST } from '@tsdi/common';
 import { Provider } from '@tsdi/ioc';
-import { Observable, defer, filter, mergeMap, race, take, takeUntil } from 'rxjs';
+import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, throwError } from 'rxjs';
 import { SOCKET } from './context';
 
 export interface WsPacketOptions extends TransferOptions {
@@ -68,32 +68,35 @@ function wsClose(socket: any): Observable<any> {
 function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn {
     const eventName = options.eventName || Events.MESSAGE;
     return config.side === TransferSide.client ? (req: any, next: any, context: any) => {
-        return defer(async () => {
+        return defer(() => {
             const socket = context.get(SOCKET);
             if (!socket) {
                 throw new Error('no socket in context');
             }
-            const message = typeof req === 'string' ? req : JSON.stringify(req);
+            const response$ = wsEvent(socket, eventName).pipe(
+                takeUntil(race(wsClose(socket)).pipe(take(1))),
+                filter(r => r !== null && r !== undefined),
+                take(1)
+            );
+            const payload = options.mapping ? options.mapping(req, context) : req;
+            const message = typeof payload === 'string' ? payload : JSON.stringify(payload, options.replacer, options.space);
             socket.send(message);
-            return req;
+            return response$;
         }).pipe(
-            mergeMap(() => {
-                const socket = context.get(SOCKET);
-                return wsEvent(socket, eventName)
-                    .pipe(
-                        takeUntil(race(wsClose(socket)).pipe(take(1))),
-                        filter(r => r !== null && r !== undefined),
-                        take(1)
-                    );
-            }),
             mergeMap((data: any) => {
+                const str = Buffer.isBuffer(data) ? data.toString() :
+                    ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
+                        String(data);
                 try {
-                    const str = Buffer.isBuffer(data) ? data.toString() :
-                        ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
-                            String(data);
-                    return next(JSON.parse(str), context);
+                    return new Observable(observer => {
+                        observer.next(JSON.parse(str));
+                        observer.complete();
+                    });
                 } catch {
-                    return next(data, context);
+                    return new Observable(observer => {
+                        observer.next(str);
+                        observer.complete();
+                    });
                 }
             })
         );
@@ -111,9 +114,13 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
                         ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
                             String(data);
                     const parsed = JSON.parse(str);
-                    context.set(REQUEST, parsed);
+                                        context.set(REQUEST, parsed);
                     context.setPayload(parsed);
-                    return next(parsed, context);
+                    return defer(() => next(parsed, context)).pipe(
+                        catchError(err => {
+                            return throwError(() => err);
+                        })
+                    );
                 } catch {
                     context.set(REQUEST, data);
                     context.setPayload(data as any);
@@ -122,9 +129,16 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
             }),
             mergeMap(async res => {
                 if (!res) return;
-                const message = typeof res === 'string' ? res : JSON.stringify(res);
+                let outgoing = res;
+                const request = context.get(REQUEST) as any;
+                if (outgoing === null || outgoing === undefined || (typeof outgoing !== 'object' && typeof outgoing !== 'function')) {
+                    outgoing = request?.id ? { id: request.id, payload: outgoing } : { payload: outgoing };
+                } else if (request?.id && !(outgoing as any).id) {
+                    (outgoing as any).id = request.id;
+                }
+                const message = JSON.stringify(outgoing);
                 socket.send(message);
-                return res;
+                return outgoing;
             })
         );
     };

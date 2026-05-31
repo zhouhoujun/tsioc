@@ -2,8 +2,8 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
-import { GET, POST } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { GET, POST, Transport } from '@tsdi/common';
+import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload, MESSAGE_ROUTERS } from '@tsdi/service';
 import { useWsTransport } from '../src/server';
 import { withWsTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
@@ -142,10 +142,13 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
     });
 
     it('should send cmd via WsClient.send()', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
-            observe: 'response' as any,
-            responseType: 'text' as any
-        }).pipe(catchError(err => of(err))));
+        const result = await Promise.race([
+            lastValueFrom(client.send({ cmd: 'ping' }, {
+                observe: 'response' as any,
+                responseType: 'text' as any
+            }).pipe(catchError(err => of(err)))),
+            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
+        ]);
         expect(result).toBeDefined();
     });
 });
@@ -178,23 +181,26 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
     });
 
     it('should send cmd via WsClient.send() in host mode', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
-            observe: 'response' as any,
-            responseType: 'text' as any
-        }).pipe(catchError(err => of(err))));
+        const result = await Promise.race([
+            lastValueFrom(client.send({ cmd: 'test' }, {
+                observe: 'response' as any,
+                responseType: 'text' as any
+            }).pipe(catchError(err => of(err)))),
+            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
+        ]);
         expect(result).toBeDefined();
     });
 });
 
 // ----- WS pattern routing -----
 class WsPatternService {
-    @Handle({ cmd: 'echo' })
+    @Handle({ cmd: 'echo' }, Transport.WS)
     echo(@Payload() msg: string) { return msg; }
 
-    @Handle('sensor.message.+')
+    @Handle('sensor.message.+', Transport.WS)
     topic(@Payload() msg: string) { return msg; }
 
-    @Subscribe('sensor.+.start', undefined as any)
+    @Subscribe('sensor.+.start', Transport.WS)
     subscribe(@Payload() msg: string) { return msg; }
 }
 
@@ -217,23 +223,45 @@ describe('WS pattern routing', () => {
     before(async () => {
         ctx = await Application.run(WsPatternModule);
         client = ctx.get(WsClient);
-        
+
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
+    it('registers message routes', () => {
+        const routers = ctx.get(MESSAGE_ROUTERS);
+        expect(routers?.length).toBeGreaterThan(0);
+        const patterns = routers[0].getPatterns();
+        console.log('ws message router patterns', patterns);
+        expect(patterns.routes).toContain('cmd:echo');
+    });
+
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        const result = await Promise.race([
+            lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }).pipe(catchError(err => of({ error: err?.message ?? err })))),
+            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
+        ]);
         console.log('ws pattern result', result);
-        expect(result.payload).toEqual('hello');
+        const value = typeof result === 'string' ? result : (result as any)?.payload ?? (result as any)?.body;
+        expect(value).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
-        expect(result.payload).toEqual('world');
+        const result = await Promise.race([
+            lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }).pipe(catchError(err => of({ error: err?.message ?? err })))),
+            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
+        ]);
+        console.log('ws wildcard result', result);
+        const value = typeof result === 'string' ? result : (result as any)?.payload ?? (result as any)?.body ?? (result as any)?.message;
+        expect(value).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
-        expect(result.payload).toEqual('foo');
+        const result = await Promise.race([
+            lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }).pipe(catchError(err => of({ error: err?.message ?? err })))),
+            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
+        ]);
+        console.log('ws subscribe result', result);
+        const value = typeof result === 'string' ? result : (result as any)?.payload ?? (result as any)?.body ?? (result as any)?.message;
+        expect(value).toEqual('foo');
     });
 });

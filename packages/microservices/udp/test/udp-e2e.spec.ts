@@ -368,7 +368,7 @@ describe('UDP pattern routing', () => {
         declarations: [UdpPatternService],
         providers: [
             provideService(useRouter(),
-                useUdpTransport({ features: { defaultTransfer: undefined }, listenOpts: { port: 21800, host: '127.0.0.1' } })),
+                useUdpTransport({ listenOpts: { port: 21800, host: '127.0.0.1' } })),
             provideClient(
                 withUdpTransport({ host: '127.0.0.1', port: 21800, microservice: true, asDefault: true }))
         ]

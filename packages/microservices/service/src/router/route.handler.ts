@@ -28,8 +28,12 @@ export class RouteHandler implements RequestHandler {
                 payload: context.getPayload?.() ?? input
             } as any)
             : this.invocation.invoke(this.propertyKey, context);
+        console.log('route.handler raw result:', this.propertyKey, result);
         return toObservable(result).pipe(
-            mergeMap(value => toObservable(value instanceof ResultValue ? value.sendValue(context as any) : value))
+            mergeMap(value => {
+                console.log('route.handler emitted value:', this.propertyKey, value);
+                return toObservable(value instanceof ResultValue ? value.sendValue(context as any) : value);
+            })
         );
     }
 }
