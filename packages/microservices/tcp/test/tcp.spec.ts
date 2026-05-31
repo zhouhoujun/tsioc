@@ -101,40 +101,36 @@ export class DeviceController {
             withTransfers(),
             withTcpTransport(
                 {
-                    // name: 'tcp-client',
-                    // microservice: true,
+                    name: 'tcp-client',
                     connectOpts: {
-                        port: 2000
+                        port: 11406
                     }
                 },
                 {
                     name: 'micclient',
                     microservice: true,
                     connectOpts: {
-                        port: 3000
+                        port: 11407
                     }
                 }
-
             )
         ),
         provideService(
             useInterceptors(BigFileInterceptor),
-            useJson(),
-            useBodyParser(),
-            useContent(),
             useRouter(),
             useLogger(),
             useTcpTransport(
                 {
-                    // microservice: true,
+                    name: 'host',
                     listenOpts: {
-                        port: 2000
+                        port: 11406
                     }
                 },
                 {
+                    name: 'micro',
                     microservice: true,
                     listenOpts: {
-                        port: 3000
+                        port: 11407
                     }
                 }
             )

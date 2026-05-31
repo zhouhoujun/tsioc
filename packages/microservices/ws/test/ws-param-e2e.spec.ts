@@ -6,7 +6,7 @@ import { Transport } from '@tsdi/common';
 import { provideService, useRouter, Controller, Get, Post, RequestBody, Handle, Payload } from '@tsdi/service';
 import { useWsTransport } from '../src/server';
 import { withWsTransport } from '../src/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import { WsClient } from '../src/client/client';
 import { catchError, lastValueFrom, of } from 'rxjs';
 
@@ -46,6 +46,7 @@ describe('WS parameter coverage E2E', () => {
             provideService(useRouter(),
                 useWsTransport({ listenOpts: { port: PARAM_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(5000),
                 withWsTransport({ url: `ws://127.0.0.1:${PARAM_PORT}`, microservice: true, asDefault: true }))
         ]
     })

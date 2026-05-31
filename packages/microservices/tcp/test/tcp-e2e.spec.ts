@@ -5,7 +5,7 @@ import { GET, POST, Transport } from '@tsdi/common';
 import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Payload } from '@tsdi/service';
 import { useTcpTransport } from '../src/server';
 import { withTcpTransport } from '../src/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import { TcpClient } from '../src/client/client';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
@@ -137,6 +137,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
                 useRouter({ microservice: true }),
                 useTcpTransport({ listenOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(10000),
                 withTcpTransport({ connectOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true }))
         ]
     })

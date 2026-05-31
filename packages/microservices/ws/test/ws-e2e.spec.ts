@@ -6,7 +6,7 @@ import { GET, POST, Transport } from '@tsdi/common';
 import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload, MESSAGE_ROUTERS } from '@tsdi/service';
 import { useWsTransport } from '../src/server';
 import { withWsTransport } from '../src/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import { WsClient } from '../src/client/client';
 import { catchError, lastValueFrom, of } from 'rxjs';
 
@@ -121,6 +121,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
             provideService(useRouter(),
                 useWsTransport({ listenOpts: { port: E2E_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(10000),
                 withWsTransport({ url: `ws://127.0.0.1:${E2E_PORT}`, microservice: true, asDefault: true }))
         ]
     })
