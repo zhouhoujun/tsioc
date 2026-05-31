@@ -9,8 +9,8 @@ import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
+import { SOCKET } from '@tsdi/transport';
 import { TcpServOptions, TCP_SERV_OPTIONS, TCP_BIND_INTERCEPTORS, TCP_BIND_FILTERS, TCP_BIND_GUARDS } from './options';
-const SOCKET = Events.SOCKET;
 
 /**
  * tcp server of `tcp` or `ipc`.
@@ -149,11 +149,11 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         this.activeConnections.clear();
 
         // Then close the server
-        await promisify(this.serv.close, this.serv)()
-            .finally(() => {
-                this.serv?.removeAllListeners();
-                this.serv = null;
-            });
+        try {
+            await promisify(this.serv.close, this.serv)();
+        } catch { /* server may already be closed */ }
+        this.serv?.removeAllListeners();
+        this.serv = null;
 
     }
 

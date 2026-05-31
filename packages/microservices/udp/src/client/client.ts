@@ -4,6 +4,7 @@ import { Pattern, Events, LOCALHOST, RequestInitOpts, UrlRequestOptions, Respons
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { defer, Observable, switchMap } from 'rxjs';
 import * as dgram from 'node:dgram';
+import { SOCKET } from '@tsdi/transport';
 import { UDP_CLIENT_OPTIONS, UdpClientOptions } from './options';
 import { UdpRequest } from './request';
 
@@ -32,6 +33,9 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
             this.socket.on(Events.ERROR, (err: Error) => {
                 this.logger?.error('UDP client error:', err);
             });
+            await new Promise<void>((resolve, reject) => {
+                this.socket!.connect(this.options.port!, this.options.host!, (err?: Error) => err ? reject(err) : resolve());
+            });
             return this.socket;
         });
     }
@@ -39,6 +43,9 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
     protected initContext(context: Context, req: UdpRequest<any>): void {
         context.set(UdpClient, this);
         context.set(UdpRequest, req);
+        if (this.socket) {
+            context.set(SOCKET, this.socket as any);
+        }
     }
 
     protected buildRequest(first: UdpRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): UdpRequest<any> {

@@ -223,6 +223,7 @@ describe('WS pattern routing', () => {
 
     it('routes object cmd patterns', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        console.log('ws pattern result', result);
         expect(result.payload).toEqual('hello');
     });
 

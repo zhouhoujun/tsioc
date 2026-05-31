@@ -1,4 +1,4 @@
-import { asProvider, getClassRef, Injector, Provider } from '@tsdi/ioc';
+import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
@@ -45,12 +45,14 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
             provide: clientToken,
             useFactory: (injector: Injector) => {
                 const handler = injector.get(hanlderToken);
-                return getClassRef(TcpClient).createInvocation(injector, {
+                const childInjector = createInjector(injector, {
                     providers: [
                         { provide: TCP_CLIENT_OPTIONS, useValue: config },
-                        { provide: ClientHandler, useValue: handler }
+                        { provide: ClientHandler, useValue: handler },
+                        TcpClient
                     ]
-                }).instance;
+                });
+                return childInjector.get(TcpClient);
             },
             deps: [
                 Injector

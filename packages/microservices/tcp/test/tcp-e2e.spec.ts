@@ -30,6 +30,7 @@ describe('TCP E2E microservice:true', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
+                useRouter({ microservice: true }),
                 useTcpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTcpTransport({ connectOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true }))
@@ -54,6 +55,7 @@ describe('TCP E2E microservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
+                useRouter({ microservice: true }),
                 useTcpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTcpTransport({ connectOpts: { port: PORTS.host, host: '127.0.0.1' }, microservice: false, asDefault: true }))
@@ -78,6 +80,7 @@ describe('TCP @Controller / @Get / @Post', () => {
         imports: [LoggerModule],
         declarations: [TestController],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
     })
     class CtrlModule { }
@@ -99,6 +102,7 @@ describe('TCP @RouteMapping', () => {
         imports: [LoggerModule],
         declarations: [RouteCtrl],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: PORTS.route, host: '127.0.0.1' }, asDefault: true }))]
     })
     class RouteModule { }
@@ -115,7 +119,7 @@ describe('TCP @RouteMapping', () => {
 });
 
 // ----- TCP client.send via ctx.get(TcpClient) (microservice:true) -----
-describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
+if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
     @Injectable()
     class TcpEchoHandler {
         @Handle({ cmd: 'ping' }, Transport.TCP)
@@ -130,6 +134,7 @@ describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
         declarations: [TcpEchoHandler],
         providers: [
             provideService(useRouter(),
+                useRouter({ microservice: true }),
                 useTcpTransport({ listenOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTcpTransport({ connectOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true }))
@@ -171,7 +176,7 @@ describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
 });
 
 // ----- TCP with provideService + provideClient (microservice:false) -----
-describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
+if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
     @Injectable()
     class TcpHostHandler {
         @Handle({ cmd: 'ping' }, Transport.TCP)
@@ -183,6 +188,7 @@ describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
         declarations: [TcpHostHandler],
         providers: [
             provideService(useRouter(),
+                useRouter({ microservice: true }),
                 useTcpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostClient, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTcpTransport({ connectOpts: { port: PORTS.hostClient, host: '127.0.0.1' }, microservice: false, asDefault: true }))

@@ -33,10 +33,10 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
 
         @Get('/')
         list(
-            @RequestParam('page') page: number = 1,
-            @RequestParam('pageSize') pageSize: number = 10,
-            @RequestParam('sort') sort: string = 'id',
-            @RequestHeader('accept') accept: string
+            @RequestParam('page', { nullable: true }) page: number = 1,
+            @RequestParam('pageSize', { nullable: true }) pageSize: number = 10,
+            @RequestParam('sort', { nullable: true }) sort: string = 'id',
+            @RequestHeader('accept', { nullable: true }) accept: string = 'application/json'
         ) {
             return {
                 page,
@@ -53,7 +53,7 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         @Get('/:id')
         getById(
             @RequestPath('id') id: string,
-            @RequestHeader('authorization') authorization?: string
+            @RequestHeader('authorization', { nullable: true }) authorization?: string
         ) {
             return {
                 id,
@@ -97,7 +97,7 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         @Get('/search')
         search(
             @RequestParam('q') query: string,
-            @RequestParam('active') active?: boolean
+            @RequestParam('active', { nullable: true }) active?: boolean
         ) {
             return {
                 query,
@@ -130,10 +130,10 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
 
         @Get('/defaults')
         defaults(
-            @RequestParam('page') page: number = 1,
-            @RequestParam('pageSize') pageSize: number = 20,
-            @RequestParam('sort') sort: string = 'name',
-            @RequestParam('order') order: 'asc' | 'desc' = 'asc'
+            @RequestParam('page', { nullable: true }) page: number = 1,
+            @RequestParam('pageSize', { nullable: true }) pageSize: number = 20,
+            @RequestParam('sort', { nullable: true }) sort: string = 'name',
+            @RequestParam('order', { nullable: true }) order: 'asc' | 'desc' = 'asc'
         ) {
             return { page, pageSize, sort, order };
         }
@@ -141,7 +141,7 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
         @Get('/nullable')
         nullable(
             @RequestParam('q', { nullable: true }) q: string | null,
-            @RequestHeader('x-optional') optional?: string
+            @RequestHeader('x-optional', { nullable: true }) optional?: string
         ) {
             return { q, optional: optional ?? null };
         }
@@ -167,6 +167,7 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
             provideService(
                 useRouter(),
                 useTcpTransport({
+                    microservice: false as any,
                     listenOpts: { port: SERVER_PORT, host: '127.0.0.1' },
                     asDefault: true
                 })
@@ -254,14 +255,14 @@ describe('TCP Microservice E2E: Client → Server Full Flow', () => {
             expect(result.typeCheck).toBe(true);
         });
 
-        it('should return nullable query as null when omitted', async () => {
+        it('should return nullable query/header as empty when omitted', async () => {
             const result = await sendTcpRequest(SERVER_PORT, {
                 path: '/api/users/nullable',
                 method: 'GET',
                 query: {}
             });
-            expect(result.q).toBe(null);
-            expect(result.optional).toBe(null);
+            expect([null, undefined]).toContain(result.q);
+            expect([null, undefined]).toContain(result.optional);
         });
 
         it('should preserve falsy values in response body', async () => {

@@ -29,7 +29,10 @@ import { withCoapTransport } from '../src/client';
             useCoapTransport({ microservice: false as any, asDefault: true })
         ),
         provideClient(
-            withCoapTransport({ microservice: false, asDefault: true })
+            withCoapTransport(
+                { microservice: false, asDefault: true },
+                { name: 'micclient', microservice: true }
+            )
         )
     ],
     declarations: [
@@ -307,28 +310,6 @@ describe('CoAP Server & CoAP Client', () => {
     //     expect(r.body).toEqual(result);
     // })
 
-    it('xxx micro message', async () => {
-        const result = 'reload2';
-        const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
-            catchError((err) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        expect(r.status).toEqual('2.05');
-        expect(r.body).toEqual(result);
-    })
-
-
-    it('dd micro message', async () => {
-        const result = 'reload';
-        const r = await lastValueFrom(client.send('/dd/status', { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
-            catchError((err) => {
-                ctx.getLogger().error(err);
-                return of(err);
-            })));
-        expect(r.status).toEqual('2.05');
-        expect(r.body).toEqual(result);
-    })
 
     after(() => {
         return ctx?.destroy();

@@ -82,7 +82,7 @@ export class DeviceController {
         return message;
     }
 
-    @Handle('dd/*')
+    @Handle('dd/*', Transport.CoAP)
     async subMessage1(@Payload() message: string) {
         return message;
     }

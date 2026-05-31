@@ -152,6 +152,7 @@ export function useSimpleJson(options?: {
                     .pipe(
                         mergeMap(rjson => {
                             context.set(REQUEST, rjson);
+                            context.setPayload(rjson);
                             return next(rjson, context)
                         }),
                         map(res => JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space))

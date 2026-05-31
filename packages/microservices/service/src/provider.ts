@@ -386,7 +386,11 @@ export function useRouter(options?: any): ServiceFeatureFn<ServiceFeatureKind.Ro
             }
         ];
         if (isBoolean(options?.microservice) && config.microservice !== options.microservice) {
-            const cfg = { ...config, microservice: options.microservice };
+            const cfg = {
+                ...config,
+                microservice: options.microservice,
+                features: { ...config.features, routerToken: undefined }
+            };
             providers.push(...createRouteProviders(cfg, undefined, routerOptions));
         }
         return makeServiceFeature(

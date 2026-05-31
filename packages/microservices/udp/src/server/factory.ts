@@ -1,11 +1,10 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
 import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { RESPONSE } from '@tsdi/common'
 import { of } from 'rxjs';
 import { UdpServer } from './udp-server';
 import { UdpServOptions, UDP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
 export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?: boolean): ServiceTransportFeature {
@@ -15,7 +14,6 @@ export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?:
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
             ...option.features
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,

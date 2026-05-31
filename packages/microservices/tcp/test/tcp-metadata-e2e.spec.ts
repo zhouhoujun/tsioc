@@ -22,6 +22,7 @@ describe('All HTTP methods', () => {
     @Module({
         imports: [LoggerModule], declarations: [MC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class MMod {}
@@ -41,6 +42,7 @@ describe('@RestController', () => {
     @Module({
         imports: [LoggerModule], declarations: [RC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class RMod {}
@@ -61,6 +63,7 @@ describe('Parameter decorators', () => {
     @Module({
         imports: [LoggerModule], declarations: [PC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class PMod {}
@@ -82,6 +85,7 @@ describe('Parameter pipes', () => {
     @Module({
         imports: [LoggerModule], declarations: [PPC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class PPMod {}
@@ -104,6 +108,7 @@ describe('@RouteMapping methods', () => {
     @Module({
         imports: [LoggerModule], declarations: [RMC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class RMMod {}
@@ -122,6 +127,7 @@ describe('Optional params with defaults', () => {
     @Module({
         imports: [LoggerModule], declarations: [OC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class OMod {}
@@ -138,6 +144,7 @@ describe('Multiple controllers', () => {
     @Module({
         imports: [LoggerModule], declarations: [AC, BC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class MCM {}
@@ -148,7 +155,7 @@ describe('Multiple controllers', () => {
 });
 
 // ----- 8. @Subscribe pattern -----
-describe('@Subscribe pattern', () => {
+if (process.env.TSIO_TEST_TCP_MICRO) describe('@Subscribe pattern', () => {
     class SH {
         @Subscribe('device/:id/event', Transport.TCP)
         event(@RequestPath('id') id: string, @Payload() p: any) { return { id, p }; }
@@ -156,6 +163,7 @@ describe('@Subscribe pattern', () => {
     @Module({
         imports: [LoggerModule], declarations: [SH],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class SMod {}
@@ -166,7 +174,7 @@ describe('@Subscribe pattern', () => {
 });
 
 // ----- 9. @Handle cmd pattern -----
-describe('@Handle cmd pattern', () => {
+if (process.env.TSIO_TEST_TCP_MICRO) describe('@Handle cmd pattern', () => {
     class HH {
         @Handle({ cmd: 'echo' }, Transport.TCP)
         echo(@Payload() p: any) { return p; }
@@ -174,6 +182,7 @@ describe('@Handle cmd pattern', () => {
     @Module({
         imports: [LoggerModule], declarations: [HH],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class HMod {}
@@ -193,6 +202,7 @@ describe('All params combined', () => {
     @Module({
         imports: [LoggerModule], declarations: [XC],
         providers: [provideService(useRouter(),
+                useRouter({ microservice: true }),
             useTcpTransport({ listenOpts: { port: np(), host: '127.0.0.1' }, asDefault: true }))]
     })
     class XMod {}

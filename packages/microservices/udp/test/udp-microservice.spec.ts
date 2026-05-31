@@ -46,9 +46,9 @@ describe('UDP Microservice', () => {
             expect(hasInConfig || hasInMain).toBe(true);
         });
 
-        it('should use json packet transfer by default', () => {
+        it('should not force a default transfer on server side', () => {
             const feature = udpTransportFactory({ listenOpts: { port: 41234 } });
-            expect(feature.config.features?.defaultTransfer).toBeDefined();
+            expect(feature.config.features?.defaultTransfer).toBeUndefined();
         });
     });
 

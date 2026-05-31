@@ -4,7 +4,7 @@ import { PipeTransform } from '@tsdi/core';
 import {
     AbstractRequest, createRequestContext, Events, IDuplex, Packet,
     PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn,
-    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket
+    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST
 } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of, throwError } from 'rxjs';
@@ -28,7 +28,15 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
         return next(req, context)
             .pipe(
                 map(res => {
-                    if (req.id && !res.id) res.id = req.id;
+                    if (!req.id) {
+                        return res;
+                    }
+                    if (isNil(res) || (typeof res !== 'object' && typeof res !== 'function')) {
+                        return { id: req.id, payload: res };
+                    }
+                    if (!res.id) {
+                        res.id = req.id;
+                    }
                     return res;
                 })
             );
@@ -51,6 +59,7 @@ export function createSendMessageBackend(eventName: string = Events.DATA, socket
             trackedSocket = currSocket;
             source$ = fromEvent(currSocket, eventName)
                 .pipe(
+                    map((r: any) => Array.isArray(r) ? r[0] : r),
                     takeUntil(race(fromEvent(currSocket, Events.CLOSE), fromEvent(currSocket, Events.DISCONNECT)).pipe(take(1))),
                     filter(r => !isNil(r)),
                     share()
@@ -76,12 +85,15 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
         if (!handle) handle = createSendMessageBackend(options.eventName);
         return handle(req, context);
 
-    } : (socket, next, context) => {
+    } : (_input, next, context) => {
+        const socket = context.get(SOCKET);
         return fromEvent(socket, options.eventName ?? Events.DATA).pipe(
             takeUntil(race(fromEvent(socket, Events.CLOSE), fromEvent(socket, Events.DISCONNECT)).pipe(take(1))),
             filter(r => !isNil(r)),
             mergeMap(data => {
                 const ctx = createRequestContext(context.getInjector(), context);
+                ctx.set(REQUEST, data as any);
+                ctx.setPayload(data as any);
                 return next(data, ctx)
             }),
             mergeMap(async res => {

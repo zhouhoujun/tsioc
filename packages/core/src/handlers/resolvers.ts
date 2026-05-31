@@ -121,7 +121,11 @@ export function createMessageResolveInterceptors(): ResolveInterceptorFn<Transpo
                             ? (input.paths ?? input.path)
                             : parameter.scope === 'query'
                                 ? (input.query ?? input.params)
-                                : input[parameter.scope];
+                                : parameter.scope === 'payload'
+                                    ? (input.payload ?? input.body)
+                                    : parameter.scope === 'body'
+                                        ? (input.body ?? input.payload)
+                                        : input[parameter.scope];
                         payload = field && scopeVal ? scopeVal[field] : scopeVal;
                     } else if (field) {
                         const sources = [input.query, input.params, input.paths, input.path, input.body, input.payload, input.headers];

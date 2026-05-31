@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, POST } from '@tsdi/common';
-import { provideService, useRouter, useBodyParser, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { GET, POST, Transport } from '@tsdi/common';
+import { provideService, useRouter, useBodyParser, Controller, Get, Post, RouteMapping, RequestBody, RequestHeader, RequestParam, RequestPath, Handle, Subscribe, Payload } from '@tsdi/service';
 import { InternalServerException } from '@tsdi/common';
 import { useCoapTransport } from '../src/server';
 import { withCoapTransport } from '../src/client';
@@ -36,6 +36,33 @@ class ErrorController {
     @Get('/bad-request')
     badRequest() {
         throw new InternalServerException('bad request', 400);
+    }
+}
+
+@Controller('/api/matrix')
+class CoapMatrixController {
+    @Get('/query')
+    query(
+        @RequestParam('page', { nullable: true }) page: number = 1,
+        @RequestParam('sort', { nullable: true }) sort: string = 'name',
+        @RequestHeader('accept', { nullable: true }) accept?: string,
+    ) {
+        return { page, sort, accept: accept ?? null };
+    }
+
+    @Get('/path/:id')
+    path(@RequestPath('id') id: string) {
+        return { id };
+    }
+
+    @Post('/body')
+    body(@RequestBody() body: any) {
+        return { received: body };
+    }
+
+    @Get('/falsy')
+    falsy(@RequestParam('zero') zero: number = 0) {
+        return { zero, ok: false, empty: '' };
     }
 }
 
@@ -304,6 +331,68 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
     });
 });
 
+describe('CoAP parameter coverage matrix', () => {
+    const MATRIX_PORT = 21312;
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [CoapMatrixController],
+        providers: [
+            provideService(useRouter(),
+                useCoapTransport({ microservice: false as any, listenOpts: { port: MATRIX_PORT, host: '127.0.0.1' }, asDefault: true }))
+        ]
+    })
+    class CoapMatrixModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(CoapMatrixModule);
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    function sendMatrix(method: string, pathname: string, payload?: any): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const req = coap.request({
+                host: '127.0.0.1',
+                port: MATRIX_PORT,
+                pathname,
+                method: method as any,
+                options: { 'Accept': 'application/json' }
+            });
+            if (payload != null) {
+                req.write(JSON.stringify(payload));
+            }
+            req.on('response', (res: any) => {
+                const body = res.payload?.toString() || '';
+                try { resolve(JSON.parse(body)); } catch { resolve(body); }
+            });
+            req.on('error', (err: Error) => reject(err));
+            req.end();
+        });
+    }
+
+    it('should resolve query params and header defaults', async () => {
+        const res = await sendMatrix('GET', '/api/matrix/query?page=2');
+        expect(res).toEqual({ page: 2, sort: 'name', accept: 'application/json' });
+    });
+
+    it('should resolve path params', async () => {
+        const res = await sendMatrix('GET', '/api/matrix/path/abc');
+        expect(res).toEqual({ id: 'abc' });
+    });
+
+    it('should resolve request body', async () => {
+        const res = await sendMatrix('POST', '/api/matrix/body', { value: 'hello' });
+        expect(res).toEqual({ received: { value: 'hello' } });
+    });
+
+    it('should preserve falsy response values', async () => {
+        const res = await sendMatrix('GET', '/api/matrix/falsy?zero=0');
+        expect(res).toEqual({ zero: 0, ok: false, empty: '' });
+    });
+});
+
 // ----- ctx.get(CoapClient) verification -----
 describe('CoAP client via ctx.get(CoapClient)', () => {
     const P = 21320;
@@ -344,24 +433,24 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
 
 // ----- CoAP pattern routing -----
 class CoapNativePatternService {
-    @Handle({ cmd: 'echo' })
+    @Handle({ cmd: 'echo' }, Transport.CoAP)
     echo(@Payload() msg: string) { return msg; }
 
-    @Handle('sensor/message/+')
+    @Handle('sensor/message/+', Transport.CoAP)
     topic(@Payload() msg: string) { return msg; }
 
-    @Subscribe('sensor/+/start', undefined as any)
+    @Subscribe('sensor/+/start', Transport.CoAP)
     subscribe(@Payload() msg: string) { return msg; }
 }
 
 class CoapCompatPatternService {
-    @Handle({ cmd: 'echo' })
+    @Handle({ cmd: 'echo' }, Transport.CoAP)
     echo(@Payload() msg: string) { return msg; }
 
-    @Handle('sensor.message.+')
+    @Handle('sensor.message.+', Transport.CoAP)
     topic(@Payload() msg: string) { return msg; }
 
-    @Subscribe('sensor.+.start', undefined as any)
+    @Subscribe('sensor.+.start', Transport.CoAP)
     subscribe(@Payload() msg: string) { return msg; }
 }
 

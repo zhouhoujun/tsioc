@@ -8,8 +8,8 @@ import {
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as dgram from 'node:dgram';
+import { SOCKET } from '@tsdi/transport';
 import { UdpServOptions, UDP_SERV_OPTIONS, UDP_BIND_INTERCEPTORS, UDP_BIND_FILTERS, UDP_BIND_GUARDS } from './options';
-import { SOCKET } from '../context';
 
 /**
  * UDP server for microservices.
@@ -141,8 +141,11 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (response && this.socket) {
-                    const ctxResponse = context.get(RESPONSE);
-                    const body = ctxResponse?.body ?? response;
+                    const ctxResponse = context.get(RESPONSE) as any;
+                    let body = ctxResponse?.body ?? response;
+                    if (requestData?.id && (body === null || body === undefined || (typeof body !== 'object' && typeof body !== 'function'))) {
+                        body = { id: requestData.id, payload: body };
+                    }
                     const buf = Buffer.from(
                         typeof body === 'string' ? body : JSON.stringify(body)
                     );
