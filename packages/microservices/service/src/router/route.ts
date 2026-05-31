@@ -2,6 +2,7 @@ import { Handler, HandlerFn, HandlerLike, Invocation, Token, token, AbstractType
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { Pattern, RequestMethod, Transport } from '@tsdi/common';
 import { Observable } from 'rxjs';
+import { ApiRateLimitOptions } from '../options';
 
 /**
  * assets route.
@@ -169,4 +170,18 @@ export interface RouteOptions<T = any> extends InvocationHandlerOptions<T> {
      * @memberof RouteMappingMetadata
      */
     contentType?: string;
+
+    /**
+     * API timeout in milliseconds for this route.
+     * Overrides global timeout; set to false to disable global timeout.
+     * 路由级 API 超时时间（毫秒），覆盖全局配置；设为 false 禁用全局超时
+     */
+    timeout?: number | false;
+
+    /**
+     * API rate limit options for this route.
+     * Overrides global rate limit; set to false to disable global rate limit.
+     * 路由级限流配置，覆盖全局配置；设为 false 禁用全局限流
+     */
+    rateLimit?: ApiRateLimitOptions | false;
 }

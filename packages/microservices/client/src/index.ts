@@ -1,6 +1,7 @@
 export * from './options';
 export * from './strategies';
 export * from './tokens';
+export * from './interceptors';
 export * from './ClientHandler';
 export * from './AbstractClient';
 export * from './provider';

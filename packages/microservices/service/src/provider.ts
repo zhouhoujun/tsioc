@@ -79,6 +79,7 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
         });
 
         providers.push(
+            { provide: SERV_OPTIONS, useValue: config },
             ...ts.providers
         );
     });

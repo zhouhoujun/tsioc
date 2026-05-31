@@ -478,7 +478,7 @@ export function createRouteDecorator(method: RequestMethod) {
         },
         props: (
             route: string,
-            arg2?: string | { middlewares: any[], guards?: AbstractType<CanHandle>[], contentType?: string, method?: string }
+            arg2?: string | Partial<RouteOptions>
         ) => {
             route = normalize(route);
             return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as RouteMappingMetadata;

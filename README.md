@@ -16,7 +16,10 @@ This is a comprehensive TypeScript framework called "tsioc" (TypeScript IoC) tha
 - Messaging: Support for multiple protocols (AMQP, MQTT, Kafka, Nats, Redis, WS, TCP, etc.) with a unified API
 - Database Integration: TypeORM integration with transaction support
 - Exception Handling: Comprehensive exception system with HTTP status mapping
-Interceptors: Request/response transformation and cross-cutting concerns
+- Interceptors: Request/response transformation and cross-cutting concerns
+- Client Timeout: Configurable request timeout for microservice clients via `withTimeout()` or `withFeatures({ timeout })`
+- API Rate-Limit: Per-route and global rate limiting for microservice service APIs
+- API Timeout: Per-route and global execution timeout for microservice service APIs
 
 # Package Structure
 
@@ -25,7 +28,8 @@ The framework is organized into multiple packages:
 - @tsdi/ioc: Core IoC container
 - @tsdi/aop: Aspect-Oriented Programming support
 - @tsdi/core: Application core and module management
-- @tsdi/endpoints: HTTP endpoint handling
+- @tsdi/client: Microservice client with unified API, discovery, load balancing, and timeout support
+- @tsdi/service: Microservice service framework with router, guards, interceptors, and API rate-limit / timeout
 - @tsdi/security: Authentication and authorization
 - @tsdi/repository: Database repository pattern
 - @tsdi/typeorm-adapter: TypeORM integration
@@ -196,7 +200,6 @@ import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
-import { InternalServerError } from '@tsdi/endpoints';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -223,7 +226,7 @@ export class UserController {
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await this.usrRep.save(user);
-        if(check) throw new InternalServerError('check');
+        if(check) throw new Error('check');
         this.logger.log(val);
         return val;
     }
@@ -234,7 +237,7 @@ export class UserController {
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await userRepo.save(user);
-        if(check) throw new InternalServerError('check');
+        if(check) throw new Error('check');
         this.logger.log(val);
         return val;
     }
@@ -313,7 +316,7 @@ import { Application, Module }  from '@tsdi/core';
 import { LogModule } from '@tsdi/logger';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
-import { Http, HttpClientOptions, HttpModule, HttpServer } from '@tsdi/endpoints';
+import { provideService, useRouter, useHttpTransport } from '@tsdi/service';
 import { ServerModule } from '@tsdi/platform-server';
 
 const key = fs.readFileSync(path.join(__dirname, './cert/localhost-privkey.pem'));
@@ -324,14 +327,6 @@ const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
-            majorVersion: 2,
-            options: {
-                allowHTTP1: true,
-                key,
-                cert
-            }
-        }),
         TransactionModule,
         TypeOrmModule.withConnection({
             name: 'xx',
@@ -347,11 +342,20 @@ const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
             repositories: ['./repositories/**/*.ts'],
         })
     ],
+    providers: [
+        provideService(
+            useRouter(),
+            useHttpTransport({
+                majorVersion: 2,
+                serverOpts: { allowHTTP1: true, key, cert } as any,
+                listenOpts: { port: 3000 }
+            })
+        )
+    ],
     declarations: [
         UserController,
         RoleController
-    ],
-    bootstrap: HttpServer
+    ]
 })
 export class Http2ServerModule {
 
@@ -485,6 +489,89 @@ export class UserRepository extends Repository<User> {
 
 ```
 
+
+
+## microservice client, module `@tsdi/client`
+Microservice client framework with interceptors, discovery, load balancing, circuit breaker, and retry support.
+
+### Client Timeout
+
+Configure request timeout per client:
+
+```ts
+import { provideClient, withTimeout, withFeatures } from '@tsdi/client';
+import { withHttpTransport } from '@tsdi/service';
+
+// via dedicated feature
+provideClient(
+    withTimeout(1000),
+    withHttpTransport({ url: 'http://localhost:3000' })
+);
+
+// via combined feature builder
+provideClient(
+    withFeatures({ timeout: 1000 }),
+    withHttpTransport({ url: 'http://localhost:3000' })
+);
+```
+
+The timeout interceptor works for all protocol clients (HTTP, WS, TCP, gRPC, AMQP, MQTT, CoAP, etc.) through the shared handler pipeline.
+
+## microservice service, module `@tsdi/service`
+Microservice service framework with router, guards, interceptors, body parsing, content negotiation, and API constraints.
+
+### API Timeout
+
+Set timeout per route or globally:
+
+```ts
+import { Controller, Get, Post, useFeatures, useRouter } from '@tsdi/service';
+
+// Route-level timeout (overrides global)
+@Controller('/api')
+class MyController {
+    @Get('/slow', { timeout: 200 })
+    slowEndpoint() {
+        // Returns 504 if execution exceeds 200ms
+        return new Promise(resolve => setTimeout(() => resolve({ done: true }), 500));
+    }
+
+    @Get('/normal')
+    normalEndpoint() {
+        return { ok: true };
+    }
+}
+
+// Global timeout for all routes
+useFeatures({ timeout: 1000 })
+```
+
+- Route-level `timeout` overrides the global default
+- Set `timeout: false` on a route to disable global timeout for that route
+
+### API Rate Limit
+
+Limit request rate per route or globally:
+
+```ts
+// Route-level rate limit
+@Controller('/api')
+class MyController {
+    @Post('/submit', { rateLimit: { limit: 10, windowMs: 60000 } })
+    submit(@RequestBody() body: any) {
+        return { received: body };
+    }
+}
+
+// Global rate limit for all routes
+useFeatures({ rateLimit: { limit: 100, windowMs: 60000 } })
+```
+
+- Returns HTTP 429 when limit is exceeded
+- Default key uses `x-forwarded-for` or remote IP address for HTTP
+- Custom `key(input, context)` function supported in `ApiRateLimitOptions`
+- Route-level `rateLimit` overrides the global default
+- Set `rateLimit: false` on a route to disable global rate limit for that route
 
 
 ## repository, module `@tsdi/repository`
@@ -977,7 +1064,8 @@ Documentation is available on the
 * [@tsdi/logger document](https://github.com/zhouhoujun/tsioc/tree/master/packages/logger).
 * [@tsdi/common document](https://github.com/zhouhoujun/tsioc/tree/master/packages/common).
 * [@tsdi/core document](https://github.com/zhouhoujun/tsioc/tree/master/packages/core).
-* [@tsdi/endpoints document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport).
+* [@tsdi/client document](https://github.com/zhouhoujun/tsioc/tree/master/packages/microservices/client).
+* [@tsdi/service document](https://github.com/zhouhoujun/tsioc/tree/master/packages/microservices/service).
 * [@tsdi/amqp document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-amqp).
 * [@tsdi/coap document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-coap).
 * [@tsdi/http document](https://github.com/zhouhoujun/tsioc/tree/master/packages/transport-http).
@@ -1007,7 +1095,8 @@ Documentation is available on the
 [@tsdi/logger](https://www.npmjs.com/package/@tsdi/logger)
 [@tsdi/common](https://www.npmjs.com/package/@tsdi/common)
 [@tsdi/core](https://www.npmjs.com/package/@tsdi/core)
-[@tsdi/endpoints](https://www.npmjs.com/package/@tsdi/endpoints)
+[@tsdi/client](https://www.npmjs.com/package/@tsdi/client)
+[@tsdi/service](https://www.npmjs.com/package/@tsdi/service)
 [@tsdi/amqp](https://www.npmjs.com/package/@tsdi/amqp)
 [@tsdi/coap](https://www.npmjs.com/package/@tsdi/coap)
 [@tsdi/http](https://www.npmjs.com/package/@tsdi/http)

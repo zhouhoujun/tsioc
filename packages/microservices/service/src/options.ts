@@ -128,8 +128,41 @@ export interface CorsOptions extends FeatureInterceptorOptions {
     maxAge?: number | string;
 }
 
+/**
+ * API rate limit options.
+ * API 限流选项
+ */
+export interface ApiRateLimitOptions {
+    /**
+     * Maximum number of requests allowed within the window.
+     * 窗口期内最大请求数
+     */
+    limit: number;
+
+    /**
+     * Time window in milliseconds.
+     * Default: 60000 (1 minute).
+     * 限流时间窗口（毫秒），默认 60000（1 分钟）
+     */
+    windowMs?: number;
+
+    /**
+     * Custom key function to identify the client.
+     * Uses x-forwarded-for or remote address for HTTP, falls back to 'global'.
+     * 自定义限流 key 函数，默认使用 x-forwarded-for 或远程地址
+     */
+    key?: (input: any, context: RequestContext) => string;
+
+    /**
+     * Error message when rate limit is exceeded.
+     * 超过限流时的错误消息
+     */
+    message?: string;
+}
+
 export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {
     timeout?: number;
+    rateLimit?: boolean | ApiRateLimitOptions;
     requestVaildators?: ProvdierOf<VaildatorLike<Incoming, TContext>>[];
     responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, TContext>>[];
     logger?: boolean;

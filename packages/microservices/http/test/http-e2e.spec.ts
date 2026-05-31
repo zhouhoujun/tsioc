@@ -4,10 +4,10 @@ import { LoggerModule } from '@tsdi/logger';
 import { provideService, useRouter, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, MESSAGE_ROUTERS } from '@tsdi/service';
 import { useHttpTransport, HttpFileResult } from '../src/server';
 import { withHttpTransport } from '../src/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout, withFeatures } from '@tsdi/client';
 import { HttpClient } from '../src/client/client';
 import { HttpRequest } from '../src/client/request';
-import { lastValueFrom } from 'rxjs';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
 import * as path from 'node:path';
@@ -664,5 +664,284 @@ describe('HTTP error handling', () => {
     it('should return 405 for method mismatch', async () => {
         const response = await request('POST', '/api/test/info');
         expect([404, 405]).toContain(response.status);
+    });
+});
+
+// ----- HTTP client timeout -----
+const TIMEOUT_PORT = 21500;
+
+@Controller('/slow')
+class SlowController {
+    @Get('/delayed')
+    delayed() {
+        return new Promise(resolve => setTimeout(() => resolve({ done: true }), 200));
+    }
+
+    @Get('/very-slow', { timeout: 20 })
+    verySlow() {
+        return new Promise(resolve => setTimeout(() => resolve({ done: true }), 200));
+    }
+
+    @Post('/submit-rate-limited', { rateLimit: { limit: 1, windowMs: 1000 } })
+    submitLimited(@RequestBody() body: any) {
+        return { received: body };
+    }
+}
+
+describe('HTTP client timeout via withTimeout()', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [SlowController],
+        providers: [
+            provideService(useRouter(),
+                useHttpTransport({ listenOpts: { port: TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true })),
+            provideClient(
+                withTimeout(20),
+                withHttpTransport({ url: `http://127.0.0.1:${TIMEOUT_PORT}`, asDefault: true }))
+        ]
+    })
+    class TimeoutModule { }
+
+    let ctx: ApplicationContext;
+    let client: HttpClient;
+
+    before(async () => {
+        ctx = await Application.run(TimeoutModule);
+        client = ctx.get(HttpClient);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    it('should timeout on slow response', async () => {
+        const result: any = await lastValueFrom(
+            client.get('/slow/delayed', { observe: 'response' as any })
+                .pipe(catchError(err => of({ error: err })))
+        );
+        expect(result.error).toBeDefined();
+    });
+});
+
+describe('HTTP client timeout via withFeatures()', () => {
+    const FEAT_TIMEOUT_PORT = 21501;
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [SlowController],
+        providers: [
+            provideService(useRouter(),
+                useHttpTransport({ listenOpts: { port: FEAT_TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true })),
+            provideClient(
+                withFeatures({ timeout: 20 }),
+                withHttpTransport({ url: `http://127.0.0.1:${FEAT_TIMEOUT_PORT}`, asDefault: true }))
+        ]
+    })
+    class FeatTimeoutModule { }
+
+    let ctx: ApplicationContext;
+    let client: HttpClient;
+
+    before(async () => {
+        ctx = await Application.run(FeatTimeoutModule);
+        client = ctx.get(HttpClient);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    it('should timeout on slow response', async () => {
+        const result: any = await lastValueFrom(
+            client.get('/slow/delayed', { observe: 'response' as any })
+                .pipe(catchError(err => of({ error: err })))
+        );
+        expect(result.error).toBeDefined();
+    });
+});
+
+describe('HTTP service route timeout', () => {
+    const ROUTE_TIMEOUT_PORT = 21502;
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [SlowController],
+        providers: [provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: ROUTE_TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true }))]
+    })
+    class RouteTimeoutModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(RouteTimeoutModule);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: ROUTE_TIMEOUT_PORT,
+                path: targetPath,
+                method,
+                headers: { accept: 'application/json' }
+            }, res => {
+                let body = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('should return timeout on slow route with route-level timeout', async () => {
+        const response = await request('GET', '/slow/very-slow');
+        expect(response.status).toBe(504);
+        const parsed = JSON.parse(response.body);
+        expect(parsed.message).toContain('timeout');
+    });
+});
+
+describe('HTTP service rate limit', () => {
+    const RATE_PORT = 21503;
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [SlowController],
+        providers: [provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: RATE_PORT, host: '127.0.0.1' }, asDefault: true }))]
+    })
+    class RateLimitModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(RateLimitModule);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    function request(method: string, targetPath: string, body?: string): Promise<{ status: number; body: string }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: RATE_PORT,
+                path: targetPath,
+                method,
+                headers: { 'content-type': 'application/json', 'accept': 'application/json' }
+            }, res => {
+                let b = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => b += chunk);
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body: b }));
+            });
+            req.on('error', reject);
+            if (body) req.write(body);
+            req.end();
+        });
+    }
+
+    it('should allow first request and reject second request within window', async () => {
+        const first = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
+        expect(first.status).toBe(200);
+
+        const second = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
+        expect(second.status).toBe(429);
+    });
+});
+
+// ----- HTTP pipe parameter conversion -----
+const PIPE_PORT = 21510;
+
+@Controller('/pipes')
+class PipeTestController {
+    @Get('/convert')
+    convert(
+        @RequestParam('age', { pipe: 'int' }) age: number,
+        @RequestParam('enabled', { pipe: 'boolean' }) enabled: boolean
+    ) {
+        return { age, enabled, types: { age: typeof age, enabled: typeof enabled } };
+    }
+
+    @Get('/defaults')
+    defaults(
+        @RequestParam('page', { nullable: true, pipe: 'int' }) page: number = 1,
+        @RequestParam('size', { nullable: true, pipe: 'int' }) size: number = 20,
+        @RequestParam('sort', { nullable: true }) sort: string = 'name'
+    ) {
+        return { page, size, sort };
+    }
+
+    @Get('/int-validate')
+    intValidate(@RequestParam('val', { pipe: 'int' }) val: number) {
+        return { val, isNumber: typeof val === 'number' };
+    }
+}
+
+describe('HTTP pipe parameter conversion', () => {
+    @Module({
+        imports: [LoggerModule],
+        declarations: [PipeTestController],
+        providers: [provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: PIPE_PORT, host: '127.0.0.1' }, asDefault: true }))]
+    })
+    class PipeModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(PipeModule);
+    });
+    after(async () => { if (ctx) await ctx.close(); });
+
+    function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: PIPE_PORT,
+                path: targetPath,
+                method,
+                headers: { accept: 'application/json' }
+            }, res => {
+                let body = '';
+                res.setEncoding('utf8');
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('should convert query params via pipe: int and boolean', async () => {
+        const res = await request('GET', '/pipes/convert?age=25&enabled=true');
+        expect(res.status).toBe(200);
+        const data = JSON.parse(res.body);
+        expect(data.age).toBe(25);
+        expect(typeof data.age).toBe('number');
+        expect(data.enabled).toBe(true);
+        expect(typeof data.enabled).toBe('boolean');
+    });
+
+    it('should apply default values when query params omitted', async () => {
+        const res = await request('GET', '/pipes/defaults');
+        expect(res.status).toBe(200);
+        const data = JSON.parse(res.body);
+        expect(data.page).toBe(1);
+        expect(data.size).toBe(20);
+        expect(data.sort).toBe('name');
+    });
+
+    it('should handle partial query params with defaults', async () => {
+        const res = await request('GET', '/pipes/defaults?page=5&sort=email');
+        expect(res.status).toBe(200);
+        const data = JSON.parse(res.body);
+        expect(data.page).toBe(5);
+        expect(data.size).toBe(20);
+        expect(data.sort).toBe('email');
+    });
+
+    it('should validate int param type', async () => {
+        const res = await request('GET', '/pipes/int-validate?val=42');
+        expect(res.status).toBe(200);
+        const data = JSON.parse(res.body);
+        expect(data.val).toBe(42);
+        expect(data.isNumber).toBe(true);
     });
 });

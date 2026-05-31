@@ -6,6 +6,7 @@ import {
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions, ClientFeature, ClientFeatureFn, ClientFeatureKind, ClientFeatureLike, ClientOptions, ClientTransportFeature } from './options';
+import { requestTimeoutInterceptor } from './interceptors/timeout';
 
 
 
@@ -156,6 +157,27 @@ export function withRetry(options?: boolean | RetryOptions): ClientFeatureFn<Cli
 }
 
 /**
+ * Adds timeout interceptor to the micro client.
+ * 添加超时拦截器到微服务客户端
+ * @see {@link provideClient}
+ * @publicApi
+ */
+export function withTimeout(timeout?: number): ClientFeatureFn<ClientFeatureKind.Interceptors> {
+    return (config) => {
+        const tk = getClientInterceptorsToken(config);
+        return makeClientFeature(
+            ClientFeatureKind.Interceptors,
+            [{
+                provide: tk,
+                useValue: requestTimeoutInterceptor(timeout ?? 15000),
+                multi: true
+            }],
+            config
+        );
+    }
+}
+
+/**
  * Adds interceptors to the micro client.
  * 添加拦截器到微服务客户端
  * @see {@link provideClient}
@@ -287,6 +309,9 @@ export function withFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Ex
         }
         if (opts.retry) {
             features.push(withRetry(opts.retry)(config));
+        }
+        if (opts.timeout != null) {
+            features.push(withTimeout(opts.timeout)(config));
         }
 
         features.push(withTransfers(...(isArray(opts.transfers) ? opts.transfers : []))(config));
