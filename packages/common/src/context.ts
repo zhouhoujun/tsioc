@@ -1,6 +1,7 @@
 import { Context, ContextToken, Injector, Token, RunContext } from '@tsdi/ioc';
 import { ContentType } from './headers';
 import { MessageAdapter, MessageSection, StatusMessageAdapter } from './MessageAdapter';
+import { OutgoingFactory } from './outgoing.impl';
 
 const CONTENT_LENGTH = new ContextToken<number | null>(() => null);
 const CONTENT_TYPE = new ContextToken<string | null>(() => ContentType.APPL_JSON);
@@ -11,6 +12,18 @@ export const RESPONSE = new ContextToken<any | null>(() => null);
 export const MESSAGE_ADAPTER = new ContextToken<MessageAdapter<any, any> | null>(() => null);
 
 export class RequestContext<TRequest = any, TResponse = any> extends RunContext {
+
+    getResponse<T = TResponse>(): T {
+        let response = this.get(RESPONSE) as T | null;
+        if (!response) {
+            const factory = this.get(OutgoingFactory, null);
+            response = factory?.create({}) as T;
+            if (response) {
+                this.set(RESPONSE, response);
+            }
+        }
+        return response as T;
+    }
 
     getMessageAdapter<TReq = TRequest, TRes = TResponse>(): MessageAdapter<TReq, TRes> | null {
         return this.get(MESSAGE_ADAPTER);

@@ -7,7 +7,7 @@ import { CoapClient, COAP_SERV_INTERCEPTORS } from '../src';
 import { CoapMessageAdapter } from '../src/server/message-adapter';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { provideService, useBodyParser, useContent, useJson, useRouter } from '@tsdi/service';
+import { provideService, useBodyParser, useJson, useRouter, useStatics } from '@tsdi/service';
 import { useCoapTransport } from '../src/server';
 import { provideClient } from '@tsdi/client';
 import { withCoapTransport } from '../src/client';
@@ -23,7 +23,7 @@ import { withCoapTransport } from '../src/client';
         provideService(
             useRouter(),
             useRouter({ microservice: true }),
-            useContent(),
+            useStatics(),
             useJson(),
             useBodyParser(),
             useCoapTransport({ microservice: false as any, asDefault: true })

@@ -22,6 +22,12 @@
       "@tsdi/agent-providers/*": [
         "packages/agents/agent-providers/*"
       ],
+      "@tsdi/common/client": [
+        "packages/services/client"
+      ],
+      "@tsdi/endpoints": [
+        "packages/services/endpoints"
+      ],
       "@tsdi/*": [
         "packages/*",
         "packages/microservices/*",

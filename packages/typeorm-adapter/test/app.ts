@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { useHttpTransport, withHttpTransport } from '@tsdi/http';
-import { provideService, useRouter, useContent, useJson } from '@tsdi/service';
+import { provideService, useRouter, useJson, useStatics } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
@@ -73,7 +73,7 @@ export class MockBootTest {
     providers: [
         provideService(
             useRouter(),
-            useContent(),
+            useStatics(),
             useJson(),
             useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
         ),
@@ -102,7 +102,7 @@ export class MockBootHttpTest {
     providers: [
         provideService(
             useRouter(),
-            useContent(),
+            useStatics(),
             useJson(),
             useHttpTransport({ listenOpts: { port: 3001, host: '127.0.0.1' }, asDefault: true }),
         ),
@@ -131,7 +131,7 @@ export class MockBootLoadTest {
     providers: [
         provideService(
             useRouter(),
-            useContent(),
+            useStatics(),
             useJson(),
             useHttpTransport({ listenOpts: { port: 3002, host: '127.0.0.1' }, asDefault: true }),
         ),
@@ -158,7 +158,7 @@ export class MockTransBootTest {
     providers: [
         provideService(
             useRouter(),
-            useContent(),
+            useStatics(),
             useJson(),
             useHttpTransport({
                 listenOpts: { port: 3003, host: '127.0.0.1' },

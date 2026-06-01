@@ -9,9 +9,10 @@ import { catchError, throwError, timeout } from 'rxjs';
  */
 export function requestTimeoutInterceptor(milliseconds: number): RequestInterceptorFn {
     return (input: any, next: RequestHandlerFn, context: RequestContext) => {
+        const timeoutMs = input?.timeout ?? milliseconds;
         return next(input, context)
             .pipe(
-                timeout(milliseconds),
+                timeout(timeoutMs),
                 catchError(err => {
                     if (err.name == 'TimeoutError') {
                         const factory = context.get(ResponseFactory);

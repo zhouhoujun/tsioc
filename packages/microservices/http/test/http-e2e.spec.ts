@@ -720,7 +720,7 @@ describe('HTTP client timeout via withTimeout()', () => {
     });
 });
 
-describe('HTTP client timeout via withFeatures()', () => {
+describe('HTTP client timeout via withTimeout() alias replacement', () => {
     const FEAT_TIMEOUT_PORT = 21501;
 
     @Module({
@@ -730,7 +730,7 @@ describe('HTTP client timeout via withFeatures()', () => {
             provideService(useRouter(),
                 useHttpTransport({ listenOpts: { port: FEAT_TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withFeatures({ timeout: 20 }),
+                withTimeout(20),
                 withHttpTransport({ url: `http://127.0.0.1:${FEAT_TIMEOUT_PORT}`, asDefault: true }))
         ]
     })

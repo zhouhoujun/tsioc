@@ -158,7 +158,7 @@
 //                 withInterceptors(BigFileInterceptor),
 //                 useJson(),
 //                 withBodyparser(),
-//                 useContent(),
+//                 useStatics(),
 //                 useRouter(),
 //                 useRouter({microservice: true}),
 //                 useLogger(),
