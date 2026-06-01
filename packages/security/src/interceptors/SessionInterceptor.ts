@@ -1,6 +1,6 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
-import { OutgoingMessage, RequestHandler, RequestInterceptor } from '@tsdi/common';
-import { Middleware, AbstractRequestContext } from '@tsdi/service';
+import { OutgoingMessage, RequestHandler, RequestInterceptor, RequestContext, IncomingMessage } from '@tsdi/common';
+import { Middleware } from '@tsdi/service';
 import { defer, finalize, mergeMap, Observable } from 'rxjs';
 
 
@@ -51,11 +51,11 @@ export class SessionManager {
 }
 
 @Injectable()
-export class SessionInterceptor implements Middleware<AbstractRequestContext>, RequestInterceptor<AbstractRequestContext, OutgoingMessage> {
+export class SessionInterceptor implements Middleware<RequestContext>, RequestInterceptor<IncomingMessage, OutgoingMessage, RequestContext> {
 
     constructor(private sessionManager: SessionManager) { }
 
-    intercept(input: AbstractRequestContext, next: RequestHandler, context?: any): Observable<any> {
+    intercept(input: RequestContext, next: RequestHandler, context: RequestContext): Observable<any> {
 
         return defer(() => this.loadSession(input)).pipe(
             mergeMap(() => next.handle(input, context)),
@@ -65,7 +65,7 @@ export class SessionInterceptor implements Middleware<AbstractRequestContext>, R
         )
     }
 
-    async invoke(ctx: AbstractRequestContext, next: () => Promise<void>): Promise<void> {
+    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         const session = await this.loadSession(ctx);
         try {
             await next();
@@ -76,8 +76,8 @@ export class SessionInterceptor implements Middleware<AbstractRequestContext>, R
         }
     }
 
-    async loadSession(ctx: AbstractRequestContext) {
-        let sessionId = ctx.request.cookies?.sessionId;
+    async loadSession(ctx: RequestContext) {
+        let sessionId = ctx.getMessageAdapter().read('cookie', 'sessionId');
         let session: Session | null;
         if (sessionId) {
             session = await this.sessionManager.get(sessionId);

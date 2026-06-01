@@ -11,10 +11,15 @@ export type MessageSection =
     | 'topic'
     | 'status'
     | 'statusMessage'
-    | 'error';
+    | 'error'
+    | 'cookie';
 
 @Abstract()
 export abstract class MessageAdapter<TRequest = any, TResponse = any> {
+
+    abstract get req(): TRequest;
+    abstract get res(): TResponse;
+
     abstract bind(request: TRequest, response?: TResponse): void;
 
     abstract read(section: MessageSection, name?: string): any;
@@ -59,6 +64,9 @@ export abstract class StatusMessageAdapter<
     TResponse = any,
     TStatus = any
 > extends MessageAdapter<TRequest, TResponse> {
+    get req(): TRequest { return this.request; }
+    get res(): TResponse { return this.response; }
+
     abstract get request(): TRequest;
     abstract get response(): TResponse;
     abstract get status(): TStatus;

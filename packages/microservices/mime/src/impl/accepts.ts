@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString, lang } from '@tsdi/ioc';
-import { HeaderAdapter, Incoming, MimeAdapter, AcceptsPriority } from '@tsdi/common';
+import { getHeader, Incoming, MimeAdapter, AcceptsPriority } from '@tsdi/common';
 
 
 
@@ -31,115 +31,6 @@ export class AcceptsPriorityImpl implements AcceptsPriority {
         const specify = accepts.map((a, i) => this.getPriority(a, accepted, i, specifyFn));
         if (!specify || !specify.length) return [];
         return this.sortSpecify(specify).map(p => accepts[specify!.indexOf(p)])
-    }
-
-
-    /**
-     * Check if the given `type(s)` is acceptable, returning
-     * the best match when true, otherwise `false`, in which
-     * case you should respond with 406 "Not Acceptable".
-     *
-     * The `type` value may be a single mime type string
-     * such as "application/json", the extension name
-     * such as "json" or an array `["json", "html", "text/plain"]`. When a list
-     * or array is given the _best_ match, if any is returned.
-     *
-     * Examples:
-     *
-     *     // Accept: text/html
-     *     this.accepts('html');
-     *     // => "html"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('html');
-     *     // => "html"
-     *     this.accepts('text/html');
-     *     // => "text/html"
-     *     this.accepts('json', 'text');
-     *     // => "json"
-     *     this.accepts('application/json');
-     *     // => "application/json"
-     *
-     *     // Accept: text/*, application/json
-     *     this.accepts('image/png');
-     *     this.accepts('png');
-     *     // => false
-     *
-     *     // Accept: text/*;q=.5, application/json
-     *     this.accepts('html', 'json');
-     *     // => "json"
-     *
-     * @param {String|Array} type(s)...
-     * @return {String|Array|false}
-     * @api public
-     */
-
-    accepts(incoming: Incoming, headerAdapter: HeaderAdapter, mimeAdapter: MimeAdapter|undefined, ...args: string[]): string | string[] | false {
-        const accepts = String(headerAdapter.getAccept?.(incoming) ?? incoming.getHeader?.('accept') ?? '') || '*';
-        if (!args.length) {
-            return accepts ?? false
-        }
-
-        const medias = args.map(a => a.indexOf('/') === -1 ? mimeAdapter?.lookup(a) ?? a : a).filter(a => isString(a)) as string[];
-        return lang.first(this.priority(accepts, medias, 'media')) ?? false
-    }
-    /**
-    * Return accepted encodings or best fit based on `encodings`.
-    *
-    * Given `Accept-Encoding: gzip, deflate`
-    * an array sorted by quality is returned:
-    *
-    *     ['gzip', 'deflate']
-    *
-    * @param {String|Array} encoding(s)...
-    * @return {String|Array}
-    * @api public
-    */
-    acceptsEncodings(incoming: Incoming, headerAdapter: HeaderAdapter, ...encodings: string[]): string | string[] | false {
-        const accepts = String(headerAdapter.getAcceptEncoding?.(incoming) ?? incoming.getHeader?.('accept-encoding') ?? '') || '*';
-        if (!encodings.length) {
-            return accepts
-        }
-        return lang.first(this.priority(accepts, encodings, 'encodings')) ?? false
-    }
-    /**
-     * Return accepted charsets or best fit based on `charsets`.
-     *
-     * Given `Accept-Charset: utf-8, iso-8859-1;q=0.2, utf-7;q=0.5`
-     * an array sorted by quality is returned:
-     *
-     *     ['utf-8', 'utf-7', 'iso-8859-1']
-     *
-     * @param {String|Array} charset(s)...
-     * @return {String|Array}
-     * @api public
-     */
-    acceptsCharsets(incoming: Incoming, headerAdapter: HeaderAdapter, ...charsets: string[]): string | string[] | false {
-        const accepts = String(headerAdapter.getAcceptCharset?.(incoming) ?? incoming.getHeader?.('accept-charset') ?? '') || '*';
-        if (!charsets.length) {
-            return accepts
-        }
-        return lang.first(this.priority(accepts, charsets, 'charsets')) ?? false
-    }
-
-    /**
-     * Return accepted languages or best fit based on `langs`.
-     *
-     * Given `Accept-Language: en;q=0.8, es, pt`
-     * an array sorted by quality is returned:
-     *
-     *     ['es', 'pt', 'en']
-     *
-     * @param {String|Array} lang(s)...
-     * @return {Array|String}
-     * @api public
-     */
-    acceptsLanguages(incoming: Incoming, headerAdapter: HeaderAdapter, ...langs: string[]): string | string[] {
-        const accepts = String(headerAdapter.getAcceptLanguage?.(incoming) ?? incoming.getHeader?.('accept-language') ?? '') || '*';
-        if (!langs.length) {
-            return accepts
-        }
-        return lang.first(this.priority(accepts, langs, 'lang')) ?? false
     }
 
 

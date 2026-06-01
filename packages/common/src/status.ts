@@ -145,26 +145,3 @@ export const statusMessage = {
   511: "Network Authentication Required"
 }
 
-import { Abstract } from '@tsdi/ioc';
-
-@Abstract()
-export abstract class StatusAdapter<TStatus = any> {
-  abstract readonly ok: TStatus;
-  abstract readonly found: TStatus;
-  abstract readonly notFound: TStatus;
-  abstract readonly serverError: TStatus;
-  abstract readonly none: TStatus;
-  abstract readonly noContent: TStatus;
-  abstract readonly gatewayTimeout: TStatus;
-  abstract isStatus(status: TStatus): boolean;
-  abstract isOk(status: TStatus): boolean;
-  abstract isNotFound(status: TStatus): boolean;
-  abstract isEmpty(status: TStatus): boolean;
-  abstract isEmptyException(status: TStatus): boolean;
-  abstract isRedirect(status: TStatus): boolean;
-  abstract isRequestFailed(status: TStatus): boolean;
-  abstract isServerError(status: TStatus): boolean;
-  abstract isRetry(status: TStatus): boolean;
-  abstract redirectBodify(status: TStatus, method?: string): boolean;
-  abstract redirectDefaultMethod(): string;
-}
