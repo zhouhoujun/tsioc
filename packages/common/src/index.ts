@@ -7,7 +7,6 @@ export * from './params';
 export * from './pattern';
 export * from './status';
 export * from './utils';
-export * from './headers.impl';
 
 export * from './events';
 
