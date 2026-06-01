@@ -1,5 +1,5 @@
-import { isString } from '@tsdi/ioc';
-import { Outgoing, RequestContext, WritableLike } from '@tsdi/common';
+import { ContextToken, isString } from '@tsdi/ioc';
+import { Outgoing, RequestContext, WritableLike, REQUEST } from '@tsdi/common';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
 import { TLSSocket } from 'node:tls';
@@ -32,6 +32,13 @@ export type HttpRequestMessage<TBody = any> = HttpServRequest & {
 
 export type HttpHandlerOutput = WritableLike<Outgoing> | string | Buffer | object | null | undefined;
 
+export const HTTP_RESPONSE = new ContextToken<HttpServResponse | null>(() => null);
+export const HTTP_COOKIES = new ContextToken<HttpCookieStore | null>(() => null);
+export const HTTP_SESSION = new ContextToken<any | null>(() => null);
+export const HTTP_PROXY_ENABLED = new ContextToken<boolean>(() => false);
+export const HTTP_PROXY_IP_HEADER = new ContextToken<string>(() => X_FORWARDED_FOR);
+export const HTTP_MAX_IPS_COUNT = new ContextToken<number>(() => 0);
+
 export const CONTENT_TYPE = 'content-type';
 export const IF_MODIFIED_SINCE = 'if-modified-since';
 export const IF_NONE_MATCH = 'if-none-match';
@@ -59,12 +66,12 @@ export class HttpContextUtil {
         vary(field: string): void;
         flushHeaders(): void;
     } {
-        const req = context.get('request') as HttpServRequest;
-        const res = context.get('response') as HttpServResponse;
+        const req = context.get(REQUEST) as HttpServRequest;
+        const res = context.get(HTTP_RESPONSE) as HttpServResponse;
 
-        const proxy = !!context.get('proxy');
-        const proxyIpHeader = (context.get('proxyIpHeader') as string) || X_FORWARDED_FOR;
-        const maxIpsCount = (context.get('maxIpsCount') as number) || 0;
+        const proxy = context.get(HTTP_PROXY_ENABLED);
+        const proxyIpHeader = context.get(HTTP_PROXY_IP_HEADER);
+        const maxIpsCount = context.get(HTTP_MAX_IPS_COUNT);
 
         const getIps = (): string[] => {
             const val = (proxy && req.headers[proxyIpHeader]) as string;
@@ -88,7 +95,7 @@ export class HttpContextUtil {
         };
 
         const getFresh = (): boolean => {
-            const method = (context.get('method') as string)?.toUpperCase();
+            const method = req.method?.toUpperCase();
             if (method !== 'GET' && method !== 'HEAD') return false;
             const status = res.statusCode;
             if ((status >= 200 && status < 300) || status === 304) {

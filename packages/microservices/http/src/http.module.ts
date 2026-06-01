@@ -15,7 +15,6 @@ import { HttpCookieInterceptor } from './server/interceptors/cookie';
 import { HttpBodyParserInterceptor } from './server/interceptors/bodyparser';
 import { HttpContentInterceptor } from './server/interceptors/content';
 import { HttpJsonInterceptor } from './server/interceptors/json';
-import { StaticFileInterceptor } from './server/static-file.interceptor';
 
 @Module({
     providers: [
@@ -42,7 +41,6 @@ import { StaticFileInterceptor } from './server/static-file.interceptor';
         HttpBodyParserInterceptor,
         HttpContentInterceptor,
         HttpJsonInterceptor,
-        StaticFileInterceptor,
     ]
 })
 export class HttpModule {

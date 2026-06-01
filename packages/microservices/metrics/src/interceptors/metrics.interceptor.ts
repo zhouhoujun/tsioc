@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { isRequestCapableMessageAdapter, RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
+import { RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { finalize, tap, catchError } from 'rxjs/operators';
 import { RequestCounter } from '../counters/request.counter';
@@ -20,8 +20,7 @@ export class MetricsInterceptor implements RequestInterceptor<ReadableLike<Incom
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<WritableLike<Outgoing>> {
         const start = Date.now();
-        const adapter = context.getMessageAdapter();
-        const request = isRequestCapableMessageAdapter(adapter) ? adapter.getRequest() as any : undefined;
+        const request = input as any;
         const method = request?.method || 'UNKNOWN';
         const path = request?.pattern || request?.url || '/';
 

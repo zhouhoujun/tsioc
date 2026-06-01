@@ -3,6 +3,7 @@ import { GET, HEAD, OPTIONS, RequestInterceptor, RequestHandler, ForbiddenExcept
 import { Observable, throwError } from 'rxjs';
 import * as CSRFTokens from 'csrf';
 import * as http from 'node:http';
+import { HttpHandlerOutput, HttpRequestMessage, HTTP_SESSION } from '../http-context';
 
 @Abstract()
 export abstract class CsrfOptions {
@@ -36,10 +37,8 @@ export class CsrfTokensFactory {
     }
 }
 
-const SESSION_TOKEN = 'session';
-
 @Injectable()
-export class Csrf implements RequestInterceptor {
+export class Csrf implements RequestInterceptor<HttpRequestMessage, HttpHandlerOutput, RequestContext> {
 
     private options: CsrfOptions;
     private tokens: Tokens;
@@ -49,9 +48,10 @@ export class Csrf implements RequestInterceptor {
         this.tokens = factory.create(this.options);
     }
 
-    intercept(input: any, next: RequestHandler, context: RequestContext): Observable<any> {
-        const session = context.get(SESSION_TOKEN) as { secret?: string } | undefined;
-        const method = context.get('method') as string;
+    intercept(input: HttpRequestMessage, next: RequestHandler<HttpRequestMessage, HttpHandlerOutput, RequestContext>, context: RequestContext): Observable<HttpHandlerOutput> {
+        const session = context.get(HTTP_SESSION) as { secret?: string } | undefined;
+        const req = input;
+        const method = req.method as string;
 
         if (!session || this.options.excludedMethods?.indexOf(method) !== -1) {
             return next.handle(input, context);
@@ -61,13 +61,12 @@ export class Csrf implements RequestInterceptor {
             session.secret = this.tokens.secretSync();
         }
 
-        const req = context.get('request') as http.IncomingMessage;
         const reqHeaders = req.headers;
         const bodyToken = (input as any)?.body && typeof (input as any).body._csrf === 'string'
             ? (input as any).body._csrf
             : false;
 
-        const query = context.get('query') as Record<string, any> | undefined;
+        const query = req.query as Record<string, any> | undefined;
         const token = bodyToken
             || (!this.options.disableQuery && query?._csrf)
             || reqHeaders[CSRF_TOKEN] as string
@@ -78,7 +77,7 @@ export class Csrf implements RequestInterceptor {
         if (!token) {
             return throwError(() => new ForbiddenException(
                 typeof this.options.invalidTokenMessage === 'function'
-                    ? this.options.invalidTokenMessage(req)
+                    ? this.options.invalidTokenMessage(req as http.IncomingMessage)
                     : this.options.invalidTokenMessage
             ));
         }
@@ -86,7 +85,7 @@ export class Csrf implements RequestInterceptor {
         if (!this.tokens.verify(session.secret, token)) {
             return throwError(() => new ForbiddenException(
                 typeof this.options.invalidTokenMessage === 'function'
-                    ? this.options.invalidTokenMessage(req)
+                    ? this.options.invalidTokenMessage(req as http.IncomingMessage)
                     : this.options.invalidTokenMessage
             ));
         }

@@ -241,7 +241,7 @@ export function withFeatures(options?: FeatureOptions): FeatureFn<Exclude<Featur
         }
 
         if (opts.content) {
-            features.push(withContent(isBoolean(opts.content) ? undefined : opts.content)(config));
+            features.push(withStatics(isBoolean(opts.content) ? undefined : opts.content)(config));
         }
         if (opts.bodyparser) {
             features.push(withBodyparser(isBoolean(opts.bodyparser) ? undefined : opts.bodyparser)(config))
@@ -447,18 +447,18 @@ export function withSession(options?: SessionOptions): FeatureFn<FeatureKind.Ses
 
 
 /**
- * 
- * Adds content interceptor to the configuration of the `Service`
+ *
+ * Adds static file serving interceptor to the configuration of the `Service`
  * instance.
  *
  * @see {@link RequestInterceptorLike}
  * @see {@link provideService}
  * @publicApi
- * 
- * @param options 
- * @returns 
+ *
+ * @param options
+ * @returns
  */
-export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Content> {
+export function withStatics(options?: ContentOptions): FeatureFn<FeatureKind.Content> {
     return (config) => {
         const token = getInterceptorsToken(config);
         return makeFeature(
@@ -477,6 +477,9 @@ export function withContent(options?: ContentOptions): FeatureFn<FeatureKind.Con
         );
     }
 }
+
+/** @deprecated use withStatics */
+export const withContent = withStatics;
 
 /**
  * 

@@ -1,26 +1,35 @@
 import { Inject, Injectable, Optional, token } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import {
-    FileAdapter, FileStats, FindOptions, GET, HEAD, Incoming, IStats, NotFoundException,
-    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming, RESPONSE
+    FileAdapter, GET, HEAD, Incoming, NotFoundException,
+    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming
 } from '@tsdi/common'
-import { Observable, from, mergeMap, throwError } from 'rxjs';
+import { Observable, from, mergeMap, of, throwError } from 'rxjs';
+import { HttpFileResult } from '../file-result';
+import { HttpStaticOptions, isHttpFileResult, normalizeStaticOptions, resolveFileResult, resolveStaticFile } from '../static-file';
 
+export interface StaticsOptions<TStats = any> extends HttpStaticOptions {
+    defer?: boolean;
+}
 
+/** @deprecated use StaticsOptions */
+export type ContentOptions<TStats = any> = StaticsOptions<TStats>;
 
-export const CONTENT_OPTIONS = token<ContentOptions>('CONTENT_OPTIONS');
+export const STATICS_OPTIONS = token<StaticsOptions>('STATICS_OPTIONS');
+/** @deprecated use STATICS_OPTIONS */
+export const CONTENT_OPTIONS = STATICS_OPTIONS;
+
 /**
  * static content resources.
  */
 @Injectable()
 export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming>> {
 
-    private options: ContentOptions;
+    private options: StaticsOptions;
 
-    constructor(@Optional() @Inject(CONTENT_OPTIONS) options: ContentOptions) {
+    constructor(@Optional() @Inject(STATICS_OPTIONS) options: StaticsOptions) {
         this.options = { ...defOpts, ...options };
     }
-
 
     intercept(input: ReadableLike<Incoming>, next: Handler<ReadableLike<Incoming>, any>, context: RequestContext): Observable<any> {
         const path = (input as UrlIncoming).url || (input as TopicIncoming).topic || input.pattern;
@@ -29,87 +38,68 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         }
 
         const options = this.options;
-        const fileAdapter = context.get(FileAdapter);
-        if (options.defer) {
-            return next.handle(input, context)
+        const staticOptions = normalizeStaticOptions(options as HttpStaticOptions | HttpStaticOptions[] | boolean);
+        if (!options.defer) {
+            return from(resolveStaticFile(input, context, staticOptions))
                 .pipe(
-                    mergeMap(async (res: Outgoing) => {
-                        const file = await this.find(path, res, fileAdapter, options)
-                        if (!file) {
-                            return throwError(() => new NotFoundException())
+                    mergeMap(staticResponse => {
+                        if (staticResponse) {
+                            return of(staticResponse);
                         }
-                        return file;
+                        return next.handle(input, context)
+                            .pipe(
+                                mergeMap(response => from(this.mapResponse(response, input, context)))
+                            );
                     })
-                )
-        } else {
-            const adapter = context.getMessageAdapter();
-            const response = context.get(RESPONSE) as Outgoing<any>;
-            return from(this.find(path, response as Outgoing<any>, fileAdapter, options))
-                .pipe(
-                    mergeMap(file => {
-                        if (!file || !file.filename) return next.handle(input, context)
-                        return this.send(context, file);
-                    })
-                )
+                );
         }
-    }
 
-    protected async send(context: RequestContext, file: FileStats<IStats>) {
-        const adapter = context.getMessageAdapter();
-        const res = context.get(RESPONSE) as Outgoing<any>;
-        if (!res) {
-            return null;
-        }
-        if (this.options.setHeaders) {
-            this.options.setHeaders(res, file.filename, file.stats);
-        }
         const fileAdapter = context.get(FileAdapter);
-        res.setHeader('content-length', file.stats.size);
-        if (!res.hasHeader('last-modified')) {
-            res.setHeader('last-modified', file.stats.mtime.toUTCString())
-        }
-
-        if (!res.hasHeader('cache-control')) {
-            const maxAge = this.options.maxAge ?? 0;
-            const directives = [`max-age=${(maxAge / 1000 | 0)}`];
-            if (this.options.immutable) {
-                directives.push('immutable')
-            }
-            res.setHeader('cache-control', directives.join(','))
-        }
-        if (!res.hasHeader('content-type')) {
-            res.setHeader('content-type', fileAdapter.extname(file.filename, file.encodingExt))
-        }
-
-        res.body = fileAdapter.read(file.filename);
-        return res;
-
+        return next.handle(input, context)
+            .pipe(
+                mergeMap(async (res: Outgoing) => {
+                    const file = await this.find(path, res, fileAdapter, options);
+                    if (!file) {
+                        return throwError(() => new NotFoundException());
+                    }
+                    return file;
+                })
+            );
     }
 
-    protected find(path: string, res: Outgoing, fileAdapter: FileAdapter, options: ContentOptions) {
-        if (res.statusCode && !(res.error instanceof NotFoundException)) return Promise.resolve(null);
+    protected find(path: string, res: Outgoing, fileAdapter: FileAdapter, options: StaticsOptions) {
+        if (res.statusCode && !(res.error instanceof NotFoundException)) {
+            return Promise.resolve(null);
+        }
         return fileAdapter.find(path, options);
     }
 
-
+    private async mapResponse(response: any, input: ReadableLike<Incoming>, context: RequestContext): Promise<any> {
+        if (isHttpFileResult(response)) {
+            return resolveFileResult(response, input, context);
+        }
+        if (response?.body instanceof HttpFileResult) {
+            const resolved = await resolveFileResult(response.body, input, context);
+            const headerNames = response.getHeaderNames?.() ?? [];
+            headerNames.forEach((name: string) => {
+                if (!resolved.hasHeader(name)) {
+                    resolved.setHeader(name, response.getHeader(name));
+                }
+            });
+            if (response.statusCode && !resolved.statusCode) {
+                resolved.statusCode = response.statusCode;
+            }
+            return resolved;
+        }
+        return response;
+    }
 }
 
-/**
- * Static Content options.
- */
-
-export interface ContentOptions<TStats = any> extends FindOptions {
-    setHeaders?: (outgoing: Outgoing, path: string, stats: TStats) => void;
-    defer?: boolean;
-}
-
-
-export const defOpts: ContentOptions = {
+export const defOpts: StaticsOptions = {
     root: 'public',
     index: 'index.html',
     maxAge: 0,
     format: true,
     defer: false,
     immutable: false,
-
-}
+};

@@ -1,17 +1,18 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestInterceptor, RequestHandler, RequestContext } from '@tsdi/common';
+import { RequestContext, RequestHandler, RequestInterceptor, RESPONSE } from '@tsdi/common';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { InjectLog, Logger } from '@tsdi/logger';
+import { HttpHandlerOutput, HttpRequestMessage } from '../http-context';
 
 @Injectable()
-export class HttpLoggerInterceptor implements RequestInterceptor {
+export class HttpLoggerInterceptor implements RequestInterceptor<HttpRequestMessage, HttpHandlerOutput, RequestContext> {
 
     @InjectLog() logger!: Logger;
 
-    intercept(input: any, next: RequestHandler, context: RequestContext): Observable<any> {
-        const url = context.get('url') || '/';
-        const method = context.get('method') || 'GET';
-        const req = context.get('request') as any;
+    intercept(input: HttpRequestMessage, next: RequestHandler<HttpRequestMessage, HttpHandlerOutput, RequestContext>, context: RequestContext): Observable<HttpHandlerOutput> {
+        const req = input;
+        const url = req?.url || '/';
+        const method = req?.method || 'GET';
         const userAgent = req?.headers?.['user-agent'] ?? 'unknown';
 
         this.logger.info(`[HTTP] ${method} ${url} - ${userAgent}`);
@@ -21,7 +22,7 @@ export class HttpLoggerInterceptor implements RequestInterceptor {
         return next.handle(input, context).pipe(
             tap((response: any) => {
                 const duration = Date.now() - startTime;
-                const res = context.get('response') as any;
+                const res = context.get(RESPONSE) as any;
                 const statusCode = res?.statusCode ?? 200;
                 const length = typeof response === 'string' || Buffer.isBuffer(response)
                     ? response.length

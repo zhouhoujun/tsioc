@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { CoapClient, COAP_SERV_INTERCEPTORS } from '../src';
-import { CoapMessageAdapter } from '../src/server/message-reader';
+import { CoapMessageAdapter } from '../src/server/message-adapter';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
 import { provideService, useBodyParser, useContent, useJson, useRouter } from '@tsdi/service';
@@ -98,6 +98,9 @@ describe('CoapMessageAdapter', () => {
         expect(adapter.read('query', 'q')).toBe('qq');
         expect(adapter.read('path', 'id')).toBe('42');
         expect(adapter.read('topic')).toBe('/device/adapter');
+        expect(adapter.read('status')).toBe('2.05');
+        expect(adapter.read('statusMessage')).toBe('Content');
+        expect(adapter.read('error')).toBe(error);
         expect(outgoing.statusCode).toBe('2.05');
         expect(outgoing.statusMessage).toBe('Content');
         expect(outgoing.getHeader('x-message-adapter')).toBe('coap');

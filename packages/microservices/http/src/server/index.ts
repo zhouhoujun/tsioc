@@ -5,3 +5,4 @@ export * from './file-result';
 export * from './multipart';
 export * from './interceptors';
 export * from './http-context';
+export * from './message-adapter';

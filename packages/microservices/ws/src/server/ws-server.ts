@@ -182,7 +182,6 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             [SOCKET, ws],
             [REQUEST, request],
             [RESPONSE, outgoing],
-            ['request', request]
         ]);
 
         // Handle messages through service handler

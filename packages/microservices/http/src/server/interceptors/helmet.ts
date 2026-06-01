@@ -2,9 +2,7 @@ import { Abstract, ArgumentException, Injectable, Nullable } from '@tsdi/ioc';
 import { RequestInterceptor, RequestHandler, RequestContext } from '@tsdi/common';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
-
-type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
+import { HttpHandlerOutput, HttpRequestMessage, HttpServResponse, HTTP_RESPONSE } from '../http-context';
 
 export type XFrameAction = 'DENY' | 'ALLOW-FROM' | 'SAMEORIGIN';
 
@@ -46,7 +44,7 @@ const X_XSS_PROTECTION = 'x-xss-protection';
 const IEExp = /msie\s*(\d{1,2})/i;
 
 @Injectable()
-export class HelmetMiddleware implements RequestInterceptor {
+export class HelmetMiddleware implements RequestInterceptor<HttpRequestMessage, HttpHandlerOutput, RequestContext> {
 
     private options: HelmetOptions;
 
@@ -54,9 +52,9 @@ export class HelmetMiddleware implements RequestInterceptor {
         this.options = { ...defOpts, ...options };
     }
 
-    intercept(input: any, next: RequestHandler, context: RequestContext): Observable<any> {
-        const res = context.get('response') as HttpServResponse;
-        const req = context.get('request') as http.IncomingMessage;
+    intercept(input: HttpRequestMessage, next: RequestHandler<HttpRequestMessage, HttpHandlerOutput, RequestContext>, context: RequestContext): Observable<HttpHandlerOutput> {
+        const res = context.get(HTTP_RESPONSE) as HttpServResponse;
+        const req = input;
 
         res.setHeader(X_DNS_PREFETCH_CONTROL, this.options.dnsPrefetch!);
 
@@ -69,7 +67,7 @@ export class HelmetMiddleware implements RequestInterceptor {
         res.setHeader(X_DOWNLOAD_OPTIONS, 'noopen');
         res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
 
-        this.setXssProtection(res, req, this.options.xssProtection ?? {});
+        this.setXssProtection(res, req as http.IncomingMessage, this.options.xssProtection ?? {});
 
         return from([input]).pipe(mergeMap(() => next.handle(input, context)));
     }

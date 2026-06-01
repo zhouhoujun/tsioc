@@ -118,7 +118,6 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
             [RESPONSE, outgoing],
-            ['topic', topic],
         ]);
         context.setPayload(requestData);
 

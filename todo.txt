@@ -1,28 +1,10 @@
-1. @packages/microservices/ 基于client的provideClient 和 service的prvoideService，提供的feature
-  特征及特征抽象拦截器，统一终端和服务提供入口（withSession(), withJson(), withBodyParser(), withContent(),
-  withCors(), withHealth() 等等等），让各协议最终实现拦截器默认的拦截器及MessageReader; 
-2. 继续实现CoAP， Http协议服务，并完成功通过能测试代码；
-3. 继续完成其他协议的功能测试，并让验证测试通过；
-4. HeaderAdapter, StatusAdapter移除了, 让具体协议直接通过MessageReader 读取
-5. @packages/services/ 下的所有包已经过时，后面会删除， 不能直接引用这里面的代码，只参考
+
+1. RequestContext 不要用 字符串当作 token 存取数据
+2. 移除isResponseStateCapableMessageAdapter 判断， 是否继承 StatusMessageAdapter 即可， 各协议具体实现，更不需要判断 
+3. MessageSection 添加 'status' | 'statusMessage' | 'error'， 通过adapter 去读取消息状态，错误消息
+4. 确保测试验证通过
 
 
-●  我再看 Service.close() 的关闭钩子，确认 ctx.close() 里到底是不是 server 先关住了。
-     
-  Thought for 23s, read 3 files (ctrl+o to expand)
-
-● 我怀疑点已经缩到一个更小范围了：**HttpClient 很可能不是通过 invocation/runtime 托管创建的，所以它的 @Shutdown close() 根本没被注册，ctx.close() 时 HTTP/2 client session 没关，随后 HttpServer.onShutdown()
-   的 server.close() 就一直等着这个连接释放。
-
-● 测试还没完成。这次复验和上次一样，npm test 卡在 packages/microservices/http/test/http-e2e.spec.ts 的 HTTP/2 via microservice client pipeline 之后，进程一直是 running，不是断言失败。
-
-  目前更像是HTTP/2 连接句柄没有在 ctx.close() 时被释放，而不只是“HTTP 服务不能退出”这么宽泛。更具体地说，我现在怀疑 ctx.get(HttpClient) 拿到的 HttpClient 没有注册到应用的 shutdown 生命周期里，所以它的
-  HttpClient.onShutdown() 没执行，留下了 ClientHttp2Session；随后 packages/microservices/http/src/server/http-server.ts:103 的 server.close() 就一直等连接断开。
-
-  我下一步会直接沿这个点查 HttpClient 的创建/托管方式，确认为什么 @Shutdown close() 没被触发，然后修这个退出问题并再跑整包。
-
-
-我按你的方向把 HTTP client 接入 IoC 生命周期，然后重新复验整包测试。
 
 
 参考 @../hermes-agent/ 和 @../zeroclaw/ 这两个智能体， 继续完善 @packages/agents/agent-tools/  的工具，并参考添加这个两个智能体已有的工具

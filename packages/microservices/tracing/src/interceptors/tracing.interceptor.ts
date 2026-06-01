@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { isHeaderCapableMessageAdapter, RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike, REQUEST, RESPONSE } from '@tsdi/common';
+import { RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { finalize, tap, catchError } from 'rxjs/operators';
 import { Tracer } from '../tracer';
@@ -15,13 +15,13 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<WritableLike<Outgoing>> {
         const adapter = context.getMessageAdapter();
-        const request = context.get(REQUEST) as any;
+        const request = input as any;
         const method = request?.method || 'UNKNOWN';
         const path = request?.pattern || request?.url || '/';
 
         // Extract trace context from headers
         const headers: Record<string, string> = {};
-        const allHeaders = isHeaderCapableMessageAdapter(adapter) ? adapter.getHeaders() : {};
+        const allHeaders = adapter?.getHeaders() ?? {};
         for (const [key, value] of Object.entries(allHeaders)) {
             if (typeof value === 'string') {
                 headers[key.toLowerCase()] = value;
@@ -57,11 +57,8 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
         // Inject trace context into response headers
         const responseHeaders: Record<string, string> = {};
         this.tracer.injectContext(span.context(), responseHeaders);
-        const response = context.get(RESPONSE) as any;
         for (const [key, value] of Object.entries(responseHeaders)) {
-            if (response?.setHeader) {
-                response.setHeader(key, value);
-            }
+            context.setHeader(key, value);
         }
 
         return next.handle(input, context).pipe(

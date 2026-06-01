@@ -134,9 +134,6 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
             [RESPONSE, outgoing],
-            ['exchange', exchange],
-            ['routingKey', routingKey],
-            ['content', content],
         ]);
         context.setPayload(requestData);
 

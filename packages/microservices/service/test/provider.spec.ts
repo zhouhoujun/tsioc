@@ -10,14 +10,14 @@ import {
     ServiceFeatureKind,
     SessionInterceptor,
     SERVICE_BODY_PARSER_OPTIONS,
-    SERVICE_CONTENT_OPTIONS,
+    SERVICE_STATICS_OPTIONS,
     SERVICE_COOKIE_OPTIONS,
     SERVICE_CORS_OPTIONS,
     SERVICE_JSON_OPTIONS,
     SERVICE_SESSION_OPTIONS,
     getServiceInterceptorsToken,
     useBodyParser,
-    useContent,
+    useStatics,
     useCookie,
     useCors,
     useJson,
@@ -97,14 +97,14 @@ describe('service provider', () => {
     it('registers default interceptors and option tokens', () => {
         const config = createConfig();
         const interceptorToken = getServiceInterceptorsToken(config);
-        const content = useContent()(config) as any;
+        const content = useStatics()(config) as any;
         const json = useJson()(config) as any;
         const body = useBodyParser()(config) as any;
         const session = useSession()(config) as any;
         const cookie = useCookie()(config) as any;
         const cors = useCors()(config) as any;
 
-        expect(content.providers.some((provider: any) => provider.provide === SERVICE_CONTENT_OPTIONS)).toBe(true);
+        expect(content.providers.some((provider: any) => provider.provide === SERVICE_STATICS_OPTIONS)).toBe(true);
         expect(content.providers.some((provider: any) => provider.provide === interceptorToken && provider.useExisting === ContentInterceptor)).toBe(true);
         expect(json.providers.some((provider: any) => provider.provide === SERVICE_JSON_OPTIONS)).toBe(true);
         expect(json.providers.some((provider: any) => provider.provide === interceptorToken && provider.useExisting === JsonInterceptor)).toBe(true);

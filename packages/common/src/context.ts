@@ -1,18 +1,14 @@
 import { Context, ContextToken, Injector, Token, RunContext } from '@tsdi/ioc';
-import { MessageSection } from '@tsdi/core';
 import { ContentType } from './headers';
-import { MessageAdapter } from './MessageAdapter';
-
+import { MessageAdapter, MessageSection, StatusMessageAdapter } from './MessageAdapter';
 
 const CONTENT_LENGTH = new ContextToken<number | null>(() => null);
 const CONTENT_TYPE = new ContextToken<string | null>(() => ContentType.APPL_JSON);
 const CONTENT_ENCODING = new ContextToken<string | null>(() => null);
 
-
 export const REQUEST = new ContextToken<any | null>(() => null);
 export const RESPONSE = new ContextToken<any | null>(() => null);
 export const MESSAGE_ADAPTER = new ContextToken<MessageAdapter<any, any> | null>(() => null);
-
 
 export class RequestContext<TRequest = any, TResponse = any> extends RunContext {
 
@@ -41,7 +37,10 @@ export class RequestContext<TRequest = any, TResponse = any> extends RunContext 
     }
 
     setStatus(code: any, message?: string) {
-        this.getMessageAdapter()?.setStatus(code, message);
+        const adapter = this.getMessageAdapter();
+        if (adapter instanceof StatusMessageAdapter) {
+            adapter.setStatus(code, message);
+        }
     }
 
     writeError(error: any) {

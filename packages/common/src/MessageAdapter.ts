@@ -1,6 +1,17 @@
 import { Abstract } from '@tsdi/ioc';
 import { Header } from './headers';
-import type { MessageSection } from '@tsdi/core';
+
+export type MessageSection =
+    'headers'
+    | 'payload'
+    | 'body'
+    | 'params'
+    | 'query'
+    | 'path'
+    | 'topic'
+    | 'status'
+    | 'statusMessage'
+    | 'error';
 
 @Abstract()
 export abstract class MessageAdapter<TRequest = any, TResponse = any> {
@@ -14,11 +25,32 @@ export abstract class MessageAdapter<TRequest = any, TResponse = any> {
 
     abstract removeHeader(name: string): void;
 
-    abstract setStatus(code: any, message?: string): void;
-
     abstract writeError(error: any): void;
-}
 
+    getHeaders(): Record<string, any> {
+        return {};
+    }
+
+    getHeader(_name: string): any {
+        return undefined;
+    }
+
+    accepts(..._args: string[]): string | string[] | false {
+        return false;
+    }
+
+    acceptsEncodings(..._encodings: string[]): string | string[] | false {
+        return false;
+    }
+
+    acceptsCharsets(..._charsets: string[]): string | string[] | false {
+        return false;
+    }
+
+    acceptsLanguages(..._langs: string[]): string | string[] | false {
+        return false;
+    }
+}
 
 
 @Abstract()
@@ -37,15 +69,22 @@ export abstract class StatusMessageAdapter<
     abstract commit(): void;
     abstract destroy(): Promise<void>;
 
-    // Header helpers — used by security interceptors                                                                                                                                           
-    abstract getHeader(name: string): string | undefined;
-    abstract setHeader(name: string, value: string | string[]): void;
+    abstract setStatus(code: any, message?: string): void;
+    abstract getStatus(): any;
+    abstract getStatusMessage(): any;
+    abstract getError(): any;
+    abstract getBody(): any;
+    abstract hasHeader(name: string): boolean;
+    abstract isHeadersSent(): boolean;
+
+    // Header helpers — used by security interceptors
+    abstract getHeader(name: string): any;
+    abstract setHeader(name: string, value: Header): void;
     abstract removeHeader(name: string): void;
 
-    // Query params — used by security (jwt, oauth, oauth2)                                                                                                                                     
+    // Query params — used by security (jwt, oauth, oauth2)
     abstract get query(): Record<string, any>;
 }
-
 
 @Abstract()
 export abstract class RestfulRequestAdapter<
@@ -72,47 +111,3 @@ export abstract class RestfulRequestAdapter<
     abstract getHeader(name: string): string | undefined;
 }
 
-export interface HeaderCapableMessageAdapter {
-    getHeaders(): Record<string, any>;
-    getHeader(name: string): any;
-}
-
-export interface ResponseStateCapableMessageAdapter {
-    getStatus(): any;
-    getStatusMessage(): any;
-    getError(): any;
-    getBody(): any;
-    hasHeader(name: string): boolean;
-    isHeadersSent(): boolean;
-}
-
-export interface AcceptsCapableMessageAdapter {
-    accepts(...args: string[]): string | string[] | false;
-    acceptsEncodings(...encodings: string[]): string | string[] | false;
-    acceptsCharsets(...charsets: string[]): string | string[] | false;
-    acceptsLanguages(...langs: string[]): string | string[] | false;
-}
-
-export function isHeaderCapableMessageAdapter(adapter: unknown): adapter is HeaderCapableMessageAdapter {
-    return !!adapter
-        && typeof (adapter as HeaderCapableMessageAdapter).getHeader === 'function'
-        && typeof (adapter as HeaderCapableMessageAdapter).getHeaders === 'function';
-}
-
-export function isResponseStateCapableMessageAdapter(adapter: unknown): adapter is ResponseStateCapableMessageAdapter {
-    return !!adapter
-        && typeof (adapter as ResponseStateCapableMessageAdapter).getStatus === 'function'
-        && typeof (adapter as ResponseStateCapableMessageAdapter).getStatusMessage === 'function'
-        && typeof (adapter as ResponseStateCapableMessageAdapter).getError === 'function'
-        && typeof (adapter as ResponseStateCapableMessageAdapter).getBody === 'function'
-        && typeof (adapter as ResponseStateCapableMessageAdapter).hasHeader === 'function'
-        && typeof (adapter as ResponseStateCapableMessageAdapter).isHeadersSent === 'function';
-}
-
-export function isAcceptsCapableMessageAdapter(adapter: unknown): adapter is AcceptsCapableMessageAdapter {
-    return !!adapter
-        && typeof (adapter as AcceptsCapableMessageAdapter).accepts === 'function'
-        && typeof (adapter as AcceptsCapableMessageAdapter).acceptsEncodings === 'function'
-        && typeof (adapter as AcceptsCapableMessageAdapter).acceptsCharsets === 'function'
-        && typeof (adapter as AcceptsCapableMessageAdapter).acceptsLanguages === 'function';
-}

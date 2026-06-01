@@ -7,7 +7,6 @@ import {
 import { TransportParameter } from './resolver';
 import { PipeTransform } from '../pipes/pipe';
 
-
 export function missingPipeException<T>(parameter: Parameter<T>, type?: AbstractType, method?: string | symbol) {
     let message = `missing pipe to transform argument ${parameter.name ?? parameter.propertyKey ?? parameter.provider?.toString() ?? parameter.type?.toString()} type`;
     if (method) {
@@ -18,7 +17,6 @@ export function missingPipeException<T>(parameter: Parameter<T>, type?: Abstract
     }
     return new ArgumentException(message)
 }
-
 
 const MUTIL_RESOLVE_HANDLER = new ContextToken<RuntimeHandler>(() => null!);
 export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, PipeTransform, TransportParameter]> {
@@ -57,7 +55,6 @@ export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, P
     }
     return scope;
 }
-
 
 /**
  * Create message resolve interceptors.
@@ -107,7 +104,7 @@ export function createMessageResolveInterceptors(): ResolveInterceptorFn<Transpo
                 ? (context as any).getMessageAdapter()
                 : null;
             const readMessage = parameter.scope && messageAdapter && isFunction(messageAdapter.read)
-                ? (section: string, name?: string) => messageAdapter.read(section, name)
+                ? (section: string, name?: string) => messageAdapter.read(section as any, name)
                 : undefined;
 
             let payload: any;
@@ -177,9 +174,6 @@ export function createMessageResolveInterceptors(): ResolveInterceptorFn<Transpo
 export function createPayloadResolveInterceptors(): ResolveInterceptorFn<TransportParameter>[] {
     return createMessageResolveInterceptors();
 }
-
-
-
 
 /**
  * is list or not.

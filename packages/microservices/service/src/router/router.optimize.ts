@@ -1,8 +1,8 @@
 import {
     Type, composeHandlers, Exception, getClassRef, HandlerFn, hasProps, Injector, Invocation,
-    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TokenOf, isToken, InjectUtil, DecorDefine
+    isArray, isType, isFunction, isRegExp, isString, isNil, ModuleRef, OnDestroy, TokenOf, isToken, InjectUtil, DecorDefine
 } from '@tsdi/ioc';
-import { Pattern, PatternFormatter, BadRequestException, NotFoundException, isResponseStateCapableMessageAdapter, RequestHandler, Transport, RequestContext, ReadableLike, Incoming, UrlIncoming, TopicIncoming, REQUEST, RESPONSE } from '@tsdi/common'
+import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext, ReadableLike, Incoming, UrlIncoming, TopicIncoming, REQUEST, StatusMessageAdapter } from '@tsdi/common'
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { AssetRoute, Route, ROUTES, Routes } from './route';
 import { MappingDef, RouteHanlder, RouteMappingMetadata, RoutePatterns, Router } from './router';
@@ -180,8 +180,14 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             context.set(REQUEST, req as Incoming);
         }
         context.setPayload(req as Incoming);
-        const res = context.get(RESPONSE) as any;
-        if (res && (res.headersSent || (res.statusCode && !(res.error instanceof NotFoundException)))) return of(null);
+        const adapter = context.getMessageAdapter();
+        if (adapter instanceof StatusMessageAdapter) {
+            const status = adapter.getStatus();
+            const error = adapter.getError();
+            if (adapter.isHeadersSent() || (!isNil(status) && !(error instanceof NotFoundException))) {
+                return of(null);
+            }
+        }
 
         return defer(async () => {
             const route = await this.getRoute(req, context);

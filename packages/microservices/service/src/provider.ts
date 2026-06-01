@@ -164,7 +164,7 @@ export function useFeatures(options?: ServiceFeatureOptions): ServiceFeatureFn<E
             features.push(useBodySerializer(isBoolean(opts.bodySerializer) ? undefined : opts.bodySerializer)(config));
         }
         if (opts.content) {
-            features.push(useContent(isBoolean(opts.content) ? undefined : opts.content)(config));
+            features.push(useStatics(isBoolean(opts.content) ? undefined : opts.content)(config));
         }
         if (opts.json) {
             features.push(useJson(isBoolean(opts.json) ? undefined : opts.json)(config));
@@ -439,22 +439,25 @@ export function useBodySerializer(options?: any): ServiceFeatureFn<ServiceFeatur
 }
 
 /**
- * Adds content negotiation to micro service.
+ * Adds static file serving to micro service.
  * @publicApi
  */
-export function useContent(options?: any): ServiceFeatureFn<ServiceFeatureKind.Content> {
+export function useStatics(options?: any): ServiceFeatureFn<ServiceFeatureKind.Content> {
     return (config) => {
         const resolved = resolveFeatureOptions(options);
         return makeServiceFeature(
             ServiceFeatureKind.Content,
             [
-                { provide: SERVICE_CONTENT_OPTIONS, useValue: resolved.featureOptions },
+                { provide: SERVICE_STATICS_OPTIONS, useValue: resolved.featureOptions },
                 createFeatureInterceptorProvider(config, ContentInterceptor, resolved.interceptor, resolved.multiOrder ?? 0)
             ],
             config
         );
     };
 }
+
+/** @deprecated use useStatics */
+export const useContent = useStatics;
 
 /**
  * Adds JSON serialization to micro service.
@@ -532,7 +535,9 @@ export const SERVICE_REGISTRATION_OPTIONS = token<RegistrationOptions>('SERVICE_
 export const SERVICE_HEALTH_OPTIONS = token<HealthOptions>('SERVICE_HEALTH_OPTIONS');
 export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>('SERVICE_GRACEFUL_SHUTDOWN_OPTIONS');
 
-export const SERVICE_CONTENT_OPTIONS = token<any>('SERVICE_CONTENT_OPTIONS');
+export const SERVICE_STATICS_OPTIONS = token<any>('SERVICE_STATICS_OPTIONS');
+/** @deprecated use SERVICE_STATICS_OPTIONS */
+export const SERVICE_CONTENT_OPTIONS = SERVICE_STATICS_OPTIONS;
 export const SERVICE_BODY_PARSER_OPTIONS = token<any>('SERVICE_BODY_PARSER_OPTIONS');
 export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZER_OPTIONS');
 export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');

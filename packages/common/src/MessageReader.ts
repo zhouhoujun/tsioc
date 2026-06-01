@@ -1,1 +1,1 @@
-export { MessageSection } from '@tsdi/core';
+export { MessageSection } from './MessageAdapter';

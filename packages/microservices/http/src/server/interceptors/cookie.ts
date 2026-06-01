@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { parseCookieValue } from '@tsdi/common/http';
-import { HttpHandlerOutput, HttpRequestMessage, HttpServRequest, HttpServResponse } from '../http-context';
+import { HttpHandlerOutput, HttpRequestMessage, HttpServRequest, HttpServResponse, HTTP_COOKIES, HTTP_RESPONSE } from '../http-context';
 
 export interface CookieStore {
     get(name: string): string | undefined;
@@ -24,8 +24,8 @@ type HttpCookieRequest = HttpRequestMessage & { cookies?: CookieStore };
 @Injectable()
 export class HttpCookieInterceptor implements RequestInterceptor<HttpRequestMessage, HttpHandlerOutput, RequestContext> {
     intercept(input: HttpRequestMessage, next: RequestHandler<HttpRequestMessage, HttpHandlerOutput, RequestContext>, context: RequestContext): Observable<HttpHandlerOutput> {
-        const request = context.get('request') as HttpCookieRequest;
-        const response = context.get('response') as HttpServResponse;
+        const request = input as HttpCookieRequest;
+        const response = context.get(HTTP_RESPONSE) as HttpServResponse;
         const header = this.getCookieHeader(request);
         const cookies: CookieStore = {
             get: (name: string) => header ? (parseCookieValue(header, name) ?? undefined) : undefined,
@@ -42,7 +42,7 @@ export class HttpCookieInterceptor implements RequestInterceptor<HttpRequestMess
         };
 
         request.cookies = cookies;
-        context.set('cookies', cookies);
+        context.set(HTTP_COOKIES, cookies);
         return next.handle(input, context);
     }
 

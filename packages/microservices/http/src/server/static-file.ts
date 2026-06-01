@@ -1,4 +1,4 @@
-import { isAcceptsCapableMessageAdapter, isHeaderCapableMessageAdapter, isResponseStateCapableMessageAdapter, BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common'
+import { BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common'
 import { REQUEST, RESPONSE } from '@tsdi/common';
 import { basename } from 'node:path';
 import { HttpFileResult, HttpFileResultOptions } from './file-result';
@@ -8,6 +8,8 @@ export interface HttpStaticOptions extends FindOptions {
     setHeaders?: (outgoing: Outgoing, path: string, stats: IStats) => void;
     headers?: Record<string, Header>;
     disposition?: 'inline' | 'attachment';
+    immutable?: boolean;
+    maxAge?: number;
 }
 
 interface ByteRange {
@@ -42,13 +44,15 @@ export async function resolveStaticFile(input: any, context: RequestContext, opt
         try {
             const file = await fileAdapter.find(pathname, {
                 ...option,
-                acceptsEncodings: (...encodings: string[]) => isAcceptsCapableMessageAdapter(adapter) ? adapter.acceptsEncodings(...encodings) : false,
+                acceptsEncodings: (...encodings: string[]) => adapter?.acceptsEncodings(...encodings) ?? false,
             });
             if (file?.filename) {
                 return createFileOutgoing(context, file, method, {
                     disposition: option.disposition,
                     headers: option.headers,
                     setHeaders: option.setHeaders,
+                    immutable: option.immutable,
+                    maxAge: option.maxAge,
                 });
             }
         } catch (err) {
@@ -101,7 +105,7 @@ export function isHttpFileResult(value: any): value is HttpFileResult {
     return value instanceof HttpFileResult;
 }
 
-function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, method: string, options: HttpFileResultOptions & { setHeaders?: (outgoing: Outgoing, path: string, stats: IStats) => void } = {}): Outgoing<any> {
+function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, method: string, options: HttpFileResultOptions & { setHeaders?: (outgoing: Outgoing, path: string, stats: IStats) => void, immutable?: boolean, maxAge?: number } = {}): Outgoing<any> {
     const outgoing = context.get(OutgoingFactory).create({});
     const mimeAdapter = context.get(MimeAdapter);
     const fileAdapter = context.get(FileAdapter);
@@ -114,7 +118,12 @@ function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, me
         outgoing.setHeader('last-modified', file.stats.mtime.toUTCString());
     }
     if (!outgoing.hasHeader('cache-control')) {
-        outgoing.setHeader('cache-control', 'max-age=0');
+        const maxAge = options.maxAge ?? 0;
+        const directives = [`max-age=${(maxAge / 1000 | 0)}`];
+        if (options.immutable) {
+            directives.push('immutable');
+        }
+        outgoing.setHeader('cache-control', directives.join(','));
     }
     if (!outgoing.hasHeader('accept-ranges')) {
         outgoing.setHeader('accept-ranges', 'bytes');

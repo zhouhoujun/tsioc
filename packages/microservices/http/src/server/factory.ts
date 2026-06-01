@@ -1,4 +1,4 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
 import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, RESPONSE } from '@tsdi/common'
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
@@ -7,14 +7,13 @@ import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServic
 import { MimeModule } from '@tsdi/mime';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { HttpBodyParserInterceptor } from './interceptors/bodyparser';
-import { HttpContentInterceptor } from './interceptors/content';
+import { HttpContentInterceptor, STATICS_OPTIONS } from './interceptors/content';
 import { HttpJsonInterceptor } from './interceptors/json';
 import { HttpSessionInterceptor } from './interceptors/session';
 import { HttpCookieInterceptor } from './interceptors/cookie';
 import { Cors } from './interceptors/cors';
-import { StaticFileInterceptor } from './static-file.interceptor';
-import { HttpMessageAdapter } from './message-reader';
-import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from '@tsdi/service';
+import { HttpMessageAdapter } from './message-adapter';
+import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -66,8 +65,14 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             multiOrder: -1000
         } as any] : []),
         ...(config.static ? [{
+            provide: STATICS_OPTIONS,
+            useValue: config.static === true ? {} : config.static,
+        }, {
+            provide: SERVICE_STATICS_OPTIONS,
+            useValue: config.static === true ? {} : config.static,
+        }, {
             provide: config.features.interceptorsToken,
-            useFactory: () => new StaticFileInterceptor(config.static),
+            useExisting: ContentInterceptor,
             multi: true,
             multiOrder: -50
         } as any] : []),

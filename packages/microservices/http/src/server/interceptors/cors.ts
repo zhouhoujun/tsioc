@@ -2,10 +2,8 @@ import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable, Inject 
 import { InternalServerException, HttpStatusCode, RequestInterceptor, RequestHandler, RequestContext } from '@tsdi/common';
 import { defer, lastValueFrom, Observable } from 'rxjs';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
 import { SERVICE_CORS_OPTIONS } from '@tsdi/service';
-
-type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
+import { HttpHandlerOutput, HttpRequestMessage, HttpServResponse, HTTP_RESPONSE } from '../http-context';
 
 /**
  * cors options.
@@ -24,7 +22,7 @@ export abstract class CorsOptions {
 const ORIGIN = 'Origin';
 
 @Injectable()
-export class Cors implements RequestInterceptor {
+export class Cors implements RequestInterceptor<HttpRequestMessage, HttpHandlerOutput, RequestContext> {
 
     private options: Options;
 
@@ -56,9 +54,9 @@ export class Cors implements RequestInterceptor {
         return options as Options;
     }
 
-    intercept(input: any, next: RequestHandler, context: RequestContext): Observable<any> {
-        const res = context.get('response') as HttpServResponse;
-        const req = context.get('request') as http.IncomingMessage;
+    intercept(input: HttpRequestMessage, next: RequestHandler<HttpRequestMessage, HttpHandlerOutput, RequestContext>, context: RequestContext): Observable<HttpHandlerOutput> {
+        const res = context.get(HTTP_RESPONSE) as HttpServResponse;
+        const req = input;
         const requestOrigin = (req.headers[ORIGIN] || req.headers[ORIGIN.toLowerCase()]) as string;
         if (!res.headersSent) {
             vary(res, ORIGIN);
@@ -67,14 +65,14 @@ export class Cors implements RequestInterceptor {
             return next.handle(input, context);
         }
 
-        const method = context.get('method') as string;
+        const method = req.method as string;
 
         return defer(async () => {
             const options = this.options || {};
             let origin: string | undefined;
 
             if (isFunction(options.origin)) {
-                const result = options.origin(req);
+                const result = options.origin(req as http.IncomingMessage);
                 origin = isPromise(result) ? await result : result;
                 if (!origin) {
                     return await lastValueFrom(next.handle(input, context));

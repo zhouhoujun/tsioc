@@ -1,10 +1,9 @@
-import { HttpServer, HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse } from '../src/server';
-import { HttpMessageAdapter } from '../src/server/message-reader';
-import { StaticFileInterceptor } from '../src/server/static-file.interceptor';
+import { HttpServer, HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse, HTTP_COOKIES, HTTP_RESPONSE } from '../src/server';
+import { HttpMessageAdapter } from '../src/server/message-adapter';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
-import { BodyParserInterceptor, ContentInterceptor, Controller, CookieInterceptor, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor } from '@tsdi/service';
+import { BodyParserInterceptor, ContentInterceptor, Controller, CookieInterceptor, CorsInterceptor, JsonInterceptor, Post, RequestBody, SessionInterceptor, SERVICE_STATICS_OPTIONS } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
 import { createInjector, getClassRef } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
@@ -88,15 +87,16 @@ describe('HTTP Microservice', () => {
             expect(feature.providers.some((p: any) => p.provide === CorsInterceptor && p.useClass?.name === 'Cors')).toBe(true);
         });
 
-        it('should register static file interceptor when static config is enabled', () => {
+        it('should register statics through content interceptor when static config is enabled', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 }, static: true });
-            const staticProvider = feature.providers.find((p: any) => p.useFactory && p.multiOrder === -50) as any;
+            const staticProvider = feature.providers.find((p: any) => p.multiOrder === -50) as any;
             expect(staticProvider).toBeDefined();
             expect(staticProvider.provide).toBe(feature.config.features?.interceptorsToken);
-            expect(staticProvider.useFactory()).toBeInstanceOf(StaticFileInterceptor);
+            expect(staticProvider.useExisting).toBe(ContentInterceptor);
+            expect(feature.providers.some((p: any) => p.provide === SERVICE_STATICS_OPTIONS)).toBe(true);
         });
 
-        it('should not register static file interceptor when static config is disabled', () => {
+        it('should not register statics interceptor when static config is disabled', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 } });
             expect(feature.providers.some((p: any) => p.multiOrder === -50)).toBe(false);
         });
@@ -215,6 +215,9 @@ describe('HTTP Microservice', () => {
             expect(adapter.read('params', 'pid')).toBe('p1');
             expect(adapter.read('query', 'q')).toBe('qq');
             expect(adapter.read('path', 'id')).toBe('42');
+            expect(adapter.read('status')).toBe(202);
+            expect(adapter.read('statusMessage')).toBe('Accepted');
+            expect(adapter.read('error')).toBe(error);
             expect(outgoing.statusCode).toBe(202);
             expect(outgoing.statusMessage).toBe('Accepted');
             expect(outgoing.getHeader('x-message-adapter')).toBe('http');
@@ -258,8 +261,7 @@ describe('HTTP Microservice', () => {
             const context = createRequestContext(injector, [
                 [REQUEST, request],
                 [RESPONSE, response],
-                ['request', request],
-                ['response', response]
+                [HTTP_RESPONSE, response]
             ]);
             const next: any = {
                 handle(value: HttpRequestMessage) {
@@ -272,7 +274,7 @@ describe('HTTP Microservice', () => {
             };
 
             interceptor.intercept(request, next, context);
-            const cookies = context.get('cookies') as { get(name: string): string | undefined; set(name: string, value?: string, opts?: Record<string, unknown>): void };
+            const cookies = context.get(HTTP_COOKIES) as { get(name: string): string | undefined; set(name: string, value?: string, opts?: Record<string, unknown>): void };
             cookies.set('token', 'a b', { httpOnly: true, sameSite: 'Lax' });
 
             expect(cookies.get('sid')).toBe('abc');

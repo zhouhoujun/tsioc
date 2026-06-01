@@ -120,8 +120,6 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
             [RESPONSE, outgoing],
-            ['subject', subject],
-            ['content', content],
         ]);
 
         this.handler.handle(requestData as TReq, context)

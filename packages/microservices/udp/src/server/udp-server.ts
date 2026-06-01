@@ -133,7 +133,6 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             [SOCKET, this.socket],
             [REQUEST, requestData],
             [RESPONSE, outgoing],
-            ['rinfo', rinfo],
         ]);
 
         this.handler.handle(requestData as TReq, context)

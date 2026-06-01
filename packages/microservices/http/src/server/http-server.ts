@@ -7,8 +7,8 @@ import {
     StreamAdapter, ContentType, Outgoing, OutgoingFactory, BadRequestException,
     AcceptsPriority, MimeAdapter
 } from '@tsdi/common'
-import { HttpRequestMessage } from './http-context';
-import { HttpMessageAdapter } from './message-reader';
+import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
+import { HttpMessageAdapter } from './message-adapter';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
@@ -156,12 +156,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const context = createRequestContext(this.injector, [
             [REQUEST, request],
             [RESPONSE, outgoing],
-            ['request', request],
-            ['response', res],
-            ['url', url],
-            ['rawUrl', rawUrl],
-            ['method', method],
-            ['headers', req.headers],
+            [HTTP_RESPONSE, res],
         ]);
         const adapter = new HttpMessageAdapter(
             this.injector.get(AcceptsPriority, undefined),

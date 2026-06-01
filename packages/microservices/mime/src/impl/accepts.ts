@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString, lang } from '@tsdi/ioc';
-import { HeaderCapableMessageAdapter, Incoming, MimeAdapter, AcceptsPriority } from '@tsdi/common';
+import { Incoming, MimeAdapter, AcceptsPriority } from '@tsdi/common';
 
 
 

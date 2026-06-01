@@ -1,4 +1,4 @@
-import { getTypeName, Inject, isNumber, isString, promisify, Injectable } from '@tsdi/ioc';
+import { ContextToken, getTypeName, Inject, isNumber, isString, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
@@ -9,6 +9,12 @@ import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
 import { McpServOptions, MCP_SERV_OPTIONS, MCP_BIND_INTERCEPTORS, MCP_BIND_FILTERS, MCP_BIND_GUARDS } from './options';
+
+const MCP_REQUEST = new ContextToken<http.IncomingMessage | null>(() => null);
+const MCP_RESPONSE = new ContextToken<http.ServerResponse | null>(() => null);
+const MCP_METHOD = new ContextToken<string | null>(() => null);
+const MCP_PARAMS = new ContextToken<any>(() => null);
+const MCP_ID = new ContextToken<any>(() => null);
 
 /**
  * MCP (Model Context Protocol) server for microservices.
@@ -134,11 +140,11 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             const context = createRequestContext(this.injector, [
                 [REQUEST, requestData],
                 [RESPONSE, outgoing],
-                ['request', req],
-                ['response', res],
-                ['method', jsonRpcRequest.method],
-                ['params', jsonRpcRequest.params],
-                ['id', jsonRpcRequest.id],
+                [MCP_REQUEST, req],
+                [MCP_RESPONSE, res],
+                [MCP_METHOD, jsonRpcRequest.method],
+                [MCP_PARAMS, jsonRpcRequest.params],
+                [MCP_ID, jsonRpcRequest.id],
             ]);
 
             this.handler.handle(jsonRpcRequest as TReq, context)

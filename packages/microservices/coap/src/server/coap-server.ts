@@ -10,7 +10,7 @@ import { Subject, race, take, takeUntil, mergeMap, isObservable, from, of } from
 import * as coap from 'coap';
 import { CoapServOptions, COAP_SERV_OPTIONS, COAP_BIND_INTERCEPTORS, COAP_BIND_FILTERS, COAP_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
-import { CoapMessageAdapter } from './message-reader';
+import { CoapMessageAdapter } from './message-adapter';
 
 /**
  * CoAP server for microservices.
@@ -96,11 +96,6 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             [SOCKET, req],
             [REQUEST, requestData],
             [RESPONSE, outgoing],
-            ['request', req],
-            ['response', res],
-            ['url', requestData.url],
-            ['method', requestData.method],
-            ['headers', requestData.headers],
         ]);
         const adapter = new CoapMessageAdapter();
         adapter.bind(requestData, res);
