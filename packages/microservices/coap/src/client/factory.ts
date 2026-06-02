@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson } from '@tsdi/common';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson, parseQueryString } from '@tsdi/common';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { COAP_CLIENT_OPTIONS, CoapClientOptions } from './options';
 import { CoapClient } from './client';
@@ -219,7 +219,12 @@ function mapRequestValue(value: any, context: any) {
 function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
     const json: Record<string, any> = {};
     if (request.url) {
-        json.url = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
+        const fullUrl = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
+        const [url, rawQuery] = String(fullUrl).split('?', 2);
+        json.url = url;
+        if (rawQuery) {
+            json.query = parseQueryString(rawQuery);
+        }
     }
     if (request.topic) {
         json.topic = request.topic;
@@ -237,9 +242,9 @@ function serializeRequest(request: any, formatter: PatternFormatter, payloadKey:
         json.headers = request.headers.getHeaders();
     }
     if (request.params) {
-        json.params = request.params;
+        json.params = typeof request.params?.toRecord === 'function' ? request.params.toRecord() : request.params;
     }
-    if (request.query) {
+    if (request.query && !json.query) {
         json.query = request.query;
     }
     if (request.body !== undefined && request.body !== null) {

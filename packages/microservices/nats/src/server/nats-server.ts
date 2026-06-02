@@ -128,7 +128,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (msg.respond) {
-                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
+                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
                     const buf = sc.encode(
                         typeof body === 'string' ? body : JSON.stringify(body)
                     );

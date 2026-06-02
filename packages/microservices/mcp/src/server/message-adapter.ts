@@ -122,8 +122,36 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         this.write(data);
     }
 
-    read(_section: any, _name?: string): any {
-        return undefined;
+    read(section: any, name?: string): any {
+        switch (section) {
+            case 'headers':
+                return name ? this.getHeader(name) : (this.requestData?.headers ?? {});
+            case 'payload':
+            case 'body': {
+                const body = this.requestData?.body ?? this.requestData?.payload;
+                return name ? body?.[name] : body;
+            }
+            case 'params': {
+                const params = this.requestData?.params;
+                return name ? params?.[name] : params;
+            }
+            case 'query': {
+                const query = this.requestData?.query;
+                return name ? query?.[name] : query;
+            }
+            case 'path':
+                return this.requestData?.url;
+            case 'topic':
+                return this.requestData?.method;
+            case 'status':
+                return this.getStatus();
+            case 'statusMessage':
+                return this.getStatusMessage();
+            case 'error':
+                return this.getError();
+            default:
+                return undefined;
+        }
     }
 
     getHeader(name: string): any {

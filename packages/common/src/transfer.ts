@@ -153,6 +153,10 @@ export function useSimpleJson(options?: {
                         mergeMap(rjson => {
                             context.set(REQUEST, rjson);
                             context.setPayload(rjson);
+                            const adapter = context.getMessageAdapter();
+                            if (adapter && typeof (adapter as any).setRequestData === 'function') {
+                                (adapter as any).setRequestData(rjson);
+                            }
                             return next(rjson, context)
                         }),
                         map(res => JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space))

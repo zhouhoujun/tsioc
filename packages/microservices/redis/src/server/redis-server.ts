@@ -114,7 +114,7 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (this.publisher) {
-                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
+                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
                     const msg = typeof body === 'string' ? body : JSON.stringify(body);
                     this.publisher.publish(channel + ':response', msg);
                 }

@@ -8,7 +8,6 @@ import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AmqpServOptions, AMQP_SERV_OPTIONS, AMQP_BIND_INTERCEPTORS, AMQP_BIND_FILTERS, AMQP_BIND_GUARDS } from './options';
-import { AmqpMessageAdapter } from './message-adapter';
 import { AmqpMessageAdapterFactory } from './message-adapter.factory';
 
 /**
@@ -108,7 +107,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         }
     }
 
-    private handleMessage(msg: amqp.ConsumeMessage, exchange: string, _routingKey: string) {
+    private handleMessage(msg: amqp.ConsumeMessage, _exchange: string, _routingKey: string) {
         const content = msg.content.toString();
 
         let parsed: any;
@@ -144,7 +143,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ).subscribe({
                 next: (response: any) => {
                     if (this.channel) {
-                        const body = adapter.getBody() ?? response === adapter ? undefined : response;
+                        const body = adapter.getBody() ?? (response === adapter ? undefined : response);
                         const replyTo = msg.properties.replyTo;
                         if (replyTo) {
                             const buf = Buffer.from(JSON.stringify({ payload: body }));

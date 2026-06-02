@@ -153,7 +153,7 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
                 .subscribe({
                     next: (response: any) => {
-                        const resultBody = adapter.getBody() ?? response === adapter ? undefined : response;
+                        const resultBody = adapter.getBody() ?? (response === adapter ? undefined : response);
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({
                             jsonrpc: '2.0',

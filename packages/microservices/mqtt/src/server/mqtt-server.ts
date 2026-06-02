@@ -127,7 +127,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (this.client) {
-                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
+                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
                     const msg = JSON.stringify({ payload: body });
                     this.client.publish(topic + '/response', msg);
                 }

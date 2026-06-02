@@ -1,4 +1,4 @@
-import { AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, useSimpleJson } from '@tsdi/common';
+import { AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, useSimpleJson, parseQueryString } from '@tsdi/common';
 import { delimiterPacket, delimiterUnpacket, packetIdMessage, socketMessage } from './interceptors';
 import { ProvdierOf, toProvider } from '@tsdi/ioc';
 import { PacketNumberIdGenerator } from './PacketId';
@@ -30,7 +30,12 @@ const requestMapping = (req: any, context: RequestContext) => {
         const payloadKey = req.pattern ? 'payload' : 'body';
         const json: Record<string, any> = {};
         if ((req as any).url) {
-            json.url = typeof (req as any).getUrlWithParams === 'function' ? (req as any).getUrlWithParams() : (req as any).url;
+            const fullUrl = typeof (req as any).getUrlWithParams === 'function' ? (req as any).getUrlWithParams() : (req as any).url;
+            const [url, rawQuery] = String(fullUrl).split('?', 2);
+            json.url = url;
+            if (rawQuery) {
+                json.query = parseQueryString(rawQuery);
+            }
         }
         if ((req as any).topic) {
             json.topic = (req as any).topic;
@@ -49,9 +54,10 @@ const requestMapping = (req: any, context: RequestContext) => {
             json.method = (req as any).method;
         }
         if ((req as any).params) {
-            json.params = (req as any).params;
+            const params = (req as any).params;
+            json.params = typeof params?.toRecord === 'function' ? params.toRecord() : params;
         }
-        if ((req as any).query) {
+        if ((req as any).query && !json.query) {
             json.query = (req as any).query;
         }
         if ((req as any).headers?.size) {

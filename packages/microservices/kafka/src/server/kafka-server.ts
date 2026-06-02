@@ -1,11 +1,12 @@
 import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { createRequestContext, RequestContext, Transport } from '@tsdi/common';
+import { createRequestContext, RequestContext, Transport, REQUEST } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import { Kafka, Consumer, Producer, EachMessagePayload } from 'kafkajs';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS, KAFKA_BIND_INTERCEPTORS, KAFKA_BIND_FILTERS, KAFKA_BIND_GUARDS } from './options';
+import { KafkaMessageAdapterFactory } from './message-adapter.factory';
 
 @Injectable()
 export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
@@ -86,18 +87,40 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     private handleMessage(payload: EachMessagePayload) {
         const { topic, partition, message } = payload;
         const content = message.value?.toString() || '';
-        const context = createRequestContext(this.injector, [
-            ['topic', topic], ['partition', partition], ['key', message.key?.toString()],
-        ]);
 
         let parsed: any;
         try { parsed = JSON.parse(content); } catch { parsed = content; }
 
-        this.handler.handle(parsed as TReq, context)
+        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
+        const url = requestSource.url || topic;
+        const method = requestSource.method || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        const requestData = {
+            ...requestSource,
+            url,
+            method,
+            body,
+            payload: body,
+            topic,
+            partition,
+            key: message.key?.toString(),
+        };
+        const context = createRequestContext(this.injector, [
+            [REQUEST, requestData],
+        ]);
+        const adapter = this.injector.get(KafkaMessageAdapterFactory).create({ request: requestData, response: this.producer!, context });
+        context.setMessageAdapter(adapter);
+        context.setPayload(requestData);
+
+        this.handler.handle(requestData as TReq, context)
             .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
             .subscribe((response: any) => {
-                if (response && this.producer) {
-                    const buf = Buffer.from(typeof response === 'string' ? response : JSON.stringify(response));
+                if (this.producer) {
+                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
+                    if (body === undefined) {
+                        return;
+                    }
+                    const buf = Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
                     this.producer.send({ topic: topic + '.response', messages: [{ value: buf }] });
                 }
             });

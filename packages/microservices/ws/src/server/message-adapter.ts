@@ -9,15 +9,17 @@ export class WsMessageAdapter extends StatusMessageAdapter<WebSocket, WebSocket,
     private responseStatus: any;
     private responseStatusMessage?: string;
     private responseError: any;
+    private currentRequest: any;
 
     constructor(
         private socket: WebSocket,
     ) {
         super();
+        this.currentRequest = socket;
     }
 
     get request(): WebSocket {
-        return this.socket;
+        return this.currentRequest;
     }
 
     get response(): WebSocket {
@@ -41,7 +43,7 @@ export class WsMessageAdapter extends StatusMessageAdapter<WebSocket, WebSocket,
     }
 
     get query(): Record<string, any> {
-        return {};
+        return this.currentRequest?.query ?? {};
     }
 
     async handle(): Promise<void> {
@@ -56,12 +58,48 @@ export class WsMessageAdapter extends StatusMessageAdapter<WebSocket, WebSocket,
         return;
     }
 
-    read(_section: any, _name?: string): any {
-        return undefined;
+    setRequestData(request: any): void {
+        this.currentRequest = request ?? this.socket;
     }
 
-    getHeader(_name: string): any {
-        return undefined;
+    read(section: any, name?: string): any {
+        const req = this.currentRequest;
+        switch (section) {
+            case 'headers':
+                return name ? this.getHeader(name) : (req?.headers ?? {});
+            case 'payload':
+            case 'body': {
+                const body = req?.body ?? req?.payload;
+                return name ? body?.[name] : body;
+            }
+            case 'params': {
+                const params = req?.params;
+                return name ? params?.[name] : params;
+            }
+            case 'query': {
+                const query = req?.query;
+                return name ? query?.[name] : query;
+            }
+            case 'path': {
+                const paths = req?.paths;
+                return name ? paths?.[name] : paths;
+            }
+            case 'topic':
+                return req?.topic ?? req?.url ?? req?.pattern;
+            case 'status':
+                return this.getStatus();
+            case 'statusMessage':
+                return this.getStatusMessage();
+            case 'error':
+                return this.getError();
+            default:
+                return undefined;
+        }
+    }
+
+    getHeader(name: string): any {
+        const headers = this.currentRequest?.headers;
+        return headers?.[name.toLowerCase()] ?? headers?.[name];
     }
 
     setHeader(name: string, value: Header): void {

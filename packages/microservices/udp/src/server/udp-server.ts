@@ -135,6 +135,7 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         ]);
         const adapter = this.injector.get(UdpMessageAdapterFactory).create({ request: this.socket!, response: this.socket!, context });
         context.setMessageAdapter(adapter);
+        adapter.setRequestData(requestData);
         context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
@@ -142,7 +143,7 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
                 if (this.socket) {
-                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
+                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
                     let payload = body;
                     if (requestData?.id && (payload === null || payload === undefined || (typeof payload !== 'object' && typeof payload !== 'function'))) {
                         payload = { id: requestData.id, payload };

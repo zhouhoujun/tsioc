@@ -131,7 +131,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ...this.toHeaderRecord((req as any).headers),
             ...this.toHeaderRecord((req as any).options)
         };
-        const query = this.parseQuery(rawUrl);
+        const query = requestSource.query ?? this.parseQuery(rawUrl);
 
         return {
             id: requestSource.id,
