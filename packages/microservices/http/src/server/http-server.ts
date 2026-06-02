@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
     InternalServerException, ListenOpts, Transport, REQUEST,
-    StreamAdapter, ContentType, Outgoing, OutgoingFactory, BadRequestException,
+    StreamAdapter, ContentType, Outgoing, BadRequestException,
 } from '@tsdi/common'
 import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
 import { HttpMessageAdapter } from './message-adapter';

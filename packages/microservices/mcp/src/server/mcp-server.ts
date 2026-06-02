@@ -3,12 +3,14 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
+    InternalServerException, ListenOpts, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
 import { McpServOptions, MCP_SERV_OPTIONS, MCP_BIND_INTERCEPTORS, MCP_BIND_FILTERS, MCP_BIND_GUARDS } from './options';
+import { McpMessageAdapter } from './message-adapter';
+import { McpMessageAdapterFactory } from './message-adapter.factory';
 
 const MCP_REQUEST = new ContextToken<http.IncomingMessage | null>(() => null);
 const MCP_RESPONSE = new ContextToken<http.ServerResponse | null>(() => null);
@@ -135,24 +137,23 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 method: 'POST',
                 body: jsonRpcRequest.params
             };
-            const outgoing = this.injector.get(OutgoingFactory).create({});
 
             const context = createRequestContext(this.injector, [
                 [REQUEST, requestData],
-                [RESPONSE, outgoing],
                 [MCP_REQUEST, req],
                 [MCP_RESPONSE, res],
                 [MCP_METHOD, jsonRpcRequest.method],
                 [MCP_PARAMS, jsonRpcRequest.params],
                 [MCP_ID, jsonRpcRequest.id],
             ]);
+            const adapter = this.injector.get(McpMessageAdapterFactory).create({ request: requestData, response: res, context });
+            context.setMessageAdapter(adapter);
 
             this.handler.handle(jsonRpcRequest as TReq, context)
                 .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
                 .subscribe({
                     next: (response: any) => {
-                        const ctxResponse = context.get(RESPONSE);
-                        const resultBody = ctxResponse?.body ?? response;
+                        const resultBody = adapter.getBody() ?? response === adapter ? undefined : response;
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({
                             jsonrpc: '2.0',

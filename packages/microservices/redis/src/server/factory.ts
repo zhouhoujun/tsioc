@@ -1,6 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
-import { RESPONSE } from '@tsdi/common'
+import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { RedisServer } from './redis-server';
 import { RedisPatternFormatter } from './pattern';
@@ -8,6 +7,8 @@ import { RedisServOptions, REDIS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { RedisMessageAdapter } from './message-adapter';
+import { RedisMessageAdapterFactory } from './message-adapter.factory';
 
 export function redisTransportFactory(option: Partial<RedisServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -41,16 +42,20 @@ export function redisTransportFactory(option: Partial<RedisServOptions>, asDefau
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         RedisPatternFormatter,
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        RedisMessageAdapter,
+        RedisMessageAdapterFactory,
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const response = context.get(RESPONSE);
+                const adapter = context.getMessageAdapter() as RedisMessageAdapter | null;
                 const error = new NotFoundException('Not Found', 404);
-                response.error = error;
-                response.statusCode = error.statusCode;
-                response.statusMessage = error.message;
-                return of(response);
+                if (adapter) {
+                    adapter.writeError(error);
+                    adapter.setStatus(error.statusCode, error.message);
+                    adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                    return of(adapter);
+                }
+                return of(null);
             },
             multi: true
         },

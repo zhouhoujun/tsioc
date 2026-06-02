@@ -2,12 +2,14 @@ import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
+    Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AmqpServOptions, AMQP_SERV_OPTIONS, AMQP_BIND_INTERCEPTORS, AMQP_BIND_FILTERS, AMQP_BIND_GUARDS } from './options';
+import { AmqpMessageAdapter } from './message-adapter';
+import { AmqpMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * AMQP server for microservices.
@@ -129,12 +131,11 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             payload: body,
         };
 
-        const outgoing = this.injector.get(OutgoingFactory).create({});
-
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
-            [RESPONSE, outgoing],
         ]);
+        const adapter = this.injector.get(AmqpMessageAdapterFactory).create({ request: requestData, response: this.channel!, context });
+        context.setMessageAdapter(adapter);
         context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
@@ -142,9 +143,8 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe({
                 next: (response: any) => {
-                    if (response && this.channel) {
-                        const ctxResponse = context.get(RESPONSE);
-                        const body = ctxResponse?.body ?? response;
+                    if (this.channel) {
+                        const body = adapter.getBody() ?? response === adapter ? undefined : response;
                         const replyTo = msg.properties.replyTo;
                         if (replyTo) {
                             const buf = Buffer.from(JSON.stringify({ payload: body }));

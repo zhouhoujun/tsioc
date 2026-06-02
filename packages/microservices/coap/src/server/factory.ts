@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
@@ -44,7 +44,6 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         CoapMessageAdapterFactory,
         CoapPatternFormatter,
         CoapCompatiblePatternFormatter,
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         { provide: ContentInterceptor, useClass: CoapContentInterceptor },
         { provide: JsonInterceptor, useClass: CoapJsonInterceptor },
         { provide: BodyParserInterceptor, useClass: CoapBodyParserInterceptor },

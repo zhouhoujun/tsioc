@@ -2,12 +2,14 @@ import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
+    Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import Redis from 'ioredis';
 import { RedisServOptions, REDIS_SERV_OPTIONS, REDIS_BIND_INTERCEPTORS, REDIS_BIND_FILTERS, REDIS_BIND_GUARDS } from './options';
+import { RedisMessageAdapter } from './message-adapter';
+import { RedisMessageAdapterFactory } from './message-adapter.factory';
 
 @Injectable()
 export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
@@ -100,22 +102,19 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         const method = parsed.method || 'GET';
         const requestData = { ...parsed, url, method };
 
-        const outgoing = this.injector.get(OutgoingFactory).create({});
-
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
-            [RESPONSE, outgoing],
-            ['channel', channel],
-            ['message', message],
         ]);
+        const adapter = this.injector.get(RedisMessageAdapterFactory).create({ request: requestData, response: this.publisher!, context });
+        context.setMessageAdapter(adapter);
+        context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
-                if (response && this.publisher) {
-                    const ctxResponse = context.get(RESPONSE);
-                    const body = ctxResponse?.body ?? response;
+                if (this.publisher) {
+                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
                     const msg = typeof body === 'string' ? body : JSON.stringify(body);
                     this.publisher.publish(channel + ':response', msg);
                 }

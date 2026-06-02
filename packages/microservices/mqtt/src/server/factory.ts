@@ -1,11 +1,12 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
-import { RESPONSE } from '@tsdi/common'
+import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { MqttServer } from './mqtt-server';
 import { MqttServOptions, MQTT_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { MqttMessageAdapter } from './message-adapter';
+import { MqttMessageAdapterFactory } from './message-adapter.factory';
 
 export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -33,16 +34,20 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        MqttMessageAdapter,
+        MqttMessageAdapterFactory,
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const response = context.get(RESPONSE);
+                const adapter = context.getMessageAdapter() as MqttMessageAdapter | null;
                 const error = new NotFoundException('Not Found', 404);
-                response.error = error;
-                response.statusCode = error.statusCode;
-                response.statusMessage = error.message;
-                return of(response);
+                if (adapter) {
+                    adapter.writeError(error);
+                    adapter.setStatus(error.statusCode, error.message);
+                    adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                    return of(adapter);
+                }
+                return of(null);
             },
             multi: true
         },

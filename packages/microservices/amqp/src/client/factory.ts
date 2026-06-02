@@ -15,15 +15,7 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
         ...option,
         features: {
             defaultTransfer: useSimpleJson({
-                mapping: (value, context) => {
-                    if (value && typeof value?.toJson === 'function') {
-                        return value.toJson({
-                            formatter: context.get(PatternFormatter) ?? defaultFormatter,
-                            payloadKey: 'payload'
-                        });
-                    }
-                    return value;
-                }
+                mapping: (value, context) => mapRequestValue(value, context)
             }),
             ...option.features
         },
@@ -110,7 +102,7 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
         const publishPayload = Buffer.isBuffer(input)
             ? input
             : Buffer.from(JSON.stringify({
-                ...request.toJson({ formatter, payloadKey: 'payload' }),
+                ...serializeRequest(request, formatter, 'payload'),
                 method: request.method
             }));
         let consumerTag: string | undefined;
@@ -171,4 +163,43 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
 
         return cleanup;
     });
+}
+
+function mapRequestValue(value: any, context: any) {
+    if (value && typeof value === 'object' && ('url' in value || 'topic' in value || 'pattern' in value)) {
+        return serializeRequest(value, context.get(PatternFormatter) ?? defaultFormatter, 'payload');
+    }
+    return value;
+}
+
+function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
+    const json: Record<string, any> = {};
+    if (request.url) {
+        json.url = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
+    }
+    if (request.topic) {
+        json.topic = request.topic;
+    }
+    if (request.responseTopic) {
+        json.responseTopic = request.responseTopic;
+    }
+    if (request.id) {
+        json.id = request.id;
+    }
+    if (request.pattern) {
+        json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
+    }
+    if (request.headers?.size) {
+        json.headers = request.headers.getHeaders();
+    }
+    if (request.params) {
+        json.params = request.params;
+    }
+    if (request.query) {
+        json.query = request.query;
+    }
+    if (request.body !== undefined && request.body !== null) {
+        json[payloadKey] = request.body;
+    }
+    return json;
 }

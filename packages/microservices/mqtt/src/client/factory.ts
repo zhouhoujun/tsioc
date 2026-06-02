@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, AbstractRequest, REQUEST, Events } from '@tsdi/common'
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events } from '@tsdi/common'
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
@@ -8,7 +8,6 @@ import { MqttRequest } from './request';
 import { Observable } from 'rxjs';
 import * as mqtt from 'mqtt';
 
-
 function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
         transport: Transport.MQTT,
@@ -16,15 +15,7 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
         ...option,
         features: {
             defaultTransfer: useSimpleJson({
-                mapping: (value, context) => {
-                    if (value instanceof AbstractRequest) {
-                        return value.toJson({
-                            formatter: context.get(PatternFormatter) ?? defaultFormatter,
-                            payloadKey: 'payload'
-                        });
-                    }
-                    return value;
-                }
+                mapping: (value, context) => mapRequestValue(value, context)
             }),
             ...option.features
         },
@@ -105,7 +96,7 @@ function createMqttClientBackend(config: MqttClientOptions) {
         const formatter = context.get(PatternFormatter, defaultFormatter);
         const payload = Buffer.isBuffer(input)
             ? input
-            : JSON.stringify(request.toJson({ formatter, payloadKey: 'payload' }));
+            : JSON.stringify(serializeRequest(request, formatter, 'payload'));
         let settled = false;
         let timer: NodeJS.Timeout | undefined;
 
@@ -163,21 +154,71 @@ function createMqttClientBackend(config: MqttClientOptions) {
     });
 }
 
-function subscribeTopic(client: mqtt.MqttClient, topic: string, options: { qos?: 0 | 1 | 2 }) {
-    const subscribeOptions: mqtt.IClientSubscribeOptions = { qos: options.qos ?? 0 };
-    return new Promise<void>((resolve, reject) => {
-        client.subscribe(topic, subscribeOptions, (err?: Error | null) => err ? reject(err) : resolve());
+function mapRequestValue(value: any, context: any) {
+    if (value && typeof value === 'object' && ('url' in value || 'topic' in value || 'pattern' in value)) {
+        return serializeRequest(value, context.get(PatternFormatter) ?? defaultFormatter, 'payload');
+    }
+    return value;
+}
+
+function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
+    const json: Record<string, any> = {};
+    if (request.url) {
+        json.url = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
+    }
+    if (request.topic) {
+        json.topic = request.topic;
+    }
+    if (request.responseTopic) {
+        json.responseTopic = request.responseTopic;
+    }
+    if (request.id) {
+        json.id = request.id;
+    }
+    if (request.pattern) {
+        json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
+    }
+    if (request.method) {
+        json.method = request.method;
+    }
+    if (request.headers?.size) {
+        json.headers = request.headers.getHeaders();
+    }
+    if (request.params) {
+        json.params = request.params;
+    }
+    if (request.query) {
+        json.query = request.query;
+    }
+    if (request.body !== undefined && request.body !== null) {
+        json[payloadKey] = request.body;
+    }
+    return json;
+}
+
+function subscribeTopic(client: mqtt.MqttClient, topic: string, options: mqtt.IClientSubscribeOptions): Promise<void> {
+    return new Promise((resolve, reject) => {
+        client.subscribe(topic, options, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
     });
 }
 
-function unsubscribeTopic(client: mqtt.MqttClient, topic: string) {
-    return new Promise<void>((resolve, reject) => {
-        client.unsubscribe(topic, (err?: Error | null) => err ? reject(err) : resolve());
+function unsubscribeTopic(client: mqtt.MqttClient, topic: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        client.unsubscribe(topic, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
     });
 }
 
-function publishMessage(client: mqtt.MqttClient, topic: string, payload: string | Buffer) {
-    return new Promise<void>((resolve, reject) => {
-        client.publish(topic, payload, (err?: Error | null) => err ? reject(err) : resolve());
+function publishMessage(client: mqtt.MqttClient, topic: string, payload: string | Buffer): Promise<void> {
+    return new Promise((resolve, reject) => {
+        client.publish(topic, payload, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
     });
 }

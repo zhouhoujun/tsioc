@@ -1,12 +1,13 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
-import { RESPONSE } from '@tsdi/common'
+import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { McpServer } from './mcp-server';
 import { McpServOptions, MCP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { McpMessageAdapter } from './message-adapter';
+import { McpMessageAdapterFactory } from './message-adapter.factory';
 
 export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -27,11 +28,18 @@ export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?:
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        McpMessageAdapter,
+        McpMessageAdapterFactory,
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const r = context.get(RESPONSE);
+            const adapter = context.getMessageAdapter() as McpMessageAdapter | null;
             const error = new NotFoundException('Not Found', 404);
-            r.error = error; r.statusCode = error.statusCode; r.statusMessage = error.message; return of(r);
+            if (adapter) {
+                adapter.writeError(error);
+                adapter.setStatus(error.statusCode, error.message);
+                adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                return of(adapter);
+            }
+            return of(null);
         }, multi: true },
         { provide: serviceToken, useFactory: (inj: Injector) => getClassRef(McpServer).createInvocation(inj, {
             providers: [{ provide: MCP_SERV_OPTIONS, useValue: config }, { provide: ServiceHandler, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] }]

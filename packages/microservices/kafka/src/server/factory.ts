@@ -1,6 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
-import { RESPONSE } from '@tsdi/common'
+import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { KafkaServer } from './kafka-server';
 import { KafkaPatternFormatter } from './pattern';
@@ -8,6 +7,8 @@ import { KafkaServOptions, KAFKA_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { KafkaMessageAdapter } from './message-adapter';
+import { KafkaMessageAdapterFactory } from './message-adapter.factory';
 
 export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -37,11 +38,18 @@ export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefau
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         KafkaPatternFormatter,
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        KafkaMessageAdapter,
+        KafkaMessageAdapterFactory,
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const r = context.get(RESPONSE);
+            const adapter = context.getMessageAdapter() as KafkaMessageAdapter | null;
             const error = new NotFoundException('Not Found', 404);
-            r.error = error; r.statusCode = error.statusCode; r.statusMessage = error.message; return of(r);
+            if (adapter) {
+                adapter.writeError(error);
+                adapter.setStatus(error.statusCode, error.message);
+                adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                return of(adapter);
+            }
+            return of(null);
         }, multi: true },
         { provide: serviceToken, useFactory: (inj: Injector) => getClassRef(KafkaServer).createInvocation(inj, {
             providers: [{ provide: KAFKA_SERV_OPTIONS, useValue: config }, { provide: ServiceHandler, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] }]

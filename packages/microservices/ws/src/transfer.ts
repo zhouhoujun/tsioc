@@ -1,4 +1,4 @@
-import { AbstractOutgoing, AbstractRequest, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST } from '@tsdi/common';
+import { AbstractRequest, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST } from '@tsdi/common';
 import { Provider } from '@tsdi/ioc';
 import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, throwError } from 'rxjs';
 import { SOCKET } from './context';
@@ -26,14 +26,75 @@ const defaultOptions = {
 
 const requestMapping = (req: any, context: RequestContext) => {
     if (req instanceof AbstractRequest) {
-        return req.toJson({ formatter: context.get(PatternFormatter) })
+        const payloadKey = req.pattern ? 'payload' : 'body';
+        const json: Record<string, any> = {};
+        if ((req as any).url) {
+            json.url = typeof (req as any).getUrlWithParams === 'function' ? (req as any).getUrlWithParams() : (req as any).url;
+        }
+        if ((req as any).topic) {
+            json.topic = (req as any).topic;
+        }
+        if ((req as any).responseTopic) {
+            json.responseTopic = (req as any).responseTopic;
+        }
+        if ((req as any).id) {
+            json.id = (req as any).id;
+        }
+        if ((req as any).pattern) {
+            const formatter = context.get(PatternFormatter);
+            json.pattern = formatter ? formatter.format((req as any).pattern) : (req as any).pattern;
+        }
+        if ((req as any).method) {
+            json.method = (req as any).method;
+        }
+        if ((req as any).params) {
+            json.params = (req as any).params;
+        }
+        if ((req as any).query) {
+            json.query = (req as any).query;
+        }
+        if ((req as any).headers?.size) {
+            json.headers = (req as any).headers.getHeaders();
+        }
+        if ((req as any).body !== undefined && (req as any).body !== null) {
+            json[payloadKey] = (req as any).body;
+        }
+        return json;
     }
     return req;
 }
 
-const outgoingMapping = (res: any, _context: RequestContext) => {
-    if (res instanceof AbstractOutgoing) {
-        return res.toJson()
+const outgoingMapping = (res: any, context: RequestContext) => {
+    const adapter = context.getMessageAdapter() as any;
+    if (adapter && (typeof adapter.getStatus === 'function' || typeof adapter.getBody === 'function')) {
+        const json: Record<string, any> = {};
+        const status = adapter.getStatus?.();
+        const statusMessage = adapter.getStatusMessage?.();
+        const error = adapter.getError?.();
+        const body = adapter.getBody?.();
+        const headerNames = adapter.getResponseHeaderNames?.() ?? [];
+        if (status !== undefined && status !== null) {
+            json.status = status;
+            json.statusCode = status;
+        }
+        if (statusMessage !== undefined && statusMessage !== null) {
+            json.statusMessage = statusMessage;
+        }
+        if (error !== undefined && error !== null) {
+            json.error = error;
+        }
+        if (headerNames.length) {
+            json.headers = {};
+            headerNames.forEach((name: string) => {
+                json.headers[name] = adapter.getResponseHeader?.(name);
+            });
+        }
+        if (body !== undefined) {
+            json.body = body;
+        } else if (res !== adapter && res !== undefined) {
+            json.body = res;
+        }
+        return json;
     }
     return res;
 }
@@ -114,7 +175,7 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
                         ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
                             String(data);
                     const parsed = JSON.parse(str);
-                                        context.set(REQUEST, parsed);
+                    context.set(REQUEST, parsed);
                     context.setPayload(parsed);
                     return defer(() => next(parsed, context)).pipe(
                         catchError(err => {
@@ -129,7 +190,7 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
             }),
             mergeMap(async res => {
                 if (!res) return;
-                let outgoing = res;
+                let outgoing = options.mapping ? options.mapping(res, context) : res;
                 const request = context.get(REQUEST) as any;
                 if (outgoing === null || outgoing === undefined || (typeof outgoing !== 'object' && typeof outgoing !== 'function')) {
                     outgoing = request?.id ? { id: request.id, payload: outgoing } : { payload: outgoing };
@@ -161,5 +222,5 @@ export function useWsPacket(options: WsPacketOptions = {}): TransferInterceptorF
             useCatch,
             wsMessage(config, options)
         ];
-    };
+    }
 }

@@ -3,13 +3,15 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
+    InternalServerException, ListenOpts, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as dgram from 'node:dgram';
 import { SOCKET } from '@tsdi/transport';
 import { UdpServOptions, UDP_SERV_OPTIONS, UDP_BIND_INTERCEPTORS, UDP_BIND_FILTERS, UDP_BIND_GUARDS } from './options';
+import { UdpMessageAdapter } from './message-adapter';
+import { UdpMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * UDP server for microservices.
@@ -127,26 +129,26 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         const method = parsed.method || 'GET';
         const requestData = { ...parsed, url, method };
 
-        const outgoing = this.injector.get(OutgoingFactory).create({});
-
         const context = createRequestContext(this.injector, [
             [SOCKET, this.socket],
             [REQUEST, requestData],
-            [RESPONSE, outgoing],
         ]);
+        const adapter = this.injector.get(UdpMessageAdapterFactory).create({ request: this.socket!, response: this.socket!, context });
+        context.setMessageAdapter(adapter);
+        context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
-                if (response && this.socket) {
-                    const ctxResponse = context.get(RESPONSE) as any;
-                    let body = ctxResponse?.body ?? response;
-                    if (requestData?.id && (body === null || body === undefined || (typeof body !== 'object' && typeof body !== 'function'))) {
-                        body = { id: requestData.id, payload: body };
+                if (this.socket) {
+                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
+                    let payload = body;
+                    if (requestData?.id && (payload === null || payload === undefined || (typeof payload !== 'object' && typeof payload !== 'function'))) {
+                        payload = { id: requestData.id, payload };
                     }
                     const buf = Buffer.from(
-                        typeof body === 'string' ? body : JSON.stringify(body)
+                        typeof payload === 'string' ? payload : JSON.stringify(payload)
                     );
                     this.socket.send(buf, rinfo.port, rinfo.address);
                 }

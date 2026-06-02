@@ -2,7 +2,7 @@ import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoo
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
-    UrlClientIncomingFactory, TopicClientIncomingFactory, AbstractRequest, ResponseEvent, RequestFilterLike,
+    AbstractRequest, ResponseEvent, RequestFilterLike,
 } from '@tsdi/common';
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
 import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions, ClientFeature, ClientFeatureFn, ClientFeatureKind, ClientFeatureLike, ClientOptions, ClientTransportFeature } from './options';
@@ -241,10 +241,7 @@ export function withTransfers(
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
         const tk = getClientTransfersToken(config);
-        const providers: Provider[] = [
-            UrlClientIncomingFactory,
-            TopicClientIncomingFactory,
-        ];
+        const providers: Provider[] = [];
         if (!selectors.length && config.features.defaultTransfer) {
             selectors.push(config.features.defaultTransfer);
         }

@@ -1,4 +1,4 @@
-import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions, RequestInitOpts, Pattern, PatternFormatter, parseQueryString } from '@tsdi/common';
+import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
 
 /**
  * TCP request implementation for microservices.
@@ -26,18 +26,5 @@ export class TcpRequest<T = any> extends BaseUrlRequest<T, UrlRequestOptions> {
     clone(update: RequestCloneOpts<any, UrlRequestOptions> = {}): TcpRequest<any> {
         const opts = this.cloneOpts(update);
         return new TcpRequest(update.url ?? this.url, this.pattern, opts, this.method);
-    }
-
-    override toJson(optoions?: { formatter?: PatternFormatter; payloadKey?: 'body' | 'payload' }): Record<string, any> {
-        const json = super.toJson(optoions);
-        const [url, rawQuery] = this.getUrlWithParams().split('?', 2);
-        json.url = url;
-        if (rawQuery) {
-            json.query = parseQueryString(rawQuery);
-        }
-        if (this.method) {
-            json.method = this.method;
-        }
-        return json;
     }
 }

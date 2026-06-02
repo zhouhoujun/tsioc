@@ -1,6 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
-import { RESPONSE } from '@tsdi/common'
+import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { AmqpServer } from './amqp-server';
 import { AmqpPatternFormatter } from './pattern';
@@ -8,6 +7,8 @@ import { AmqpServOptions, AMQP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { AmqpMessageAdapter } from './message-adapter';
+import { AmqpMessageAdapterFactory } from './message-adapter.factory';
 
 export function amqpTransportFactory(option: Partial<AmqpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -39,16 +40,20 @@ export function amqpTransportFactory(option: Partial<AmqpServOptions>, asDefault
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         AmqpPatternFormatter,
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        AmqpMessageAdapter,
+        AmqpMessageAdapterFactory,
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const response = context.get(RESPONSE);
+                const adapter = context.getMessageAdapter() as AmqpMessageAdapter | null;
                 const error = new NotFoundException('Not Found', 404);
-                response.error = error;
-                response.statusCode = error.statusCode;
-                response.statusMessage = error.message;
-                return of(response);
+                if (adapter) {
+                    adapter.writeError(error);
+                    adapter.setStatus(error.statusCode, error.message);
+                    adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                    return of(adapter);
+                }
+                return of(null);
             },
             multi: true
         },

@@ -3,11 +3,13 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { connect, StringCodec, NatsConnection, Subscription } from 'nats';
 import {
-    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
+    Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import { NatsServOptions, NATS_SERV_OPTIONS, NATS_BIND_INTERCEPTORS, NATS_BIND_FILTERS, NATS_BIND_GUARDS } from './options';
+import { NatsMessageAdapter } from './message-adapter';
+import { NatsMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * NATS server for microservices.
@@ -115,20 +117,18 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const method = parsed.method || 'GET';
         const requestData = { ...parsed, url, method };
 
-        const outgoing = this.injector.get(OutgoingFactory).create({});
-
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
-            [RESPONSE, outgoing],
         ]);
+        const adapter = this.injector.get(NatsMessageAdapterFactory).create({ request: requestData, response: this.nc!, context });
+        context.setMessageAdapter(adapter);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
-                if (response && msg.respond) {
-                    const ctxResponse = context.get(RESPONSE);
-                    const body = ctxResponse?.body ?? response;
+                if (msg.respond) {
+                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
                     const buf = sc.encode(
                         typeof body === 'string' ? body : JSON.stringify(body)
                     );

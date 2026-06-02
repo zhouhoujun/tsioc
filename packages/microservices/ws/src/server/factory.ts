@@ -1,12 +1,13 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, TransferInterceptorFactory } from '@tsdi/common'
-import { RESPONSE } from '@tsdi/common'
+import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, TransferInterceptorFactory } from '@tsdi/common'
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { useWsPacket } from '../transfer';
+import { WsMessageAdapter } from './message-adapter';
+import { WsMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * Create WebSocket transport feature for microservice.
@@ -35,12 +36,15 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
     config.providers.push(
         { provide: WS_SERV_OPTIONS, useValue: config },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const response = context.get(RESPONSE);
+            const adapter = context.getMessageAdapter() as WsMessageAdapter | null;
             const error = new NotFoundException('Not Found', 404);
-            response.error = error;
-            response.statusCode = error.statusCode;
-            response.statusMessage = error.message;
-            return of(response);
+            if (adapter) {
+                adapter.writeError(error);
+                adapter.setStatus(error.statusCode, error.message);
+                adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                return of(adapter);
+            }
+            return of(null);
         }, multi: true },
     );
 
@@ -60,7 +64,8 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
+        WsMessageAdapter,
+        WsMessageAdapterFactory,
         ...transferProviders,
 
         {
@@ -70,12 +75,15 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
                     providers: [
                         { provide: WS_SERV_OPTIONS, useValue: config },
                         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-                            const response = context.get(RESPONSE);
+                            const adapter = context.getMessageAdapter() as WsMessageAdapter | null;
                             const error = new NotFoundException('Not Found', 404);
-                            response.error = error;
-                            response.statusCode = error.statusCode;
-                            response.statusMessage = error.message;
-                            return of(response);
+                            if (adapter) {
+                                adapter.writeError(error);
+                                adapter.setStatus(error.statusCode, error.message);
+                                adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                                return of(adapter);
+                            }
+                            return of(null);
                         }, multi: true },
                         {
                             provide: ServiceHandler,

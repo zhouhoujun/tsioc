@@ -20,6 +20,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
+    private shutdownTimer: NodeJS.Timeout | null = null;
 
     constructor(
         readonly handler: ClientHandler<TcpRequest<any>, ResponseEvent<any>>,
@@ -40,6 +41,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             if (valid) return this.connection;
 
             if (this.connection) {
+                this.clearShutdownTimer();
                 this.connection.removeAllListeners();
                 this.connection.destroy();
             }
@@ -116,32 +118,34 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         if (!this.connection || this.connection.destroyed) return;
 
         return new Promise<void>((resolve) => {
+            const connection = this.connection;
+            let cleaned = false;
             const cleanup = () => {
-                this.connection.removeAllListeners();
-                this.connection = null!;
+                if (cleaned) {
+                    return;
+                }
+                cleaned = true;
+                this.clearShutdownTimer();
+                connection.removeAllListeners();
+                if (this.connection === connection) {
+                    this.connection = null!;
+                }
                 resolve();
             };
 
-            this.connection.once(Events.CLOSE, cleanup);
+            connection.once(Events.CLOSE, cleanup);
 
-            // Use end() for graceful shutdown, which will trigger 'close' event
-            this.connection.end();
-
-            // Set a timeout to force destroy if graceful shutdown takes too long
-            const timeout = setTimeout(() => {
-                if (this.connection && !this.connection.destroyed) {
+            this.shutdownTimer = setTimeout(() => {
+                if (connection && !connection.destroyed) {
                     this.logger?.warn('TCP client connection shutdown timeout, forcing destroy');
-                    this.connection.destroy();
+                    connection.destroy();
                 }
             }, 5000);
 
-            // Clear timeout when cleanup runs
-            this.connection.once(Events.CLOSE, () => {
-                clearTimeout(timeout);
-            });
+            connection.end();
         }).catch(err => {
             this.logger?.error('TCP client shutdown error:', err);
-            // Ensure cleanup even on error
+            this.clearShutdownTimer();
             if (this.connection) {
                 this.connection.removeAllListeners();
                 this.connection.destroy();
@@ -161,5 +165,11 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         }
         return socket;
     }
-}
 
+    private clearShutdownTimer() {
+        if (this.shutdownTimer) {
+            clearTimeout(this.shutdownTimer);
+            this.shutdownTimer = null;
+        }
+    }
+}

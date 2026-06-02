@@ -2,12 +2,14 @@ import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    Events, createRequestContext, RequestContext, Transport, REQUEST, RESPONSE, OutgoingFactory
+    Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
+import { MqttMessageAdapter } from './message-adapter';
+import { MqttMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * MQTT server for microservices.
@@ -113,21 +115,19 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             payload: body,
         };
 
-        const outgoing = this.injector.get(OutgoingFactory).create({});
-
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
-            [RESPONSE, outgoing],
         ]);
+        const adapter = this.injector.get(MqttMessageAdapterFactory).create({ request: requestData, response: this.client!, context });
+        context.setMessageAdapter(adapter);
         context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe((response: any) => {
-                if (response && this.client) {
-                    const ctxResponse = context.get(RESPONSE);
-                    const body = ctxResponse?.body ?? response;
+                if (this.client) {
+                    const body = adapter.getBody() ?? response === adapter ? undefined : response;
                     const msg = JSON.stringify({ payload: body });
                     this.client.publish(topic + '/response', msg);
                 }

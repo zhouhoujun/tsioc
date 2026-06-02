@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
@@ -44,7 +44,6 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     const providers: Provider[] = [
         importProvidersFrom(MimeModule),
         importProvidersFrom(ServerCommonModule),
-        { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         HttpMessageAdapter,
         HttpMessageAdapterFactory,
         { provide: ContentInterceptor, useClass: HttpContentInterceptor },

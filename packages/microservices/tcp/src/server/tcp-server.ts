@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
+    InternalServerException, ListenOpts, Transport, REQUEST
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
@@ -11,6 +11,8 @@ import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { SOCKET } from '@tsdi/transport';
 import { TcpServOptions, TCP_SERV_OPTIONS, TCP_BIND_INTERCEPTORS, TCP_BIND_FILTERS, TCP_BIND_GUARDS } from './options';
+import { TcpMessageAdapter } from './message-adapter';
+import { TcpMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * tcp server of `tcp` or `ipc`.
@@ -30,6 +32,7 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
      * Track active socket connections for proper shutdown
      */
     private activeConnections: Set<tls.TLSSocket | net.Socket> = new Set();
+    private shutdownTimers = new Map<tls.TLSSocket | net.Socket, NodeJS.Timeout>();
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
@@ -138,23 +141,29 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         for (const socket of this.activeConnections) {
             if (!socket.destroyed) {
                 socket.end();
-                // Force destroy after timeout if socket doesn't close gracefully
-                setTimeout(() => {
+                const timer = setTimeout(() => {
+                    this.shutdownTimers.delete(socket);
                     if (!socket.destroyed) {
                         socket.destroy();
                     }
                 }, 1000);
+                this.shutdownTimers.set(socket, timer);
             }
         }
-        this.activeConnections.clear();
 
         // Then close the server
         try {
             await promisify(this.serv.close, this.serv)();
         } catch { /* server may already be closed */ }
+
+        // Clear any remaining shutdown timers
+        for (const timer of this.shutdownTimers.values()) {
+            clearTimeout(timer);
+        }
+        this.shutdownTimers.clear();
+
         this.serv?.removeAllListeners();
         this.serv = null;
-
     }
 
     private createServer(): net.Server | tls.Server {
@@ -168,15 +177,20 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
 
         // Remove from tracking when socket closes
         socket.once(Events.CLOSE, () => {
+            const timer = this.shutdownTimers.get(socket);
+            if (timer) {
+                clearTimeout(timer);
+                this.shutdownTimers.delete(socket);
+            }
             this.activeConnections.delete(socket);
         });
 
-        const outgoing = this.injector.get(OutgoingFactory).create({});
         const context = createRequestContext(this.injector, [
             [SOCKET, socket],
             [REQUEST, socket],
-            [RESPONSE, outgoing],
         ]);
+        const adapter = this.injector.get(TcpMessageAdapterFactory).create({ request: socket, response: socket, context });
+        context.setMessageAdapter(adapter);
         context.setPayload(socket as any);
 
         this.handler.handle(socket as TReq, context)

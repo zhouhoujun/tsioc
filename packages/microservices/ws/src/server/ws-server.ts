@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport, REQUEST, RESPONSE, OutgoingFactory
+    InternalServerException, ListenOpts, Transport, REQUEST
 } from '@tsdi/common';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
@@ -12,6 +12,7 @@ import * as https from 'node:https';
 import { WebSocketServer, WebSocket } from 'ws';
 import { WsServOptions, WS_SERV_OPTIONS, WS_BIND_INTERCEPTORS, WS_BIND_FILTERS, WS_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
+import { WsMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * WebSocket server for microservices.
@@ -177,12 +178,12 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             this.logger.error('WebSocket connection error:', err);
         });
 
-        const outgoing = this.injector.get(OutgoingFactory).create({});
         const context = createRequestContext(this.injector, [
             [SOCKET, ws],
             [REQUEST, request],
-            [RESPONSE, outgoing],
         ]);
+        const adapter = this.injector.get(WsMessageAdapterFactory).create({ request: ws, response: ws, context });
+        context.setMessageAdapter(adapter);
 
         // Handle messages through service handler
         this.handler.handle(ws as TReq, context)
