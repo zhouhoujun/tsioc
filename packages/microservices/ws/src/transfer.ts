@@ -184,7 +184,9 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
                     context.set(REQUEST, parsed);
                     context.setPayload(parsed);
                     const adapter = context.getMessageAdapter();
-                    if (adapter && typeof (adapter as any).setRequestData === 'function') {
+                    if (adapter && typeof (adapter as any).forkRequest === 'function') {
+                        context.setMessageAdapter((adapter as any).forkRequest(parsed));
+                    } else if (adapter && typeof (adapter as any).setRequestData === 'function') {
                         (adapter as any).setRequestData(parsed);
                     }
                     return defer(() => next(parsed, context)).pipe(

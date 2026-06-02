@@ -154,7 +154,9 @@ export function useSimpleJson(options?: {
                             context.set(REQUEST, rjson);
                             context.setPayload(rjson);
                             const adapter = context.getMessageAdapter();
-                            if (adapter && typeof (adapter as any).setRequestData === 'function') {
+                            if (adapter && typeof (adapter as any).forkRequest === 'function') {
+                                context.setMessageAdapter((adapter as any).forkRequest(rjson));
+                            } else if (adapter && typeof (adapter as any).setRequestData === 'function') {
                                 (adapter as any).setRequestData(rjson);
                             }
                             return next(rjson, context)

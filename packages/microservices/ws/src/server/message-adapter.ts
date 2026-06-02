@@ -62,6 +62,12 @@ export class WsMessageAdapter extends StatusMessageAdapter<WebSocket, WebSocket,
         this.currentRequest = request ?? this.socket;
     }
 
+    forkRequest(request: any): WsMessageAdapter {
+        const adapter = new WsMessageAdapter(this.socket);
+        adapter.setRequestData(request);
+        return adapter;
+    }
+
     read(section: any, name?: string): any {
         const req = this.currentRequest;
         switch (section) {
