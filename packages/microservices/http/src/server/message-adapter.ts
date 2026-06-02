@@ -1,14 +1,18 @@
 import { Injectable, isNil, isString } from '@tsdi/ioc';
-import { AcceptsPriority, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter, Outgoing } from '@tsdi/common';
+import { AcceptsPriority, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter } from '@tsdi/common';
 import { HttpCookieStore, HttpRequestMessage, HttpServResponse } from './http-context';
 
 @Injectable()
 export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpRequestMessage<TBody>, HttpServResponse, any> {
-    private _request?: HttpRequestMessage<TBody>;
-    private _response?: HttpServResponse;
-    private outgoing?: Outgoing<any>;
+    private responseHeaders = new Map<string, Header>();
+    private responseBody: any;
+    private responseStatus: any;
+    private responseStatusMessage?: string;
+    private responseError: any;
 
     constructor(
+        private _request: HttpRequestMessage<TBody>,
+        private _response?: HttpServResponse,
         private acceptsPriority?: AcceptsPriority,
         private mimeAdapter?: MimeAdapter
     ) {
@@ -16,7 +20,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     }
 
     get request(): HttpRequestMessage<TBody> {
-        return this._request!;
+        return this._request;
     }
 
     get response(): HttpServResponse {
@@ -84,11 +88,6 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         return this._request?.rawUrl ?? this._request?.url ?? '';
     }
 
-    bind(request: HttpRequestMessage<TBody>, response?: HttpServResponse): void {
-        this._request = request;
-        this._response = response;
-    }
-
     async handle(): Promise<void> {
         return;
     }
@@ -126,10 +125,6 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         this.write(data);
     }
 
-    setOutgoing(outgoing: Outgoing<any>) {
-        this.outgoing = outgoing;
-    }
-
     read(section: any, name?: string): any {
         switch (section) {
             case 'headers':
@@ -163,6 +158,14 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
 
     getHeader(name: string): any {
         return this.header(name);
+    }
+
+    getResponseHeaderNames(): string[] {
+        return Array.from(this.responseHeaders.keys());
+    }
+
+    getResponseHeader(name: string): Header {
+        return this.responseHeaders.get(name.toLowerCase());
     }
 
     accepts(...args: string[]): string | string[] | false {
@@ -208,39 +211,34 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     }
 
     write(body: any): void {
-        if (this.outgoing) {
-            this.outgoing.body = body;
-        }
+        this.responseBody = body;
     }
 
     setHeader(name: string, value: Header): void {
-        this.outgoing?.setHeader(name, value);
+        const key = name.toLowerCase();
+        this.responseHeaders.set(key, value);
     }
 
     removeHeader(name: string): void {
-        this.outgoing?.removeHeader(name);
+        this.responseHeaders.delete(name.toLowerCase());
     }
 
     setStatus(code: any, message?: string): void {
-        if (this.outgoing) {
-            this.outgoing.statusCode = code;
-            if (!isNil(message)) {
-                this.outgoing.statusMessage = message;
-            }
+        this.responseStatus = code;
+        if (!isNil(message)) {
+            this.responseStatusMessage = message;
         }
     }
 
     writeError(error: any): void {
-        if (this.outgoing) {
-            this.outgoing.error = error;
-        }
+        this.responseError = error;
     }
 
-    getStatus(): any { return this.outgoing?.statusCode; }
-    getStatusMessage(): any { return this.outgoing?.statusMessage; }
-    getError(): any { return this.outgoing?.error; }
-    getBody(): any { return this.outgoing?.body; }
-    hasHeader(name: string): boolean { return this.outgoing?.hasHeader?.(name) ?? false; }
+    getStatus(): any { return this.responseStatus; }
+    getStatusMessage(): any { return this.responseStatusMessage; }
+    getError(): any { return this.responseError; }
+    getBody(): any { return this.responseBody; }
+    hasHeader(name: string): boolean { return this.responseHeaders.has(name.toLowerCase()); }
     isHeadersSent(): boolean { return this._response?.headersSent ?? false; }
 
     protected headers(): Record<string, any> {

@@ -1,9 +1,9 @@
 import { ApplicationContext } from '@tsdi/core';
 import { FileAdapter, MimeAdapter, NotFoundException, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common'
-import { RESPONSE } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
 import { basename } from 'node:path';
 import { from, mergeMap, Observable } from 'rxjs';
+import { CoapMessageAdapter } from '../server/message-adapter';
 
 @Injectable()
 export class CoapContentInterceptor implements RequestInterceptor<any> {
@@ -19,28 +19,28 @@ export class CoapContentInterceptor implements RequestInterceptor<any> {
                 if (!file) {
                     return next.handle(input, context);
                 }
-                const response = context.get(RESPONSE);
+                const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
                 const fileAdapter = context.get(FileAdapter);
                 const mimeAdapter = context.getInjector().get(MimeAdapter, null);
                 const ext = file.encodingExt ?? fileAdapter.extname(file.filename);
                 if (ext === '.json') {
-                    response.body = await fileAdapter.readJSON(file.filename);
-                    return response;
+                    adapter?.write(await fileAdapter.readJSON(file.filename));
+                    return adapter;
                 }
-                response.body = await fileAdapter.readText(file.filename);
-                if (!response.hasHeader('content-type')) {
+                adapter?.write(await fileAdapter.readText(file.filename));
+                if (adapter && !adapter.hasHeader('content-type')) {
                     const contentType = mimeAdapter?.lookup(basename(file.filename, file.encodingExt ?? ''));
-                    response.setHeader('content-type', typeof contentType === 'string' ? contentType : 'text/plain');
+                    adapter.setHeader('content-type', typeof contentType === 'string' ? contentType : 'text/plain');
                 }
-                return response;
+                return adapter;
             }),
             mergeMap(result => result instanceof Promise ? result : Promise.resolve(result))
         );
     }
 
     private async find(path: string, context: RequestContext) {
-        const response = context.get(RESPONSE);
-        if (response.statusCode && !(response.error instanceof NotFoundException)) {
+        const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+        if (adapter?.getStatus() && !(adapter.getError() instanceof NotFoundException)) {
             return null;
         }
         const appContext = context.getInjector().get(ApplicationContext, null) as any;

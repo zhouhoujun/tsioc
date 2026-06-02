@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     createRequestContext, RequestContext,
-    InternalServerException, Transport, REQUEST, RESPONSE, OutgoingFactory, Outgoing
+    InternalServerException, Transport, REQUEST
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil, mergeMap, isObservable, from, of } from 'rxjs';
@@ -11,6 +11,7 @@ import * as coap from 'coap';
 import { CoapServOptions, COAP_SERV_OPTIONS, COAP_BIND_INTERCEPTORS, COAP_BIND_FILTERS, COAP_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
 import { CoapMessageAdapter } from './message-adapter';
+import { CoapMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * CoAP server for microservices.
@@ -90,16 +91,12 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private handleRequest(req: coap.IncomingMessage, res: coap.OutgoingMessage) {
         const requestData = this.normalizeRequest(req);
-        const outgoing = this.injector.get(OutgoingFactory).create({ url: requestData.url, incoming: requestData } as any);
 
         const context = createRequestContext(this.injector, [
             [SOCKET, req],
             [REQUEST, requestData],
-            [RESPONSE, outgoing],
         ]);
-        const adapter = new CoapMessageAdapter();
-        adapter.bind(requestData, res);
-        adapter.setOutgoing(outgoing);
+        const adapter = this.injector.get(CoapMessageAdapterFactory).create({ request: requestData, response: res, context });
         context.setMessageAdapter(adapter);
         context.setPayload(requestData);
 
@@ -178,188 +175,131 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         }
     }
 
-    private isEnvelope(payload: any): payload is Record<string, any> {
-        return !!payload && typeof payload === 'object' && !Array.isArray(payload)
-            && ('url' in payload || 'pattern' in payload || 'method' in payload || 'body' in payload || 'payload' in payload || 'headers' in payload);
+    private isEnvelope(value: any): value is Record<string, any> {
+        return !!value && typeof value === 'object' && (
+            'url' in value ||
+            'method' in value ||
+            'body' in value ||
+            'payload' in value ||
+            'headers' in value ||
+            'pattern' in value
+        );
     }
 
-    private parseQuery(url: string): Record<string, any> {
-        const idx = url.indexOf('?');
-        if (idx < 0 || idx === url.length - 1) {
-            return {};
+    private parseQuery(rawUrl: string): Record<string, string> {
+        const queryText = rawUrl.split('?', 2)[1];
+        const query: Record<string, string> = {};
+        if (!queryText) {
+            return query;
         }
-        return Object.fromEntries(new URLSearchParams(url.slice(idx + 1)).entries());
-    }
-
-    private writeResponse(res: coap.OutgoingMessage, context: RequestContext, response: any) {
-        const outgoing = this.toOutgoing(response, context);
-        const code = this.toCoapCode(outgoing?.statusCode ?? (outgoing?.error ? 500 : 200));
-        (res as any).code = code;
-        this.applyResponseHeaders(res, outgoing);
-        const request = context.get(REQUEST) as Record<string, any>;
-        const wantsResponse = request?.observe === 'response' || request?.headers?.observe === 'response' || request?.headers?.observe === 'true';
-        if (wantsResponse) {
-            const packet = this.toResponsePacket(outgoing, response, code);
-            if (isNil(packet.body) && !packet.error) {
-                res.end();
-                return;
-            }
-            res.end(this.serializeBody(packet));
-            return;
-        }
-        const body = this.resolveBody(outgoing, response);
-        if (isNil(body)) {
-            res.end();
-            return;
-        }
-        res.end(this.serializeBody(body));
-    }
-
-    private writeError(res: coap.OutgoingMessage, context: RequestContext, err: any) {
-        this.logger.error('CoAP request error:', err);
-        const rawStatus = err instanceof MissingParameterException || err instanceof ArgumentException
-            ? 400
-            : (err?.statusCode ?? err?.status ?? (err?.name === 'BadRequestException' ? 400 : 500));
-        const code = this.toCoapCode(rawStatus);
-        (res as any).code = code;
-        const request = context.get(REQUEST) as Record<string, any>;
-        const wantsResponse = request?.observe === 'response' || request?.headers?.observe === 'response' || request?.headers?.observe === 'true';
-        const body = {
-            statusCode: Number(rawStatus) || 500,
-            message: code.startsWith('5.') ? 'Internal Server Error' : (err?.message ?? String(err))
-        };
-        if (wantsResponse) {
-            res.end(this.serializeBody({
-                ok: false,
-                status: code,
-                statusCode: code,
-                statusMessage: body.message,
-                headers: {},
-                body
-            }));
-            return;
-        }
-        res.end(this.serializeBody(body));
-    }
-
-    private toOutgoing(response: any, context: RequestContext): Outgoing<any> | null {
-        const outgoing = context.get(RESPONSE) as Outgoing<any>;
-        if (isNil(response)) {
-            return outgoing;
-        }
-        if (typeof response.getHeader === 'function' && typeof response.setHeader === 'function') {
-            return response as Outgoing<any>;
-        }
-        if (response === outgoing) {
-            return outgoing;
-        }
-        outgoing.body = response;
-        if (outgoing.error) {
-            outgoing.error = undefined;
-            if (Number(outgoing.statusCode) >= 400 || (typeof outgoing.statusCode === 'string' && /^([45])\./.test(outgoing.statusCode))) {
-                outgoing.statusCode = undefined as any;
-                outgoing.statusMessage = undefined as any;
-            }
-        }
-        return outgoing;
-    }
-
-    private resolveBody(outgoing: Outgoing<any> | null, response: any): any {
-        if (!outgoing) {
-            return response;
-        }
-        if (!isNil(outgoing.body)) {
-            return outgoing.body;
-        }
-        if (outgoing.error) {
-            return undefined;
-        }
-        return response === outgoing ? undefined : response;
-    }
-
-    private toResponsePacket(outgoing: Outgoing<any> | null, response: any, code: string): Record<string, any> {
-        const body = this.resolveBody(outgoing, response);
-        return {
-            ok: !outgoing?.error && code.startsWith('2.'),
-            status: code,
-            statusCode: code,
-            statusMessage: outgoing?.statusMessage,
-            headers: outgoing?.getHeaders?.() ?? {},
-            error: outgoing?.error,
-            body
-        };
-    }
-
-    private serializeBody(body: any): Buffer | string {
-        if (Buffer.isBuffer(body)) {
-            return body;
-        }
-        if (typeof body === 'string') {
-            return body;
-        }
-        return JSON.stringify(body);
-    }
-
-    private applyResponseHeaders(res: coap.OutgoingMessage, outgoing: Outgoing<any> | null) {
-        const headers = outgoing?.getHeaders?.();
-        if (!headers) {
-            return;
-        }
-        Object.entries(headers).forEach(([name, value]) => {
-            if (isNil(value)) {
-                return;
-            }
-            if (typeof (res as any).setOption === 'function') {
-                (res as any).setOption(name, value as any);
-                return;
-            }
-            if (typeof (res as any).setHeader === 'function') {
-                (res as any).setHeader(name, value as any);
-            }
+        queryText.split('&').forEach(entry => {
+            if (!entry) return;
+            const [key, value = ''] = entry.split('=', 2);
+            if (!key) return;
+            query[decodeURIComponent(key)] = decodeURIComponent(value);
         });
+        return query;
     }
 
     private toHeaderRecord(source: any): Record<string, any> {
+        const record: Record<string, any> = {};
         if (!source) {
-            return {};
+            return record;
         }
         if (Array.isArray(source)) {
-            return source.reduce((record, option) => {
-                const name = option?.name ?? option?.key;
-                if (!name) {
-                    return record;
+            source.forEach((entry: any) => {
+                if (entry && typeof entry.name === 'string') {
+                    record[String(entry.name).toLowerCase()] = entry.value;
                 }
-                record[String(name).toLowerCase()] = option?.value;
-                return record;
-            }, {} as Record<string, any>);
+            });
+            return record;
         }
-        return { ...source };
+        Object.keys(source).forEach(key => {
+            record[key.toLowerCase()] = source[key];
+        });
+        return record;
     }
 
-    private toCoapCode(status: string | number | undefined): string {
-        if (typeof status === 'string' && /^\d\.\d\d$/.test(status)) {
-            return status;
+    private writeResponse(res: coap.OutgoingMessage, context: RequestContext, response: any) {
+        const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+        const status = adapter?.getStatus() ?? '2.05';
+        const contentType = adapter?.getResponseHeader('content-type') ?? context.getContentType();
+        const payload = !isNil(adapter?.getBody()) ? adapter?.getBody() : response;
+
+        const headerNames = adapter?.getResponseHeaderNames() ?? [];
+        headerNames.forEach((name: string) => {
+            const value = adapter?.getResponseHeader(name);
+            if (!isNil(value)) {
+                try {
+                    if (name.toLowerCase() === 'content-format' || name.toLowerCase() === 'max-age') {
+                        const num = Number(value);
+                        if (Number.isFinite(num)) {
+                            (res as any).setOption?.(name, num);
+                        }
+                    } else {
+                        (res as any).setHeader?.(name, value as any);
+                    }
+                } catch {
+                    this.logger.warn('Failed to set CoAP header', name, value as any);
+                }
+            }
+        });
+
+        if (!isNil(status)) {
+            (res as any).code = status;
         }
-        switch (Number(status) || 200) {
-            case 201: return '2.01';
-            case 202: return '2.03';
-            case 204: return '2.04';
-            case 400: return '4.00';
-            case 401: return '4.01';
-            case 403: return '4.03';
-            case 404: return '4.04';
-            case 405: return '4.05';
-            case 408: return '4.08';
-            case 409: return '4.09';
-            case 415: return '4.15';
-            case 429: return '4.29';
-            case 500: return '5.00';
-            case 501: return '5.01';
-            case 502: return '5.02';
-            case 503: return '5.03';
-            case 504: return '5.04';
-            default:
-                return Number(status) >= 400 ? '4.00' : '2.05';
+
+        if (contentType && !(res as any).getOption?.('Content-Format')) {
+            const contentFormat = this.mapContentTypeToFormat(String(contentType));
+            if (contentFormat) {
+                (res as any).setOption?.('Content-Format', contentFormat);
+            }
         }
+
+        if (isNil(payload)) {
+            res.end();
+            return;
+        }
+
+        if (Buffer.isBuffer(payload) || typeof payload === 'string') {
+            res.end(payload);
+            return;
+        }
+
+        res.end(JSON.stringify(payload));
+    }
+
+    private writeError(res: coap.OutgoingMessage, context: RequestContext, err: any) {
+        this.logger.error(err);
+
+        const status = err?.statusCode ?? err?.status ?? (err instanceof MissingParameterException ? '4.00' : '5.00');
+        const expose = typeof err?.expose === 'boolean' ? err.expose : String(status).startsWith('4');
+        const statusMessage = err?.statusMessage || err?.message || 'Error';
+        const body = String(status).startsWith('5') && !expose
+            ? { statusCode: status, statusMessage: 'Internal Server Error' }
+            : {
+                statusCode: status,
+                statusMessage,
+                ...(err?.details ? { details: err.details } : {})
+            };
+
+        const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+        if (adapter) {
+            adapter.setStatus(status, statusMessage);
+            adapter.writeError(err);
+            adapter.write(body);
+        }
+
+        (res as any).code = status;
+        res.end(JSON.stringify(body));
+    }
+
+    private mapContentTypeToFormat(contentType: string): string | undefined {
+        const normalized = contentType.toLowerCase();
+        if (normalized.includes('application/json')) return 'application/json';
+        if (normalized.includes('text/plain')) return 'text/plain';
+        if (normalized.includes('application/xml') || normalized.includes('text/xml')) return 'application/xml';
+        if (normalized.includes('application/octet-stream')) return 'application/octet-stream';
+        return undefined;
     }
 }

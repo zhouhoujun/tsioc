@@ -1,33 +1,51 @@
-import { Inject, Injectable, Optional, token } from '@tsdi/ioc';
+import { Inject, Injectable, Optional, token, isNil } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import {
-    FileAdapter, GET, HEAD, Incoming, NotFoundException,
-    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming
+    ContentSendAdapter, FileAdapter, GET, HEAD, Incoming, NotFoundException,
+    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming, Header, HttpStatusCode, MimeAdapter
 } from '@tsdi/common'
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { HttpFileResult } from '../file-result';
-import { HttpStaticOptions, isHttpFileResult, normalizeStaticOptions, resolveFileResult, resolveStaticFile } from '../static-file';
+import { HttpMessageAdapter } from '../message-adapter';
 
-export interface StaticsOptions<TStats = any> extends HttpStaticOptions {
+export interface HttpStaticOptions {
+    enabled?: boolean;
+    setHeaders?: (adapter: any, path: string, stats: any) => void;
+    headers?: Record<string, Header>;
+    disposition?: 'inline' | 'attachment';
+    immutable?: boolean;
+    maxAge?: number;
+    root?: string | string[];
+    index?: string | string[] | false;
+    maxAgeMs?: number;
+    format?: boolean;
+    hidden?: boolean;
+    baseUrl?: string;
+    extensions?: string[];
+    brotli?: boolean;
+    gzip?: boolean;
+}
+
+export interface StaticsOptions extends HttpStaticOptions {
     defer?: boolean;
 }
 
 /** @deprecated use StaticsOptions */
-export type ContentOptions<TStats = any> = StaticsOptions<TStats>;
+export type ContentOptions = StaticsOptions;
 
 export const STATICS_OPTIONS = token<StaticsOptions>('STATICS_OPTIONS');
 /** @deprecated use STATICS_OPTIONS */
 export const CONTENT_OPTIONS = STATICS_OPTIONS;
 
-/**
- * static content resources.
- */
 @Injectable()
 export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming>> {
 
     private options: StaticsOptions;
 
-    constructor(@Optional() @Inject(STATICS_OPTIONS) options: StaticsOptions) {
+    constructor(
+        @Optional() @Inject(STATICS_OPTIONS) options: StaticsOptions,
+        @Inject() private sender: ContentSendAdapter
+    ) {
         this.options = { ...defOpts, ...options };
     }
 
@@ -38,13 +56,12 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         }
 
         const options = this.options;
-        const staticOptions = normalizeStaticOptions(options as HttpStaticOptions | HttpStaticOptions[] | boolean);
         if (!options.defer) {
-            return from(resolveStaticFile(input, context, staticOptions))
+            return from(this.resolveStaticFile(input, context, options))
                 .pipe(
                     mergeMap(staticResponse => {
                         if (staticResponse) {
-                            return of(staticResponse);
+                            return of(null);
                         }
                         return next.handle(input, context)
                             .pipe(
@@ -75,23 +92,129 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
     }
 
     private async mapResponse(response: any, input: ReadableLike<Incoming>, context: RequestContext): Promise<any> {
-        if (isHttpFileResult(response)) {
-            return resolveFileResult(response, input, context);
+        if (this.isHttpFileResult(response)) {
+            return this.resolveFileResult(response, input, context);
         }
         if (response?.body instanceof HttpFileResult) {
-            const resolved = await resolveFileResult(response.body, input, context);
+            const resolved = await this.resolveFileResult(response.body, input, context);
             const headerNames = response.getHeaderNames?.() ?? [];
             headerNames.forEach((name: string) => {
                 if (!resolved.hasHeader(name)) {
                     resolved.setHeader(name, response.getHeader(name));
                 }
             });
-            if (response.statusCode && !resolved.statusCode) {
-                resolved.statusCode = response.statusCode;
+            if (response.statusCode && isNil(resolved.getStatus())) {
+                resolved.setStatus(response.statusCode);
             }
             return resolved;
         }
         return response;
+    }
+
+    private async resolveStaticFile(input: any, context: RequestContext, options: HttpStaticOptions): Promise<boolean> {
+        const method = String(input?.method ?? '').toUpperCase();
+        if (method !== 'GET' && method !== 'HEAD') {
+            return false;
+        }
+        const pathname = this.getPathname(input?.url ?? input?.pattern ?? input?.topic);
+        if (!pathname) {
+            return false;
+        }
+
+        const fileAdapter = context.get(FileAdapter);
+        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        if (!adapter) {
+            return false;
+        }
+        const file = await this.sender.send(adapter, fileAdapter, pathname, {
+            ...options,
+            method,
+            headers: options.headers,
+            disposition: options.disposition,
+            statusCode: HttpStatusCode.Ok,
+            contentType: this.inferContentType(context.get(MimeAdapter), pathname),
+            setHeaders: options.setHeaders,
+        });
+        return !!file;
+    }
+
+    private async resolveFileResult(result: HttpFileResult, input: any, context: RequestContext): Promise<HttpMessageAdapter> {
+        const method = String(input?.method ?? '').toUpperCase();
+        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        if (!adapter) {
+            throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
+        }
+        const fileAdapter = context.get(FileAdapter);
+        if (typeof result.value === 'string') {
+            const filename = fileAdapter.isAbsolute(result.value) ? result.value : fileAdapter.resolve(result.value);
+            if (!fileAdapter.existsSync(filename)) {
+                throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
+            }
+            await this.sender.send(adapter, fileAdapter, filename, {
+                root: '/',
+                hidden: true,
+                format: false,
+                index: false,
+                method,
+                headers: result.options.headers,
+                disposition: result.options.disposition,
+                statusCode: result.options.statusCode ?? HttpStatusCode.Ok,
+                contentType: result.options.contentType,
+            });
+            return adapter;
+        }
+
+        this.applyResponseHeaders(adapter, result.options.headers);
+        if (result.options.statusCode) {
+            adapter.setStatus(result.options.statusCode);
+        }
+        const mimeAdapter = context.get(MimeAdapter);
+        const contentType = result.options.contentType ?? this.inferContentType(mimeAdapter, result.options.filename);
+        if (contentType && !adapter.hasHeader('content-type')) {
+            adapter.setHeader('content-type', contentType);
+        }
+        if (result.options.filename) {
+            adapter.setHeader('content-disposition', this.createContentDisposition(result.options.filename, result.options.disposition ?? 'attachment'));
+        }
+        if (Buffer.isBuffer(result.value)) {
+            adapter.setHeader('content-length', result.value.length);
+        }
+        if (isNil(adapter.getStatus())) {
+            adapter.setStatus(HttpStatusCode.Ok);
+        }
+        adapter.write(method === 'HEAD' ? null : result.value);
+        return adapter;
+    }
+
+    private isHttpFileResult(value: any): value is HttpFileResult {
+        return value instanceof HttpFileResult;
+    }
+
+    private inferContentType(mimeAdapter: MimeAdapter | null | undefined, filename?: string): string {
+        const name = filename ?? '';
+        const contentType = name && mimeAdapter?.lookup(name);
+        return contentType || 'application/octet-stream';
+    }
+
+    private getPathname(path?: string): string {
+        if (!path) {
+            return '';
+        }
+        const queryIndex = path.indexOf('?');
+        return queryIndex >= 0 ? path.slice(0, queryIndex) : path;
+    }
+
+    private applyResponseHeaders(outgoing: { setHeader(name: string, value: Header): void }, headers?: Record<string, Header>) {
+        if (!headers) {
+            return;
+        }
+        Object.entries(headers).forEach(([name, value]) => outgoing.setHeader(name, value));
+    }
+
+    private createContentDisposition(filename: string, disposition: 'inline' | 'attachment'): string {
+        const fallback = filename.replace(/[\r\n"]/g, '_');
+        const encoded = encodeURIComponent(filename);
+        return `${disposition}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
     }
 }
 

@@ -1,8 +1,7 @@
 import { Module } from '@tsdi/ioc';
-import { StreamAdapter, FileAdapter, ResponseStatusFormater } from '@tsdi/common';
-// import { ContentSendAdapter  } from '@tsdi/endpoints';
+import { StreamAdapter, FileAdapter, ResponseStatusFormater, ContentSendAdapter } from '@tsdi/common';
 import { NodeResponseStatusFormater } from './formater';
-// import { ContentSendAdapterImpl } from './send';
+import { ContentSendAdapterImpl } from './send';
 
 import { NodeFileAdapter } from './file';
 import { NodeStreamAdapter } from './stream';
@@ -13,7 +12,7 @@ import { NodeStreamAdapter } from './stream';
     providers: [
         { provide: StreamAdapter, useClass: NodeStreamAdapter },
         { provide: FileAdapter, useClass: NodeFileAdapter },
-        // { provide: ContentSendAdapter, useClass: ContentSendAdapterImpl },
+        { provide: ContentSendAdapter, useClass: ContentSendAdapterImpl },
         { provide: ResponseStatusFormater, useClass: NodeResponseStatusFormater }
     ]
 })

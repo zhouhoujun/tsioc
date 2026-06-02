@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, RequestContext, createRequestHandler, Transport, TransferSide, RESPONSE } from '@tsdi/common'
+import { UrlOutgoingFactory, OutgoingFactory, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
@@ -8,6 +8,7 @@ import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServic
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
 import { CoapMessageAdapter } from './message-adapter';
+import { CoapMessageAdapterFactory } from './message-adapter.factory';
 
 export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -40,6 +41,7 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         CoapMessageAdapter,
+        CoapMessageAdapterFactory,
         CoapPatternFormatter,
         CoapCompatiblePatternFormatter,
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
@@ -49,11 +51,14 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const response = context.get(RESPONSE);
-                response.error = { message: 'Not Found' };
-                response.statusCode = '4.04';
-                response.statusMessage = 'Not Found';
-                return of(response);
+                const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+                if (adapter) {
+                    adapter.writeError({ message: 'Not Found' });
+                    adapter.setStatus('4.04', 'Not Found');
+                    adapter.write({ statusCode: '4.04', statusMessage: 'Not Found' });
+                    return of(adapter);
+                }
+                return of(null);
             },
             multi: true
         },
@@ -98,7 +103,5 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
 }
 
 export function useCoapTransport(...options: Partial<CoapServOptions>[]): ServiceTransportFeature[] {
-    return options.map(option => {
-        return coapTransportFactory(option, options.length === 1 && option.asDefault);
-    });
+    return options.map((o, i) => coapTransportFactory(o, o.asDefault ?? (options.length === 1 && i === 0)));
 }

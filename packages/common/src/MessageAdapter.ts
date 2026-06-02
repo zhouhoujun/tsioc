@@ -20,8 +20,6 @@ export abstract class MessageAdapter<TRequest = any, TResponse = any> {
     abstract get req(): TRequest;
     abstract get res(): TResponse;
 
-    abstract bind(request: TRequest, response?: TResponse): void;
-
     abstract read(section: MessageSection, name?: string): any;
 
     abstract write(body: any): void;
@@ -38,6 +36,10 @@ export abstract class MessageAdapter<TRequest = any, TResponse = any> {
 
     getHeader(_name: string): any {
         return undefined;
+    }
+
+    hasHeader(_name: string): boolean {
+        return false;
     }
 
     accepts(..._args: string[]): string | string[] | false {

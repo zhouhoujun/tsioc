@@ -1,76 +1,112 @@
-// import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
-// import { PROCESS_ROOT } from '@tsdi/core';
-// import { joinPath } from '@tsdi/common';
-// import { BadRequestException } from '@tsdi/transport';
-// import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
+import { Injectable, isNil, isString } from '@tsdi/ioc';
+import { BadRequestException, ContentSendAdapter, FileAdapter, FileStats, ForbiddenException, MessageAdapter, SendOptions } from '@tsdi/common';
+import { normalize, basename, parse, sep, isAbsolute } from 'node:path';
 
-// @Injectable({ static: true })
-// export class BrowserContentSendAdapter extends ContentSendAdapter {
+@Injectable({ static: true })
+export class BrowserContentSendAdapter extends ContentSendAdapter {
+    async send(adapter: MessageAdapter, fileAdapter: FileAdapter, path: string, opts: SendOptions = {}): Promise<FileStats<any> | null> {
+        if (isNil(path) || !isString(path)) return null;
 
-//     async send(ctx: RequestContext, path: string, opts: SendOptions<any>): Promise<string> {
+        const fields = {
+            cacheControl: 'cache-control',
+            contentEncoding: 'content-encoding',
+            contentLength: 'content-length',
+            contentType: 'content-type',
+            disposition: 'content-disposition',
+            lastModified: 'last-modified',
+            acceptRanges: 'accept-ranges',
+            range: 'range',
+            contentRange: 'content-range',
+            ...opts.fields,
+        };
 
-//         if (isNil(path) || !isString(path)) return '';
+        if (path.startsWith('/')) {
+            path = path.substring(1);
+        }
+        if (opts.prefix) {
+            const prefix = path.startsWith('/') ? opts.prefix.substring(1) : opts.prefix;
+            if (!path.startsWith(prefix)) return null;
+            path = path.slice(prefix.length);
+        }
+        const endSlash = path[path.length - 1] === '/';
+        path = path.substring(parse(path).root.length);
+        try {
+            path = decodeURIComponent(path)
+        } catch {
+            throw new BadRequestException('failed to decode url');
+        }
+        const index = opts.index;
+        if (!index && INDEX_REGEXP.test(path)) {
+            return null;
+        }
+        if (isString(index) && endSlash) path += index;
+        if (isAbsolute(path) || absPath.test(path)) {
+            throw new BadRequestException('Malicious Path');
+        }
+        if (UP_REGEXP.test(normalize('.' + sep + path))) {
+            throw new ForbiddenException();
+        }
 
-//         if (path.startsWith('/')) {
-//             path = path.substring(1);
-//         }
-//         if (opts.prefix) {
-//             const prefix = path.startsWith('/') ? opts.prefix.substring(1) : opts.prefix;
-//             if (!path.startsWith(prefix)) return '';
-//             path = path.slice(prefix.length);
-//         }
-//         const endSlash = path[path.length - 1] === '/';
-//         // path = path.substring(parse(path).root.length);
-//         const roots = isArray(opts.root) ? opts.root : [opts.root ?? 'public'];
-//         try {
-//             path = decodeURIComponent(path)
-//         } catch {
-//             throw new BadRequestException('failed to decode url');
-//         }
+        const file = await fileAdapter.find(path, opts);
+        if (!file?.stats) {
+            return null;
+        }
 
-//         let index = opts.index;
-//         if (isBoolean(index)) {
-//             if (index) {
-//                 index = 'index.html';
-//             } else if (INDEX_REGEXP.test(path)) {
-//                 return '';
-//             }
-//         }
-//         if (index && endSlash) path += index;
-//         if (absPath.test(path)) {
-//             throw new BadRequestException('Malicious Path');
-//         }
+        if (opts.setHeaders) {
+            opts.setHeaders(adapter, file.filename, file.stats);
+        }
+        if (file.encodingExt && !adapter.hasHeader(fields.contentEncoding)) {
+            adapter.setHeader(fields.contentEncoding, this.getContentEncoding(file.encodingExt));
+        }
+        if (!adapter.hasHeader(fields.lastModified) && file.stats?.mtime) {
+            adapter.setHeader(fields.lastModified, file.stats.mtime.toUTCString());
+        }
+        if (!adapter.hasHeader(fields.cacheControl)) {
+            const maxAge = opts.maxAge ?? 0;
+            const directives = [`max-age=${(maxAge / 1000 | 0)}`];
+            if (opts.immutable) {
+                directives.push('immutable');
+            }
+            adapter.setHeader(fields.cacheControl, directives.join(','));
+        }
+        if (!adapter.hasHeader(fields.acceptRanges)) {
+            adapter.setHeader(fields.acceptRanges, 'bytes');
+        }
+        if (opts.contentType && !adapter.hasHeader(fields.contentType)) {
+            adapter.setHeader(fields.contentType, opts.contentType);
+        }
+        if (opts.disposition) {
+            const dispositionName = basename(file.filename, file.encodingExt ?? '');
+            adapter.setHeader(fields.disposition, this.createContentDisposition(dispositionName, opts.disposition));
+        }
+        if (file.stats?.size != null) {
+            adapter.setHeader(fields.contentLength, file.stats.size as any);
+        }
+        if (opts.statusCode != null && typeof (adapter as any).setStatus === 'function') {
+            (adapter as any).setStatus(opts.statusCode);
+        }
+        adapter.write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename));
+        return file;
+    }
 
+    private createContentDisposition(filename: string, disposition: 'inline' | 'attachment'): string {
+        const fallback = filename.replace(/[\r\n"]/g, '_');
+        const encoded = encodeURIComponent(filename);
+        return `${disposition}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+    }
 
-//         const baseUrl = ctx.get(PROCESS_ROOT);
-//         const fsdir = new FileSystemDirectoryEntry();
-//         let flieEntry: FileSystemEntry | undefined;
-//         await lang.some(roots.map(root => () => {
-//             const defer = lang.defer();
-//             const rpath = isString(opts.baseUrl) ? joinPath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? joinPath(root, path!) : joinPath(baseUrl, root, path!);
-//             fsdir.getFile(rpath, {
-//                 create: false
-//             }, (entry) => {
-//                 if (!entry.isFile) defer.resolve()
-//                 flieEntry = entry;
-//                 defer.resolve(entry);
-//             }, defer.reject);
-//             return defer.promise;
-//         }), (v) => !!v);
+    private getContentEncoding(ext?: string): string | undefined {
+        switch (ext) {
+            case '.br':
+                return 'br';
+            case '.gz':
+                return 'gzip';
+            default:
+                return undefined;
+        }
+    }
+}
 
-//         if (!flieEntry) return '';
-
-
-//         const handle = new FileSystemDirectoryHandle();
-
-//         const filehandle = await handle.getFileHandle(flieEntry.fullPath);
-//         const file = await filehandle.getFile();
-//         ctx.body = file;
-
-//         return flieEntry.name;
-//     }
-
-// }
-
-// const absPath = /^[a-zA-Z]+:\//;
-// const INDEX_REGEXP = /index(\.\w+)*$/;
+const absPath = /^[a-zA-Z]+:\//;
+const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
+const INDEX_REGEXP = /index(\.\w+)*$/;

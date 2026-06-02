@@ -3,12 +3,12 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport, RESPONSE, REQUEST,
+    InternalServerException, ListenOpts, Transport, REQUEST,
     StreamAdapter, ContentType, Outgoing, OutgoingFactory, BadRequestException,
-    AcceptsPriority, MimeAdapter
 } from '@tsdi/common'
 import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
 import { HttpMessageAdapter } from './message-adapter';
+import { HttpMessageAdapterFactory } from './message-adapter.factory';
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
@@ -152,18 +152,11 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         };
         request.hasHeader = (name: string) => request.getHeader(name) != null;
         request.getHeaderNames = () => Object.keys(req.headers ?? {});
-        const outgoing = this.createOutgoing(req);
         const context = createRequestContext(this.injector, [
             [REQUEST, request],
-            [RESPONSE, outgoing],
             [HTTP_RESPONSE, res],
         ]);
-        const adapter = new HttpMessageAdapter(
-            this.injector.get(AcceptsPriority, undefined),
-            this.injector.get(MimeAdapter, undefined)
-        );
-        adapter.bind(request, res);
-        adapter.setOutgoing(outgoing);
+        const adapter = this.injector.get(HttpMessageAdapterFactory).create({ request, response: res, context });
         context.setMessageAdapter(adapter);
         context.setPayload(request);
 
@@ -171,46 +164,40 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
             .subscribe({
                 next: (response: any) => this.writeResponse(req, res, context, response),
-                error: (err: any) => this.writeError(req, res, err)
+                error: (err: any) => this.writeError(req, res, context, err)
             });
     }
 
-
-
-    private createOutgoing(_req: HttpRequestLike): Outgoing<any> {
-        return this.injector.get(OutgoingFactory).create({});
-    }
-
     private writeResponse(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, response: any) {
-        const outgoing = this.toOutgoing(response, context);
-        const hasOutgoingState = !!outgoing && (!isNil(outgoing.body) || !isNil(outgoing.statusCode) || (outgoing.getHeaderNames?.().length ?? 0) > 0);
-        if (isNil(response) && !hasOutgoingState) {
+        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        const hasAdapterState = !!adapter && (!isNil(adapter.getBody()) || !isNil(adapter.getStatus()) || adapter.getResponseHeaderNames().length > 0);
+        if (isNil(response) && !hasAdapterState) {
             res.statusCode = 204;
             res.end();
             return;
         }
 
         const streamAdapter = context.get(StreamAdapter);
-        const status = outgoing ? outgoing.statusCode ?? 200 : 200;
-        const contentType = outgoing?.getHeader?.('content-type') ?? context.getContentType();
-        const payload = !isNil(outgoing?.body) ? outgoing.body : response;
+        const status = adapter?.getStatus() ?? 200;
+        const contentType = adapter?.getResponseHeader('content-type') ?? context.getContentType();
+        const payload = !isNil(adapter?.getBody()) ? adapter?.getBody() : response === adapter ? undefined : response;
 
-        const headerNames = outgoing?.getHeaderNames?.() ?? [];
+        const headerNames = adapter?.getResponseHeaderNames() ?? [];
         headerNames.forEach((name: string) => {
-            const value = outgoing?.getHeader?.(name);
+            const value = adapter?.getResponseHeader(name);
             if (!isNil(value)) {
                 res.setHeader(name, value as any);
             }
         });
 
         if (contentType && !res.hasHeader('content-type')) {
-            res.setHeader('content-type', contentType);
+            res.setHeader('content-type', contentType as any);
         }
 
         if (!isNil(status)) {
             res.statusCode = status as number;
-            if (req.httpVersionMajor < 2 && outgoing?.statusMessage) {
-                res.statusMessage = outgoing.statusMessage;
+            if (req.httpVersionMajor < 2 && adapter?.getStatusMessage()) {
+                res.statusMessage = adapter.getStatusMessage();
             }
         }
 
@@ -235,10 +222,33 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         res.end(typeof payload === 'string' || Buffer.isBuffer(payload) ? payload : JSON.stringify(payload));
     }
 
-    private writeError(req: HttpRequestLike, res: HttpResponseLike, err: any) {
+    private writeError(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, err: any) {
         this.logger.error(err);
         const status = err?.statusCode ?? err?.status
             ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException' ? 400 : 500);
+        const expose = typeof err?.expose === 'boolean' ? err.expose : (status >= 400 && status < 500);
+        const body = status >= 500 && !expose
+            ? { statusCode: status, statusMessage: 'Internal Server Error' }
+            : {
+                statusCode: status,
+                statusMessage: err?.statusMessage || err?.message || 'Error',
+                ...(err?.details ? { details: err.details } : {})
+            };
+
+        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        if (adapter) {
+            adapter.setStatus(status, err?.statusMessage);
+            adapter.writeError(err);
+            adapter.write(body);
+            if (err?.headers && typeof err.headers === 'object') {
+                Object.entries(err.headers).forEach(([name, value]) => {
+                    if (!isNil(value) && !adapter.hasHeader(name)) {
+                        adapter.setHeader(name, value as any);
+                    }
+                });
+            }
+        }
+
         res.statusCode = status;
         if (req.httpVersionMajor < 2 && err?.statusMessage) {
             res.statusMessage = err.statusMessage;
@@ -257,57 +267,39 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             res.end();
             return;
         }
-        res.end(JSON.stringify({ statusCode: status, message: err?.message ?? String(err) }));
+        res.end(JSON.stringify(body));
     }
 
-    private toOutgoing(response: any, context: RequestContext): Outgoing<any> | null {
-        const outgoing = context.get(RESPONSE) as Outgoing<any>;
-        if (!response) {
-            return outgoing;
+    private getRequestUrl(req: HttpRequestLike): string {
+        if ((req as http2.Http2ServerRequest).stream) {
+            return ((req as http2.Http2ServerRequest).headers[':path'] as string) || '/';
         }
-        if (typeof response.getHeader === 'function' && typeof response.setHeader === 'function') {
-            return response as Outgoing<any>;
-        }
-        if (response === outgoing) {
-            return outgoing;
-        }
-        if (!isNil(outgoing.body) || !isNil(outgoing.statusCode) || (outgoing.getHeaderNames?.().length ?? 0) > 0) {
-            return outgoing;
-        }
-        if (response && typeof response === 'object'
-            && typeof (response as any).getHeader === 'function'
-            && typeof (response as any).setHeader === 'function') {
-            return response as Outgoing<any>;
-        }
-        outgoing.body = response;
-        return outgoing;
+        return req.url || '/';
     }
 
-
-    private getRequestUrl(req: HttpRequestLike): string | undefined {
-        return req.url ?? (req.headers[':path'] as string | undefined);
+    private getRequestPath(rawUrl: string): string {
+        return rawUrl.split('?', 1)[0] || '/';
     }
 
-    private getRequestMethod(req: HttpRequestLike): string | undefined {
-        return req.method ?? (req.headers[':method'] as string | undefined);
+    private parseQuery(rawUrl: string): Record<string, string> {
+        const queryText = rawUrl.split('?', 2)[1];
+        const query: Record<string, string> = {};
+        if (!queryText) {
+            return query;
+        }
+        queryText.split('&').forEach(entry => {
+            if (!entry) return;
+            const [key, value = ''] = entry.split('=', 2);
+            if (!key) return;
+            query[decodeURIComponent(key)] = decodeURIComponent(value);
+        });
+        return query;
     }
 
-    private getRequestPath(url?: string | null): string | undefined {
-        if (!url) {
-            return undefined;
+    private getRequestMethod(req: HttpRequestLike): string {
+        if ((req as http2.Http2ServerRequest).stream) {
+            return String((req as http2.Http2ServerRequest).headers[':method'] || req.method || 'GET');
         }
-        const idx = url.indexOf('?');
-        return idx >= 0 ? url.slice(0, idx) : url;
-    }
-
-    private parseQuery(url?: string | null) {
-        if (!url) {
-            return {};
-        }
-        const idx = url.indexOf('?');
-        if (idx < 0 || idx === url.length - 1) {
-            return {};
-        }
-        return Object.fromEntries(new URLSearchParams(url.slice(idx + 1)).entries());
+        return req.method || 'GET';
     }
 }

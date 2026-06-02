@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, RESPONSE } from '@tsdi/common'
+import { UrlOutgoingFactory, OutgoingFactory, NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
@@ -13,6 +13,7 @@ import { HttpSessionInterceptor } from './interceptors/session';
 import { HttpCookieInterceptor } from './interceptors/cookie';
 import { Cors } from './interceptors/cors';
 import { HttpMessageAdapter } from './message-adapter';
+import { HttpMessageAdapterFactory } from './message-adapter.factory';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
@@ -45,6 +46,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         importProvidersFrom(ServerCommonModule),
         { provide: OutgoingFactory, useExisting: UrlOutgoingFactory },
         HttpMessageAdapter,
+        HttpMessageAdapterFactory,
         { provide: ContentInterceptor, useClass: HttpContentInterceptor },
         { provide: JsonInterceptor, useClass: HttpJsonInterceptor },
         {
@@ -77,14 +79,15 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             multiOrder: -50
         } as any] : []),
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const r = context.get(RESPONSE) as any;
+            const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
             const error = new NotFoundException('Not Found', 404);
-            if (r) {
-                r.error = error;
-                r.statusCode = error.statusCode;
-                r.statusMessage = error.message;
+            if (adapter) {
+                adapter.writeError(error);
+                adapter.setStatus(error.statusCode, error.message);
+                adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                return of(adapter);
             }
-            return of(r);
+            return of(null);
         }, multi: true },
         { provide: serviceToken, useFactory: (inj: Injector) => getClassRef(HttpServer).createInvocation(inj, {
             providers: [{ provide: HTTP_SERV_OPTIONS, useValue: config }, { provide: ServiceHandler, useFactory: (i: Injector) => createRequestHandler(i, config), deps: [Injector] }]

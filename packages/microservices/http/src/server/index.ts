@@ -6,3 +6,4 @@ export * from './multipart';
 export * from './interceptors';
 export * from './http-context';
 export * from './message-adapter';
+export * from './message-adapter.factory';

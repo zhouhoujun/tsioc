@@ -1,7 +1,9 @@
 import { BadRequestException, ContentType, FileAdapter, FileStats, FindOptions, ForbiddenException, Header, HttpStatusCode, IStats, MimeAdapter, NotFoundException, Outgoing, OutgoingFactory, RequestContext } from '@tsdi/common'
-import { REQUEST, RESPONSE } from '@tsdi/common';
+import { isNil } from '@tsdi/ioc';
+import { REQUEST } from '@tsdi/common';
 import { basename } from 'node:path';
 import { HttpFileResult, HttpFileResultOptions } from './file-result';
+import { HttpMessageAdapter } from './message-adapter';
 
 export interface HttpStaticOptions extends FindOptions {
     enabled?: boolean;
@@ -25,87 +27,93 @@ export function normalizeStaticOptions(options?: boolean | HttpStaticOptions | H
     return values.filter(value => value?.enabled !== false).map(value => ({ ...defaultStaticOptions, ...value }));
 }
 
-export async function resolveStaticFile(input: any, context: RequestContext, options: HttpStaticOptions[]): Promise<Outgoing<any> | null> {
+export async function resolveStaticFile(input: any, context: RequestContext, options: HttpStaticOptions[]): Promise<boolean> {
     if (!options.length) {
-        return null;
+        return false;
     }
     const method = String(input?.method ?? '').toUpperCase();
     if (method !== 'GET' && method !== 'HEAD') {
-        return null;
+        return false;
     }
     const pathname = getPathname(input?.url ?? input?.pattern ?? input?.topic);
     if (!pathname) {
-        return null;
+        return false;
     }
 
     const fileAdapter = context.get(FileAdapter);
-    const adapter = context.getMessageAdapter();
+    const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+    if (!adapter) {
+        return false;
+    }
     for (const option of options) {
         try {
             const file = await fileAdapter.find(pathname, {
                 ...option,
-                acceptsEncodings: (...encodings: string[]) => adapter?.acceptsEncodings(...encodings) ?? false,
+                acceptsEncodings: (...encodings: string[]) => adapter.acceptsEncodings(...encodings) ?? false,
             });
             if (file?.filename) {
-                return createFileOutgoing(context, file, method, {
+                applyFileToAdapter(adapter, context, file, method, {
                     disposition: option.disposition,
                     headers: option.headers,
                     setHeaders: option.setHeaders,
                     immutable: option.immutable,
                     maxAge: option.maxAge,
                 });
+                return true;
             }
         } catch (err) {
             throw normalizeFileError(err);
         }
     }
-    return null;
+    return false;
 }
 
-export async function resolveFileResult(result: HttpFileResult, input: any, context: RequestContext): Promise<Outgoing<any>> {
+export async function resolveFileResult(result: HttpFileResult, input: any, context: RequestContext): Promise<HttpMessageAdapter> {
     const method = String(input?.method ?? '').toUpperCase();
+    const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+    if (!adapter) {
+        throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
+    }
     if (typeof result.value === 'string') {
         const fileAdapter = context.get(FileAdapter);
         const filename = fileAdapter.isAbsolute(result.value) ? result.value : fileAdapter.resolve(result.value);
         if (!fileAdapter.existsSync(filename)) {
             throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
         }
-        return createFileOutgoing(context, {
+        applyFileToAdapter(adapter, context, {
             filename,
             stats: await fileStats(fileAdapter, filename),
         }, method, result.options);
+        return adapter;
     }
 
-    const adapter = context.getMessageAdapter();
-    const outgoing = context.get(RESPONSE);
-    if (!outgoing) {
-        throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
-    }
-    applyResponseHeaders(outgoing, result.options.headers);
+    applyResponseHeaders(adapter, result.options.headers);
     if (result.options.statusCode) {
-        outgoing.statusCode = result.options.statusCode;
+        adapter.setStatus(result.options.statusCode);
     }
     const mimeAdapter = context.get(MimeAdapter);
     const contentType = result.options.contentType ?? inferContentType(mimeAdapter, result.options.filename);
-    if (contentType && !outgoing.hasHeader('content-type')) {
-        outgoing.setHeader('content-type', contentType);
+    if (contentType && !adapter.hasHeader('content-type')) {
+        adapter.setHeader('content-type', contentType);
     }
     if (result.options.filename) {
-        outgoing.setHeader('content-disposition', createContentDisposition(result.options.filename, result.options.disposition ?? 'attachment'));
+        adapter.setHeader('content-disposition', createContentDisposition(result.options.filename, result.options.disposition ?? 'attachment'));
     }
     if (Buffer.isBuffer(result.value)) {
-        outgoing.setHeader('content-length', result.value.length);
+        adapter.setHeader('content-length', result.value.length);
     }
-    outgoing.statusCode ||= HttpStatusCode.Ok;
-    outgoing.body = method === 'HEAD' ? null : result.value;
-    return outgoing;
+    if (isNil(adapter.getStatus())) {
+        adapter.setStatus(HttpStatusCode.Ok);
+    }
+    adapter.write(method === 'HEAD' ? null : result.value);
+    return adapter;
 }
 
 export function isHttpFileResult(value: any): value is HttpFileResult {
     return value instanceof HttpFileResult;
 }
 
-function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, method: string, options: HttpFileResultOptions & { setHeaders?: (outgoing: Outgoing, path: string, stats: IStats) => void, immutable?: boolean, maxAge?: number } = {}): Outgoing<any> {
+function applyFileToAdapter(adapter: HttpMessageAdapter, context: RequestContext, file: FileStats<IStats>, method: string, options: HttpFileResultOptions & { setHeaders?: (outgoing: Outgoing, path: string, stats: IStats) => void, immutable?: boolean, maxAge?: number } = {}): void {
     const outgoing = context.get(OutgoingFactory).create({});
     const mimeAdapter = context.get(MimeAdapter);
     const fileAdapter = context.get(FileAdapter);
@@ -145,13 +153,17 @@ function createFileOutgoing(context: RequestContext, file: FileStats<IStats>, me
         outgoing.setHeader('content-range', `bytes ${range.start}-${range.end}/${size}`);
         outgoing.setHeader('content-length', range.end - range.start + 1);
         outgoing.body = method === 'HEAD' ? null : fileAdapter.read(file.filename, { start: range.start, end: range.end });
-        return outgoing;
+    } else {
+        outgoing.statusCode = options.statusCode ?? HttpStatusCode.Ok;
+        outgoing.setHeader('content-length', size);
+        outgoing.body = method === 'HEAD' ? null : fileAdapter.read(file.filename);
     }
 
-    outgoing.statusCode = options.statusCode ?? HttpStatusCode.Ok;
-    outgoing.setHeader('content-length', size);
-    outgoing.body = method === 'HEAD' ? null : fileAdapter.read(file.filename);
-    return outgoing;
+    outgoing.getHeaderNames().forEach((name: string) => {
+        adapter.setHeader(name, outgoing.getHeader(name));
+    });
+    adapter.setStatus(outgoing.statusCode, outgoing.statusMessage);
+    adapter.write(outgoing.body);
 }
 
 function inferContentType(mimeAdapter: MimeAdapter | null | undefined, filename?: string, encodingExt?: string): string {
@@ -212,7 +224,7 @@ function parseRange(header: string | undefined, size: number): ByteRange | null 
     return { start, end: Math.min(end, size - 1) };
 }
 
-function applyResponseHeaders(outgoing: Outgoing, headers?: Record<string, Header>) {
+function applyResponseHeaders(outgoing: { setHeader(name: string, value: Header): void }, headers?: Record<string, Header>) {
     if (!headers) {
         return;
     }
