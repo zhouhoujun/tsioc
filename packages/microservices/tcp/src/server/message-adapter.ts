@@ -63,6 +63,12 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
         this.currentRequest = request ?? this.socket;
     }
 
+    forkRequest(request: any): TcpMessageAdapter {
+        const adapter = new TcpMessageAdapter(this.socket);
+        adapter.setRequestData(request);
+        return adapter;
+    }
+
     read(section: any, name?: string): any {
         const req = this.currentRequest;
         switch (section) {

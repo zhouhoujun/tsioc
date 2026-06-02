@@ -139,8 +139,10 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
                 const query = this.requestData?.query;
                 return name ? query?.[name] : query;
             }
-            case 'path':
-                return this.requestData?.url;
+            case 'path': {
+                const paths = this.requestData?.paths;
+                return name ? paths?.[name] : paths;
+            }
             case 'topic':
                 return this.requestData?.method;
             case 'status':

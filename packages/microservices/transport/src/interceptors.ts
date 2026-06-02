@@ -4,7 +4,7 @@ import { PipeTransform } from '@tsdi/core';
 import {
     AbstractRequest, createRequestContext, Events, IDuplex, Packet,
     PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn,
-    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST
+    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST, MESSAGE_ADAPTER
 } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of, throwError } from 'rxjs';
@@ -94,6 +94,16 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
                 const ctx = createRequestContext(context.getInjector(), context);
                 ctx.set(REQUEST, data as any);
                 ctx.setPayload(data as any);
+                const adapter = context.getMessageAdapter();
+                if (adapter) {
+                    const factory = context.getInjector().get((adapter as any).constructor, null);
+                    if (factory && typeof (factory as any).create === 'function') {
+                        ctx.set(MESSAGE_ADAPTER, (factory as any).create({ request: data, response: context.get(SOCKET), context: ctx }));
+                    } else if (typeof (adapter as any).setRequestData === 'function') {
+                        ctx.set(MESSAGE_ADAPTER, adapter);
+                        (adapter as any).setRequestData(data);
+                    }
+                }
                 return next(data, ctx)
             }),
             mergeMap(async res => {
