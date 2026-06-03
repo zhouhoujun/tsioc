@@ -42,6 +42,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     );
 
     const providers: Provider[] = [
+        ...config.providers,
         importProvidersFrom(MimeModule),
         importProvidersFrom(ServerCommonModule),
         HttpMessageAdapter,

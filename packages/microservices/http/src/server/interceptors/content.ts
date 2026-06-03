@@ -115,7 +115,6 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
             headers: options.headers,
             disposition: options.disposition,
             statusCode: HttpStatusCode.Ok,
-            contentType: this.inferContentType(context.get(MimeAdapter), pathname),
             setHeaders: options.setHeaders,
         });
         return !!file;

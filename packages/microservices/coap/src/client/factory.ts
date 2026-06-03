@@ -101,9 +101,10 @@ function createCoapClientBackend(config: CoapClientOptions) {
                 method: request.method,
                 observe: request.observe
             });
+        const target = config.url ? new URL(config.url) : undefined;
         const client = coap.request({
-            host: config.host ?? '127.0.0.1',
-            port: config.port ?? 5683,
+            host: config.host ?? target?.hostname ?? '127.0.0.1',
+            port: config.port ?? (target?.port ? Number(target.port) : 5683),
             pathname,
             method: request.method as any,
             options: request.headers?.getHeaders?.() ?? undefined
@@ -142,7 +143,7 @@ function createCoapClientBackend(config: CoapClientOptions) {
                 const parsedStatus = parsed && typeof parsed === 'object'
                     ? (parsed.status ?? parsed.statusCode)
                     : undefined;
-                const status = res.code ?? parsedStatus ?? '2.05';
+                const status = res.code ?? normalizeCoapStatus(parsedStatus) ?? '2.05';
                 const responseOptions = parsed && typeof parsed === 'object' && parsed.headers
                     ? parsed.headers.options
                     : (res as any).options;
@@ -151,12 +152,14 @@ function createCoapClientBackend(config: CoapClientOptions) {
                     : responseOptions == null
                         ? []
                         : [responseOptions];
-                const response = parsed && typeof parsed === 'object' && 'status' in parsed
+                const isResponseEnvelope = parsed && typeof parsed === 'object' && ('body' in parsed || 'payload' in parsed || 'ok' in parsed || 'headers' in parsed || 'status' in parsed);
+                const response = isResponseEnvelope
                     ? {
                         ...parsed,
                         status,
                         statusCode: parsed.statusCode ?? status,
                         ok: parsed.ok ?? (typeof status === 'string' ? status.startsWith('2.') : true),
+                        body: 'body' in parsed ? parsed.body : ('payload' in parsed ? parsed.payload : parsed),
                         headers: {
                             ...((res as any).headers ?? {}),
                             ...(parsed.headers ?? {}),
@@ -164,9 +167,10 @@ function createCoapClientBackend(config: CoapClientOptions) {
                         }
                     }
                     : {
+                        ...(parsed && typeof parsed === 'object' ? parsed : {}),
                         ok: typeof status === 'string' ? status.startsWith('2.') : true,
                         status,
-                        statusCode: status,
+                        statusCode: parsed && typeof parsed === 'object' ? (parsed.statusCode ?? status) : status,
                         body: parsed,
                         headers: {
                             ...((res as any).headers ?? {}),
@@ -182,7 +186,7 @@ function createCoapClientBackend(config: CoapClientOptions) {
                     observer.error(response);
                     return;
                 }
-                observer.next(response.body ?? response.payload ?? parsed);
+                observer.next(response.statusMessage ? response : (response.body ?? response.payload ?? parsed));
                 observer.complete();
             });
         });
@@ -214,6 +218,17 @@ function mapRequestValue(value: any, context: any) {
         return serializeRequest(value, context.get(PatternFormatter) ?? defaultFormatter, 'payload');
     }
     return value;
+}
+
+function normalizeCoapStatus(status: any): string | undefined {
+    if (typeof status !== 'number') {
+        return status;
+    }
+    if (status >= 500) return '5.00';
+    if (status >= 400) return '4.00';
+    if (status >= 300) return '3.00';
+    if (status >= 200) return '2.05';
+    return undefined;
 }
 
 function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {

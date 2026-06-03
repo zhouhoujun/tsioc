@@ -65,7 +65,8 @@ export class RouteHandler implements RequestHandler {
                     if (err.name === 'TimeoutError') {
                         return throwError(() => Object.assign(new Error('API timeout'), {
                             statusCode: 504,
-                            statusMessage: 'API Timeout'
+                            statusMessage: 'API Timeout',
+                            expose: true
                         }));
                     }
                     return throwError(() => err);

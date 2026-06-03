@@ -3,7 +3,7 @@ import { FileAdapter, MimeAdapter, NotFoundException, RequestContext, RequestHan
 import { Injectable } from '@tsdi/ioc';
 import { basename } from 'node:path';
 import { from, mergeMap, Observable } from 'rxjs';
-import { CoapMessageAdapter } from '../server/message-adapter';
+import { CoapMessageAdapter } from '../message-adapter';
 
 @Injectable()
 export class CoapContentInterceptor implements RequestInterceptor<any> {

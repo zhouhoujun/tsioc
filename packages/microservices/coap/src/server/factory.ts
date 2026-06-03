@@ -9,6 +9,7 @@ import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
 import { CoapMessageAdapter } from './message-adapter';
 import { CoapMessageAdapterFactory } from './message-adapter.factory';
+import { COAP_SERV_INTERCEPTORS } from '../coap.module';
 
 export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -27,6 +28,7 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
     } as CoapServOptions;
 
+    config.features.interceptorsToken ??= COAP_SERV_INTERCEPTORS;
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
     getServiceInterceptorsToken(config);

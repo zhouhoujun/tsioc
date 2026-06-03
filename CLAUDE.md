@@ -163,8 +163,16 @@ Component rendering is split between the component model and HTML-specific rende
 
 There are two separate groupings with different responsibilities:
 
-- `packages/services/*`: protocol adapters
-- `packages/microservices/*`: client/service/discovery/config/security/swagger/tracing infrastructure
+- `packages/services/*`: legacy protocol adapters. Treat this tree as deprecated unless the user explicitly asks you to touch it.
+- `packages/microservices/*`: active client/service/discovery/config/security/swagger/tracing infrastructure
+
+For active transport work, prefer the current runtime model:
+
+- `RequestContext` reads request/response through `MessageAdapter`
+- transport handlers should prefer `MessageAdapterFactory` over direct request/response wrapper construction
+- content/file sending should go through `ContentSendAdapter`
+- avoid reintroducing direct dependencies on deleted `packages/common/src/incoming.impl.ts` and `packages/common/src/outgoing.impl.ts`
+- avoid relying on `toJson()` transport wrappers when direct request fields or adapter state are available
 
 When working on networked or distributed flows, expect application logic to reuse the same module/container/decorator patterns rather than a separate runtime model.
 

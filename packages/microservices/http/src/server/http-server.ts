@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
     InternalServerException, ListenOpts, Transport, REQUEST,
-    StreamAdapter, ContentType, Outgoing, BadRequestException,
+    StreamAdapter, ContentType, Outgoing, BadRequestException, ForbiddenException, NotFoundException,
 } from '@tsdi/common'
 import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
 import { HttpMessageAdapter } from './message-adapter';
@@ -225,13 +225,20 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private writeError(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, err: any) {
         this.logger.error(err);
         const status = err?.statusCode ?? err?.status
-            ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException' ? 400 : 500);
+            ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
+                ? 400
+                : err instanceof ForbiddenException
+                    ? 403
+                    : err instanceof NotFoundException
+                        ? 404
+                        : 500);
         const expose = typeof err?.expose === 'boolean' ? err.expose : (status >= 400 && status < 500);
         const body = status >= 500 && !expose
-            ? { statusCode: status, statusMessage: 'Internal Server Error' }
+            ? { statusCode: status, statusMessage: 'Internal Server Error', message: 'Internal Server Error' }
             : {
                 statusCode: status,
                 statusMessage: err?.statusMessage || err?.message || 'Error',
+                message: err?.message || err?.statusMessage || 'Error',
                 ...(err?.details ? { details: err.details } : {})
             };
 

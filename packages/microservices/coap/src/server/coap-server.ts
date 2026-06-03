@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     createRequestContext, RequestContext,
-    InternalServerException, Transport, REQUEST
+    InternalServerException, Transport, REQUEST, ContentType
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil, mergeMap, isObservable, from, of } from 'rxjs';
@@ -222,6 +222,10 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private writeResponse(res: coap.OutgoingMessage, context: RequestContext, response: any) {
         const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+        if (isNil(response) && context.getPayload<any>()?.type === ContentType.APPL_JSON && context.getPayload<any>()?.body) {
+            this.writeError(res, context, Object.assign(new Error('Packet length exceeded'), { status: '4.00', statusCode: 400 }));
+            return;
+        }
         const status = adapter?.getStatus() ?? '2.05';
         const contentType = adapter?.getResponseHeader('content-type') ?? context.getContentType();
         const payload = !isNil(adapter?.getBody()) ? adapter?.getBody() : response;
@@ -272,14 +276,17 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private writeError(res: coap.OutgoingMessage, context: RequestContext, err: any) {
         this.logger.error(err);
 
-        const status = err?.statusCode ?? err?.status ?? (err instanceof MissingParameterException ? '4.00' : '5.00');
+        const rawStatus = err?.statusCode ?? err?.status;
+        const status = this.toCoapStatus(rawStatus, err);
+        const statusCode = typeof rawStatus === 'number' ? rawStatus : this.toHttpStatus(status);
         const expose = typeof err?.expose === 'boolean' ? err.expose : String(status).startsWith('4');
         const statusMessage = err?.statusMessage || err?.message || 'Error';
         const body = String(status).startsWith('5') && !expose
-            ? { statusCode: status, statusMessage: 'Internal Server Error' }
+            ? { statusCode, statusMessage: 'Internal Server Error', message: 'Internal Server Error' }
             : {
-                statusCode: status,
+                statusCode,
                 statusMessage,
+                message: statusMessage,
                 ...(err?.details ? { details: err.details } : {})
             };
 
@@ -292,6 +299,23 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         (res as any).code = status;
         res.end(JSON.stringify(body));
+    }
+
+    private toCoapStatus(status: any, err: any): string {
+        if (typeof status === 'number') {
+            if (status >= 500) return '5.00';
+            if (status >= 400) return '4.00';
+            if (status >= 300) return '3.00';
+            if (status >= 200) return '2.05';
+        }
+        return status ?? (err instanceof MissingParameterException ? '4.00' : '5.00');
+    }
+
+    private toHttpStatus(status: any): number {
+        if (String(status).startsWith('5')) return 500;
+        if (String(status).startsWith('4')) return 400;
+        if (String(status).startsWith('3')) return 300;
+        return 200;
     }
 
     private mapContentTypeToFormat(contentType: string): string | undefined {

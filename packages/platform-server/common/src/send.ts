@@ -72,8 +72,9 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         if (!adapter.hasHeader(fields.acceptRanges)) {
             adapter.setHeader(fields.acceptRanges, 'bytes');
         }
-        if (opts.contentType && !adapter.hasHeader(fields.contentType)) {
-            adapter.setHeader(fields.contentType, opts.contentType);
+        const contentType = opts.contentType ?? this.inferContentType(fileAdapter, file.filename, file.encodingExt);
+        if (contentType && !adapter.hasHeader(fields.contentType)) {
+            adapter.setHeader(fields.contentType, contentType);
         }
         if (opts.disposition) {
             const dispositionName = basename(file.filename, file.encodingExt ?? '');
@@ -115,6 +116,38 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
                 return 'gzip';
             default:
                 return undefined;
+        }
+    }
+
+    private inferContentType(fileAdapter: FileAdapter, filename: string, encodingExt?: string): string {
+        const ext = fileAdapter.extname(filename, encodingExt).toLowerCase();
+        switch (ext) {
+            case '.html':
+            case '.htm':
+                return 'text/html';
+            case '.txt':
+                return 'text/plain';
+            case '.json':
+                return 'application/json';
+            case '.js':
+                return 'application/javascript';
+            case '.css':
+                return 'text/css';
+            case '.xml':
+                return 'application/xml';
+            case '.svg':
+                return 'image/svg+xml';
+            case '.png':
+                return 'image/png';
+            case '.jpg':
+            case '.jpeg':
+                return 'image/jpeg';
+            case '.gif':
+                return 'image/gif';
+            case '.mp4':
+                return 'video/mp4';
+            default:
+                return 'application/octet-stream';
         }
     }
 

@@ -21,6 +21,25 @@ This is a comprehensive TypeScript framework called "tsioc" (TypeScript IoC) tha
 - API Rate-Limit: Per-route and global rate limiting for microservice service APIs
 - API Timeout: Per-route and global execution timeout for microservice service APIs
 
+## Active transport runtime model
+
+The active transport stack now centers on `MessageAdapter`.
+
+- Request/response access goes through `RequestContext.getMessageAdapter()` / `getRequest()` / `getResponse()`.
+- Active microservice transports serialize request/response data directly from request fields and adapter state instead of relying on legacy `incoming.impl.ts` / `outgoing.impl.ts` wrapper flows.
+- Static/content sending is handled through `ContentSendAdapter`, with platform implementations in:
+  - `packages/platform-server/common/src/send.ts`
+  - `packages/platform-browser/common/src/send.ts`
+- Header field names used by content sending are configurable via `SendOptions.fields` (`cache-control`, `content-encoding`, `last-modified`, etc.).
+
+This means new transport or content work should prefer:
+
+- `MessageAdapter`
+- `MessageAdapterFactory`
+- `ContentSendAdapter`
+
+and should not reintroduce legacy incoming/outgoing implementation layers.
+
 # Package Structure
 
 The framework is organized into multiple packages:
