@@ -37,10 +37,12 @@
     "lib": [
       "dom",
       "es2015",
-      "es2017"
+      "es2017",
+      "es2020"
     ],
     "types": [
-      "mocha"
+      "mocha",
+      "node"
     ]
   },
   "exclude": [
