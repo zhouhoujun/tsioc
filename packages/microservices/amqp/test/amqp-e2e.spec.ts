@@ -5,7 +5,7 @@ import { GET, POST } from '@tsdi/common';
 import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useAmqpTransport } from '../src/server';
 import { withAmqpTransport, AmqpClient } from '../src/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import * as amqp from 'amqplib';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
@@ -31,6 +31,7 @@ describe('AMQP E2E microservice:true', () => {
             provideService(useRouter(),
                 useAmqpTransport({ url: AMQP_URL, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withAmqpTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -55,6 +56,7 @@ describe('AMQP E2E microservice:false', () => {
             provideService(useRouter(),
                 useAmqpTransport({ microservice: false as any, url: AMQP_URL, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withAmqpTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
         ]
     })
@@ -128,6 +130,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
             provideService(useRouter(),
                 useAmqpTransport({ url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withAmqpTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -176,7 +179,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
                 correlationId: corrId
             });
 
-            setTimeout(() => reject(new Error('Timeout')), 10000);
+            setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
         expect(result).toBeDefined();
@@ -200,6 +203,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
             provideService(useRouter(),
                 useAmqpTransport({ microservice: false as any, url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withAmqpTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
         ]
     })
@@ -244,7 +248,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
                 correlationId: corrId
             });
 
-            setTimeout(() => reject(new Error('Timeout')), 10000);
+            setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
         expect(result).toBeDefined();
@@ -273,6 +277,7 @@ describe('AMQP pattern routing', () => {
                     url: AMQP_URL
                 })),
             provideClient(
+                withTimeout(),
                 withAmqpTransport({ url: AMQP_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -289,17 +294,17 @@ describe('AMQP pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
         expect(result.payload).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 50 } as any));
         expect(result.payload).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 } as any));
         expect(result.payload).toEqual('foo');
     });
 });
@@ -317,6 +322,7 @@ describe('AMQP pattern routing with custom routingKey', () => {
                     routingKey: ROUTING_KEY
                 })),
             provideClient(
+                withTimeout(),
                 withAmqpTransport({
                     url: AMQP_URL,
                     routingKey: ROUTING_KEY,
@@ -338,7 +344,7 @@ describe('AMQP pattern routing with custom routingKey', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns with custom routingKey', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
         expect(result.payload).toEqual('hello');
     });
 });

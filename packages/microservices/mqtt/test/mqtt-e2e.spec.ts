@@ -5,7 +5,7 @@ import { GET, POST } from '@tsdi/common';
 import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useMqttTransport } from '../src/server';
 import { withMqttTransport, MqttClient } from '../src/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import * as mqtt from 'mqtt';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
@@ -42,6 +42,7 @@ describe('MQTT E2E microservice:true', () => {
             provideService(useRouter(),
                 useMqttTransport({ url: MQTT_URL, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withMqttTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -66,6 +67,7 @@ describe('MQTT E2E microservice:false', () => {
             provideService(useRouter(),
                 useMqttTransport({ microservice: false as any, url: MQTT_URL, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withMqttTransport({ url: MQTT_URL, microservice: false, asDefault: true }))
         ]
     })
@@ -137,6 +139,7 @@ describe('MQTT pattern routing', () => {
                     ]
                 })),
             provideClient(
+                withTimeout(),
                 withMqttTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -153,17 +156,17 @@ describe('MQTT pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns through the default formatter', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' } }));
+        const result = await lastValueFrom(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 50 } as any));
         expect(result.payload).toEqual('ble');
     });
 
     it('routes wildcard mqtt topics', async () => {
-        const result = await lastValueFrom(client.send('sensor/message/update', { payload: { message: 'ble' } }));
+        const result = await lastValueFrom(client.send('sensor/message/update', { payload: { message: 'ble' }, timeout: 50 } as any));
         expect(result.payload).toEqual('ble');
     });
 
     it('routes subscribe patterns via MQTT wildcard topic', async () => {
-        const result = await lastValueFrom(client.send('sensor/sensor01/start', { payload: { message: 'ble' } }));
+        const result = await lastValueFrom(client.send('sensor/sensor01/start', { payload: { message: 'ble' }, timeout: 50 } as any));
         expect(result.payload).toEqual('ble');
     });
 });
@@ -188,6 +191,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
                     asDefault: true
                 })),
             provideClient(
+                withTimeout(),
                 withMqttTransport({ url: MQTT_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -229,7 +233,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
                     }
                 }
             });
-            setTimeout(() => reject(new Error('Timeout')), 10000);
+            setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
         expect(result).toBeDefined();
@@ -252,6 +256,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
                     asDefault: true
                 })),
             provideClient(
+                withTimeout(),
                 withMqttTransport({ url: MQTT_URL, microservice: false, asDefault: true }))
         ]
     })
@@ -286,7 +291,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
                     try { resolve(JSON.parse(payload.toString())); } catch { resolve(payload.toString()); }
                 }
             });
-            setTimeout(() => reject(new Error('Timeout')), 10000);
+            setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
         expect(result).toBeDefined();

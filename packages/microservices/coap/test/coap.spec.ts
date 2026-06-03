@@ -9,7 +9,7 @@ import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
 import { provideService, useBodyParser, useJson, useRouter, useStatics } from '@tsdi/service';
 import { useCoapTransport } from '../src/server';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import { withCoapTransport } from '../src/client';
 
 @Module({
@@ -26,6 +26,7 @@ import { withCoapTransport } from '../src/client';
             useCoapTransport({ listenOpts: { port: 5684 }, asDefault: true })
         ),
         provideClient(
+            withTimeout(),
             withCoapTransport({ url: 'coap://localhost:5684', asDefault: true })
         )
     ],
@@ -104,21 +105,21 @@ describe('CoAP Server & CoAP Client', () => {
     });
 
     it('should return not found for static json path', async () => {
-        const res: any = await lastValueFrom(client.send('/content/510100_full.json').pipe(
+        const res: any = await lastValueFrom(client.send('/content/510100_full.json', { timeout: 50 } as any).pipe(
             catchError(err => of(err))
         ));
         expect(res.statusMessage).toEqual('Not Found');
     });
 
     it('should reject oversized json payload through validator', async () => {
-        const res: any = await lastValueFrom(client.send('/content/big.json').pipe(
+        const res: any = await lastValueFrom(client.send('/content/big.json', { timeout: 50 } as any).pipe(
             catchError(err => of(err))
         ));
         expect(String(res.statusMessage || res.message || '')).toContain('Packet length');
     });
 
     it('should echo route parameter endpoint', async () => {
-        const res: any = await lastValueFrom(client.send('/device/123').pipe(
+        const res: any = await lastValueFrom(client.send('/device/123', { timeout: 50 } as any).pipe(
             catchError(err => of(err))
         ));
         expect(res).toBeDefined();

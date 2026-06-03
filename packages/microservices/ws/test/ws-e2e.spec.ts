@@ -146,7 +146,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
         const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
             observe: 'response' as any,
             responseType: 'text' as any,
-            timeout: 100
+            timeout: 50
         } as any).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
@@ -184,7 +184,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
         const result = await lastValueFrom(client.send({ cmd: 'test' }, {
             observe: 'response' as any,
             responseType: 'text' as any,
-            timeout: 100
+            timeout: 50
         } as any).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
@@ -237,7 +237,7 @@ describe('WS pattern routing', () => {
     it('routes object cmd patterns', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
             payload: { msg: 'hello' },
-            timeout: 100
+            timeout: 50
         } as any).pipe(catchError(err => of({ error: err?.message ?? err }))));
         expect(result).toBeDefined();
     });

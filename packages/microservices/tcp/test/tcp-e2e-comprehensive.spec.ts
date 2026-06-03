@@ -492,6 +492,6 @@ function sendTcpRequest(port: number, requestObj: Record<string, unknown>): Prom
         setTimeout(() => {
             socket.destroy();
             reject(new Error('Request timeout'));
-        }, 5000);
+        }, 500);
     });
 }

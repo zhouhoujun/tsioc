@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { BadRequestException, Transport } from '@tsdi/common';
-import { provideClient, withInterceptors, withTransfers } from '@tsdi/client';
+import { provideClient, withTimeout, withInterceptors, withTransfers } from '@tsdi/client';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -97,6 +97,7 @@ export class DeviceController {
     ],
     providers: [
         provideClient(
+            withTimeout(),
             withInterceptors(),
             withTransfers(),
             withTcpTransport(

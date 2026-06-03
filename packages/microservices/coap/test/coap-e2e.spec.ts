@@ -7,7 +7,7 @@ import { InternalServerException } from '@tsdi/common';
 import { useCoapTransport } from '../src/server';
 import { withCoapTransport } from '../src/client';
 import { CoapClient } from '../src/client/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import * as coap from 'coap';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');

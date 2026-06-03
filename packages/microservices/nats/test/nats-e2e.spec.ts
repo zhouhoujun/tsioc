@@ -4,8 +4,8 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
 import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useNatsTransport } from '../src/server';
+import { provideClient, withTimeout } from '@tsdi/client';
 import { withNatsTransport, NatsClient } from '../src/client';
-import { provideClient } from '@tsdi/client';
 import { connect, StringCodec, NatsConnection } from 'nats';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
@@ -31,6 +31,7 @@ describe('NATS E2E microservice:true', () => {
             provideService(useRouter(),
                 useNatsTransport({ url: NATS_URL, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withNatsTransport({ url: NATS_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -55,6 +56,7 @@ describe('NATS E2E microservice:false', () => {
             provideService(useRouter(),
                 useNatsTransport({ microservice: false as any, url: NATS_URL, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withNatsTransport({ url: NATS_URL, microservice: false, asDefault: true }))
         ]
     })
@@ -127,6 +129,7 @@ describe('NATS E2E with provideService + provideClient (microservice:true)', () 
             provideService(useRouter(),
                 useNatsTransport({ url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
             provideClient(
+                withTimeout(),
                 withNatsTransport({ url: NATS_URL, microservice: true, asDefault: true }))
         ]
     })
@@ -154,7 +157,7 @@ describe('NATS E2E with provideService + provideClient (microservice:true)', () 
         const msg = await nc.request(SUBJECT, sc.encode(JSON.stringify({
             url: '/e2e/test/ping',
             method: 'GET'
-        })), { timeout: 10000 });
+        })), { timeout: 1000 });
         const response = JSON.parse(sc.decode(msg.data));
         expect(response).toBeDefined();
         expect(response).toBeDefined();
@@ -171,6 +174,7 @@ describe('NATS E2E with provideService + provideClient (microservice:false)', ()
             provideService(useRouter(),
                 useNatsTransport({ microservice: false as any, url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
             provideClient(
+                withTimeout(),
                 withNatsTransport({ url: NATS_URL, microservice: false, asDefault: true }))
         ]
     })
@@ -198,7 +202,7 @@ describe('NATS E2E with provideService + provideClient (microservice:false)', ()
         const msg = await nc.request(SUBJECT, sc.encode(JSON.stringify({
             url: '/test',
             method: 'GET'
-        })), { timeout: 10000 });
+        })), { timeout: 1000 });
         const response = JSON.parse(sc.decode(msg.data));
         expect(response).toBeDefined();
     });
@@ -224,6 +228,7 @@ describe('NATS pattern routing', () => {
             provideService(useRouter(),
                 useNatsTransport({ url: 'nats://127.0.0.1:4222' })),
             provideClient(
+                withTimeout(),
                 withNatsTransport({ url: 'nats://127.0.0.1:4222', microservice: true, asDefault: true }))
         ]
     })
@@ -240,17 +245,26 @@ describe('NATS pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
+            payload: { msg: 'hello' },
+            timeout: 50
+        } as any));
         expect(result.payload).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        const result = await lastValueFrom(client.send('sensor.message.update', {
+            payload: { msg: 'world' },
+            timeout: 50
+        } as any));
         expect(result.payload).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
+        const result = await lastValueFrom(client.send('sensor.temp.start', {
+            payload: { msg: 'foo' },
+            timeout: 50
+        } as any));
         expect(result.payload).toEqual('foo');
     });
 });

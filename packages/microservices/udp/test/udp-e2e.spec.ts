@@ -5,7 +5,7 @@ import { GET, POST } from '@tsdi/common';
 import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, RequestHeader, RequestParam, RequestPath, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useUdpTransport } from '../src/server';
 import { withUdpTransport, UdpClient } from '../src/client';
-import { provideClient } from '@tsdi/client';
+import { provideClient, withTimeout } from '@tsdi/client';
 import * as dgram from 'node:dgram';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
@@ -59,6 +59,7 @@ describe('UDP E2E microservice:true', () => {
             provideService(useRouter(),
                 useUdpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withUdpTransport({ port: PORTS.ms, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -84,6 +85,7 @@ describe('UDP E2E microservice:false', () => {
             provideService(useRouter(),
                 useUdpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withUdpTransport({ port: PORTS.host, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
     })
@@ -156,6 +158,7 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
             provideService(useRouter(),
                 useUdpTransport({ features: { defaultTransfer: undefined }, listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withUdpTransport({ port: PORTS.e2e, host: '127.0.0.1', microservice: true, asDefault: true }))
         ]
     })
@@ -176,7 +179,7 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
             const timer = setTimeout(() => {
                 try { client.close(); } catch { }
                 reject(new Error('Timeout'));
-            }, 5000);
+            }, 500);
             client.send(payload, PORTS.e2e, '127.0.0.1', (err) => {
                 if (err) {
                     clearTimeout(timer);
@@ -225,6 +228,7 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
             provideService(useRouter(),
                 useUdpTransport({ microservice: false as any, features: { defaultTransfer: undefined }, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withUdpTransport({ port: PORTS.hostE2e, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
     })
@@ -245,7 +249,7 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
             const timer = setTimeout(() => {
                 try { client.close(); } catch { }
                 reject(new Error('Timeout'));
-            }, 5000);
+            }, 500);
             client.send(payload, PORTS.hostE2e, '127.0.0.1', (err) => {
                 if (err) {
                     clearTimeout(timer);
@@ -308,7 +312,7 @@ describe('UDP parameter coverage matrix', () => {
             const timer = setTimeout(() => {
                 try { client.close(); } catch { }
                 reject(new Error('Timeout'));
-            }, 5000);
+            }, 500);
             client.send(payload, MATRIX_PORT, '127.0.0.1', (err) => {
                 if (err) {
                     clearTimeout(timer);
@@ -370,6 +374,7 @@ describe('UDP pattern routing', () => {
             provideService(useRouter(),
                 useUdpTransport({ listenOpts: { port: 21800, host: '127.0.0.1' } })),
             provideClient(
+                withTimeout(),
                 withUdpTransport({ host: '127.0.0.1', port: 21800, microservice: true, asDefault: true }))
         ]
     })
@@ -386,18 +391,18 @@ describe('UDP pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }));
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
         console.log('udp cmd result:', result);
         expect(result.payload).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }));
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 50 } as any));
         expect(result.payload).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }));
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 } as any));
         expect(result.payload).toEqual('foo');
     });
 });

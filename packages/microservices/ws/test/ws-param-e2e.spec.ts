@@ -67,7 +67,7 @@ describe('WS parameter coverage E2E', () => {
             meta: { count: 3, enabled: true }
         };
         const result = await lastValueFrom(
-            client.send({ cmd: 'body-echo' }, { payload, timeout: 100 } as any).pipe(catchError(err => of({ error: err?.message ?? err })))
+            client.send({ cmd: 'body-echo' }, { payload, timeout: 50 } as any).pipe(catchError(err => of({ error: err?.message ?? err })))
         );
         expect(result).toBeDefined();
     });

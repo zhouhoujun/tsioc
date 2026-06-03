@@ -137,7 +137,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
                 useRouter({ microservice: true }),
                 useTcpTransport({ listenOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withTimeout(10000),
+                withTimeout(),
                 withTcpTransport({ connectOpts: { port: PORTS.client, host: '127.0.0.1' }, asDefault: true }))
         ]
     })
@@ -149,7 +149,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
     before(async () => {
         ctx = await Application.run(TcpClientModule);
         client = ctx.get(TcpClient);
-        
+
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -161,8 +161,9 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
     it('should send ping cmd and receive pong via client.send()', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
             observe: 'response' as any,
-            responseType: 'text' as any
-        }).pipe(catchError(err => of(err))));
+            responseType: 'text' as any,
+            timeout: 50
+        } as any).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 
@@ -170,8 +171,9 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
         const testMsg = { message: 'hello tcp' };
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
             observe: 'response' as any,
-            payload: testMsg
-        }).pipe(catchError(err => of(err))));
+            payload: testMsg,
+            timeout: 50
+        } as any).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 });
