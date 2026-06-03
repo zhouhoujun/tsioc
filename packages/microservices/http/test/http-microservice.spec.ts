@@ -25,8 +25,8 @@ describe('HTTP Microservice', () => {
         });
 
         it('should accept timeout property', () => {
-            const options: Partial<HttpServOptions> = { transport: Transport.HTTP, majorVersion: 2, timeout: 5000 };
-            expect(options.timeout).toBe(5000);
+            const options: Partial<HttpServOptions> = { transport: Transport.HTTP, majorVersion: 2, timeout: 50 };
+            expect(options.timeout).toBe(50);
         });
     });
 

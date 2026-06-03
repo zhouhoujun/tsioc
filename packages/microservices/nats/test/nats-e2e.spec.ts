@@ -247,7 +247,7 @@ describe('NATS pattern routing', () => {
     it('routes object cmd patterns', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
             payload: { msg: 'hello' },
-            timeout: 5000
+            timeout: 50
         } as any));
         expect(result.payload).toEqual('hello');
     });
@@ -255,7 +255,7 @@ describe('NATS pattern routing', () => {
     it('routes wildcard topic patterns', async () => {
         const result = await lastValueFrom(client.send('sensor.message.update', {
             payload: { msg: 'world' },
-            timeout: 5000
+            timeout: 50
         } as any));
         expect(result.payload).toEqual('world');
     });
@@ -263,7 +263,7 @@ describe('NATS pattern routing', () => {
     it('routes subscribe patterns with wildcard', async () => {
         const result = await lastValueFrom(client.send('sensor.temp.start', {
             payload: { msg: 'foo' },
-            timeout: 5000
+            timeout: 50
         } as any));
         expect(result.payload).toEqual('foo');
     });
