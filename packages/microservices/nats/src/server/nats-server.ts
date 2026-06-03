@@ -53,7 +53,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
             this.logger.info(getTypeName(this), 'connected to NATS:', this.options.url || 'nats://127.0.0.1:4222');
 
-            const subjects = this.options.subjects || ['microservice.>'];
+            const subjects = this.options.subjects || ['>'];
             const sc = StringCodec();
 
             for (const subject of subjects) {
@@ -113,15 +113,24 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             parsed = content;
         }
 
-        const url = parsed.url || '/' + subject.replace(/\./g, '/');
-        const method = parsed.method || 'GET';
-        const requestData = { ...parsed, url, method };
+        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
+        const url = requestSource.url || subject;
+        const method = requestSource.method || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        const requestData = {
+            ...requestSource,
+            url,
+            method,
+            body,
+            payload: body,
+        };
 
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
         ]);
         const adapter = this.injector.get(NatsMessageAdapterFactory).create({ request: requestData, response: this.nc!, context });
         context.setMessageAdapter(adapter);
+        context.setPayload(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
@@ -129,9 +138,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ).subscribe((response: any) => {
                 if (msg.respond) {
                     const body = adapter.getBody() ?? (response === adapter ? undefined : response);
-                    const buf = sc.encode(
-                        typeof body === 'string' ? body : JSON.stringify(body)
-                    );
+                    const buf = sc.encode(JSON.stringify({ payload: body }));
                     msg.respond(buf);
                 }
             });

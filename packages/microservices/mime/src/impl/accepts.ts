@@ -1,11 +1,38 @@
 /* eslint-disable no-useless-escape */
 import { Injectable, isArray, isString } from '@tsdi/ioc';
-import { AcceptsPriority } from '@tsdi/common';
+import { AcceptsPriority, Incoming, MimeAdapter } from '@tsdi/common';
 
 
 
 @Injectable({ static: true })
 export class AcceptsPriorityImpl implements AcceptsPriority {
+
+    accepts(incoming: Incoming, mime: MimeAdapter, ...types: string[]): string | false {
+        const header = this.getHeaderValue(incoming, 'accept') || '*/*';
+        const accepts = types.map(type => mime.normalize(type) || type);
+        const priority = this.priority(header, accepts, 'media')[0];
+        return priority ? mime.match(accepts, priority) : false;
+    }
+
+    acceptsEncodings(incoming: Incoming, ...encodings: string[]): string | false {
+        const header = this.getHeaderValue(incoming, 'accept-encoding') || 'identity';
+        return this.priority(header, encodings, 'encodings')[0] || false;
+    }
+
+    acceptsCharsets(incoming: Incoming, ...charsets: string[]): string | false {
+        const header = this.getHeaderValue(incoming, 'accept-charset') || '*';
+        return this.priority(header, charsets, 'charsets')[0] || false;
+    }
+
+    acceptsLanguages(incoming: Incoming, ...languages: string[]): string | false {
+        const header = this.getHeaderValue(incoming, 'accept-language') || '*';
+        return this.priority(header, languages, 'lang')[0] || false;
+    }
+
+    private getHeaderValue(incoming: Incoming, name: string): string {
+        const value = (incoming as any).getHeader?.(name);
+        return Array.isArray(value) ? value.join(',') : value == null ? '' : String(value);
+    }
 
     priority(accept: string | string[], accepts: string[], type: 'lang' | 'media' | 'charsets' | 'encodings'): string[] {
         let accepted: Accepted[];

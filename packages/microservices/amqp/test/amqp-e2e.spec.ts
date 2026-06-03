@@ -118,6 +118,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
     @Controller('/e2e')
     class AmqpE2eController {
         @Get('/ping') ping() { return { result: 'pong' }; }
+        @Post('/echo') echo(@RequestBody() body: any) { return { received: body }; }
     }
 
     @Module({

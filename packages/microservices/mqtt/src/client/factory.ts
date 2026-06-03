@@ -141,7 +141,7 @@ function createMqttClientBackend(config: MqttClientOptions) {
         }
 
         client.on(Events.MESSAGE, onMessage);
-        subscribeTopic(client, responseTopic, config.subscribeOpts ?? { qos: 0 })
+        subscribeTopic(client, responseTopic, normalizeSubscribeOptions(config.subscribeOpts))
             .then(() => publishMessage(client, topic, payload))
             .then(() => {
                 timer = setTimeout(() => {
@@ -177,7 +177,7 @@ function serializeRequest(request: any, formatter: PatternFormatter, payloadKey:
     if (request.responseTopic) {
         json.responseTopic = request.responseTopic;
     }
-    if (request.id) {
+    if (request.id !== undefined && request.id !== null) {
         json.id = request.id;
     }
     if (request.pattern) {
@@ -201,9 +201,13 @@ function serializeRequest(request: any, formatter: PatternFormatter, payloadKey:
     return json;
 }
 
+function normalizeSubscribeOptions(options?: MqttClientOptions['subscribeOpts']): mqtt.IClientSubscribeOptions {
+    return { qos: options?.qos ?? 0 };
+}
+
 function subscribeTopic(client: mqtt.MqttClient, topic: string, options: mqtt.IClientSubscribeOptions): Promise<void> {
     return new Promise((resolve, reject) => {
-        client.subscribe(topic, options, (err) => {
+        client.subscribe(topic, options, (err: Error | null) => {
             if (err) reject(err);
             else resolve();
         });
@@ -212,7 +216,7 @@ function subscribeTopic(client: mqtt.MqttClient, topic: string, options: mqtt.IC
 
 function unsubscribeTopic(client: mqtt.MqttClient, topic: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        client.unsubscribe(topic, (err) => {
+        client.unsubscribe(topic, (err: Error | null) => {
             if (err) reject(err);
             else resolve();
         });

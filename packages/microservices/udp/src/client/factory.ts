@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter } from '@tsdi/common';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, Events } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { UDP_CLIENT_OPTIONS, UdpClientOptions } from './options';
@@ -9,7 +9,7 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
     const config = {
         transport: Transport.UDP, side: TransferSide.client,
         ...option,
-        features: { defaultTransfer: useJsonPacket(), ...option.features },
+        features: { defaultTransfer: useJsonPacket({ eventName: Events.MESSAGE }), ...option.features },
     } as UdpClientOptions;
     config.providers ??= [];
     config.providers.push(

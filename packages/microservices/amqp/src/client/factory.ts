@@ -177,7 +177,7 @@ function serializeRequest(request: any, formatter: PatternFormatter, payloadKey:
     if (request.url) {
         const fullUrl = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
         const [url, rawQuery] = String(fullUrl).split('?', 2);
-        json.url = url;
+        json.url = url.startsWith('/') ? url.slice(1).replace(/\//g, '.') : url;
         if (rawQuery) {
             json.query = parseQueryString(rawQuery);
         }
@@ -188,7 +188,7 @@ function serializeRequest(request: any, formatter: PatternFormatter, payloadKey:
     if (request.responseTopic) {
         json.responseTopic = request.responseTopic;
     }
-    if (request.id) {
+    if (request.id !== undefined && request.id !== null) {
         json.id = request.id;
     }
     if (request.pattern) {

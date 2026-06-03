@@ -116,7 +116,11 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
     }
 
     private handleMessage(msg: Buffer, rinfo: dgram.RemoteInfo) {
-        const data = msg.toString();
+        let data = msg.toString();
+        const framed = data.endsWith('\r\n');
+        if (framed) {
+            data = data.slice(0, -2);
+        }
 
         let parsed: any;
         try {
@@ -145,12 +149,15 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 if (this.socket) {
                     const body = adapter.getBody() ?? (response === adapter ? undefined : response);
                     let payload = body;
-                    if (requestData?.id && (payload === null || payload === undefined || (typeof payload !== 'object' && typeof payload !== 'function'))) {
-                        payload = { id: requestData.id, payload };
+                    if (requestData?.id !== undefined && requestData?.id !== null) {
+                        if (payload === null || payload === undefined || (typeof payload !== 'object' && typeof payload !== 'function')) {
+                            payload = { id: requestData.id, payload };
+                        } else if (payload.id === undefined || payload.id === null) {
+                            payload.id = requestData.id;
+                        }
                     }
-                    const buf = Buffer.from(
-                        typeof payload === 'string' ? payload : JSON.stringify(payload)
-                    );
+                    const responseText = typeof payload === 'string' ? payload : JSON.stringify(payload);
+                    const buf = Buffer.from(framed ? responseText + '\r\n' : responseText);
                     this.socket.send(buf, rinfo.port, rinfo.address);
                 }
             });

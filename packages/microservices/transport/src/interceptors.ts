@@ -96,12 +96,16 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
                 ctx.setPayload(data as any);
                 const adapter = context.getMessageAdapter();
                 if (adapter) {
-                    const factory = context.getInjector().get((adapter as any).constructor, null);
-                    if (factory && typeof (factory as any).create === 'function') {
-                        ctx.set(MESSAGE_ADAPTER, (factory as any).create({ request: data, response: context.get(SOCKET), context: ctx }));
+                    if (typeof (adapter as any).forkRequest === 'function') {
+                        ctx.set(MESSAGE_ADAPTER, (adapter as any).forkRequest(data));
                     } else if (typeof (adapter as any).setRequestData === 'function') {
                         ctx.set(MESSAGE_ADAPTER, adapter);
                         (adapter as any).setRequestData(data);
+                    } else {
+                        const factory = context.getInjector().get((adapter as any).constructor, null);
+                        if (factory && typeof (factory as any).create === 'function') {
+                            ctx.set(MESSAGE_ADAPTER, (factory as any).create({ request: data, response: context.get(SOCKET), context: ctx }));
+                        }
                     }
                 }
                 return next(data, ctx)

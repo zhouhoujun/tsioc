@@ -5,7 +5,6 @@ import { NatsServer } from './nats-server';
 import { NatsPatternFormatter } from './pattern';
 import { NatsServOptions, NATS_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { NatsMessageAdapter } from './message-adapter';
 import { NatsMessageAdapterFactory } from './message-adapter.factory';
@@ -17,7 +16,7 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
+            defaultTransfer: () => [],
             ...option.features,
             router: option.features?.router === false ? false : {
                 ...(typeof option.features?.router === 'object' ? option.features.router : {}),

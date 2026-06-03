@@ -27,7 +27,7 @@ export interface PacketOptions extends TransferOptions {
 
 const requestMapping = (req: any, context: RequestContext) => {
     if (req instanceof AbstractRequest) {
-        const payloadKey = req.pattern ? 'payload' : 'body';
+        const payloadKey = (req as any).pattern ? 'payload' : 'body';
         const json: Record<string, any> = {};
         if ((req as any).url) {
             const fullUrl = typeof (req as any).getUrlWithParams === 'function' ? (req as any).getUrlWithParams() : (req as any).url;
@@ -43,8 +43,9 @@ const requestMapping = (req: any, context: RequestContext) => {
         if ((req as any).responseTopic) {
             json.responseTopic = (req as any).responseTopic;
         }
-        if ((req as any).id) {
-            json.id = (req as any).id;
+        const id = (req as any).id;
+        if (id !== undefined && id !== null) {
+            json.id = id;
         }
         if ((req as any).pattern) {
             const formatter = context.get(PatternFormatter);
@@ -80,6 +81,10 @@ const outgoingMapping = (res: any, context: RequestContext) => {
         const error = adapter.getError?.();
         const body = adapter.getBody?.();
         const headerNames = adapter.getResponseHeaderNames?.() ?? [];
+        const id = res?.id;
+        if (id !== undefined && id !== null) {
+            json.id = id;
+        }
         if (status !== undefined && status !== null) {
             json.status = status;
             json.statusCode = status;

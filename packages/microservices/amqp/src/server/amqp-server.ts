@@ -59,6 +59,9 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             await this.channel.assertExchange(exchange, exchangeType, { durable: true });
             const q = await this.channel.assertQueue(queue, { exclusive: !queue });
             await this.channel.bindQueue(q.queue, exchange, routingKey);
+            if (routingKey !== '*.microservice') {
+                await this.channel.bindQueue(q.queue, exchange, '*.microservice');
+            }
 
             if (this.options.prefetch) {
                 await this.channel.prefetch(this.options.prefetch);
@@ -119,7 +122,8 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         const routingKey = msg.fields.routingKey;
         const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || routingKey;
+        const rawUrl = requestSource.url || routingKey;
+        const url = typeof rawUrl === 'string' && rawUrl.startsWith('/') ? rawUrl.slice(1).replace(/\//g, '.') : rawUrl;
         const method = requestSource.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         const requestData = {

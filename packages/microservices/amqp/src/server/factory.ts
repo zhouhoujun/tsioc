@@ -5,10 +5,12 @@ import { AmqpServer } from './amqp-server';
 import { AmqpPatternFormatter } from './pattern';
 import { AmqpServOptions, AMQP_SERV_OPTIONS } from './options';
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
+import { RequestInterceptorFn } from '@tsdi/common';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { AmqpMessageAdapter } from './message-adapter';
 import { AmqpMessageAdapterFactory } from './message-adapter.factory';
+
+const useAmqpMessage = () => ((_req, next, context) => next(_req, context)) as RequestInterceptorFn;
 
 export function amqpTransportFactory(option: Partial<AmqpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -17,7 +19,7 @@ export function amqpTransportFactory(option: Partial<AmqpServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
+            defaultTransfer: useAmqpMessage,
             ...option.features,
             router: option.features?.router === false ? false : {
                 ...(typeof option.features?.router === 'object' ? option.features.router : {}),

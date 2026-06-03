@@ -26,7 +26,7 @@ const defaultOptions = {
 
 const requestMapping = (req: any, context: RequestContext) => {
     if (req instanceof AbstractRequest) {
-        const payloadKey = req.pattern ? 'payload' : 'body';
+        const payloadKey = (req as any).pattern ? 'payload' : 'body';
         const json: Record<string, any> = {};
         if ((req as any).url) {
             const fullUrl = typeof (req as any).getUrlWithParams === 'function' ? (req as any).getUrlWithParams() : (req as any).url;
@@ -42,7 +42,7 @@ const requestMapping = (req: any, context: RequestContext) => {
         if ((req as any).responseTopic) {
             json.responseTopic = (req as any).responseTopic;
         }
-        if ((req as any).id) {
+        if ((req as any).id !== undefined && (req as any).id !== null) {
             json.id = (req as any).id;
         }
         if ((req as any).pattern) {
@@ -205,8 +205,8 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
                 let outgoing = options.mapping ? options.mapping(res, context) : res;
                 const request = context.get(REQUEST) as any;
                 if (outgoing === null || outgoing === undefined || (typeof outgoing !== 'object' && typeof outgoing !== 'function')) {
-                    outgoing = request?.id ? { id: request.id, payload: outgoing } : { payload: outgoing };
-                } else if (request?.id && !(outgoing as any).id) {
+                    outgoing = request?.id !== undefined && request?.id !== null ? { id: request.id, payload: outgoing } : { payload: outgoing };
+                } else if (request?.id !== undefined && request?.id !== null && ((outgoing as any).id === undefined || (outgoing as any).id === null)) {
                     (outgoing as any).id = request.id;
                 }
                 const message = JSON.stringify(outgoing);

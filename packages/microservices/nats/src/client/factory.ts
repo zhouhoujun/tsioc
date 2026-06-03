@@ -1,10 +1,13 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter } from '@tsdi/common';
-import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, parseQueryString } from '@tsdi/common';
+import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { NATS_CLIENT_OPTIONS, NatsClientOptions } from './options';
 import { NatsClient } from './client';
+import { NatsRequest } from './request';
 import { NatsPatternFormatter } from '../server';
+import { Observable } from 'rxjs';
+import { NatsConnection, StringCodec } from 'nats';
 
 
 function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefault?: boolean): ClientTransportFeature {
@@ -13,7 +16,9 @@ function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefaul
         side: TransferSide.client,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
+            defaultTransfer: useSimpleJson({
+                mapping: (value, context) => mapRequestValue(value, context)
+            }),
             ...option.features
         },
         servers: option.servers ? [...option.servers] : undefined,
@@ -31,7 +36,7 @@ function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefaul
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: createSendMessageBackend,
+            useFactory: () => createNatsClientBackend(config),
             multi: true
         }),
         {
@@ -82,4 +87,91 @@ export function withNatsTransport(...options: Partial<NatsClientOptions>[]): Cli
         const asDefault = option.asDefault ?? (idx === 0);
         return natsClientTransportFactory(option, asDefault);
     });
+}
+
+function createNatsClientBackend(_config: NatsClientOptions) {
+    return (input: any, context: any) => new Observable<any>((observer) => {
+        const nc = context.get(SOCKET) as NatsConnection | undefined;
+        const request = context.get(REQUEST) as NatsRequest<any> | undefined;
+        if (!nc || !request) {
+            observer.error(new Error('NATS client context is incomplete'));
+            return;
+        }
+
+        const sc = StringCodec();
+        const subject = request.url;
+        const formatter = context.get(PatternFormatter, defaultFormatter);
+        const payload = typeof input === 'string' || input instanceof Uint8Array
+            ? input
+            : JSON.stringify(serializeRequest(request, formatter, 'payload'));
+
+        if (request.observe === 'emit') {
+            nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload);
+            observer.complete();
+            return;
+        }
+
+        nc.request(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { timeout: request.timeout ?? 10000 })
+            .then(msg => {
+                const text = sc.decode(msg.data);
+                if (request.responseType === 'text') {
+                    observer.next(text);
+                } else {
+                    try {
+                        observer.next(JSON.parse(text));
+                    } catch {
+                        observer.next(text);
+                    }
+                }
+                observer.complete();
+            })
+            .catch(err => observer.error(err));
+    });
+}
+
+function mapRequestValue(value: any, context: any) {
+    if (value && typeof value === 'object' && ('url' in value || 'topic' in value || 'pattern' in value)) {
+        return serializeRequest(value, context.get(PatternFormatter) ?? defaultFormatter, 'payload');
+    }
+    return value;
+}
+
+function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
+    const json: Record<string, any> = {};
+    if (request.url) {
+        const fullUrl = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
+        const [url, rawQuery] = String(fullUrl).split('?', 2);
+        json.url = url.startsWith('/') ? url.slice(1).replace(/\//g, '.') : url;
+        if (rawQuery) {
+            json.query = parseQueryString(rawQuery);
+        }
+    }
+    if (request.topic) {
+        json.topic = request.topic;
+    }
+    if (request.responseTopic) {
+        json.responseTopic = request.responseTopic;
+    }
+    if (request.id !== undefined && request.id !== null) {
+        json.id = request.id;
+    }
+    if (request.pattern) {
+        json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
+    }
+    if (request.method) {
+        json.method = request.method;
+    }
+    if (request.headers?.size) {
+        json.headers = request.headers.getHeaders();
+    }
+    if (request.params) {
+        json.params = typeof request.params?.toRecord === 'function' ? request.params.toRecord() : request.params;
+    }
+    if (request.query && !json.query) {
+        json.query = request.query;
+    }
+    if (request.body !== undefined && request.body !== null) {
+        json[payloadKey] = request.body;
+    }
+    return json;
 }

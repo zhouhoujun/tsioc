@@ -41,13 +41,17 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const port = this.options.port || 50051;
         const creds = this.options.credentials || grpc.ServerCredentials.createInsecure();
 
-        this.server.bindAsync(`0.0.0.0:${port}`, creds, (err: Error | null, boundPort: number) => {
-            if (err) {
-                this.logger.error('gRPC server bind error:', err);
-                return;
-            }
-            this.server?.start();
-            this.logger.info(getTypeName(this), `gRPC server started on port ${boundPort}`);
+        await new Promise<void>((resolve, reject) => {
+            this.server!.bindAsync(`0.0.0.0:${port}`, creds, (err: Error | null, boundPort: number) => {
+                if (err) {
+                    this.logger.error('gRPC server bind error:', err);
+                    reject(err);
+                    return;
+                }
+                this.server?.start();
+                this.logger.info(getTypeName(this), `gRPC server started on port ${boundPort}`);
+                resolve();
+            });
         });
 
         if (!this.options.microservice) {
