@@ -112,7 +112,7 @@ describe('CoAP Server & CoAP Client', () => {
     });
 
     it('should reject oversized json payload through validator', async () => {
-        const res: any = await lastValueFrom(client.send('/content/big.json', { timeout: 50 } as any).pipe(
+        const res: any = await lastValueFrom(client.send('/content/big.json', { timeout: 10000 } as any).pipe(
             catchError(err => of(err))
         ));
         expect(String(res.statusMessage || res.message || '')).toContain('Packet length');

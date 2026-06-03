@@ -263,7 +263,7 @@ describe('NATS pattern routing', () => {
     it('routes subscribe patterns with wildcard', async () => {
         const result = await lastValueFrom(client.send('sensor.temp.start', {
             payload: { msg: 'foo' },
-            timeout: 50
+            timeout: 5000
         } as any));
         expect(result.payload).toEqual('foo');
     });

@@ -20,3 +20,4 @@ big-temp.json
 **/*.apk
 **/coverage-*.json
 *.info
+packages/microservices/**/coverage/

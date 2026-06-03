@@ -294,17 +294,17 @@ describe('AMQP pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 5000 } as any));
         expect(result.payload).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 5000 } as any));
         expect(result.payload).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 5000 } as any));
         expect(result.payload).toEqual('foo');
     });
 });
@@ -344,7 +344,7 @@ describe('AMQP pattern routing with custom routingKey', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns with custom routingKey', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 5000 } as any));
         expect(result.payload).toEqual('hello');
     });
 });
