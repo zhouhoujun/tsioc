@@ -7,24 +7,7 @@ import {
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { HttpFileResult } from '../file-result';
 import { HttpMessageAdapter } from '../message-adapter';
-
-export interface HttpStaticOptions {
-    enabled?: boolean;
-    setHeaders?: (adapter: any, path: string, stats: any) => void;
-    headers?: Record<string, Header>;
-    disposition?: 'inline' | 'attachment';
-    immutable?: boolean;
-    maxAge?: number;
-    root?: string | string[];
-    index?: string | string[] | false;
-    maxAgeMs?: number;
-    format?: boolean;
-    hidden?: boolean;
-    baseUrl?: string;
-    extensions?: string[];
-    brotli?: boolean;
-    gzip?: boolean;
-}
+import { HttpStaticOptions } from '../options';
 
 export interface StaticsOptions extends HttpStaticOptions {
     defer?: boolean;

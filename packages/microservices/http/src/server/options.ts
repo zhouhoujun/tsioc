@@ -9,6 +9,9 @@ export interface HttpStaticOptions extends FindOptions {
     enabled?: boolean;
     disposition?: 'inline' | 'attachment';
     headers?: Record<string, Header>;
+    immutable?: boolean;
+    maxAge?: number;
+    setHeaders?: (adapter: any, path: string, stats: any) => void;
 }
 
 export interface HttpUploadOptions {

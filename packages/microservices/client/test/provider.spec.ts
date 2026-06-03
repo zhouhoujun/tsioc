@@ -13,6 +13,7 @@ import {
     withDiscovery,
     withLoadBalance
 } from '../src/provider';
+import { getClientTransfersToken } from '../src/tokens';
 import { ClientFeatureKind } from '../src/options';
 
 const createConfig = (name = 'alpha') => ({
@@ -95,7 +96,8 @@ describe('client provider', () => {
                 defaultTransfer: () => [() => undefined]
             }
         } as any) as any;
-        expect(transfer.providers.length).toBeGreaterThan(2);
+        expect(transfer.providers.length).toBeGreaterThan(0);
+        expect(transfer.providers.every((provider: any) => provider.provide === getClientTransfersToken(config))).toBe(true);
     });
 
     it('throws when provideClientFromDi cannot find matching config', () => {

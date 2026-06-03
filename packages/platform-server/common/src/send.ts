@@ -79,11 +79,25 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             const dispositionName = basename(file.filename, file.encodingExt ?? '');
             adapter.setHeader(fields.disposition, this.createContentDisposition(dispositionName, opts.disposition));
         }
-        adapter.setHeader(fields.contentLength, file.stats.size);
-        if (opts.statusCode != null && typeof (adapter as any).setStatus === 'function') {
-            (adapter as any).setStatus(opts.statusCode);
+
+        const size = Number(file.stats.size ?? 0);
+        const rangeHeader = typeof adapter.getHeader === 'function' ? adapter.getHeader(fields.range) : undefined;
+        const range = this.parseRange(typeof rangeHeader === 'string' ? rangeHeader : undefined, size);
+
+        if (range) {
+            if (typeof (adapter as any).setStatus === 'function') {
+                (adapter as any).setStatus(206);
+            }
+            adapter.setHeader(fields.contentRange, `bytes ${range.start}-${range.end}/${size}`);
+            adapter.setHeader(fields.contentLength, range.end - range.start + 1);
+            adapter.write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename, { start: range.start, end: range.end }));
+        } else {
+            adapter.setHeader(fields.contentLength, size);
+            if (opts.statusCode != null && typeof (adapter as any).setStatus === 'function') {
+                (adapter as any).setStatus(opts.statusCode);
+            }
+            adapter.write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename));
         }
-        adapter.write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename));
         return file;
     }
 
@@ -102,6 +116,38 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             default:
                 return undefined;
         }
+    }
+
+    private parseRange(header: string | undefined, size: number): { start: number; end: number } | null {
+        if (!header) {
+            return null;
+        }
+        const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+        if (!match) {
+            throw new BadRequestException('Invalid Range header', 416);
+        }
+        let start: number;
+        let end: number;
+        if (!match[1] && !match[2]) {
+            throw new BadRequestException('Invalid Range header', 416);
+        }
+        if (!match[1]) {
+            const suffix = Number(match[2]);
+            if (!Number.isFinite(suffix) || suffix <= 0) {
+                throw new BadRequestException('Invalid Range header', 416);
+            }
+            start = Math.max(size - suffix, 0);
+            end = size - 1;
+        } else {
+            start = Number(match[1]);
+            end = match[2] ? Number(match[2]) : size - 1;
+        }
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end < start || start >= size) {
+            const error = new BadRequestException('Requested range not satisfiable', 416) as any;
+            error.headers = { 'content-range': `bytes */${size}` };
+            throw error;
+        }
+        return { start, end: Math.min(end, size - 1) };
     }
 }
 

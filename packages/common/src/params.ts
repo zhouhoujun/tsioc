@@ -253,10 +253,15 @@ export function eachRawParams(rawParams: string, each: (key: string, value: stri
     }
 }
 
-export function parseQueryString(rawParams: string, encoder?: ParameterCodec): Record<string, string> {
-    const query: Record<string, string> = {};
+export function parseQueryString(rawParams: string, encoder?: ParameterCodec): Record<string, any> {
+    const query: Record<string, any> = Object.create(null);
     eachRawParams(rawParams, (key, val) => {
-        query[key] = val;
+        if (!Object.prototype.hasOwnProperty.call(query, key)) {
+            query[key] = val;
+            return;
+        }
+        const current = query[key];
+        query[key] = isArray(current) ? [...current, val] : [current, val];
     }, encoder)
     return query;
 }
