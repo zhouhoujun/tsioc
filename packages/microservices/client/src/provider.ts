@@ -169,7 +169,7 @@ export function withTimeout(timeout?: number): ClientFeatureFn<ClientFeatureKind
             ClientFeatureKind.Interceptors,
             [{
                 provide: tk,
-                useValue: requestTimeoutInterceptor(timeout ?? 15000),
+                useValue: requestTimeoutInterceptor(timeout),
                 multi: true
             }],
             config

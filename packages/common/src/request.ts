@@ -39,6 +39,10 @@ export interface PayloadOptions<T = any> {
 export interface RequestOptions<T = any> extends PayloadOptions<T> {
     id?: any;
     /**
+     * request timeout (ms).
+     */
+    timeout?: number;
+    /**
      * headers of request.
      */
     headers?: HeadersLike;
@@ -261,6 +265,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
     constructor(protected initOptions: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super()
         this.id = initOptions.id;
+        this.timeout = initOptions.timeout;
         this.headers = new HeaderMappings(initOptions.headers);
         this.payload = initOptions.body ?? initOptions.payload ?? null;
         this.params = new RequestParams(initOptions);

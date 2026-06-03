@@ -54,7 +54,7 @@ export class MicroTestModule {
 }
 
 
-if (process.env.TSIO_TEST_WS) describe('WS Micro Service', () => {
+describe('WS Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {
@@ -77,6 +77,6 @@ if (process.env.TSIO_TEST_WS) describe('WS Micro Service', () => {
     });
 
     after(async () => {
-        if (ctx) await ctx.destroy();
+        if (ctx) await ctx.close();
     });
 });

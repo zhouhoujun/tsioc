@@ -46,7 +46,7 @@ describe('WS parameter coverage E2E', () => {
             provideService(useRouter(),
                 useWsTransport({ listenOpts: { port: PARAM_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withTimeout(5000),
+                withTimeout(),
                 withWsTransport({ url: `ws://127.0.0.1:${PARAM_PORT}`, microservice: true, asDefault: true }))
         ]
     })
@@ -66,44 +66,32 @@ describe('WS parameter coverage E2E', () => {
             user: { name: 'Alice', tags: ['dev', 'ops'] },
             meta: { count: 3, enabled: true }
         };
-        const result = await Promise.race([
-            lastValueFrom(
-                client.send({ cmd: 'body-echo' }, { payload }).pipe(catchError(err => of({ error: err?.message ?? err })))
-            ),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(
+            client.send({ cmd: 'body-echo' }, { payload, timeout: 100 } as any).pipe(catchError(err => of({ error: err?.message ?? err })))
+        );
         expect(result).toBeDefined();
     });
 
     it('should handle error from controller', async () => {
-        const result = await Promise.race([
-            lastValueFrom(
-                client.send({ cmd: 'error-test' }, { observe: 'response' as any, responseType: 'text' as any })
-                    .pipe(catchError(err => of({ error: true, message: err?.message })))
-            ),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(
+            client.send({ cmd: 'error-test' }, { observe: 'response' as any, responseType: 'text' as any })
+                .pipe(catchError(err => of({ error: true, message: err?.message })))
+        );
         expect(result).toBeDefined();
     });
 
     it('should echo payload via @Handle pattern', async () => {
         const testPayload = { message: 'hello ws' };
-        const result = await Promise.race([
-            lastValueFrom(
-                client.send({ cmd: 'payload-echo' }, { payload: testPayload }).pipe(catchError(err => of({ error: err?.message ?? err })))
-            ),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(
+            client.send({ cmd: 'payload-echo' }, { payload: testPayload }).pipe(catchError(err => of({ error: err?.message ?? err })))
+        );
         expect(result).toBeDefined();
     });
 
     it('should route wildcard topic payload', async () => {
-        const result = await Promise.race([
-            lastValueFrom(
-                client.send('topic.data.update', { payload: { value: 42 } }).pipe(catchError(err => of({ error: err?.message ?? err })))
-            ),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(
+            client.send('topic.data.update', { payload: { value: 42 } }).pipe(catchError(err => of({ error: err?.message ?? err })))
+        );
         expect(result).toBeDefined();
     });
 });

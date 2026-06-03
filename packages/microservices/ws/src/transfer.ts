@@ -1,6 +1,6 @@
 import { AbstractRequest, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
 import { Provider } from '@tsdi/ioc';
-import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, throwError } from 'rxjs';
+import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, throwError, of } from 'rxjs';
 import { SOCKET } from './context';
 
 export interface WsPacketOptions extends TransferOptions {
@@ -191,7 +191,15 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
                     }
                     return defer(() => next(parsed, context)).pipe(
                         catchError(err => {
-                            return throwError(() => err);
+                            const errorResponse = {
+                                id: parsed?.id ?? null,
+                                error: true,
+                                statusCode: err.statusCode ?? 500,
+                                statusMessage: err.statusMessage ?? err.message ?? 'Internal Server Error',
+                                message: err.message ?? String(err)
+                            };
+                            socket.send(JSON.stringify(errorResponse));
+                            return of(errorResponse);
                         })
                     );
                 } catch {

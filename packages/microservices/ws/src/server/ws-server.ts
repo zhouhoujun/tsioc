@@ -153,6 +153,7 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
 
         // Then close the HTTP server
         await promisify(this.server.close, this.server)()
+            .catch(err => this.logger.warn('HTTP server close warning:', err?.message ?? err))
             .finally(() => {
                 this.server?.removeAllListeners();
                 this.server = null;

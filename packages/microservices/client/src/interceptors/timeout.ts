@@ -5,11 +5,18 @@ import { catchError, throwError, timeout } from 'rxjs';
  * Request timeout interceptor.
  * 请求超时拦截器
  *
- * @param milliseconds timeout duration in milliseconds.
+ * When `milliseconds` is provided, it serves as the default timeout.
+ * Individual requests can override via `input.timeout`.
+ * When neither is set, no timeout is applied.
+ *
+ * @param milliseconds default timeout in milliseconds (optional).
  */
-export function requestTimeoutInterceptor(milliseconds: number): RequestInterceptorFn {
+export function requestTimeoutInterceptor(milliseconds?: number): RequestInterceptorFn {
     return (input: any, next: RequestHandlerFn, context: RequestContext) => {
         const timeoutMs = input?.timeout ?? milliseconds;
+        if (timeoutMs == null || timeoutMs === Infinity) {
+            return next(input, context);
+        }
         return next(input, context)
             .pipe(
                 timeout(timeoutMs),

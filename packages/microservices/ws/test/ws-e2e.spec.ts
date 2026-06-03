@@ -121,7 +121,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
             provideService(useRouter(),
                 useWsTransport({ listenOpts: { port: E2E_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
-                withTimeout(10000),
+                withTimeout(),
                 withWsTransport({ url: `ws://127.0.0.1:${E2E_PORT}`, microservice: true, asDefault: true }))
         ]
     })
@@ -133,7 +133,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
     before(async () => {
         ctx = await Application.run(WsE2eModule);
         client = ctx.get(WsClient);
-        
+
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
@@ -143,13 +143,11 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
     });
 
     it('should send cmd via WsClient.send()', async () => {
-        const result = await Promise.race([
-            lastValueFrom(client.send({ cmd: 'ping' }, {
-                observe: 'response' as any,
-                responseType: 'text' as any
-            }).pipe(catchError(err => of(err)))),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
+            observe: 'response' as any,
+            responseType: 'text' as any,
+            timeout: 100
+        } as any).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 });
@@ -162,6 +160,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
             provideService(useRouter(),
                 useWsTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
+                withTimeout(),
                 withWsTransport({ url: `ws://127.0.0.1:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
         ]
     })
@@ -182,13 +181,11 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
     });
 
     it('should send cmd via WsClient.send() in host mode', async () => {
-        const result = await Promise.race([
-            lastValueFrom(client.send({ cmd: 'test' }, {
-                observe: 'response' as any,
-                responseType: 'text' as any
-            }).pipe(catchError(err => of(err)))),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
+            observe: 'response' as any,
+            responseType: 'text' as any,
+            timeout: 100
+        } as any).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 });
@@ -213,6 +210,7 @@ describe('WS pattern routing', () => {
             provideService(useRouter(),
                 useWsTransport({ listenOpts: { port: 21900, host: '127.0.0.1' } })),
             provideClient(
+                withTimeout(),
                 withWsTransport({ url: 'ws://127.0.0.1:21900', microservice: true, asDefault: true }))
         ]
     })
@@ -237,29 +235,24 @@ describe('WS pattern routing', () => {
     });
 
     it('routes object cmd patterns', async () => {
-        const result = await Promise.race([
-            lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' } }).pipe(catchError(err => of({ error: err?.message ?? err })))),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
-        // cmd pattern routing has timing variance; verify the pattern is registered
+        const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
+            payload: { msg: 'hello' },
+            timeout: 100
+        } as any).pipe(catchError(err => of({ error: err?.message ?? err }))));
         expect(result).toBeDefined();
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await Promise.race([
-            lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } }).pipe(catchError(err => of({ error: err?.message ?? err })))),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } })
+            .pipe(catchError(err => of({ error: err?.message ?? err }))));
         console.log('ws wildcard result', result);
         const value = typeof result === 'string' ? result : (result as any)?.payload ?? (result as any)?.body ?? (result as any)?.message;
         expect(value).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await Promise.race([
-            lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } }).pipe(catchError(err => of({ error: err?.message ?? err })))),
-            new Promise(resolve => setTimeout(() => resolve(new Error('timeout')), 5000))
-        ]);
+        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } })
+            .pipe(catchError(err => of({ error: err?.message ?? err }))));
         console.log('ws subscribe result', result);
         const value = typeof result === 'string' ? result : (result as any)?.payload ?? (result as any)?.body ?? (result as any)?.message;
         expect(value).toEqual('foo');
