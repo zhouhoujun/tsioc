@@ -93,7 +93,9 @@ npm run test:coverage
 | `terminal` | Deferred | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 前台命令执行；runtime 授权会区分本地 / gateway-local 与普通远程 principal。 |
 | `process.start` | Deferred | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 后台进程创建与 terminal / 文件变更工具使用同样的本地优先策略。 |
 | `http_request` | Deferred | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 允许本地场景使用，但默认不向普通远程 principal 放开副作用请求。 |
-| `memory.*`、`schedule`、`cron_manage`、`todo`、`ask_user`、`escalate` | 多数为 always-on | 混合 | 默认无要求 | 仍然受 session ownership、scheduler/session scope 等运行时边界约束。 |
+| `knowledge_store`、`memory.put`、`memory.forget`、`memory.purge`、`memory.delete`、`cron_manage`、`data_manage` | 多数为 always-on | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 写操作型数据与调度管理工具现在统一采用与文件变更工具相同的本地优先授权模型。 |
+| `schedule`、`todo`、`ask_user`、`escalate`、只读 `memory.*` | 多数为 always-on | 混合 | 默认无要求 | 仍然受 session ownership、scheduler/session scope 等运行时边界约束。 |
+| `backup`、`pipeline`、`approval`、`ai_cli`、`send_message` | Deferred 或依赖 adapter | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 高副作用的编排与外部集成工具同样受 principal-aware 策略约束。 |
 | MCP manifest 工具 / `mcp.call_tool` | Session-gated | 取决于具体工具 | 取决于桥接工具元数据 | 同时受 allowlist 与 session activation 规则约束。 |
 
 ### 授权语义

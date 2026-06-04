@@ -96,7 +96,11 @@ export class KanbanTool implements AgentTool {
     };
     toolset = 'kanban';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_KANBAN_ADAPTER, { defaultValue: null })

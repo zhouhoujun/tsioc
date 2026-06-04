@@ -15,7 +15,12 @@ export class MemoryDeleteTool implements AgentTool {
     };
     toolset = 'memory';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const id = this.requireId(input?.id);

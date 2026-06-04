@@ -35,7 +35,12 @@ export class CheckpointTool implements AgentTool {
     };
     toolset = 'approval';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(SessionStore)

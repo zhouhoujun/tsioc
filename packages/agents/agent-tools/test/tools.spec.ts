@@ -497,6 +497,22 @@ export class AgentToolsPackageTest {
         expect(new TerminalTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new ProcessStartTool(new ProcessRegistry()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new HttpRequestTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new BackupTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new PipelineTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new ApprovalTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new AiCliTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new SendMessageTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new KnowledgeStoreTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new MemoryPutTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new MemoryForgetTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new MemoryPurgeTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new MemoryDeleteTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new CronManageTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new DataManageTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new CheckpointTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new KanbanTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new PollTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new CanvasTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
     }
 
     @Test('edit file replaces exact text and validates matches')

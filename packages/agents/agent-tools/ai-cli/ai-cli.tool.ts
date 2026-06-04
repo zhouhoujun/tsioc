@@ -80,7 +80,12 @@ export class AiCliTool implements AgentTool {
     };
     toolset = 'ai_cli';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_AI_CLI_ADAPTER, { defaultValue: null })

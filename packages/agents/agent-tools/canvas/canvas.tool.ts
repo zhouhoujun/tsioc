@@ -66,7 +66,11 @@ export class CanvasTool implements AgentTool {
     };
     toolset = 'canvas';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_CANVAS_ADAPTER, { defaultValue: null })

@@ -94,7 +94,9 @@ npm run test:coverage
 | `terminal` | Deferred | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Foreground command execution; runtime authz differentiates local/gateway-local from other remote principals. |
 | `process.start` | Deferred | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Background process creation is restricted the same way as terminal and mutation tools. |
 | `http_request` | Deferred | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Remote-capable side effects remain local-first by policy. |
-| `memory.*`, `schedule`, `cron_manage`, `todo`, `ask_user`, `escalate` | Mostly always-on | Mixed | None by default | Session ownership and scheduler/session scoping still apply through runtime and tool logic. |
+| `knowledge_store`, `memory.put`, `memory.forget`, `memory.purge`, `memory.delete`, `cron_manage`, `data_manage` | Mostly always-on | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Write-oriented data and scheduling operations now follow the same local-first authorization model as filesystem mutation tools. |
+| `schedule`, `todo`, `ask_user`, `escalate`, read-only `memory.*` | Mostly always-on | Mixed | None by default | Session ownership and scheduler/session scoping still apply through runtime and tool logic. |
+| `backup`, `pipeline`, `approval`, `ai_cli`, `send_message` | Deferred or adapter-driven | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | High-side-effect orchestration and integration tools are restricted by the same principal-aware policy. |
 | MCP manifest tools / `mcp.call_tool` | Session-gated | Depends on tool | Depends on bridged tool metadata | Also constrained by allowlist and session activation rules. |
 
 ### Authorization semantics

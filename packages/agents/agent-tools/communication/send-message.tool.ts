@@ -68,7 +68,11 @@ export class SendMessageTool implements AgentTool {
     };
     toolset = 'communication';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_MESSAGING_ADAPTER, { defaultValue: null })

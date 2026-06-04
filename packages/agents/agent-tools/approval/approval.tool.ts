@@ -52,7 +52,12 @@ export class ApprovalTool implements AgentTool {
     };
     toolset = 'approval';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_APPROVAL_ADAPTER, { defaultValue: null })

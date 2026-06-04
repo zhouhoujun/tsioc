@@ -68,7 +68,11 @@ export class DataManageTool implements AgentTool {
     };
     toolset = 'data';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(MemoryStore)

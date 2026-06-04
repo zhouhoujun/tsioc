@@ -61,7 +61,11 @@ export class PollTool implements AgentTool {
     };
     toolset = 'poll';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_POLL_ADAPTER, { defaultValue: null })

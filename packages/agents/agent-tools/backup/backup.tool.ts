@@ -57,7 +57,12 @@ export class BackupTool implements AgentTool {
     };
     toolset = 'backup';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_BACKUP_ADAPTER, { defaultValue: null })
