@@ -489,6 +489,11 @@ export class AgentToolsPackageTest {
     @Test('sensitive built-in tools expose authorization policy for principal-aware runtimes')
     sensitiveBuiltInToolsExposeAuthorizationPolicy() {
         expect(new DeleteFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new WriteFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new EditFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new MoveFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new CopyFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new MkdirTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new TerminalTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new ProcessStartTool(new ProcessRegistry()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
         expect(new HttpRequestTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });

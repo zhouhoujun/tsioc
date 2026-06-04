@@ -84,6 +84,24 @@ npm run test:coverage
 - 通过 manifest 注册的 MCP 工具会以 `mcp.<serverId>.<toolName>` 暴露，并保持 session 级激活边界；无论直接调用还是经 `mcp.call_tool` 桥接调用，都必须先激活。
 - 动态 MCP 工具默认不能通过 `mcp.call_tool` 调用，只有在对应 server 的 `allowedTools` 中显式列出后才允许调用。
 
+## 工具安全矩阵
+
+| 工具 / 分组 | 激活方式 | 是否副作用 | Principal 策略 | 说明 |
+| --- | --- | --- | --- | --- |
+| `read_file`、`glob_search`、`content_search`、`tool_search`、`tool_inspect` | 文件搜索类为 deferred，registry 工具为 always-on | 否 / 只读 | 默认无要求 | 主要用于安全发现与检查。 |
+| `write_file`、`edit_file`、`move_file`、`copy_file`、`mkdir`、`delete_file` | Deferred | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 本地变更工具在直接/本地执行时可用，但默认拒绝无关远程 principal。 |
+| `terminal` | Deferred | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 前台命令执行；runtime 授权会区分本地 / gateway-local 与普通远程 principal。 |
+| `process.start` | Deferred | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 后台进程创建与 terminal / 文件变更工具使用同样的本地优先策略。 |
+| `http_request` | Deferred | 是 | `requiredPrincipals: ['local-system']`、`allowLocalAnonymous: true` | 允许本地场景使用，但默认不向普通远程 principal 放开副作用请求。 |
+| `memory.*`、`schedule`、`cron_manage`、`todo`、`ask_user`、`escalate` | 多数为 always-on | 混合 | 默认无要求 | 仍然受 session ownership、scheduler/session scope 等运行时边界约束。 |
+| MCP manifest 工具 / `mcp.call_tool` | Session-gated | 取决于具体工具 | 取决于桥接工具元数据 | 同时受 allowlist 与 session activation 规则约束。 |
+
+### 授权语义
+
+- `allowLocalAnonymous: true` 表示在本地/直接执行时，即使没有显式 principal 也允许调用；当 gateway 关闭鉴权时，对应的 `gateway-local` principal 也会被视为本地场景。
+- `requiredPrincipals` 会在真正进入工具实现之前，由 `@tsdi/agent` 的工具执行协调器统一校验。
+- 不满足工具授权策略的远程 principal 会得到授权失败结果；该失败会记录进 tool receipt 与 audit trail，而不会真的执行副作用操作。
+
 ## MCP 安全边界
 
 配置 `provideMcpTools` 时，`server.tools` 用于声明应注册进本地工具注册表、可被 inspect 且按 session 激活的 MCP 工具；`allowedTools` 仅用于允许那些保持未注册状态、但仍可通过 `mcp.call_tool` 调用的动态工具。

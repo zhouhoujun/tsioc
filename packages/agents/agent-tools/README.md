@@ -85,6 +85,24 @@ npm run test:coverage
 - Manifest-backed MCP tools registered as `mcp.<serverId>.<toolName>` stay session-gated and must be activated before either direct invocation or `mcp.call_tool` bridging.
 - Dynamic MCP tools are not callable through `mcp.call_tool` unless they are explicitly listed in `allowedTools` for that server.
 
+## Tool security matrix
+
+| Tool / group | Activation | Side effect | Principal policy | Notes |
+| --- | --- | --- | --- | --- |
+| `read_file`, `glob_search`, `content_search`, `tool_search`, `tool_inspect` | Deferred for filesystem search, always-on for registry tools | No / read-only | None | Safe discovery and inspection surface. |
+| `write_file`, `edit_file`, `move_file`, `copy_file`, `mkdir`, `delete_file` | Deferred | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Local mutation tools remain usable in direct/local execution but are denied by default for unrelated remote principals. |
+| `terminal` | Deferred | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Foreground command execution; runtime authz differentiates local/gateway-local from other remote principals. |
+| `process.start` | Deferred | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Background process creation is restricted the same way as terminal and mutation tools. |
+| `http_request` | Deferred | Yes | `requiredPrincipals: ['local-system']`, `allowLocalAnonymous: true` | Remote-capable side effects remain local-first by policy. |
+| `memory.*`, `schedule`, `cron_manage`, `todo`, `ask_user`, `escalate` | Mostly always-on | Mixed | None by default | Session ownership and scheduler/session scoping still apply through runtime and tool logic. |
+| MCP manifest tools / `mcp.call_tool` | Session-gated | Depends on tool | Depends on bridged tool metadata | Also constrained by allowlist and session activation rules. |
+
+### Authorization semantics
+
+- `allowLocalAnonymous: true` means a tool may run without an explicit principal in local/direct execution and may also run for the gateway-local principal used when gateway auth is disabled.
+- `requiredPrincipals` is enforced by `@tsdi/agent`'s tool execution coordinator before the tool implementation runs.
+- Remote principals that do not satisfy the tool policy receive an authorization failure recorded in the tool receipt and audit trail instead of executing the side effect.
+
 ## MCP security boundary
 
 When configuring `provideMcpTools`, use `server.tools` for MCP tools that should be registered into the local tool registry, inspected, and activated per session. Use `allowedTools` only for dynamic tools that should remain unregistered but still be callable through `mcp.call_tool`.

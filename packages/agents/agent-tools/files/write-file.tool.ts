@@ -26,6 +26,7 @@ export class WriteFileTool implements AgentTool {
         requiresSequential: true,
         timeoutMs: 30000,
         retryPolicy: { maxRetries: 1, delayMs: 50 },
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true },
         rateLimit: { maxCalls: 5, windowMs: 1000, scope: 'session' as const },
         redactOutput: true,
         auditEnabled: true
