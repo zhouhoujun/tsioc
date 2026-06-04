@@ -15,6 +15,7 @@ export interface AgentToolRetryPolicy {
 export interface AgentToolAuthorizationPolicy {
     requiredPrincipals?: string[];
     allowAnonymous?: boolean;
+    allowLocalAnonymous?: boolean;
 }
 
 export interface AgentToolRateLimitPolicy {

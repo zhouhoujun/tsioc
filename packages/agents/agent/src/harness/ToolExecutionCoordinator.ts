@@ -170,10 +170,13 @@ export class ToolExecutionCoordinator {
             return;
         }
         if (!principalId) {
-            if (policy.allowAnonymous) {
+            if (policy.allowAnonymous || policy.allowLocalAnonymous) {
                 return;
             }
             throw new Error(`Tool "${definition.name}" authorization failed: principal is required.`);
+        }
+        if (policy.allowLocalAnonymous && principalId === 'gateway-local') {
+            return;
         }
         if (policy.requiredPrincipals?.length && !policy.requiredPrincipals.includes(principalId)) {
             throw new Error(`Tool "${definition.name}" authorization failed for principal "${principalId}".`);

@@ -1546,6 +1546,73 @@ export class RuntimeLoopTest {
         expect(toolMessage?.metadata?.receipt?.status).toEqual('success');
     }
 
+    @Test('allows local gateway principal for sensitive local-only authorization policy')
+    async allowsGatewayLocalPrincipalForLocalOnlyAuthorizationPolicy() {
+        const runtime = new DefaultAgentRuntime(
+            new ProtectedToolModelAdapter(),
+            new class extends ProtectedToolRegistry {
+                getTools() {
+                    return [{
+                        name: 'protected_echo',
+                        description: 'protected echo input',
+                        inputSchema: { type: 'object', properties: { value: { type: 'string' } }, required: ['value'] },
+                        toolset: 'test',
+                        source: 'test',
+                        execution: {
+                            readOnly: true,
+                            authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+                        }
+                    } as any];
+                }
+            }(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello', 'gateway-local');
+        expect(result.message.content).toEqual('done');
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(m => m.role === 'tool');
+        expect(toolMessage?.metadata?.receipt?.status).toEqual('success');
+    }
+
+    @Test('denies unrelated remote principal for local-only authorization policy')
+    async deniesRemotePrincipalForLocalOnlyAuthorizationPolicy() {
+        const runtime = new DefaultAgentRuntime(
+            new ProtectedToolModelAdapter(),
+            new class extends ProtectedToolRegistry {
+                getTools() {
+                    return [{
+                        name: 'protected_echo',
+                        description: 'protected echo input',
+                        inputSchema: { type: 'object', properties: { value: { type: 'string' } }, required: ['value'] },
+                        toolset: 'test',
+                        source: 'test',
+                        execution: {
+                            readOnly: true,
+                            authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+                        }
+                    } as any];
+                }
+            }(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello', 'user-2');
+        expect(result.message.content).toEqual('done');
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(m => m.role === 'tool');
+        expect(toolMessage?.metadata?.receipt?.status).toEqual('error');
+        expect(toolMessage?.metadata?.error).toContain('authorization failed');
+    }
+
     @Test('runtime runTurn uses provider guard')
     async runtimeUsesProviderGuard() {
         const ctx = await Application.run(AgentModule, {

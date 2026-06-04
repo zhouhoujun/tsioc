@@ -28,7 +28,7 @@ export class TerminalTool implements AgentTool {
         readOnly: false,
         sideEffect: true,
         requiresSequential: true,
-        authorization: { requiredPrincipals: ['local-system'], allowAnonymous: true }
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
     };
 
     constructor(

@@ -488,10 +488,10 @@ export class AgentToolsPackageTest {
 
     @Test('sensitive built-in tools expose authorization policy for principal-aware runtimes')
     sensitiveBuiltInToolsExposeAuthorizationPolicy() {
-        expect(new DeleteFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
-        expect(new TerminalTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
-        expect(new ProcessStartTool(new ProcessRegistry()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
-        expect(new HttpRequestTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
+        expect(new DeleteFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new TerminalTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new ProcessStartTool(new ProcessRegistry()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
+        expect(new HttpRequestTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowLocalAnonymous: true });
     }
 
     @Test('edit file replaces exact text and validates matches')
@@ -2257,6 +2257,22 @@ export class AgentToolsPackageTest {
         const result = await tool.invoke({ command: 'node -e "process.stdout.write(\'ok\')"' }, createSessionContext());
         expect(result.exitCode).toEqual(0);
         expect(result.stdout).toEqual('ok');
+    }
+
+    @Test('sensitive built-in tools allow anonymous local invocation while declaring principal-aware authz metadata')
+    async sensitiveBuiltInToolsAllowAnonymousLocalInvocation() {
+        const workspace = await this.createWorkspace();
+        const terminal = new TerminalTool({
+            file: { rootDir: workspace },
+            terminal: { defaultTimeoutMs: 2000, maxTimeoutMs: 5000 }
+        } as any);
+        const deleteTool = new DeleteFileTool({ file: { rootDir: workspace } } as any);
+
+        const terminalResult = await terminal.invoke({ command: 'node -e "process.stdout.write(\'ok\')"' }, createSessionContext({ principalId: undefined } as any));
+        expect(terminalResult.stdout).toEqual('ok');
+
+        const deleteResult = await deleteTool.invoke({ path: 'src/alpha.txt', confirm: true }, createSessionContext({ principalId: undefined } as any));
+        expect(deleteResult.deleted).toEqual(true);
     }
 
     @Test('filesystem loader imports nested SKILL files')
