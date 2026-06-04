@@ -486,6 +486,14 @@ export class AgentToolsPackageTest {
         expect(typeError?.message).toContain('regular file');
     }
 
+    @Test('sensitive built-in tools expose authorization policy for principal-aware runtimes')
+    sensitiveBuiltInToolsExposeAuthorizationPolicy() {
+        expect(new DeleteFileTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
+        expect(new TerminalTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
+        expect(new ProcessStartTool(new ProcessRegistry()).execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
+        expect(new HttpRequestTool().execution?.authorization).toEqual({ requiredPrincipals: ['local-system'], allowAnonymous: true });
+    }
+
     @Test('edit file replaces exact text and validates matches')
     async editFileReplacesExactTextAndValidatesMatches() {
         const workspace = await this.createWorkspace();

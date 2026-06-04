@@ -24,7 +24,12 @@ export class TerminalTool implements AgentTool {
     };
     toolset = 'terminal';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })

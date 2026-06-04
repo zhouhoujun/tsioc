@@ -25,7 +25,12 @@ export class ProcessStartTool implements AgentTool {
     };
     toolset = 'process';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowAnonymous: true }
+    };
 
     constructor(
         private processes: ProcessRegistry,

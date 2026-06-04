@@ -40,6 +40,7 @@ npm run test:coverage
 - `src/tools`: tool contracts, registry, approval manager, and builtin tools
 - `src/memory`: session store, memory store, summarizer, and ORM-backed implementations
 - `src/prompt`: system prompt builder and prompt sections
+- `src/harness`: tool execution coordinator, schema validation, rate limiting, output guarding, and audit sinks
 - `src/scheduler`: scheduled task abstractions and interval scheduler
 - `src/channels`: local request/server/client primitives
 - `src/ui`: console component and view model

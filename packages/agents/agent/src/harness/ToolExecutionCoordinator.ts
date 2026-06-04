@@ -61,6 +61,7 @@ export class ToolExecutionCoordinator {
             const startedAt = Date.now();
             try {
                 this.validator.validateOrThrow(definition.inputSchema, request.toolCall.input, `Tool "${definition.name}" input`);
+                this.ensureAuthorized(definition, request.principalId);
                 this.rateLimitManager.checkToolLimitOrThrow(definition.name, request.sessionId, policy?.rateLimit);
                 const rawOutput = await this.invokeWithTimeout(request, policy?.timeoutMs);
                 this.validator.validateOrThrow(definition.outputSchema, rawOutput, `Tool "${definition.name}" output`);
@@ -158,7 +159,25 @@ export class ToolExecutionCoordinator {
 
     private isRetryable(error: Error): boolean {
         const message = error.message.toLowerCase();
-        return !message.includes('validation failed') && !message.includes('rate limit exceeded');
+        return !message.includes('validation failed')
+            && !message.includes('rate limit exceeded')
+            && !message.includes('authorization failed');
+    }
+
+    private ensureAuthorized(definition: AgentToolDefinition, principalId?: string): void {
+        const policy = definition.execution?.authorization;
+        if (!policy) {
+            return;
+        }
+        if (!principalId) {
+            if (policy.allowAnonymous) {
+                return;
+            }
+            throw new Error(`Tool "${definition.name}" authorization failed: principal is required.`);
+        }
+        if (policy.requiredPrincipals?.length && !policy.requiredPrincipals.includes(principalId)) {
+            throw new Error(`Tool "${definition.name}" authorization failed for principal "${principalId}".`);
+        }
     }
 
     private summarize(value: unknown): string | undefined {

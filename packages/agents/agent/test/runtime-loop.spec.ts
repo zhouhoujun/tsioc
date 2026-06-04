@@ -343,6 +343,48 @@ class SecretToolRegistry extends EchoToolRegistry {
     }
 }
 
+class ProtectedToolRegistry extends ToolRegistry {
+    getTools() {
+        return [{
+            name: 'protected_echo',
+            description: 'protected echo input',
+            inputSchema: { type: 'object', properties: { value: { type: 'string' } }, required: ['value'] },
+            toolset: 'test',
+            source: 'test',
+            execution: {
+                readOnly: true,
+                authorization: { requiredPrincipals: ['user-1'] }
+            }
+        } as any];
+    }
+
+    getTool(name: string) {
+        return this.getTools().find((tool: any) => tool.name === name) as any;
+    }
+
+    async invoke(name: string, input: any, sessionId: string, principalId?: string): Promise<any> {
+        return { name, input, sessionId, principalId };
+    }
+}
+
+class ProtectedToolModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-protected', name: 'protected_echo', input: { value: 'secret' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
 class MultiToolLoopModelAdapter extends EchoModelAdapter {
     private count = 0;
 
@@ -1463,6 +1505,45 @@ export class RuntimeLoopTest {
         expect(toolMessage?.content).not.toContain('sk-secret-token');
         expect(toolMessage?.content).not.toContain('abc.def.ghi');
         expect(toolMessage?.metadata?.receipt?.outputSummary).toContain('[REDACTED]');
+    }
+
+    @Test('denies protected tool invocation for unauthorized principal')
+    async deniesProtectedToolInvocationForUnauthorizedPrincipal() {
+        const runtime = new DefaultAgentRuntime(
+            new ProtectedToolModelAdapter(),
+            new ProtectedToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello', 'user-2');
+        expect(result.message.content).toEqual('done');
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(m => m.role === 'tool');
+        expect(toolMessage?.metadata?.receipt?.status).toEqual('error');
+        expect(toolMessage?.metadata?.error).toContain('authorization failed');
+    }
+
+    @Test('allows protected tool invocation for authorized principal')
+    async allowsProtectedToolInvocationForAuthorizedPrincipal() {
+        const runtime = new DefaultAgentRuntime(
+            new ProtectedToolModelAdapter(),
+            new ProtectedToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello', 'user-1');
+        expect(result.message.content).toEqual('done');
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(m => m.role === 'tool');
+        expect(toolMessage?.metadata?.receipt?.status).toEqual('success');
     }
 
     @Test('runtime runTurn uses provider guard')

@@ -12,6 +12,11 @@ export interface AgentToolRetryPolicy {
     backoffMultiplier?: number;
 }
 
+export interface AgentToolAuthorizationPolicy {
+    requiredPrincipals?: string[];
+    allowAnonymous?: boolean;
+}
+
 export interface AgentToolRateLimitPolicy {
     maxCalls: number;
     windowMs: number;
@@ -24,6 +29,7 @@ export interface AgentToolExecutionHints {
     requiresSequential?: boolean;
     timeoutMs?: number;
     retryPolicy?: AgentToolRetryPolicy;
+    authorization?: AgentToolAuthorizationPolicy;
     rateLimit?: AgentToolRateLimitPolicy;
     redactOutput?: boolean;
     auditEnabled?: boolean;
