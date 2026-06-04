@@ -24,6 +24,17 @@ export class HttpAuthServiceTest {
         expect(service.extractToken({ headers: { host: 'localhost' }, url: '/ws/chat?token=query-token' } as any)).toBe('query-token');
     }
 
+    @Test('respects token extraction flags for query and websocket protocol')
+    extractionFlags() {
+        const service = new HttpAuthService();
+        expect(service.extractToken({ headers: { host: 'localhost' }, url: '/ws/chat?token=query-token' } as any, {
+            allowQueryToken: false
+        })).toBeNull();
+        expect(service.extractToken({ headers: { 'sec-websocket-protocol': 'bearer.ws-token' } } as any, {
+            allowWebSocketProtocolToken: false
+        })).toBeNull();
+    }
+
     @Test('verifies configured bearer token safely')
     verifiesBearerToken() {
         const service = new HttpAuthService();
@@ -41,6 +52,20 @@ export class HttpAuthServiceTest {
         const token = await jwtService.sign({ sub: 'u-1', role: 'admin' }, { privateKey: 'secret-key' as any });
         const claims = await service.verifyJwtToken(token, { publicKey: 'secret-key' as any, algorithms: ['HS256'] });
         expect(claims.sub).toBe('u-1');
+    }
+
+    @Test('authenticates bearer strategy without allowing query fallback override')
+    async authenticateBearer() {
+        const service = new HttpAuthService();
+        const result = await service.authenticate({
+            headers: { authorization: 'Bearer secret-token', host: 'localhost' },
+            url: '/x?token=query-token'
+        } as any, {
+            bearerToken: 'secret-token',
+            allowQueryToken: false
+        });
+        expect(result.authenticated).toBe(true);
+        expect(result.token).toBe('secret-token');
     }
 }
 
