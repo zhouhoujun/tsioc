@@ -187,6 +187,30 @@ export class IntervalAgentScheduler extends AgentScheduler {
         return { ...updatedTask };
     }
 
+    async recover(taskId: string): Promise<ScheduledAgentTask | undefined> {
+        const task = this.tasks.get(taskId);
+        if (!task || task.cancelled) {
+            return undefined;
+        }
+        const now = Date.now();
+        const recoveredTask: ScheduledAgentTask = this.normalizeTask({
+            ...task,
+            paused: false,
+            running: false,
+            manualRecoveryRequired: false,
+            failureCount: 0,
+            lastError: undefined,
+            updatedAt: now,
+            nextRunAt: task.scheduleType === 'once'
+                ? (task.runAt && task.runAt > now ? task.runAt : now)
+                : this.resolveNextRun(task, now)
+        });
+        this.tasks.set(taskId, recoveredTask);
+        await this.persistTask(recoveredTask);
+        this.armTimer(recoveredTask);
+        return { ...recoveredTask };
+    }
+
     private armTimer(task: ScheduledAgentTask): void {
         if (!this.isEnabled() || this.stopping) {
             this.timers.delete(task.id);
@@ -308,7 +332,7 @@ export class IntervalAgentScheduler extends AgentScheduler {
                 return;
             }
             const failedTask = this.createFailedTask(runningTask, err);
-            if (this.shouldRepeat(failedTask)) {
+            if (this.shouldRetryTask(failedTask)) {
                 this.tasks.set(failedTask.id, failedTask);
                 try {
                     await this.persistTask(failedTask);
@@ -326,7 +350,9 @@ export class IntervalAgentScheduler extends AgentScheduler {
 
             const terminalTask: ScheduledAgentTask = {
                 ...failedTask,
-                cancelled: true
+                cancelled: failedTask.manualRecoveryRequired ? false : true,
+                paused: failedTask.manualRecoveryRequired ? true : failedTask.paused,
+                manualRecoveryRequired: failedTask.manualRecoveryRequired ?? false
             };
             try {
                 await this.persistTask(terminalTask);
@@ -334,11 +360,15 @@ export class IntervalAgentScheduler extends AgentScheduler {
                 return;
             }
             this.timers.delete(failedTask.id);
-            this.tasks.delete(failedTask.id);
-            try {
-                await this.deleteTask(failedTask.id);
-            } catch {
-                return;
+            if (terminalTask.manualRecoveryRequired) {
+                this.tasks.set(terminalTask.id, terminalTask);
+            } else {
+                this.tasks.delete(failedTask.id);
+                try {
+                    await this.deleteTask(failedTask.id);
+                } catch {
+                    return;
+                }
             }
             try {
                 await this.app.publishEvent(new AgentErrorEvent(this, failedTask.sessionId, err));
@@ -363,7 +393,12 @@ export class IntervalAgentScheduler extends AgentScheduler {
             nextRunAt: task.nextRunAt ?? this.resolveInitialNextRun({ ...task, scheduleType }, now),
             runCount: task.runCount ?? 0,
             failureCount: task.failureCount ?? 0,
-            lastError: task.lastError
+            lastError: task.lastError,
+            maxAttempts: task.maxAttempts ?? this.options.scheduler?.defaultMaxAttempts ?? defaultAgentOptions.scheduler?.defaultMaxAttempts,
+            retryBackoffMs: task.retryBackoffMs ?? this.options.scheduler?.defaultRetryBackoffMs ?? defaultAgentOptions.scheduler?.defaultRetryBackoffMs,
+            retryBackoffMultiplier: task.retryBackoffMultiplier ?? this.options.scheduler?.defaultRetryBackoffMultiplier ?? defaultAgentOptions.scheduler?.defaultRetryBackoffMultiplier,
+            manualRecoveryRequired: task.manualRecoveryRequired ?? false,
+            alertOnFailure: task.alertOnFailure ?? false
         };
     }
 
@@ -385,14 +420,23 @@ export class IntervalAgentScheduler extends AgentScheduler {
 
     private createFailedTask(task: ScheduledAgentTask, error: Error): ScheduledAgentTask {
         const now = Date.now();
+        const failureCount = (task.failureCount ?? 0) + 1;
+        const maxAttempts = task.maxAttempts ?? this.options.scheduler?.defaultMaxAttempts ?? defaultAgentOptions.scheduler?.defaultMaxAttempts ?? 3;
+        const retryBackoffMs = task.retryBackoffMs ?? this.options.scheduler?.defaultRetryBackoffMs ?? defaultAgentOptions.scheduler?.defaultRetryBackoffMs ?? 1000;
+        const retryBackoffMultiplier = task.retryBackoffMultiplier ?? this.options.scheduler?.defaultRetryBackoffMultiplier ?? defaultAgentOptions.scheduler?.defaultRetryBackoffMultiplier ?? 2;
+        const exhausted = failureCount >= maxAttempts;
+        const backoff = retryBackoffMs * Math.max(1, Math.pow(retryBackoffMultiplier, Math.max(0, failureCount - 1)));
         return {
             ...task,
             running: false,
             lastRunAt: now,
             updatedAt: now,
-            failureCount: (task.failureCount ?? 0) + 1,
+            failureCount,
             lastError: error.message,
-            nextRunAt: this.shouldRepeat(task) ? this.resolveNextRun(task, now) : task.nextRunAt
+            manualRecoveryRequired: task.manualRecoveryRequired ?? false,
+            nextRunAt: exhausted
+                ? task.nextRunAt
+                : (this.shouldRepeat(task) ? now + backoff : task.nextRunAt)
         };
     }
 
@@ -470,7 +514,12 @@ export class IntervalAgentScheduler extends AgentScheduler {
             nextRunAt: task.nextRunAt,
             runCount: task.runCount ?? 0,
             failureCount: task.failureCount ?? 0,
-            lastError: task.lastError
+            lastError: task.lastError,
+            maxAttempts: task.maxAttempts ?? null,
+            retryBackoffMs: task.retryBackoffMs ?? null,
+            retryBackoffMultiplier: task.retryBackoffMultiplier ?? null,
+            manualRecoveryRequired: task.manualRecoveryRequired ?? false,
+            alertOnFailure: task.alertOnFailure ?? false
         });
         await repo.save(entity);
     }
@@ -499,6 +548,14 @@ export class IntervalAgentScheduler extends AgentScheduler {
 
     private shouldRepeat(task: ScheduledAgentTask): boolean {
         return task.scheduleType === 'interval' || task.scheduleType === 'cron' || !!(task.intervalMs && task.intervalMs > 0) || !!task.cronExpr;
+    }
+
+    private shouldRetryTask(task: ScheduledAgentTask): boolean {
+        if (!this.shouldRepeat(task)) {
+            return false;
+        }
+        const maxAttempts = task.maxAttempts ?? this.options.scheduler?.defaultMaxAttempts ?? defaultAgentOptions.scheduler?.defaultMaxAttempts ?? 3;
+        return (task.failureCount ?? 0) < maxAttempts;
     }
 
     private isEnabled(): boolean {
@@ -559,7 +616,12 @@ export class IntervalAgentScheduler extends AgentScheduler {
             nextRunAt: record.nextRunAt == null ? undefined : Number(record.nextRunAt),
             runCount: record.runCount == null ? 0 : Number(record.runCount),
             failureCount: record.failureCount == null ? 0 : Number(record.failureCount),
-            lastError: record.lastError ?? undefined
+            lastError: record.lastError ?? undefined,
+            maxAttempts: record.maxAttempts == null ? undefined : Number(record.maxAttempts),
+            retryBackoffMs: record.retryBackoffMs == null ? undefined : Number(record.retryBackoffMs),
+            retryBackoffMultiplier: record.retryBackoffMultiplier == null ? undefined : Number(record.retryBackoffMultiplier),
+            manualRecoveryRequired: !!record.manualRecoveryRequired,
+            alertOnFailure: !!record.alertOnFailure
         };
     }
 }

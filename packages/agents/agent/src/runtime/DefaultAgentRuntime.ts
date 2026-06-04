@@ -24,6 +24,10 @@ import { AgentContextManager } from '../context/AgentContextManager';
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { AgentScheduler } from '../scheduler/AgentScheduler';
+import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
+import { ToolSchemaValidator } from '../harness/ToolSchemaValidator';
+import { RateLimitManager } from '../harness/RateLimitManager';
+import { OutputGuard } from '../harness/OutputGuard';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -38,6 +42,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected contextManager: AgentContextManager;
     protected toolApprovalManager?: ToolApprovalManager;
     protected _stopped = false;
+    protected activePrincipalId?: string;
 
     constructor(
         protected modelAdapter: ModelAdapter,
@@ -51,7 +56,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected promptBuilder?: SystemPromptBuilder,
         @Optional() protected approvalManagerInput?: ToolApprovalManager,
         @Optional() protected injectedContextManager?: AgentContextManager,
-        @Optional() @Inject(AgentMemoryRetriever) protected memoryRetriever?: AgentMemoryRetriever
+        @Optional() @Inject(AgentMemoryRetriever) protected memoryRetriever?: AgentMemoryRetriever,
+        @Optional() protected toolExecutionCoordinator?: ToolExecutionCoordinator
     ) {
         super();
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
@@ -60,9 +66,19 @@ export class DefaultAgentRuntime extends AgentRuntime {
             maxToolResults: this.options.context?.maxToolResultChars
         });
         this.toolApprovalManager = this.resolveApprovalManager(this.approvalManagerInput);
+        if (!this.toolExecutionCoordinator) {
+            this.toolExecutionCoordinator = new ToolExecutionCoordinator(
+                this.toolRegistry,
+                new ToolSchemaValidator(),
+                new RateLimitManager(),
+                new OutputGuard(),
+                this.app
+            );
+        }
     }
 
-    async runTurn(sessionId: string, input: string): Promise<AgentTurnResult> {
+    async runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult> {
+        this.activePrincipalId = principalId;
         const handler = typeof (this.app as any)?.get === 'function'
             ? (this.app as any).get(TurnHandler, null) as {
                 injector?: ApplicationContext,
@@ -110,6 +126,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     async executeTurn(input: AgentTurnInput, _context: RunContext): Promise<AgentTurnResult> {
         return this.processTurn(input);
+    }
+
+    setPrincipalId(principalId?: string): void {
+        this.activePrincipalId = principalId;
     }
 
     async processTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
@@ -490,11 +510,54 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
 
-        const startedAt = Date.now();
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, baseReceipt));
 
+        if (this.toolExecutionCoordinator) {
+            const definition = callableTools.find(tool => tool.name === toolCall.name) ?? this.toolRegistry.getToolDefinition(toolCall.name, sessionId);
+            if (!definition) {
+                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                    ...baseReceipt,
+                    status: 'error',
+                    durationMs: 0,
+                    error: `Tool "${toolCall.name}" definition was not found.`
+                }, `Tool "${toolCall.name}" definition was not found.`);
+            }
+            const outcome = await this.toolExecutionCoordinator.execute({
+                sessionId,
+                principalId: this.activePrincipalId,
+                toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
+                definition,
+                executionMode,
+                inputSummary,
+                baseReceipt
+            });
+            if (outcome.redactedOutput !== undefined) {
+                loopDetector.record(toolCall.name, toolCallInput, outcome.redactedOutput);
+            }
+            const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
+            const outputStr = outcome.redactedOutput === undefined
+                ? JSON.stringify({ error: outcome.error?.message ?? outcome.receipt.error ?? 'tool failed' })
+                : (typeof outcome.redactedOutput === 'string' ? outcome.redactedOutput : JSON.stringify(outcome.redactedOutput));
+            const truncated = outputStr.length > maxChars ? outputStr.slice(0, maxChars) + '...[truncated]' : outputStr;
+            if (outcome.error) {
+                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
+            }
+            return {
+                toolCall,
+                content: truncated,
+                metadata: {
+                    toolCallInput,
+                    inputSummary,
+                    receipt: outcome.receipt,
+                    attempts: outcome.attempts
+                },
+                receipt: outcome.receipt
+            };
+        }
+
+        const startedAt = Date.now();
         try {
-            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId);
+            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, this.activePrincipalId);
             loopDetector.record(toolCall.name, toolCallInput, output);
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);

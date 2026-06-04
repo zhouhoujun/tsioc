@@ -33,6 +33,14 @@ export * from './tools/ToolApprovalManager';
 export * from './tools/BuiltinTools';
 
 export * from './context/AgentContextManager';
+export * from './harness/ToolSchemaValidator';
+export * from './harness/RateLimitManager';
+export * from './harness/OutputGuard';
+export * from './harness/AuditSink';
+export * from './harness/InMemoryAuditSink';
+export * from './harness/TypeOrmAuditSink';
+export * from './harness/DefaultAuditSink';
+export * from './harness/ToolExecutionCoordinator';
 export * from './prompt/SystemPromptBuilder';
 export * from './prompt/PromptSection';
 export * from './prompt/sections/IdentitySection';

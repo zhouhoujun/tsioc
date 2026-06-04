@@ -115,6 +115,9 @@ export class GatewayServer {
 
         try {
             const state = { principalId: getRequestPrincipalId(req) };
+            if (typeof (this.runtime as any)?.setPrincipalId === 'function') {
+                (this.runtime as any).setPrincipalId(state.principalId);
+            }
             if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
                 const body = await this.readBody(req);
                 let parsed: any;

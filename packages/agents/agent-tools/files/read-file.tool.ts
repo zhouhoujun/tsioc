@@ -18,7 +18,13 @@ export class ReadFileTool implements AgentTool {
     };
     toolset = 'filesystem';
     source = 'local';
-    execution = { readOnly: true };
+    execution = {
+        readOnly: true,
+        timeoutMs: 15000,
+        rateLimit: { maxCalls: 20, windowMs: 1000, scope: 'session' as const },
+        redactOutput: true,
+        auditEnabled: true
+    };
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })

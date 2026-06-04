@@ -18,7 +18,7 @@ export class ScheduleTool implements AgentTool {
     inputSchema = {
         type: 'object',
         properties: {
-            action: { type: 'string', enum: ['create', 'list', 'get', 'cancel', 'pause', 'resume', 'update'] },
+            action: { type: 'string', enum: ['create', 'list', 'get', 'cancel', 'pause', 'resume', 'update', 'recover'] },
             id: { type: 'string' },
             prompt: { type: 'string' },
             runAt: { type: 'number' },
@@ -73,6 +73,12 @@ export class ScheduleTool implements AgentTool {
             const resumed = await this.requireSchedulerMethod(scheduler, 'resume', id);
             return { resumed: true, task: resumed };
         }
+        if (action === 'recover') {
+            const id = this.requireString(input?.id, 'schedule recover id');
+            this.requireTaskForSession(scheduler, id, context.sessionId);
+            const recovered = await this.requireSchedulerMethod(scheduler, 'recover', id);
+            return { recovered: true, task: recovered };
+        }
         if (action === 'update') {
             const id = this.requireString(input?.id, 'schedule update id');
             const task = this.requireTaskForSession(scheduler, id, context.sessionId);
@@ -117,7 +123,7 @@ export class ScheduleTool implements AgentTool {
         return task;
     }
 
-    private async requireSchedulerMethod(scheduler: AgentScheduler, method: 'pause' | 'resume', id: string): Promise<ScheduledAgentTask> {
+    private async requireSchedulerMethod(scheduler: AgentScheduler, method: 'pause' | 'resume' | 'recover', id: string): Promise<ScheduledAgentTask> {
         const fn = scheduler[method];
         if (typeof fn !== 'function') {
             throw new Error(`Schedule tool requires scheduler.${method}() support.`);

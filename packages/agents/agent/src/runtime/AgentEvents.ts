@@ -16,6 +16,7 @@ export interface AgentToolExecutionReceipt {
     outputSummary?: string;
     durationMs?: number;
     error?: string;
+    attemptCount?: number;
 }
 
 function summarizeEventInput(input: any): string | undefined {

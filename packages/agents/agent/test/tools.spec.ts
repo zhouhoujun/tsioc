@@ -53,9 +53,24 @@ class DeferredDefinitionTool implements AgentTool {
         },
         required: ['value']
     };
+    outputSchema = {
+        type: 'object',
+        properties: {
+            value: { type: 'string' },
+            count: { type: 'number' }
+        },
+        required: ['value']
+    };
     toolset = 'custom';
     source = 'test';
-    execution = { readOnly: true };
+    execution = {
+        readOnly: true,
+        timeoutMs: 25,
+        retryPolicy: { maxRetries: 1, delayMs: 1 },
+        rateLimit: { maxCalls: 2, windowMs: 1000, scope: 'session' as const },
+        redactOutput: true,
+        auditEnabled: true
+    };
 
     async invoke(input: any): Promise<any> {
         return input;
@@ -251,6 +266,7 @@ export class BuiltinToolsTest {
             name: 'described',
             description: 'resolved description',
             inputSchema: { type: 'object' },
+            outputSchema: undefined,
             toolset: 'custom',
             source: 'test',
             execution: { readOnly: true }
@@ -259,6 +275,7 @@ export class BuiltinToolsTest {
             name: 'described',
             description: 'resolved description',
             inputSchema: { type: 'object' },
+            outputSchema: undefined,
             toolset: 'custom',
             source: 'test',
             execution: { readOnly: true }
@@ -292,6 +309,7 @@ export class BuiltinToolsTest {
                     query: { type: 'string' }
                 }
             },
+            outputSchema: undefined,
             toolset: 'registry',
             source: 'test',
             execution: { readOnly: true }
@@ -301,7 +319,19 @@ export class BuiltinToolsTest {
             description: 'heavy schema tool',
             toolset: 'custom',
             source: 'test',
-            execution: { readOnly: true }
+            execution: {
+                readOnly: true,
+                timeoutMs: 25,
+                retryPolicy: { maxRetries: 1, delayMs: 1 },
+                rateLimit: { maxCalls: 2, windowMs: 1000, scope: 'session' },
+                redactOutput: true,
+                auditEnabled: true
+            },
+            canonicalName: undefined,
+            aliases: undefined,
+            tags: undefined,
+            activation: undefined,
+            provenance: undefined
         });
     }
 
@@ -322,6 +352,14 @@ export class BuiltinToolsTest {
             },
             required: ['value']
         });
+        expect(registry.getToolDefinition('heavy_tool', 's1')?.outputSchema).toEqual({
+            type: 'object',
+            properties: {
+                value: { type: 'string' },
+                count: { type: 'number' }
+            },
+            required: ['value']
+        });
         expect(registry.getToolDefinition('heavy_tool', 's2')?.inputSchema).toEqual(undefined);
     }
 
@@ -335,6 +373,7 @@ export class BuiltinToolsTest {
         expect(registry.getToolDefinition('metadata_tool', 's1')).toEqual({
             name: 'metadata_tool',
             description: 'metadata aware tool',
+            outputSchema: undefined,
             toolset: 'custom',
             source: 'skill',
             execution: { readOnly: true },
@@ -369,6 +408,7 @@ export class BuiltinToolsTest {
         expect(registry.getToolDefinition('metadata_tool', 's2')).toEqual({
             name: 'metadata_tool',
             description: 'metadata aware tool',
+            outputSchema: undefined,
             toolset: 'custom',
             source: 'skill',
             execution: { readOnly: true },
@@ -543,6 +583,26 @@ export class BuiltinToolsTest {
         const deleted = await registry.invoke('memory.delete', { id: 's1-note' }, 's1');
         expect(deleted.deleted).toEqual(true);
         expect((await store.getAll('s1')).map(record => record.id)).toEqual(['global-note']);
+    }
+
+    @Test('local tool registry invokes activated tools with extended execution metadata')
+    async localToolRegistryInvokesActivatedToolsWithExtendedExecutionMetadata() {
+        class StrictTool extends DeferredDefinitionTool {
+            invocations = 0;
+            async invoke(input: any): Promise<any> {
+                this.invocations++;
+                return input;
+            }
+        }
+
+        const tool = new StrictTool();
+        const registry = new LocalToolRegistry([new RegistryDiscoveryTool(), tool], new InMemoryMemoryStore());
+        await registry.activateTool('s1', 'heavy_tool');
+
+        const result = await registry.invoke('heavy_tool', { count: 1, value: 'ok' }, 's1');
+
+        expect(result).toEqual({ count: 1, value: 'ok' });
+        expect(tool.invocations).toEqual(1);
     }
 
     @Test('local tool registry passes scheduler into schedule tool context')

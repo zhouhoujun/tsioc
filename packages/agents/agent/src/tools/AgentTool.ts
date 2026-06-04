@@ -3,12 +3,30 @@ import { MemoryStore } from '../memory/MemoryStore';
 export interface AgentToolContext {
     sessionId: string;
     memory: MemoryStore;
+    principalId?: string;
+}
+
+export interface AgentToolRetryPolicy {
+    maxRetries?: number;
+    delayMs?: number;
+    backoffMultiplier?: number;
+}
+
+export interface AgentToolRateLimitPolicy {
+    maxCalls: number;
+    windowMs: number;
+    scope?: 'session' | 'global';
 }
 
 export interface AgentToolExecutionHints {
     readOnly?: boolean;
     sideEffect?: boolean;
     requiresSequential?: boolean;
+    timeoutMs?: number;
+    retryPolicy?: AgentToolRetryPolicy;
+    rateLimit?: AgentToolRateLimitPolicy;
+    redactOutput?: boolean;
+    auditEnabled?: boolean;
 }
 
 export type AgentToolOrigin = 'builtin' | 'skill' | 'mcp';
@@ -31,6 +49,7 @@ export interface AgentToolDefinition {
     name: string;
     description: string;
     inputSchema?: Record<string, any>;
+    outputSchema?: Record<string, any>;
     toolset?: string;
     source?: string;
     execution?: AgentToolExecutionHints;

@@ -322,6 +322,27 @@ class FailingToolRegistry extends EchoToolRegistry {
     }
 }
 
+class DelayedToolRegistry extends EchoToolRegistry {
+    constructor(private delayMs: number) {
+        super();
+    }
+
+    async invoke(_name: string, input: any): Promise<any> {
+        await new Promise(resolve => setTimeout(resolve, this.delayMs));
+        return input;
+    }
+}
+
+class SecretToolRegistry extends EchoToolRegistry {
+    async invoke(): Promise<any> {
+        return {
+            token: 'sk-secret-token',
+            authorization: 'Bearer abc.def.ghi',
+            safe: 'ok'
+        };
+    }
+}
+
 class MultiToolLoopModelAdapter extends EchoModelAdapter {
     private count = 0;
 
@@ -1396,6 +1417,52 @@ export class RuntimeLoopTest {
         expect(parallelMessages[2].metadata?.receipt?.executionMode).toEqual('parallel');
         expect(parallelMessages[3].metadata?.receipt?.executionMode).toEqual('parallel');
         expect(parallelRegistry.getMaxActive()).toBeGreaterThan(1);
+    }
+
+    @Test('stores timeout failure for slow tool invocations')
+    async storesTimeoutFailureForSlowToolInvocations() {
+        const runtime = new DefaultAgentRuntime(
+            new ToolLoopModelAdapter(),
+            new DelayedToolRegistry(40),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            {
+                ...defaultAgentOptions,
+                tools: {
+                    ...defaultAgentOptions.tools,
+                    parallelExecution: false
+                }
+            },
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        expect(result.message).toBeDefined();
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(m => m.role === 'tool');
+        expect(toolMessage?.metadata?.receipt?.status).toEqual('success');
+    }
+
+    @Test('redacts sensitive tool output before storing tool messages')
+    async redactsSensitiveToolOutputBeforeStoringToolMessages() {
+        const runtime = new DefaultAgentRuntime(
+            new ToolLoopModelAdapter(),
+            new SecretToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'hello');
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(m => m.role === 'tool');
+        expect(toolMessage?.content).toContain('[REDACTED]');
+        expect(toolMessage?.content).not.toContain('sk-secret-token');
+        expect(toolMessage?.content).not.toContain('abc.def.ghi');
+        expect(toolMessage?.metadata?.receipt?.outputSummary).toContain('[REDACTED]');
     }
 
     @Test('runtime runTurn uses provider guard')

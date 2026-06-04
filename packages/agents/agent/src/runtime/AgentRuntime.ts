@@ -7,7 +7,7 @@ import { AgentTurnInput } from './AgentTurnInput';
 
 @Abstract()
 export abstract class AgentRuntime {
-    abstract runTurn(sessionId: string, input: string): Promise<AgentTurnResult>;
+    abstract runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult>;
 
     abstract start(): Promise<void>;
     abstract stop(): Promise<void>;

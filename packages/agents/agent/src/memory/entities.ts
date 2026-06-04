@@ -139,4 +139,61 @@ export class AgentScheduledTaskEntity {
 
     @Column({ type: 'text', nullable: true })
     lastError!: string;
+
+    @Column({ type: 'int', nullable: true })
+    maxAttempts!: number | null;
+
+    @Column({ type: 'bigint', nullable: true })
+    retryBackoffMs!: number | null;
+
+    @Column({ type: 'float', nullable: true })
+    retryBackoffMultiplier!: number | null;
+
+    @Column({ type: 'boolean', default: false })
+    manualRecoveryRequired!: boolean;
+
+    @Column({ type: 'boolean', default: false })
+    alertOnFailure!: boolean;
+}
+
+@Entity()
+export class AgentAuditLogEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column()
+    sessionId!: string;
+
+    @Column()
+    toolName!: string;
+
+    @Column()
+    toolCallId!: string;
+
+    @Column({ type: 'varchar' })
+    status!: string;
+
+    @Column({ type: 'text', nullable: true })
+    inputSummary!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    outputSummary!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    error!: string | null;
+
+    @Column({ type: 'bigint', nullable: true })
+    durationMs!: number | null;
+
+    @Column({ type: 'int', nullable: true })
+    attemptCount!: number | null;
+
+    @Column({ type: 'text', nullable: true })
+    principalId!: string | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata!: Record<string, any> | null;
+
+    @Column({ type: 'bigint' })
+    createdAt!: number;
 }

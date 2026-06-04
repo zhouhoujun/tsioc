@@ -5,7 +5,7 @@ import { AgentTool, AgentToolDefinition } from './AgentTool';
 export abstract class ToolRegistry {
     abstract getTools(): AgentTool[];
     abstract getTool(name: string): AgentTool | undefined;
-    abstract invoke(name: string, input: any, sessionId: string): Promise<any>;
+    abstract invoke(name: string, input: any, sessionId: string, principalId?: string): Promise<any>;
 
     getToolDefinitions(sessionId?: string): AgentToolDefinition[] {
         return this.getTools().map(tool => this.toDefinition(tool, sessionId));
@@ -33,6 +33,7 @@ export abstract class ToolRegistry {
             name: tool.name,
             description: tool.description,
             inputSchema: tool.inputSchema,
+            outputSchema: (tool as any).outputSchema,
             toolset: tool.toolset,
             source: tool.source,
             execution: tool.execution,

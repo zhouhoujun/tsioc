@@ -18,4 +18,9 @@ export interface ScheduledAgentTask {
     runCount?: number;
     failureCount?: number;
     lastError?: string;
+    maxAttempts?: number;
+    retryBackoffMs?: number;
+    retryBackoffMultiplier?: number;
+    manualRecoveryRequired?: boolean;
+    alertOnFailure?: boolean;
 }

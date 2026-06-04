@@ -30,6 +30,9 @@ export interface AgentToolOptions {
 export interface AgentSchedulerOptions {
     enabled?: boolean;
     shutdownTimeoutMs?: number;
+    defaultMaxAttempts?: number;
+    defaultRetryBackoffMs?: number;
+    defaultRetryBackoffMultiplier?: number;
 }
 
 export interface AgentUIOptions {
@@ -76,7 +79,10 @@ export const defaultAgentOptions: AgentOptions = {
     },
     scheduler: {
         enabled: true,
-        shutdownTimeoutMs: 10000
+        shutdownTimeoutMs: 10000,
+        defaultMaxAttempts: 3,
+        defaultRetryBackoffMs: 1000,
+        defaultRetryBackoffMultiplier: 2
     },
     ui: {
         title: 'Hermes Agent Console'

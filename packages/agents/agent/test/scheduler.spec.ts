@@ -438,6 +438,88 @@ export class SchedulerTest {
         await scheduler.stop();
     }
 
+    @Test('retries repeating task with backoff and then requires manual recovery')
+    async retriesRepeatingTaskWithBackoffAndManualRecovery() {
+        class FailingRuntimeStub extends RuntimeStub {
+            async runTurn(sessionId: string, input: string): Promise<any> {
+                this.calls.push(`${sessionId}:${input}`);
+                throw new Error('boom');
+            }
+        }
+        const runtime = new FailingRuntimeStub();
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, {
+            scheduler: {
+                enabled: true,
+                shutdownTimeoutMs: 10000,
+                defaultMaxAttempts: 2,
+                defaultRetryBackoffMs: 10,
+                defaultRetryBackoffMultiplier: 1
+            }
+        } as any);
+
+        await scheduler.schedule({
+            id: 'retry-task',
+            sessionId: 's-retry',
+            prompt: 'retry',
+            intervalMs: 10,
+            runAt: Date.now(),
+            manualRecoveryRequired: true
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 70));
+        expect(runtime.calls.length).toEqual(2);
+        const task = scheduler.getTask('retry-task');
+        expect(task?.failureCount).toEqual(2);
+        expect(task?.manualRecoveryRequired).toEqual(true);
+        await scheduler.stop();
+    }
+
+    @Test('recover resets manual recovery task and rearms execution')
+    async recoverResetsManualRecoveryTaskAndRearmsExecution() {
+        class FailingThenRecoveringRuntimeStub extends RuntimeStub {
+            failuresRemaining = 2;
+            async runTurn(sessionId: string, input: string): Promise<any> {
+                this.calls.push(`${sessionId}:${input}`);
+                if (this.failuresRemaining > 0) {
+                    this.failuresRemaining--;
+                    throw new Error('boom');
+                }
+                return { sessionId, message: { id: '1', role: 'assistant', content: input, createdAt: Date.now() } };
+            }
+        }
+        const runtime = new FailingThenRecoveringRuntimeStub();
+        const scheduler = new IntervalAgentScheduler(runtime as any, new FakeApp() as any, {
+            scheduler: {
+                enabled: true,
+                shutdownTimeoutMs: 10000,
+                defaultMaxAttempts: 2,
+                defaultRetryBackoffMs: 10,
+                defaultRetryBackoffMultiplier: 1
+            }
+        } as any);
+
+        await scheduler.schedule({
+            id: 'recover-task',
+            sessionId: 's-recover',
+            prompt: 'recover',
+            intervalMs: 10,
+            runAt: Date.now(),
+            manualRecoveryRequired: true
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 70));
+        const failedTask = scheduler.getTask('recover-task');
+        expect(failedTask?.manualRecoveryRequired).toEqual(true);
+        expect(failedTask?.paused).toEqual(true);
+
+        const recovered = await scheduler.recover('recover-task');
+        expect(recovered?.manualRecoveryRequired).toEqual(false);
+        expect(recovered?.failureCount).toEqual(0);
+        await new Promise(resolve => setTimeout(resolve, 40));
+        expect(runtime.calls.length).toBeGreaterThanOrEqual(3);
+        await scheduler.stop();
+    }
+
     @Test('persists cron task metadata and computes next run')
     async persistsCronTaskMetadata() {
         const ctx = await Application.run(SchedulerOrmTestModule);

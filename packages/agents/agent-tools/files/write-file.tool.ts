@@ -20,7 +20,16 @@ export class WriteFileTool implements AgentTool {
     };
     toolset = 'filesystem';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        timeoutMs: 30000,
+        retryPolicy: { maxRetries: 1, delayMs: 50 },
+        rateLimit: { maxCalls: 5, windowMs: 1000, scope: 'session' as const },
+        redactOutput: true,
+        auditEnabled: true
+    };
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })

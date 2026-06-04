@@ -22,6 +22,7 @@ export class ToolsHandler {
             source: t.source ?? null,
             execution: t.execution ?? null,
             inputSchema: t.inputSchema ?? null,
+            outputSchema: t.outputSchema ?? null,
             canonicalName: t.canonicalName ?? null,
             aliases: t.aliases ?? null,
             tags: t.tags ?? null,

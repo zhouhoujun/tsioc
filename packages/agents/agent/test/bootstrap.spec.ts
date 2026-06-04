@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext, RunContext, Runner } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { AgentModule, AgentConsoleComponent, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord } from '../src';
+import { AgentModule, AgentConsoleComponent, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord, AuditSink } from '../src';
 
 @Injectable()
 class CustomBootstrapRuntime extends AgentRuntime {
@@ -71,6 +71,23 @@ export class BootstrapTest {
         const runtime = this.ctx.get(AgentRuntime);
         expect(runtime).toBeTruthy();
         expect(runtime).toBeInstanceOf(DefaultAgentRuntime);
+    }
+
+    @Test('provides a usable audit sink by default')
+    async providesUsableAuditSinkByDefault() {
+        const sink = this.ctx.get(AuditSink);
+        expect(sink).toBeTruthy();
+        await sink.append({
+            id: 'bootstrap-a1',
+            sessionId: 'boot-audit',
+            toolName: 'echo',
+            toolCallId: 'tool-bootstrap',
+            status: 'success',
+            createdAt: 1
+        });
+        const records = await sink.list('boot-audit');
+        expect(records.length).toEqual(1);
+        expect(records[0].toolName).toEqual('echo');
     }
 
     @Test('bootstrap turn runs through AgentRuntime start')

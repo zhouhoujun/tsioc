@@ -13,4 +13,5 @@ export abstract class AgentScheduler {
     pause?(taskId: string): Promise<ScheduledAgentTask | undefined>;
     resume?(taskId: string): Promise<ScheduledAgentTask | undefined>;
     update?(taskId: string, patch: Partial<ScheduledAgentTask>): Promise<ScheduledAgentTask | undefined>;
+    recover?(taskId: string): Promise<ScheduledAgentTask | undefined>;
 }

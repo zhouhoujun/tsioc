@@ -37,6 +37,14 @@ import { LocalAgentClient } from './channels/LocalAgentClient';
 import { PubSubAgentChannel } from './channels/PubSubAgentChannel';
 import { AgentConsoleViewModel } from './ui/AgentConsoleViewModel';
 import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
+import { ToolExecutionCoordinator } from './harness/ToolExecutionCoordinator';
+import { ToolSchemaValidator } from './harness/ToolSchemaValidator';
+import { RateLimitManager } from './harness/RateLimitManager';
+import { OutputGuard } from './harness/OutputGuard';
+import { AuditSink } from './harness/AuditSink';
+import { InMemoryAuditSink } from './harness/InMemoryAuditSink';
+import { TypeOrmAuditSink } from './harness/TypeOrmAuditSink';
+import { DefaultAuditSink } from './harness/DefaultAuditSink';
 
 @Module({
     imports: [
@@ -61,6 +69,14 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         },
         AgentContextManager,
         ToolLoopDetector,
+        ToolSchemaValidator,
+        RateLimitManager,
+        OutputGuard,
+        InMemoryAuditSink,
+        TypeOrmAuditSink,
+        DefaultAuditSink,
+        { provide: AuditSink, useExisting: DefaultAuditSink },
+        ToolExecutionCoordinator,
         SystemPromptBuilder,
         ToolApprovalManager,
         InMemoryToolActivationStore,
@@ -77,6 +93,7 @@ import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
         MemorySearchTool,
         { provide: SessionStore, useClass: InMemorySessionStore },
         { provide: MemoryStore, useClass: InMemoryMemoryStore },
+        DefaultAgentMemoryRetriever,
         { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever, asDefault: true },
         { provide: SessionSummarizer, useClass: SimpleSessionSummarizer },
         DeterministicExperienceDistiller,

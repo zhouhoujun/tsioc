@@ -10,6 +10,7 @@ import { PairingStore } from '../src/auth/PairingStore';
 import { SessionOwnerStore } from '../src/auth/SessionOwnerStore';
 import { SessionHandler } from '../src/api/SessionHandler';
 import { EventHandler } from '../src/api/EventHandler';
+import { AuditHandler } from '../src/api/AuditHandler';
 import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, AgentStreamChunkEvent, AgentToolInvokedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentErrorEvent, LocalToolRegistry } from '@tsdi/agent';
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
@@ -463,6 +464,7 @@ export class ToolsHandlerTest {
             source: 'mcp',
             execution: { readOnly: false, sideEffect: true, requiresSequential: true },
             inputSchema: { type: 'object' },
+            outputSchema: null,
             canonicalName: 'echo',
             aliases: ['demo.echo'],
             tags: ['mcp', 'dynamic'],
@@ -545,6 +547,7 @@ export class ToolsHandlerTest {
             source: 'mcp',
             execution: { readOnly: false, sideEffect: true, requiresSequential: true },
             inputSchema: { type: 'object' },
+            outputSchema: null,
             canonicalName: 'echo',
             aliases: null,
             tags: ['mcp', 'demo'],
@@ -679,6 +682,7 @@ export class ToolsHandlerTest {
             source: null,
             execution: null,
             inputSchema: null,
+            outputSchema: null,
             canonicalName: null,
             aliases: null,
             tags: null,
@@ -867,6 +871,87 @@ export class ChatWebSocketTest {
         const frame = JSON.parse(writes[0]);
         expect(frame.type).toEqual('error');
         expect(frame.error).toEqual('session queue limit reached');
+    }
+}
+
+@Suite('AuditHandler')
+export class AuditHandlerTest {
+    @Test('lists audit records for owned session and supports filtering')
+    async listsAuditRecordsForOwnedSession() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-2');
+        const audit = {
+            async list(sessionId?: string) {
+                const records = [{
+                    id: 'a1',
+                    sessionId: 's1',
+                    toolName: 'echo',
+                    toolCallId: 'tool-1',
+                    status: 'success',
+                    createdAt: 1,
+                    inputSummary: 'hi',
+                    outputSummary: 'ok'
+                }, {
+                    id: 'a2',
+                    sessionId: 's1',
+                    toolName: 'write_file',
+                    toolCallId: 'tool-2',
+                    status: 'error',
+                    createdAt: 2,
+                    error: 'boom'
+                }, {
+                    id: 'a3',
+                    sessionId: 's2',
+                    toolName: 'echo',
+                    toolCallId: 'tool-3',
+                    status: 'success',
+                    createdAt: 3
+                }];
+                return records.filter(record => !sessionId || record.sessionId === sessionId);
+            }
+        } as any;
+        const handler = new AuditHandler(audit, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/audit' && route.method === 'GET')!;
+        let body = '';
+        const req = { url: '/api/audit?sessionId=s1&toolName=write_file&status=error' } as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.records.length).toEqual(1);
+        expect(data.records[0].id).toEqual('a2');
+        expect(data.records[0].error).toEqual('boom');
+    }
+
+    @Test('rejects audit access for another principal')
+    async rejectsForeignAuditAccess() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const handler = new AuditHandler({ list: async () => [] } as any, owners);
+        const route = handler.getRoutes().find(route => route.path === '/api/audit' && route.method === 'GET')!;
+        let status = 0;
+        const req = { url: '/api/audit?sessionId=s1' } as any;
+        setRequestAuth(req, { token: 'token-2', principalId: 'user-2' });
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: () => res
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        expect(status).toEqual(403);
     }
 }
 

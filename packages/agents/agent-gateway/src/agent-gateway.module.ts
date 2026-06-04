@@ -14,6 +14,7 @@ import { SessionHandler } from './api/SessionHandler';
 import { MemoryHandler } from './api/MemoryHandler';
 import { ToolsHandler } from './api/ToolsHandler';
 import { EventHandler } from './api/EventHandler';
+import { AuditHandler } from './api/AuditHandler';
 import { ChatWebSocket } from './ws/ChatWebSocket';
 
 @Module({
@@ -33,6 +34,7 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
         MemoryHandler,
         ToolsHandler,
         EventHandler,
+        AuditHandler,
         ChatWebSocket
     ],
     exports: [
@@ -48,6 +50,7 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
         MemoryHandler,
         ToolsHandler,
         EventHandler,
+        AuditHandler,
         ChatWebSocket
     ]
 })
