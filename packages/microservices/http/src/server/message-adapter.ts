@@ -141,6 +141,10 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
                 return name ? this.pathValue(name) : this.pathValue();
             case 'topic':
                 return this.topic();
+            case 'cookie':
+                return name ? this.cookies.get(name) : this.cookies;
+            case 'session':
+                return name ? (this.session as any)?.data?.[name] ?? (this.session as any)?.[name] : this.session;
             case 'status':
                 return this.getStatus();
             case 'statusMessage':

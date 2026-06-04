@@ -1,16 +1,102 @@
-import { Controller, Get, Post, RequestParam, RequestBody, RestfulRequestContext } from '@tsdi/service';
+import { Inject } from '@tsdi/ioc';
+import { RequestContext } from '@tsdi/common';
+import { HTTP_COOKIES, HTTP_RESPONSE } from '@tsdi/http';
+import { Controller, Get, Post, RequestParam, RequestBody } from '@tsdi/service';
 import { OIDCService, SessionUser } from '../auth/OIDCService';
 
-function getHeader(ctx: RestfulRequestContext, name: string): string | undefined {
-    const headers = ctx.request.headers as Record<string, unknown> | undefined;
-    if (!headers) return undefined;
+function getAdapter(ctx: any): any {
+    return typeof ctx?.getMessageAdapter === 'function' ? ctx.getMessageAdapter() : null;
+}
+
+function getCookies(ctx: any): { get(name: string): string | undefined; set(name: string, value?: string, opts?: Record<string, any>): void } {
+    if (typeof ctx?.get === 'function') {
+        const cookies = ctx.get(HTTP_COOKIES as any);
+        if (cookies) {
+            return cookies;
+        }
+    }
+    if (ctx?.cookies) {
+        return ctx.cookies;
+    }
+    const header = getHeader(ctx, 'cookie') ?? '';
+    const response = getResponse(ctx);
+    return {
+        get: (name: string) => parseCookieHeader(header)[name],
+        set: (name: string, value = '', opts: Record<string, any> = {}) => {
+            const serialized = serializeCookie(name, value, opts);
+            const current = response?.getHeader?.('set-cookie');
+            const nextValue = Array.isArray(current)
+                ? [...current, serialized]
+                : current != null
+                    ? [String(current), serialized]
+                    : [serialized];
+            response?.setHeader?.('set-cookie', nextValue);
+        }
+    };
+}
+
+function parseCookieHeader(header: string): Record<string, string> {
+    return header.split(';').reduce((cookies, entry) => {
+        const [rawName, ...rest] = entry.split('=');
+        const name = rawName?.trim();
+        if (!name) {
+            return cookies;
+        }
+        cookies[name] = decodeURIComponent(rest.join('=').trim());
+        return cookies;
+    }, {} as Record<string, string>);
+}
+
+function serializeCookie(name: string, value: string, opts: Record<string, any>): string {
+    const segments = [`${encodeURIComponent(name)}=${encodeURIComponent(value)}`];
+    if (opts.maxAge != null) {
+        segments.push(`Max-Age=${opts.maxAge}`);
+    }
+    segments.push(`Path=${opts.path ?? '/'}`);
+    if (opts.httpOnly) {
+        segments.push('HttpOnly');
+    }
+    if (opts.secure) {
+        segments.push('Secure');
+    }
+    if (opts.sameSite) {
+        segments.push(`SameSite=${opts.sameSite}`);
+    }
+    return segments.join('; ');
+}
+
+function getResponse(ctx: any): any {
+    if (typeof ctx?.get === 'function') {
+        return ctx.get(HTTP_RESPONSE as any) ?? getAdapter(ctx)?.response;
+    }
+    return ctx.response;
+}
+
+function isSecure(ctx: any): boolean {
+    const adapter = getAdapter(ctx);
+    if (adapter) {
+        return !!adapter.secure;
+    }
+    return !!ctx.secure;
+}
+
+function getHeader(ctx: any, name: string): string | undefined {
+    const adapter = getAdapter(ctx);
+    const adapted = adapter?.getHeader?.(name);
+    if (adapted != null) {
+        return String(adapted);
+    }
+    const headers = ctx?.request?.headers as Record<string, unknown> | undefined;
+    if (!headers) {
+        return undefined;
+    }
     const val = headers[name];
     if (typeof val === 'string') return val;
     if (Array.isArray(val)) return val[0];
     return undefined;
 }
 
-function bearerToken(ctx: RestfulRequestContext): string | null {
+function bearerToken(ctx: any): string | null {
     const auth = getHeader(ctx, 'authorization');
     if (auth?.startsWith('Bearer ')) {
         return auth.slice(7).trim();
@@ -23,43 +109,45 @@ export class AuthController {
     constructor(private oidcService: OIDCService) {}
 
     @Get('/login')
-    login(ctx: RestfulRequestContext): { url: string } {
+    login(@Inject(RequestContext) ctx: RequestContext): { url: string } {
         const challenge = this.oidcService.authenticate();
-        ctx.cookies.set('oidc_state', challenge.state, {
+        const cookies = getCookies(ctx);
+        cookies.set('oidc_state', challenge.state, {
             httpOnly: true,
             sameSite: 'lax',
-            secure: ctx.secure,
-            maxAge: 600000
+            secure: isSecure(ctx),
+            maxAge: 600
         });
-        ctx.cookies.set('oidc_nonce', challenge.nonce, {
+        cookies.set('oidc_nonce', challenge.nonce, {
             httpOnly: true,
             sameSite: 'lax',
-            secure: ctx.secure,
-            maxAge: 600000
+            secure: isSecure(ctx),
+            maxAge: 600
         });
         return { url: challenge.url };
     }
 
     @Get('/callback')
     async callback(
-        ctx: RestfulRequestContext,
+        @Inject(RequestContext) ctx: RequestContext,
         @RequestParam('code') code: string,
         @RequestParam('state') state: string
     ): Promise<{ sessionToken: string; user: Record<string, unknown> }> {
-        const expectedState = ctx.cookies.get('oidc_state') || '';
-        const expectedNonce = ctx.cookies.get('oidc_nonce') || '';
+        const cookies = getCookies(ctx);
+        const expectedState = cookies.get('oidc_state') || '';
+        const expectedNonce = cookies.get('oidc_nonce') || '';
 
-        ctx.cookies.set('oidc_state', '', { maxAge: 0 });
-        ctx.cookies.set('oidc_nonce', '', { maxAge: 0 });
+        cookies.set('oidc_state', '', { maxAge: 0 });
+        cookies.set('oidc_nonce', '', { maxAge: 0 });
 
         const result = await this.oidcService.handleCallback(code, state, expectedState, expectedNonce);
         const sessionToken = await this.oidcService.createSessionToken(result.user as unknown as SessionUser);
 
-        ctx.cookies.set('oidc_session', sessionToken, {
+        cookies.set('oidc_session', sessionToken, {
             httpOnly: true,
             sameSite: 'lax',
-            secure: ctx.secure,
-            maxAge: 86400000
+            secure: isSecure(ctx),
+            maxAge: 86400
         });
 
         return {
@@ -69,23 +157,26 @@ export class AuthController {
     }
 
     @Get('/userinfo')
-    async userinfo(ctx: RestfulRequestContext): Promise<SessionUser | { error: string }> {
-        const token = bearerToken(ctx) || ctx.cookies.get('oidc_session');
+    async userinfo(@Inject(RequestContext) ctx: RequestContext): Promise<SessionUser | { error: string }> {
+        const cookies = getCookies(ctx);
+        const response = getResponse(ctx);
+        const token = bearerToken(ctx) || cookies.get('oidc_session');
         if (!token) {
-            ctx.response.statusCode = 401;
+            response.statusCode = 401;
             return { error: 'Not authenticated' };
         }
         const user = await this.oidcService.verifySessionToken(token);
         if (!user) {
-            ctx.response.statusCode = 401;
+            response.statusCode = 401;
             return { error: 'Invalid or expired session' };
         }
         return user;
     }
 
     @Get('/session')
-    async session(ctx: RestfulRequestContext): Promise<{ authenticated: boolean; user?: SessionUser }> {
-        const token = bearerToken(ctx) || ctx.cookies.get('oidc_session');
+    async session(@Inject(RequestContext) ctx: RequestContext): Promise<{ authenticated: boolean; user?: SessionUser }> {
+        const cookies = getCookies(ctx);
+        const token = bearerToken(ctx) || cookies.get('oidc_session');
         if (!token) {
             return { authenticated: false };
         }
@@ -97,36 +188,38 @@ export class AuthController {
     }
 
     @Get('/logout')
-    logout(ctx: RestfulRequestContext): { status: string } {
-        ctx.cookies.set('oidc_session', '', { maxAge: 0 });
-        ctx.cookies.set('oidc_state', '', { maxAge: 0 });
-        ctx.cookies.set('oidc_nonce', '', { maxAge: 0 });
+    logout(@Inject(RequestContext) ctx: RequestContext): { status: string } {
+        const cookies = getCookies(ctx);
+        cookies.set('oidc_session', '', { maxAge: 0 });
+        cookies.set('oidc_state', '', { maxAge: 0 });
+        cookies.set('oidc_nonce', '', { maxAge: 0 });
         return { status: 'ok' };
     }
 
     @Post('/refresh')
     async refresh(
-        ctx: RestfulRequestContext,
+        @Inject(RequestContext) ctx: RequestContext,
         @RequestBody() body: { refreshToken: string }
     ): Promise<{ tokens: Record<string, unknown> } | { error: string }> {
+        const response = getResponse(ctx);
         const refreshToken = body?.refreshToken;
         if (!refreshToken) {
-            ctx.response.statusCode = 400;
+            response.statusCode = 400;
             return { error: 'Refresh token is required' };
         }
         try {
             const tokens = await this.oidcService.refreshAccessToken(refreshToken);
             return { tokens: tokens as unknown as Record<string, unknown> };
         } catch (err: unknown) {
-            ctx.response.statusCode = 400;
+            response.statusCode = 400;
             return { error: err instanceof Error ? err.message : 'Token refresh failed' };
         }
     }
 
     @Get('/.well-known/openid-configuration')
-    openidConfiguration(ctx: RestfulRequestContext): Record<string, unknown> {
+    openidConfiguration(@Inject(RequestContext) ctx: RequestContext): Record<string, unknown> {
         const host = getHeader(ctx, 'host') || 'localhost';
-        const proto = ctx.secure ? 'https' : 'http';
+        const proto = isSecure(ctx) ? 'https' : 'http';
         const base = `${proto}://${host}`;
         return {
             issuer: this.oidcService.issuer || base,

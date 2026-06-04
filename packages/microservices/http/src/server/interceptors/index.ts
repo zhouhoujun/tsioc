@@ -7,6 +7,7 @@ export { HelmetMiddleware as Helmet } from './helmet';
 export * from './logger';
 export * from './session';
 export * from './cookie';
+export * from './auth';
 export * from './bodyparser';
 export * from './content';
 export * from './json';

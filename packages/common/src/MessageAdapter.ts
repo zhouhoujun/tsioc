@@ -12,7 +12,8 @@ export type MessageSection =
     | 'status'
     | 'statusMessage'
     | 'error'
-    | 'cookie';
+    | 'cookie'
+    | 'session';
 
 @Abstract()
 export abstract class MessageAdapter<TRequest = any, TResponse = any> {

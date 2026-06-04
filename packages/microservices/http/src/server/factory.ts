@@ -1,5 +1,6 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
 import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { HttpAuthService } from '@tsdi/security';
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
 import { HttpServOptions, HTTP_SERV_OPTIONS } from './options';
@@ -11,10 +12,11 @@ import { HttpContentInterceptor, STATICS_OPTIONS } from './interceptors/content'
 import { HttpJsonInterceptor } from './interceptors/json';
 import { HttpSessionInterceptor } from './interceptors/session';
 import { HttpCookieInterceptor } from './interceptors/cookie';
+import { HttpAuthInterceptor, HTTP_AUTH_OPTIONS } from './interceptors/auth';
 import { Cors } from './interceptors/cors';
 import { HttpMessageAdapter } from './message-adapter';
 import { HttpMessageAdapterFactory } from './message-adapter.factory';
-import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -59,12 +61,24 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         },
         { provide: SessionInterceptor, useClass: HttpSessionInterceptor },
         { provide: CookieInterceptor, useClass: HttpCookieInterceptor },
+        { provide: HttpAuthService, useClass: HttpAuthService },
+        { provide: AuthInterceptor, useClass: HttpAuthInterceptor },
+        { provide: HttpAuthInterceptor, useExisting: AuthInterceptor },
         { provide: CorsInterceptor, useClass: Cors },
         ...(config.features.bodyparser ? [{
             provide: config.features.interceptorsToken,
             useExisting: BodyParserInterceptor,
             multi: true,
             multiOrder: -1000
+        } as any] : []),
+        ...(config.features.auth ? [{
+            provide: HTTP_AUTH_OPTIONS,
+            useValue: config.features.auth,
+        }, {
+            provide: config.features.interceptorsToken,
+            useExisting: HttpAuthInterceptor,
+            multi: true,
+            multiOrder: -300
         } as any] : []),
         ...(config.static ? [{
             provide: STATICS_OPTIONS,

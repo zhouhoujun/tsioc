@@ -54,18 +54,12 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
             if (this.hasModel(prop.provider ?? prop.type)) {
                 val = this.resolveModel(prop.provider ?? prop.type as Type, ctx, fields[prop.propertyKey], prop.nullable)
             } else {
-                val = this.fieldResolver.handle([prop, fields, modelType], ctx, {
-                    next: (res) => {
-                        if (isResolved(res)) {
-                            return res
-                        } else {
-                            missings.push(prop);
-                        }
-                    },
-                    error: (err) => {
-                        throw err
-                    }
-                })
+                const resolved = this.fieldResolver.handle([prop, fields, modelType], ctx);
+                if (isResolved(resolved)) {
+                    val = resolved;
+                } else {
+                    missings.push(prop);
+                }
             }
             if (isDefined(val)) {
                 model[prop.propertyKey] = val

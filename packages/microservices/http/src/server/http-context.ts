@@ -25,6 +25,7 @@ export type HttpRequestMessage<TBody = any> = HttpServRequest & {
     files?: Record<string, HttpUploadFile>;
     cookies?: HttpCookieStore;
     _session?: unknown;
+    _auth?: HttpRequestAuth;
     getHeader(name: string): string | undefined;
     hasHeader(name: string): boolean;
     getHeaderNames(): string[];
@@ -32,9 +33,16 @@ export type HttpRequestMessage<TBody = any> = HttpServRequest & {
 
 export type HttpHandlerOutput = WritableLike<Outgoing> | string | Buffer | object | null | undefined;
 
+export interface HttpRequestAuth {
+    authenticated: boolean;
+    token: string | null;
+    claims?: any;
+}
+
 export const HTTP_RESPONSE = new ContextToken<HttpServResponse | null>(() => null);
 export const HTTP_COOKIES = new ContextToken<HttpCookieStore | null>(() => null);
 export const HTTP_SESSION = new ContextToken<any | null>(() => null);
+export const HTTP_AUTH_RESULT = new ContextToken<HttpRequestAuth | null>(() => null);
 export const HTTP_PROXY_ENABLED = new ContextToken<boolean>(() => false);
 export const HTTP_PROXY_IP_HEADER = new ContextToken<string>(() => X_FORWARDED_FOR);
 export const HTTP_MAX_IPS_COUNT = new ContextToken<number>(() => 0);

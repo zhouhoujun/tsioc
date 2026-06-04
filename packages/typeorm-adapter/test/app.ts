@@ -107,7 +107,7 @@ export class MockBootHttpTest {
             useHttpTransport({ listenOpts: { port: 3001, host: '127.0.0.1' }, asDefault: true }),
         ),
         provideClient(
-            ithHttpTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
+            withHttpTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
         ),
     ],
     declarations: [UserController, RoleController],

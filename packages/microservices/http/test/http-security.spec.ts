@@ -1,8 +1,9 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, useCors, useInterceptors, useRouter, SERVICE_CORS_OPTIONS } from '@tsdi/service';
-import { useHttpTransport } from '../src/server';
+import { Controller, Get, provideService, useAuth, useCors, useInterceptors, useRouter, SERVICE_CORS_OPTIONS } from '@tsdi/service';
+import { httpTransportFactory, useHttpTransport } from '../src/server';
+import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import { HelmetMiddleware, HelmetOptions } from '../src/server/interceptors/helmet';
@@ -167,6 +168,117 @@ describe('HTTP Security', () => {
                 }, resolve).end();
             });
             expect(res.headers['access-control-allow-origin']).toBe('http://legacy.example.com');
+        });
+    });
+
+    describe('HTTP Auth Interceptor', () => {
+        const AUTH_PORT = 21314;
+
+        @Controller('/api/auth-test')
+        class AuthController {
+            @Get('/auth')
+            auth() {
+                return { ok: true };
+            }
+        }
+
+        @Module({
+            imports: [LoggerModule],
+            declarations: [AuthController],
+            providers: [
+                provideService(
+                    useRouter(),
+                    useAuth({ bearerToken: 'secret-token' } as any),
+                    useHttpTransport({ listenOpts: { port: AUTH_PORT, host: '127.0.0.1' }, asDefault: true })
+                ),
+                provideClient(
+                    withHttpTransport({ url: `http://127.0.0.1:${AUTH_PORT}`, asDefault: true })
+                )
+            ]
+        })
+        class AuthApp { }
+
+        let ctx: ApplicationContext;
+
+        before(async () => {
+            ctx = await Application.run(AuthApp);
+        });
+
+        after(async () => {
+            await ctx?.close();
+        });
+
+        it('should reject missing bearer token', async () => {
+            const res = await new Promise<http.IncomingMessage>((resolve) => {
+                http.request({
+                    host: '127.0.0.1', port: AUTH_PORT, path: '/api/auth-test/auth', method: 'GET'
+                }, resolve).end();
+            });
+            expect(res.statusCode).toBe(401);
+        });
+
+        it('should accept configured bearer token', async () => {
+            const body = await new Promise<string>((resolve, reject) => {
+                const req = http.request({
+                    host: '127.0.0.1', port: AUTH_PORT, path: '/api/auth-test/auth', method: 'GET',
+                    headers: { authorization: 'Bearer secret-token' }
+                }, (res) => {
+                    let text = '';
+                    res.setEncoding('utf8');
+                    res.on('data', chunk => text += chunk);
+                    res.on('end', () => {
+                        expect(res.statusCode).toBe(200);
+                        resolve(text);
+                    });
+                });
+                req.on('error', reject);
+                req.end();
+            });
+            expect(JSON.parse(body)).toEqual({ ok: true });
+        });
+
+        it('should reject query token by default even when bearer auth is configured', async () => {
+            const res = await new Promise<http.IncomingMessage>((resolve) => {
+                http.request({
+                    host: '127.0.0.1', port: AUTH_PORT, path: '/api/auth-test/auth?token=secret-token', method: 'GET'
+                }, resolve).end();
+            });
+            expect(res.statusCode).toBe(401);
+        });
+
+        it('should fail closed when auth feature is enabled without a strategy', async () => {
+            const BROKEN_AUTH_PORT = 21316;
+            @Controller('/api/auth-test')
+            class BrokenAuthController {
+                @Get('/auth')
+                auth() {
+                    return { ok: true };
+                }
+            }
+            @Module({
+                imports: [LoggerModule],
+                declarations: [BrokenAuthController],
+                providers: [
+                    provideService(
+                        useRouter(),
+                        useAuth(true as any),
+                        useHttpTransport({ listenOpts: { port: BROKEN_AUTH_PORT, host: '127.0.0.1' }, asDefault: true })
+                    )
+                ]
+            })
+            class BrokenAuthApp { }
+
+            const brokenCtx = await Application.run(BrokenAuthApp);
+            try {
+                const res = await new Promise<http.IncomingMessage>((resolve) => {
+                    http.request({
+                        host: '127.0.0.1', port: BROKEN_AUTH_PORT, path: '/api/auth-test/auth', method: 'GET'
+                    }, resolve).end();
+                });
+                expect(res.statusCode).toBe(500);
+            } finally {
+                await brokenCtx.close();
+            }
         });
     });
 

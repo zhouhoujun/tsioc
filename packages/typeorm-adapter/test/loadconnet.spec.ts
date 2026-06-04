@@ -54,7 +54,7 @@ export class LoadReposTest {
     async getUser0() {
         const usrRep = this.ctx.get(TypeormAdapter).getRepository(User);
         expect(usrRep).toBeInstanceOf(Repository);
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'admin----test' } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get('/users', { observe: 'response', params: { name: 'admin----test' } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.account).toEqual('admin----test');
@@ -75,7 +75,7 @@ export class LoadReposTest {
 
     @Test()
     async postUser() {
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<User>('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
@@ -84,7 +84,7 @@ export class LoadReposTest {
 
     @Test()
     async getUser() {
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.account).toEqual('post_test');
@@ -92,18 +92,18 @@ export class LoadReposTest {
 
     @Test()
     async detUser() {
-        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeDefined();
         expect(rep1.body?.id).toBeDefined();
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete<User>('/users', { observe: 'response', params: { id: rep1.body?.id } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/users', { observe: 'response', params: { id: rep1.body?.id } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }
 
     @Test()
     async postRole() {
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post<Role>('/roles', { name: 'opter' }, { observe: 'response' }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post('/roles', { name: 'opter' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
@@ -112,7 +112,7 @@ export class LoadReposTest {
 
     @Test()
     async getRole() {
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.name).toEqual('opter');
@@ -120,11 +120,11 @@ export class LoadReposTest {
 
     @Test()
     async detRole() {
-        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
+        const rep1 = await lastValueFrom(this.ctx.resolve(HttpClient).get('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeDefined();
         expect(rep1.body?.id).toBeDefined();
-        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete<Role>('/roles', { observe: 'response', params: { id: rep1.body?.id } }));
+        const rep = await lastValueFrom(this.ctx.resolve(HttpClient).delete('/roles', { observe: 'response', params: { id: rep1.body?.id } }));
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeTruthy();
     }

@@ -53,6 +53,8 @@ export class TypeormAdapter {
             getMetadataArgsStorage().filterColumns(type)
                 .forEach(col => {
                     const opType = col.options.type;
+                    const reflectTarget = isString(col.target) ? null : (((col.target as any).prototype ?? col.target) as any);
+                    const designType = reflectTarget ? Reflect.getMetadata("design:type", reflectTarget, col.propertyName) : undefined;
                     let type: AbstractType;
                     let dbtype: string | undefined;
                     if (opType) {
@@ -60,15 +62,15 @@ export class TypeormAdapter {
                             type = opType;
                         } else if (isString(opType)) {
                             dbtype = opType;
-                            type = isString(col.target) ? toPrimitType(opType) : Reflect.getMetadata("design:type", col.target.prototype, col.propertyName) ?? toPrimitType(opType);
+                            type = designType ?? toPrimitType(opType);
                         } else {
                             if (col.mode === 'objectId') {
                                 dbtype = 'objectId';
                             }
-                            type = (opType as PropertyDescriptor).value ?? Object
+                            type = (opType as PropertyDescriptor).value ?? designType ?? Object
                         }
                     } else {
-                        type = Object;
+                        type = designType ?? Object;
                     }
 
                     props!.push({
@@ -144,6 +146,17 @@ export class TypeormAdapter {
                         const pipe = context.get<PipeTransform>('objectId');
                         if (!pipe) throw missingPropPipe(prop, target)
                         return pipe.transform(value)
+                    }
+                    return next(input, context);
+                },
+                (input, next, context) => {
+                    const [prop, args] = input;
+                    if (!prop.dbtype && prop.type && prop.type !== Object && prop.type !== Array) {
+                        const value = args[prop.propertyKey] ?? prop.default;
+                        if (isNil(value)) return null;
+                        const pipe = context.get<PipeTransform>(prop.type.name.toLowerCase());
+                        if (!pipe) throw missingPropPipe(prop, input[2]);
+                        return pipe.transform(value);
                     }
                     return next(input, context);
                 },

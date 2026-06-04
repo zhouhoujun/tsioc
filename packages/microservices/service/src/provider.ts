@@ -10,9 +10,9 @@ import {
     getServiceMiddlewaresToken, getServiceTransfersToken, getServiceRouterToken
 } from './tokens';
 
-import { CookieOptions, CorsOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
+import { AuthOptions, CookieOptions, CorsOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
-import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from './interceptors';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from './interceptors';
 import { SetupServices } from './SetupMicroServices';
 
 
@@ -175,6 +175,9 @@ export function useFeatures(options?: ServiceFeatureOptions): ServiceFeatureFn<E
         }
         if (opts.cors) {
             features.push(useCors(isBoolean(opts.cors) ? undefined : opts.cors)(config));
+        }
+        if (opts.auth) {
+            features.push(useAuth(isBoolean(opts.auth) ? undefined : opts.auth)(config));
         }
 
         if (opts.registration) {
@@ -529,6 +532,20 @@ export function useCors(options?: CorsOptions): ServiceFeatureFn<ServiceFeatureK
     };
 }
 
+export function useAuth(options?: AuthOptions): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
+    return (config) => {
+        const resolved = resolveFeatureOptions(options);
+        return makeServiceFeature(
+            ServiceFeatureKind.Interceptors,
+            [
+                { provide: SERVICE_AUTH_OPTIONS, useValue: resolved.featureOptions },
+                createFeatureInterceptorProvider(config, AuthInterceptor, resolved.interceptor, resolved.multiOrder ?? -300)
+            ],
+            config
+        );
+    };
+}
+
 export const SERVICE_REGISTRATION_OPTIONS = token<RegistrationOptions>('SERVICE_REGISTRATION_OPTIONS');
 export const SERVICE_HEALTH_OPTIONS = token<HealthOptions>('SERVICE_HEALTH_OPTIONS');
 export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>('SERVICE_GRACEFUL_SHUTDOWN_OPTIONS');
@@ -536,6 +553,7 @@ export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>(
 export const SERVICE_STATICS_OPTIONS = token<any>('SERVICE_STATICS_OPTIONS');
 /** @deprecated use SERVICE_STATICS_OPTIONS */
 export const SERVICE_CONTENT_OPTIONS = SERVICE_STATICS_OPTIONS;
+export const SERVICE_AUTH_OPTIONS = token<any>('SERVICE_AUTH_OPTIONS');
 export const SERVICE_BODY_PARSER_OPTIONS = token<any>('SERVICE_BODY_PARSER_OPTIONS');
 export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZER_OPTIONS');
 export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');

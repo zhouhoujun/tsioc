@@ -128,6 +128,10 @@ export interface CorsOptions extends FeatureInterceptorOptions {
     maxAge?: number | string;
 }
 
+export interface AuthOptions extends FeatureInterceptorOptions {
+    [key: string]: any;
+}
+
 /**
  * API rate limit options.
  * API 限流选项
@@ -173,6 +177,7 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     session?: boolean | SessionOptions;
     cookie?: boolean | CookieOptions;
     cors?: boolean | CorsOptions;
+    auth?: boolean | AuthOptions;
     router?: boolean | RouteOpts;
     registration?: boolean | RegistrationOptions;
     health?: boolean | HealthOptions;

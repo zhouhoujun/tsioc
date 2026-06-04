@@ -11,7 +11,8 @@ import {
     withFeatures,
     withTransfers,
     withDiscovery,
-    withLoadBalance
+    withLoadBalance,
+    withTimeout
 } from '../src/provider';
 import { getClientTransfersToken } from '../src/tokens';
 import { ClientFeatureKind } from '../src/options';
@@ -86,6 +87,21 @@ describe('client provider', () => {
         expect(retry.providers[0].useValue).toEqual({});
         expect(breaker.providers[0].provide).toBe(MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS);
         expect(breaker.providers[0].useValue).toEqual({});
+    });
+
+    it('omits discovery and load balance features when disabled explicitly', () => {
+        const config = createConfig();
+        const features = withFeatures({ discovery: false, loadBalance: false })(config) as any[];
+        const kinds = features.map(feature => feature.kind);
+        expect(kinds).not.toContain(ClientFeatureKind.Discovery);
+        expect(kinds).not.toContain(ClientFeatureKind.LoadBalance);
+        expect(kinds).toContain(ClientFeatureKind.Transfer);
+    });
+
+    it('adds timeout interceptor when timeout feature is configured', () => {
+        const config = createConfig();
+        const features = withFeatures({ timeout: 1234 })(config) as any[];
+        expect(features.some(feature => feature.kind === ClientFeatureKind.Interceptors)).toBe(true);
     });
 
     it('uses default transfer when no transfer factory is provided', () => {

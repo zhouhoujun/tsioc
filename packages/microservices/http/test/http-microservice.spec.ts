@@ -1,5 +1,6 @@
 import { HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse, HTTP_COOKIES, HTTP_RESPONSE } from '../src/server';
 import { HttpMessageAdapter } from '../src/server/message-adapter';
+import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
@@ -96,6 +97,12 @@ describe('HTTP Microservice', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 }, features: { bodyparser: false } as any });
             expect(feature.config.features?.bodyparser).toBe(false);
             expect(feature.providers.some((p: any) => p.useExisting === BodyParserInterceptor)).toBe(false);
+        });
+
+        it('should register auth interceptor and options when auth feature is enabled', () => {
+            const feature = httpTransportFactory({ listenOpts: { port: 3000 }, features: { auth: { bearerToken: 'secret' } } as any });
+            expect(feature.providers.some((p: any) => p.provide === HTTP_AUTH_OPTIONS && p.useValue.bearerToken === 'secret')).toBe(true);
+            expect(feature.providers.some((p: any) => p.useExisting?.name === 'HttpAuthInterceptor' && p.multiOrder === -300)).toBe(true);
         });
     });
 

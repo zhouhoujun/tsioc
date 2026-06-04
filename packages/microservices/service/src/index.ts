@@ -5,6 +5,7 @@ export * from './tokens';
 export * from './router';
 export * from './middleware';
 export * from './metadata';
+export * from './request-context';
 export * from './interceptors';
 export * from './ServiceHandler';
 export * from './Service';

@@ -1,5 +1,5 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
+import { Pattern, RequestInitOpts, UrlRequestOptions, Response, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { defer, Observable, switchMap } from 'rxjs';
 import * as http2 from 'node:http2';
@@ -86,6 +86,8 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         return !connection.closed && !connection.destroyed;
     }
 
+    get<T = any>(url: string, options: UrlRequestOptions & { observe: 'response'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<Response<T>>;
+    get<T = any>(url: string, options?: UrlRequestOptions & { observe?: 'body'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<T>;
     get(url: string, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
         return this.send(new HttpRequest(url, null, {
             ...options,
@@ -93,6 +95,8 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         } as any));
     }
 
+    post<T = any>(url: string, body: any, options: UrlRequestOptions & { observe: 'response'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<Response<T>>;
+    post<T = any>(url: string, body: any, options?: UrlRequestOptions & { observe?: 'body'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<T>;
     post(url: string, body: any, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
         return this.send(new HttpRequest(url, null, {
             ...options,
@@ -101,6 +105,8 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         } as any));
     }
 
+    put<T = any>(url: string, body: any, options: UrlRequestOptions & { observe: 'response'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<Response<T>>;
+    put<T = any>(url: string, body: any, options?: UrlRequestOptions & { observe?: 'body'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<T>;
     put(url: string, body: any, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
         return this.send(new HttpRequest(url, null, {
             ...options,
@@ -109,6 +115,8 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         } as any));
     }
 
+    delete<T = any>(url: string, options: UrlRequestOptions & { observe: 'response'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<Response<T>>;
+    delete<T = any>(url: string, options?: UrlRequestOptions & { observe?: 'body'; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream'; params?: any }): Observable<T>;
     delete(url: string, options?: UrlRequestOptions & { observe?: string; responseType?: string; params?: any }): Observable<any> {
         return this.send(new HttpRequest(url, null, {
             ...options,

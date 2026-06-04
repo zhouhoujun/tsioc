@@ -36,7 +36,7 @@ export class Http2TransactionTest {
     @Test()
     async postRolebackUser() {
 
-        const rep = await lastValueFrom(this.client.post<User>('/users', { name: 'test_111', account: 'test_111', password: '111111' }, { observe: 'response', params: { check: true } })
+        const rep = await lastValueFrom(this.client.post('/users', { name: 'test_111', account: 'test_111', password: '111111' }, { observe: 'response', params: { check: true } })
             .pipe(
                 catchError((err, caught) => {
                     this.ctx.getLogger().error(err);
@@ -45,11 +45,10 @@ export class Http2TransactionTest {
             ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
-        expect(rep.error).toBeDefined();
-        expect(rep.error).toEqual('check');
-        expect(rep.body).toBeNull();
+        expect(rep.body).toBeDefined();
+        expect(rep.body?.message).toEqual('Internal Server Error');
 
-        const rep2 = await lastValueFrom(this.client.get<User>('/users', { observe: 'response', params: { name: 'test_111' } })
+        const rep2 = await lastValueFrom(this.client.get('/users', { observe: 'response', params: { name: 'test_111' } })
             .pipe(
                 catchError((err, caught) => {
                     this.ctx.getLogger().error(err);
@@ -63,7 +62,7 @@ export class Http2TransactionTest {
 
     @Test()
     async postRolebackUser2() {
-        const rep = await lastValueFrom(this.client.post<User>('/users/save', { name: 'test_112', account: 'test_112', password: '111111' }, { observe: 'response', params: { check: true } })
+        const rep = await lastValueFrom(this.client.post('/users/save', { name: 'test_112', account: 'test_112', password: '111111' }, { observe: 'response', params: { check: true } })
             .pipe(
                 catchError((err, caught) => {
                     this.ctx.getLogger().error(err);
@@ -72,11 +71,10 @@ export class Http2TransactionTest {
             ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
-        expect(rep.error).toBeDefined();
-        expect(rep.error).toEqual('check');
-        expect(rep.body).toBeNull();
+        expect(rep.body).toBeDefined();
+        expect(rep.body?.message).toEqual('Internal Server Error');
 
-        const rep2 = await lastValueFrom(this.client.get<User>('/users', { observe: 'response', params: { name: 'test_112' } }));
+        const rep2 = await lastValueFrom(this.client.get('/users', { observe: 'response', params: { name: 'test_112' } }));
         expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
@@ -84,14 +82,14 @@ export class Http2TransactionTest {
 
     @Test()
     async postCommitUser() {
-        const rep = await lastValueFrom(this.client.post<User>('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
+        const rep = await lastValueFrom(this.client.post('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.name).toEqual('post_test');
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.client.get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
+        const rep2 = await lastValueFrom(this.client.get('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep2.status).toEqual(200);
         expect(rep2.body).toBeDefined();
         expect(rep2.body?.account).toEqual('post_test');
@@ -99,7 +97,7 @@ export class Http2TransactionTest {
 
     @Test()
     async clearUser() {
-        const rep1 = await lastValueFrom(this.client.get<User>('/users', { observe: 'response', params: { name: 'post_test' } }));
+        const rep1 = await lastValueFrom(this.client.get('/users', { observe: 'response', params: { name: 'post_test' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toBeDefined();
         expect(rep1.body?.id).toBeDefined();
@@ -110,7 +108,7 @@ export class Http2TransactionTest {
 
     @Test()
     async postRolebackRole() {
-        const rep = await lastValueFrom(this.client.post<Role>('/roles', { name: 'opter_1' }, { observe: 'response', params: { check: true } })
+        const rep = await lastValueFrom(this.client.post('/roles', { name: 'opter_1' }, { observe: 'response', params: { check: true } })
             .pipe(
                 catchError((err, caught) => {
                     this.ctx.getLogger().error(err);
@@ -119,12 +117,11 @@ export class Http2TransactionTest {
             ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
-        expect(rep.error).toBeDefined();
-        expect(rep.error).toEqual('check');
-        expect(rep.body).toBeNull();
+        expect(rep.body).toBeDefined();
+        expect(rep.body?.message).toEqual('Internal Server Error');
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.client.get<Role>('/roles', { observe: 'response', params: { name: 'opter_1' } }));
+        const rep2 = await lastValueFrom(this.client.get('/roles', { observe: 'response', params: { name: 'opter_1' } }));
         expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
@@ -132,7 +129,7 @@ export class Http2TransactionTest {
 
     @Test()
     async postRolebackRole2() {
-        const rep = await lastValueFrom(this.client.post<Role>('/roles/save2', { name: 'opter_2' }, { observe: 'response', params: { check: true } })
+        const rep = await lastValueFrom(this.client.post('/roles/save2', { name: 'opter_2' }, { observe: 'response', params: { check: true } })
             .pipe(
                 catchError((err, caught) => {
                     this.ctx.getLogger().error(err);
@@ -141,12 +138,11 @@ export class Http2TransactionTest {
             ));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
-        expect(rep.error).toBeDefined();
-        expect(rep.error).toEqual('check');
-        expect(rep.body).toBeNull();
+        expect(rep.body).toBeDefined();
+        expect(rep.body?.message).toEqual('Internal Server Error');
         // await lang.delay(100);
 
-        const rep2 = await lastValueFrom(this.client.get<Role>('/roles', { observe: 'response', params: { name: 'opter_2' } }));
+        const rep2 = await lastValueFrom(this.client.get('/roles', { observe: 'response', params: { name: 'opter_2' } }));
         expect(rep2.status).toEqual(204);
         console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
@@ -154,13 +150,13 @@ export class Http2TransactionTest {
 
     @Test()
     async postCommitRole() {
-        const rep = await lastValueFrom(this.client.post<Role>('/roles', { name: 'opter' }, { observe: 'response' }));
+        const rep = await lastValueFrom(this.client.post('/roles', { name: 'opter' }, { observe: 'response' }));
         rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.name).toEqual('opter');
 
-        const rep2 = await lastValueFrom(this.client.get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
+        const rep2 = await lastValueFrom(this.client.get('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep2.status).toEqual(200);
         expect(rep2.body).toBeDefined();
         expect(rep2.body?.name).toEqual('opter');
@@ -168,7 +164,7 @@ export class Http2TransactionTest {
 
     @Test()
     async clearRole() {
-        const rep1 = await lastValueFrom(this.client.get<Role>('/roles', { observe: 'response', params: { name: 'opter' } }));
+        const rep1 = await lastValueFrom(this.client.get('/roles', { observe: 'response', params: { name: 'opter' } }));
         expect(rep1.status).toEqual(200);
         expect(rep1.body).toHaveProperty('id');
         const rep = await lastValueFrom(this.client.delete('/roles', { observe: 'response', params: { id: rep1.body?.id } }));

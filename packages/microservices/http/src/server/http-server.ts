@@ -158,6 +158,8 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         ]);
         const adapter = this.injector.get(HttpMessageAdapterFactory).create({ request, response: res, context });
         context.setMessageAdapter(adapter);
+        context.set(RequestContext, context);
+        context.set(HttpMessageAdapter, adapter);
         context.setPayload(request);
 
         this.handler.handle(request as TReq, context)
