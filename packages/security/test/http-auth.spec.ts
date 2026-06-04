@@ -41,7 +41,7 @@ export class HttpAuthServiceTest {
         expect(service.verifyBearerToken('secret', 'secret')).toBe(true);
         expect(service.verifyBearerToken('wrong', 'secret')).toBe(false);
         expect(service.verifyBearerToken(null, 'secret')).toBe(false);
-        expect(service.verifyBearerToken('secret', '')).toBe(true);
+        expect(service.verifyBearerToken('secret', '')).toBe(false);
         expect(service.verifyBearerToken('short', 'longer-token')).toBe(false);
     }
 

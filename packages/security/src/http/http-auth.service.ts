@@ -55,7 +55,7 @@ export class HttpAuthService {
 
     verifyBearerToken(token: string | null, expectedToken?: string): boolean {
         if (!expectedToken) {
-            return true;
+            return false;
         }
         if (!token) {
             return false;
