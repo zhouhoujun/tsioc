@@ -52,4 +52,6 @@ npm run test:coverage
 
 ## License
 
-MIT © [Houjun](https://github.com/zhouhoujun/)
+该包按 Apache License 2.0 发布。仓库根目录许可证可以不同；对于 `packages/agents/*`，请以各子包自己的许可证声明作为分发与使用依据。
+
+Apache License 2.0 © [Houjun](https://github.com/zhouhoujun/)

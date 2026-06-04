@@ -64,6 +64,31 @@ npm run test:coverage
 - Prompt and context assembly that merges recent history, summaries, tools, and retrieved memories before each model call.
 - Built-in tool registry and approval pipeline for integrating local tools into model-driven workflows.
 
+## Control-plane capability matrix
+
+| Capability | Status | Main implementation |
+| --- | --- | --- |
+| Tool input validation | Implemented | `src/harness/ToolSchemaValidator.ts`, `src/harness/ToolExecutionCoordinator.ts` |
+| Tool output validation | Implemented | `src/harness/ToolSchemaValidator.ts`, `src/harness/ToolExecutionCoordinator.ts` |
+| Tool timeout / retry / rate limiting | Implemented | `src/harness/ToolExecutionCoordinator.ts`, `src/harness/RateLimitManager.ts` |
+| Output redaction | Implemented | `src/harness/OutputGuard.ts` |
+| Audit logging (memory + durable fallback) | Implemented | `src/harness/DefaultAuditSink.ts`, `src/harness/InMemoryAuditSink.ts`, `src/harness/TypeOrmAuditSink.ts` |
+| Session-scoped activation and approval | Implemented | `src/tools/LocalToolRegistry.ts`, `src/tools/ToolApprovalManager.ts` |
+| Principal-aware tool authorization | Implemented | `src/tools/AgentTool.ts`, `src/harness/ToolExecutionCoordinator.ts` |
+| Scheduler retry / backoff | Implemented | `src/scheduler/IntervalAgentScheduler.ts`, `src/scheduler/ScheduledAgentTask.ts` |
+| Scheduler manual recovery / recover action | Implemented | `src/scheduler/IntervalAgentScheduler.ts`, `src/scheduler/AgentScheduler.ts` |
+| Cross-session durable session / memory state | Implemented | `src/memory/TypeOrmSessionStore.ts`, `src/memory/TypeOrmMemoryStore.ts` |
+| Gateway audit visibility | Implemented in sibling package | `packages/agents/agent-gateway/src/api/AuditHandler.ts` |
+| Tool compensation / rollback | Partial / future phase | planned follow-up |
+| Strong sandbox isolation | Partial / future phase | policy hooks only, no universal sandbox runtime |
+
+## Control-plane notes
+
+- Tool execution now flows through a dedicated coordinator that applies validation, authorization, rate limits, timeout/retry policy, output guarding, and audit writes before results are persisted back into the session transcript.
+- Audit behavior is environment-aware: local/default module usage resolves to `InMemoryAuditSink`, while applications that register a `TypeormAdapter` transparently switch to `TypeOrmAuditSink` through `DefaultAuditSink`.
+- Scheduler failure handling is no longer fire-and-forget only: repeating tasks may exhaust retry attempts, enter `manualRecoveryRequired`, and then be re-armed explicitly through scheduler recovery semantics.
+- Principal-aware authorization is expressed as tool metadata (`execution.authorization`) so sibling packages such as `@tsdi/agent-gateway` can pass caller identity without coupling authorization logic to transport code.
+
 ## Memory and experience distillation
 
 - The agent keeps working memory, conversation summaries, and distilled experience separate, so short-term context and reusable knowledge do not have to be managed in the same way.
@@ -88,4 +113,6 @@ npm run test:coverage
 
 ## License
 
-MIT © [Houjun](https://github.com/zhouhoujun/)
+This package is published under the Apache License 2.0. The repository root license may differ; for `packages/agents/*`, use this package-level license declaration for distribution and consumption.
+
+Apache License 2.0 © [Houjun](https://github.com/zhouhoujun/)

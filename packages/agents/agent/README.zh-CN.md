@@ -38,6 +38,7 @@ npm run test:coverage
 - `src/tools`：工具接口、注册表、审批管理与内置工具
 - `src/memory`：会话存储、记忆存储、摘要器与 ORM 实现
 - `src/prompt`：系统提示词构建器与 prompt section
+- `src/harness`：工具执行协调器、schema 校验、限流、输出保护与审计 sink
 - `src/scheduler`：定时任务抽象与 interval 调度器
 - `src/channels`：本地 request/server/client 基础设施
 - `src/ui`：控制台组件与 view model
@@ -60,6 +61,31 @@ npm run test:coverage
 - 通过 `MemoryStore` 提供记忆检索，支持 session 级与 global 级记录。
 - 每次模型调用前，都会合并近期历史、摘要、工具定义与检索命中的记忆来构建上下文。
 - 内置工具注册表与审批链路，便于把本地工具接入模型驱动的工作流。
+
+## Control-plane 能力矩阵
+
+| 能力 | 状态 | 主要实现 |
+| --- | --- | --- |
+| 工具输入校验 | 已实现 | `src/harness/ToolSchemaValidator.ts`、`src/harness/ToolExecutionCoordinator.ts` |
+| 工具输出校验 | 已实现 | `src/harness/ToolSchemaValidator.ts`、`src/harness/ToolExecutionCoordinator.ts` |
+| 工具超时 / 重试 / 限流 | 已实现 | `src/harness/ToolExecutionCoordinator.ts`、`src/harness/RateLimitManager.ts` |
+| 输出脱敏 | 已实现 | `src/harness/OutputGuard.ts` |
+| 审计日志（内存 + 持久化回退） | 已实现 | `src/harness/DefaultAuditSink.ts`、`src/harness/InMemoryAuditSink.ts`、`src/harness/TypeOrmAuditSink.ts` |
+| Session 级工具激活与审批 | 已实现 | `src/tools/LocalToolRegistry.ts`、`src/tools/ToolApprovalManager.ts` |
+| 基于 principal 的工具授权 | 已实现 | `src/tools/AgentTool.ts`、`src/harness/ToolExecutionCoordinator.ts` |
+| Scheduler 重试 / backoff | 已实现 | `src/scheduler/IntervalAgentScheduler.ts`、`src/scheduler/ScheduledAgentTask.ts` |
+| Scheduler 人工恢复 / recover 操作 | 已实现 | `src/scheduler/IntervalAgentScheduler.ts`、`src/scheduler/AgentScheduler.ts` |
+| 跨会话持久化 session / memory 状态 | 已实现 | `src/memory/TypeOrmSessionStore.ts`、`src/memory/TypeOrmMemoryStore.ts` |
+| Gateway 审计可见性 | 已在兄弟包实现 | `packages/agents/agent-gateway/src/api/AuditHandler.ts` |
+| 工具补偿 / 回滚 | 部分 / 后续阶段 | 作为后续增强 |
+| 强沙箱隔离 | 部分 / 后续阶段 | 目前主要是策略层，不是统一沙箱运行时 |
+
+## Control-plane 说明
+
+- 工具执行现在统一经过协调器：在结果写回 session transcript 之前，会依次应用校验、授权、限流、超时/重试策略、输出保护与审计写入。
+- 审计行为具备环境自适应：默认本地模块使用 `InMemoryAuditSink`；当应用注册了 `TypeormAdapter` 时，会通过 `DefaultAuditSink` 自动切换到 `TypeOrmAuditSink`。
+- Scheduler 失败处理不再只是 fire-and-forget：重复任务在重试耗尽后可以进入 `manualRecoveryRequired`，再通过显式 recovery 语义重新挂载执行。
+- principal-aware 授权通过工具元数据（`execution.authorization`）表达，因此 `@tsdi/agent-gateway` 这类兄弟包只需透传调用者身份，而无需把授权逻辑硬编码到传输层。
 
 ## 记忆与经验蒸馏
 
@@ -85,4 +111,6 @@ npm run test:coverage
 
 ## License
 
-MIT © [Houjun](https://github.com/zhouhoujun/)
+该包按 Apache License 2.0 发布。仓库根目录许可证可以不同；对于 `packages/agents/*`，请以各子包自己的许可证声明作为分发与使用依据。
+
+Apache License 2.0 © [Houjun](https://github.com/zhouhoujun/)
