@@ -104,14 +104,14 @@ export class DeviceController {
                 {
                     name: 'tcp-client',
                     connectOpts: {
-                        port: 11406
+                        port: 3000
                     }
                 },
                 {
                     name: 'micclient',
                     microservice: true,
                     connectOpts: {
-                        port: 11407
+                        port: 3001
                     }
                 }
             )
@@ -124,14 +124,14 @@ export class DeviceController {
                 {
                     name: 'host',
                     listenOpts: {
-                        port: 11406
+                        port: 3000
                     }
                 },
                 {
                     name: 'micro',
                     microservice: true,
                     listenOpts: {
-                        port: 11407
+                        port: 3001
                     }
                 }
             )

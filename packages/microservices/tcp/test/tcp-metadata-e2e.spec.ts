@@ -7,7 +7,7 @@ import { provideService, useRouter, Controller, Get, Post, Put, Delete, RouteMap
 import { useTcpTransport } from '../src/server';
 import expect = require('expect');
 
-let port = 11700;
+let port = 3000;
 function np() { return port++; }
 
 // ----- 1. All HTTP methods -----

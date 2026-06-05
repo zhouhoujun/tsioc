@@ -35,6 +35,7 @@ export class WSService {
             useWsTransport({
                 microservice: true,
                 bootstrap: false,
+                listenOpts: { port: 11300, host: '127.0.0.1' },
                 asDefault: true
             })
         ),

@@ -34,7 +34,7 @@ if (process.env.TSIO_TEST_TCP) {
                 useRouter({ microservice: true }),
                 useTcpTransport({
                     microservice: true,
-                    listenOpts: { port: 11900, host: '127.0.0.1' },
+                    listenOpts: { port: 3000, host: '127.0.0.1' },
                     bootstrap: false,
                     asDefault: true
                 })
@@ -42,7 +42,7 @@ if (process.env.TSIO_TEST_TCP) {
             provideClient(
                 withTcpTransport({
                     microservice: true,
-                    connectOpts: { port: 11900, host: '127.0.0.1' },
+                    connectOpts: { port: 3000, host: '127.0.0.1' },
                     asDefault: true
                 })
             )

@@ -22,7 +22,7 @@ class RouteCtrl {
     @RouteMapping('/data', POST) data(@RequestBody() b: any) { return { received: b }; }
 }
 
-const PORTS = { ms: 11400, host: 11401, ctrl: 11402, route: 11403, client: 11404, hostClient: 11405 };
+const PORTS = { ms: 3000, host: 3000, ctrl: 3000, route: 3000, client: 3000, hostClient: 3000 };
 
 // ----- microservice:true -----
 describe('TCP E2E microservice:true', () => {

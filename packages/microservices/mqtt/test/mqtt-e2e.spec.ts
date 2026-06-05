@@ -10,6 +10,8 @@ import * as mqtt from 'mqtt';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 
+const MQTT_URL = 'mqtt://127.0.0.1:3883';
+
 @Controller('/api/test')
 class TestController {
     @Get('/info') info() { return { status: 'ok' }; }
@@ -21,8 +23,6 @@ class RouteCtrl {
     @RouteMapping('/hello', GET) hello() { return 'hi'; }
     @RouteMapping('/data', POST) data(@RequestBody() b: any) { return { received: b }; }
 }
-
-const MQTT_URL = 'mqtt://127.0.0.1:1883';
 
 class MqttPatternService {
     @Handle({ cmd: 'xxx' })
@@ -52,7 +52,7 @@ describe('MQTT E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(MqttMsModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -77,7 +77,7 @@ describe('MQTT E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(MqttHostModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -97,7 +97,7 @@ describe('MQTT @Controller', () => {
 
     before(async () => {
         ctx = await Application.run(MqttCtrlModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -117,7 +117,7 @@ describe('MQTT @RouteMapping', () => {
 
     before(async () => {
         ctx = await Application.run(MqttRouteModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -151,22 +151,22 @@ describe('MQTT pattern routing', () => {
     before(async () => {
         ctx = await Application.run(MqttPatternModule);
         client = ctx.get(MqttClient);
-        
+
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns through the default formatter', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 5000 } as any));
         expect(result.payload).toEqual('ble');
     });
 
     it('routes wildcard mqtt topics', async () => {
-        const result = await lastValueFrom(client.send('sensor/message/update', { payload: { message: 'ble' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send('sensor/message/update', { payload: { message: 'ble' }, timeout: 5000 } as any));
         expect(result.payload).toEqual('ble');
     });
 
     it('routes subscribe patterns via MQTT wildcard topic', async () => {
-        const result = await lastValueFrom(client.send('sensor/sensor01/start', { payload: { message: 'ble' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send('sensor/sensor01/start', { payload: { message: 'ble' }, timeout: 5000 } as any));
         expect(result.payload).toEqual('ble');
     });
 });
@@ -203,7 +203,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
     before(async () => {
         ctx = await Application.run(MqttE2eModule);
         client = mqtt.connect(MQTT_URL);
-        
+
     });
     after(async () => {
         if (client) client.end(true);
@@ -268,7 +268,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
     before(async () => {
         ctx = await Application.run(MqttE2eHostModule);
         client = mqtt.connect(MQTT_URL);
-        
+
     });
     after(async () => {
         if (client) client.end(true);

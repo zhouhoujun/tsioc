@@ -137,30 +137,20 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         this.destroy$.next();
         this.destroy$.complete();
 
-        // Close all active connections gracefully
+        // Force-close all active connections
         for (const socket of this.activeConnections) {
             if (!socket.destroyed) {
-                socket.end();
-                const timer = setTimeout(() => {
-                    this.shutdownTimers.delete(socket);
-                    if (!socket.destroyed) {
-                        socket.destroy();
-                    }
-                }, 1000);
-                this.shutdownTimers.set(socket, timer);
+                socket.destroy();
             }
         }
 
-        // Then close the server
+        // Close the server with a timeout
         try {
-            await promisify(this.serv.close, this.serv)();
+            await Promise.race([
+                promisify(this.serv.close, this.serv)(),
+                new Promise<void>(r => setTimeout(() => r(), 2000))
+            ]);
         } catch { /* server may already be closed */ }
-
-        // Clear any remaining shutdown timers
-        for (const timer of this.shutdownTimers.values()) {
-            clearTimeout(timer);
-        }
-        this.shutdownTimers.clear();
 
         this.serv?.removeAllListeners();
         this.serv = null;

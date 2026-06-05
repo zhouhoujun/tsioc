@@ -66,7 +66,7 @@ describe('middleware', () => {
     });
 
     after(async () => {
-        await ctx?.destroy();
+        await ctx?.close();
     });
 
     it('uses middleware in http server', async () => {

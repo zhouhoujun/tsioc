@@ -52,8 +52,8 @@ describe('TCP Microservice Integration', () => {
             providers: [
                 provideService(
                     useTcpTransport(
-                        { listenOpts: { port: 8080 }, name: 'service1' },
-                        { listenOpts: { port: 8081 }, name: 'service2' }
+                        { listenOpts: { port: 3000 }, name: 'service1' },
+                        { listenOpts: { port: 3001 }, name: 'service2' }
                     )
                 )
             ]
@@ -64,8 +64,8 @@ describe('TCP Microservice Integration', () => {
         // Just verify the providers can be created without error
         const providers = provideService(
             useTcpTransport(
-                { listenOpts: { port: 8080 }, name: 'service1' },
-                { listenOpts: { port: 8081 }, name: 'service2' }
+                { listenOpts: { port: 3000 }, name: 'service1' },
+                { listenOpts: { port: 3001 }, name: 'service2' }
             )
         );
         expect(Array.isArray(providers)).toBe(true);

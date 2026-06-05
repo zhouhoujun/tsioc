@@ -27,7 +27,7 @@ describe('Advanced: Connection Lifecycle', () => {
     });
 
     it('should handle connection error gracefully', (done) => {
-        const client = net.connect({ port: 99999 }, () => {});
+        const client = net.connect({ port: 61000 }, () => {});
         client.on('error', (err: any) => {
             expect(err).toBeDefined();
             done();
@@ -167,7 +167,7 @@ describe('Advanced: Multiple Connections', () => {
 
 describe('Advanced: Error Scenarios', () => {
     it('should handle connection refused', (done) => {
-        const client = net.connect({ port: 99999, host: 'localhost' });
+        const client = net.connect({ port: 61000, host: 'localhost' });
         client.on('error', (err: any) => {
             expect(err.code).toMatch(/ECONNREFUSED|ENOTFOUND/);
             done();

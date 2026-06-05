@@ -19,7 +19,7 @@ import expect = require('expect');
  */
 describe('TCP Microservice E2E: Client → Server Full Flow', () => {
 
-    const SERVER_PORT = 11399;
+    const SERVER_PORT = 3000;
 
     interface User {
         id: string;

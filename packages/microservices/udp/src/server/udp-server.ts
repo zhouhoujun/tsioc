@@ -145,8 +145,9 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe((response: any) => {
-                if (this.socket) {
+            ).subscribe({
+                next: (response: any) => {
+                    if (!this.socket) return;
                     const body = adapter.getBody() ?? (response === adapter ? undefined : response);
                     let payload = body;
                     if (requestData?.id !== undefined && requestData?.id !== null) {
@@ -156,10 +157,36 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                             payload.id = requestData.id;
                         }
                     }
-                    const responseText = typeof payload === 'string' ? payload : JSON.stringify(payload);
-                    const buf = Buffer.from(framed ? responseText + '\r\n' : responseText);
-                    this.socket.send(buf, rinfo.port, rinfo.address);
+                    this.sendResponse(payload, rinfo, framed);
+                },
+                error: (err: any) => {
+                    this.logger.error(err);
+                    if (!this.socket) return;
+                    const errorPayload = this.buildErrorPayload(err, requestData);
+                    this.sendResponse(errorPayload, rinfo, framed);
                 }
             });
+    }
+
+    private buildErrorPayload(err: any, requestData: any): any {
+        const statusCode = err?.statusCode ?? err?.status ?? 500;
+        const statusMessage = err?.statusMessage || err?.message || 'Internal Server Error';
+        const payload: Record<string, any> = {
+            statusCode,
+            statusMessage,
+            message: statusMessage,
+            ...(err?.details ? { details: err.details } : {})
+        };
+        if (requestData?.id !== undefined && requestData?.id !== null) {
+            payload.id = requestData.id;
+        }
+        return payload;
+    }
+
+    private sendResponse(payload: any, rinfo: dgram.RemoteInfo, framed: boolean): void {
+        if (!this.socket) return;
+        const responseText = typeof payload === 'string' ? payload : JSON.stringify(payload);
+        const buf = Buffer.from(framed ? responseText + '\r\n' : responseText);
+        this.socket.send(buf, rinfo.port, rinfo.address);
     }
 }

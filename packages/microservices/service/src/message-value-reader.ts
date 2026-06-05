@@ -26,6 +26,10 @@ export class ServiceMessageValueReader extends MessageValueReader {
         if (!isNil(value)) {
             return { success: true, value };
         }
+        // For body scope, fall back to whole section (@RequestBody() shorthand).
+        if (section === 'body') {
+            return { success: true, value: scopeVal };
+        }
         // Name specified but not found in object scope → failure.
         if (isObject(scopeVal)) {
             return { success: false, value: undefined };
