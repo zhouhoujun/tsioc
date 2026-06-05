@@ -20,7 +20,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private shutdownTimer: NodeJS.Timeout | null = null;
 
     constructor(
         readonly handler: ClientHandler<TcpRequest<any>, ResponseEvent<any>>,
@@ -41,7 +40,6 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             if (valid) return this.connection;
 
             if (this.connection) {
-                this.clearShutdownTimer();
                 this.connection.removeAllListeners();
                 this.connection.destroy();
             }
@@ -117,41 +115,12 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     protected async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
 
-        return new Promise<void>((resolve) => {
+        try {
             const connection = this.connection;
-            let cleaned = false;
-            const cleanup = () => {
-                if (cleaned) {
-                    return;
-                }
-                cleaned = true;
-                this.clearShutdownTimer();
-                connection.removeAllListeners();
-                if (this.connection === connection) {
-                    this.connection = null!;
-                }
-                resolve();
-            };
-
-            connection.once(Events.CLOSE, cleanup);
-
-            this.shutdownTimer = setTimeout(() => {
-                if (connection && !connection.destroyed) {
-                    this.logger?.warn('TCP client connection shutdown timeout, forcing destroy');
-                    connection.destroy();
-                }
-            }, 5000);
-
-            connection.end();
-        }).catch(err => {
-            this.logger?.error('TCP client shutdown error:', err);
-            this.clearShutdownTimer();
-            if (this.connection) {
-                this.connection.removeAllListeners();
-                this.connection.destroy();
-                this.connection = null!;
-            }
-        });
+            this.connection = null!;
+            connection.removeAllListeners();
+            connection.destroy();
+        } catch { /* ignore destroy errors */ }
     }
 
     protected isValid(connection: (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean }): boolean {
@@ -166,10 +135,4 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         return socket;
     }
 
-    private clearShutdownTimer() {
-        if (this.shutdownTimer) {
-            clearTimeout(this.shutdownTimer);
-            this.shutdownTimer = null;
-        }
-    }
 }

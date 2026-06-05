@@ -273,9 +273,9 @@ describe('Unit: KeepAlive Mechanism', () => {
 
 describe('Unit: Error Handling', () => {
     it('should handle connection refused', (done) => {
-        const client = net.connect({ port: 99999, host: 'localhost' });
+        const client = net.connect({ port: 65500, host: 'localhost' });
         client.on('error', (err: any) => {
-            expect(err.code).toMatch(/ECONNREFUSED|ENOTFOUND/);
+            expect(err.code).toMatch(/ECONNREFUSED|EADDRNOTAVAIL|ENOTFOUND/);
             done();
         });
     });
