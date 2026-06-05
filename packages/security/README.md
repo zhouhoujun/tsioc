@@ -23,6 +23,56 @@ npm install @tsdi/platform-server
 
 ## add extends modules
 
+## Microservices auth integration
+
+`@tsdi/security` now works with the microservice runtime through the shared adapter abstractions from `@tsdi/common` and the service-layer bridge in `@tsdi/service`.
+
+### Recommended server-side pattern
+
+For HTTP microservices, prefer the `useAuth(...)` feature instead of wiring protocol-specific auth checks manually:
+
+```ts
+import { Module } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
+import { provideService, useAuth, useCookie, useRouter } from '@tsdi/service';
+import { useHttpTransport } from '@tsdi/http';
+
+@Module({
+  imports: [LoggerModule],
+  providers: [
+    provideService(
+      useRouter(),
+      useCookie(),
+      useAuth({
+        bearerToken: 'secret-token'
+        // or
+        // jwt: { publicKey: '...', algorithms: ['HS256'] }
+      }),
+      useHttpTransport({
+        listenOpts: { host: '127.0.0.1', port: 3000 },
+        asDefault: true
+      })
+    )
+  ]
+})
+export class AppModule {}
+```
+
+### Runtime access rules
+
+Within request handling code, use `RequestContext` as the container and fetch the capability you need from adapter abstractions:
+
+- `context.get(MessageAdapter)` — common read/write/message operations
+- `context.get(StatusMessageAdapter)` — status/error/response-header operations
+- `context.get(RestfulRequestAdapter)` — cookies/session/body/path/redirect operations
+
+Do **not** depend on transport-specific adapter classes unless you are implementing the transport itself.
+
+### Security defaults
+
+- bearer token auth now rejects query-string token fallback by default in the HTTP auth bridge
+- enabling auth without a concrete strategy fails closed
+- OIDC/browser-style flows should pair `useCookie()` (and `useSession()` when needed) with the auth feature
 
 ## boot
 DI Module manager, application bootstrap. base on AOP.

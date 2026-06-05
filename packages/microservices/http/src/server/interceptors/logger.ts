@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { RequestContext, RequestHandler, RequestInterceptor, StatusMessageAdapter } from '@tsdi/common';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { HttpHandlerOutput, HttpRequestMessage } from '../http-context';
@@ -23,7 +23,7 @@ export class HttpLoggerInterceptor implements RequestInterceptor<HttpRequestMess
         return next.handle(input, context).pipe(
             tap((response: any) => {
                 const duration = Date.now() - startTime;
-                const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+                const adapter = context.get(StatusMessageAdapter);
                 const statusCode = adapter?.getStatus() ?? 200;
                 const body = adapter?.getBody();
                 const length = typeof body === 'string' || Buffer.isBuffer(body)

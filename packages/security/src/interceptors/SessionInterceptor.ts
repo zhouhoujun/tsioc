@@ -1,5 +1,5 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
-import { OutgoingMessage, RequestHandler, RequestInterceptor, RequestContext, IncomingMessage } from '@tsdi/common';
+import { MessageAdapter, OutgoingMessage, RequestHandler, RequestInterceptor, RequestContext, IncomingMessage } from '@tsdi/common';
 import { Middleware } from '@tsdi/service';
 import { defer, finalize, mergeMap, Observable } from 'rxjs';
 
@@ -55,9 +55,9 @@ export class SessionInterceptor implements Middleware<RequestContext>, RequestIn
 
     constructor(private sessionManager: SessionManager) { }
 
-    intercept(input: RequestContext, next: RequestHandler, context: RequestContext): Observable<any> {
+    intercept(input: IncomingMessage, next: RequestHandler, context: RequestContext): Observable<OutgoingMessage> {
 
-        return defer(() => this.loadSession(input)).pipe(
+        return defer(() => this.loadSession(context)).pipe(
             mergeMap(() => next.handle(input, context)),
             finalize(() => {
 
@@ -77,7 +77,8 @@ export class SessionInterceptor implements Middleware<RequestContext>, RequestIn
     }
 
     async loadSession(ctx: RequestContext) {
-        let sessionId = ctx.getMessageAdapter().read('cookie', 'sessionId');
+        const adapter = ctx.get(MessageAdapter);
+        let sessionId = adapter?.read('cookie', 'sessionId');
         let session: Session | null;
         if (sessionId) {
             session = await this.sessionManager.get(sessionId);
@@ -90,7 +91,7 @@ export class SessionInterceptor implements Middleware<RequestContext>, RequestIn
                 userId: ''
             } as Session;
             sessionId = await this.sessionManager.create(session);
-            ctx.setHeader('cookie', `sessionId=${sessionId}`);
+            adapter?.setHeader('cookie', `sessionId=${sessionId}`);
         }
         ctx.set(Session, session);
         return session;

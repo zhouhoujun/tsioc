@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { Incoming, OutgoingMessage, RequestHandler, RequestInterceptor, UnauthorizedException } from '@tsdi/common';
-import { AbstractRequestContext } from '@tsdi/service';
+import { Incoming, OutgoingMessage, RequestContext, RequestHandler, RequestInterceptor, UnauthorizedException } from '@tsdi/common';
+import { getStatusAdapter } from '../context';
 import { Observable, defer, mergeMap, throwError } from 'rxjs';
 import { Authenticator } from '../Authenticator';
 import { BasicAuthOptions } from './basic.config';
@@ -8,11 +8,11 @@ import { BasicAuthOptions } from './basic.config';
 
 
 @Injectable()
-export class BasicAuthInterceptor implements RequestInterceptor<AbstractRequestContext, OutgoingMessage> {
+export class BasicAuthInterceptor implements RequestInterceptor<RequestContext, OutgoingMessage> {
     constructor(private authenticator: Authenticator) {}
 
-    intercept(input: AbstractRequestContext, next: RequestHandler, context?: any): Observable<any> {
-        const authHeader = input.getHeader('authorization');
+    intercept(input: RequestContext, next: RequestHandler, context?: any): Observable<any> {
+        const authHeader = getStatusAdapter(input).getHeader('authorization');
         if (!authHeader) {
             return this.unauthorized(input);
         }
@@ -36,13 +36,13 @@ export class BasicAuthInterceptor implements RequestInterceptor<AbstractRequestC
         );
     }
 
-    private unauthorized(ctx: AbstractRequestContext): Observable<never> {
+    private unauthorized(ctx: RequestContext): Observable<never> {
         const options = ctx.get(BasicAuthOptions) ?? {};
         const realm = options.realm ?? 'Protected Area';
         const charset = options.charset ?? 'UTF-8';
-        
-        ctx.setHeader(
-            'WWW-Authenticate', 
+
+        getStatusAdapter(ctx).setHeader(
+            'WWW-Authenticate',
             `Basic realm="${realm}", charset="${charset}"`
         );
         

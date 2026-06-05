@@ -1,7 +1,7 @@
 import * as jwt from 'jsonwebtoken';
 import { Injectable, lang } from '@tsdi/ioc';
-import { OutgoingMessage, RequestInterceptor, RequestHandler } from '@tsdi/common';
-import { AbstractRequestContext } from '@tsdi/service';
+import { OutgoingMessage, RequestContext, RequestInterceptor, RequestHandler } from '@tsdi/common';
+import { getRestfulAdapter } from '../context';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { InvalidTokenException } from '../exceptions';
 import { Authenticator } from '../Authenticator';
@@ -11,9 +11,9 @@ import { JWTOption } from './jwt.config';
 
 
 @Injectable()
-export class JwtInterceptor implements RequestInterceptor<AbstractRequestContext, OutgoingMessage> {
+export class JwtInterceptor implements RequestInterceptor<RequestContext, OutgoingMessage> {
 
-    intercept(input: AbstractRequestContext, next: RequestHandler, context?: any): Observable<any> {
+    intercept(input: RequestContext, next: RequestHandler, context?: any): Observable<any> {
         const option = input.get(JWTOption);
         const token = this.getToken(input, option);
         if (!token) return throwError(() => new InvalidTokenException('no token'));
@@ -37,14 +37,15 @@ export class JwtInterceptor implements RequestInterceptor<AbstractRequestContext
         );
     }
 
-    getToken(ctx: AbstractRequestContext, option: JWTOption) {
+    getToken(ctx: RequestContext, option: JWTOption) {
+        const adapter = getRestfulAdapter(ctx);
         switch (option.tokenIn) {
             case 'header':
-                return parseAuthHeader(ctx.getHeader(option.tokenName))?.value;
+                return parseAuthHeader(adapter.getHeader(option.tokenName))?.value;
             case 'query':
-                return ctx.query[option.tokenName];
+                return adapter.query[option.tokenName];
             case 'body':
-                return ctx.request.body[option.tokenName];
+                return adapter.request.body[option.tokenName];
         }
     }
 }

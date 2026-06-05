@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, Transport, REQUEST,
+    InternalServerException, ListenOpts, StatusMessageAdapter, Transport, REQUEST,
     StreamAdapter, ContentType, Outgoing, BadRequestException, ForbiddenException, NotFoundException,
 } from '@tsdi/common'
 import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
@@ -171,7 +171,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private writeResponse(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, response: any) {
-        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        const adapter = context.get(StatusMessageAdapter);
         const hasAdapterState = !!adapter && (!isNil(adapter.getBody()) || !isNil(adapter.getStatus()) || adapter.getResponseHeaderNames().length > 0);
         if (isNil(response) && !hasAdapterState) {
             res.statusCode = 204;
@@ -244,7 +244,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 ...(err?.details ? { details: err.details } : {})
             };
 
-        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        const adapter = context.get(StatusMessageAdapter);
         if (adapter) {
             adapter.setStatus(status, err?.statusMessage);
             adapter.writeError(err);

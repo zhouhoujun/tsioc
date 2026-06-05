@@ -1,4 +1,4 @@
-import { AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, useSimpleJson, parseQueryString } from '@tsdi/common';
+import { AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, useSimpleJson, parseQueryString } from '@tsdi/common';
 import { delimiterPacket, delimiterUnpacket, packetIdMessage, socketMessage } from './interceptors';
 import { ProvdierOf, toProvider } from '@tsdi/ioc';
 import { PacketNumberIdGenerator } from './PacketId';
@@ -25,47 +25,62 @@ export interface PacketOptions extends TransferOptions {
     space?: string | number;
 }
 
+interface MappedRequestLike {
+    url?: string;
+    topic?: string;
+    responseTopic?: string;
+    id?: any;
+    pattern?: any;
+    method?: string;
+    params?: { toRecord?: () => any } | Record<string, any>;
+    query?: Record<string, any>;
+    headers?: { size?: number; getHeaders?: () => Record<string, any> };
+    body?: any;
+    getUrlWithParams?: () => string;
+}
+
 const requestMapping = (req: any, context: RequestContext) => {
     if (req instanceof AbstractRequest) {
-        const payloadKey = (req as any).pattern ? 'payload' : 'body';
+        const request = req as AbstractRequest<any> & MappedRequestLike;
+        const payloadKey = request.pattern ? 'payload' : 'body';
         const json: Record<string, any> = {};
-        if ((req as any).url) {
-            const fullUrl = typeof (req as any).getUrlWithParams === 'function' ? (req as any).getUrlWithParams() : (req as any).url;
+        if (request.url) {
+            const fullUrl = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
             const [url, rawQuery] = String(fullUrl).split('?', 2);
             json.url = url;
             if (rawQuery) {
                 json.query = parseQueryString(rawQuery);
             }
         }
-        if ((req as any).topic) {
-            json.topic = (req as any).topic;
+        if (request.topic) {
+            json.topic = request.topic;
         }
-        if ((req as any).responseTopic) {
-            json.responseTopic = (req as any).responseTopic;
+        if (request.responseTopic) {
+            json.responseTopic = request.responseTopic;
         }
-        const id = (req as any).id;
+        const { id } = request;
         if (id !== undefined && id !== null) {
             json.id = id;
         }
-        if ((req as any).pattern) {
+        if (request.pattern) {
             const formatter = context.get(PatternFormatter);
-            json.pattern = formatter ? formatter.format((req as any).pattern) : (req as any).pattern;
+            json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
         }
-        if ((req as any).method) {
-            json.method = (req as any).method;
+        if (request.method) {
+            json.method = request.method;
         }
-        if ((req as any).params) {
-            const params = (req as any).params;
-            json.params = typeof params?.toRecord === 'function' ? params.toRecord() : params;
+        if (request.params) {
+            const { params } = request;
+            json.params = typeof params.toRecord === 'function' ? params.toRecord() : params;
         }
-        if ((req as any).query && !json.query) {
-            json.query = (req as any).query;
+        if (request.query && !json.query) {
+            json.query = request.query;
         }
-        if ((req as any).headers?.size) {
-            json.headers = (req as any).headers.getHeaders();
+        if (request.headers?.size) {
+            json.headers = request.headers.getHeaders?.();
         }
-        if ((req as any).body !== undefined && (req as any).body !== null) {
-            json[payloadKey] = (req as any).body;
+        if (request.body !== undefined && request.body !== null) {
+            json[payloadKey] = request.body;
         }
         return json;
     }
@@ -73,8 +88,8 @@ const requestMapping = (req: any, context: RequestContext) => {
 }
 
 const outgoingMapping = (res: any, context: RequestContext) => {
-    const adapter = context.getMessageAdapter() as any;
-    if (adapter && (typeof adapter.getStatus === 'function' || typeof adapter.getBody === 'function')) {
+    const adapter = context.get(StatusMessageAdapter);
+    if (adapter) {
         const json: Record<string, any> = {};
         const status = adapter.getStatus?.();
         const statusMessage = adapter.getStatusMessage?.();

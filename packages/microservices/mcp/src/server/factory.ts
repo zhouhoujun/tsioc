@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { McpServer } from './mcp-server';
 import { McpServOptions, MCP_SERV_OPTIONS } from './options';
@@ -31,7 +31,7 @@ export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?:
         McpMessageAdapter,
         McpMessageAdapterFactory,
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const adapter = context.getMessageAdapter() as McpMessageAdapter | null;
+            const adapter = context.get(StatusMessageAdapter);
             const error = new NotFoundException('Not Found', 404);
             if (adapter) {
                 adapter.writeError(error);

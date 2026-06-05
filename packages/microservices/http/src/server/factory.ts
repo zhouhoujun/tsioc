@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { HttpAuthService } from '@tsdi/security';
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
@@ -93,7 +93,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             multiOrder: -50
         } as any] : []),
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+            const adapter = context.get(StatusMessageAdapter);
             const error = new NotFoundException('Not Found', 404);
             if (adapter) {
                 adapter.writeError(error);

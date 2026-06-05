@@ -2,9 +2,9 @@
 import { ArgumentException, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    AbstractRequest, createRequestContext, Events, IDuplex, Packet,
+    AbstractRequest, createRequestContext, Events, IDuplex, MessageAdapter, Packet,
     PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn,
-    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST, MESSAGE_ADAPTER
+    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST
 } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of, throwError } from 'rxjs';
@@ -94,18 +94,14 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
                 const ctx = createRequestContext(context.getInjector(), context);
                 ctx.set(REQUEST, data as any);
                 ctx.setPayload(data as any);
-                const adapter = context.getMessageAdapter();
+                const adapter = context.get(MessageAdapter);
                 if (adapter) {
-                    if (typeof (adapter as any).forkRequest === 'function') {
-                        ctx.set(MESSAGE_ADAPTER, (adapter as any).forkRequest(data));
-                    } else if (typeof (adapter as any).setRequestData === 'function') {
-                        ctx.set(MESSAGE_ADAPTER, adapter);
-                        (adapter as any).setRequestData(data);
+                    const forked = adapter.forkRequest(data);
+                    if (forked !== adapter) {
+                        ctx.setMessageAdapter(forked);
                     } else {
-                        const factory = context.getInjector().get((adapter as any).constructor, null);
-                        if (factory && typeof (factory as any).create === 'function') {
-                            ctx.set(MESSAGE_ADAPTER, (factory as any).create({ request: data, response: context.get(SOCKET), context: ctx }));
-                        }
+                        ctx.setMessageAdapter(adapter);
+                        adapter.setRequestData(data);
                     }
                 }
                 return next(data, ctx)

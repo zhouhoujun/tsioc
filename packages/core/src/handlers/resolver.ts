@@ -43,6 +43,10 @@ export function getResolveHandlerToken(type: TypeOf<any>, propertyKey?: string):
 }
 
 
+export abstract class MessageValueReader {
+    abstract read(section: string, name: string | undefined, context: any): any;
+}
+
 export const typeResolveInterceptor: ResolveInterceptorFn = (input: TransportParameter, next, context) => {
     if (input.scope) {
         return next(input, context);

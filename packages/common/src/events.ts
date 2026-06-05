@@ -4,6 +4,9 @@
 /**
  * event type name.
  */
+export const REQUEST = 'request';
+export const RESPONSE = 'response';
+
 export namespace Events {
 
     export const CONN_ERR = 'CONN_ERR';

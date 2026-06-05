@@ -1,5 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
-import { AbstractRequestContext, Controller, Get } from '@tsdi/service';
+import { RequestContext } from '@tsdi/common';
+import { Controller, Get } from '@tsdi/service';
+import { getRestfulAdapter } from '../context';
 import { fetch } from 'cross-fetch';
 import { OAuthOption } from './oauth.options';
 
@@ -7,11 +9,11 @@ import { OAuthOption } from './oauth.options';
 @Injectable()
 @Controller('/oauth')
 export class OAuthCallback {
-    
+
     @Get('/callback')
-    async handleCallback(ctx: AbstractRequestContext) {
+    async handleCallback(ctx: RequestContext) {
         const option = ctx.get(OAuthOption);
-        const code = ctx.query.code;
+        const code = getRestfulAdapter(ctx).query.code;
 
         // 使用授权码获取访问令牌
         const tokenResponse = await fetch(option.tokenURL, {

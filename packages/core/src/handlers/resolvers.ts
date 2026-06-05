@@ -4,7 +4,7 @@ import {
     createResolveHandler, isResolved, isNil, isObject, isDefined, getClassRef,
     ResolveInterceptorFn
 } from '@tsdi/ioc';
-import { TransportParameter } from './resolver';
+import { MessageValueReader, TransportParameter } from './resolver';
 import { PipeTransform } from '../pipes/pipe';
 
 export function missingPipeException<T>(parameter: Parameter<T>, type?: AbstractType, method?: string | symbol) {
@@ -56,18 +56,7 @@ export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, P
     return scope;
 }
 
-/**
- * Create message resolve interceptors.
- *
- * At request time, resolves parameter values through the protocol's
- * MessageAdapter attached to the RequestContext.
- * Each protocol registers its concrete adapter via
- * `context.setMessageAdapter(adapter)` before the handler chain runs.
- *
- * Falls back to direct payload property access when no adapter is set.
- */
-export function createMessageResolveInterceptors(): ResolveInterceptorFn<TransportParameter>[] {
-
+export function createPayloadResolveInterceptors(reader?: MessageValueReader): ResolveInterceptorFn<TransportParameter>[] {
     return [
         (parameter, next, context) => {
             const injector = context.getInjector();
@@ -83,75 +72,36 @@ export function createMessageResolveInterceptors(): ResolveInterceptorFn<Transpo
                 return next(parameter, context);
             }
 
-            if (!pipe && !hasMessageScope) {
-                return next(parameter, context);
-            }
-            if (!pipe && hasMessageScope) {
-            } else if (!pipe) {
-                throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
-            }
+            if (!pipe && !hasMessageScope) throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
 
-            const methodParameters = parameter.target ? getClassRef(parameter.target)?.getParameters(parameter.propertyKey) : undefined;
-            const bodyParameters = methodParameters?.filter(param => (param as TransportParameter).scope === 'body') ?? [];
-            const implicitWholeSection = parameter.scope === 'body' && bodyParameters.length <= 1;
-            const field = isDefined(parameter.field)
-                ? parameter.field
-                : (parameter.scope === 'body'
-                    ? (implicitWholeSection ? undefined : parameter.name)
-                    : parameter.name);
 
-            const messageAdapter = isFunction((context as any).getMessageAdapter)
-                ? (context as any).getMessageAdapter()
-                : null;
-            const readMessage = parameter.scope && messageAdapter && isFunction(messageAdapter.read)
-                ? (section: string, name?: string) => messageAdapter.read(section as any, name)
-                : undefined;
-
+            const field = parameter.field ?? parameter.name;
+            const payloadReader = reader ?? injector.get(MessageValueReader, null);
             let payload: any;
-            if (readMessage && parameter.scope) {
-                payload = readMessage(parameter.scope, field as any);
+            if (payloadReader && parameter.scope) {
+                payload = payloadReader.read(parameter.scope, field as any, context);
             } else {
                 const input = context.getPayload() as Record<string, any> | undefined;
-                if (input) {
-                    if (parameter.scope) {
-                        const scopeVal = parameter.scope === 'path'
-                            ? (input.paths ?? input.path)
-                            : parameter.scope === 'query'
-                                ? (input.query ?? input.params)
-                                : parameter.scope === 'payload'
-                                    ? (input.payload ?? input.body)
-                                    : parameter.scope === 'body'
-                                        ? (input.body ?? input.payload)
-                                        : input[parameter.scope];
-                        payload = field && scopeVal ? scopeVal[field] : scopeVal;
-                    } else if (field) {
-                        const sources = [input.query, input.params, input.paths, input.path, input.body, input.payload, input.headers];
-                        for (const source of sources) {
-                            if (isDefined(source?.[field])) {
-                                payload = source[field];
-                                break;
-                            }
-                        }
-                    }
+                if (parameter.scope && input) {
+                    const scopeVal = input[parameter.scope];
+                    payload = field && scopeVal ? scopeVal[field] : scopeVal;
                 }
             }
 
             if (isNil(payload)) {
-                if (readMessage && parameter.scope) {
-                    const data = readMessage(parameter.scope);
-                    if (isDefined(data) && (!isObject(data) || implicitWholeSection)) {
+                if (payloadReader && parameter.scope) {
+                    const data = payloadReader.read(parameter.scope, undefined, context);
+                    if (isDefined(data)) {
                         payload = data;
                     } else if (parameter.nullable) {
                         return parameter.defaultValue ?? null;
                     } else {
                         return next(parameter, context);
                     }
+                } else if (parameter.nullable) {
+                    return parameter.defaultValue ?? null;
                 } else {
-                    if (parameter.nullable) {
-                        return parameter.defaultValue ?? null;
-                    } else {
-                        return next(parameter, context);
-                    }
+                    return next(parameter, context);
                 }
             }
 
@@ -162,17 +112,17 @@ export function createMessageResolveInterceptors(): ResolveInterceptorFn<Transpo
                 const value = getMutilResolveHanlder(context.getInjector().getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], context);
                 if (isResolved(value)) return value;
             } else {
-                return pipe.transform(payload, ...parameter.args || [])
+                return pipe.transform(payload, ...parameter.args || []);
             }
         }
     ];
 }
 
 /**
- * @deprecated Use {@link createMessageResolveInterceptors} instead.
+ * Create message resolve interceptors.
  */
-export function createPayloadResolveInterceptors(): ResolveInterceptorFn<TransportParameter>[] {
-    return createMessageResolveInterceptors();
+export function createMessageResolveInterceptors(reader?: MessageValueReader): ResolveInterceptorFn<TransportParameter>[] {
+    return createPayloadResolveInterceptors(reader);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { KafkaServer } from './kafka-server';
 import { KafkaPatternFormatter } from './pattern';
@@ -41,7 +41,7 @@ export function kafkaTransportFactory(option: Partial<KafkaServOptions>, asDefau
         KafkaMessageAdapter,
         KafkaMessageAdapterFactory,
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const adapter = context.getMessageAdapter() as KafkaMessageAdapter | null;
+            const adapter = context.get(StatusMessageAdapter);
             const error = new NotFoundException('Not Found', 404);
             if (adapter) {
                 adapter.writeError(error);

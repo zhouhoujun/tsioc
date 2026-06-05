@@ -31,6 +31,14 @@ export abstract class MessageAdapter<TRequest = any, TResponse = any> {
 
     abstract writeError(error: any): void;
 
+    forkRequest(_request: TRequest): MessageAdapter<TRequest, TResponse> {
+        return this;
+    }
+
+    setRequestData(_request: TRequest): void {
+        return;
+    }
+
     getHeaders(): Record<string, any> {
         return {};
     }
@@ -87,6 +95,14 @@ export abstract class StatusMessageAdapter<
     abstract getBody(): any;
     abstract hasHeader(name: string): boolean;
     abstract isHeadersSent(): boolean;
+
+    getResponseHeaderNames(): string[] {
+        return [];
+    }
+
+    getResponseHeader(_name: string): Header | undefined {
+        return undefined;
+    }
 
     // Header helpers — used by security interceptors
     abstract getHeader(name: string): any;

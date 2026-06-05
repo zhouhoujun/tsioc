@@ -1,5 +1,5 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
-import { GuardLike } from '@tsdi/core';
+import { GuardLike, MessageValueReader } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
     LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
@@ -14,6 +14,7 @@ import { AuthOptions, CookieOptions, CorsOptions, FeatureInterceptorOptions, Ser
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
 import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from './interceptors';
 import { SetupServices } from './SetupMicroServices';
+import { ServiceMessageValueReader } from './message-value-reader';
 
 
 
@@ -35,7 +36,8 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
 
     const providers: Provider[] = [
         SetupServices,
-        LoggerInterceptor
+        LoggerInterceptor,
+        { provide: MessageValueReader, useClass: ServiceMessageValueReader }
     ];
 
     transports.forEach(ts => {

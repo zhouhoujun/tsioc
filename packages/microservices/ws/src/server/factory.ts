@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide, TransferInterceptorFactory } from '@tsdi/common'
+import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide, TransferInterceptorFactory } from '@tsdi/common'
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
@@ -36,7 +36,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
     config.providers.push(
         { provide: WS_SERV_OPTIONS, useValue: config },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-            const adapter = context.getMessageAdapter() as WsMessageAdapter | null;
+            const adapter = context.get(StatusMessageAdapter);
             const error = new NotFoundException('Not Found', 404);
             if (adapter) {
                 adapter.writeError(error);
@@ -75,7 +75,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
                     providers: [
                         { provide: WS_SERV_OPTIONS, useValue: config },
                         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
-                            const adapter = context.getMessageAdapter() as WsMessageAdapter | null;
+                            const adapter = context.get(StatusMessageAdapter);
                             const error = new NotFoundException('Not Found', 404);
                             if (adapter) {
                                 adapter.writeError(error);

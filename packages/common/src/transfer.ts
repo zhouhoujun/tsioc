@@ -2,7 +2,9 @@ import { ContextToken, isDefined, ProvdierOf, Provider } from '@tsdi/ioc';
 import { catchError, defer, map, mergeMap, of } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
-import { REQUEST, RequestContext } from './context';
+import { RequestContext } from './context';
+import { Events } from './events';
+import { MessageAdapter } from './MessageAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { Logger } from '@tsdi/logger';
 
@@ -151,13 +153,16 @@ export function useSimpleJson(options?: {
                 })
                     .pipe(
                         mergeMap(rjson => {
-                            context.set(REQUEST, rjson);
+                            context.set(Events.REQUEST, rjson);
                             context.setPayload(rjson);
-                            const adapter = context.getMessageAdapter();
-                            if (adapter && typeof (adapter as any).forkRequest === 'function') {
-                                context.setMessageAdapter((adapter as any).forkRequest(rjson));
-                            } else if (adapter && typeof (adapter as any).setRequestData === 'function') {
-                                (adapter as any).setRequestData(rjson);
+                            const adapter = context.get(MessageAdapter);
+                            if (adapter) {
+                                const forked = adapter.forkRequest(rjson);
+                                if (forked !== adapter) {
+                                    context.setMessageAdapter(forked);
+                                } else {
+                                    adapter.setRequestData(rjson);
+                                }
                             }
                             return next(rjson, context)
                         }),

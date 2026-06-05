@@ -2,11 +2,10 @@ import { Inject, Injectable, Optional, token, isNil } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import {
     ContentSendAdapter, FileAdapter, GET, HEAD, Incoming, NotFoundException,
-    Outgoing, ReadableLike, RequestContext, TopicIncoming, UrlIncoming, Header, HttpStatusCode, MimeAdapter
+    Outgoing, ReadableLike, RequestContext, RestfulRequestAdapter, TopicIncoming, UrlIncoming, Header, HttpStatusCode, MimeAdapter
 } from '@tsdi/common'
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { HttpFileResult } from '../file-result';
-import { HttpMessageAdapter } from '../message-adapter';
 import { HttpStaticOptions } from '../options';
 
 export interface StaticsOptions extends HttpStaticOptions {
@@ -105,7 +104,7 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         }
 
         const fileAdapter = context.get(FileAdapter);
-        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        const adapter = context.get(RestfulRequestAdapter);
         if (!adapter) {
             return false;
         }
@@ -120,9 +119,9 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         return !!file;
     }
 
-    private async resolveFileResult(result: HttpFileResult, input: any, context: RequestContext): Promise<HttpMessageAdapter> {
+    private async resolveFileResult(result: HttpFileResult, input: any, context: RequestContext): Promise<RestfulRequestAdapter> {
         const method = String(input?.method ?? '').toUpperCase();
-        const adapter = context.getMessageAdapter() as HttpMessageAdapter | null;
+        const adapter = context.get(RestfulRequestAdapter);
         if (!adapter) {
             throw new NotFoundException('Not Found', HttpStatusCode.NotFound);
         }

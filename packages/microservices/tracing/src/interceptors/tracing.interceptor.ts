@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
+import { MessageAdapter, RequestInterceptor, RequestContext, RequestHandler, Incoming, Outgoing, ReadableLike, WritableLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { finalize, tap, catchError } from 'rxjs/operators';
 import { Tracer } from '../tracer';
@@ -14,7 +14,7 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
     constructor(private tracer: Tracer) {}
 
     intercept(input: ReadableLike<Incoming>, next: RequestHandler<ReadableLike<Incoming>, WritableLike<Outgoing>, RequestContext>, context: RequestContext): Observable<WritableLike<Outgoing>> {
-        const adapter = context.getMessageAdapter();
+        const adapter = context.get(MessageAdapter);
         const request = input as any;
         const method = request?.method || 'UNKNOWN';
         const path = request?.pattern || request?.url || '/';
@@ -58,7 +58,7 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
         const responseHeaders: Record<string, string> = {};
         this.tracer.injectContext(span.context(), responseHeaders);
         for (const [key, value] of Object.entries(responseHeaders)) {
-            context.setHeader(key, value);
+            adapter.setHeader(key, value);
         }
 
         return next.handle(input, context).pipe(

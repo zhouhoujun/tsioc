@@ -12,10 +12,8 @@ export class RedirectResult extends ResultValue {
             url = this.referrer || this.alt || '/';
         }
 
-        const adapter = ctx.getMessageAdapter();
-        if (!(adapter instanceof StatusMessageAdapter)) {
-            ctx.setHeader('location', encodeUrl(url));
-            ctx.setStatus(302);
+        const adapter = ctx.get(StatusMessageAdapter);
+        if (!adapter) {
             return;
         }
 

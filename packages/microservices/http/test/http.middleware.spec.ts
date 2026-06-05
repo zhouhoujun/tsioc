@@ -7,7 +7,7 @@ import { provideClient } from '@tsdi/client';
 import { Controller, Get, provideService, useMiddlewares, useRouter } from '@tsdi/service';
 import { HttpClient, withHttpTransport } from '../src/client';
 import { useHttpTransport } from '../src/server';
-import { REQUEST } from '@tsdi/common';
+import { MessageAdapter, REQUEST } from '@tsdi/common';
 
 const PORT = 3200 + Math.floor(Math.random() * 1000);
 
@@ -29,7 +29,7 @@ describe('middleware', () => {
                 useRouter({ microservice: true }),
                 useMiddlewares(async (ctx, next) => {
                     const request = ctx.get(REQUEST) as any;
-                    const adapter = ctx.getMessageAdapter();
+                    const adapter = ctx.get(MessageAdapter);
                     if (request?.url?.startsWith('/test')) {
                         const hi = adapter?.read('query', 'hi') ?? '';
                         adapter?.write(hi);

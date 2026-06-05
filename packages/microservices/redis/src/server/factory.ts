@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { RedisServer } from './redis-server';
 import { RedisPatternFormatter } from './pattern';
@@ -47,7 +47,7 @@ export function redisTransportFactory(option: Partial<RedisServOptions>, asDefau
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const adapter = context.getMessageAdapter() as RedisMessageAdapter | null;
+                const adapter = context.get(StatusMessageAdapter);
                 const error = new NotFoundException('Not Found', 404);
                 if (adapter) {
                     adapter.writeError(error);

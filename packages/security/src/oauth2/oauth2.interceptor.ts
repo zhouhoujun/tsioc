@@ -1,13 +1,13 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestHandler, RequestInterceptor } from '@tsdi/common';
-import { RestfulRequestContext } from '@tsdi/service';
+import { RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { getRestfulAdapter } from '../context';
 import { Observable, defer, mergeMap } from 'rxjs';
 import { Authenticator } from '../Authenticator';
 import { OAuth2Options } from './oauth2.options';
 
 @Injectable()
-export class OAuth2Interceptor implements RequestInterceptor<RestfulRequestContext, any> {
-    intercept(input: RestfulRequestContext, next: RequestHandler, context?: any): Observable<any> {
+export class OAuth2Interceptor implements RequestInterceptor<RequestContext, any> {
+    intercept(input: RequestContext, next: RequestHandler, context?: any): Observable<any> {
         const options = input.get(OAuth2Options);
         
         // 检查是否是 OAuth 回调
@@ -27,17 +27,17 @@ export class OAuth2Interceptor implements RequestInterceptor<RestfulRequestConte
         return next.handle(input, context);
     }
 
-    private isCallback(ctx: RestfulRequestContext): boolean {
-        return ctx.path.includes('/oauth/callback');
+    private isCallback(ctx: RequestContext): boolean {
+        return getRestfulAdapter(ctx).path.includes('/oauth/callback');
     }
 
-    protected isAuthenticated(ctx: RestfulRequestContext): boolean {
+    protected isAuthenticated(ctx: RequestContext): boolean {
         // 实现会话检查逻辑
-        return !!ctx.session?.user;
+        return !!getRestfulAdapter(ctx).session?.user;
     }
 
-    protected async handleCallback(ctx: RestfulRequestContext, options: OAuth2Options) {
-        const code = ctx.query.code;
+    protected async handleCallback(ctx: RequestContext, options: OAuth2Options) {
+        const code = getRestfulAdapter(ctx).query.code;
         if (!code) {
             throw new Error('No authorization code provided');
         }
@@ -60,9 +60,9 @@ export class OAuth2Interceptor implements RequestInterceptor<RestfulRequestConte
         // 实现获取用户信息的逻辑
     }
 
-    private redirectToAuth(ctx: RestfulRequestContext, options: OAuth2Options): Observable<never> {
+    private redirectToAuth(ctx: RequestContext, options: OAuth2Options): Observable<never> {
         const authUrl = this.buildAuthorizationUrl(options);
-        ctx.redirect(authUrl);
+        getRestfulAdapter(ctx).redirect(authUrl);
         return new Observable(); // 终止后续处理
     }
 

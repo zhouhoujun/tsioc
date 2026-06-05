@@ -1,9 +1,61 @@
 import expect = require('expect');
 import { of, lastValueFrom } from 'rxjs';
 import { createInjector } from '@tsdi/ioc';
-import { PacketIdGenerator, PatternFormatter, StreamAdapter, TransferSide, createRequestContext, useCatch } from '@tsdi/common';
+import { Header, PacketIdGenerator, PatternFormatter, StatusMessageAdapter, StreamAdapter, TransferSide, createRequestContext, useCatch } from '@tsdi/common';
 import { TcpRequest } from '@tsdi/tcp';
 import { useJsonPacket } from '../src/providers';
+
+class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
+    private headers = new Map<string, Header>();
+    private statusCode?: number;
+    private statusMessageText?: string;
+    private errorValue: any;
+    private bodyValue: any;
+
+    constructor(public request: any = {}, public response: any = {}) {
+        super();
+    }
+
+    get status(): number {
+        return this.statusCode ?? 0;
+    }
+
+    set status(value: number) {
+        this.statusCode = value;
+    }
+
+    get isHandled(): boolean {
+        return this.statusCode != null || this.errorValue != null || this.bodyValue != null;
+    }
+
+    get isCommitted(): boolean {
+        return false;
+    }
+
+    get query(): Record<string, any> {
+        return this.request?.query ?? {};
+    }
+
+    async handle(): Promise<void> { return; }
+    commit(): void { return; }
+    async destroy(): Promise<void> { return; }
+
+    read(): any { return undefined; }
+    write(body: any): void { this.bodyValue = body; }
+    setHeader(name: string, value: Header): void { this.headers.set(name, value); }
+    removeHeader(name: string): void { this.headers.delete(name); }
+    writeError(error: any): void { this.errorValue = error; }
+    setStatus(code: any, message?: string): void { this.statusCode = code; this.statusMessageText = message; }
+    getStatus(): any { return this.statusCode; }
+    getStatusMessage(): any { return this.statusMessageText; }
+    getError(): any { return this.errorValue; }
+    getBody(): any { return this.bodyValue; }
+    hasHeader(name: string): boolean { return this.headers.has(name); }
+    isHeadersSent(): boolean { return false; }
+    getHeader(name: string): any { return this.request?.headers?.[name]; }
+    getResponseHeaderNames(): string[] { return Array.from(this.headers.keys()); }
+    getResponseHeader(name: string): Header | undefined { return this.headers.get(name); }
+}
 
 describe('transport json packet', () => {
     function createContext(adapter?: any) {
@@ -73,14 +125,10 @@ describe('transport json packet', () => {
         const config: any = { side: TransferSide.server, transfer: {}, providers: [] };
         const interceptors = useJsonPacket()(config) as Function[];
         const jsonInterceptor = interceptors[4];
-        const adapter = {
-            getStatus: () => 202,
-            getStatusMessage: () => 'Accepted',
-            getError: () => null,
-            getBody: () => ({ ok: true }),
-            getResponseHeaderNames: () => ['x-test'],
-            getResponseHeader: (name: string) => name === 'x-test' ? '1' : undefined
-        };
+        const adapter = new TestStatusAdapter();
+        adapter.setStatus(202, 'Accepted');
+        adapter.setHeader('x-test', '1');
+        adapter.write({ ok: true });
         const context = createContext(adapter);
         const response = await lastValueFrom(jsonInterceptor(JSON.stringify({ body: { id: '1' } }), () => of({ id: 'resp-1' }), context));
 

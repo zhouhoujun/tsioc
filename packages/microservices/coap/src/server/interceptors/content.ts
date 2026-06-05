@@ -1,5 +1,5 @@
 import { ApplicationContext } from '@tsdi/core';
-import { FileAdapter, MimeAdapter, NotFoundException, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common'
+import { FileAdapter, MimeAdapter, NotFoundException, RequestContext, RequestHandler, RequestInterceptor, StatusMessageAdapter } from '@tsdi/common'
 import { Injectable } from '@tsdi/ioc';
 import { basename } from 'node:path';
 import { from, mergeMap, Observable } from 'rxjs';
@@ -19,7 +19,7 @@ export class CoapContentInterceptor implements RequestInterceptor<any> {
                 if (!file) {
                     return next.handle(input, context);
                 }
-                const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+                const adapter = context.get(StatusMessageAdapter);
                 const fileAdapter = context.get(FileAdapter);
                 const mimeAdapter = context.getInjector().get(MimeAdapter, null);
                 const ext = file.encodingExt ?? fileAdapter.extname(file.filename);
@@ -39,7 +39,7 @@ export class CoapContentInterceptor implements RequestInterceptor<any> {
     }
 
     private async find(path: string, context: RequestContext) {
-        const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+        const adapter = context.get(StatusMessageAdapter);
         if (adapter?.getStatus() && !(adapter.getError() instanceof NotFoundException)) {
             return null;
         }

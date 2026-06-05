@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { NatsServer } from './nats-server';
 import { NatsPatternFormatter } from './pattern';
@@ -46,7 +46,7 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const adapter = context.getMessageAdapter() as NatsMessageAdapter | null;
+                const adapter = context.get(StatusMessageAdapter);
                 const error = new NotFoundException('Not Found', 404);
                 if (adapter) {
                     adapter.writeError(error);

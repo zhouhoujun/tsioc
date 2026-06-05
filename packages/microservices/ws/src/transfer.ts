@@ -1,4 +1,4 @@
-import { AbstractRequest, PatternFormatter, RequestContext, RequestInterceptorFn, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
+import { AbstractRequest, MessageAdapter, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
 import { Provider } from '@tsdi/ioc';
 import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, throwError, of } from 'rxjs';
 import { SOCKET } from './context';
@@ -71,8 +71,8 @@ const requestMapping = (req: any, context: RequestContext) => {
 }
 
 const outgoingMapping = (res: any, context: RequestContext) => {
-    const adapter = context.getMessageAdapter() as any;
-    if (adapter && (typeof adapter.getStatus === 'function' || typeof adapter.getBody === 'function')) {
+    const adapter = context.get(StatusMessageAdapter) as any;
+    if (adapter) {
         const json: Record<string, any> = {};
         const status = adapter.getStatus?.();
         const statusMessage = adapter.getStatusMessage?.();
@@ -183,11 +183,14 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
                     const parsed = JSON.parse(str);
                     context.set(REQUEST, parsed);
                     context.setPayload(parsed);
-                    const adapter = context.getMessageAdapter();
-                    if (adapter && typeof (adapter as any).forkRequest === 'function') {
-                        context.setMessageAdapter((adapter as any).forkRequest(parsed));
-                    } else if (adapter && typeof (adapter as any).setRequestData === 'function') {
-                        (adapter as any).setRequestData(parsed);
+                    const adapter = context.get(MessageAdapter);
+                    if (adapter) {
+                        const forked = adapter.forkRequest(parsed);
+                        if (forked !== adapter) {
+                            context.setMessageAdapter(forked);
+                        } else {
+                            adapter.setRequestData(parsed);
+                        }
                     }
                     return defer(() => next(parsed, context)).pipe(
                         catchError(err => {

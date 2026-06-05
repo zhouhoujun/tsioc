@@ -1,62 +1,38 @@
 import { Context, ContextToken, Injector, Token, RunContext } from '@tsdi/ioc';
 import { ContentType } from './headers';
-import { MessageAdapter, MessageSection, StatusMessageAdapter } from './MessageAdapter';
+import { MessageAdapter, RestfulRequestAdapter, StatusMessageAdapter } from './MessageAdapter';
 
 const CONTENT_LENGTH = new ContextToken<number | null>(() => null);
 const CONTENT_TYPE = new ContextToken<string | null>(() => ContentType.APPL_JSON);
 const CONTENT_ENCODING = new ContextToken<string | null>(() => null);
 
-export const REQUEST = new ContextToken<any | null>(() => null);
-export const RESPONSE = new ContextToken<any | null>(() => null);
-export const MESSAGE_ADAPTER = new ContextToken<MessageAdapter<any, any> | null>(() => null);
-
 export class RequestContext<TRequest = any, TResponse = any> extends RunContext {
 
-    getRequest<T = TRequest>(): T {
-        return this.getMessageAdapter<T, any>().req as T;
+    getRequest(): TRequest {
+        return this.get(MessageAdapter).req as TRequest;
     }
 
-    getResponse<T = TResponse>(): T {
-        return this.getMessageAdapter<any, T>().res as T;
+    getResponse(): TResponse {
+        return this.get(MessageAdapter).res as TResponse;
     }
 
     getMessageAdapter<TReq = TRequest, TRes = TResponse>(): MessageAdapter<TReq, TRes> {
-        return this.get(MESSAGE_ADAPTER)!;
+        return this.get(MessageAdapter) as MessageAdapter<TReq, TRes>;
     }
 
-    setMessageAdapter<TReq = TRequest, TRes = TResponse>(adapter: MessageAdapter<TReq, TRes> | null) {
-        this.set(MESSAGE_ADAPTER, adapter);
-    }
+    setMessageAdapter(adapter: MessageAdapter<TRequest, TResponse>) {
+        if (!(adapter instanceof MessageAdapter)) return;
+        this.set(MessageAdapter, adapter);
+        if (!(adapter instanceof StatusMessageAdapter)) return;
+        this.set(StatusMessageAdapter, adapter);
 
-    readMessage(section: MessageSection, name?: string): any {
-        return this.getMessageAdapter()?.read(section, name);
-    }
+        if (!(adapter instanceof RestfulRequestAdapter)) return;
+        this.set(RestfulRequestAdapter, adapter);
 
-    writeMessage(body: any) {
-        this.getMessageAdapter()?.write(body);
-    }
-
-    setHeader(name: string, value: any) {
-        this.getMessageAdapter()?.setHeader(name, value);
-    }
-
-    removeHeader(name: string) {
-        this.getMessageAdapter()?.removeHeader(name);
-    }
-
-    setStatus(code: any, message?: string) {
-        const adapter = this.getMessageAdapter();
-        if (adapter instanceof StatusMessageAdapter) {
-            adapter.setStatus(code, message);
-        }
-    }
-
-    writeError(error: any) {
-        this.getMessageAdapter()?.writeError(error);
     }
 
     getContentEncoding(): string | null {
-        return this.get(CONTENT_ENCODING)
+        return this.get(CONTENT_ENCODING);
     }
 
     setContentEncoding(encoding: string | null) {

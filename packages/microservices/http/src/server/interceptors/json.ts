@@ -1,5 +1,5 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
-import { RequestContext, RequestHandler, RequestInterceptor, ContentType, ReadableLike, Incoming, StreamAdapter } from '@tsdi/common';
+import { MessageAdapter, RequestContext, RequestHandler, RequestInterceptor, ContentType, ReadableLike, Incoming, StreamAdapter } from '@tsdi/common';
 import { Observable, map } from 'rxjs';
 
 
@@ -44,7 +44,7 @@ export class HttpJsonInterceptor implements RequestInterceptor<ReadableLike<Inco
 
         const pretty = this.pretty || hasOwn(input.query, this.paramName);
 
-        const adapter = context.getMessageAdapter();
+        const adapter = context.get(MessageAdapter);
         if (strm && adapter?.accepts('json')) {
             context.setContentType(ContentType.APPL_JSON);
             return streamAdapter.jsonSreamify(res, undefined, pretty ? this.spaces : 2);

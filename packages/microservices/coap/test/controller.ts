@@ -1,5 +1,5 @@
 import { Inject, lang } from '@tsdi/ioc';
-import { BadRequestException, RequestContext, Transport } from '@tsdi/common';
+import { BadRequestException, RequestContext, StatusMessageAdapter, Transport } from '@tsdi/common';
 import { Get, Handle, Payload, Post, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/service';
 import { of } from 'rxjs';
 
@@ -63,17 +63,19 @@ export class DeviceController {
     }
 
     @Post('/adapter/write')
-    adapterWrite(@RequestBody() body: any, @Inject(RequestContext) context: RequestContext) {
-        context.setStatus(201, 'Created');
-        context.setHeader('x-message-adapter', 'coap');
-        context.writeMessage({ wrapped: body });
+    adapterWrite(@RequestBody() body: any, @Inject() context: RequestContext) {
+        const adapter = context.get(StatusMessageAdapter);
+        adapter.setStatus(201, 'Created');
+        adapter.setHeader('x-message-adapter', 'coap');
+        adapter.write({ wrapped: body });
         return undefined;
     }
 
     @Get('/adapter/error')
-    adapterError(@Inject(RequestContext) context: RequestContext) {
+    adapterError(@Inject() context: RequestContext) {
         const err = new BadRequestException('adapter error');
-        context.writeError(err);
+        const adapter = context.get(StatusMessageAdapter);
+        adapter.writeError(err);
         throw err;
     }
 

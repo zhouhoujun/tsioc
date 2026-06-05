@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
@@ -52,7 +52,7 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
-                const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+                const adapter = context.get(StatusMessageAdapter);
                 if (adapter) {
                     adapter.writeError({ message: 'Not Found' });
                     adapter.setStatus('4.04', 'Not Found');

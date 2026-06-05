@@ -2,7 +2,7 @@ import { getTypeName, Inject, isNumber, promisify, Injectable, isNil, ArgumentEx
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    createRequestContext, RequestContext,
+    createRequestContext, RequestContext, StatusMessageAdapter,
     InternalServerException, Transport, REQUEST, ContentType
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
@@ -221,7 +221,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private writeResponse(res: coap.OutgoingMessage, context: RequestContext, response: any) {
-        const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+        const adapter = context.get(StatusMessageAdapter);
         if (isNil(response) && context.getPayload<any>()?.type === ContentType.APPL_JSON && context.getPayload<any>()?.body) {
             this.writeError(res, context, Object.assign(new Error('Packet length exceeded'), { status: '4.00', statusCode: 400 }));
             return;
@@ -290,7 +290,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 ...(err?.details ? { details: err.details } : {})
             };
 
-        const adapter = context.getMessageAdapter() as CoapMessageAdapter | null;
+        const adapter = context.get(StatusMessageAdapter);
         if (adapter) {
             adapter.setStatus(status, statusMessage);
             adapter.writeError(err);
