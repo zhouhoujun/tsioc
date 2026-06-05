@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, StatusMessageAdapter, Transport, REQUEST,
+    InternalServerException, ListenOpts, RestfulRequestAdapter, StatusMessageAdapter, Transport, REQUEST,
     StreamAdapter, ContentType, Outgoing, BadRequestException, ForbiddenException, NotFoundException,
 } from '@tsdi/common'
 import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
@@ -158,8 +158,8 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         ]);
         const adapter = this.injector.get(HttpMessageAdapterFactory).create({ request, response: res, context });
         context.setMessageAdapter(adapter);
-        context.set(RequestContext, context);
         context.set(HttpMessageAdapter, adapter);
+        context.set(RestfulRequestAdapter, adapter);
         context.setPayload(request);
 
         this.handler.handle(request as TReq, context)

@@ -198,6 +198,51 @@ Because the repo builds itself, breakages in these packages can cascade into bui
 
 Recent work routes `AgentRuntime.runTurn()` through `@tsdi/core`'s generic guard/interceptor/filter pipeline via a turn handler token, so runtime behavior may be extended through providers rather than direct conditionals.
 
+### RequestContext / Adapter model
+
+The microservice runtime uses a single `RequestContext` as the request-scoped container. Protocol-specific capabilities are accessed through adapter tokens:
+
+- `context.get(MessageAdapter)` — universal message read/write operations
+- `context.get(StatusMessageAdapter)` — status/error/response-header operations  
+- `context.get(RestfulRequestAdapter)` — HTTP-specific helpers (cookies, session, redirect)
+
+The adapter tokens are registered by `setMessageAdapter()` when each transport creates the request context.
+Controller methods that need protocol access should use `@Inject(AdapterType)` rather than custom context subclasses.
+
+### `MessageValueReader` abstraction
+
+In `packages/core/src/handlers/resolver.ts`:
+
+The abstract class `MessageValueReader` defines the reader interface for scoped parameter resolution (`@RequestBody`, `@RequestParam`, `@RequestPath`, etc.). Its `read(section, name, context)` method is called during method invocation to extract parameter values from the request.
+
+Default parameter resolution uses direct payload access. When a `MessageValueReader` is registered, the resolver delegates to it instead. The `@tsdi/service` package provides a default `ServiceMessageValueReader` that reads through the registered `MessageAdapter`.
+
+### `useAuth()` feature
+
+In `packages/microservices/service/src/provider.ts`:
+
+The `useAuth(options?)` feature registers an auth interceptor and options provider. Usage:
+
+```ts
+provideService(
+  useRouter(),
+  useCookie(),
+  useAuth({ bearerToken: 'secret' }),
+  useHttpTransport({ listenOpts: { port: 3000 }, asDefault: true })
+)
+```
+
+Security hooks:
+- bearer token auth rejects query-string fallback by default
+- enabling auth without a concrete strategy (`bearerToken` / `jwt`) fails closed  
+- OIDC flows pair `useCookie()` with the auth feature
+
+### Auth interceptor bridge
+
+In `packages/microservices/http/src/server/interceptors/auth.ts`:
+
+The `HttpAuthInterceptor` bridges `@tsdi/security`'s `HttpAuthService` with the HTTP microservice runtime. It reads credentials from `HttpAuthService.extractToken()`, validates them, and sets `HTTP_AUTH_RESULT` on the request context.
+
 ## TypeScript and Module Conventions
 
 - Root TypeScript target is ES2020 with CommonJS modules.
