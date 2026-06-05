@@ -10,7 +10,7 @@ import { InterceptorResolver } from './interceptor';
 import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
 import { ExceptionHandlerFilter } from './filters/exception.filter';
-import { getResolveHandlerToken } from './handlers/resolver';
+import { DefaultMessageValueReader, MessageValueReader, getResolveHandlerToken } from './handlers/resolver';
 import { PayloadApplicationEvent } from './events';
 import { createMessageResolveInterceptors } from './handlers/resolvers';
 
@@ -21,7 +21,8 @@ import { createMessageResolveInterceptors } from './handlers/resolvers';
  */
 export const DEFAULTA_PROVIDERS: Provider[] = [
     { provide: ApplicationContextFactory, useClass: DefaultApplicationContextFactory, static: true },
-    { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
+    { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true },
+    { provide: MessageValueReader, useClass: DefaultMessageValueReader, asDefault: true, static: true },
 ]
 
 export const RESOLVER_PROVIDERS = [

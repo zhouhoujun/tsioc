@@ -16,6 +16,7 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, typeResolveInterceptor } from './handlers/resolver';
+import { createMessageResolveInterceptors } from './handlers/resolvers';
 import { InterceptorFn, InterceptorResolver } from './interceptor';
 import { createInvocationHandler } from './impl/invocation';
 
@@ -269,7 +270,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
             if (!meta.resolvers) {
                 meta.resolvers = [];
             }
-            meta.resolvers.push(typeResolveInterceptor);
+            meta.resolvers.push(typeResolveInterceptor, ...createMessageResolveInterceptors());
         },
         design: {
             method: runtime === true ? undefined : (typeRef, ctx) => {

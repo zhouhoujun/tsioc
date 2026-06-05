@@ -2,7 +2,8 @@ import {
     ArgumentException, AbstractType, isArray, isString, Parameter,
     ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName,
     createResolveHandler, isResolved, isNil, isObject, isDefined, getClassRef,
-    ResolveInterceptorFn
+    ResolveInterceptorFn,
+    InjectFlags
 } from '@tsdi/ioc';
 import { MessageValueReader, TransportParameter } from './resolver';
 import { PipeTransform } from '../pipes/pipe';
@@ -65,33 +66,32 @@ export function createPayloadResolveInterceptors(reader?: MessageValueReader): R
             if (parameter.pipe) {
                 pipe = isToken(parameter.pipe) ? injector.get<PipeTransform>(parameter.pipe) : parameter.pipe;
             } else if (parameter.multi && isFunction(parameter.provider)) {
-                pipe = injector.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
+                pipe = injector.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider), null!);
             } else if (parameter.type && isPrimitive(parameter.type)) {
-                pipe = injector.get<PipeTransform>(parameter.type.name.toLowerCase());
+                pipe = injector.get<PipeTransform>(parameter.type.name.toLowerCase(), null!);
             } else if (!hasMessageScope) {
                 return next(parameter, context);
             }
 
-
-            if (!pipe) throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
-
             const msgReader = reader ?? injector.get(MessageValueReader, null);
 
-            if (!msgReader) throw new ArgumentException(`missing MessageValueReader to read argument ${parameter.name ?? parameter.propertyKey ?? parameter.provider?.toString() ?? parameter.type?.toString()} of ${getTypeName(parameter.target)}.${parameter.propertyKey.toString()}`);
+            if (!msgReader) throw new ArgumentException('missing MessageValueReader to read argument ' + (parameter.name ?? parameter.propertyKey ?? parameter.provider?.toString() ?? parameter.type?.toString()) + ' of ' + (parameter.target ? getTypeName(parameter.target) : 'unknown') + '.' + (parameter.propertyKey?.toString() ?? ''));
 
-            let payload = msgReader.read(parameter.scope!, parameter.field ?? parameter.name, context);
-            if (isNil(payload)) {
+            const res = msgReader.read(parameter.field ?? parameter.name, context.getPayload(), parameter.scope);
+            if (!res.success) {
                 return next(parameter, context);
             }
 
-            if (!pipe) {
-                return payload;
+            if (!pipe || (isNil(res.value) && (parameter.nullable || 
+                    (parameter.flags && (parameter.flags & InjectFlags.Optional) > 0))
+                )) {
+                return res.value;
             }
             if (parameter.multi) {
-                const value = getMutilResolveHanlder(context.getInjector().getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], context);
+                const value = getMutilResolveHanlder(context.getInjector().getRuntime()).handle([isString(res.value) ? res.value.split(',') : res.value, pipe, parameter], context);
                 if (isResolved(value)) return value;
             } else {
-                return pipe.transform(payload, ...parameter.args || []);
+                return pipe.transform(res.value, ...parameter.args || []);
             }
         }
     ];

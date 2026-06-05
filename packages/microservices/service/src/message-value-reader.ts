@@ -1,27 +1,36 @@
-import { Injectable } from '@tsdi/ioc';
-import { MessageValueReader } from '@tsdi/core';
-import { MessageAdapter, RequestContext } from '@tsdi/common';
+import { Injectable, isNil, isObject } from '@tsdi/ioc';
+import { MessageValueReader, ReadResult } from '@tsdi/core';
 
 @Injectable()
 export class ServiceMessageValueReader extends MessageValueReader {
-    read(section: string, name: string | undefined, context: RequestContext): any {
-        const adapter = context.get(MessageAdapter);
-        if (adapter) {
-            return adapter.read(section as any, name);
-        }
-        const input = context.getPayload() as Record<string, any> | undefined;
-        if (!input || !section) {
-            return undefined;
+    read(name: string | undefined, payload: any, section?: string): ReadResult {
+        if (isNil(payload) || !section) {
+            return { success: false, value: undefined };
         }
         const scopeVal = section === 'path'
-            ? (input.paths ?? input.path)
+            ? (payload.paths ?? payload.path)
             : section === 'query'
-                ? (input.query ?? input.params)
+                ? (payload.query ?? payload.params)
                 : section === 'payload'
-                    ? (input.payload ?? input.body)
+                    ? (payload.payload ?? payload.body)
                     : section === 'body'
-                        ? (input.body ?? input.payload)
-                        : input[section];
-        return name && scopeVal ? scopeVal[name] : scopeVal;
+                        ? (payload.body ?? payload.payload)
+                        : payload[section];
+        if (isNil(scopeVal)) {
+            return { success: false, value: undefined };
+        }
+        const value = name ? scopeVal[name] : scopeVal;
+        if (!name) {
+            return { success: true, value: scopeVal };
+        }
+        if (!isNil(value)) {
+            return { success: true, value };
+        }
+        // Name specified but not found in object scope → failure.
+        if (isObject(scopeVal)) {
+            return { success: false, value: undefined };
+        }
+        // Scalar scopeVal → return as-is.
+        return { success: true, value: scopeVal };
     }
 }

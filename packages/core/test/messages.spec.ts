@@ -1,21 +1,21 @@
 import { createInjector, createRunContext, getClassRef, Provider } from '@tsdi/ioc';
 import expect = require('expect');
 import { RequestBody } from '@tsdi/service';
-import { MessageValueReader } from '../src';
+import { MessageValueReader, DefaultMessageValueReader } from '../src';
 import { createMessageResolveInterceptors } from '../src';
 
 describe('Message resolve interceptors', () => {
     it('should use context readMessage when available', () => {
         const injector = createInjector([
             { provide: MessageValueReader, useValue: {
-                read: (_section: string, name: string | undefined, _ctx: any) => `reader:${_section}:${name ?? '*'}`
+                read: (name: string | undefined, _ctx: any, section?: string) => ({ success: true, value: `reader:${section}:${name ?? '*'}` })
             } as MessageValueReader }
         ]);
         const context = createRunContext(injector);
         context.setPayload({ body: { id: 'payload-id' } });
         const parameter = { scope: 'body', field: 'id', name: 'id', nullable: false } as any;
         const interceptor = createMessageResolveInterceptors()[0];
-        const next = { handle: () => 'next' } as any;
+        const next = () => 'next' as any;
 
         const value = interceptor(parameter, next, context);
 
@@ -23,12 +23,14 @@ describe('Message resolve interceptors', () => {
     });
 
     it('should fallback to direct payload properties when adapter is absent', () => {
-        const injector = createInjector();
+        const injector = createInjector([
+            { provide: MessageValueReader, useClass: DefaultMessageValueReader }
+        ]);
         const context = createRunContext(injector);
         context.setPayload({ body: { id: 'payload-id' } });
         const parameter = { scope: 'body', field: 'id', name: 'id', nullable: false } as any;
         const interceptor = createMessageResolveInterceptors()[0];
-        const next = { handle: () => 'next' } as any;
+        const next = () => 'next' as any;
 
         const value = interceptor(parameter, next, context);
 
@@ -49,18 +51,26 @@ describe('Message resolve interceptors', () => {
 
         const body = { id: 'one', age: 20 };
         const reader: MessageValueReader = {
-            read(_section: string, name: string | undefined, _ctx: any) {
-                if (_section !== 'body') {
-                    return undefined;
+            read(name: string | undefined, payload: any, section?: string): any {
+                if (section !== 'body') {
+                    return { success: false, value: undefined };
                 }
-                return name ? body[name as 'id' | 'age'] : body;
+                const scopeVal = payload?.body ?? payload?.payload;
+                if (!scopeVal) {
+                    return { success: false, value: undefined };
+                }
+                const value = name ? scopeVal[name as 'id' | 'age'] : scopeVal;
+                if (section === 'body' && value == null) {
+                    return { success: true, value: scopeVal };
+                }
+                return { success: true, value };
             }
         };
         const injector = createInjector([
             { provide: MessageValueReader, useValue: reader }
         ]);
         const interceptor = createMessageResolveInterceptors()[0];
-        const next = { handle: () => 'next' } as any;
+        const next = () => 'next' as any;
 
         const wholeContext = createRunContext(injector);
         wholeContext.setPayload({ body });
