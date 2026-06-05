@@ -72,54 +72,16 @@ export function createPayloadResolveInterceptors(reader?: MessageValueReader): R
                 return next(parameter, context);
             }
 
-            if (!pipe && !hasMessageScope) {
-                return next(parameter, context);
-            }
 
+            if (!pipe) throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
 
-            const methodParameters = parameter.target ? getClassRef(parameter.target)?.getParameters(parameter.propertyKey) : undefined;
-            const bodyParameters = methodParameters?.filter(param => (param as TransportParameter).scope === 'body') ?? [];
-            const implicitWholeSection = parameter.scope === 'body' && bodyParameters.length <= 1;
-            const field = isDefined(parameter.field)
-                ? parameter.field
-                : (parameter.scope === 'body'
-                    ? (implicitWholeSection ? undefined : parameter.name)
-                    : parameter.name);
-            const payloadReader = reader;
-            let payload: any;
-            if (payloadReader && parameter.scope) {
-                payload = payloadReader.read(parameter.scope, field as any, context);
-            } else {
-                const input = context.getPayload() as Record<string, any> | undefined;
-                if (parameter.scope && input) {
-                    const scopeVal = parameter.scope === 'path'
-                        ? (input.paths ?? input.path)
-                        : parameter.scope === 'query'
-                            ? (input.query ?? input.params)
-                            : parameter.scope === 'payload'
-                                ? (input.payload ?? input.body)
-                                : parameter.scope === 'body'
-                                    ? (input.body ?? input.payload)
-                                    : input[parameter.scope];
-                    payload = field && scopeVal ? scopeVal[field] : scopeVal;
-                }
-            }
+            const msgReader = reader ?? injector.get(MessageValueReader, null);
 
+            if (!msgReader) throw new ArgumentException(`missing MessageValueReader to read argument ${parameter.name ?? parameter.propertyKey ?? parameter.provider?.toString() ?? parameter.type?.toString()} of ${getTypeName(parameter.target)}.${parameter.propertyKey.toString()}`);
+
+            let payload = msgReader.read(parameter.scope!, parameter.field ?? parameter.name, context);
             if (isNil(payload)) {
-                if (payloadReader && parameter.scope) {
-                    const data = payloadReader.read(parameter.scope, undefined, context);
-                    if (isDefined(data)) {
-                        payload = data;
-                    } else if (parameter.nullable) {
-                        return parameter.defaultValue ?? null;
-                    } else {
-                        return next(parameter, context);
-                    }
-                } else if (parameter.nullable) {
-                    return parameter.defaultValue ?? null;
-                } else {
-                    return next(parameter, context);
-                }
+                return next(parameter, context);
             }
 
             if (!pipe) {
