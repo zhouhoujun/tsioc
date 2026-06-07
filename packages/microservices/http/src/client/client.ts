@@ -78,7 +78,10 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         const session = this.session;
         this.session = undefined;
         if (session.closed || session.destroyed) return;
-        session.close();
+        // Await the close so the underlying TCP socket is released before
+        // the caller (test context shutdown) continues. Without the await,
+        // the socket fd stays open and keeps the event loop alive.
+        await new Promise<void>(resolve => session.close(resolve));
         session.destroy();
     }
 
