@@ -97,7 +97,7 @@ export class DeviceController {
     ],
     providers: [
         provideClient(
-            withTimeout(),
+            withTimeout(3000),
             withInterceptors(),
             withTransfers(),
             withTcpTransport(

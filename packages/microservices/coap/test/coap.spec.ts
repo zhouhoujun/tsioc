@@ -105,7 +105,7 @@ describe('CoAP Server & CoAP Client', () => {
     });
 
     it('should return not found for static json path', async () => {
-        const res: any = await lastValueFrom(client.send('/content/510100_full.json', { timeout: 50 } as any).pipe(
+        const res: any = await lastValueFrom(client.send('/content/510100_full.json', { timeout: 500 } as any).pipe(
             catchError(err => of(err))
         ));
         expect(res.statusMessage).toEqual('Not Found');

@@ -152,12 +152,22 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
         }
 
         // Then close the HTTP server
-        await promisify(this.server.close, this.server)()
-            .catch(err => this.logger.warn('HTTP server close warning:', err?.message ?? err))
-            .finally(() => {
-                this.server?.removeAllListeners();
-                this.server = null;
-            });
+        const srv = this.server;
+        try {
+            if (typeof (srv as any).closeAllConnections === 'function') {
+                (srv as any).closeAllConnections();
+            }
+            await promisify(this.server.close, this.server)()
+                .catch(err => this.logger.warn('HTTP server close warning:', err?.message ?? err));
+        } catch { /* server may already be closed */ }
+        this.server?.removeAllListeners();
+        this.server = null;
+
+        // Destroy http agent idle sockets so process can exit cleanly
+        http.globalAgent?.destroy();
+        if (typeof https !== 'undefined') {
+            https.globalAgent?.destroy();
+        }
     }
 
     private createServer(): http.Server | https.Server {

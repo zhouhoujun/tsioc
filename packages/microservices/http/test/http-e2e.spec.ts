@@ -65,7 +65,7 @@ class HttpTestController {
     }
 }
 
-const PORTS = { ms: 21200, host: 21201, ctrl: 21202, h2: 21204, h2client: 21205, static: 21206 };
+const PORTS = { ms: 3001, host: 3000, ctrl: 3000, h2: 3000, h2client: 3000, static: 3000 };
 
 describe('HTTP E2E microservice:true', () => {
     @Module({
@@ -413,7 +413,7 @@ describe('HTTP/2 over TLS (HTTPS/2)', () => {
                 majorVersion: 2,
                 secure: true,
                 serverOpts: { key, cert, allowHTTP1: true } as any,
-                listenOpts: { port: PORTS.h2 + 10, host: 'localhost' },
+                listenOpts: { port: PORTS.h2, host: 'localhost' },
                 asDefault: true
             }))]
     })
@@ -424,8 +424,8 @@ describe('HTTP/2 over TLS (HTTPS/2)', () => {
 
     before(async () => {
         ctx = await Application.run(Https2Module);
-        
-        http2Client = http2.connect(`https://localhost:${PORTS.h2 + 10}`, { ca: cert });
+
+        http2Client = http2.connect(`https://localhost:${PORTS.h2}`, { ca: cert });
     });
     after(async () => {
         try { http2Client?.close(); } catch { /* ignore */ }
@@ -466,7 +466,7 @@ describe('HTTP/2 over TLS (HTTPS/2)', () => {
         const response = await new Promise<{ status: number; body: string }>((resolve, reject) => {
             const req = require('https').request({
                 host: 'localhost',
-                port: PORTS.h2 + 10,
+                port: PORTS.h2,
                 path: '/api/test/info',
                 method: 'GET',
                 ca: cert,

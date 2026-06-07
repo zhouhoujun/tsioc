@@ -106,11 +106,26 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         if (!this.server) return;
         this.destroy$.next();
         this.destroy$.complete();
+        const server = this.server;
         try {
+            // Close all active connections so server.close() can complete.
+            // Without this, keep-alive connections prevent the 'close' event.
+            if (typeof (server as any).closeAllConnections === 'function') {
+                (server as any).closeAllConnections();
+            }
             await promisify(this.server.close.bind(this.server))();
         } catch { /* server may already be closed */ }
         this.server?.removeAllListeners();
         this.server = null;
+
+        // Node.js 19+ enables keepAlive on the default http.Agent by default.
+        // Idle sockets in the agent pool keep the event loop alive after
+        // shutdown. Destroy them so the process can exit cleanly.
+        http.globalAgent?.destroy();
+        https.globalAgent?.destroy();
+        if (typeof http2 !== 'undefined') {
+            (http2 as any).globalAgent?.destroy();
+        }
     }
 
     private createServer(): HttpServerLike {

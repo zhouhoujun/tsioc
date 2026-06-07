@@ -10,7 +10,7 @@ import * as mqtt from 'mqtt';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 
-const MQTT_URL = 'mqtt://127.0.0.1:3883';
+const MQTT_URL = 'mqtt://127.0.0.1:1883';
 
 @Controller('/api/test')
 class TestController {

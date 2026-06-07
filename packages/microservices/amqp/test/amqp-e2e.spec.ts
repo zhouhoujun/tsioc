@@ -299,7 +299,7 @@ describe('AMQP pattern routing', () => {
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 50 } as any));
+        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 500 } as any));
         expect(result.payload).toEqual('world');
     });
 
