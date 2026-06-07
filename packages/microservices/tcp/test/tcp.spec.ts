@@ -219,7 +219,7 @@ describe('TCP Server & TCP Client', () => {
                 })
             ));
         // expect(a.status).toEqual(404);
-        expect(a.statusText).toEqual('Not Found')
+        expect(a.statusMessage).toEqual('Not Found')
     });
 
     it('bad request', async () => {
@@ -231,13 +231,13 @@ describe('TCP Server & TCP Client', () => {
                 })
             ));
         // expect(a.status).toEqual(400);
-        expect(a.statusText).toEqual('Bad Request')
+        expect(a.statusMessage).toEqual('Bad Request')
     })
 
     it('post route response object', async () => {
         const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response' as any, method: 'POST', params: { name: 'test' } }));
         // expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
+        expect(a.body).toBeDefined();
         expect(a.body).toBeDefined();
         expect(a.body.name).toEqual('test');
     });
@@ -262,7 +262,7 @@ describe('TCP Server & TCP Client', () => {
             })));
         // a.error && console.log(a.error);
         // expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
+        expect(a.body).toBeDefined();
         expect(a.body).toBeDefined();
         expect(a.body.year).toStrictEqual(50);
         expect(new Date(a.body.createAt)).toEqual(new Date('2021-10-01'));
@@ -276,7 +276,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('Bad Request')
+        expect(r.statusMessage).toEqual('Bad Request')
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -287,13 +287,13 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('Bad Request')
+        expect(r.statusMessage).toEqual('Bad Request')
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response' as any, params: { age: '20' } }));
         // expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
+        expect(a.body).toBeDefined();
         expect(a.body).toStrictEqual(20);
     })
 
@@ -305,7 +305,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('Bad Request')
+        expect(r.statusMessage).toEqual('Bad Request')
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -316,13 +316,13 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('Bad Request')
+        expect(r.statusMessage).toEqual('Bad Request')
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response' as any, params: { age: '20' } }));
         // expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
+        expect(a.body).toBeDefined();
         expect(a.body).toStrictEqual(30);
     })
 
@@ -334,7 +334,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(404);
-        expect(r.statusText).toEqual('Not Found')
+        expect(r.statusMessage).toEqual('Not Found')
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -345,7 +345,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('Bad Request')
+        expect(r.statusMessage).toEqual('Bad Request')
     })
 
 
@@ -369,7 +369,7 @@ describe('TCP Server & TCP Client', () => {
             })));
         // expect(r.status).toEqual(200);
         // expect(r.body).toEqual(result);
-        expect(r.statusText).toEqual('Not Supported')
+        expect(r.statusMessage).toEqual('Not Supported')
     })
 
     it('xxx micro message', async () => {

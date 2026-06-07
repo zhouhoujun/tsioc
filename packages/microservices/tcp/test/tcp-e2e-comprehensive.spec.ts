@@ -467,7 +467,8 @@ function sendTcpRequest(port: number, requestObj: Record<string, unknown>): Prom
             if (response.endsWith('\r\n')) {
                 socket.destroy();
                 try {
-                    resolve(JSON.parse(response.trim()));
+                    const parsed = JSON.parse(response.trim());
+                    resolve(parsed.body !== undefined ? parsed.body : parsed);
                 } catch {
                     resolve(response.trim());
                 }
@@ -482,7 +483,8 @@ function sendTcpRequest(port: number, requestObj: Record<string, unknown>): Prom
         socket.on('close', () => {
             if (response) {
                 try {
-                    resolve(JSON.parse(response.trim()));
+                    const parsed = JSON.parse(response.trim());
+                    resolve(parsed.body !== undefined ? parsed.body : parsed);
                 } catch {
                     resolve(response.trim());
                 }

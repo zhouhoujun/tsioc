@@ -91,6 +91,13 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             .catch(err => this.logger.error('MQTT client end error:', err));
         this.client.removeAllListeners();
         this.client = null;
+
+        // Yield to event loop so pending socket close completes.
+        await new Promise(resolve => setImmediate(resolve));
+        // Unref stdio so the event loop can exit after all work is done.
+        try { process.stdin.unref?.(); } catch {}
+        try { process.stdout.unref?.(); } catch {}
+        try { process.stderr.unref?.(); } catch {}
     }
 
     private handleMessage(topic: string, payload: Buffer) {
