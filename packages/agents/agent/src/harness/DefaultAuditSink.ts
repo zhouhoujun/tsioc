@@ -36,11 +36,11 @@ export class DefaultAuditSink extends AuditSink {
     }
 
     private tryGetAdapter(): TypeormAdapter | null {
-        if (typeof (this.app as any)?.get !== 'function') {
+        if (!this.app) {
             return null;
         }
         try {
-            return (this.app as any).get(TypeormAdapter, null) as TypeormAdapter | null;
+            return this.app.get(TypeormAdapter, null) as TypeormAdapter | null;
         } catch {
             return null;
         }

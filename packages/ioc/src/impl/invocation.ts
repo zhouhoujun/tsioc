@@ -223,7 +223,10 @@ export abstract class AbstractInvocation<T = any,
         if (propertyKey === ctorName) return this.injector;
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
-            const opts = this.invokeClassRef.getMethodOptions(propertyKey);
+            // Use resolveInvokeClassRef(true) so that for abstract classes the
+            // concrete implementation's method-level options (e.g. provider
+            // overrides set via setMethodOptions) are found.
+            const opts = this.resolveInvokeClassRef(true).getMethodOptions(propertyKey);
             if (hasContextOptions(opts)) {
                 ctx = this.createInjector(this.injector, opts);
                 this.injector.onDestroy(ctx);
