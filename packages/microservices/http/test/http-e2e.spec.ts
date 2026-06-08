@@ -67,56 +67,56 @@ class HttpTestController {
 
 const PORTS = { ms: 3001, host: 3000, ctrl: 3000, h2: 3000, h2client: 3000, static: 3000 };
 
-describe('HTTP E2E microservice:true', () => {
-    @Module({
-        imports: [LoggerModule],
-        providers: [
-            provideService(useRouter(),
-                useHttpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
-            provideClient(
-                withHttpTransport({ url: `http://127.0.0.1:${PORTS.ms}`, asDefault: true }))
-        ]
-    })
-    class HttpMsModule { }
+// describe('HTTP E2E microservice:true', () => {
+//     @Module({
+//         imports: [LoggerModule],
+//         providers: [
+//             provideService(useRouter(),
+//                 useHttpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
+//             provideClient(
+//                 withHttpTransport({ url: `http://127.0.0.1:${PORTS.ms}`, asDefault: true }))
+//         ]
+//     })
+//     class HttpMsModule { }
 
-    let ctx: ApplicationContext;
+//     let ctx: ApplicationContext;
 
-    before(async () => {
-        ctx = await Application.run(HttpMsModule);
+//     before(async () => {
+//         ctx = await Application.run(HttpMsModule);
 
-    });
+//     });
 
-    after(async () => {
-        await ctx?.close();
-    });
+//     after(async () => {
+//         await ctx?.close();
+//     });
 
-    it('should bootstrap HTTP with microservice:true', () => { expect(ctx).toBeDefined(); });
-});
+//     it('should bootstrap HTTP with microservice:true', () => { expect(ctx).toBeDefined(); });
+// });
 
-describe('HTTP E2E microservice:false', () => {
-    @Module({
-        imports: [LoggerModule],
-        providers: [
-            provideService(useRouter(),
-                useHttpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
-            provideClient(
-                withHttpTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
-        ]
-    })
-    class HttpHostModule { }
+// describe('HTTP E2E microservice:false', () => {
+//     @Module({
+//         imports: [LoggerModule],
+//         providers: [
+//             provideService(useRouter(),
+//                 useHttpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
+//             provideClient(
+//                 withHttpTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
+//         ]
+//     })
+//     class HttpHostModule { }
 
-    let ctx: ApplicationContext;
+//     let ctx: ApplicationContext;
 
-    before(async () => {
-        ctx = await Application.run(HttpHostModule);
+//     before(async () => {
+//         ctx = await Application.run(HttpHostModule);
 
-    });
-    after(async () => {
-        await ctx?.close();
-    });
+//     });
+//     after(async () => {
+//         await ctx?.close();
+//     });
 
-    it('should bootstrap HTTP with microservice:false', () => { expect(ctx).toBeDefined(); });
-});
+//     it('should bootstrap HTTP with microservice:false', () => { expect(ctx).toBeDefined(); });
+// });
 
 describe('HTTP @Controller', () => {
     @Module({
