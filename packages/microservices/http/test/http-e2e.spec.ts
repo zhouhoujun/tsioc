@@ -83,9 +83,12 @@ describe('HTTP E2E microservice:true', () => {
 
     before(async () => {
         ctx = await Application.run(HttpMsModule);
-        
+
     });
-    after(async () => { if (ctx) await ctx.close(); });
+
+    after(async () => {
+        await ctx?.close();
+    });
 
     it('should bootstrap HTTP with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
@@ -106,9 +109,11 @@ describe('HTTP E2E microservice:false', () => {
 
     before(async () => {
         ctx = await Application.run(HttpHostModule);
-        
+
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => {
+        await ctx?.close();
+    });
 
     it('should bootstrap HTTP with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
@@ -126,7 +131,7 @@ describe('HTTP @Controller', () => {
 
     before(async () => {
         ctx = await Application.run(HttpCtrlModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -166,8 +171,8 @@ describe('HTTP parameter coverage matrix', () => {
         imports: [LoggerModule],
         declarations: [HttpTestController],
         providers: [provideService(useRouter(),
-            useHttpTransport({ listenOpts: { port: PORTS.ctrl + 50, host: '127.0.0.1' }, microservice: false as any, asDefault: true })),
-            provideClient(withHttpTransport({ url: `http://127.0.0.1:${PORTS.ctrl + 50}`, microservice: false, asDefault: true }))]
+            useHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, microservice: false as any, asDefault: true })),
+        provideClient(withHttpTransport({ url: `http://127.0.0.1:${PORTS.ctrl}`, microservice: false, asDefault: true }))]
     })
     class HttpMatrixModule { }
 
@@ -223,7 +228,7 @@ describe('HTTP static/media support', () => {
 
     before(async () => {
         ctx = await Application.run(HttpStaticModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -326,7 +331,7 @@ describe('HTTP/2 over h2c (plaintext)', () => {
 
     before(async () => {
         ctx = await Application.run(Http2Module);
-        
+
         http2Client = http2.connect(`http://127.0.0.1:${PORTS.h2}`);
     });
     after(async () => {
@@ -380,7 +385,7 @@ describe('HTTP/2 via microservice client pipeline', () => {
 
     before(async () => {
         ctx = await Application.run(Http2ClientModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -503,7 +508,7 @@ describe('HTTP/2 concurrent streams', () => {
 
     before(async () => {
         ctx = await Application.run(Http2ConcurrentModule);
-        
+
         http2Client = http2.connect(`http://127.0.0.1:${PORTS.h2 + 20}`);
     });
     after(async () => {
@@ -566,7 +571,7 @@ describe('HTTP content negotiation', () => {
 
     before(async () => {
         ctx = await Application.run(NegotiateModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
@@ -628,7 +633,7 @@ describe('HTTP error handling', () => {
 
     before(async () => {
         ctx = await Application.run(ErrModule);
-        
+
     });
     after(async () => { if (ctx) await ctx.close(); });
 
