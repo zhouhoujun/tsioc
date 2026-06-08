@@ -48,31 +48,21 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             const port = arg1;
             if (isString(arg2)) {
                 if (!this.options.listenOpts) this.options.listenOpts = { host: arg2, port };
-                if (listeningListener) {
-                    this.server.listen(port, arg2, listeningListener);
-                } else {
-                    this.server.listen(port, arg2);
-                }
+
+                this.server.listen(port, arg2, listeningListener);
+
                 this.logger.info(getTypeName(this), 'access with url:', `${protocol}://${arg2}:${port}`, '!');
 
             } else {
                 listeningListener = arg2;
                 if (!this.options.listenOpts) this.options.listenOpts = { port };
-                if (listeningListener) {
-                    this.server.listen(port, listeningListener);
-                } else {
-                    this.server.listen(port);
-                }
+                this.server.listen(port, listeningListener);
                 this.logger.info(getTypeName(this), 'access with url:', `${protocol}://localhost:${port}`, '!');
             }
         } else {
             const opts = arg1;
             if (!this.options.listenOpts) this.options.listenOpts = opts;
-            if (listeningListener) {
-                this.server.listen(opts, listeningListener);
-            } else {
-                this.server.listen(opts);
-            }
+            this.server.listen(opts, listeningListener);
             if (opts.host || opts.port) {
                 this.logger.info(getTypeName(this), 'access with url:', `${protocol}://${opts.host ?? 'localhost'}:${opts.port}`, '!');
             }
