@@ -48,7 +48,11 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
     }
 
     protected async onShutdown(): Promise<void> {
-        if (this.producer) { try { await this.producer.disconnect(); } catch {} this.producer = undefined; this.kafka = undefined; }
+        if (this.producer) {
+            await this.producer.disconnect();
+        }
+        this.producer = undefined;
+        this.kafka = undefined;
     }
 
     protected isValid(_connection: Producer): boolean { return true; }

@@ -1,4 +1,4 @@
-import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
+import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, UrlRequestOptions, Response, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { defer, Observable, switchMap } from 'rxjs';
@@ -78,11 +78,7 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         const session = this.session;
         this.session = undefined;
         if (session.closed || session.destroyed) return;
-        // Await the close so the underlying TCP socket is released before
-        // the caller (test context shutdown) continues. Without the await,
-        // the socket fd stays open and keeps the event loop alive.
-        await new Promise<void>(resolve => session.close(resolve));
-        session.destroy();
+        await promisify(session.close, session)();
     }
 
     protected isValid(connection: http2.ClientHttp2Session): boolean {

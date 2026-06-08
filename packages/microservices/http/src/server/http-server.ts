@@ -110,21 +110,15 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
         const server = this.server;
-        try {
-            // Close all active connections so server.close() can complete.
-            // Without this, keep-alive connections prevent the 'close' event.
-            if (typeof (server as any).closeAllConnections === 'function') {
-                (server as any).closeAllConnections();
-            }
-            await promisify(this.server.close, this.server)();
-        } catch (err: any) {
-            this.logger.error(err);
-            // process.exit(1);
-        } finally {
-            this.server?.removeAllListeners();
-            this.server = null;
+        // Close all active connections so server.close() can complete.
+        // Without this, keep-alive connections prevent the 'close' event.
+        if (typeof (server as any).closeAllConnections === 'function') {
+            (server as any).closeAllConnections();
         }
+        await promisify(this.server.close, this.server)();
 
+        this.server?.removeAllListeners();
+        this.server = null;
     }
 
     private createServer(): HttpServerLike {

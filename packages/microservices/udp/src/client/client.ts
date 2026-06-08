@@ -1,4 +1,4 @@
-import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
+import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Pattern, Events, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
@@ -63,11 +63,11 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
     }
 
     protected async onShutdown(): Promise<void> {
-        if (this.socket) {
-            this.socket.removeAllListeners();
-            this.socket.close();
-            this.socket = undefined;
-        }
+        if (!this.socket) return;
+        this.socket.removeAllListeners();
+        await promisify(this.socket.close, this.socket)();
+        this.socket = undefined;
+
     }
 
     protected isValid(connection: dgram.Socket): boolean {

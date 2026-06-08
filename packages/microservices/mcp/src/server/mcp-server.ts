@@ -106,9 +106,9 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         if (!this.server) return;
         this.destroy$.next();
         this.destroy$.complete();
-        try {
-            await promisify(this.server.close.bind(this.server))();
-        } catch { /* server may already be closed */ }
+
+        await promisify(this.server.close, this.server)();
+
         this.server?.removeAllListeners();
         this.server = null;
     }

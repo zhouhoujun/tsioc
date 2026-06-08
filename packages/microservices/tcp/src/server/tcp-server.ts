@@ -144,13 +144,7 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             }
         }
 
-        // Close the server with a timeout
-        try {
-            await Promise.race([
-                promisify(this.serv.close, this.serv)(),
-                new Promise<void>(r => setTimeout(() => r(), 2000))
-            ]);
-        } catch { /* server may already be closed */ }
+        await promisify(this.serv.close, this.serv)(),
 
         this.serv?.removeAllListeners();
         this.serv = null;

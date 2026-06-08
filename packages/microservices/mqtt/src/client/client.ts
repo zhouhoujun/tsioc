@@ -97,7 +97,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
     }
 
     protected async onShutdown(): Promise<void> {
-        if (!this.connection) return;
+        if (!this.connection) return;        
 
         return new Promise<void>((resolve) => {
             const cleanup = () => {

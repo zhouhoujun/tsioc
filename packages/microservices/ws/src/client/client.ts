@@ -1,4 +1,4 @@
-import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
+import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '../context';
@@ -109,39 +109,10 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
     protected async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.readyState === WebSocket.CLOSED) return;
 
-        return new Promise<void>((resolve) => {
-            const cleanup = () => {
-                this.connection.removeAllListeners();
-                this.connection = null!;
-                resolve();
-            };
-
-            this.connection.once(Events.CLOSE, cleanup);
-
-            // Use close() for graceful shutdown, which will trigger 'close' event
-            this.connection.close(1001, 'Client shutdown');
-
-            // Set a timeout to force terminate if graceful shutdown takes too long
-            const timeout = setTimeout(() => {
-                if (this.connection && this.connection.readyState !== WebSocket.CLOSED) {
-                    this.logger?.warn('WebSocket client shutdown timeout, forcing termination');
-                    this.connection.terminate();
-                }
-            }, 5000);
-
-            // Clear timeout when cleanup runs
-            this.connection.once(Events.CLOSE, () => {
-                clearTimeout(timeout);
-            });
-        }).catch(err => {
-            this.logger?.error('WebSocket client shutdown error:', err);
-            // Ensure cleanup even on error
-            if (this.connection) {
-                this.connection.removeAllListeners();
-                this.connection.terminate();
-                this.connection = null!;
-            }
-        });
+        this.connection.close(1001, 'Client shutdown');
+        this.connection.terminate();
+        this.connection.removeAllListeners();
+        this.connection = null!;
     }
 
     protected isValid(connection: WebSocket): boolean {

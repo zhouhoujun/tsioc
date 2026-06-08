@@ -1,4 +1,4 @@
-import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
+import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
@@ -115,12 +115,10 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
     protected async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
 
-        try {
-            const connection = this.connection;
-            this.connection = null!;
-            connection.removeAllListeners();
-            connection.destroy();
-        } catch { /* ignore destroy errors */ }
+        const connection = this.connection;
+        this.connection = null!;
+        await promisify(connection.destroy, connection)(null!);
+        connection.removeAllListeners();
     }
 
     protected isValid(connection: (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean }): boolean {

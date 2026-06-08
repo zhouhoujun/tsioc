@@ -96,17 +96,13 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
 
-        try {
-            if (this.channel) {
-                await this.channel.close();
-                this.channel = null;
-            }
-            if (this.connection) {
-                await this.connection.close();
-                this.connection = null;
-            }
-        } catch (err) {
-            this.logger?.error('AMQP shutdown error:', err);
+        if (this.channel) {
+            await this.channel.close();
+            this.channel = null;
+        }
+        if (this.connection) {
+            await this.connection.close();
+            this.connection = null;
         }
     }
 

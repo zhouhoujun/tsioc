@@ -87,17 +87,10 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
 
-        await promisify(this.client.end.bind(this.client), this.client)(true)
-            .catch(err => this.logger.error('MQTT client end error:', err));
+        await promisify(this.client.end, this.client)(true);
         this.client.removeAllListeners();
         this.client = null;
 
-        // Yield to event loop so pending socket close completes.
-        await new Promise(resolve => setImmediate(resolve));
-        // Unref stdio so the event loop can exit after all work is done.
-        try { process.stdin.unref?.(); } catch {}
-        try { process.stdout.unref?.(); } catch {}
-        try { process.stderr.unref?.(); } catch {}
     }
 
     private handleMessage(topic: string, payload: Buffer) {

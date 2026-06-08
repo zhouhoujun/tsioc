@@ -66,12 +66,8 @@ export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<a
 
     protected async onShutdown(): Promise<void> {
         if (this.nc) {
-            try {
-                await this.nc.drain();
-                await this.nc.close();
-            } catch (err) {
-                this.logger?.error('NATS client shutdown error:', err);
-            }
+            await this.nc.drain();
+            await this.nc.close();
             this.nc = undefined;
         }
     }

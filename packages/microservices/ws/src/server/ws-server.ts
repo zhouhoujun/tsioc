@@ -91,8 +91,9 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
         await this.onStart(event.server);
     }
 
+    private isBinding = false;
     async onStart(bindServer?: http.Server | https.Server): Promise<void> {
-
+        this.isBinding = !!bindServer;
         if (this.options.heybird && !bindServer) return;
 
         const inj = this.injector;
@@ -131,7 +132,7 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
     }
 
     async onShutdown(): Promise<void> {
-        if (!this.server) return;
+        if (!this.wss) return;
 
         // Signal all handlers to stop
         this.destroy$.next();
@@ -145,29 +146,16 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
         }
         this.activeConnections.clear();
 
-        // Close WebSocket server first
-        if (this.wss) {
-            await promisify(this.wss.close, this.wss)().catch(err => this.logger.error('WebSocket server close error:', err));
-            this.wss = null;
-        }
+        await promisify(this.wss.close, this.wss)();
+        this.wss = null;
 
-        // Then close the HTTP server
-        const srv = this.server;
-        try {
-            if (typeof (srv as any).closeAllConnections === 'function') {
-                (srv as any).closeAllConnections();
-            }
-            await promisify(this.server.close, this.server)()
-                .catch(err => this.logger.warn('HTTP server close warning:', err?.message ?? err));
-        } catch { /* server may already be closed */ }
-        this.server?.removeAllListeners();
+        if(!this.server) return;
+
+        if(!this.isBinding) {
+            await promisify(this.server.close, this.server)();
+            this.server?.removeAllListeners();
+        }
         this.server = null;
-
-        // Destroy http agent idle sockets so process can exit cleanly
-        http.globalAgent?.destroy();
-        if (typeof https !== 'undefined') {
-            https.globalAgent?.destroy();
-        }
     }
 
     private createServer(): http.Server | https.Server {

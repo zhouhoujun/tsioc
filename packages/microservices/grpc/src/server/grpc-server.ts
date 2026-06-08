@@ -63,8 +63,7 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
         if (this.server) {
-            await promisify(this.server.tryShutdown.bind(this.server))()
-                .catch(err => this.logger.error('gRPC server shutdown error:', err));
+            await promisify(this.server.tryShutdown, this.server)();
             this.server = null;
         }
     }

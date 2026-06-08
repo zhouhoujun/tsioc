@@ -78,10 +78,9 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     async onShutdown(): Promise<void> {
         this.destroy$.next();
         this.destroy$.complete();
-        try {
-            if (this.consumer) { await this.consumer.disconnect(); this.consumer = null; }
-            if (this.producer) { await this.producer.disconnect(); this.producer = null; }
-        } catch (err) { this.logger?.error('Kafka shutdown error:', err); }
+        if (this.consumer) { await this.consumer.disconnect(); this.consumer = null; }
+        if (this.producer) { await this.producer.disconnect(); this.producer = null; }
+
     }
 
     private handleMessage(payload: EachMessagePayload) {

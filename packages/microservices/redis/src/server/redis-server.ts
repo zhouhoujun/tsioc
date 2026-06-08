@@ -78,14 +78,12 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         this.destroy$.complete();
 
         if (this.subscriber) {
-            await promisify(this.subscriber.quit.bind(this.subscriber))()
-                .catch(err => this.logger.error('Redis subscriber quit error:', err));
+            await promisify(this.subscriber.quit, this.subscriber)();
             this.subscriber = null;
         }
 
         if (this.publisher) {
-            await promisify(this.publisher.quit.bind(this.publisher))()
-                .catch(err => this.logger.error('Redis publisher quit error:', err));
+            await promisify(this.publisher.quit, this.publisher)()
             this.publisher = null;
         }
     }

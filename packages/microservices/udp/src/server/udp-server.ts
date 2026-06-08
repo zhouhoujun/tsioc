@@ -108,10 +108,10 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
 
         this.destroy$.next();
         this.destroy$.complete();
-
-        await promisify(this.socket.close.bind(this.socket))()
-            .catch(err => this.logger.error('UDP socket close error:', err));
         this.socket.removeAllListeners();
+
+        await promisify(this.socket.close, this.socket)();
+        
         this.socket = null;
     }
 

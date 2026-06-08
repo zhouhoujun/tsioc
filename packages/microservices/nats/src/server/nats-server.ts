@@ -93,12 +93,8 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.subscriptions = [];
 
         if (this.nc) {
-            try {
-                await this.nc.drain();
-                await this.nc.close();
-            } catch (err) {
-                this.logger?.error('NATS shutdown error:', err);
-            }
+            await this.nc.drain();
+            await this.nc.close();
             this.nc = null;
         }
     }

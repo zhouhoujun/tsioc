@@ -83,8 +83,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
 
-        await promisify(this.server.close.bind(this.server))()
-            .catch(err => this.logger.error('CoAP server close error:', err));
+        await promisify(this.server.close, this.server)()
         this.server.removeAllListeners();
         this.server = null;
     }
