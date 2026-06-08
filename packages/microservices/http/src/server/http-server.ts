@@ -48,21 +48,34 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             const port = arg1;
             if (isString(arg2)) {
                 if (!this.options.listenOpts) this.options.listenOpts = { host: arg2, port };
+                if (listeningListener) {
+                    this.server.listen(port, arg2, listeningListener);
+                } else {
+                    this.server.listen(port, arg2);
+                }
                 this.logger.info(getTypeName(this), 'access with url:', `${protocol}://${arg2}:${port}`, '!');
-                this.server.listen(port, arg2, listeningListener);
+
             } else {
                 listeningListener = arg2;
-                if (!this.options.listenOpts) this.options.listenOpts = { host: LOCALHOST, port };
+                if (!this.options.listenOpts) this.options.listenOpts = { port };
+                if (listeningListener) {
+                    this.server.listen(port, listeningListener);
+                } else {
+                    this.server.listen(port);
+                }
                 this.logger.info(getTypeName(this), 'access with url:', `${protocol}://localhost:${port}`, '!');
-                this.server.listen(port, listeningListener);
             }
         } else {
             const opts = arg1;
             if (!this.options.listenOpts) this.options.listenOpts = opts;
+            if (listeningListener) {
+                this.server.listen(opts, listeningListener);
+            } else {
+                this.server.listen(opts);
+            }
             if (opts.host || opts.port) {
                 this.logger.info(getTypeName(this), 'access with url:', `${protocol}://${opts.host ?? 'localhost'}:${opts.port}`, '!');
             }
-            this.server.listen(opts, listeningListener);
         }
         return this;
     }
@@ -113,11 +126,15 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             if (typeof (server as any).closeAllConnections === 'function') {
                 (server as any).closeAllConnections();
             }
-            await promisify(this.server.close.bind(this.server))();
-        } catch { /* server may already be closed */ }
-        this.server?.removeAllListeners();
-        this.server = null;
-    
+            await promisify(this.server.close, this.server)();
+        } catch (err: any) {
+            this.logger.error(err);
+            // process.exit(1);
+        } finally {
+            this.server?.removeAllListeners();
+            this.server = null;
+        }
+
     }
 
     private createServer(): HttpServerLike {
@@ -228,7 +245,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         if (!res.hasHeader('content-type') && typeof payload !== 'string' && !Buffer.isBuffer(payload)) {
             res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
         }
-        res.end(typeof payload === 'string' || Buffer.isBuffer(payload) ? payload : JSON.stringify(payload));
+        res.end(typeof payload === 'string' || Buffer.isBuffer(payload) ? payload : JSON.stringify(payload) as any);
     }
 
     private writeError(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, err: any) {
