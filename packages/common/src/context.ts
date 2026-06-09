@@ -9,11 +9,11 @@ const CONTENT_ENCODING = new ContextToken<string | null>(() => null);
 export class RequestContext<TRequest = any, TResponse = any> extends RunContext {
 
     getRequest(): TRequest {
-        return this.get(MessageAdapter).req as TRequest;
+        return this.get(MessageAdapter).request as TRequest;
     }
 
     getResponse(): TResponse {
-        return this.get(MessageAdapter).res as TResponse;
+        return this.get(MessageAdapter).response as TResponse;
     }
 
     getMessageAdapter<TReq = TRequest, TRes = TResponse>(): MessageAdapter<TReq, TRes> {

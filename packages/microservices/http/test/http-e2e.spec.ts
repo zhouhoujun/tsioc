@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, useRouter, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, MESSAGE_ROUTERS } from '@tsdi/service';
+import { provideService, useRouter, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, MESSAGE_ROUTERS, useSender } from '@tsdi/service';
 import { useHttpTransport, HttpFileResult } from '../src/server';
 import { withHttpTransport } from '../src/client';
 import { provideClient, withTimeout, withFeatures } from '@tsdi/client';
@@ -122,7 +122,8 @@ describe('HTTP @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [HttpTestController],
-        providers: [provideService(useRouter(),
+        providers: [provideService(
+            useRouter(),
             useHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
     })
     class HttpCtrlModule { }

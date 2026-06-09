@@ -1,4 +1,4 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject, Providers } from '@tsdi/ioc';
 import { GuardLike, MessageValueReader } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
@@ -37,7 +37,7 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
     const providers: Provider[] = [
         SetupServices,
         LoggerInterceptor,
-        { provide: MessageValueReader, useClass: ServiceMessageValueReader }
+        { provide: MessageValueReader, useClass: ServiceMessageValueReader, asDefault: true }
     ];
 
     transports.forEach(ts => {
@@ -61,7 +61,20 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
             });
         });
 
-        if (!kinds.has(ServiceFeatureKind.Transfer)) {
+        if (config.features.sender && !kinds.has(ServiceFeatureKind.Sender)) {
+            const feature = useSender()(config);
+            let pdrs: Provider[];
+            if (Array.isArray(feature)) {
+                pdrs = feature.reduce((p, c) => p.concat(c.providers), [] as Provider[]);
+            } else {
+                pdrs = feature.providers.slice(0)
+            }
+            if (pdrs.length) {
+                kinds.set(ServiceFeatureKind.Sender, pdrs)
+            }
+        }
+
+        if (!kinds.has(ServiceFeatureKind.Sender) && !kinds.has(ServiceFeatureKind.Transfer)) {
             const transferFeature = useTransfers()(config);
             const transfers = Array.isArray(transferFeature) ? transferFeature : [transferFeature];
             transfers.forEach(feature => {

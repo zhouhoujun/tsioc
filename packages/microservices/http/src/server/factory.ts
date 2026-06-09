@@ -103,7 +103,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
                 adapter.writeError(error);
                 adapter.setStatus(error.statusCode, error.message);
                 adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
-                return of(adapter);
+                return of(adapter.response);
             }
             return of(null);
         }, multi: true },
