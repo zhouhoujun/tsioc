@@ -21,7 +21,8 @@ export enum ServiceFeatureKind {
     Configure,
     Transfer,
     Logger,
-    Exception,
+    Sender,
+    ExceptionFilter,
     Filters,
     Guards,
     Interceptors,
@@ -167,6 +168,7 @@ export interface ApiRateLimitOptions {
 export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {
     timeout?: number;
     rateLimit?: boolean | ApiRateLimitOptions;
+    sender?: boolean;
     requestVaildators?: ProvdierOf<VaildatorLike<Incoming, TContext>>[];
     responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, TContext>>[];
     logger?: boolean;

@@ -13,10 +13,11 @@ import { HttpJsonInterceptor } from './interceptors/json';
 import { HttpSessionInterceptor } from './interceptors/session';
 import { HttpCookieInterceptor } from './interceptors/cookie';
 import { HttpAuthInterceptor, HTTP_AUTH_OPTIONS } from './interceptors/auth';
-import { Cors } from './interceptors/cors';
+import { Cors } from './interceptors';
+import { HttpTransportSenderFilter } from './interceptors/send-response';
 import { HttpMessageAdapter } from './message-adapter';
 import { HttpMessageAdapterFactory } from './message-adapter.factory';
-import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor, SenderFilter } from '@tsdi/service';
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -25,6 +26,7 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
+            sender: true,
             bodyparser: true,
             ...option.features,
         },
@@ -80,6 +82,8 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             multi: true,
             multiOrder: -300
         } as any] : []),
+        // Sender filter — writes every result into the HTTP response.
+        { provide: SenderFilter, useClass: HttpTransportSenderFilter },
         ...(config.static ? [{
             provide: STATICS_OPTIONS,
             useValue: config.static === true ? {} : config.static,

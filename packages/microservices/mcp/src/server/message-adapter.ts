@@ -1,5 +1,5 @@
-import { Injectable, isNil } from '@tsdi/ioc';
-import { Header, RestfulRequestAdapter } from '@tsdi/common';
+import { Injectable, isNil, isString, ArgumentException } from '@tsdi/ioc';
+import { Header, RestfulRequestAdapter, ContentType, BadRequestException, ForbiddenException, NotFoundException } from '@tsdi/common';
 import * as http from 'node:http';
 
 @Injectable()
@@ -213,5 +213,50 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
 
     writeError(error: any): void {
         this.responseError = error;
+    }
+
+    /** @inheritDoc */
+    sendResponse(res: any, response: any): void {
+        const resultBody = this.getBody() ?? (response === this ? undefined : response);
+
+        // JSON-RPC response envelope
+        const mcpResponse = {
+            jsonrpc: '2.0',
+            result: resultBody,
+            id: this.requestData?.id ?? null,
+        };
+
+        res.statusCode = 200;
+        res.setHeader('Content-Type', ContentType.APPL_JSON_UTF8);
+        res.end(JSON.stringify(mcpResponse));
+    }
+
+    /** @inheritDoc */
+    sendError(res: any, err: any): void {
+        const status = err?.statusCode ?? err?.status
+            ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
+                ? 400
+                : err instanceof ForbiddenException
+                    ? 403
+                    : err instanceof NotFoundException
+                        ? 404
+                        : 500);
+        const expose = typeof err?.expose === 'boolean' ? err.expose : (status >= 400 && status < 500);
+
+        const message = status >= 500 && !expose
+            ? 'Internal Server Error'
+            : err?.message || err?.statusMessage || 'Error';
+
+        this.setStatus(status, err?.statusMessage);
+        this.writeError(err);
+        this.write({ statusCode: status, statusMessage: message });
+
+        res.statusCode = status;
+        res.setHeader('Content-Type', ContentType.APPL_JSON_UTF8);
+        res.end(JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code: status, message },
+            id: this.requestData?.id ?? null,
+        }));
     }
 }

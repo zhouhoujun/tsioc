@@ -1,9 +1,9 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
 import { GuardLike, MessageValueReader } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
     LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
-    RequestFilterLike
+    RequestFilter, RequestFilterLike
 } from '@tsdi/common';
 import {
     getServiceFiltersToken, getServiceGuardsToken, getServiceInterceptorsToken,
@@ -12,7 +12,7 @@ import {
 
 import { AuthOptions, CookieOptions, CorsOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
-import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor } from './interceptors';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor, SenderFilter } from './interceptors';
 import { SetupServices } from './SetupMicroServices';
 import { ServiceMessageValueReader } from './message-value-reader';
 
@@ -150,6 +150,13 @@ export function useFeatures(options?: ServiceFeatureOptions): ServiceFeatureFn<E
         }
         if (opts.logger) {
             features.push(useLogger(isBoolean(opts.logger) ? undefined : opts.logger)(config));
+        }
+        if (opts.sender) {
+            if (isBoolean(opts.sender)) {
+                features.push(useSender()(config));
+            } else {
+                features.push(useSender(opts.sender as any)(config));
+            }
         }
         if (opts.router) {
             features.push(useRouter(isBoolean(opts.router) ? undefined : opts.router)(config));
@@ -364,6 +371,31 @@ export function useLogger(options?: LoggerOptions): ServiceFeatureFn<ServiceFeat
                     ],
                     multi: true
                 }
+            ],
+            config
+        );
+    };
+}
+
+/**
+ * Adds Sender filter to transport.
+ * The sender filter wraps the handler chain so *every* result (success or
+ * error) is written to the native response via the request's
+ * MessageAdapter, and errors are re-thrown for upstream filters
+ * (e.g. Logger) to observe.
+ *
+ * @param sender  Optional concrete filter class for this transport.
+ *                When omitted the DI-resolved SenderFilter is used.
+ */
+export function useSender(sender?: Type<RequestFilter>): ServiceFeatureFn<ServiceFeatureKind.Sender> {
+    return (config) => {
+        const tk = getServiceFiltersToken(config);
+        return makeServiceFeature(
+            ServiceFeatureKind.Sender,
+            [
+                sender
+                    ? { provide: tk, useClass: sender, multi: true }
+                    : { provide: tk, useExisting: SenderFilter, multi: true },
             ],
             config
         );

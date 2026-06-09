@@ -58,7 +58,7 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         } else {
             const opts = arg1;
             if (!this.options.listenOpts) this.options.listenOpts = opts;
-            this.server.listen(opts, listeningListener);
+            this.server.listen(opts, listeningListener ?? arg2);
         }
         return this;
     }
@@ -98,7 +98,10 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
 
         if (!bindServer) {
             if (!this.options.listenOpts) this.options.listenOpts = { host: LOCALHOST, port: 3100 };
-            this.listen(this.options.listenOpts);
+            await new Promise<void>((resolve, reject) => {
+                this.listen(this.options.listenOpts!, resolve);
+                this.server!.once('error', reject);
+            });
         }
     }
 
@@ -152,19 +155,8 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             this.handler.handle(jsonRpcRequest as TReq, context)
                 .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
                 .subscribe({
-                    next: (response: any) => {
-                        const resultBody = adapter.getBody() ?? (response === adapter ? undefined : response);
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({
-                            jsonrpc: '2.0',
-                            result: resultBody,
-                            id: jsonRpcRequest.id ?? null
-                        }));
-                    },
-                    error: (err: Error) => {
-                        res.writeHead(500, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify(mcpError(-32603, err.message || 'Internal error')));
-                    }
+                    next: (response: any) => adapter.sendResponse(res, response),
+                    error: (err: any) => adapter.sendError(res, err),
                 });
         });
     }

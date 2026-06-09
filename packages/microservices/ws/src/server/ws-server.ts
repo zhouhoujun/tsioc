@@ -76,7 +76,7 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             if (opts.host || opts.port) {
                 this.logger.info(getTypeName(this), 'listen:', opts, '. access with url:', `${protocol}://${opts?.host ?? 'localhost'}:${opts?.port}${options.path || ''}`, '!');
             }
-            this.server.listen(opts, listeningListener);
+            this.server.listen(opts, listeningListener ?? arg2);
         }
         return this;
     }
@@ -127,7 +127,10 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             if (!this.options.listenOpts) {
                 this.options.listenOpts = { host: LOCALHOST, port: 3000 };
             }
-            this.listen(this.options.listenOpts);
+            await new Promise<void>((resolve, reject) => {
+                this.listen(this.options.listenOpts!, resolve);
+                this.server!.once('error', reject);
+            });
         }
     }
 

@@ -1,10 +1,9 @@
-import { getTypeName, Inject, isNumber, isString, promisify, Injectable, isNil, ArgumentException } from '@tsdi/ioc';
+import { getTypeName, Inject, isNumber, isString, promisify, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
     LOCALHOST, Events, createRequestContext, RequestContext,
-    InternalServerException, ListenOpts, RestfulRequestAdapter, StatusMessageAdapter, Transport, REQUEST,
-    StreamAdapter, ContentType, Outgoing, BadRequestException, ForbiddenException, NotFoundException,
+    InternalServerException, ListenOpts, RestfulRequestAdapter, Transport, REQUEST,
 } from '@tsdi/common'
 import { HttpRequestMessage, HTTP_RESPONSE } from './http-context';
 import { HttpMessageAdapter } from './message-adapter';
@@ -62,7 +61,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         } else {
             const opts = arg1;
             if (!this.options.listenOpts) this.options.listenOpts = opts;
-            this.server.listen(opts, listeningListener);
+            this.server.listen(opts, listeningListener ?? arg2);
             if (opts.host || opts.port) {
                 this.logger.info(getTypeName(this), 'access with url:', `${protocol}://${opts.host ?? 'localhost'}:${opts.port}`, '!');
             }
@@ -101,7 +100,14 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         if (!bindServer) {
             if (!this.options.listenOpts) this.options.listenOpts = { host: LOCALHOST, port: 3000 };
-            this.listen(this.options.listenOpts);
+            // Wait for the 'listening' event to ensure the server is actually
+            // bound before onStart() resolves.  Without this a later shutdown
+            // races with the async bind and server.close() throws
+            // ERR_SERVER_NOT_RUNNING.
+            await new Promise<void>((resolve, reject) => {
+                this.listen(this.options.listenOpts!, resolve);
+                this.server!.once('error', reject);
+            });
         }
     }
 
@@ -172,119 +178,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         this.handler.handle(request as TReq, context)
             .pipe(takeUntil(this.destroy$))
-            .subscribe({
-                next: (response: any) => this.writeResponse(req, res, context, response),
-                error: (err: any) => this.writeError(req, res, context, err)
-            });
-    }
-
-    private writeResponse(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, response: any) {
-        const adapter = context.get(StatusMessageAdapter);
-        const hasAdapterState = !!adapter && (!isNil(adapter.getBody()) || !isNil(adapter.getStatus()) || adapter.getResponseHeaderNames().length > 0);
-        if (isNil(response) && !hasAdapterState) {
-            res.statusCode = 204;
-            res.end();
-            return;
-        }
-
-        const streamAdapter = context.get(StreamAdapter);
-        const status = adapter?.getStatus() ?? 200;
-        const contentType = adapter?.getResponseHeader('content-type') ?? context.getContentType();
-        const payload = !isNil(adapter?.getBody()) ? adapter?.getBody() : response === adapter ? undefined : response;
-
-        const headerNames = adapter?.getResponseHeaderNames() ?? [];
-        headerNames.forEach((name: string) => {
-            const value = adapter?.getResponseHeader(name);
-            if (!isNil(value)) {
-                res.setHeader(name, value as any);
-            }
-        });
-
-        if (contentType && !res.hasHeader('content-type')) {
-            res.setHeader('content-type', contentType as any);
-        }
-
-        if (!isNil(status)) {
-            res.statusCode = status as number;
-            if (req.httpVersionMajor < 2 && adapter?.getStatusMessage()) {
-                res.statusMessage = adapter.getStatusMessage();
-            }
-        }
-
-        if (isNil(payload)) {
-            res.end();
-            return;
-        }
-
-        if (this.getRequestMethod(req)?.toUpperCase() === 'HEAD') {
-            res.end();
-            return;
-        }
-
-        if (streamAdapter.isStream(payload)) {
-            streamAdapter.pipeTo(payload, res as any, { end: true }).catch(err => this.logger.error(err));
-            return;
-        }
-
-        if (!res.hasHeader('content-type') && typeof payload !== 'string' && !Buffer.isBuffer(payload)) {
-            res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
-        }
-        res.end(typeof payload === 'string' || Buffer.isBuffer(payload) ? payload : JSON.stringify(payload) as any);
-    }
-
-    private writeError(req: HttpRequestLike, res: HttpResponseLike, context: RequestContext, err: any) {
-        this.logger.error(err);
-        const status = err?.statusCode ?? err?.status
-            ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
-                ? 400
-                : err instanceof ForbiddenException
-                    ? 403
-                    : err instanceof NotFoundException
-                        ? 404
-                        : 500);
-        const expose = typeof err?.expose === 'boolean' ? err.expose : (status >= 400 && status < 500);
-        const body = status >= 500 && !expose
-            ? { statusCode: status, statusMessage: 'Internal Server Error', message: 'Internal Server Error' }
-            : {
-                statusCode: status,
-                statusMessage: err?.statusMessage || err?.message || 'Error',
-                message: err?.message || err?.statusMessage || 'Error',
-                ...(err?.details ? { details: err.details } : {})
-            };
-
-        const adapter = context.get(StatusMessageAdapter);
-        if (adapter) {
-            adapter.setStatus(status, err?.statusMessage);
-            adapter.writeError(err);
-            adapter.write(body);
-            if (err?.headers && typeof err.headers === 'object') {
-                Object.entries(err.headers).forEach(([name, value]) => {
-                    if (!isNil(value) && !adapter.hasHeader(name)) {
-                        adapter.setHeader(name, value as any);
-                    }
-                });
-            }
-        }
-
-        res.statusCode = status;
-        if (req.httpVersionMajor < 2 && err?.statusMessage) {
-            res.statusMessage = err.statusMessage;
-        }
-        if (err?.headers && typeof err.headers === 'object') {
-            Object.entries(err.headers).forEach(([name, value]) => {
-                if (!isNil(value) && !res.hasHeader(name)) {
-                    res.setHeader(name, value as any);
-                }
-            });
-        }
-        if (!res.hasHeader('content-type')) {
-            res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
-        }
-        if (this.getRequestMethod(req)?.toUpperCase() === 'HEAD') {
-            res.end();
-            return;
-        }
-        res.end(JSON.stringify(body));
+            .subscribe();
     }
 
     private getRequestUrl(req: HttpRequestLike): string {

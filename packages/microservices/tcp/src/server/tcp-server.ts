@@ -77,7 +77,7 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             } else {
                 this.logger.info(getTypeName(this), 'listen:', opts, '. access with IPC address:', opts.path, '!');
             }
-            this.serv.listen(opts, listeningListener);
+            this.serv.listen(opts, listeningListener ?? arg2);
         }
         return this;
     }
@@ -126,7 +126,10 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             if (!this.options.listenOpts) {
                 this.options.listenOpts = { host: LOCALHOST, port: 3000 };
             }
-            this.listen(this.options.listenOpts);
+            await new Promise<void>((resolve, reject) => {
+                this.listen(this.options.listenOpts!, resolve);
+                this.serv!.once('error', reject);
+            });
         }
     }
 
@@ -144,7 +147,7 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             }
         }
 
-        await promisify(this.serv.close, this.serv)(),
+        await promisify(this.serv.close, this.serv)();
 
         this.serv?.removeAllListeners();
         this.serv = null;

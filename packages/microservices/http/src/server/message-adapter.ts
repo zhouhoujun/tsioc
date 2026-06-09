@@ -1,5 +1,5 @@
-import { Injectable, isNil, isString } from '@tsdi/ioc';
-import { AcceptsPriority, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter } from '@tsdi/common';
+import { Injectable, isNil, isString, ArgumentException, Inject } from '@tsdi/ioc';
+import { AcceptsPriority, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter, StreamAdapter, ContentType, BadRequestException, ForbiddenException, NotFoundException, RequestContext } from '@tsdi/common';
 import { HttpCookieStore, HttpRequestMessage, HttpServResponse } from './http-context';
 
 @Injectable()
@@ -9,14 +9,18 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     private responseStatus: any;
     private responseStatusMessage?: string;
     private responseError: any;
+    protected context?: RequestContext;
 
     constructor(
         private _request: HttpRequestMessage<TBody>,
         private _response?: HttpServResponse,
         private acceptsPriority?: AcceptsPriority,
-        private mimeAdapter?: MimeAdapter
+        private mimeAdapter?: MimeAdapter,
+        context?: RequestContext,
+        @Inject(StreamAdapter) private streamAdapter?: StreamAdapter,
     ) {
         super();
+        this.context = context;
     }
 
     get request(): HttpRequestMessage<TBody> {
@@ -244,6 +248,125 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     getBody(): any { return this.responseBody; }
     hasHeader(name: string): boolean { return this.responseHeaders.has(name.toLowerCase()); }
     isHeadersSent(): boolean { return this._response?.headersSent ?? false; }
+
+    /**
+     * Write adapter state to an HTTP response.  Handles streaming, HEAD
+     * method, content-type negotiation, and status-code mapping.
+     */
+    sendResponse(res: any, response: any): void {
+        if (!this._response) {
+            this._response = res;
+        }
+        const hasAdapterState = !isNil(this.getBody()) || !isNil(this.getStatus()) || this.getResponseHeaderNames().length > 0;
+        if (isNil(response) && !hasAdapterState) {
+            res.statusCode = 204;
+            res.end();
+            return;
+        }
+
+        const streamAdapter = this.streamAdapter ?? this.context?.get(StreamAdapter);
+        const status = this.getStatus() ?? 200;
+        const contentType = this.getResponseHeader('content-type') ?? this.context?.getContentType();
+        const payload = !isNil(this.getBody()) ? this.getBody() : response === this ? undefined : response;
+
+        const headerNames = this.getResponseHeaderNames() ?? [];
+        for (const name of headerNames) {
+            const value = this.getResponseHeader(name);
+            if (!isNil(value)) {
+                res.setHeader(name, value as any);
+            }
+        }
+
+        if (contentType && !res.hasHeader('content-type')) {
+            res.setHeader('content-type', contentType as any);
+        }
+
+        if (!isNil(status)) {
+            res.statusCode = status as number;
+            const msg = this.getStatusMessage();
+            if (msg) {
+                try { res.statusMessage = msg; } catch { /* http2 read-only */ }
+            }
+        }
+
+        if (isNil(payload)) {
+            res.end();
+            return;
+        }
+
+        if (this._request?.method?.toUpperCase() === 'HEAD') {
+            res.end();
+            return;
+        }
+
+        if (streamAdapter?.isStream(payload)) {
+            streamAdapter.pipeTo(payload, res as any, { end: true }).catch(() => {});
+            return;
+        }
+
+        if (!res.hasHeader('content-type') && typeof payload !== 'string' && !Buffer.isBuffer(payload)) {
+            res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
+        }
+        res.end(typeof payload === 'string' || Buffer.isBuffer(payload) ? payload : JSON.stringify(payload));
+    }
+
+    /**
+     * Map an exception to an HTTP error response and write it to both the
+     * adapter state and the raw response object.
+     */
+    sendError(res: any, err: any): void {
+        const status = err?.statusCode ?? err?.status
+            ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
+                ? 400
+                : err instanceof ForbiddenException
+                    ? 403
+                    : err instanceof NotFoundException
+                        ? 404
+                        : 500);
+        const expose = typeof err?.expose === 'boolean' ? err.expose : (status >= 400 && status < 500);
+
+        const body = status >= 500 && !expose
+            ? { statusCode: status, statusMessage: 'Internal Server Error', message: 'Internal Server Error' }
+            : {
+                statusCode: status,
+                statusMessage: err?.statusMessage || err?.message || 'Error',
+                message: err?.message || err?.statusMessage || 'Error',
+                ...(err?.details ? { details: err.details } : {})
+            };
+
+        this.setStatus(status, err?.statusMessage);
+        this.writeError(err);
+        this.write(body);
+
+        if (err?.headers && typeof err.headers === 'object') {
+            Object.entries(err.headers).forEach(([name, value]) => {
+                if (!isNil(value) && !this.hasHeader(name)) {
+                    this.setHeader(name, value as any);
+                }
+            });
+        }
+
+        res.statusCode = status;
+        if (err?.statusMessage) {
+            try { res.statusMessage = err.statusMessage; } catch { /* http2 read-only */ }
+        }
+
+        if (err?.headers && typeof err.headers === 'object') {
+            Object.entries(err.headers).forEach(([name, value]) => {
+                if (!isNil(value) && !res.hasHeader(name)) {
+                    res.setHeader(name, value as any);
+                }
+            });
+        }
+        if (!res.hasHeader('content-type')) {
+            res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
+        }
+        if (this._request?.method?.toUpperCase() === 'HEAD') {
+            res.end();
+            return;
+        }
+        res.end(JSON.stringify(body));
+    }
 
     protected headers(): Record<string, any> {
         return this._request?.headers ?? {};

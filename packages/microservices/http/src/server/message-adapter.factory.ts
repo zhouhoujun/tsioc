@@ -13,6 +13,6 @@ export class HttpMessageAdapterFactory extends MessageAdapterFactory<HttpRequest
     }
 
     create(options: MessageAdapterFactoryOptions<HttpRequestMessage, HttpServResponse>): HttpMessageAdapter {
-        return new HttpMessageAdapter(options.request, options.response, this.acceptsPriority, this.mimeAdapter);
+        return new HttpMessageAdapter(options.request, options.response, this.acceptsPriority, this.mimeAdapter, options.context);
     }
 }
