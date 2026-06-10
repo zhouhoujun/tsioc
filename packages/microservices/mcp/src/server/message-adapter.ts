@@ -216,23 +216,35 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
     }
 
     /** @inheritDoc */
-    sendResponse(res: any, response: any): void {
-        const resultBody = this.getBody() ?? (response === this ? undefined : response);
+    sendHeaders(headers?: Record<string, Header>): void {
+        const res = this.httpResponse;
+        if (!res) return;
+        if (!isNil(this.getStatus())) {
+            res.statusCode = this.getStatus() as number;
+        }
+    }
 
-        // JSON-RPC response envelope
+    /** @inheritDoc */
+    sendResponse(response?: any): void {
+        const res = this.httpResponse;
+        if (!res) return;
+        this.sendHeaders();
+
+        const resultBody = this.getBody() ?? (response === this ? undefined : response);
         const mcpResponse = {
             jsonrpc: '2.0',
             result: resultBody,
             id: this.requestData?.id ?? null,
         };
-
         res.statusCode = 200;
         res.setHeader('Content-Type', ContentType.APPL_JSON_UTF8);
         res.end(JSON.stringify(mcpResponse));
     }
 
     /** @inheritDoc */
-    sendError(res: any, err: any): void {
+    sendError(err: any): void {
+        const res = this.httpResponse;
+        if (!res) return;
         const status = err?.statusCode ?? err?.status
             ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
                 ? 400

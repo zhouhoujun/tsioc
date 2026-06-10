@@ -250,44 +250,42 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     isHeadersSent(): boolean { return this._response?.headersSent ?? false; }
 
     /**
-     * Write adapter state to an HTTP response.  Handles streaming, HEAD
-     * method, content-type negotiation, and status-code mapping.
+     * Write headers from adapter state to the raw HTTP response.
+     * Called before sendResponse / sendError to ensure headers are set.
      */
-    sendResponse(res: any, response: any): void {
-        if (!this._response) {
-            this._response = res;
-        }
-        const hasAdapterState = !isNil(this.getBody()) || !isNil(this.getStatus()) || this.getResponseHeaderNames().length > 0;
-        if (isNil(response) && !hasAdapterState) {
-            res.statusCode = 204;
-            res.end();
-            return;
+    sendHeaders(headers?: Record<string, Header>): void {
+        const res = this._response;
+        if (!res) return;
+
+        const hdrs = headers ?? this.getResponseHeaderNames().reduce((acc, name) => {
+            const v = this.getResponseHeader(name);
+            if (!isNil(v)) acc[name] = v;
+            return acc;
+        }, {} as Record<string, Header>);
+
+        for (const [name, value] of Object.entries(hdrs)) {
+            if (!isNil(value)) res.setHeader(name, value as any);
         }
 
-        const streamAdapter = this.streamAdapter ?? this.context?.get(StreamAdapter);
-        const status = this.getStatus() ?? 200;
-        const contentType = this.getResponseHeader('content-type') ?? this.context?.getContentType();
+        const ct = this.getResponseHeader('content-type') ?? this.context?.getContentType();
+        if (ct && !res.hasHeader('content-type')) {
+            res.setHeader('content-type', ct as any);
+        }
+
+        res.statusCode = this.getStatus() ?? 200;
+        const msg = this.getStatusMessage();
+        if (msg) try { res.statusMessage = msg; } catch { /* http2 */ }
+    }
+
+    /**
+     * Write adapter state to the HTTP response.
+     */
+    sendResponse(response?: any): void {
+        const res = this._response;
+        if (!res) return;
+
+        this.sendHeaders();
         const payload = !isNil(this.getBody()) ? this.getBody() : response === this ? undefined : response;
-
-        const headerNames = this.getResponseHeaderNames() ?? [];
-        for (const name of headerNames) {
-            const value = this.getResponseHeader(name);
-            if (!isNil(value)) {
-                res.setHeader(name, value as any);
-            }
-        }
-
-        if (contentType && !res.hasHeader('content-type')) {
-            res.setHeader('content-type', contentType as any);
-        }
-
-        if (!isNil(status)) {
-            res.statusCode = status as number;
-            const msg = this.getStatusMessage();
-            if (msg) {
-                try { res.statusMessage = msg; } catch { /* http2 read-only */ }
-            }
-        }
 
         if (isNil(payload)) {
             res.end();
@@ -299,6 +297,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
             return;
         }
 
+        const streamAdapter = this.streamAdapter ?? this.context?.get(StreamAdapter);
         if (streamAdapter?.isStream(payload)) {
             streamAdapter.pipeTo(payload, res as any, { end: true }).catch(() => {});
             return;
@@ -311,10 +310,12 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     }
 
     /**
-     * Map an exception to an HTTP error response and write it to both the
-     * adapter state and the raw response object.
+     * Map an exception to an HTTP error response.
      */
-    sendError(res: any, err: any): void {
+    sendError(err: any): void {
+        const res = this._response;
+        if (!res) return;
+
         const status = err?.statusCode ?? err?.status
             ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
                 ? 400
@@ -346,21 +347,8 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
             });
         }
 
-        res.statusCode = status;
-        if (err?.statusMessage) {
-            try { res.statusMessage = err.statusMessage; } catch { /* http2 read-only */ }
-        }
+        this.sendHeaders(err?.headers);
 
-        if (err?.headers && typeof err.headers === 'object') {
-            Object.entries(err.headers).forEach(([name, value]) => {
-                if (!isNil(value) && !res.hasHeader(name)) {
-                    res.setHeader(name, value as any);
-                }
-            });
-        }
-        if (!res.hasHeader('content-type')) {
-            res.setHeader('content-type', ContentType.APPL_JSON_UTF8);
-        }
         if (this._request?.method?.toUpperCase() === 'HEAD') {
             res.end();
             return;

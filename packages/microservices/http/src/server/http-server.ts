@@ -177,8 +177,12 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         context.setPayload(request);
 
         this.handler.handle(request as TReq, context)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe();
+            .pipe(
+                takeUntil(this.destroy$),
+            )
+            .subscribe({
+                error: (err) => this.logger.error(err)
+            });
     }
 
     private getRequestUrl(req: HttpRequestLike): string {
