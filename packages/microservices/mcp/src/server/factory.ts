@@ -1,19 +1,20 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
 import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { McpServer } from './mcp-server';
 import { McpServOptions, MCP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, SenderFilter } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { McpMessageAdapter } from './message-adapter';
 import { McpMessageAdapterFactory } from './message-adapter.factory';
+import { McpTransportSenderFilter } from './sender-filter';
 
 export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
         transport: Transport.MCP, side: TransferSide.server, microservice: true,
         ...option,
-        features: { defaultTransfer: useJsonPacket(), ...option.features },
+        features: { sender: true, defaultTransfer: useJsonPacket(), ...option.features },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
     } as McpServOptions;
 
@@ -30,6 +31,7 @@ export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?:
         importProvidersFrom(ServerCommonModule),
         McpMessageAdapter,
         McpMessageAdapterFactory,
+        { provide: SenderFilter, useClass: McpTransportSenderFilter },
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const adapter = context.get(StatusMessageAdapter);
             const error = new NotFoundException('Not Found', 404);

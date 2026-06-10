@@ -9,7 +9,6 @@ import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
 import { McpServOptions, MCP_SERV_OPTIONS, MCP_BIND_INTERCEPTORS, MCP_BIND_FILTERS, MCP_BIND_GUARDS } from './options';
-import { McpMessageAdapter } from './message-adapter';
 import { McpMessageAdapterFactory } from './message-adapter.factory';
 
 const MCP_REQUEST = new ContextToken<http.IncomingMessage | null>(() => null);
@@ -155,8 +154,7 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             this.handler.handle(jsonRpcRequest as TReq, context)
                 .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
                 .subscribe({
-                    next: (response: any) => adapter.sendResponse(res, response),
-                    error: (err: any) => adapter.sendError(res, err),
+                    error: (err: any) => this.logger.error(err),
                 });
         });
     }
