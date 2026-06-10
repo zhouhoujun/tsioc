@@ -26,7 +26,7 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
     }
 
     get status(): any {
-        return this.getStatus();
+        return this.responseStatus;
     }
 
     set status(value: any) {
@@ -34,7 +34,7 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
     }
 
     get isHandled(): boolean {
-        return !isNil(this.getStatus()) || !isNil(this.getBody()) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.error);
     }
 
     get isCommitted(): boolean {
@@ -60,14 +60,8 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         return undefined;
     }
 
-    get body(): any {
-        return this.requestData?.body;
-    }
-
-    set body(value: any) {
-        if (this.requestData) {
-            this.requestData.body = value;
-        }
+    protected onPayloadChange(payload: any): any {
+        return payload;
     }
 
     get hostname(): string {
@@ -106,27 +100,14 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         return;
     }
 
-    json(data: any): void {
-        this.write(data);
-    }
-
-    send(data: any): void {
-        this.write(data);
-    }
-
-    html(data: string): void {
-        this.write(data);
-    }
-
-    text(data: string): void {
-        this.write(data);
-    }
-
     read(section: any, name?: string): any {
         switch (section) {
             case 'headers':
                 return name ? this.getHeader(name) : (this.requestData?.headers ?? {});
-            case 'payload':
+            case 'payload': {
+                const payload = this.requestData?.payload ?? this.requestData?.body;
+                return name ? payload?.[name] : payload;
+            }
             case 'body': {
                 const body = this.requestData?.body ?? this.requestData?.payload;
                 return name ? body?.[name] : body;
@@ -146,7 +127,7 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
             case 'topic':
                 return this.requestData?.method;
             case 'status':
-                return this.getStatus();
+                return this.status;
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
@@ -160,12 +141,14 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         return this.requestData?.headers?.[name.toLowerCase()] ?? this.requestData?.headers?.[name];
     }
 
-    setHeader(name: string, value: Header): void {
+    setHeader(name: string, value: Header): this {
         this.responseHeaders.set(name.toLowerCase(), value);
+        return this;
     }
 
-    removeHeader(name: string): void {
+    removeHeader(name: string): this {
         this.responseHeaders.delete(name.toLowerCase());
+        return this;
     }
 
     getResponseHeaderNames(): string[] {
@@ -176,19 +159,12 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         return this.responseHeaders.get(name.toLowerCase());
     }
 
-    write(body: any): void {
-        this.responseBody = body;
-    }
-
-    setStatus(code: any, message?: string): void {
+    setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
             this.responseStatusMessage = message;
         }
-    }
-
-    getStatus(): any {
-        return this.responseStatus;
+        return this;
     }
 
     getStatusMessage(): any {
@@ -211,16 +187,17 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         return this.httpResponse.headersSent;
     }
 
-    writeError(error: any): void {
+    setError(error: any): this {
         this.responseError = error;
+        return this;
     }
 
     /** @inheritDoc */
     sendHeaders(headers?: Record<string, Header>): void {
         const res = this.httpResponse;
         if (!res) return;
-        if (!isNil(this.getStatus())) {
-            res.statusCode = this.getStatus() as number;
+        if (!isNil(this.status)) {
+            res.statusCode = this.status as number;
         }
     }
 
@@ -230,7 +207,7 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         if (!res) return;
         this.sendHeaders();
 
-        const resultBody = this.getBody() ?? (response === this ? undefined : response);
+        const resultBody = this.getPayload() ?? (response === this ? undefined : response);
         const mcpResponse = {
             jsonrpc: '2.0',
             result: resultBody,
@@ -259,9 +236,9 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
             ? 'Internal Server Error'
             : err?.message || err?.statusMessage || 'Error';
 
-        this.setStatus(status, err?.statusMessage);
-        this.writeError(err);
-        this.write({ statusCode: status, statusMessage: message });
+        this.setStatus(status, err?.statusMessage)
+            .setError(err)
+            .setPayload({ statusCode: status, statusMessage: message });
 
         res.statusCode = status;
         res.setHeader('Content-Type', ContentType.APPL_JSON_UTF8);

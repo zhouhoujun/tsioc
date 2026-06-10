@@ -23,7 +23,7 @@ export class DeviceController {
     }
 
     @RouteMapping('/init', 'POST')
-    req(name: string) {
+    req(@RequestParam('name') name: string) {
         console.log('DeviceController init:', name);
         return { name };
     }
@@ -51,7 +51,7 @@ export class DeviceController {
 
 
     @RouteMapping('/update', 'POST')
-    async update(version: string) {
+    async update(@RequestParam('version') version: string) {
         // do smth.
         console.log('update version:', version);
         const defer = lang.defer();
@@ -86,6 +86,14 @@ export class DeviceController {
         return message;
     }
 
+}
+
+@RouteMapping('/content')
+class ContentController {
+    @RouteMapping('/510100_full.json', 'GET')
+    json() {
+        return { features: ['feature-a', 'feature-b'] };
+    }
 }
 
 @Module({
@@ -138,7 +146,8 @@ export class DeviceController {
         ),
     ],
     declarations: [
-        DeviceController
+        DeviceController,
+        ContentController
     ]
 })
 export class TcpTestModule {
@@ -151,17 +160,18 @@ describe('TCP Server & TCP Client', () => {
     let injector: Injector;
 
     let client: TcpClient;
-    let micclient: TcpClient;
+    let micclient: TcpClient | null;
 
     before(async () => {
         ctx = await Application.run(TcpTestModule);
         client = ctx.get(TcpClient);
-        micclient = ctx.get('micclient');
+        micclient = ctx.get(TcpClient, null, { name: 'micclient' } as any);
+        await new Promise(resolve => setTimeout(resolve, 300));
     });
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET', responseType: 'json' })
+        const res: any = await lastValueFrom(client.send('/content/510100_full.json', { method: 'GET', responseType: 'json' })
             .pipe(
                 catchError((err, ct) => {
                     //  ctx.getLogger().error(err);
@@ -374,7 +384,7 @@ describe('TCP Server & TCP Client', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(micclient.send({ cmd: 'xxx' }, { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
+        const r = await lastValueFrom(micclient!.send({ cmd: 'xxx' }, { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);
@@ -385,7 +395,7 @@ describe('TCP Server & TCP Client', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(micclient.send('/dd/status', { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
+        const r = await lastValueFrom(micclient!.send('/dd/status', { observe: 'response' as any, payload: { message: result }, responseType: 'text' as any }).pipe(
             catchError((err, ct) => {
                 //  ctx.getLogger().error(err);
                 return of(err);

@@ -85,7 +85,7 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
                     resolved.setHeader(name, response.getHeader(name));
                 }
             });
-            if (response.statusCode && isNil(resolved.getStatus())) {
+            if (response.statusCode && isNil(resolved.status)) {
                 resolved.setStatus(response.statusCode);
             }
             return resolved;
@@ -160,10 +160,10 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         if (Buffer.isBuffer(result.value)) {
             adapter.setHeader('content-length', result.value.length);
         }
-        if (isNil(adapter.getStatus())) {
+        if (isNil(adapter.status)) {
             adapter.setStatus(HttpStatusCode.Ok);
         }
-        adapter.write(method === 'HEAD' ? null : result.value);
+        adapter.setPayload(method === 'HEAD' ? null : result.value);
         return adapter;
     }
 

@@ -2,7 +2,7 @@
 import { ArgumentException, isNil, isNumber, isString } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import {
-    AbstractRequest, createRequestContext, Events, IDuplex, MessageAdapter, Packet,
+    AbstractRequest, CONTENT_LENGTH, createRequestContext, Events, IDuplex, MessageAdapter, Packet,
     PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn,
     RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST
 } from '@tsdi/common';
@@ -22,7 +22,40 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                 filter(res => {
                     return res && res.id == req.id;
                 }),
-                req.observe !== 'observe' ? take(1) : map(r => r)
+                req.observe !== 'observe' ? take(1) : map(r => r),
+                map(res => {
+                    if (req.observe === 'response') {
+                        const status = res?.statusCode ?? res?.status ?? res?.error?.statusCode ?? res?.error?.status ?? 200;
+                        const statusMessage = res?.statusMessage ?? res?.statusText ?? res?.error?.statusMessage ?? res?.error?.message ?? 'OK';
+                        const body = !isNil(res?.body) ? res.body : res?.payload;
+                        return {
+                            id: res?.id,
+                            url: req?.getUrlWithParams?.() ?? req?.url,
+                            headers: res?.headers ?? {},
+                            statusCode: status,
+                            status,
+                            statusMessage,
+                            statusText: statusMessage,
+                            ok: status >= 200 && status < 300,
+                            body,
+                            payload: body,
+                            error: res?.error,
+                        };
+                    }
+                    if (res?.error) {
+                        return res;
+                    }
+                    if ((res?.statusCode ?? res?.status) >= 400) {
+                        return res;
+                    }
+                    if (!isNil(res?.body)) {
+                        return res.body;
+                    }
+                    if (!isNil(res?.payload)) {
+                        return res.payload;
+                    }
+                    return res;
+                })
             );
     } : (req, next, context) => {
         return next(req, context)
@@ -166,7 +199,7 @@ async function packetWithSize(data: any, options: TransferOptions, context: Requ
     const streamAdapter = context.get(StreamAdapter);
     const size = options.size!;
     const maxSize = options.maxSize;
-    const len = context.getContentLength() ?? 0;
+    const len = context.get(CONTENT_LENGTH) ?? 0;
     if (maxSize && len >= maxSize) {
         const btpipe = context.get<PipeTransform>('bytes-format');
         throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
@@ -203,7 +236,7 @@ async function packet(data: any, options: TransferOptions, context: RequestConte
     const delimiter = options.delimiter!;
     const streamAdapter = context.get(StreamAdapter);
 
-    let len = context.getContentLength() ?? 0;
+    let len = context.get(CONTENT_LENGTH) ?? 0;
     if (maxSize && len >= maxSize) {
         const btpipe = context.get<PipeTransform>('bytes-format');
         throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(maxSize)}`);
@@ -356,7 +389,7 @@ function handleMessage(cache: Packet<IDuplex>, context: RequestContext): IDuplex
     const data = cache.payload!;
     context.set(PACKET_LENGTH, cache.length);
     if (cache.contentLength !== null && cache.contentLength !== undefined) {
-        context.setContentLength(cache.contentLength);
+        context.set(CONTENT_LENGTH, cache.contentLength);
     }
     cache.payload?.end();
     cache.payload = null;

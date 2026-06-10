@@ -13,11 +13,17 @@ import { OptimizedRouter } from '../src';
 
 class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
     headers = new Map<string, any>();
-    body: any;
-    error: any;
     code: any;
     message?: string;
     headersSent = false;
+
+    protected onPayloadChange(payload: any): any {
+        return payload;
+    }
+
+    protected onErrorChange(error: any): any {
+        return error;
+    }
 
     constructor(public request: any = {}, public response: any = {}) {
         super();
@@ -32,7 +38,7 @@ class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
     }
 
     get isHandled(): boolean {
-        return this.code != null || this.body != null || this.error != null;
+        return this.code != null || this.payload != null || this.error != null;
     }
 
     get isCommitted(): boolean {
@@ -58,14 +64,16 @@ class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
     read(section: any, name?: string): any {
         switch (section) {
             case 'status':
-                return this.code;
+                return this.status;
             case 'statusMessage':
                 return this.message;
             case 'error':
                 return this.error;
             case 'body':
-            case 'payload':
-                return name ? this.body?.[name] : this.body;
+            case 'payload': {
+                const payload = this.payload;
+                return name ? payload?.[name] : payload;
+            }
             case 'query':
                 return name ? this.request?.query?.[name] : this.request?.query;
             case 'path':
@@ -75,41 +83,40 @@ class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
         }
     }
 
-    write(body: any): void {
-        this.body = body;
+    get payload(): any {
+        return (this as any)._payload;
     }
 
-    setHeader(name: string, value: any): void {
+    set payload(payload: any) {
+        (this as any)._payload = this.onPayloadChange(payload);
+    }
+
+    get error(): any {
+        return (this as any)._error;
+    }
+
+    set error(error: any) {
+        (this as any)._error = this.onErrorChange(error);
+    }
+
+    setHeader(name: string, value: any): this {
         this.headers.set(name.toLowerCase(), value);
+        return this;
     }
 
-    removeHeader(name: string): void {
+    removeHeader(name: string): this {
         this.headers.delete(name.toLowerCase());
+        return this;
     }
 
-    writeError(error: any): void {
-        this.error = error;
-    }
-
-    setStatus(code: any, message?: string): void {
+    setStatus(code: any, message?: string): this {
         this.code = code;
         this.message = message;
-    }
-
-    getStatus(): any {
-        return this.code;
+        return this;
     }
 
     getStatusMessage(): any {
         return this.message;
-    }
-
-    getError(): any {
-        return this.error;
-    }
-
-    getBody(): any {
-        return this.body;
     }
 
     hasHeader(name: string): boolean {
@@ -184,7 +191,7 @@ describe('optimized router', () => {
         const context404 = createRequestContext(createInjector());
         const adapter404 = new TestStatusAdapter();
         adapter404.setStatus(404);
-        adapter404.writeError(new NotFoundException());
+        adapter404.setError(new NotFoundException());
         context404.setMessageAdapter(adapter404);
         const request404 = { url: '/alive', method: 'GET' } as any;
 
@@ -197,7 +204,7 @@ describe('optimized router', () => {
                 const context500 = createRequestContext(createInjector());
                 const adapter500 = new TestStatusAdapter();
                 adapter500.setStatus(500);
-                adapter500.writeError(new Error('boom'));
+                adapter500.setError(new Error('boom'));
                 context500.setMessageAdapter(adapter500);
                 router.handle({ url: '/alive', method: 'GET' } as any, context500).subscribe({
                     next: second => {

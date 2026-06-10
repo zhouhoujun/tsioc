@@ -5,7 +5,6 @@ import { Producer } from 'kafkajs';
 @Injectable()
 export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any>, Producer, any> {
     private responseHeaders = new Map<string, Header>();
-    private responseBody: any;
     private responseStatus: any;
     private responseStatusMessage?: string;
     private responseError: any;
@@ -26,7 +25,7 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
     }
 
     get status(): any {
-        return this.getStatus();
+        return this.responseStatus;
     }
 
     set status(value: any) {
@@ -34,7 +33,7 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
     }
 
     get isHandled(): boolean {
-        return !isNil(this.getStatus()) || !isNil(this.getBody()) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.getError());
     }
 
     get isCommitted(): boolean {
@@ -81,7 +80,7 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
             case 'topic':
                 return this.requestData?.topic ?? this.requestData?.url;
             case 'status':
-                return this.getStatus();
+                return this.status;
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
@@ -95,12 +94,18 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
         return this.requestData?.headers?.[name.toLowerCase()] ?? this.requestData?.headers?.[name];
     }
 
-    setHeader(name: string, value: Header): void {
-        this.responseHeaders.set(name.toLowerCase(), value);
+    protected onPayloadChange(payload: any): any {
+        return payload;
     }
 
-    removeHeader(name: string): void {
+    setHeader(name: string, value: Header): this {
+        this.responseHeaders.set(name.toLowerCase(), value);
+        return this;
+    }
+
+    removeHeader(name: string): this {
         this.responseHeaders.delete(name.toLowerCase());
+        return this;
     }
 
     getResponseHeaderNames(): string[] {

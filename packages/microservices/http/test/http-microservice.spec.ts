@@ -165,8 +165,8 @@ describe('HTTP Microservice', () => {
 
             adapter.setStatus(202, 'Accepted');
             adapter.setHeader('x-message-adapter', 'http');
-            adapter.write({ wrapped: true });
-            adapter.writeError(error);
+            adapter.setPayload({ wrapped: true });
+            adapter.setError(error);
 
             expect(adapter.read('headers', 'x-test')).toBe('1');
             expect(adapter.read('body', 'id')).toBe('zhou');
@@ -176,11 +176,11 @@ describe('HTTP Microservice', () => {
             expect(adapter.read('status')).toBe(202);
             expect(adapter.read('statusMessage')).toBe('Accepted');
             expect(adapter.read('error')).toBe(error);
-            expect(adapter.getStatus()).toBe(202);
+            expect(adapter.status).toBe(202);
             expect(adapter.getStatusMessage()).toBe('Accepted');
             expect(adapter.getResponseHeader('x-message-adapter')).toBe('http');
-            expect(adapter.getBody()).toEqual({ wrapped: true });
-            expect(adapter.getError()).toBe(error);
+            expect(adapter.body).toEqual({ wrapped: true });
+            expect(adapter.error).toBe(error);
         });
     });
 

@@ -5,7 +5,6 @@ import * as amqp from 'amqplib';
 @Injectable()
 export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>, amqp.Channel, any> {
     private responseHeaders = new Map<string, Header>();
-    private responseBody: any;
     private responseStatus: any;
     private responseStatusMessage?: string;
     private responseError: any;
@@ -26,7 +25,7 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     get status(): any {
-        return this.getStatus();
+        return this.responseStatus;
     }
 
     set status(value: any) {
@@ -34,7 +33,7 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     get isHandled(): boolean {
-        return !isNil(this.getStatus()) || !isNil(this.getBody()) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.getError());
     }
 
     get isCommitted(): boolean {
@@ -81,7 +80,7 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
             case 'topic':
                 return this.requestData?.topic ?? this.requestData?.url;
             case 'status':
-                return this.getStatus();
+                return this.status;
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
@@ -95,12 +94,18 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return this.requestData?.headers?.[name.toLowerCase()] ?? this.requestData?.headers?.[name];
     }
 
-    setHeader(name: string, value: Header): void {
-        this.responseHeaders.set(name.toLowerCase(), value);
+    protected onPayloadChange(payload: any): any {
+        return payload;
     }
 
-    removeHeader(name: string): void {
+    setHeader(name: string, value: Header): this {
+        this.responseHeaders.set(name.toLowerCase(), value);
+        return this;
+    }
+
+    removeHeader(name: string): this {
         this.responseHeaders.delete(name.toLowerCase());
+        return this;
     }
 
     getResponseHeaderNames(): string[] {
@@ -111,19 +116,12 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return this.responseHeaders.get(name.toLowerCase());
     }
 
-    write(body: any): void {
-        this.responseBody = body;
-    }
-
-    setStatus(code: any, message?: string): void {
+    setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
             this.responseStatusMessage = message;
         }
-    }
-
-    getStatus(): any {
-        return this.responseStatus;
+        return this;
     }
 
     getStatusMessage(): any {
@@ -134,10 +132,6 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return this.responseError;
     }
 
-    getBody(): any {
-        return this.responseBody;
-    }
-
     hasHeader(name: string): boolean {
         return this.responseHeaders.has(name.toLowerCase());
     }
@@ -146,7 +140,8 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return false;
     }
 
-    writeError(error: any): void {
+    setError(error: any): this {
         this.responseError = error;
+        return this;
     }
 }

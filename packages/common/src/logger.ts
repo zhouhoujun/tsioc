@@ -6,7 +6,8 @@ import { RequestInterceptor } from './interceptor';
 import { ReadableLike, WritableLike } from './stream';
 import { Incoming, TopicIncoming, UrlIncoming } from './incoming';
 import { Outgoing } from './outgoing';
-import { RequestContext } from './context';
+import { CONTENT_LENGTH, RequestContext } from './context';
+import { StatusMessageAdapter } from './MessageAdapter';
 import { RequestHandler } from './handler';
 
 
@@ -83,13 +84,18 @@ export class LoggerInterceptor implements RequestInterceptor<ReadableLike<Incomi
         return next.handle(req, context)
             .pipe(
                 map(res => {
+                    const adapter = context.get(StatusMessageAdapter, null as any);
+                    const output = res as any;
+                    const status = adapter?.status ?? output?.statusCode ?? output?.status;
+                    const statusMessage = adapter?.getStatusMessage?.() ?? output?.statusMessage;
+                    const error = adapter?.error ?? output?.error;
                     logger[level](...this.formatter.format(withColor, path, req.method,
-                        this.formatter.htime.hrtime(start), res.statusCode, res.statusMessage, context.getContentLength(), res.error));
+                        this.formatter.htime.hrtime(start), status, statusMessage, context.get(CONTENT_LENGTH), error));
                     return res
                 }),
                 catchError(err => {
                     logger[level](...this.formatter.format(withColor, path, req.method,
-                        this.formatter.htime.hrtime(start), err.statusCode, err.statusMessage, context.getContentLength(), err));
+                        this.formatter.htime.hrtime(start), err.statusCode, err.statusMessage, context.get(CONTENT_LENGTH), err));
                     return throwError(() => err);
                 })
             )

@@ -14,6 +14,7 @@ import {
     withLoadBalance,
     withTimeout
 } from '../src/provider';
+import { SenderFilter } from '@tsdi/service';
 import { getClientTransfersToken } from '../src/tokens';
 import { ClientFeatureKind } from '../src/options';
 
@@ -114,6 +115,25 @@ describe('client provider', () => {
         } as any) as any;
         expect(transfer.providers.length).toBeGreaterThan(0);
         expect(transfer.providers.every((provider: any) => provider.provide === getClientTransfersToken(config))).toBe(true);
+    });
+
+    it('uses default transfer without mutating selector state', () => {
+        const config = createConfig();
+        const transferFactory = () => [() => undefined];
+        const featureA = withTransfers()({
+            ...config,
+            features: {
+                defaultTransfer: transferFactory
+            }
+        } as any) as any;
+        const featureB = withTransfers()({
+            ...config,
+            features: {
+                defaultTransfer: transferFactory
+            }
+        } as any) as any;
+        expect(featureA.providers).toHaveLength(1);
+        expect(featureB.providers).toHaveLength(1);
     });
 
     it('throws when provideClientFromDi cannot find matching config', () => {

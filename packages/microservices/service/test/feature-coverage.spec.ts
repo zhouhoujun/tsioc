@@ -21,6 +21,7 @@ import {
     getServiceFiltersToken,
     getServiceMiddlewaresToken,
     getServiceTransfersToken,
+    SenderFilter,
 } from '../src';
 
 function createBaseConfig() {
@@ -130,6 +131,23 @@ describe('service feature coverage', () => {
         const feature = useTransfers(mockTransfer)(config) as any;
         expect(feature.kind).toBe(ServiceFeatureKind.Transfer);
         expect(feature.providers.some((p: any) => p.provide === tk)).toBe(true);
+    });
+
+    it('useTransfers should use default transfer without mutating selector state', () => {
+        const config = createBaseConfig();
+        const tk = getServiceTransfersToken(config);
+        const mockTransfer = (() => [(_req: any, _next: any, _ctx: any) => null]) as any;
+        config.features.defaultTransfer = mockTransfer;
+
+        const featureA = useTransfers()(config) as any;
+        const featureB = useTransfers()(config) as any;
+
+        expect(featureA.providers.filter((p: any) => p.provide === tk)).toHaveLength(1);
+        expect(featureB.providers.filter((p: any) => p.provide === tk)).toHaveLength(1);
+    });
+
+    it('supports abstract sender typing export', () => {
+        expect(SenderFilter).toBeDefined();
     });
 
     it('useBodySerializer should register body serializer options', () => {

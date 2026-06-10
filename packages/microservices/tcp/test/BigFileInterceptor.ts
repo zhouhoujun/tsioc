@@ -1,5 +1,5 @@
-import { Injectable, lang } from '@tsdi/ioc';
-import { RequestInterceptor, RequestHandler, RequestContext, ContentType, normalize, UrlIncoming } from '@tsdi/common';
+import { Injectable } from '@tsdi/ioc';
+import { ContentType, MessageAdapter, RequestInterceptor, RequestHandler, RequestContext, normalize, UrlIncoming } from '@tsdi/common';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -22,27 +22,27 @@ export class BigFileInterceptor implements RequestInterceptor {
     async genedata(context: RequestContext) {
         const filename = join(__dirname, './public/big-temp.json');
         if (!fs.existsSync(filename)) {
-            const defer = lang.defer();
-            setTimeout(() => {
+            await fs.promises.mkdir(join(__dirname, './public'), { recursive: true });
+            await new Promise<void>((resolve, reject) => {
                 const stream = fs.createWriteStream(filename);
+                stream.on('finish', () => resolve());
+                stream.on('error', reject);
                 stream.write('{\n"features": [');
                 let i;
-                for (i = 0; i < 100000; i++) {
+                for (i = 0; i < 512; i++) {
                     stream.write(`\n"this is ${i} lines of json file big-temp, for unit test big file demo by BigFileInterceptor, for unit test big file demo by BigFileInterceptor, for unit test big file demo by BigFileInterceptor, for unit test big file demo by BigFileInterceptor",`);
                 }
                 stream.end(`"this is ${i} lines of json file big-temp, for unit test big file demo by BigFileInterceptor, for unit test big file demo by BigFileInterceptor, for unit test big file demo by BigFileInterceptor, for unit test big file demo by BigFileInterceptor"\n]\n}`);
-                stream.close(defer.resolve)
-            }, 0);
-
-            await defer.promise;
+            });
         }
 
-
         const stats = await statify(filename);
-        context.setContentLength(stats.size);
-        context.setContentType(ContentType.APPL_JSON);
+        const adapter = context.get<MessageAdapter>(MessageAdapter);
+        adapter.setHeader('content-type', ContentType.APPL_JSON)
+            .setHeader('content-length', String(stats.size))
+            .setPayload(fs.createReadStream(filename));
 
-        return fs.createReadStream(filename);
+        return adapter.response;
 
     }
 

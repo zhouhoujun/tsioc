@@ -100,9 +100,9 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             const adapter = context.get(StatusMessageAdapter);
             const error = new NotFoundException('Not Found', 404);
             if (adapter) {
-                adapter.writeError(error);
-                adapter.setStatus(error.statusCode, error.message);
-                adapter.write({ statusCode: error.statusCode, statusMessage: error.message });
+                adapter.setStatus(error.statusCode, error.message)
+                    .setError(error)
+                    .setPayload({ statusCode: error.statusCode, statusMessage: error.message });
                 return of(adapter.response);
             }
             return of(null);

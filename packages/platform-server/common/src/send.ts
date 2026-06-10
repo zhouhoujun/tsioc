@@ -91,13 +91,13 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             }
             adapter.setHeader(fields.contentRange, `bytes ${range.start}-${range.end}/${size}`);
             adapter.setHeader(fields.contentLength, range.end - range.start + 1);
-            adapter.write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename, { start: range.start, end: range.end }));
+            adapter.setPayload((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename, { start: range.start, end: range.end }));
         } else {
             adapter.setHeader(fields.contentLength, size);
             if (opts.statusCode != null && typeof (adapter as any).setStatus === 'function') {
                 (adapter as any).setStatus(opts.statusCode);
             }
-            adapter.write((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename));
+            adapter.setPayload((opts.method ?? 'GET').toUpperCase() === 'HEAD' ? null : fileAdapter.read(file.filename));
         }
         return file;
     }

@@ -24,8 +24,8 @@ export class HttpLoggerInterceptor implements RequestInterceptor<HttpRequestMess
             tap((response: any) => {
                 const duration = Date.now() - startTime;
                 const adapter = context.get(StatusMessageAdapter);
-                const statusCode = adapter?.getStatus() ?? 200;
-                const body = adapter?.getBody();
+                const statusCode = adapter?.status ?? 200;
+                const body = (adapter as any)?.body ?? adapter?.payload;
                 const length = typeof body === 'string' || Buffer.isBuffer(body)
                     ? body.length
                     : typeof response === 'string' || Buffer.isBuffer(response)

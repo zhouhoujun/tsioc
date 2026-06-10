@@ -2,7 +2,7 @@ import { getTypeName, Inject, isNumber, promisify, Injectable, isNil, ArgumentEx
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
-    createRequestContext, RequestContext, StatusMessageAdapter,
+    CONTENT_TYPE, createRequestContext, RequestContext, StatusMessageAdapter,
     InternalServerException, Transport, REQUEST, ContentType
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
@@ -226,7 +226,7 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             return;
         }
         const status = adapter?.getStatus() ?? '2.05';
-        const contentType = adapter?.getResponseHeader('content-type') ?? context.getContentType();
+        const contentType = adapter?.getResponseHeader('content-type') ?? context.get(CONTENT_TYPE);
         const payload = !isNil(adapter?.getBody()) ? adapter?.getBody() : response;
 
         const headerNames = adapter?.getResponseHeaderNames() ?? [];

@@ -242,10 +242,8 @@ export function withTransfers(
     return (config) => {
         const tk = getClientTransfersToken(config);
         const providers: Provider[] = [];
-        if (!selectors.length && config.features.defaultTransfer) {
-            selectors.push(config.features.defaultTransfer);
-        }
-        selectors.forEach((fac) => {
+        const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
+        resolvedSelectors.forEach((fac) => {
             const itps = fac(config);
             if (isArray(itps)) {
                 providers.push(...toProviders(tk, itps, true));

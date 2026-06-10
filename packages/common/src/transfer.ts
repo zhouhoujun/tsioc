@@ -134,7 +134,7 @@ export function useSimpleJson(options?: {
                                 incoming = raw;
                             }
                         }
-                        if (isDefined(incoming?.payload)) incoming.body = incoming.payload;
+                        if (isDefined(incoming?.payload) && !isDefined(incoming?.body)) incoming.body = incoming.payload;
                         return incoming;
 
                     })
@@ -164,9 +164,24 @@ export function useSimpleJson(options?: {
                                     adapter.setRequestData(rjson);
                                 }
                             }
-                            return next(rjson, context)
-                        }),
-                        map(res => JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space))
+                            return next(rjson, context).pipe(
+                                mergeMap(async res => {
+                                    const streamAdapter = context.get(StreamAdapter);
+                                    if (streamAdapter.isReadable(res)) {
+                                        res = await streamAdapter.read(res);
+                                        if (typeof res === 'string' || Buffer.isBuffer(res)) {
+                                            const raw = res.toString();
+                                            try {
+                                                res = JSON.parse(raw, options?.reviver);
+                                            } catch {
+                                                res = raw;
+                                            }
+                                        }
+                                    }
+                                    return JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space);
+                                })
+                            )
+                        })
                     )
             };
 

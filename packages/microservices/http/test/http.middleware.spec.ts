@@ -32,7 +32,7 @@ describe('middleware', () => {
                     const adapter = ctx.get(MessageAdapter);
                     if (request?.url?.startsWith('/test')) {
                         const hi = adapter?.read('query', 'hi') ?? '';
-                        adapter?.write(hi);
+                        adapter?.setPayload(hi);
                         return;
                     }
                     await next();

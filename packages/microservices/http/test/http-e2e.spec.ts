@@ -65,7 +65,7 @@ class HttpTestController {
     }
 }
 
-const PORTS = { ms: 3001, host: 3000, ctrl: 3000, h2: 3000, h2client: 3000, static: 3000 };
+const PORTS = { ms: 3001, host: 3002, ctrl: 3003, matrix: 3004, static: 3005, h2: 3006, h2client: 3007 };
 
 // describe('HTTP E2E microservice:true', () => {
 //     @Module({
@@ -171,9 +171,11 @@ describe('HTTP parameter coverage matrix', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [HttpTestController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, microservice: false as any, asDefault: true })),
-        provideClient(withHttpTransport({ url: `http://127.0.0.1:${PORTS.ctrl}`, microservice: false, asDefault: true }))]
+        providers: [
+            provideService(useRouter(),
+                useHttpTransport({ listenOpts: { port: PORTS.matrix, host: '127.0.0.1' }, asDefault: true })),
+            provideClient(withHttpTransport({ url: `http://127.0.0.1:${PORTS.matrix}`, asDefault: true }))
+        ]
     })
     class HttpMatrixModule { }
 
@@ -191,7 +193,10 @@ describe('HTTP parameter coverage matrix', () => {
             observe: 'response' as any,
             params: { page: '2', sort: 'name', active: '' },
             headers: { accept: 'application/json' }
-        } as any));
+        }).pipe(catchError(err => {
+            console.error(err);
+            throw err;
+        })));
         expect(response.status).toBe(200);
         expect(response.body).toMatchObject({ page: 2, sort: 'name', accept: 'application/json' });
     });

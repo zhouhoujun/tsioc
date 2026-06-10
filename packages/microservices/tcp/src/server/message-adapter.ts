@@ -6,7 +6,6 @@ import * as tls from 'node:tls';
 @Injectable()
 export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLSSocket, net.Socket | tls.TLSSocket, any> {
     private responseHeaders = new Map<string, Header>();
-    private responseBody: any;
     private responseStatus: any;
     private responseStatusMessage?: string;
     private responseError: any;
@@ -28,7 +27,7 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
     }
 
     get status(): any {
-        return this.getStatus();
+        return this.responseStatus;
     }
 
     set status(value: any) {
@@ -36,7 +35,7 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
     }
 
     get isHandled(): boolean {
-        return !isNil(this.getStatus()) || !isNil(this.getBody()) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.getError());
     }
 
     get isCommitted(): boolean {
@@ -94,7 +93,7 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
             case 'topic':
                 return req?.topic ?? req?.url ?? req?.pattern;
             case 'status':
-                return this.getStatus();
+                return this.status;
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
@@ -104,17 +103,27 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
         }
     }
 
+    protected onPayloadChange(payload: any): any {
+        return payload;
+    }
+
+    protected onErrorChange(error: any): any {
+        return error;
+    }
+
     getHeader(name: string): any {
         const headers = this.currentRequest?.headers;
         return headers?.[name.toLowerCase()] ?? headers?.[name];
     }
 
-    setHeader(name: string, value: Header): void {
+    setHeader(name: string, value: Header): this {
         this.responseHeaders.set(name.toLowerCase(), value);
+        return this;
     }
 
-    removeHeader(name: string): void {
+    removeHeader(name: string): this {
         this.responseHeaders.delete(name.toLowerCase());
+        return this;
     }
 
     getResponseHeaderNames(): string[] {
@@ -125,19 +134,12 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
         return this.responseHeaders.get(name.toLowerCase());
     }
 
-    write(body: any): void {
-        this.responseBody = body;
-    }
-
-    setStatus(code: any, message?: string): void {
+    setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
             this.responseStatusMessage = message;
         }
-    }
-
-    getStatus(): any {
-        return this.responseStatus;
+        return this;
     }
 
     getStatusMessage(): any {
@@ -148,10 +150,6 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
         return this.responseError;
     }
 
-    getBody(): any {
-        return this.responseBody;
-    }
-
     hasHeader(name: string): boolean {
         return this.responseHeaders.has(name.toLowerCase());
     }
@@ -160,7 +158,8 @@ export class TcpMessageAdapter extends StatusMessageAdapter<net.Socket | tls.TLS
         return this.socket.destroyed;
     }
 
-    writeError(error: any): void {
+    setError(error: any): this {
         this.responseError = error;
+        return this;
     }
 }

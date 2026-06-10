@@ -9,8 +9,14 @@ class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
     private headers = new Map<string, Header>();
     private statusCode?: number;
     private statusMessageText?: string;
-    private errorValue: any;
-    private bodyValue: any;
+
+    protected onPayloadChange(payload: any): any {
+        return payload;
+    }
+
+    protected onErrorChange(error: any): any {
+        return error;
+    }
 
     constructor(public request: any = {}, public response: any = {}) {
         super();
@@ -25,7 +31,7 @@ class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
     }
 
     get isHandled(): boolean {
-        return this.statusCode != null || this.errorValue != null || this.bodyValue != null;
+        return this.statusCode != null || this.error != null || this.payload != null;
     }
 
     get isCommitted(): boolean {
@@ -40,16 +46,21 @@ class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
     commit(): void { return; }
     async destroy(): Promise<void> { return; }
 
-    read(): any { return undefined; }
-    write(body: any): void { this.bodyValue = body; }
-    setHeader(name: string, value: Header): void { this.headers.set(name, value); }
-    removeHeader(name: string): void { this.headers.delete(name); }
-    writeError(error: any): void { this.errorValue = error; }
-    setStatus(code: any, message?: string): void { this.statusCode = code; this.statusMessageText = message; }
-    getStatus(): any { return this.statusCode; }
+    read(section?: any, name?: string): any {
+        if (section === 'payload' || section === 'body') {
+            const payload = this.request?.payload ?? this.request?.body;
+            return name ? payload?.[name] : payload;
+        }
+        return undefined;
+    }
+    get payload(): any { return (this as any)._payload; }
+    set payload(payload: any) { (this as any)._payload = this.onPayloadChange(payload); }
+    get error(): any { return (this as any)._error; }
+    set error(error: any) { (this as any)._error = this.onErrorChange(error); }
+    setHeader(name: string, value: Header): this { this.headers.set(name, value); return this; }
+    removeHeader(name: string): this { this.headers.delete(name); return this; }
+    setStatus(code: any, message?: string): this { this.statusCode = code; this.statusMessageText = message; return this; }
     getStatusMessage(): any { return this.statusMessageText; }
-    getError(): any { return this.errorValue; }
-    getBody(): any { return this.bodyValue; }
     hasHeader(name: string): boolean { return this.headers.has(name); }
     isHeadersSent(): boolean { return false; }
     getHeader(name: string): any { return this.request?.headers?.[name]; }
@@ -128,7 +139,7 @@ describe('transport json packet', () => {
         const adapter = new TestStatusAdapter();
         adapter.setStatus(202, 'Accepted');
         adapter.setHeader('x-test', '1');
-        adapter.write({ ok: true });
+        adapter.setPayload({ ok: true });
         const context = createContext(adapter);
         const response = await lastValueFrom(jsonInterceptor(JSON.stringify({ body: { id: '1' } }), () => of({ id: 'resp-1' }), context));
 

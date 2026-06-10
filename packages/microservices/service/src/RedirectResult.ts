@@ -21,10 +21,10 @@ export class RedirectResult extends ResultValue {
         adapter.setStatus(302);
 
         if (adapter.accepts('html')) {
-            adapter.write(`Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>.`);
+            adapter.setPayload(`Redirecting to <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>.`);
             return;
         }
 
-        adapter.write(`Redirecting to ${url}.`);
+        adapter.setPayload(`Redirecting to ${url}.`);
     }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { ContentType, RequestContext, RequestHandler, RequestInterceptor, StreamAdapter } from '@tsdi/common';
+import { CONTENT_TYPE, ContentType, RequestContext, RequestHandler, RequestInterceptor, StreamAdapter } from '@tsdi/common';
 import { map, Observable } from 'rxjs';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class CoapJsonInterceptor implements RequestInterceptor<any> {
         if (!streamAdapter.isStream(response)) {
             return response;
         }
-        if (context.getContentType() === ContentType.APPL_JSON) {
+        if (context.get(CONTENT_TYPE) === ContentType.APPL_JSON) {
             throw Object.assign(new Error('Packet length exceeded'), { status: '4.00', statusCode: 400 });
         }
         return response;

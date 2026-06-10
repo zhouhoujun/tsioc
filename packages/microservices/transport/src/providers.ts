@@ -91,10 +91,10 @@ const outgoingMapping = (res: any, context: RequestContext) => {
     const adapter = context.get(StatusMessageAdapter);
     if (adapter) {
         const json: Record<string, any> = {};
-        const status = adapter.getStatus?.();
+        const status = adapter.status;
         const statusMessage = adapter.getStatusMessage?.();
-        const error = adapter.getError?.();
-        const body = adapter.getBody?.();
+        const error = adapter.error;
+        const body = adapter.payload;
         const headerNames = adapter.getResponseHeaderNames?.() ?? [];
         const id = res?.id;
         if (id !== undefined && id !== null) {
@@ -119,7 +119,7 @@ const outgoingMapping = (res: any, context: RequestContext) => {
         if (body !== undefined) {
             json.body = body;
         } else if (res !== adapter && res !== undefined) {
-            json.body = res;
+            json.body = res?.payload !== undefined ? res.payload : res;
         }
         return json;
     }

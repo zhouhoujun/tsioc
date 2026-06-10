@@ -1,11 +1,10 @@
 import { Injectable, isNil, isString, ArgumentException, Inject } from '@tsdi/ioc';
-import { AcceptsPriority, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter, StreamAdapter, ContentType, BadRequestException, ForbiddenException, NotFoundException, RequestContext } from '@tsdi/common';
+import { AcceptsPriority, CONTENT_TYPE, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter, StreamAdapter, ContentType, BadRequestException, ForbiddenException, NotFoundException, RequestContext } from '@tsdi/common';
 import { HttpCookieStore, HttpRequestMessage, HttpServResponse } from './http-context';
 
 @Injectable()
 export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpRequestMessage<TBody>, HttpServResponse, any> {
     private responseHeaders = new Map<string, Header>();
-    private responseBody: any;
     private responseStatus: any;
     private responseStatusMessage?: string;
     private responseError: any;
@@ -32,7 +31,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     }
 
     get status(): any {
-        return this.getStatus();
+        return this.responseStatus;
     }
 
     set status(value: any) {
@@ -40,7 +39,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
     }
 
     get isHandled(): boolean {
-        return !isNil(this.getStatus()) || !isNil(this.getBody()) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.error);
     }
 
     get isCommitted(): boolean {
@@ -66,14 +65,26 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         return this._request?._session as Record<string, any> | undefined;
     }
 
-    get body(): any {
-        return this._request?.body;
+    onPayloadChange(payload: any): any {
+        return payload;
     }
 
-    set body(value: any) {
-        if (this._request) {
-            this._request.body = value;
+    protected onErrorChange(error: any): any {
+        if (isNil(error)) {
+            this.payload = null;
+            return null;
         }
+        const status = error?.statusCode ?? error?.status
+            ?? (error instanceof BadRequestException || error instanceof ArgumentException || error?.constructor?.name === 'MissingParameterException'
+                ? 400
+                : error instanceof ForbiddenException
+                    ? 403
+                    : error instanceof NotFoundException
+                        ? 404
+                        : 500);
+        this.setStatus(status, error?.statusMessage ?? error?.message);
+        this.payload = null;
+        return error;
     }
 
     get hostname(): string {
@@ -113,30 +124,22 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         return;
     }
 
-    json(data: any): void {
-        this.write(data);
-    }
-
-    send(data: any): void {
-        this.write(data);
-    }
-
-    html(data: string): void {
-        this.write(data);
-    }
-
-    text(data: string): void {
-        this.write(data);
+    getBody(): any {
+        return this.payload;
     }
 
     read(section: any, name?: string): any {
         switch (section) {
             case 'headers':
                 return name ? this.header(name) : this.headers();
-            case 'payload':
-                return name ? this.payload(name) : this.payload();
-            case 'body':
-                return name ? this.bodyValue(name) : this.bodyValue();
+            case 'payload': {
+                const payload = this.requestPayload(name);
+                return payload;
+            }
+            case 'body': {
+                const body = this.bodyValue(name);
+                return body;
+            }
             case 'params':
                 return name ? this.param(name) : this.params();
             case 'query':
@@ -150,11 +153,11 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
             case 'session':
                 return name ? (this.session as any)?.data?.[name] ?? (this.session as any)?.[name] : this.session;
             case 'status':
-                return this.getStatus();
+                return this.status;
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
-                return this.getError();
+                return this.error;
             default:
                 return undefined;
         }
@@ -218,34 +221,39 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         return acceptsPriority.priority(accepts, langs, 'lang')[0] ?? false;
     }
 
-    write(body: any): void {
-        this.responseBody = body;
-    }
-
-    setHeader(name: string, value: Header): void {
+    setHeader(name: string, value: Header): this {
         const key = name.toLowerCase();
         this.responseHeaders.set(key, value);
+        return this;
     }
 
-    removeHeader(name: string): void {
+    removeHeader(name: string): this {
         this.responseHeaders.delete(name.toLowerCase());
+        return this;
     }
 
-    setStatus(code: any, message?: string): void {
+    setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
             this.responseStatusMessage = message;
         }
+        return this;
     }
 
-    writeError(error: any): void {
+    get error(): any {
+        return this.responseError;
+    }
+
+    set error(error: any) {
         this.responseError = error;
     }
 
-    getStatus(): any { return this.responseStatus; }
+    setError(error: any): this {
+        this.error = error;
+        return this;
+    }
+
     getStatusMessage(): any { return this.responseStatusMessage; }
-    getError(): any { return this.responseError; }
-    getBody(): any { return this.responseBody; }
     hasHeader(name: string): boolean { return this.responseHeaders.has(name.toLowerCase()); }
     isHeadersSent(): boolean { return this._response?.headersSent ?? false; }
 
@@ -264,15 +272,17 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         }, {} as Record<string, Header>);
 
         for (const [name, value] of Object.entries(hdrs)) {
-            if (!isNil(value)) res.setHeader(name, value as any);
+            if (!isNil(value) && !res.headersSent) res.setHeader(name, value as any);
         }
 
-        const ct = this.getResponseHeader('content-type') ?? this.context?.getContentType();
-        if (ct && !res.hasHeader('content-type')) {
+        const ct = this.getResponseHeader('content-type') ?? this.context?.get(CONTENT_TYPE);
+        if (ct && !res.hasHeader('content-type') && !res.headersSent) {
             res.setHeader('content-type', ct as any);
         }
 
-        res.statusCode = this.getStatus() ?? 200;
+        if (!res.headersSent) {
+            res.statusCode = this.status ?? 200;
+        }
         const msg = this.getStatusMessage();
         if (msg) try { res.statusMessage = msg; } catch { /* http2 */ }
     }
@@ -314,7 +324,7 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
      */
     sendError(err: any): void {
         const res = this._response;
-        if (!res) return;
+        if (!res || res.headersSent) return;
 
         const status = err?.statusCode ?? err?.status
             ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
@@ -336,8 +346,8 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
             };
 
         this.setStatus(status, err?.statusMessage);
-        this.writeError(err);
-        this.write(body);
+        this.setError(err);
+        this.setPayload(body);
 
         if (err?.headers && typeof err.headers === 'object') {
             Object.entries(err.headers).forEach(([name, value]) => {
@@ -368,12 +378,12 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         return request.getHeader(name) ?? (request.headers as HeaderAccess | undefined)?.getHeader?.(name);
     }
 
-    protected payload(field?: string): any {
-        const body = this._request?.body;
+    protected requestPayload(field?: string): any {
+        const payload = this._request?.body;
         if (field === undefined) {
-            return body;
+            return payload;
         }
-        return body ? (body as any)[field] : undefined;
+        return payload ? (payload as any)[field] : undefined;
     }
 
     protected bodyValue(field?: string): any {

@@ -2,9 +2,9 @@ import { Context, ContextToken, Injector, Token, RunContext } from '@tsdi/ioc';
 import { ContentType } from './headers';
 import { MessageAdapter, RestfulRequestAdapter, StatusMessageAdapter } from './MessageAdapter';
 
-const CONTENT_LENGTH = new ContextToken<number | null>(() => null);
-const CONTENT_TYPE = new ContextToken<string | null>(() => ContentType.APPL_JSON);
-const CONTENT_ENCODING = new ContextToken<string | null>(() => null);
+export const CONTENT_LENGTH = new ContextToken<number | null>(() => null);
+export const CONTENT_TYPE = new ContextToken<string | null>(() => ContentType.APPL_JSON);
+export const CONTENT_ENCODING = new ContextToken<string | null>(() => null);
 
 export class RequestContext<TRequest = any, TResponse = any> extends RunContext {
 
@@ -29,30 +29,6 @@ export class RequestContext<TRequest = any, TResponse = any> extends RunContext 
         if (!(adapter instanceof RestfulRequestAdapter)) return;
         this.set(RestfulRequestAdapter, adapter);
 
-    }
-
-    getContentEncoding(): string | null {
-        return this.get(CONTENT_ENCODING);
-    }
-
-    setContentEncoding(encoding: string | null) {
-        this.set(CONTENT_ENCODING, encoding);
-    }
-
-    getContentType(): string | null | undefined {
-        return this.get(CONTENT_TYPE);
-    }
-
-    setContentType(type: string | null | undefined) {
-        this.set(CONTENT_TYPE, type);
-    }
-
-    getContentLength(): number | null {
-        return this.get(CONTENT_LENGTH);
-    }
-
-    setContentLength(len: number | null) {
-        this.set(CONTENT_LENGTH, len);
     }
 
 }

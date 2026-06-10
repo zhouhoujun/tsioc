@@ -20,7 +20,7 @@ export class HttpTransportSenderFilter extends SenderFilter<any, Observable<any>
                 if (adapter) {
                     const res = adapter.response;
                     if (res) {
-                        const err = adapter.getError();
+                        const err = adapter.error;
                         if (err) {
                             adapter.sendError(err);
                         } else {
