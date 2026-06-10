@@ -25,14 +25,13 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                 req.observe !== 'observe' ? take(1) : map(r => r),
                 map(res => {
                     if (req.observe === 'response') {
-                        const status = res?.statusCode ?? res?.status ?? res?.error?.statusCode ?? res?.error?.status ?? 200;
+                        const status = res?.status ?? res?.statusCode ?? res?.error?.status ?? res?.error?.statusCode ?? 200;
                         const statusMessage = res?.statusMessage ?? res?.statusText ?? res?.error?.statusMessage ?? res?.error?.message ?? 'OK';
-                        const body = !isNil(res?.body) ? res.body : res?.payload;
+                        const body = !isNil(res?.payload) ? res.payload : res?.body;
                         return {
                             id: res?.id,
                             url: req?.getUrlWithParams?.() ?? req?.url,
                             headers: res?.headers ?? {},
-                            statusCode: status,
                             status,
                             statusMessage,
                             statusText: statusMessage,

@@ -147,7 +147,8 @@ export function useSimpleJson(options?: {
                     if (streamAdapter.isReadable(req)) {
                         req = await streamAdapter.read(req);
                     }
-                    const incoming = JSON.parse(req, options?.reviver);
+                    const raw = Buffer.isBuffer(req) ? req.toString() : String(req);
+                    const incoming = JSON.parse(raw, options?.reviver);
                     if (isDefined(incoming?.payload)) incoming.body = incoming.payload;
                     return incoming;
                 })

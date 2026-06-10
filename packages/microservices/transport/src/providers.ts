@@ -102,7 +102,6 @@ const outgoingMapping = (res: any, context: RequestContext) => {
         }
         if (status !== undefined && status !== null) {
             json.status = status;
-            json.statusCode = status;
         }
         if (statusMessage !== undefined && statusMessage !== null) {
             json.statusMessage = statusMessage;
