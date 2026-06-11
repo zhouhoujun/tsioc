@@ -178,6 +178,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
 
+        console.log('tcp-fetch-json', res);
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
     })
@@ -190,6 +191,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
 
+        console.log('tcp-fetch-big-json', res);
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
     })
@@ -389,6 +391,7 @@ describe('TCP Server & TCP Client', () => {
                 //  ctx.getLogger().error(err);
                 return of(err);
             })));
+        console.log('tcp-xxx-micro', r);
         // expect(r.status).toEqual(200);
         expect(r.body).toEqual(result);
     })

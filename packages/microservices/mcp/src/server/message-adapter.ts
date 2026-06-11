@@ -64,6 +64,10 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         return payload;
     }
 
+    protected onErrorChange(error: any): any {
+        return error;
+    }
+
     get hostname(): string {
         return '';
     }
@@ -131,7 +135,7 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
-                return this.getError();
+                return this.error;
             default:
                 return undefined;
         }
@@ -207,7 +211,7 @@ export class McpMessageAdapter extends RestfulRequestAdapter<Record<string, any>
         if (!res) return;
         this.sendHeaders();
 
-        const resultBody = this.getPayload() ?? (response === this ? undefined : response);
+        const resultBody = this.payload ?? (response === this ? undefined : response);
         const mcpResponse = {
             jsonrpc: '2.0',
             result: resultBody,

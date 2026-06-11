@@ -5,7 +5,6 @@ import * as coap from 'coap';
 @Injectable()
 export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>, coap.OutgoingMessage, any> {
     private responseHeaders = new Map<string, Header>();
-    private responseBody: any;
     private responseStatus: any;
     private responseStatusMessage?: string;
     private responseError: any;
@@ -26,7 +25,7 @@ export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     get status(): any {
-        return this.getStatus();
+        return this.responseStatus;
     }
 
     set status(value: any) {
@@ -34,7 +33,7 @@ export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     get isHandled(): boolean {
-        return !isNil(this.getStatus()) || !isNil(this.getBody()) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.error);
     }
 
     get isCommitted(): boolean {
@@ -61,10 +60,14 @@ export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>
         switch (section) {
             case 'headers':
                 return name ? this.header(name) : this.headers();
-            case 'payload':
-                return name ? this.payload(name) : this.payload();
-            case 'body':
-                return name ? this.body(name) : this.body();
+            case 'payload': {
+                const payload = this.incoming?.payload ?? this.incoming?.body;
+                return name ? payload?.[name] : payload;
+            }
+            case 'body': {
+                const body = this.incoming?.body ?? this.incoming?.payload;
+                return name ? body?.[name] : body;
+            }
             case 'params':
                 return name ? this.param(name) : this.params();
             case 'query':
@@ -74,11 +77,11 @@ export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>
             case 'topic':
                 return this.topic();
             case 'status':
-                return this.getStatus();
+                return this.status;
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
-                return this.getError();
+                return this.error;
             default:
                 return undefined;
         }
@@ -100,35 +103,35 @@ export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return this.responseHeaders.get(name.toLowerCase());
     }
 
-    write(body: any): void {
-        this.responseBody = body;
+    protected onPayloadChange(payload: any): any {
+        return payload;
     }
 
-    setHeader(name: string, value: Header): void {
+    protected onErrorChange(error: any): any {
+        return error;
+    }
+
+    setHeader(name: string, value: Header): this {
         this.responseHeaders.set(name.toLowerCase(), value);
+        return this;
     }
 
-    removeHeader(name: string): void {
+    removeHeader(name: string): this {
         this.responseHeaders.delete(name.toLowerCase());
+        return this;
     }
 
-    setStatus(code: any, message?: string): void {
+    setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
             this.responseStatusMessage = message;
         }
+        return this;
     }
 
-    getStatus(): any { return this.responseStatus; }
     getStatusMessage(): any { return this.responseStatusMessage; }
-    getError(): any { return this.responseError; }
-    getBody(): any { return this.responseBody; }
     hasHeader(name: string): boolean { return this.responseHeaders.has(name.toLowerCase()); }
     isHeadersSent(): boolean { return false; }
-
-    writeError(error: any): void {
-        this.responseError = error;
-    }
 
     protected headers(): Record<string, any> {
         return this.incoming?.headers ?? {};
@@ -146,22 +149,6 @@ export class CoapMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return (headers as HeaderAccess | undefined)?.getHeader?.(name)
             ?? (headers as Record<string, any> | undefined)?.[name.toLowerCase()]
             ?? (headers as Record<string, any> | undefined)?.[name];
-    }
-
-    protected payload(field?: string): any {
-        const payload = this.incoming?.payload ?? this.incoming?.body;
-        if (field === undefined) {
-            return payload;
-        }
-        return payload ? (payload as any)[field] : undefined;
-    }
-
-    protected body(field?: string): any {
-        const body = this.incoming?.body ?? this.incoming?.payload;
-        if (field === undefined) {
-            return body;
-        }
-        return body ? (body as any)[field] : undefined;
     }
 
     protected params(): Record<string, any> | undefined {

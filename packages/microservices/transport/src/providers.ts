@@ -117,8 +117,11 @@ const outgoingMapping = (res: any, context: RequestContext) => {
         }
         if (body !== undefined) {
             json.body = body;
+            json.payload = body;
         } else if (res !== adapter && res !== undefined) {
-            json.body = res?.payload !== undefined ? res.payload : res;
+            const value = res?.payload !== undefined ? res.payload : res;
+            json.body = value;
+            json.payload = value;
         }
         return json;
     }

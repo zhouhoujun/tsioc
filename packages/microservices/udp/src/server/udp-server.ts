@@ -148,7 +148,7 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             ).subscribe({
                 next: (response: any) => {
                     if (!this.socket) return;
-                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
+                    const body = adapter.payload ?? (response === adapter ? undefined : response);
                     let payload = body;
                     if (requestData?.id !== undefined && requestData?.id !== null) {
                         if (payload === null || payload === undefined || (typeof payload !== 'object' && typeof payload !== 'function')) {

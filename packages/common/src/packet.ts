@@ -44,7 +44,7 @@ export interface Packet<T = any> {
 
 export function writePacket(socket: IWritable, msg: PipeSource, streamAdapter: StreamAdapter): Promise<void> {
     if (streamAdapter.isReadable(msg)) {
-        return streamAdapter.pipeTo(msg as IReadable, socket, { end: false });
+        return streamAdapter.pipeTo(msg as IReadable, socket, { end: true });
     }
     if (typeof (socket as any)?.write === 'function') {
         return promisify<any, void>((socket as any).write, socket as any)(msg)

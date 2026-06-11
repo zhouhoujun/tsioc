@@ -393,16 +393,16 @@ describe('UDP pattern routing', () => {
     it('routes object cmd patterns', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
         console.log('udp cmd result:', result);
-        expect(result.payload).toEqual('hello');
+        expect(result).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
         const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 50 } as any));
-        expect(result.payload).toEqual('world');
+        expect(result).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
         const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 } as any));
-        expect(result.payload).toEqual('foo');
+        expect(result).toEqual('foo');
     });
 });

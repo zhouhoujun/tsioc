@@ -10,7 +10,7 @@ export class McpTransportSenderFilter extends SenderFilter<any, Observable<any>,
             mergeMap((response) => {
                 const adapter = context.get(RestfulRequestAdapter);
                 if (adapter) {
-                    const err = adapter.getError();
+                    const err = adapter.error;
                     if (err) {
                         adapter.sendError(err);
                     } else {

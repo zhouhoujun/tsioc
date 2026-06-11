@@ -34,7 +34,7 @@ export class WsMessageAdapter extends StatusMessageAdapter<WebSocket, WebSocket,
     }
 
     get isHandled(): boolean {
-        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.error);
     }
 
     get isCommitted(): boolean {
@@ -96,7 +96,7 @@ export class WsMessageAdapter extends StatusMessageAdapter<WebSocket, WebSocket,
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
-                return this.getError();
+                return this.error;
             default:
                 return undefined;
         }
@@ -109,6 +109,10 @@ export class WsMessageAdapter extends StatusMessageAdapter<WebSocket, WebSocket,
 
     protected onPayloadChange(payload: any): any {
         return payload;
+    }
+
+    protected onErrorChange(error: any): any {
+        return error;
     }
 
     setHeader(name: string, value: Header): this {

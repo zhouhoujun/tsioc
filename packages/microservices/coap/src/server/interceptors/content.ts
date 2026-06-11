@@ -24,10 +24,10 @@ export class CoapContentInterceptor implements RequestInterceptor<any> {
                 const mimeAdapter = context.getInjector().get(MimeAdapter, null);
                 const ext = file.encodingExt ?? fileAdapter.extname(file.filename);
                 if (ext === '.json') {
-                    adapter?.write(await fileAdapter.readJSON(file.filename));
+                    adapter?.setPayload(await fileAdapter.readJSON(file.filename));
                     return adapter;
                 }
-                adapter?.write(await fileAdapter.readText(file.filename));
+                adapter?.setPayload(await fileAdapter.readText(file.filename));
                 if (adapter && !adapter.hasHeader('content-type')) {
                     const contentType = mimeAdapter?.lookup(basename(file.filename, file.encodingExt ?? ''));
                     adapter.setHeader('content-type', typeof contentType === 'string' ? contentType : 'text/plain');
@@ -40,7 +40,7 @@ export class CoapContentInterceptor implements RequestInterceptor<any> {
 
     private async find(path: string, context: RequestContext) {
         const adapter = context.get(StatusMessageAdapter);
-        if (adapter?.getStatus() && !(adapter.getError() instanceof NotFoundException)) {
+        if (adapter?.status && !(adapter.error instanceof NotFoundException)) {
             return null;
         }
         const appContext = context.getInjector().get(ApplicationContext, null) as any;

@@ -225,9 +225,9 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             this.writeError(res, context, Object.assign(new Error('Packet length exceeded'), { status: '4.00', statusCode: 400 }));
             return;
         }
-        const status = adapter?.getStatus() ?? '2.05';
+        const status = adapter?.status ?? '2.05';
         const contentType = adapter?.getResponseHeader('content-type') ?? context.get(CONTENT_TYPE);
-        const payload = !isNil(adapter?.getBody()) ? adapter?.getBody() : response;
+        const payload = !isNil((adapter as any)?.body) ? (adapter as any).body : adapter?.payload ?? response;
 
         const headerNames = adapter?.getResponseHeaderNames() ?? [];
         headerNames.forEach((name: string) => {
@@ -291,9 +291,9 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         const adapter = context.get(StatusMessageAdapter);
         if (adapter) {
-            adapter.setStatus(status, statusMessage);
-            adapter.writeError(err);
-            adapter.write(body);
+            adapter.setStatus(status, statusMessage)
+                .setError(err)
+                .setPayload(body);
         }
 
         (res as any).code = status;

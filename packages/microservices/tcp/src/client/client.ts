@@ -102,7 +102,13 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
         if (isString(first)) {
             return new TcpRequest(first, null, options, defaultMethod);
         } else {
-            return new TcpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
+            const formatter = this.handler.injector.get(PatternFormatter, null);
+            const url = formatter
+                ? formatter.format(first)
+                : (this.options.microservice
+                    ? undefined as any
+                    : (typeof (first as any)?.cmd === 'string' ? (first as any).cmd : JSON.stringify(first)));
+            return new TcpRequest(url, first, options, defaultMethod);
         }
     }
 

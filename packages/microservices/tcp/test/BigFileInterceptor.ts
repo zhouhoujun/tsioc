@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { ContentType, MessageAdapter, RequestInterceptor, RequestHandler, RequestContext, normalize, UrlIncoming } from '@tsdi/common';
+import { CONTENT_LENGTH, ContentType, MessageAdapter, RequestInterceptor, RequestHandler, RequestContext, normalize, UrlIncoming } from '@tsdi/common';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -37,12 +37,13 @@ export class BigFileInterceptor implements RequestInterceptor {
         }
 
         const stats = await statify(filename);
+        context.set(CONTENT_LENGTH, stats.size);
         const adapter = context.get<MessageAdapter>(MessageAdapter);
         adapter.setHeader('content-type', ContentType.APPL_JSON)
             .setHeader('content-length', String(stats.size))
             .setPayload(fs.createReadStream(filename));
 
-        return adapter.response;
+        return adapter;
 
     }
 

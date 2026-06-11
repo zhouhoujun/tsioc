@@ -65,8 +65,8 @@ describe('CoapMessageAdapter', () => {
 
         adapter.setStatus('2.05', 'Content');
         adapter.setHeader('x-message-adapter', 'coap');
-        adapter.write({ wrapped: true });
-        adapter.writeError(error);
+        adapter.setPayload({ wrapped: true });
+        adapter.setError(error);
 
         expect(adapter.read('headers', 'x-test')).toBe('1');
         expect(adapter.read('body', 'id')).toBe('zhou');
@@ -78,11 +78,11 @@ describe('CoapMessageAdapter', () => {
         expect(adapter.read('status')).toBe('2.05');
         expect(adapter.read('statusMessage')).toBe('Content');
         expect(adapter.read('error')).toBe(error);
-        expect(adapter.getStatus()).toBe('2.05');
+        expect(adapter.status).toBe('2.05');
         expect(adapter.getStatusMessage()).toBe('Content');
         expect(adapter.getResponseHeader('x-message-adapter')).toBe('coap');
-        expect(adapter.getBody()).toEqual({ wrapped: true });
-        expect(adapter.getError()).toBe(error);
+        expect(adapter.payload).toEqual({ wrapped: true });
+        expect(adapter.error).toBe(error);
     });
 });
 

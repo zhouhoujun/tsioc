@@ -207,6 +207,42 @@ export abstract class StatusMessageAdapter<
     abstract get query(): Record<string, any>;
 }
 
+export interface MessageWritable {
+    write(chunk: any, encoding?: string): void;
+    end(chunk?: any, encoding?: string): void;
+}
+
+export interface MessageSendable {
+    /**
+     * Write the adapter's accumulated state (status, headers, body) to an
+     * HTTP-like response object.  Handles streaming, HEAD method, and
+     * content-type negotiation.
+     * Each HTTP-based transport (http, mcp, grpc) provides its own
+     * implementation.
+     * @param headers 
+     */
+    sendHeaders(headers?: Record<string, Header>): void;
+    /**
+     * Write the adapter's accumulated state (status, headers, body) to an
+     * HTTP-like response object.  Handles streaming, HEAD method, and
+     * content-type negotiation.
+     * Each HTTP-based transport (http, mcp, grpc) provides its own
+     * implementation.
+     * @param response  handler return value to use when the adapter body is empty
+     */
+    sendResponse(response?: any): void;
+
+    /**
+     * Map an error to an HTTP status code and write an error response body
+     * to both the adapter state and the raw response object.
+     * Each HTTP-based transport (http, mcp, grpc) provides its own
+     * implementation.
+     * @param err  thrown exception
+     */
+    sendError(err: any): void;
+}
+
+
 @Abstract()
 export abstract class RestfulRequestAdapter<
     TRequest = any,

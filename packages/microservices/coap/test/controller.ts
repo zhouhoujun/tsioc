@@ -67,7 +67,7 @@ export class DeviceController {
         const adapter = context.get(StatusMessageAdapter);
         adapter.setStatus(201, 'Created');
         adapter.setHeader('x-message-adapter', 'coap');
-        adapter.write({ wrapped: body });
+        adapter.setPayload({ wrapped: body });
         return undefined;
     }
 
@@ -75,7 +75,7 @@ export class DeviceController {
     adapterError(@Inject() context: RequestContext) {
         const err = new BadRequestException('adapter error');
         const adapter = context.get(StatusMessageAdapter);
-        adapter.writeError(err);
+        adapter.setError(err);
         throw err;
     }
 

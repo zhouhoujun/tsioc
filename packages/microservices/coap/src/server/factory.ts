@@ -54,9 +54,9 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
             useValue: (_req: any, context: RequestContext): any => {
                 const adapter = context.get(StatusMessageAdapter);
                 if (adapter) {
-                    adapter.writeError({ message: 'Not Found' });
-                    adapter.setStatus('4.04', 'Not Found');
-                    adapter.write({ statusCode: '4.04', statusMessage: 'Not Found' });
+                    adapter.setStatus('4.04', 'Not Found')
+                        .setError({ message: 'Not Found' } as any)
+                        .setPayload({ statusCode: '4.04', statusMessage: 'Not Found' });
                     return of(adapter);
                 }
                 return of(null);

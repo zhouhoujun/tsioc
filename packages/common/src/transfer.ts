@@ -2,7 +2,7 @@ import { ContextToken, isDefined, ProvdierOf, Provider } from '@tsdi/ioc';
 import { catchError, defer, map, mergeMap, of } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
 import { TransportConfig } from './protocols';
-import { RequestContext } from './context';
+import { CONTENT_LENGTH, RequestContext } from './context';
 import { Events } from './events';
 import { MessageAdapter } from './MessageAdapter';
 import { StreamAdapter } from './StreamAdapter';
@@ -134,7 +134,23 @@ export function useSimpleJson(options?: {
                                 incoming = raw;
                             }
                         }
-                        if (isDefined(incoming?.payload) && !isDefined(incoming?.body)) incoming.body = incoming.payload;
+                        if (isDefined(incoming?.payload)) {
+                            if (typeof incoming.payload === 'string') {
+                                try {
+                                    incoming.payload = JSON.parse(incoming.payload, options?.reviver);
+                                } catch {
+                                    // keep raw string payload
+                                }
+                            }
+                            if (!isDefined(incoming?.body)) incoming.body = incoming.payload;
+                        }
+                        if (isDefined(incoming?.body) && typeof incoming.body === 'string') {
+                            try {
+                                incoming.body = JSON.parse(incoming.body, options?.reviver);
+                            } catch {
+                                // keep raw string body
+                            }
+                        }
                         return incoming;
 
                     })
@@ -168,18 +184,50 @@ export function useSimpleJson(options?: {
                             return next(rjson, context).pipe(
                                 mergeMap(async res => {
                                     const streamAdapter = context.get(StreamAdapter);
-                                    if (streamAdapter.isReadable(res)) {
-                                        res = await streamAdapter.read(res);
-                                        if (typeof res === 'string' || Buffer.isBuffer(res)) {
-                                            const raw = res.toString();
-                                            try {
-                                                res = JSON.parse(raw, options?.reviver);
-                                            } catch {
-                                                res = raw;
-                                            }
+                                    const mapped = options?.mapping ? options.mapping(res, context) : res;
+                                    if (streamAdapter.isReadable(mapped?.payload)) {
+                                        const rawPayload = await streamAdapter.read(mapped.payload);
+                                        mapped.payload = rawPayload;
+                                        mapped.body = rawPayload;
+                                    }
+                                    if (streamAdapter.isReadable(mapped?.body)) {
+                                        const rawBody = await streamAdapter.read(mapped.body);
+                                        mapped.body = rawBody;
+                                        if (mapped.payload === res || mapped.payload === mapped.body) {
+                                            mapped.payload = rawBody;
                                         }
                                     }
-                                    return JSON.stringify(options?.mapping ? options?.mapping(res, context) : res, options?.replacer, options?.space);
+                                    const output = JSON.stringify(mapped, options?.replacer, options?.space);
+                                    if ((mapped as any)?.id && ((mapped as any)?.url === 'content/big.json' || (mapped as any)?.url === '/content/big.json')) {
+                                        console.log('tcp-big-mapped', {
+                                            keys: Object.keys(mapped),
+                                            payloadType: typeof mapped.payload,
+                                            bodyType: typeof mapped.body,
+                                            payloadSize: Buffer.isBuffer(mapped.payload) ? mapped.payload.length : (typeof mapped.payload === 'string' ? Buffer.byteLength(mapped.payload) : undefined),
+                                            bodySize: Buffer.isBuffer(mapped.body) ? mapped.body.length : (typeof mapped.body === 'string' ? Buffer.byteLength(mapped.body) : undefined),
+                                            outputSize: Buffer.byteLength(output)
+                                        });
+                                    }
+                                    if (typeof context.set === 'function') {
+                                        context.set(CONTENT_LENGTH, Buffer.byteLength(output));
+                                    }
+                                    return output;
+                                }),
+                                catchError(err => {
+                                    const adapter = context.get(MessageAdapter, null as any) as any;
+                                    if (adapter) {
+                                        if (typeof adapter.setPayload === 'function') {
+                                            adapter.setPayload(null);
+                                        }
+                                        if (typeof adapter.setStatus === 'function' && adapter.status == null) {
+                                            adapter.setStatus(err?.statusCode ?? err?.status ?? 500, err?.statusMessage ?? err?.message);
+                                        }
+                                        if (typeof adapter.setError === 'function') {
+                                            adapter.setError(err);
+                                        }
+                                    }
+                                    const responseLike = { id: rjson?.id };
+                                    return of(JSON.stringify(options?.mapping ? options.mapping(responseLike, context) : responseLike, options?.replacer, options?.space));
                                 })
                             )
                         })

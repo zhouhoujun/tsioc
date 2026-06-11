@@ -47,11 +47,11 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                     if ((res?.statusCode ?? res?.status) >= 400) {
                         return res;
                     }
-                    if (!isNil(res?.body)) {
-                        return res.body;
-                    }
                     if (!isNil(res?.payload)) {
                         return res.payload;
+                    }
+                    if (!isNil(res?.body)) {
+                        return res.body;
                     }
                     return res;
                 })
@@ -66,8 +66,12 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                     if (isNil(res) || (typeof res !== 'object' && typeof res !== 'function')) {
                         return { id: req.id, payload: res };
                     }
-                    if (!res.id) {
+                    if (res.id == null) {
                         res.id = req.id;
+                        return res;
+                    }
+                    if (res.id !== req.id) {
+                        return { id: req.id, payload: res };
                     }
                     return res;
                 })
@@ -140,8 +144,17 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
             }),
             mergeMap(async res => {
                 if (!res) return;
-                const socket = context.get(SOCKET);
                 const streamAdapter = context.get(StreamAdapter);
+                console.log('tcp-socket-write', {
+                    type: typeof res,
+                    ctor: (res as any)?.constructor?.name,
+                    isReadable: streamAdapter.isReadable(res),
+                    hasId: (res as any)?.id,
+                    hasStatus: (res as any)?.status,
+                    hasPayloadType: typeof (res as any)?.payload,
+                    hasBodyType: typeof (res as any)?.body,
+                });
+                const socket = context.get(SOCKET);
                 return await writePacket(socket, res, streamAdapter);
             })
         )
@@ -209,7 +222,7 @@ async function packetWithSize(data: any, options: TransferOptions, context: Requ
     const delimiterLen = Buffer.byteLength(delimiter as Uint8Array);
     if (streamAdapter.isReadable(data)) {
         buffLen = Buffer.alloc(size);
-        const packLen = context.get(PACKET_LENGTH);
+        const packLen = context.get(CONTENT_LENGTH) ?? context.get(PACKET_LENGTH);
         buffLen.writeUIntBE(packLen, 0, size);
         const total = size + delimiterLen;
         const prfix = Buffer.concat([buffLen, delimiter] as Uint8Array[], total);
@@ -248,7 +261,7 @@ async function packet(data: any, options: TransferOptions, context: RequestConte
         data = data + delimiter!;
         len = Buffer.byteLength(data);
     } else if (streamAdapter.isReadable(data)) {
-        const packetLen = context.get(PACKET_LENGTH);
+        const packetLen = context.get(CONTENT_LENGTH) ?? context.get(PACKET_LENGTH);
         const bufDt = Buffer.from(delimiter);
         data.push(bufDt);
         len = packetLen + Buffer.byteLength(bufDt as Uint8Array);
