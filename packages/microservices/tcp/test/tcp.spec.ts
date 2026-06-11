@@ -178,7 +178,6 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
 
-        console.log('tcp-fetch-json', res);
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
     })

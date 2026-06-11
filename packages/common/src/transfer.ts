@@ -187,27 +187,19 @@ export function useSimpleJson(options?: {
                                     const mapped = options?.mapping ? options.mapping(res, context) : res;
                                     if (streamAdapter.isReadable(mapped?.payload)) {
                                         const rawPayload = await streamAdapter.read(mapped.payload);
-                                        mapped.payload = rawPayload;
-                                        mapped.body = rawPayload;
+                                        const normalizedPayload = Buffer.isBuffer(rawPayload) ? rawPayload.toString('utf8') : rawPayload;
+                                        mapped.payload = normalizedPayload;
+                                        mapped.body = normalizedPayload;
                                     }
                                     if (streamAdapter.isReadable(mapped?.body)) {
                                         const rawBody = await streamAdapter.read(mapped.body);
-                                        mapped.body = rawBody;
+                                        const normalizedBody = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody;
+                                        mapped.body = normalizedBody;
                                         if (mapped.payload === res || mapped.payload === mapped.body) {
-                                            mapped.payload = rawBody;
+                                            mapped.payload = normalizedBody;
                                         }
                                     }
                                     const output = JSON.stringify(mapped, options?.replacer, options?.space);
-                                    if ((mapped as any)?.id && ((mapped as any)?.url === 'content/big.json' || (mapped as any)?.url === '/content/big.json')) {
-                                        console.log('tcp-big-mapped', {
-                                            keys: Object.keys(mapped),
-                                            payloadType: typeof mapped.payload,
-                                            bodyType: typeof mapped.body,
-                                            payloadSize: Buffer.isBuffer(mapped.payload) ? mapped.payload.length : (typeof mapped.payload === 'string' ? Buffer.byteLength(mapped.payload) : undefined),
-                                            bodySize: Buffer.isBuffer(mapped.body) ? mapped.body.length : (typeof mapped.body === 'string' ? Buffer.byteLength(mapped.body) : undefined),
-                                            outputSize: Buffer.byteLength(output)
-                                        });
-                                    }
                                     if (typeof context.set === 'function') {
                                         context.set(CONTENT_LENGTH, Buffer.byteLength(output));
                                     }
