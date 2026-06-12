@@ -79,7 +79,7 @@ export interface RequestHandlerOptions<TReq = any, TRes = any, TContext extends 
 
 
     transfers?: TransferInterceptorFactory[];
-
+    transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[];
 
     handlerType?: Type<RequestHandler>;
 
@@ -129,7 +129,7 @@ export abstract class ConfigableRequestHandler<
      * append handler options.
      * @param options 
      */
-    abstract append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this;
+    abstract append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]>; transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] }): this;
     /**
      * handle request.
      * @param input 
@@ -148,11 +148,15 @@ export class DefaultRequestHandler<
     TContext extends RequestContext = RequestContext
 > extends ConfigableHandler<TReq, Observable<TRes>, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
 
-    override append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]> }): this {
+    override append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]>; transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] }): this {
         super.append(options);
-        const config = options as RequestHandlerOptions;
+        const config = options as RequestHandlerOptions<TReq, TRes, TContext> & { transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] };
         if (config.transfers) {
             this.regMulti(config.transfersToken!, config.transfers);
+            this.resetChain();
+        }
+        if (config.transferFilters?.length) {
+            this.regMulti(this.options.filtersToken!, config.transferFilters);
             this.resetChain();
         }
         return this;

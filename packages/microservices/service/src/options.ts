@@ -1,4 +1,4 @@
-import { InstanceOf, ProvdierOf, Provider, Token } from '@tsdi/ioc';
+import { InstanceOf, ProvdierOf, Provider, Token, token } from '@tsdi/ioc';
 import { VaildatorLike } from '@tsdi/core';
 import {
     Incoming, Outgoing, PatternFormatter, RequestContext, TransferConfig,
@@ -15,30 +15,56 @@ import { ServiceHandlerOptions } from './ServiceHandler';
 
 /**
  * Identifies a particular kind of `ServiceFeature`.
+ *
+ * The values are ordered from lower-level transport concerns up to
+ * higher-level service composition concerns so provider lists can be
+ * sorted deterministically before transport providers are appended.
  * @publicApi
  */
 export enum ServiceFeatureKind {
-    Configure,
+    /** Logs exceptions raised while request/transfer chains are executing. */
+    ExecptionLogger,
+    /** Registers transport-side request/response transfer interceptors. */
     Transfer,
+    /** Registers service-side request lifecycle logging. */
     Logger,
+    /** Registers request filters that serialize adapter state to transport output. */
     Sender,
+    /** Registers exception-oriented request filters. */
     ExceptionFilter,
+    /** Registers generic request filters. */
     Filters,
+    /** Registers authorization or precondition guards. */
     Guards,
+    /** Registers request interceptors around handler execution. */
     Interceptors,
+    /** Registers middleware adapters that are converted into interceptors. */
     Middlewares,
+    /** Registers route tables and route matching interceptors. */
     Router,
+    /** Registers controller declarations and route metadata sources. */
     Controller,
+    /** Registers the concrete transport runtime and transport-specific providers. */
     Transport,
+    /** Registers service discovery/registration support. */
     Registration,
+    /** Registers health-check support. */
     Health,
+    /** Registers graceful-shutdown support. */
     GracefulShutdown,
+    /** Registers request body parsing support. */
     BodyParser,
+    /** Registers response body serialization support. */
     BodySerializer,
+    /** Registers static-content/file handling support. */
     Content,
+    /** Registers JSON-specific response/request shaping support. */
     Json,
+    /** Registers session support. */
     Session,
+    /** Registers cookie support. */
     Cookie,
+    /** Registers CORS support. */
     Cors
 }
 
@@ -134,6 +160,26 @@ export interface AuthOptions extends FeatureInterceptorOptions {
 }
 
 /**
+ * Service-side logger options.
+ * These options are owned by the service layer instead of reusing
+ * `@tsdi/common` logger contracts directly.
+ */
+export interface ServiceLoggerOptions {
+    level?: string;
+}
+
+/**
+ * Service-side exception logger options.
+ * Used for transfer/filter-level exception capture without coupling to
+ * terminal logger formatting concerns.
+ */
+export interface ExecptionLoggerOptions {
+    level?: string;
+}
+
+export const SERVICE_EXECEPTION_LOGGER_OPTIONS = token<ExecptionLoggerOptions>('SERVICE_EXECEPTION_LOGGER_OPTIONS');
+
+/**
  * API rate limit options.
  * API 限流选项
  */
@@ -168,10 +214,10 @@ export interface ApiRateLimitOptions {
 export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends RequestContext = RequestContext> extends ServiceHandlerOptions<TReq, TRes, TContext> {
     timeout?: number;
     rateLimit?: boolean | ApiRateLimitOptions;
-    sender?: boolean;
     requestVaildators?: ProvdierOf<VaildatorLike<Incoming, TContext>>[];
     responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, TContext>>[];
-    logger?: boolean;
+    logger?: boolean | ServiceLoggerOptions;
+    execptionLogger?: boolean | ExecptionLoggerOptions;
     bodyparser?: boolean | BodyparserOptions;
     bodySerializer?: boolean;
     content?: boolean | ContentOptions;

@@ -12,6 +12,7 @@ import {
     useMiddlewares,
     useTransfers,
     useBodySerializer,
+    useFeatures,
     SERVICE_REGISTRATION_OPTIONS,
     SERVICE_HEALTH_OPTIONS,
     SERVICE_GRACEFUL_SHUTDOWN_OPTIONS,
@@ -157,5 +158,13 @@ describe('service feature coverage', () => {
         const optProvider = feature.providers.find((p: any) => p.provide === SERVICE_BODY_SERIALIZER_OPTIONS);
         expect(optProvider).toBeDefined();
         expect(optProvider.useValue).toEqual({ type: 'form' });
+    });
+
+    it('useFeatures should include exception logger through transfer by default', () => {
+        const config = createBaseConfig();
+        const features = useFeatures()(config) as any[];
+        const transfer = features.find(feature => feature.kind === ServiceFeatureKind.Transfer);
+        expect(transfer).toBeDefined();
+        expect(transfer.providers.length).toBeGreaterThan(0);
     });
 });

@@ -1,8 +1,8 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject, Providers } from '@tsdi/ioc';
+import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
 import { GuardLike, MessageValueReader } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
-    LoggerInterceptor, LoggerOptions, ResponseStatusFormater,
+    LoggerInterceptor, ResponseStatusFormater,
     RequestFilter, RequestFilterLike
 } from '@tsdi/common';
 import {
@@ -10,9 +10,9 @@ import {
     getServiceMiddlewaresToken, getServiceTransfersToken, getServiceRouterToken
 } from './tokens';
 
-import { AuthOptions, CookieOptions, CorsOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
+import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
-import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor, SenderFilter } from './interceptors';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, ExecptionLogger, JsonInterceptor, SessionInterceptor, SenderFilter } from './interceptors';
 import { SetupServices } from './SetupMicroServices';
 import { ServiceMessageValueReader } from './message-value-reader';
 
@@ -61,20 +61,7 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
             });
         });
 
-        if (config.features.sender && !kinds.has(ServiceFeatureKind.Sender)) {
-            const feature = useSender()(config);
-            let pdrs: Provider[];
-            if (Array.isArray(feature)) {
-                pdrs = feature.reduce((p, c) => p.concat(c.providers), [] as Provider[]);
-            } else {
-                pdrs = feature.providers.slice(0)
-            }
-            if (pdrs.length) {
-                kinds.set(ServiceFeatureKind.Sender, pdrs)
-            }
-        }
-
-        if (!kinds.has(ServiceFeatureKind.Sender) && !kinds.has(ServiceFeatureKind.Transfer)) {
+        if (!kinds.has(ServiceFeatureKind.Transfer)) {
             const transferFeature = useTransfers()(config);
             const transfers = Array.isArray(transferFeature) ? transferFeature : [transferFeature];
             transfers.forEach(feature => {
@@ -133,6 +120,7 @@ function createFeatureInterceptorProvider(config: ServiceConfig, fallback: any, 
 
 const defaultServiceOptions: Partial<ServiceFeatureOptions> = {
     logger: true,
+    execptionLogger: true,
     router: true,
     registration: true,
     health: true,
@@ -164,12 +152,14 @@ export function useFeatures(options?: ServiceFeatureOptions): ServiceFeatureFn<E
         if (opts.logger) {
             features.push(useLogger(isBoolean(opts.logger) ? undefined : opts.logger)(config));
         }
-        if (opts.sender) {
-            if (isBoolean(opts.sender)) {
-                features.push(useSender()(config));
-            } else {
-                features.push(useSender(opts.sender as any)(config));
-            }
+        if (opts.execptionLogger) {
+            const exceptionLoggerOptions = isBoolean(opts.execptionLogger) ? undefined : opts.execptionLogger;
+            features.push(useTransfers(() => ({
+                filters: [
+                    { provide: SERVICE_EXECEPTION_LOGGER_OPTIONS, useValue: exceptionLoggerOptions ?? {} } as any,
+                    ExecptionLogger as any
+                ]
+            }) as any)(config));
         }
         if (opts.router) {
             features.push(useRouter(isBoolean(opts.router) ? undefined : opts.router)(config));
@@ -342,19 +332,42 @@ export function useMiddlewares(...middlewares: ProvdierOf<MiddlewareLike>[]): Se
  * Adds transfer interceptors to micro service.
  * @publicApi
  */
+const SERVICE_TRANSFER_FILTERS = token<ProvdierOf<RequestFilterLike>[]>('SERVICE_TRANSFER_FILTERS');
+
 export function useTransfers(...selectors: TransferInterceptorFactory[]): ServiceFeatureFn<ServiceFeatureKind.Transfer> {
     return (config) => {
-        const tk = getServiceTransfersToken(config);
+        const interceptorToken = getServiceTransfersToken(config);
         const providers: Provider[] = [];
+        let hasTransferFilters = false;
         const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
         resolvedSelectors.forEach((fac) => {
-            const itps = fac(config);
-            if (isArray(itps)) {
-                providers.push(...toProviders(tk, itps, true));
+            const result = fac(config) as any;
+            if (result && !isArray(result) && (result.interceptors || result.filters)) {
+                const interceptors = result.interceptors ?? [];
+                const filters = result.filters ?? [];
+                if (interceptors.length) {
+                    providers.push(...toProviders(interceptorToken, interceptors, true));
+                }
+                if (filters.length) {
+                    hasTransferFilters = true;
+                    providers.push({ provide: SERVICE_TRANSFER_FILTERS, useValue: filters, multi: true } as any);
+                }
+                return;
+            }
+            if (isArray(result)) {
+                providers.push(...toProviders(interceptorToken, result, true));
             } else {
-                providers.push(toProvider(tk, itps, true));
+                providers.push(toProvider(interceptorToken, result, true));
             }
         });
+        if (hasTransferFilters) {
+            providers.push({
+                provide: getServiceFiltersToken(config),
+                useFactory: (...groups: ProvdierOf<RequestFilterLike>[][]) => groups.flat(),
+                deps: [SERVICE_TRANSFER_FILTERS],
+                multi: true
+            } as any);
+        }
         return makeServiceFeature(
             ServiceFeatureKind.Transfer,
             providers,
@@ -364,10 +377,10 @@ export function useTransfers(...selectors: TransferInterceptorFactory[]): Servic
 }
 
 /**
- * Adds logger to micro service.
+ * Adds service-side request lifecycle logger to the micro service.
  * @publicApi
  */
-export function useLogger(options?: LoggerOptions): ServiceFeatureFn<ServiceFeatureKind.Logger> {
+export function useLogger(options?: ServiceLoggerOptions): ServiceFeatureFn<ServiceFeatureKind.Logger> {
     return (config) => {
         const tk = getServiceFiltersToken(config);
         return makeServiceFeature(
@@ -382,6 +395,26 @@ export function useLogger(options?: LoggerOptions): ServiceFeatureFn<ServiceFeat
                     ],
                     multi: true
                 }
+            ],
+            config
+        );
+    };
+}
+
+/**
+ * Adds exception logging at the service/transfer layer.
+ * This is narrower than the terminal/service logger and only observes
+ * exceptions propagated through request filters.
+ * @publicApi
+ */
+export function useExecptionLogger(options?: ExecptionLoggerOptions): ServiceFeatureFn<ServiceFeatureKind.ExecptionLogger> {
+    return (config) => {
+        const tk = getServiceFiltersToken(config);
+        return makeServiceFeature(
+            ServiceFeatureKind.ExecptionLogger,
+            [
+                { provide: SERVICE_EXECEPTION_LOGGER_OPTIONS, useValue: options ?? {} },
+                { provide: tk, useClass: ExecptionLogger, multi: true }
             ],
             config
         );

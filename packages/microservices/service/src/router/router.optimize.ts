@@ -172,7 +172,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
     doHandle(req: ReadableLike<Incoming>, context: RequestContext, notFound?: () => Observable<any>): Observable<any> {
-        const url = (req as UrlIncoming).url ?? (req as TopicIncoming).topic ?? req.pattern;
+        const pattern = req.pattern;
+        const url = this.microservice && pattern && !isString(pattern)
+            ? pattern
+            : ((req as UrlIncoming).url ?? (req as TopicIncoming).topic ?? pattern);
         if (!url) {
             return notFound ? notFound() : throwError(() => new NotFoundException());
         }

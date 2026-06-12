@@ -63,8 +63,12 @@ const requestMapping = (req: any, context: RequestContext) => {
             json.id = id;
         }
         if (request.pattern) {
-            const formatter = context.get(PatternFormatter);
-            json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
+            if (request.method) {
+                json.pattern = request.pattern;
+            } else {
+                const formatter = context.get(PatternFormatter);
+                json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
+            }
         }
         if (request.method) {
             json.method = request.method;

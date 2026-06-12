@@ -236,21 +236,45 @@ export function withFilters(...filters: ProvdierOf<RequestFilterLike>[]): Client
  * @see {@link provideClient}
  * @publicApi
  */
+const CLIENT_TRANSFER_FILTERS = token<ProvdierOf<RequestFilterLike>[]>('CLIENT_TRANSFER_FILTERS');
+
 export function withTransfers(
     ...selectors: TransferInterceptorFactory[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
         const tk = getClientTransfersToken(config);
+        const filterToken = getClientFiltersToken(config);
         const providers: Provider[] = [];
+        let hasTransferFilters = false;
         const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
         resolvedSelectors.forEach((fac) => {
-            const itps = fac(config);
-            if (isArray(itps)) {
-                providers.push(...toProviders(tk, itps, true));
+            const result = fac(config) as any;
+            if (result && !isArray(result) && (result.interceptors || result.filters)) {
+                const interceptors = result.interceptors ?? [];
+                const filters = result.filters ?? [];
+                if (interceptors.length) {
+                    providers.push(...toProviders(tk, interceptors, true));
+                }
+                if (filters.length) {
+                    hasTransferFilters = true;
+                    providers.push({ provide: CLIENT_TRANSFER_FILTERS, useValue: filters, multi: true } as any);
+                }
+                return;
+            }
+            if (isArray(result)) {
+                providers.push(...toProviders(tk, result, true));
             } else {
-                providers.push(toProvider(tk, itps, true));
+                providers.push(toProvider(tk, result, true));
             }
         });
+        if (hasTransferFilters) {
+            providers.push({
+                provide: filterToken,
+                useFactory: (...groups: ProvdierOf<RequestFilterLike>[][]) => groups.flat(),
+                deps: [CLIENT_TRANSFER_FILTERS],
+                multi: true
+            } as any);
+        }
         return makeClientFeature(
             ClientFeatureKind.Transfer,
             providers,

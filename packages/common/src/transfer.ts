@@ -1,6 +1,7 @@
 import { ContextToken, isDefined, ProvdierOf, Provider } from '@tsdi/ioc';
 import { catchError, defer, map, mergeMap, of } from 'rxjs';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
+import { RequestFilterLike } from './filter';
 import { TransportConfig } from './protocols';
 import { CONTENT_LENGTH, RequestContext } from './context';
 import { Events } from './events';
@@ -58,8 +59,18 @@ export function makeTransferFeature<T extends TransferFeatureKind>(kind: T, prov
 }
 
 
+export interface TransferHandlers {
+    interceptors?: ProvdierOf<RequestInterceptorLike>[];
+    filters?: ProvdierOf<RequestFilterLike>[];
+}
+
+export type TransferHandlerResult =
+    | ProvdierOf<RequestInterceptorLike>
+    | ProvdierOf<RequestInterceptorLike>[]
+    | TransferHandlers;
+
 export interface TransferInterceptorFactory {
-    (side: TransferConfig): ProvdierOf<RequestInterceptorLike> | ProvdierOf<RequestInterceptorLike>[];
+    (side: TransferConfig): TransferHandlerResult;
 }
 
 export interface StringTransferOptions {

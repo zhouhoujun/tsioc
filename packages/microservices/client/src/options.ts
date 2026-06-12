@@ -4,20 +4,37 @@ import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig
 import { ConnectionPoolOptions } from './pool';
 
 
-
+/**
+ * Identifies a particular kind of `ClientFeature`.
+ *
+ * The values are ordered from request-pipeline concerns up to transport and
+ * resilience concerns so feature providers can be merged deterministically
+ * before transport providers are appended.
+ */
 export enum ClientFeatureKind {
-    Configure,
+    /** Registers client-side guards. */
     Guards,
+    /** Registers client-side filters. */
     Filters,
+    /** Registers client-side interceptors. */
     Interceptors,
+    /** Registers body serialization helpers. */
     BodySerialize,
+    /** Registers low-level fetch/request dispatch helpers. */
     Fetch,
+    /** Registers response adaptation helpers. */
     Response,
+    /** Registers transfer-specific request/response adaptation. */
     Transfer,
+    /** Registers the concrete client transport runtime. */
     Transport,
+    /** Registers discovery support. */
     Discovery,
+    /** Registers load-balancing support. */
     LoadBalance,
+    /** Registers circuit-breaker support. */
     CircuitBreaker,
+    /** Registers retry support. */
     Retry
 }
 
