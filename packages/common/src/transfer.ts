@@ -1,6 +1,6 @@
 import { ContextToken, isDefined, ProvdierOf, Provider } from '@tsdi/ioc';
 import { catchError, defer, map, mergeMap, of } from 'rxjs';
-import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
+import { RequestInterceptorFn } from './interceptor';
 import { RequestFilterLike } from './filter';
 import { TransportConfig } from './protocols';
 import { CONTENT_LENGTH, RequestContext } from './context';
@@ -60,17 +60,16 @@ export function makeTransferFeature<T extends TransferFeatureKind>(kind: T, prov
 
 
 export interface TransferHandlers {
-    interceptors?: ProvdierOf<RequestInterceptorLike>[];
     filters?: ProvdierOf<RequestFilterLike>[];
 }
 
-export type TransferHandlerResult =
-    | ProvdierOf<RequestInterceptorLike>
-    | ProvdierOf<RequestInterceptorLike>[]
+export type TransferFilterFactoryResult =
+    | ProvdierOf<RequestFilterLike>
+    | ProvdierOf<RequestFilterLike>[]
     | TransferHandlers;
 
-export interface TransferInterceptorFactory {
-    (side: TransferConfig): TransferHandlerResult;
+export interface TransferFilterFactory {
+    (side: TransferConfig): TransferFilterFactoryResult;
 }
 
 export interface StringTransferOptions {
@@ -97,7 +96,7 @@ export interface StreamTransferOptions {
 }
 
 
-export type TransferFactoryOptions = StringTransferOptions | JsonTransferOptions | StreamTransferOptions | TransferInterceptorFactory[];
+export type TransferFactoryOptions = StringTransferOptions | JsonTransferOptions | StreamTransferOptions | TransferFilterFactory[];
 
 
 export const PAYLOAD_KEY = new ContextToken<string>(() => 'body');
@@ -125,8 +124,8 @@ export function useSimpleJson(options?: {
     reviver?: (this: any, key: string, value: any) => any;
     replacer?: ((this: any, key: string, value: any) => any);
     space?: string | number;
-}): TransferInterceptorFactory {
-    return (config) => {
+}): TransferFilterFactory {
+    return (config: TransferConfig) => {
         const interceptor: RequestInterceptorFn = config.side === TransferSide.client ? (req, next, context) => {
             const reqdata = JSON.stringify(options?.mapping ? options.mapping(req, context) : req, options?.replacer, options?.space);
             return next(reqdata, context)

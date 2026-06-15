@@ -103,11 +103,8 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
             return new TcpRequest(first, null, options, defaultMethod);
         } else {
             const formatter = this.handler.injector.get(PatternFormatter, null);
-            const url = this.options.microservice
-                ? undefined as any
-                : (formatter
-                    ? formatter.format(first)
-                    : (typeof (first as any)?.cmd === 'string' ? (first as any).cmd : JSON.stringify(first)));
+            const formatted = formatter ? formatter.format(first) : (typeof (first as any)?.cmd === 'string' ? (first as any).cmd : JSON.stringify(first));
+            const url = this.options.microservice ? formatted : formatted;
             return new TcpRequest(url, first, options, defaultMethod);
         }
     }

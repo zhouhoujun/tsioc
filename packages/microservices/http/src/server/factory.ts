@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, RequestFilterLike, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { HttpAuthService } from '@tsdi/security';
 import { of } from 'rxjs';
 import { HttpServer } from './http-server';
@@ -17,7 +17,11 @@ import { Cors } from './interceptors';
 import { HttpTransportSenderFilter } from './interceptors/send-response';
 import { HttpMessageAdapter } from './message-adapter';
 import { HttpMessageAdapterFactory } from './message-adapter.factory';
-import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor, SenderFilter } from '@tsdi/service';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SERVICE_STATICS_OPTIONS, SessionInterceptor } from '@tsdi/service';
+
+const useHttpTransfer = () => () => ({
+    filters: [HttpTransportSenderFilter as unknown as RequestFilterLike]
+});
 
 export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -26,8 +30,8 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
-            sender: true,
             bodyparser: true,
+            defaultTransfer: useHttpTransfer(),
             ...option.features,
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
@@ -82,8 +86,6 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
             multi: true,
             multiOrder: -300
         } as any] : []),
-        // Sender filter — writes every result into the HTTP response.
-        { provide: SenderFilter, useClass: HttpTransportSenderFilter },
         ...(config.static ? [{
             provide: STATICS_OPTIONS,
             useValue: config.static === true ? {} : config.static,

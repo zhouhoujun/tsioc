@@ -39,13 +39,6 @@ export function getServiceMiddlewaresToken(config: ServiceConfig): Token<Middlew
     return config.features.middlewaresToken;
 }
 
-export function getServiceTransfersToken(config: ServiceConfig): Token<RequestInterceptorLike[]> {
-    if (!config.features.transfersToken) {
-        config.features.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_TRANSFERS`, toMicroName(config.microservice));
-    }
-    return config.features.transfersToken;
-}
-
 export function getServiceRouterToken(config: ServiceConfig): Token<Router> {
     if (!config.features.routerToken) {
         config.features.routerToken = getToken(Router, Transport[config.transport] + '_MICRO_' + toMicroName(config.microservice));

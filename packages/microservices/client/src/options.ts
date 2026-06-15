@@ -1,6 +1,6 @@
 import { ProvdierOf, Provider, Token } from '@tsdi/ioc';
 
-import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig, TransferInterceptorFactory, TransferSide } from '@tsdi/common';
+import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig, TransferFilterFactory, TransferSide } from '@tsdi/common';
 import { ConnectionPoolOptions } from './pool';
 
 
@@ -59,7 +59,8 @@ export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends R
      * timeout
      */
     timeout?: number;
-    defaultTransfer?: TransferInterceptorFactory;
+    defaultTransfer?: TransferFilterFactory;
+    transfers?: TransferFilterFactory[];
     discovery?: boolean | DiscoveryOptions;
     loadBalance?: boolean | LoadBalanceOptions;
     circuitBreaker?: boolean | CircuitBreakerOptions;

@@ -1,10 +1,10 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
-    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
+    matchTransport, TransportConfig, RequestInterceptorLike, TransferFilterFactory,
     AbstractRequest, ResponseEvent, RequestFilterLike,
 } from '@tsdi/common';
-import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransfersToken } from './tokens';
+import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken } from './tokens';
 import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions, ClientFeature, ClientFeatureFn, ClientFeatureKind, ClientFeatureLike, ClientOptions, ClientTransportFeature } from './options';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 
@@ -236,45 +236,21 @@ export function withFilters(...filters: ProvdierOf<RequestFilterLike>[]): Client
  * @see {@link provideClient}
  * @publicApi
  */
-const CLIENT_TRANSFER_FILTERS = token<ProvdierOf<RequestFilterLike>[]>('CLIENT_TRANSFER_FILTERS');
-
 export function withTransfers(
-    ...selectors: TransferInterceptorFactory[]
+    ...selectors: TransferFilterFactory[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
-        const tk = getClientTransfersToken(config);
         const filterToken = getClientFiltersToken(config);
         const providers: Provider[] = [];
-        let hasTransferFilters = false;
         const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
         resolvedSelectors.forEach((fac) => {
             const result = fac(config) as any;
-            if (result && !isArray(result) && (result.interceptors || result.filters)) {
-                const interceptors = result.interceptors ?? [];
-                const filters = result.filters ?? [];
-                if (interceptors.length) {
-                    providers.push(...toProviders(tk, interceptors, true));
-                }
-                if (filters.length) {
-                    hasTransferFilters = true;
-                    providers.push({ provide: CLIENT_TRANSFER_FILTERS, useValue: filters, multi: true } as any);
-                }
-                return;
-            }
-            if (isArray(result)) {
-                providers.push(...toProviders(tk, result, true));
-            } else {
-                providers.push(toProvider(tk, result, true));
+            const filters = result && !isArray(result) && result.filters ? result.filters : (isArray(result) ? result : [result]);
+            const normalized = (filters ?? []).filter(Boolean);
+            if (normalized.length) {
+                providers.push(...toProviders(filterToken, normalized, true));
             }
         });
-        if (hasTransferFilters) {
-            providers.push({
-                provide: filterToken,
-                useFactory: (...groups: ProvdierOf<RequestFilterLike>[][]) => groups.flat(),
-                deps: [CLIENT_TRANSFER_FILTERS],
-                multi: true
-            } as any);
-        }
         return makeClientFeature(
             ClientFeatureKind.Transfer,
             providers,

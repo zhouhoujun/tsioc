@@ -1,4 +1,4 @@
-import { AbstractRequest, MessageAdapter, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
+import { AbstractRequest, MessageAdapter, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferFilterFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
 import { Provider } from '@tsdi/ioc';
 import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, throwError, of } from 'rxjs';
 import { SOCKET } from './context';
@@ -232,7 +232,7 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
  * Use WebSocket packet transfer for microservice.
  * 为微服务使用 WebSocket 数据包传输
  */
-export function useWsPacket(options: WsPacketOptions = {}): TransferInterceptorFactory {
+export function useWsPacket(options: WsPacketOptions = {}): TransferFilterFactory {
     return (config) => {
         options = { ...defaultOptions, ...config.transfer, ...options };
 

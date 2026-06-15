@@ -30,13 +30,6 @@ export function getClientInterceptorsToken(config: ClientConfig): Token<RequestI
     return config.features.interceptorsToken;
 }
 
-export function getClientTransfersToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
-    if (!config.features.transfersToken) {
-        config.features.transfersToken = getToken<RequestInterceptorLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_TRANSFERS`, toMicroName(config.microservice));
-    }
-    return config.features.transfersToken;
-}
-
 export function getClientOptionsToken(config: ClientConfig): Token<ClientConfig> {
     return getToken<ClientConfig>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_OPTIONS`, toMicroName(config.microservice, config.name));
 }

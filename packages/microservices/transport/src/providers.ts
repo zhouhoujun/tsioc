@@ -1,4 +1,4 @@
-import { AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferInterceptorFactory, TransferOptions, TransferSide, useCatch, useSimpleJson, parseQueryString } from '@tsdi/common';
+import { AbstractRequest, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferFilterFactory, TransferOptions, TransferSide, useCatch, useSimpleJson, parseQueryString } from '@tsdi/common';
 import { delimiterPacket, delimiterUnpacket, packetIdMessage, socketMessage } from './interceptors';
 import { ProvdierOf, toProvider } from '@tsdi/ioc';
 import { PacketNumberIdGenerator } from './PacketId';
@@ -63,12 +63,8 @@ const requestMapping = (req: any, context: RequestContext) => {
             json.id = id;
         }
         if (request.pattern) {
-            if (request.method) {
-                json.pattern = request.pattern;
-            } else {
-                const formatter = context.get(PatternFormatter);
-                json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
-            }
+            const formatter = context.get(PatternFormatter);
+            json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
         }
         if (request.method) {
             json.method = request.method;
@@ -132,7 +128,7 @@ const outgoingMapping = (res: any, context: RequestContext) => {
     return res;
 }
 
-export function useJsonPacket(options: PacketOptions = {}): TransferInterceptorFactory {
+export function useJsonPacket(options: PacketOptions = {}): TransferFilterFactory {
     return (config) => {
         options = { ...defaultOptions, ...config.transfer, ...options };
 

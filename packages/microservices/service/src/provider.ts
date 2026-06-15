@@ -1,13 +1,13 @@
 import { ArgumentException, ProvdierOf, Provider, StaticProvider, Type, isArray, isBoolean, isFunction, toProvider, toProviders, token, isPlainObject } from '@tsdi/ioc';
 import { GuardLike, MessageValueReader } from '@tsdi/core';
 import {
-    matchTransport, TransportConfig, RequestInterceptorLike, TransferInterceptorFactory,
+    matchTransport, TransportConfig, RequestInterceptorLike, TransferFilterFactory,
     LoggerInterceptor, ResponseStatusFormater,
     RequestFilter, RequestFilterLike
 } from '@tsdi/common';
 import {
     getServiceFiltersToken, getServiceGuardsToken, getServiceInterceptorsToken,
-    getServiceMiddlewaresToken, getServiceTransfersToken, getServiceRouterToken
+    getServiceMiddlewaresToken, getServiceRouterToken
 } from './tokens';
 
 import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
@@ -332,42 +332,19 @@ export function useMiddlewares(...middlewares: ProvdierOf<MiddlewareLike>[]): Se
  * Adds transfer interceptors to micro service.
  * @publicApi
  */
-const SERVICE_TRANSFER_FILTERS = token<ProvdierOf<RequestFilterLike>[]>('SERVICE_TRANSFER_FILTERS');
-
-export function useTransfers(...selectors: TransferInterceptorFactory[]): ServiceFeatureFn<ServiceFeatureKind.Transfer> {
+export function useTransfers(...selectors: TransferFilterFactory[]): ServiceFeatureFn<ServiceFeatureKind.Transfer> {
     return (config) => {
-        const interceptorToken = getServiceTransfersToken(config);
+        const filterToken = getServiceFiltersToken(config);
         const providers: Provider[] = [];
-        let hasTransferFilters = false;
         const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
         resolvedSelectors.forEach((fac) => {
             const result = fac(config) as any;
-            if (result && !isArray(result) && (result.interceptors || result.filters)) {
-                const interceptors = result.interceptors ?? [];
-                const filters = result.filters ?? [];
-                if (interceptors.length) {
-                    providers.push(...toProviders(interceptorToken, interceptors, true));
-                }
-                if (filters.length) {
-                    hasTransferFilters = true;
-                    providers.push({ provide: SERVICE_TRANSFER_FILTERS, useValue: filters, multi: true } as any);
-                }
-                return;
-            }
-            if (isArray(result)) {
-                providers.push(...toProviders(interceptorToken, result, true));
-            } else {
-                providers.push(toProvider(interceptorToken, result, true));
+            const filters = result && !isArray(result) && result.filters ? result.filters : (isArray(result) ? result : [result]);
+            const normalized = (filters ?? []).filter(Boolean);
+            if (normalized.length) {
+                providers.push(...toProviders(filterToken, normalized, true));
             }
         });
-        if (hasTransferFilters) {
-            providers.push({
-                provide: getServiceFiltersToken(config),
-                useFactory: (...groups: ProvdierOf<RequestFilterLike>[][]) => groups.flat(),
-                deps: [SERVICE_TRANSFER_FILTERS],
-                multi: true
-            } as any);
-        }
         return makeServiceFeature(
             ServiceFeatureKind.Transfer,
             providers,

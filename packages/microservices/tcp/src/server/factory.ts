@@ -8,6 +8,7 @@ import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { TcpMessageAdapter } from './message-adapter';
 import { TcpMessageAdapterFactory } from './message-adapter.factory';
+import { TcpMicroPatternFormatter } from '../pattern-formatter';
 
 /**
  * create TCP transport feature for microservice.
@@ -17,10 +18,15 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
         transport: Transport.TCP,
         side: TransferSide.server,
         microservice: true,
+        formatter: option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? TcpMicroPatternFormatter),
         ...option,
         features: {
             defaultTransfer: useJsonPacket(),
-            ...option.features
+            ...option.features,
+            router: option.features?.router === false ? false : {
+                ...(typeof option.features?.router === 'object' ? option.features.router : {}),
+                formatter: (typeof option.features?.router === 'object' && option.features.router.formatter) || (option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? TcpMicroPatternFormatter))
+            }
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
         serverOpts: option.serverOpts ? { ...option.serverOpts } : undefined,
@@ -39,6 +45,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        TcpMicroPatternFormatter,
         TcpMessageAdapter,
         TcpMessageAdapterFactory,
         asProvider({

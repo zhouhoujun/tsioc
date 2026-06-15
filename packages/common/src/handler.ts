@@ -4,7 +4,7 @@ import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { RequestContext } from './context';
 import { ForbiddenException } from './exceptions';
 import { RequestInterceptorFn, RequestInterceptorLike } from './interceptor';
-import { TransferInterceptorFactory, TransferSide } from './transfer';
+import { TransferSide } from './transfer';
 import { RequestFilterLike } from './filter';
 
 
@@ -78,7 +78,6 @@ export interface RequestHandlerOptions<TReq = any, TRes = any, TContext extends 
     backend?: ProvdierOf<RequestHandlerLike<TReq, TRes, TContext>>;
 
 
-    transfers?: TransferInterceptorFactory[];
     transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[];
 
     handlerType?: Type<RequestHandler>;
@@ -108,8 +107,6 @@ export interface RequestHandlerOptions<TReq = any, TRes = any, TContext extends 
 
     backendToken?: Token<RequestHandlerLike<TReq, TRes, TContext>>;
 
-    transfersToken?: Token<RequestInterceptorLike[]>;
-
     side?: TransferSide;
 
 }
@@ -129,7 +126,7 @@ export abstract class ConfigableRequestHandler<
      * append handler options.
      * @param options 
      */
-    abstract append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]>; transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] }): this;
+    abstract append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] }): this;
     /**
      * handle request.
      * @param input 
@@ -148,13 +145,9 @@ export class DefaultRequestHandler<
     TContext extends RequestContext = RequestContext
 > extends ConfigableHandler<TReq, Observable<TRes>, TContext> implements ConfigableRequestHandler<TReq, TRes, TContext> {
 
-    override append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transfers?: ProvdierOf<RequestInterceptorLike[]>; transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] }): this {
+    override append(options: RequestHandlerOptions<TReq, TRes, TContext> & { transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] }): this {
         super.append(options);
         const config = options as RequestHandlerOptions<TReq, TRes, TContext> & { transferFilters?: ProvdierOf<RequestFilterLike<TReq, TRes, TContext>>[] };
-        if (config.transfers) {
-            this.regMulti(config.transfersToken!, config.transfers);
-            this.resetChain();
-        }
         if (config.transferFilters?.length) {
             this.regMulti(this.options.filtersToken!, config.transferFilters);
             this.resetChain();
@@ -173,30 +166,11 @@ export class DefaultRequestHandler<
     }
 
     protected override generateInterceptorFn(fns: InterceptorLike[]): RequestInterceptorFn {
-        const options = this.options as RequestHandlerOptions & { features?: RequestHandlerOptions };
-        if (options.side === TransferSide.server) {
-            const transfersToken = options.transfersToken ?? options.features?.transfersToken;
-            const transfers = transfersToken ? this.injector.get(transfersToken, []) : [];
-            if (transfers?.length) {
-                fns.unshift(...transfers)
-            }
-        }
         return composeInterceptors(fns);
     }
 
     protected override generateBackendFn(): RequestHandlerFn {
-        const handler = super.generateBackendFn() as RequestHandlerFn;
-        const options = this.options as RequestHandlerOptions & { features?: RequestHandlerOptions };
-        if (options.side === TransferSide.client) {
-            const transfersToken = options.transfersToken ?? options.features?.transfersToken;
-            const transfers = transfersToken ? this.injector.get(transfersToken, []) : [];
-            if (transfers?.length) {
-                const interceptorFn = composeInterceptors(transfers) as RequestInterceptorFn;
-                return (req: TReq, context: RequestContext) => interceptorFn(req, handler, context);
-            }
-        }
-
-        return handler
+        return super.generateBackendFn() as RequestHandlerFn;
     }
 
     protected override forbiddenError(): Exception {

@@ -2,7 +2,7 @@ import { InstanceOf, ProvdierOf, Provider, Token, token } from '@tsdi/ioc';
 import { VaildatorLike } from '@tsdi/core';
 import {
     Incoming, Outgoing, PatternFormatter, RequestContext, TransferConfig,
-    TransferSide, TransferInterceptorFactory, RequestInterceptorLike, FindOptions
+    TransferSide, TransferFilterFactory, RequestInterceptorLike, FindOptions
 } from '@tsdi/common';
 export * from './features/index';
 export * from './middleware';
@@ -218,6 +218,7 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     responseVaildators?: ProvdierOf<VaildatorLike<Outgoing, TContext>>[];
     logger?: boolean | ServiceLoggerOptions;
     execptionLogger?: boolean | ExecptionLoggerOptions;
+    transfers?: TransferFilterFactory[];
     bodyparser?: boolean | BodyparserOptions;
     bodySerializer?: boolean;
     content?: boolean | ContentOptions;
@@ -232,7 +233,7 @@ export interface ServiceFeatureOptions<TReq = any, TRes = any, TContext extends 
     gracefulShutdown?: boolean | GracefulShutdownOptions;
     messageReaderFactory?: any;
     messagerReaderFactory?: any;
-    defaultTransfer?: TransferInterceptorFactory;
+    defaultTransfer?: TransferFilterFactory;
 }
 
 /**

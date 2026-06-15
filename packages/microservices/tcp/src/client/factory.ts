@@ -1,15 +1,17 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport } from '@tsdi/common';
+import { createRequestHandler, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
 import { TcpClient } from './client';
+import { TcpMicroPatternFormatter } from '../pattern-formatter';
 
 
 function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
         transport: Transport.TCP,
         side: TransferSide.client,
+        formatter: option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? TcpMicroPatternFormatter),
         ...option,
         features: {
             defaultTransfer: useJsonPacket(),
@@ -64,7 +66,14 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
         providers.push({
             provide: TcpClient,
             useExisting: clientToken
-        })
+        });
+        if (config.formatter) {
+            providers.push({
+                provide: PatternFormatter,
+                useFactory: (injector: Injector) => injector.get(config.formatter!),
+                deps: [Injector]
+            });
+        }
     }
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 
