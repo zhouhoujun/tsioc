@@ -21,7 +21,6 @@ import {
     getServiceGuardsToken,
     getServiceFiltersToken,
     getServiceMiddlewaresToken,
-    SenderFilter,
 } from '../src';
 
 function createBaseConfig() {
@@ -143,10 +142,6 @@ describe('service feature coverage', () => {
 
         expect(featureA.providers.length).toBeGreaterThan(0);
         expect(featureB.providers.length).toBeGreaterThan(0);
-    });
-
-    it('supports abstract sender typing export', () => {
-        expect(SenderFilter).toBeDefined();
     });
 
     it('useBodySerializer should register body serializer options', () => {

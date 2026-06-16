@@ -28,8 +28,6 @@ export enum ServiceFeatureKind {
     Transfer,
     /** Registers service-side request lifecycle logging. */
     Logger,
-    /** Registers request filters that serialize adapter state to transport output. */
-    Sender,
     /** Registers exception-oriented request filters. */
     ExceptionFilter,
     /** Registers generic request filters. */

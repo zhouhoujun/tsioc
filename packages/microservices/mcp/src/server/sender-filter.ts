@@ -1,10 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext, RestfulRequestAdapter } from '@tsdi/common';
-import { SenderFilter } from '@tsdi/service';
+import { RequestContext, RequestFilter, RestfulRequestAdapter } from '@tsdi/common';
 import { Observable, of, mergeMap, catchError, throwError } from 'rxjs';
 
 @Injectable()
-export class McpTransportSenderFilter extends SenderFilter<any, Observable<any>, RequestContext> {
+export class McpTransportSenderFilter extends RequestFilter<any, Observable<any>, RequestContext> {
     doFilter(input: any, next: any, context: RequestContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap((response) => {

@@ -6,5 +6,4 @@ export * from './cookie';
 export * from './auth';
 export * from './cors';
 export * from './ratelimiter';
-export * from './sender';
 export * from './exception-logger';

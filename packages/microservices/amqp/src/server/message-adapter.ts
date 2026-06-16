@@ -33,7 +33,7 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     get isHandled(): boolean {
-        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.error);
     }
 
     get isCommitted(): boolean {
@@ -84,7 +84,7 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
-                return this.getError();
+                return this.error;
             default:
                 return undefined;
         }
@@ -128,8 +128,17 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return this.responseStatusMessage;
     }
 
-    getError(): any {
+    get error(): any {
         return this.responseError;
+    }
+
+    set error(error: any) {
+        this.responseError = error;
+    }
+
+    setError(error: any): this {
+        this.error = error;
+        return this;
     }
 
     hasHeader(name: string): boolean {

@@ -14,7 +14,7 @@ describe('AMQP message adapter auth-facing reads', () => {
         const adapter = new AmqpMessageAdapter(request, {} as any);
         adapter.setStatus(202, 'Accepted');
         adapter.setHeader('x-auth', 'ok');
-        adapter.write({ ok: true });
+        adapter.setPayload({ ok: true });
 
         expect(adapter.read('headers', 'authorization')).toBe('Bearer amqp-token');
         expect(adapter.read('query', 'token')).toBe('query-token');

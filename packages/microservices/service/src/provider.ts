@@ -12,7 +12,7 @@ import {
 
 import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
-import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, ExecptionLogger, JsonInterceptor, SessionInterceptor, SenderFilter } from './interceptors';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, ExecptionLogger, JsonInterceptor, SessionInterceptor } from './interceptors';
 import { SetupServices } from './SetupMicroServices';
 import { ServiceMessageValueReader } from './message-value-reader';
 
@@ -392,31 +392,6 @@ export function useExecptionLogger(options?: ExecptionLoggerOptions): ServiceFea
             [
                 { provide: SERVICE_EXECEPTION_LOGGER_OPTIONS, useValue: options ?? {} },
                 { provide: tk, useClass: ExecptionLogger, multi: true }
-            ],
-            config
-        );
-    };
-}
-
-/**
- * Adds Sender filter to transport.
- * The sender filter wraps the handler chain so *every* result (success or
- * error) is written to the native response via the request's
- * MessageAdapter, and errors are re-thrown for upstream filters
- * (e.g. Logger) to observe.
- *
- * @param sender  Optional concrete filter class for this transport.
- *                When omitted the DI-resolved SenderFilter is used.
- */
-export function useSender(sender?: Type<RequestFilter>): ServiceFeatureFn<ServiceFeatureKind.Sender> {
-    return (config) => {
-        const tk = getServiceFiltersToken(config);
-        return makeServiceFeature(
-            ServiceFeatureKind.Sender,
-            [
-                sender
-                    ? { provide: tk, useClass: sender, multi: true }
-                    : { provide: tk, useExisting: SenderFilter, multi: true },
             ],
             config
         );

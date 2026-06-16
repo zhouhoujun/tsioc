@@ -143,7 +143,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             ).subscribe({
                 next: (response: any) => {
                     if (this.channel) {
-                        const body = adapter.getBody() ?? (response === adapter ? undefined : response);
+                        const body = adapter.payload ?? (response === adapter ? undefined : response);
                         const replyTo = msg.properties.replyTo;
                         if (replyTo) {
                             const buf = Buffer.from(JSON.stringify({ payload: body }));

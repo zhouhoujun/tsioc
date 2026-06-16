@@ -14,7 +14,6 @@ import {
     withLoadBalance,
     withTimeout
 } from '../src/provider';
-import { SenderFilter } from '@tsdi/service';
 import { ClientFeatureKind } from '../src/options';
 
 const createConfig = (name = 'alpha') => ({

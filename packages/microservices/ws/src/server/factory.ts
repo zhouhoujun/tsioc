@@ -1,9 +1,9 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider, toProviders, isArray } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide, TransferInterceptorFactory } from '@tsdi/common'
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
+import { NotFoundException, RequestContext, RequestFilterLike, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES, getServiceTransfersToken } from '@tsdi/service';
+import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { useWsPacket } from '../transfer';
 import { WsMessageAdapter } from './message-adapter';
@@ -13,6 +13,10 @@ import { WsMessageAdapterFactory } from './message-adapter.factory';
  * Create WebSocket transport feature for microservice.
  * 创建 WebSocket 微服务传输特性
  */
+const useWsTransfer = () => () => ({
+    filters: [useWsPacket() as unknown as RequestFilterLike]
+});
+
 export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
         transport: Transport.WS,
@@ -20,7 +24,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: useWsPacket(),
+            defaultTransfer: useWsTransfer(),
             ...option.features
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
@@ -29,8 +33,6 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
 
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
-    const transfersToken = getServiceTransfersToken(config);
-
 
     config.providers ??= [];
     config.providers.push(
@@ -48,25 +50,10 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         }, multi: true },
     );
 
-    const transferProviders: Provider[] = [];
-    const transfers: TransferInterceptorFactory[] = [];
-    if (config.features.defaultTransfer) {
-        transfers.push(config.features.defaultTransfer);
-    }
-    transfers.forEach((fac) => {
-        const itps = fac(config);
-        if (isArray(itps)) {
-            transferProviders.push(...toProviders(transfersToken, itps, true));
-        } else {
-            transferProviders.push(toProvider(transfersToken, itps, true));
-        }
-    });
-
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         WsMessageAdapter,
         WsMessageAdapterFactory,
-        ...transferProviders,
 
         {
             provide: serviceToken,

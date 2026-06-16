@@ -1,6 +1,5 @@
 import { Injectable, Exception } from '@tsdi/ioc';
-import { RequestContext, RestfulRequestAdapter } from '@tsdi/common';
-import { SenderFilter } from '@tsdi/service';
+import { RequestContext, RequestFilter, RestfulRequestAdapter } from '@tsdi/common';
 import { Observable, of, mergeMap, catchError, throwError } from 'rxjs';
 
 /**
@@ -12,7 +11,7 @@ import { Observable, of, mergeMap, catchError, throwError } from 'rxjs';
  * LoggerInterceptor) can observe them.
  */
 @Injectable()
-export class HttpTransportSenderFilter extends SenderFilter<any, Observable<any>, RequestContext> {
+export class HttpTransportSenderFilter extends RequestFilter<any, Observable<any>, RequestContext> {
     doFilter(input: any, next: any, context: RequestContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap((response) => {
