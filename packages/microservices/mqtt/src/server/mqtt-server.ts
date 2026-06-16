@@ -113,6 +113,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             method,
             body,
             payload: body,
+            topic,
         };
 
         const context = createRequestContext(this.injector, [
@@ -121,15 +122,17 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const adapter = this.injector.get(MqttMessageAdapterFactory).create({ request: requestData, response: this.client!, context });
         context.setMessageAdapter(adapter);
         context.setPayload(requestData);
+        adapter.setRequestData(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe((response: any) => {
-                if (this.client) {
-                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
-                    const msg = JSON.stringify({ payload: body });
-                    this.client.publish(topic + '/response', msg);
+            ).subscribe({
+                next: (response: any) => {
+                    adapter.sendResponse(response);
+                },
+                error: (err) => {
+                    adapter.sendError(err);
                 }
             });
     }

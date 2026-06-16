@@ -98,7 +98,7 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
 
         const url = parsed.url || channel;
         const method = parsed.method || 'GET';
-        const requestData = { ...parsed, url, method };
+        const requestData = { ...parsed, url, method, channel };
 
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],
@@ -106,15 +106,17 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         const adapter = this.injector.get(RedisMessageAdapterFactory).create({ request: requestData, response: this.publisher!, context });
         context.setMessageAdapter(adapter);
         context.setPayload(requestData);
+        adapter.setRequestData(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe((response: any) => {
-                if (this.publisher) {
-                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
-                    const msg = typeof body === 'string' ? body : JSON.stringify(body);
-                    this.publisher.publish(channel + ':response', msg);
+            ).subscribe({
+                next: (response: any) => {
+                    adapter.sendResponse(response);
+                },
+                error: (err) => {
+                    adapter.sendError(err);
                 }
             });
     }

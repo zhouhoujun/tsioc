@@ -128,6 +128,8 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             method,
             body,
             payload: body,
+            replyTo: msg.properties.replyTo,
+            correlationId: msg.properties.correlationId,
         };
 
         const context = createRequestContext(this.injector, [
@@ -142,19 +144,11 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe({
                 next: (response: any) => {
-                    if (this.channel) {
-                        const body = adapter.payload ?? (response === adapter ? undefined : response);
-                        const replyTo = msg.properties.replyTo;
-                        if (replyTo) {
-                            const buf = Buffer.from(JSON.stringify({ payload: body }));
-                            this.channel.sendToQueue(replyTo, buf, {
-                                correlationId: msg.properties.correlationId
-                            });
-                        }
-                    }
+                    adapter.sendResponse(response);
                     this.channel?.ack(msg);
                 },
-                error: () => {
+                error: (err) => {
+                    adapter.sendError(err);
                     this.channel?.nack(msg, false, false);
                 }
             });

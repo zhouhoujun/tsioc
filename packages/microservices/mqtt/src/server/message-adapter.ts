@@ -5,10 +5,8 @@ import * as mqtt from 'mqtt';
 @Injectable()
 export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>, mqtt.MqttClient, any> {
     private responseHeaders = new Map<string, Header>();
-    private responseBody: any;
     private responseStatus: any;
     private responseStatusMessage?: string;
-    private responseError: any;
 
     constructor(
         private requestData: Record<string, any>,
@@ -26,7 +24,7 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     get status(): any {
-        return this.getStatus();
+        return this.responseStatus;
     }
 
     set status(value: any) {
@@ -34,7 +32,7 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     get isHandled(): boolean {
-        return !isNil(this.getStatus()) || !isNil(this.getBody()) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.error);
     }
 
     get isCommitted(): boolean {
@@ -55,6 +53,10 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
 
     async destroy(): Promise<void> {
         return;
+    }
+
+    setRequestData(request: any): void {
+        this.requestData = request ?? {};
     }
 
     read(section: any, name?: string): any {
@@ -81,11 +83,11 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
             case 'topic':
                 return this.requestData?.topic ?? this.requestData?.url;
             case 'status':
-                return this.getStatus();
+                return this.status;
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
-                return this.getError();
+                return this.error;
             default:
                 return undefined;
         }
@@ -95,12 +97,26 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return this.requestData?.headers?.[name.toLowerCase()] ?? this.requestData?.headers?.[name];
     }
 
-    setHeader(name: string, value: Header): void {
-        this.responseHeaders.set(name.toLowerCase(), value);
+    protected onPayloadChange(payload: any): any {
+        return payload;
     }
 
-    removeHeader(name: string): void {
+    protected onErrorChange(error: any): any {
+        if (isNil(error)) {
+            this.payload = null;
+            return null;
+        }
+        return error;
+    }
+
+    setHeader(name: string, value: Header): this {
+        this.responseHeaders.set(name.toLowerCase(), value);
+        return this;
+    }
+
+    removeHeader(name: string): this {
         this.responseHeaders.delete(name.toLowerCase());
+        return this;
     }
 
     getResponseHeaderNames(): string[] {
@@ -111,15 +127,26 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return this.responseHeaders.get(name.toLowerCase());
     }
 
+    /**
+     * Write response body. Delegates to setPayload().
+     */
     write(body: any): void {
-        this.responseBody = body;
+        this.payload = body;
     }
 
-    setStatus(code: any, message?: string): void {
+    /**
+     * Read response body. Delegates to payload property.
+     */
+    getBody(): any {
+        return this.payload;
+    }
+
+    setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
             this.responseStatusMessage = message;
         }
+        return this;
     }
 
     getStatus(): any {
@@ -131,11 +158,7 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     getError(): any {
-        return this.responseError;
-    }
-
-    getBody(): any {
-        return this.responseBody;
+        return this.error;
     }
 
     hasHeader(name: string): boolean {
@@ -147,6 +170,46 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     writeError(error: any): void {
-        this.responseError = error;
+        this.setError(error);
+    }
+
+    /**
+     * Send the adapter's response payload to MQTT reply topic (topic + '/response').
+     */
+    sendResponse(response?: any): void {
+        const client = this.client;
+        if (!client) return;
+        const topic = this.requestData?.topic;
+        if (!topic) return;
+
+        const body = !isNil(this.payload) ? this.payload
+            : response === this ? undefined : response;
+        if (body === undefined) return;
+
+        const msg = JSON.stringify({ payload: body });
+        client.publish(topic + '/response', msg);
+    }
+
+    /**
+     * Send an error response to MQTT reply topic (topic + '/response').
+     */
+    sendError(err: any): void {
+        const client = this.client;
+        if (!client) return;
+
+        this.setError(err);
+        this.setStatus(err?.statusCode || err?.status || 500);
+
+        const errorBody = {
+            error: err?.message || err?.statusMessage || 'Error',
+            statusCode: err?.statusCode || err?.status || 500,
+            ...(err?.details ? { details: err.details } : {}),
+        };
+        this.setPayload(errorBody);
+
+        const topic = this.requestData?.topic;
+        if (topic) {
+            client.publish(topic + '/response', JSON.stringify(errorBody));
+        }
     }
 }

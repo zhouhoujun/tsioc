@@ -113,14 +113,12 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
 
         this.handler.handle(requestData as TReq, context)
             .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
-            .subscribe((response: any) => {
-                if (this.producer) {
-                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
-                    if (body === undefined) {
-                        return;
-                    }
-                    const buf = Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
-                    this.producer.send({ topic: topic + '.response', messages: [{ value: buf }] });
+            .subscribe({
+                next: (response: any) => {
+                    adapter.sendResponse(response);
+                },
+                error: (err) => {
+                    adapter.sendError(err);
                 }
             });
     }

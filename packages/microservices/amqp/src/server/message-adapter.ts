@@ -56,6 +56,10 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return;
     }
 
+    setRequestData(request: any): void {
+        this.requestData = request ?? {};
+    }
+
     read(section: any, name?: string): any {
         switch (section) {
             case 'headers':
@@ -98,6 +102,14 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return payload;
     }
 
+    protected onErrorChange(error: any): any {
+        if (isNil(error)) {
+            this.payload = null;
+            return null;
+        }
+        return error;
+    }
+
     setHeader(name: string, value: Header): this {
         this.responseHeaders.set(name.toLowerCase(), value);
         return this;
@@ -137,8 +149,16 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
     }
 
     setError(error: any): this {
-        this.error = error;
+        this.responseError = error;
         return this;
+    }
+
+    getError(): any {
+        return this.responseError;
+    }
+
+    getBody(): any {
+        return this.payload;
     }
 
     hasHeader(name: string): boolean {
@@ -149,8 +169,45 @@ export class AmqpMessageAdapter extends StatusMessageAdapter<Record<string, any>
         return false;
     }
 
-    setError(error: any): this {
-        this.responseError = error;
-        return this;
+    /**
+     * Send the adapter's response payload to the AMQP reply-to queue.
+     * If no replyTo is set, this is a no-op (the message will still be acked
+     * by the caller).
+     */
+    sendResponse(response?: any): void {
+        const channel = this.channel;
+        if (!channel) return;
+        const replyTo = this.requestData?.replyTo;
+        if (isNil(replyTo)) return;
+
+        const correlationId = this.requestData?.correlationId;
+        const body = !isNil(this.payload) ? this.payload
+            : response === this ? undefined : response;
+        const buf = Buffer.from(JSON.stringify({ payload: body }));
+        channel.sendToQueue(replyTo, buf, { correlationId });
+    }
+
+    /**
+     * Send an error response to the AMQP reply-to queue.
+     * Sets error state on the adapter and publishes error details.
+     */
+    sendError(err: any): void {
+        const channel = this.channel;
+        if (!channel) return;
+
+        this.setError(err);
+        const errorBody = {
+            error: err?.message || err?.statusMessage || 'Error',
+            statusCode: err?.statusCode || err?.status || 500,
+            ...(err?.details ? { details: err.details } : {}),
+        };
+        this.setPayload(errorBody);
+
+        const replyTo = this.requestData?.replyTo;
+        if (!isNil(replyTo)) {
+            const correlationId = this.requestData?.correlationId;
+            const buf = Buffer.from(JSON.stringify({ payload: errorBody }));
+            channel.sendToQueue(replyTo, buf, { correlationId });
+        }
     }
 }

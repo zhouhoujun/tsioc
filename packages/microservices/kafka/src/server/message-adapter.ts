@@ -7,7 +7,6 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
     private responseHeaders = new Map<string, Header>();
     private responseStatus: any;
     private responseStatusMessage?: string;
-    private responseError: any;
 
     constructor(
         private requestData: Record<string, any>,
@@ -33,7 +32,7 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
     }
 
     get isHandled(): boolean {
-        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.getError());
+        return !isNil(this.status) || !isNil(this.payload) || !isNil(this.error);
     }
 
     get isCommitted(): boolean {
@@ -54,6 +53,10 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
 
     async destroy(): Promise<void> {
         return;
+    }
+
+    setRequestData(request: any): void {
+        this.requestData = request ?? {};
     }
 
     read(section: any, name?: string): any {
@@ -84,7 +87,7 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
             case 'statusMessage':
                 return this.getStatusMessage();
             case 'error':
-                return this.getError();
+                return this.error;
             default:
                 return undefined;
         }
@@ -96,6 +99,14 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
 
     protected onPayloadChange(payload: any): any {
         return payload;
+    }
+
+    protected onErrorChange(error: any): any {
+        if (isNil(error)) {
+            this.payload = null;
+            return null;
+        }
+        return error;
     }
 
     setHeader(name: string, value: Header): this {
@@ -116,15 +127,26 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
         return this.responseHeaders.get(name.toLowerCase());
     }
 
+    /**
+     * Write response body. Delegates to setPayload().
+     */
     write(body: any): void {
-        this.responseBody = body;
+        this.payload = body;
     }
 
-    setStatus(code: any, message?: string): void {
+    /**
+     * Read response body. Delegates to payload property.
+     */
+    getBody(): any {
+        return this.payload;
+    }
+
+    setStatus(code: any, message?: string): this {
         this.responseStatus = code;
         if (!isNil(message)) {
             this.responseStatusMessage = message;
         }
+        return this;
     }
 
     getStatus(): any {
@@ -136,11 +158,7 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
     }
 
     getError(): any {
-        return this.responseError;
-    }
-
-    getBody(): any {
-        return this.responseBody;
+        return this.error;
     }
 
     hasHeader(name: string): boolean {
@@ -152,6 +170,47 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
     }
 
     writeError(error: any): void {
-        this.responseError = error;
+        this.setError(error);
+    }
+
+    /**
+     * Send the adapter's response payload to Kafka reply topic (topic + '.response').
+     */
+    sendResponse(response?: any): void {
+        const producer = this.producer;
+        if (!producer) return;
+        const topic = this.requestData?.topic;
+        if (!topic) return;
+
+        const body = !isNil(this.payload) ? this.payload
+            : response === this ? undefined : response;
+        if (body === undefined) return;
+
+        const buf = Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
+        producer.send({ topic: topic + '.response', messages: [{ value: buf }] });
+    }
+
+    /**
+     * Send an error response to Kafka reply topic (topic + '.response').
+     */
+    sendError(err: any): void {
+        const producer = this.producer;
+        if (!producer) return;
+
+        this.setError(err);
+        this.setStatus(err?.statusCode || err?.status || 500);
+
+        const errorBody = {
+            error: err?.message || err?.statusMessage || 'Error',
+            statusCode: err?.statusCode || err?.status || 500,
+            ...(err?.details ? { details: err.details } : {}),
+        };
+        this.setPayload(errorBody);
+
+        const topic = this.requestData?.topic;
+        if (topic) {
+            const buf = Buffer.from(JSON.stringify(errorBody));
+            producer.send({ topic: topic + '.response', messages: [{ value: buf }] });
+        }
     }
 }

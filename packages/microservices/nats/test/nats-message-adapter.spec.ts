@@ -22,9 +22,9 @@ describe('NATS message adapter auth-facing reads', () => {
         expect(adapter.read('params', 'pid')).toBe('p1');
         expect(adapter.read('path', 'name')).toBe('alice');
         expect(adapter.read('topic')).toBe('sensor.message.start');
-        expect(adapter.getStatus()).toBe(202);
+        expect(adapter.status).toBe(202);
         expect(adapter.getStatusMessage()).toBe('Accepted');
         expect(adapter.getResponseHeader('x-auth')).toBe('ok');
-        expect(adapter.getBody()).toEqual({ ok: true });
+        expect(adapter.payload).toEqual({ ok: true });
     });
 });

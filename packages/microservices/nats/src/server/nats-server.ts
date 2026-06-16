@@ -119,6 +119,13 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             method,
             body,
             payload: body,
+            subject,
+            _respond: (data: any) => {
+                if (msg.respond) {
+                    const buf = sc.encode(JSON.stringify(data));
+                    msg.respond(buf);
+                }
+            },
         };
 
         const context = createRequestContext(this.injector, [
@@ -127,15 +134,17 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const adapter = this.injector.get(NatsMessageAdapterFactory).create({ request: requestData, response: this.nc!, context });
         context.setMessageAdapter(adapter);
         context.setPayload(requestData);
+        adapter.setRequestData(requestData);
 
         this.handler.handle(requestData as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe((response: any) => {
-                if (msg.respond) {
-                    const body = adapter.getBody() ?? (response === adapter ? undefined : response);
-                    const buf = sc.encode(JSON.stringify({ payload: body }));
-                    msg.respond(buf);
+            ).subscribe({
+                next: (response: any) => {
+                    adapter.sendResponse(response);
+                },
+                error: (err) => {
+                    adapter.sendError(err);
                 }
             });
     }
