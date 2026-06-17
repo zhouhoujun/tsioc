@@ -107,12 +107,20 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
     }
 
     protected async onShutdown(): Promise<void> {
-        if (!this.connection || this.connection.readyState === WebSocket.CLOSED) return;
+        if (!this.connection) return;
 
-        this.connection.close(1001, 'Client shutdown');
-        this.connection.terminate();
-        this.connection.removeAllListeners();
+        const connection = this.connection;
         this.connection = null!;
+
+        if (connection.readyState !== WebSocket.CLOSED) {
+            try {
+                connection.close(1001, 'Client shutdown');
+            } catch {
+                // ignore close errors during shutdown
+            }
+            connection.terminate();
+        }
+        connection.removeAllListeners();
     }
 
     protected isValid(connection: WebSocket): boolean {
@@ -158,8 +166,14 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
                 return;
             }
 
+            let timer: NodeJS.Timeout | null = null;
+
             const onMessage = (data: WebSocket.RawData) => {
                 this.connection.off(Events.ERROR, onError);
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
                 try {
                     const message = data.toString();
                     try {
@@ -174,6 +188,10 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
 
             const onError = (err: Error) => {
                 this.connection.off(Events.MESSAGE, onMessage);
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
                 reject(err);
             };
 
@@ -181,9 +199,10 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
             this.connection.once(Events.ERROR, onError);
 
             // Timeout
-            setTimeout(() => {
+            timer = setTimeout(() => {
                 this.connection.off(Events.MESSAGE, onMessage);
                 this.connection.off(Events.ERROR, onError);
+                timer = null;
                 reject(new Error('Receive timeout'));
             }, 30000);
         });

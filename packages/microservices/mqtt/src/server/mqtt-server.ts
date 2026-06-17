@@ -8,7 +8,6 @@ import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
-import { MqttMessageAdapter } from './message-adapter';
 import { MqttMessageAdapterFactory } from './message-adapter.factory';
 
 /**

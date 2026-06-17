@@ -10,7 +10,6 @@ import { TransformModule } from './pipes/transform';
 import { ApplicationArguments } from './ApplicationArguments';
 
 
-
 /**
  * application.
  * 

@@ -13,8 +13,10 @@ import {
 import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions, ServiceOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
 import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, ExecptionLogger, JsonInterceptor, SessionInterceptor } from './interceptors';
+import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware';
 import { SetupServices } from './SetupMicroServices';
 import { ServiceMessageValueReader } from './message-value-reader';
+
 
 
 
@@ -300,7 +302,6 @@ export function useFilters(...filters: ProvdierOf<RequestFilterLike>[]): Service
     };
 }
 
-import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware';
 
 /**
  * Adds middlewares to micro service.

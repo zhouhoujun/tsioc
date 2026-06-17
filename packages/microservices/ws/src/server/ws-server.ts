@@ -9,6 +9,7 @@ import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
 import { Subject, fromEvent, race, take, takeUntil } from 'rxjs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as net from 'node:net';
 import { WebSocketServer, WebSocket } from 'ws';
 import { WsServOptions, WS_SERV_OPTIONS, WS_BIND_INTERCEPTORS, WS_BIND_FILTERS, WS_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
@@ -35,6 +36,7 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
      * 跟踪活跃的 WebSocket 连接以便正确关闭
      */
     private activeConnections: Set<WebSocket> = new Set();
+    private activeSockets: Set<net.Socket> = new Set();
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
@@ -112,6 +114,7 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
         const server = this.server;
         server.on(Events.CLOSE, () => this.logger.info(this.options.microservice ? 'WebSocket microservice closed!' : 'WebSocket server closed!'));
         server.on(Events.ERROR, (err: Error) => this.logger.error(err));
+        server.on(Events.CONNECTION, (socket: net.Socket) => this.trackSocket(socket));
 
         // Handle WebSocket connections
         this.wss.on(Events.CONNECTION, (ws: WebSocket, request: http.IncomingMessage) => {
@@ -128,8 +131,21 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
                 this.options.listenOpts = { host: LOCALHOST, port: 3000 };
             }
             await new Promise<void>((resolve, reject) => {
-                this.listen(this.options.listenOpts!, resolve);
-                this.server!.once('error', reject);
+                const cleanup = () => {
+                    server.off('listening', onListening);
+                    server.off('error', onError);
+                };
+                const onListening = () => {
+                    cleanup();
+                    resolve();
+                };
+                const onError = (err: Error) => {
+                    cleanup();
+                    reject(err);
+                };
+                server.once('listening', onListening);
+                server.once('error', onError);
+                this.listen(this.options.listenOpts!);
             });
         }
     }
@@ -146,8 +162,16 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             if (ws.readyState === WebSocket.OPEN) {
                 ws.close(1001, 'Server shutdown');
             }
+            if (ws.readyState !== WebSocket.CLOSED) {
+                ws.terminate();
+            }
         }
         this.activeConnections.clear();
+        this.closeSockets();
+
+        if (this.server && typeof (this.server as any).unref === 'function') {
+            (this.server as any).unref();
+        }
 
         await promisify(this.wss.close, this.wss)();
         this.wss = null;
@@ -155,7 +179,19 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
         if(!this.server) return;
 
         if(!this.isBinding) {
-            await promisify(this.server.close, this.server)();
+            if (typeof (this.server as any).closeIdleConnections === 'function') {
+                (this.server as any).closeIdleConnections();
+            }
+            if (typeof (this.server as any).closeAllConnections === 'function') {
+                (this.server as any).closeAllConnections();
+            }
+            try {
+                await promisify(this.server.close, this.server)();
+            } catch (err: any) {
+                if (err?.code !== 'ERR_SERVER_NOT_RUNNING') {
+                    throw err;
+                }
+            }
             this.server?.removeAllListeners();
         }
         this.server = null;
@@ -192,6 +228,23 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             .pipe(
                 takeUntil(race(this.destroy$, fromEvent(ws, Events.CLOSE)).pipe(take(1)))
             ).subscribe();
+    }
+
+    private trackSocket(socket: net.Socket) {
+        this.activeSockets.add(socket);
+        socket.once(Events.CLOSE, () => this.activeSockets.delete(socket));
+    }
+
+    private closeSockets() {
+        for (const socket of this.activeSockets) {
+            if (typeof (socket as any).unref === 'function') {
+                (socket as any).unref();
+            }
+            if (!socket.destroyed) {
+                socket.destroy();
+            }
+        }
+        this.activeSockets.clear();
     }
 
 }

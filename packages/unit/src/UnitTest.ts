@@ -159,9 +159,11 @@ export async function runTest(src: string | AbstractType | (string | AbstractTyp
             useFactory: () => new UnitTestApplicationArguments(finalConfig.baseURL!)
         });
     }
-    await Application.run(UnitTest, {
+    const ctx = await Application.run(UnitTest, {
         ...config,
         loadDeps,
         providers
-    })
+    });
+
+    await ctx.close();
 }

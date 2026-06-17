@@ -1,6 +1,7 @@
-import { AbstractRequest, MessageAdapter, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferFilterFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
-import { Provider } from '@tsdi/ioc';
-import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, throwError, of } from 'rxjs';
+import { AbstractRequest, MessageAdapter, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferFilterFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
+import { Provider, toProvider } from '@tsdi/ioc';
+import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, of, timeout as rxTimeout } from 'rxjs';
+import { PacketNumberIdGenerator, packetIdMessage } from '@tsdi/transport';
 import { SOCKET } from './context';
 
 export interface WsPacketOptions extends TransferOptions {
@@ -22,6 +23,7 @@ export interface WsPacketOptions extends TransferOptions {
 const defaultOptions = {
     eventName: Events.MESSAGE,
     idSize: 2,
+    packetId: PacketNumberIdGenerator
 } as WsPacketOptions;
 
 const requestMapping = (req: any, context: RequestContext) => {
@@ -79,6 +81,10 @@ const outgoingMapping = (res: any, context: RequestContext) => {
         const error = adapter.getError?.();
         const body = adapter.getBody?.();
         const headerNames = adapter.getResponseHeaderNames?.() ?? [];
+        const id = res?.id;
+        if (id !== undefined && id !== null) {
+            json.id = id;
+        }
         if (status !== undefined && status !== null) {
             json.status = status;
             json.statusCode = status;
@@ -97,12 +103,26 @@ const outgoingMapping = (res: any, context: RequestContext) => {
         }
         if (body !== undefined) {
             json.body = body;
+            json.payload = body;
         } else if (res !== adapter && res !== undefined) {
-            json.body = res;
+            const value = res?.payload !== undefined ? res.payload : res;
+            json.body = value;
+            json.payload = value;
         }
         return json;
     }
     return res;
+}
+
+function parseWsData(data: any): any {
+    const str = Buffer.isBuffer(data) ? data.toString() :
+        ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
+            String(data);
+    try {
+        return JSON.parse(str);
+    } catch {
+        return str;
+    }
 }
 
 function wsEvent(socket: any, eventName: string): Observable<any> {
@@ -140,33 +160,23 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
             if (!socket) {
                 throw new Error('no socket in context');
             }
-            const response$ = wsEvent(socket, eventName).pipe(
-                takeUntil(race(wsClose(socket)).pipe(take(1))),
-                filter(r => r !== null && r !== undefined),
-                take(1)
-            );
             const payload = options.mapping ? options.mapping(req, context) : req;
             const message = typeof payload === 'string' ? payload : JSON.stringify(payload, options.replacer, options.space);
+            let response$ = wsEvent(socket, eventName).pipe(
+                takeUntil(race(wsClose(socket)).pipe(take(1))),
+                filter(r => r !== null && r !== undefined),
+                mergeMap((data: any) => of(parseWsData(data))),
+                filter((res: any) => req?.observe === 'observe' || req?.id == null || (res && typeof res === 'object' && (res as any).id == req.id))
+            );
+            if (req?.observe !== 'observe') {
+                response$ = response$.pipe(take(1));
+            }
+            if (req?.timeout != null && req.timeout !== Infinity) {
+                response$ = response$.pipe(rxTimeout(req.timeout));
+            }
             socket.send(message);
             return response$;
-        }).pipe(
-            mergeMap((data: any) => {
-                const str = Buffer.isBuffer(data) ? data.toString() :
-                    ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
-                        String(data);
-                try {
-                    return new Observable(observer => {
-                        observer.next(JSON.parse(str));
-                        observer.complete();
-                    });
-                } catch {
-                    return new Observable(observer => {
-                        observer.next(str);
-                        observer.complete();
-                    });
-                }
-            })
-        );
+        });
     } : (_input: any, next: any, context: any) => {
         const socket = context.get(SOCKET);
         if (!socket) {
@@ -177,10 +187,10 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
             filter(r => r !== null && r !== undefined),
             mergeMap(data => {
                 try {
-                    const str = Buffer.isBuffer(data) ? data.toString() :
-                        ArrayBuffer.isView(data) ? Buffer.from(data as Uint8Array).toString() :
-                            String(data);
-                    const parsed = JSON.parse(str);
+                    const parsed = parseWsData(data);
+                    if (typeof parsed === 'string') {
+                        throw new Error('raw-text');
+                    }
                     context.set(REQUEST, parsed);
                     context.setPayload(parsed);
                     const adapter = context.get(MessageAdapter);
@@ -240,10 +250,19 @@ export function useWsPacket(options: WsPacketOptions = {}): TransferFilterFactor
         if (!options.mapping) {
             options.mapping = isClient ? requestMapping : outgoingMapping;
         }
+        if (isClient) {
+            config.providers ??= [];
+            config.providers.push(toProvider(PacketIdGenerator, options.packetId));
+        }
 
-        return [
+        return isClient ? [
             useCatch,
+            packetIdMessage(config, options),
             wsMessage(config, options)
+        ] : [
+            useCatch,
+            wsMessage(config, options),
+            packetIdMessage(config, options)
         ];
     }
 }

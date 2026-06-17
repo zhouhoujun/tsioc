@@ -1,5 +1,5 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, RequestFilterLike, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
@@ -9,14 +9,6 @@ import { useWsPacket } from '../transfer';
 import { WsMessageAdapter } from './message-adapter';
 import { WsMessageAdapterFactory } from './message-adapter.factory';
 
-/**
- * Create WebSocket transport feature for microservice.
- * 创建 WebSocket 微服务传输特性
- */
-const useWsTransfer = () => () => ({
-    filters: [useWsPacket() as unknown as RequestFilterLike]
-});
-
 export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
         transport: Transport.WS,
@@ -24,7 +16,7 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: useWsTransfer(),
+            defaultTransfer: useWsPacket(),
             ...option.features
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
