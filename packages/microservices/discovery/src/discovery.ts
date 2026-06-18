@@ -27,6 +27,10 @@ export interface ServiceEndpoint {
      */
     metadata?: Record<string, any>;
     /**
+     * endpoint tags.
+     */
+    tags?: string[];
+    /**
      * endpoint health status.
      */
     status?: 'UP' | 'DOWN' | 'UNKNOWN';
@@ -34,6 +38,30 @@ export interface ServiceEndpoint {
      * last updated timestamp.
      */
     updatedAt?: number;
+    /**
+     * registration timestamp.
+     */
+    registeredAt?: number;
+    /**
+     * service version.
+     */
+    version?: string;
+    /**
+     * health check path.
+     */
+    healthCheckPath?: string;
+    /**
+     * health check interval in seconds.
+     */
+    healthCheckInterval?: number;
+    /**
+     * time-to-live in milliseconds.
+     */
+    ttl?: number;
+    /**
+     * instance weight used for load balancing.
+     */
+    weight?: number;
 }
 
 /**
@@ -65,6 +93,14 @@ export interface ServiceInfo {
      */
     metadata?: Record<string, any>;
     /**
+     * service tags.
+     */
+    tags?: string[];
+    /**
+     * service version.
+     */
+    version?: string;
+    /**
      * health check path.
      */
     healthCheckPath?: string;
@@ -72,6 +108,37 @@ export interface ServiceInfo {
      * health check interval in seconds.
      */
     healthCheckInterval?: number;
+    /**
+     * endpoint ttl in milliseconds.
+     */
+    ttl?: number;
+    /**
+     * service weight for weighted selection.
+     */
+    weight?: number;
+}
+
+export interface ServiceQuery {
+    /**
+     * service name.
+     */
+    name?: string;
+    /**
+     * protocol filter.
+     */
+    protocol?: string;
+    /**
+     * health status filter.
+     */
+    status?: 'UP' | 'DOWN' | 'UNKNOWN';
+    /**
+     * metadata matcher. All provided keys must match.
+     */
+    metadata?: Record<string, any>;
+    /**
+     * tag filter. All provided tags must be present.
+     */
+    tags?: string[];
 }
 
 /**
@@ -102,6 +169,10 @@ export interface ServiceDiscoveryOptions {
      * cache expiration in seconds.
      */
     cacheExpiration?: number;
+    /**
+     * default endpoint ttl in milliseconds.
+     */
+    ttl?: number;
 }
 
 /**

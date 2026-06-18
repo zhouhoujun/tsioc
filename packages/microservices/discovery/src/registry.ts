@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ServiceEndpoint, ServiceInfo, ServiceWatchCallback } from './discovery';
+import { ServiceEndpoint, ServiceInfo, ServiceQuery, ServiceWatchCallback } from './discovery';
 
 /**
  * Service discovery abstract interface.
@@ -25,6 +25,12 @@ export abstract class ServiceDiscovery {
      * @param name service name.
      */
     abstract discover(name: string): Promise<ServiceEndpoint[]>;
+
+    /**
+     * discover service endpoints with query conditions.
+     * @param query service query conditions.
+     */
+    abstract query(query: ServiceQuery): Promise<ServiceEndpoint[]>;
 
     /**
      * discover one service endpoint by name.
@@ -56,6 +62,13 @@ export abstract class ServiceDiscovery {
      * @param endpoint service endpoint.
      */
     abstract healthCheck(endpoint: ServiceEndpoint): Promise<boolean>;
+
+    /**
+     * update service endpoint status or metadata.
+     * @param id endpoint id.
+     * @param patch endpoint patch.
+     */
+    abstract update(id: string, patch: Partial<ServiceEndpoint>): Promise<ServiceEndpoint | null>;
 
     /**
      * shutdown service discovery.

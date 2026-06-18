@@ -1,0 +1,35 @@
+{
+  "name": "@tsdi/gateway",
+  "version": "6.0.31",
+  "description": "Microservice API gateway for @tsdi/microservices with route forwarding, discovery, and rate limiting.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
+  },
+  "keywords": [
+    "microservice",
+    "gateway",
+    "api-gateway",
+    "routing",
+    "discovery",
+    "tsdi",
+    "@tsdi",
+    "ioc"
+  ],
+  "author": "houjun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {},
+  "directories": {
+    "lib": "dist",
+    "test": "test"
+  },
+  "devDependencies": {}
+}

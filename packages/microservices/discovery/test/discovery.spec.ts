@@ -101,6 +101,47 @@ describe('Discovery Module Test', () => {
             const ep2 = await discovery.register({ name: 'service2', address: 'host2' });
             expect(ep1.id).not.toBe(ep2.id);
         });
+
+        it('should query services by metadata and tags', async () => {
+            await discovery.register({
+                name: 'profile-service',
+                address: 'host1',
+                metadata: { env: 'prod', zone: 'a' },
+                tags: ['public', 'http']
+            });
+            await discovery.register({
+                name: 'profile-service',
+                address: 'host2',
+                metadata: { env: 'test', zone: 'b' },
+                tags: ['internal']
+            });
+
+            const endpoints = await discovery.query({
+                name: 'profile-service',
+                metadata: { env: 'prod' },
+                tags: ['public']
+            });
+
+            expect(endpoints.length).toBe(1);
+            expect(endpoints[0].address).toBe('host1');
+        });
+
+        it('should update endpoint status and metadata', async () => {
+            const endpoint = await discovery.register({
+                name: 'billing-service',
+                address: 'host1',
+                metadata: { env: 'prod' }
+            });
+
+            const updated = await discovery.update(endpoint.id, {
+                status: 'DOWN',
+                metadata: { env: 'prod', reason: 'maintenance' }
+            });
+
+            expect(updated).not.toBeNull();
+            expect(updated?.status).toBe('DOWN');
+            expect(updated?.metadata?.reason).toBe('maintenance');
+        });
     });
 
     describe('RandomEndpointSelector', () => {

@@ -1,7 +1,7 @@
 import { Module, ModuleWithProviders, Provider, token } from '@tsdi/ioc';
 import { ServiceDiscovery } from './registry';
 import { InMemoryServiceDiscovery } from './memory.discovery';
-import { RoundRobinEndpointSelector } from './selector';
+import { LeastConnectionsEndpointSelector, RandomEndpointSelector, RoundRobinEndpointSelector, WeightedEndpointSelector } from './selector';
 import { EndpointSelector } from './registry';
 import { ServiceDiscoveryOptions } from './discovery';
 
@@ -16,7 +16,10 @@ export const DISCOVERY_OPTIONS = token<ServiceDiscoveryOptions>('DISCOVERY_OPTIO
 export const DISCOVERY_PROVIDERS: Provider[] = [
     InMemoryServiceDiscovery,
     { provide: ServiceDiscovery, useClass: InMemoryServiceDiscovery },
+    RandomEndpointSelector,
     RoundRobinEndpointSelector,
+    WeightedEndpointSelector,
+    LeastConnectionsEndpointSelector,
     { provide: EndpointSelector, useClass: RoundRobinEndpointSelector }
 ];
 
@@ -27,7 +30,7 @@ export const DISCOVERY_PROVIDERS: Provider[] = [
  */
 @Module({
     providers: DISCOVERY_PROVIDERS,
-    exports: [InMemoryServiceDiscovery, RoundRobinEndpointSelector]
+    exports: [InMemoryServiceDiscovery, RandomEndpointSelector, RoundRobinEndpointSelector, WeightedEndpointSelector, LeastConnectionsEndpointSelector]
 })
 export class DiscoveryModule {
     /**

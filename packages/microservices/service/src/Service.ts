@@ -23,6 +23,7 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
     async start() {
         if (this.injector.ready) await this.injector.ready;
         await this.strategyRegister();
+        await this.strategyHealthStart();
         return await this.onStart();
     }
 
@@ -68,6 +69,17 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
             return strategy.shutdown();
         }
         return this.onGracefulShutdown();
+    }
+
+    /**
+     * Start health reporting using strategy.
+     */
+    protected async strategyHealthStart(): Promise<any> {
+        const strategy = this.injector.get(HEALTH_CHECK_STRATEGY, null);
+        if (strategy) {
+            return strategy.start();
+        }
+        return Promise.resolve();
     }
 
     /**

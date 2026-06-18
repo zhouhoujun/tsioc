@@ -16,6 +16,12 @@ import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInter
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware';
 import { SetupServices } from './SetupMicroServices';
 import { ServiceMessageValueReader } from './message-value-reader';
+import { DiscoveryHealthCheckStrategy } from './strategies/discovery-health.strategy';
+import { DiscoveryRegistrationStrategy } from './strategies/discovery-registration.strategy';
+import { DefaultGracefulShutdownStrategy } from './strategies/default-graceful-shutdown.strategy';
+import { REGISTRATION_STRATEGY } from './strategies/IRegistrationStrategy';
+import { HEALTH_CHECK_STRATEGY } from './strategies/IHealthCheckStrategy';
+import { GRACEFUL_SHUTDOWN_STRATEGY } from './strategies/IGracefulShutdownStrategy';
 
 
 
@@ -218,7 +224,9 @@ export function useRegistration(options?: boolean | RegistrationOptions): Servic
         return makeServiceFeature(
             ServiceFeatureKind.Registration,
             [
-                { provide: SERVICE_REGISTRATION_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) }
+                DiscoveryRegistrationStrategy,
+                { provide: SERVICE_REGISTRATION_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
+                { provide: REGISTRATION_STRATEGY, useExisting: DiscoveryRegistrationStrategy }
             ],
             config
         );
@@ -234,7 +242,9 @@ export function useHealth(options?: boolean | HealthOptions): ServiceFeatureFn<S
         return makeServiceFeature(
             ServiceFeatureKind.Health,
             [
-                { provide: SERVICE_HEALTH_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) }
+                DiscoveryHealthCheckStrategy,
+                { provide: SERVICE_HEALTH_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
+                { provide: HEALTH_CHECK_STRATEGY, useExisting: DiscoveryHealthCheckStrategy }
             ],
             config
         );
@@ -250,7 +260,9 @@ export function useGracefulShutdown(options?: boolean | GracefulShutdownOptions)
         return makeServiceFeature(
             ServiceFeatureKind.GracefulShutdown,
             [
-                { provide: SERVICE_GRACEFUL_SHUTDOWN_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) }
+                DefaultGracefulShutdownStrategy,
+                { provide: SERVICE_GRACEFUL_SHUTDOWN_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
+                { provide: GRACEFUL_SHUTDOWN_STRATEGY, useExisting: DefaultGracefulShutdownStrategy }
             ],
             config
         );
