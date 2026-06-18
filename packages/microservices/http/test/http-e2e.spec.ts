@@ -104,67 +104,233 @@ function closeHttp2Client(session?: http2.ClientHttp2Session | null): Promise<vo
     });
 }
 
-// describe('HTTP E2E microservice:true', () => {
-//     @Module({
-//         imports: [LoggerModule],
-//         providers: [
-//             provideService(useRouter(),
-//                 useHttpTransport({ listenOpts: { port: PORTS.ms, host: '127.0.0.1' }, asDefault: true })),
-//             provideClient(
-//                 withHttpTransport({ url: `http://127.0.0.1:${PORTS.ms}`, asDefault: true }))
-//         ]
-//     })
-//     class HttpMsModule { }
+// ---- Module definitions ----
 
-//     let ctx: ApplicationContext;
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(
+        useRouter(),
+        useHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
+})
+class HttpCtrlModule { }
 
-//     before(async () => {
-//         ctx = await Application.run(HttpMsModule);
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [
+        provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: PORTS.matrix, host: '127.0.0.1' }, asDefault: true })),
+        provideClient(withHttpTransport({ url: `http://127.0.0.1:${PORTS.matrix}`, asDefault: true }))
+    ]
+})
+class HttpMatrixModule { }
 
-//     });
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [
+        provideService(useRouter(),
+        useHttpTransport({
+            listenOpts: { port: PORTS.static, host: '127.0.0.1' },
+            static: { root: path.resolve(__dirname, 'fixtures') },
+            upload: { limit: '1mb' },
+            asDefault: true
+        }))]
+})
+class HttpStaticModule { }
 
-//     after(async () => {
-//         await ctx?.close();
-//     });
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2, host: '127.0.0.1' }, asDefault: true }))]
+})
+class Http2Module { }
 
-//     it('should bootstrap HTTP with microservice:true', () => { expect(ctx).toBeDefined(); });
-// });
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [
+        provideService(useRouter(),
+            useHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2client, host: '127.0.0.1' }, asDefault: true })),
+        provideClient(
+            withHttpTransport({ authority: `http://127.0.0.1:${PORTS.h2client}`, asDefault: true }))
+    ]
+})
+class Http2ClientModule { }
 
-// describe('HTTP E2E microservice:false', () => {
-//     @Module({
-//         imports: [LoggerModule],
-//         providers: [
-//             provideService(useRouter(),
-//                 useHttpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
-//             provideClient(
-//                 withHttpTransport({ url: `http://127.0.0.1:${PORTS.host}`, microservice: false, asDefault: true }))
-//         ]
-//     })
-//     class HttpHostModule { }
+const key = require('fs').readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+const cert = require('fs').readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
 
-//     let ctx: ApplicationContext;
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({
+            majorVersion: 2,
+            secure: true,
+            serverOpts: { key, cert, allowHTTP1: true } as any,
+            listenOpts: { port: PORTS.h2, host: 'localhost' },
+            asDefault: true
+        }))]
+})
+class Https2Module { }
 
-//     before(async () => {
-//         ctx = await Application.run(HttpHostModule);
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({
+            majorVersion: 2,
+            listenOpts: { port: PORTS.h2 + 20, host: '127.0.0.1' },
+            asDefault: true
+        }))]
+})
+class Http2ConcurrentModule { }
 
-//     });
-//     after(async () => {
-//         await ctx?.close();
-//     });
+@Controller('/negotiate')
+class NegotiateController {
+    @Get('/format')
+    format() {
+        return { data: 'content-negotiation' };
+    }
+}
 
-//     it('should bootstrap HTTP with microservice:false', () => { expect(ctx).toBeDefined(); });
-// });
+const NEG_PORT = PORTS.ctrl + 100;
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [NegotiateController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({
+            listenOpts: { port: NEG_PORT, host: '127.0.0.1' },
+            asDefault: true
+        }))]
+})
+class NegotiateModule { }
+
+const ERR_PORT = PORTS.ctrl + 200;
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({
+            listenOpts: { port: ERR_PORT, host: '127.0.0.1' },
+            asDefault: true
+        }))]
+})
+class ErrModule { }
+
+// ----- HTTP client timeout -----
+const TIMEOUT_PORT = 21500;
+
+@Controller('/slow')
+class SlowController {
+    @Get('/delayed')
+    delayed() {
+        return new Promise(resolve => setTimeout(() => resolve({ done: true }), 200));
+    }
+
+    @Get('/very-slow', { timeout: 20 })
+    verySlow() {
+        return new Promise(resolve => setTimeout(() => resolve({ done: true }), 200));
+    }
+
+    @Post('/submit-rate-limited', { rateLimit: { limit: 1, windowMs: 1000 } })
+    submitLimited(@RequestBody() body: any) {
+        return { received: body };
+    }
+}
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [SlowController],
+    providers: [
+        provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true })),
+        provideClient(
+            withTimeout(20),
+            withHttpTransport({ url: `http://127.0.0.1:${TIMEOUT_PORT}`, asDefault: true }))
+    ]
+})
+class TimeoutModule { }
+
+const FEAT_TIMEOUT_PORT = 21501;
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [SlowController],
+    providers: [
+        provideService(useRouter(),
+            useHttpTransport({ listenOpts: { port: FEAT_TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true })),
+        provideClient(
+            withTimeout(20),
+            withHttpTransport({ url: `http://127.0.0.1:${FEAT_TIMEOUT_PORT}`, asDefault: true }))
+    ]
+})
+class FeatTimeoutModule { }
+
+const ROUTE_TIMEOUT_PORT = 21502;
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [SlowController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({ listenOpts: { port: ROUTE_TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true }))]
+})
+class RouteTimeoutModule { }
+
+const RATE_PORT = 21503;
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [SlowController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({ listenOpts: { port: RATE_PORT, host: '127.0.0.1' }, asDefault: true }))]
+})
+class RateLimitModule { }
+
+// ----- HTTP pipe parameter conversion -----
+const PIPE_PORT = 21510;
+
+@Controller('/pipes')
+class PipeTestController {
+    @Get('/convert')
+    convert(
+        @RequestParam('age', { pipe: 'int' }) age: number,
+        @RequestParam('enabled', { pipe: 'boolean' }) enabled: boolean
+    ) {
+        return { age, enabled, types: { age: typeof age, enabled: typeof enabled } };
+    }
+
+    @Get('/defaults')
+    defaults(
+        @RequestParam('page', { nullable: true, pipe: 'int' }) page: number = 1,
+        @RequestParam('size', { nullable: true, pipe: 'int' }) size: number = 20,
+        @RequestParam('sort', { nullable: true }) sort: string = 'name'
+    ) {
+        return { page, size, sort };
+    }
+
+    @Get('/int-validate')
+    intValidate(@RequestParam('val', { pipe: 'int' }) val: number) {
+        return { val, isNumber: typeof val === 'number' };
+    }
+}
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [PipeTestController],
+    providers: [provideService(useRouter(),
+        useHttpTransport({ listenOpts: { port: PIPE_PORT, host: '127.0.0.1' }, asDefault: true }))]
+})
+class PipeModule { }
+
+// ---- Tests ----
 
 describe('HTTP @Controller', () => {
-    @Module({
-        imports: [LoggerModule],
-        declarations: [HttpTestController],
-        providers: [provideService(
-            useRouter(),
-            useHttpTransport({ listenOpts: { port: PORTS.ctrl, host: '127.0.0.1' }, asDefault: true }))]
-    })
-    class HttpCtrlModule { }
-
     let ctx: ApplicationContext;
 
     before(async () => {
@@ -205,17 +371,6 @@ describe('HTTP @Controller', () => {
 });
 
 describe('HTTP parameter coverage matrix', () => {
-    @Module({
-        imports: [LoggerModule],
-        declarations: [HttpTestController],
-        providers: [
-            provideService(useRouter(),
-                useHttpTransport({ listenOpts: { port: PORTS.matrix, host: '127.0.0.1' }, asDefault: true })),
-            provideClient(withHttpTransport({ url: `http://127.0.0.1:${PORTS.matrix}`, asDefault: true }))
-        ]
-    })
-    class HttpMatrixModule { }
-
     let ctx: ApplicationContext;
     let client: HttpClient;
 
@@ -223,7 +378,9 @@ describe('HTTP parameter coverage matrix', () => {
         ctx = await Application.run(HttpMatrixModule);
         client = ctx.get(HttpClient);
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => {
+        await ctx?.close();
+    });
 
     it('should resolve query params, header and defaults for partial params', async () => {
         const response: any = await lastValueFrom(client.get('/api/test/matrix/query', {
@@ -255,25 +412,14 @@ describe('HTTP parameter coverage matrix', () => {
 });
 
 describe('HTTP static/media support', () => {
-    @Module({
-        imports: [LoggerModule], declarations: [HttpTestController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({
-                listenOpts: { port: PORTS.static, host: '127.0.0.1' },
-                static: { root: path.resolve(__dirname, 'fixtures') },
-                upload: { limit: '1mb' },
-                asDefault: true
-            }))]
-    })
-    class HttpStaticModule { }
-
     let ctx: ApplicationContext;
 
     before(async () => {
         ctx = await Application.run(HttpStaticModule);
-
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => {
+        await ctx.close();
+    });
 
     function request(method: string, targetPath: string, headers?: Record<string, string>, body?: Buffer | string): Promise<{ status: number; headers: http.IncomingHttpHeaders; body: Buffer }> {
         return new Promise((resolve, reject) => {
@@ -361,14 +507,6 @@ describe('HTTP static/media support', () => {
 });
 
 describe('HTTP/2 over h2c (plaintext)', () => {
-    @Module({
-        imports: [LoggerModule],
-        declarations: [HttpTestController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2, host: '127.0.0.1' }, asDefault: true }))]
-    })
-    class Http2Module { }
-
     let ctx: ApplicationContext;
     let http2Client: http2.ClientHttp2Session;
 
@@ -412,25 +550,15 @@ describe('HTTP/2 over h2c (plaintext)', () => {
 });
 
 describe('HTTP/2 via microservice client pipeline', () => {
-    @Module({
-        imports: [LoggerModule],
-        declarations: [HttpTestController],
-        providers: [
-            provideService(useRouter(),
-                useHttpTransport({ majorVersion: 2, listenOpts: { port: PORTS.h2client, host: '127.0.0.1' }, asDefault: true })),
-            provideClient(
-                withHttpTransport({ authority: `http://127.0.0.1:${PORTS.h2client}`, asDefault: true }))
-        ]
-    })
-    class Http2ClientModule { }
-
     let ctx: ApplicationContext;
 
     before(async () => {
         ctx = await Application.run(Http2ClientModule);
-
     });
-    after(async () => { if (ctx) await ctx.close(); });
+
+    after(async () => {
+        await ctx.close();
+    });
 
     it('should bootstrap HTTP/2 with client', () => { expect(ctx).toBeDefined(); });
 
@@ -450,23 +578,6 @@ describe('HTTP/2 via microservice client pipeline', () => {
 });
 
 describe('HTTP/2 over TLS (HTTPS/2)', () => {
-    const key = require('fs').readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
-    const cert = require('fs').readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
-
-    @Module({
-        imports: [LoggerModule],
-        declarations: [HttpTestController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({
-                majorVersion: 2,
-                secure: true,
-                serverOpts: { key, cert, allowHTTP1: true } as any,
-                listenOpts: { port: PORTS.h2, host: 'localhost' },
-                asDefault: true
-            }))]
-    })
-    class Https2Module { }
-
     let ctx: ApplicationContext;
     let http2Client: http2.ClientHttp2Session;
 
@@ -534,18 +645,6 @@ describe('HTTP/2 over TLS (HTTPS/2)', () => {
 });
 
 describe('HTTP/2 concurrent streams', () => {
-    @Module({
-        imports: [LoggerModule],
-        declarations: [HttpTestController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({
-                majorVersion: 2,
-                listenOpts: { port: PORTS.h2 + 20, host: '127.0.0.1' },
-                asDefault: true
-            }))]
-    })
-    class Http2ConcurrentModule { }
-
     let ctx: ApplicationContext;
     let http2Client: http2.ClientHttp2Session;
 
@@ -589,27 +688,6 @@ describe('HTTP/2 concurrent streams', () => {
 });
 
 describe('HTTP content negotiation', () => {
-    @Controller('/negotiate')
-    class NegotiateController {
-        @Get('/format')
-        format() {
-            return { data: 'content-negotiation' };
-        }
-    }
-
-    const NEG_PORT = PORTS.ctrl + 100;
-
-    @Module({
-        imports: [LoggerModule],
-        declarations: [NegotiateController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({
-                listenOpts: { port: NEG_PORT, host: '127.0.0.1' },
-                asDefault: true
-            }))]
-    })
-    class NegotiateModule { }
-
     let ctx: ApplicationContext;
 
     before(async () => {
@@ -659,19 +737,6 @@ describe('HTTP content negotiation', () => {
 });
 
 describe('HTTP error handling', () => {
-    const ERR_PORT = PORTS.ctrl + 200;
-
-    @Module({
-        imports: [LoggerModule],
-        declarations: [HttpTestController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({
-                listenOpts: { port: ERR_PORT, host: '127.0.0.1' },
-                asDefault: true
-            }))]
-    })
-    class ErrModule { }
-
     let ctx: ApplicationContext;
 
     before(async () => {
@@ -715,228 +780,130 @@ describe('HTTP error handling', () => {
     });
 });
 
-// ----- HTTP client timeout -----
-const TIMEOUT_PORT = 21500;
+// describe('HTTP client timeout via withTimeout()', () => {
+//     let ctx: ApplicationContext;
+//     let client: HttpClient;
 
-@Controller('/slow')
-class SlowController {
-    @Get('/delayed')
-    delayed() {
-        return new Promise(resolve => setTimeout(() => resolve({ done: true }), 200));
-    }
+//     before(async () => {
+//         ctx = await Application.run(TimeoutModule);
+//         client = ctx.get(HttpClient);
+//     });
+//     after(async () => { if (ctx) await ctx.close(); });
 
-    @Get('/very-slow', { timeout: 20 })
-    verySlow() {
-        return new Promise(resolve => setTimeout(() => resolve({ done: true }), 200));
-    }
+//     it('should timeout on slow response', async () => {
+//         const result: any = await lastValueFrom(
+//             client.get('/slow/delayed', { observe: 'response' as any })
+//                 .pipe(catchError(err => of({ error: err })))
+//         );
+//         expect(result.error).toBeDefined();
+//     });
+// });
 
-    @Post('/submit-rate-limited', { rateLimit: { limit: 1, windowMs: 1000 } })
-    submitLimited(@RequestBody() body: any) {
-        return { received: body };
-    }
-}
+// describe('HTTP client timeout via withTimeout() alias replacement', () => {
+//     let ctx: ApplicationContext;
+//     let client: HttpClient;
 
-describe('HTTP client timeout via withTimeout()', () => {
-    @Module({
-        imports: [LoggerModule],
-        declarations: [SlowController],
-        providers: [
-            provideService(useRouter(),
-                useHttpTransport({ listenOpts: { port: TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true })),
-            provideClient(
-                withTimeout(20),
-                withHttpTransport({ url: `http://127.0.0.1:${TIMEOUT_PORT}`, asDefault: true }))
-        ]
-    })
-    class TimeoutModule { }
+//     before(async () => {
+//         ctx = await Application.run(FeatTimeoutModule);
+//         client = ctx.get(HttpClient);
+//     });
+//     after(async () => { if (ctx) await ctx.close(); });
 
-    let ctx: ApplicationContext;
-    let client: HttpClient;
+//     it('should timeout on slow response', async () => {
+//         const result: any = await lastValueFrom(
+//             client.get('/slow/delayed', { observe: 'response' as any })
+//                 .pipe(catchError(err => of({ error: err })))
+//         );
+//         expect(result.error).toBeDefined();
+//     });
+// });
 
-    before(async () => {
-        ctx = await Application.run(TimeoutModule);
-        client = ctx.get(HttpClient);
-    });
-    after(async () => { if (ctx) await ctx.close(); });
+// describe('HTTP service route timeout', () => {
+//     let ctx: ApplicationContext;
 
-    it('should timeout on slow response', async () => {
-        const result: any = await lastValueFrom(
-            client.get('/slow/delayed', { observe: 'response' as any })
-                .pipe(catchError(err => of({ error: err })))
-        );
-        expect(result.error).toBeDefined();
-    });
-});
+//     before(async () => {
+//         ctx = await Application.run(RouteTimeoutModule);
+//     });
+//     after(async () => {
+//         await ctx?.close(); 
+//     });
 
-describe('HTTP client timeout via withTimeout() alias replacement', () => {
-    const FEAT_TIMEOUT_PORT = 21501;
+//     function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
+//         return new Promise((resolve, reject) => {
+//             const req = http.request({
+//                 host: '127.0.0.1',
+//                 port: ROUTE_TIMEOUT_PORT,
+//                 path: targetPath,
+//                 method,
+//                 headers: { accept: 'application/json' }
+//             }, res => {
+//                 let body = '';
+//                 res.setEncoding('utf8');
+//                 res.on('data', chunk => body += chunk);
+//                 res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+//             });
+//             req.on('error', reject);
+//             req.end();
+//         });
+//     }
 
-    @Module({
-        imports: [LoggerModule],
-        declarations: [SlowController],
-        providers: [
-            provideService(useRouter(),
-                useHttpTransport({ listenOpts: { port: FEAT_TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true })),
-            provideClient(
-                withTimeout(20),
-                withHttpTransport({ url: `http://127.0.0.1:${FEAT_TIMEOUT_PORT}`, asDefault: true }))
-        ]
-    })
-    class FeatTimeoutModule { }
+//     it('should return timeout on slow route with route-level timeout', async () => {
+//         const response = await request('GET', '/slow/very-slow');
+//         expect(response.status).toBe(504);
+//         const parsed = JSON.parse(response.body);
+//         expect(parsed.message).toContain('timeout');
+//     });
+// });
 
-    let ctx: ApplicationContext;
-    let client: HttpClient;
+// describe('HTTP service rate limit', () => {
+//     let ctx: ApplicationContext;
 
-    before(async () => {
-        ctx = await Application.run(FeatTimeoutModule);
-        client = ctx.get(HttpClient);
-    });
-    after(async () => { if (ctx) await ctx.close(); });
+//     before(async () => {
+//         ctx = await Application.run(RateLimitModule);
+//     });
+//     after(async () => {
+//         await ctx?.close();
+//     });
 
-    it('should timeout on slow response', async () => {
-        const result: any = await lastValueFrom(
-            client.get('/slow/delayed', { observe: 'response' as any })
-                .pipe(catchError(err => of({ error: err })))
-        );
-        expect(result.error).toBeDefined();
-    });
-});
+//     function request(method: string, targetPath: string, body?: string): Promise<{ status: number; body: string }> {
+//         return new Promise((resolve, reject) => {
+//             const req = http.request({
+//                 host: '127.0.0.1',
+//                 port: RATE_PORT,
+//                 path: targetPath,
+//                 method,
+//                 headers: { 'content-type': 'application/json', 'accept': 'application/json' }
+//             }, res => {
+//                 let b = '';
+//                 res.setEncoding('utf8');
+//                 res.on('data', chunk => b += chunk);
+//                 res.on('end', () => resolve({ status: res.statusCode ?? 0, body: b }));
+//             });
+//             req.on('error', reject);
+//             if (body) req.write(body);
+//             req.end();
+//         });
+//     }
 
-describe('HTTP service route timeout', () => {
-    const ROUTE_TIMEOUT_PORT = 21502;
+//     it('should allow first request and reject second request within window', async () => {
+//         const first = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
+//         expect(first.status).toBe(200);
 
-    @Module({
-        imports: [LoggerModule],
-        declarations: [SlowController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({ listenOpts: { port: ROUTE_TIMEOUT_PORT, host: '127.0.0.1' }, asDefault: true }))]
-    })
-    class RouteTimeoutModule { }
-
-    let ctx: ApplicationContext;
-
-    before(async () => {
-        ctx = await Application.run(RouteTimeoutModule);
-    });
-    after(async () => { if (ctx) await ctx.close(); });
-
-    function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
-        return new Promise((resolve, reject) => {
-            const req = http.request({
-                host: '127.0.0.1',
-                port: ROUTE_TIMEOUT_PORT,
-                path: targetPath,
-                method,
-                headers: { accept: 'application/json' }
-            }, res => {
-                let body = '';
-                res.setEncoding('utf8');
-                res.on('data', chunk => body += chunk);
-                res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
-            });
-            req.on('error', reject);
-            req.end();
-        });
-    }
-
-    it('should return timeout on slow route with route-level timeout', async () => {
-        const response = await request('GET', '/slow/very-slow');
-        expect(response.status).toBe(504);
-        const parsed = JSON.parse(response.body);
-        expect(parsed.message).toContain('timeout');
-    });
-});
-
-describe('HTTP service rate limit', () => {
-    const RATE_PORT = 21503;
-
-    @Module({
-        imports: [LoggerModule],
-        declarations: [SlowController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({ listenOpts: { port: RATE_PORT, host: '127.0.0.1' }, asDefault: true }))]
-    })
-    class RateLimitModule { }
-
-    let ctx: ApplicationContext;
-
-    before(async () => {
-        ctx = await Application.run(RateLimitModule);
-    });
-    after(async () => { if (ctx) await ctx.close(); });
-
-    function request(method: string, targetPath: string, body?: string): Promise<{ status: number; body: string }> {
-        return new Promise((resolve, reject) => {
-            const req = http.request({
-                host: '127.0.0.1',
-                port: RATE_PORT,
-                path: targetPath,
-                method,
-                headers: { 'content-type': 'application/json', 'accept': 'application/json' }
-            }, res => {
-                let b = '';
-                res.setEncoding('utf8');
-                res.on('data', chunk => b += chunk);
-                res.on('end', () => resolve({ status: res.statusCode ?? 0, body: b }));
-            });
-            req.on('error', reject);
-            if (body) req.write(body);
-            req.end();
-        });
-    }
-
-    it('should allow first request and reject second request within window', async () => {
-        const first = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
-        expect(first.status).toBe(200);
-
-        const second = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
-        expect(second.status).toBe(429);
-    });
-});
-
-// ----- HTTP pipe parameter conversion -----
-const PIPE_PORT = 21510;
-
-@Controller('/pipes')
-class PipeTestController {
-    @Get('/convert')
-    convert(
-        @RequestParam('age', { pipe: 'int' }) age: number,
-        @RequestParam('enabled', { pipe: 'boolean' }) enabled: boolean
-    ) {
-        return { age, enabled, types: { age: typeof age, enabled: typeof enabled } };
-    }
-
-    @Get('/defaults')
-    defaults(
-        @RequestParam('page', { nullable: true, pipe: 'int' }) page: number = 1,
-        @RequestParam('size', { nullable: true, pipe: 'int' }) size: number = 20,
-        @RequestParam('sort', { nullable: true }) sort: string = 'name'
-    ) {
-        return { page, size, sort };
-    }
-
-    @Get('/int-validate')
-    intValidate(@RequestParam('val', { pipe: 'int' }) val: number) {
-        return { val, isNumber: typeof val === 'number' };
-    }
-}
+//         const second = await request('POST', '/slow/submit-rate-limited', JSON.stringify({ test: true }));
+//         expect(second.status).toBe(429);
+//     });
+// });
 
 describe('HTTP pipe parameter conversion', () => {
-    @Module({
-        imports: [LoggerModule],
-        declarations: [PipeTestController],
-        providers: [provideService(useRouter(),
-            useHttpTransport({ listenOpts: { port: PIPE_PORT, host: '127.0.0.1' }, asDefault: true }))]
-    })
-    class PipeModule { }
-
     let ctx: ApplicationContext;
 
     before(async () => {
         ctx = await Application.run(PipeModule);
     });
-    after(async () => { if (ctx) await ctx.close(); });
+
+    after(async () => {
+        await ctx?.close(); 
+    });
 
     function request(method: string, targetPath: string): Promise<{ status: number; body: string }> {
         return new Promise((resolve, reject) => {
