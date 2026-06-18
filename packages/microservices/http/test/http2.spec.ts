@@ -98,6 +98,11 @@ class Http2DeviceController {
     reload() {
         return 'reload';
     }
+
+    @Get('/empty')
+    empty() {
+        return null;
+    }
 }
 
 @Module({
@@ -216,6 +221,14 @@ describe('http2 server, HttpClient', () => {
         expect(Array.isArray(items)).toBeTruthy();
         expect(items.length).toEqual(1);
         expect(items[0].name).toEqual('2');
+    });
+
+    it('null response should default to 204', async () => {
+        const response = await asResponse(
+            lastValueFrom(client.get('/device/empty', { observe: 'response' }))
+        );
+        expect(response.status).toEqual(204);
+        expect(response.body).toBeNull();
     });
 
     it('post not found', async () => {

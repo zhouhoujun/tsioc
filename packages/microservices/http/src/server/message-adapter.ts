@@ -1,5 +1,5 @@
 import { Injectable, isNil, isString, ArgumentException, Inject } from '@tsdi/ioc';
-import { AcceptsPriority, CONTENT_TYPE, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter, StreamAdapter, ContentType, BadRequestException, ForbiddenException, NotFoundException, RequestContext } from '@tsdi/common';
+import { AcceptsPriority, CONTENT_TYPE, Header, HeaderAccess, RestfulRequestAdapter, MimeAdapter, StreamAdapter, ContentType, BadRequestException, ForbiddenException, NotFoundException, RequestContext, HttpStatusCode } from '@tsdi/common';
 import { HttpCookieStore, HttpRequestMessage, HttpServResponse } from './http-context';
 
 @Injectable()
@@ -298,6 +298,9 @@ export class HttpMessageAdapter<TBody = any> extends RestfulRequestAdapter<HttpR
         const payload = !isNil(this.getBody()) ? this.getBody() : response === this ? undefined : response;
 
         if (isNil(payload)) {
+            if (isNil(this.status) && !res.headersSent) {
+                res.statusCode = HttpStatusCode.NoContent;
+            }
             res.end();
             return;
         }

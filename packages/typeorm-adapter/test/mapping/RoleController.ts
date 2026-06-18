@@ -15,9 +15,8 @@ export class RoleController {
     @Transactional()
     @Post('/')
     @Put('/')
-    async save(role: Role, @RequestParam('check', { nullable: true }) check?: boolean) {
+    async save(role: Role, @RequestParam('check', { nullable: true, pipe: 'boolean' }) check?: boolean) {
         this.logger.log(role);
-        console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         const value = await this.repo.save(role);
         if (check) throw new InternalServerException('check');
         this.logger.info(value);
@@ -27,9 +26,8 @@ export class RoleController {
     @Transactional()
     @Post('/save2')
     @Put('/save2')
-    async save2(role: Role, @InjectRepository(Role) roleRepo: Repository<Role>, @RequestParam('check', { nullable: true }) check?: boolean) {
+    async save2(role: Role, @InjectRepository(Role) roleRepo: Repository<Role>, @RequestParam('check', { nullable: true, pipe: 'boolean' }) check?: boolean) {
         this.logger.log(role);
-        console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);
         if (check) throw new InternalServerException('check');
         this.logger.info(value);
@@ -39,7 +37,6 @@ export class RoleController {
     @Get('/')
     async getRole(@RequestParam('name', { nullable: true }) name: string) {
         this.logger.log('name:', name);
-        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         return await this.repo.findOne({ where: { name } });
     }
 
@@ -47,7 +44,6 @@ export class RoleController {
     @Delete('/')
     async del(@RequestParam('id', { nullable: true }) id: string) {
         this.logger.log('id:', id);
-        console.log('del isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         await this.repo.delete(id);
         return true;
     }

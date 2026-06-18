@@ -30,7 +30,7 @@ export class UserController {
 
     @Post('/')
     @Put('/')
-    async modify(user: User, @RequestParam('check', { nullable: true }) check?: boolean) {
+    async modify(user: User, @RequestParam('check', { nullable: true, pipe: 'boolean' }) check?: boolean) {
         this.logger.log(getTypeName(this.usrService), user);
         const val = await this.usrService.save(user, check);
         this.logger.log(val);
@@ -40,7 +40,7 @@ export class UserController {
     @Transactional()
     @Post('/save')
     @Put('/save')
-    async modify2(user: User, @Repository(User) userRepo: TypeormRepository<User>, @RequestParam('check', { nullable: true }) check?: boolean) {
+    async modify2(user: User, @Repository(User) userRepo: TypeormRepository<User>, @RequestParam('check', { nullable: true, pipe: 'boolean' }) check?: boolean) {
         this.logger.log(getTypeName(this.usrService), user);
         const val = await userRepo.save(user);
         if (check) throw new InternalServerException('check');
@@ -49,7 +49,7 @@ export class UserController {
     }
 
     @Delete('/')
-    async del(@RequestParam('id', { nullable: true }) id: string, @RequestParam('check', { nullable: true }) check?: boolean) {
+    async del(@RequestParam('id', { nullable: true }) id: string, @RequestParam('check', { nullable: true, pipe: 'boolean' }) check?: boolean) {
         this.logger.log('id:', id);
         await this.usrService.delete(id, check);
         return true;

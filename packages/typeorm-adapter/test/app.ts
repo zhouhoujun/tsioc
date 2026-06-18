@@ -12,6 +12,7 @@ import { TypeOrmModule, TypeormOptions } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
+import { RequestValidationController } from './mapping/RequestValidationController';
 
 
 export const option = {
@@ -81,7 +82,7 @@ export class MockBootTest {
             withHttpTransport({ url: 'http://127.0.0.1:3000', asDefault: true }),
         ),
     ],
-    declarations: [UserController, RoleController],
+    declarations: [UserController, RoleController, RequestValidationController],
 })
 export class MockBootHttpTest {
 
@@ -110,7 +111,7 @@ export class MockBootHttpTest {
             withHttpTransport({ url: 'http://127.0.0.1:3001', asDefault: true }),
         ),
     ],
-    declarations: [UserController, RoleController],
+    declarations: [UserController, RoleController, RequestValidationController],
 })
 export class MockBootLoadTest {
 
@@ -139,7 +140,7 @@ export class MockBootLoadTest {
             withHttpTransport({ url: 'http://127.0.0.1:3002', asDefault: true }),
         ),
     ],
-    declarations: [UserController, RoleController],
+    declarations: [UserController, RoleController, RequestValidationController],
 })
 export class MockTransBootTest {
 
@@ -175,7 +176,7 @@ export class MockTransBootTest {
             } as any),
         ),
     ],
-    declarations: [UserController, RoleController],
+    declarations: [UserController, RoleController, RequestValidationController],
 })
 export class Http2TransBootTest {
 

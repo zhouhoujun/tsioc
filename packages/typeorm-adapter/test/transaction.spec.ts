@@ -27,7 +27,6 @@ export class TransactionTest {
             await em.query(`DELETE FROM "role" WHERE name IN ('opter_1', 'opter_2')`);
         } catch { /* ignore */ }
 
-        console.log('clean data');
     }
 
     @Test()
@@ -39,7 +38,6 @@ export class TransactionTest {
                     return of(err);
                 })
             ));
-        rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.body).toBeDefined();
         expect(rep.body?.message).toEqual('Internal Server Error');
@@ -52,7 +50,6 @@ export class TransactionTest {
                 })
             ));
         expect(rep2.status).toEqual(204);
-        console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
     }
 
@@ -65,21 +62,18 @@ export class TransactionTest {
                     return of(err);
                 })
             ));
-        rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.body).toBeDefined();
         expect(rep.body?.message).toEqual('Internal Server Error');
 
         const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get('/users', { observe: 'response', params: { name: 'test_112' } }));
         expect(rep2.status).toEqual(204);
-        console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
     }
 
     @Test()
     async postCommitUser() {
         const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post('/users', { name: 'post_test', account: 'post_test', password: '111111' }, { observe: 'response' }));
-        rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.name).toEqual('post_test');
@@ -111,7 +105,6 @@ export class TransactionTest {
                     return of(err);
                 })
             ));
-        rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.body).toBeDefined();
         expect(rep.body?.message).toEqual('Internal Server Error');
@@ -119,7 +112,6 @@ export class TransactionTest {
 
         const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get('/roles', { observe: 'response', params: { name: 'opter_1' } }));
         expect(rep2.status).toEqual(204);
-        console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
     }
 
@@ -132,7 +124,6 @@ export class TransactionTest {
                     return of(err);
                 })
             ));
-        rep.error && console.log(rep.error)
         expect(rep.status).toEqual(500);
         expect(rep.body).toBeDefined();
         expect(rep.body?.message).toEqual('Internal Server Error');
@@ -140,14 +131,12 @@ export class TransactionTest {
 
         const rep2 = await lastValueFrom(this.ctx.resolve(HttpClient).get('/roles', { observe: 'response', params: { name: 'opter_2' } }));
         expect(rep2.status).toEqual(204);
-        console.log('rep.body:', rep2.body);
         expect(rep2.body).toBeNull();
     }
 
     @Test()
     async postCommitRole() {
         const rep = await lastValueFrom(this.ctx.resolve(HttpClient).post('/roles', { name: 'opter' }, { observe: 'response' }));
-        rep.error && console.log(rep.error)
         expect(rep.status).toEqual(200);
         expect(rep.body).toBeDefined();
         expect(rep.body?.name).toEqual('opter');
