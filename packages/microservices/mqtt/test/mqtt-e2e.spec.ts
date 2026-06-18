@@ -10,7 +10,7 @@ import * as mqtt from 'mqtt';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 
-const MQTT_URL = 'mqtt://127.0.0.1:1883';
+const MQTT_URL = process.env.TSIO_TEST_MQTT_URL || 'mqtt://127.0.0.1:1883';
 
 @Controller('/api/test')
 class TestController {
@@ -35,6 +35,7 @@ class MqttPatternService {
     subscribe(@Payload() message: string) { return message; }
 }
 
+if (process.env.TSIO_TEST_MQTT) {
 describe('MQTT E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
@@ -203,7 +204,6 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
     before(async () => {
         ctx = await Application.run(MqttE2eModule);
         client = mqtt.connect(MQTT_URL);
-
     });
     after(async () => {
         if (client) client.end(true);
@@ -268,7 +268,6 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
     before(async () => {
         ctx = await Application.run(MqttE2eHostModule);
         client = mqtt.connect(MQTT_URL);
-
     });
     after(async () => {
         if (client) client.end(true);
@@ -297,3 +296,4 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
         expect(result).toBeDefined();
     });
 });
+}
