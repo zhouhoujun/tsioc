@@ -78,7 +78,22 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         const session = this.session;
         this.session = undefined;
         if (session.closed || session.destroyed) return;
-        await promisify(session.close, session)();
+        try {
+            const socket = (session as any).socket;
+            if (socket && typeof socket.unref === 'function') {
+                socket.unref();
+            }
+        } catch {
+            // ignore socket unref errors during shutdown
+        }
+        try {
+            await promisify(session.close, session)();
+        } catch {
+            // ignore close callback errors, destroy below as a finalizer
+        }
+        if (!session.closed && !session.destroyed) {
+            session.destroy();
+        }
     }
 
     protected isValid(connection: http2.ClientHttp2Session): boolean {
@@ -123,4 +138,3 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         } as any));
     }
 }
-

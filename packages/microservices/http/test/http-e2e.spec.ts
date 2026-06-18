@@ -67,6 +67,43 @@ class HttpTestController {
 
 const PORTS = { ms: 3001, host: 3002, ctrl: 3003, matrix: 3004, static: 3005, h2: 3006, h2client: 3007 };
 
+function closeHttp2Client(session?: http2.ClientHttp2Session | null): Promise<void> {
+    if (!session || session.closed || session.destroyed) {
+        return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+        const timer = setTimeout(() => {
+            try {
+                session.destroy();
+            } catch {
+                // ignore force-destroy errors during test shutdown
+            }
+        }, 500);
+        const done = () => {
+            clearTimeout(timer);
+            resolve();
+        };
+        session.once('close', done);
+        try {
+            const socket = (session as any).socket;
+            if (socket && typeof socket.unref === 'function') {
+                socket.unref();
+            }
+        } catch {
+            // ignore socket unref errors during test shutdown
+        }
+        try {
+            session.close();
+        } catch {
+            try {
+                session.destroy();
+            } catch {
+                // ignore destroy errors during test shutdown
+            }
+        }
+    });
+}
+
 // describe('HTTP E2E microservice:true', () => {
 //     @Module({
 //         imports: [LoggerModule],
@@ -341,7 +378,7 @@ describe('HTTP/2 over h2c (plaintext)', () => {
         http2Client = http2.connect(`http://127.0.0.1:${PORTS.h2}`);
     });
     after(async () => {
-        try { http2Client?.close(); } catch { /* ignore */ }
+        await closeHttp2Client(http2Client);
         if (ctx) await ctx.close();
     });
 
@@ -439,7 +476,7 @@ describe('HTTP/2 over TLS (HTTPS/2)', () => {
         http2Client = http2.connect(`https://localhost:${PORTS.h2}`, { ca: cert });
     });
     after(async () => {
-        try { http2Client?.close(); } catch { /* ignore */ }
+        await closeHttp2Client(http2Client);
         if (ctx) await ctx.close();
     });
 
@@ -518,7 +555,7 @@ describe('HTTP/2 concurrent streams', () => {
         http2Client = http2.connect(`http://127.0.0.1:${PORTS.h2 + 20}`);
     });
     after(async () => {
-        try { http2Client?.close(); } catch { /* ignore */ }
+        await closeHttp2Client(http2Client);
         if (ctx) await ctx.close();
     });
 

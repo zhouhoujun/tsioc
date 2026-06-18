@@ -76,6 +76,26 @@ function waitForSessionClose(session: http2.ClientHttp2Session) {
     });
 }
 
+async function closeHttp2Client(session?: http2.ClientHttp2Session | null) {
+    if (!session || session.closed || session.destroyed) {
+        return;
+    }
+    try {
+        const socket = (session as any).socket;
+        if (socket && typeof socket.unref === 'function') {
+            socket.unref();
+        }
+    } catch {
+        // ignore socket unref errors during test shutdown
+    }
+    try {
+        session.close();
+    } catch {
+        session.destroy();
+    }
+    await waitForSessionClose(session).catch(() => undefined);
+}
+
 describe('HTTP/2 shutdown port release', () => {
     it('should release the port and close active sessions on shutdown', async () => {
         const ctx = await Application.run(createModule());
@@ -83,6 +103,7 @@ describe('HTTP/2 shutdown port release', () => {
 
         await ctx.close();
         await waitForSessionClose(session);
+        await closeHttp2Client(session);
 
         const next = await Application.run(createModule());
         expect(next).toBeDefined();
