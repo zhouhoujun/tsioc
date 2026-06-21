@@ -33,7 +33,7 @@ import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLog4Module } from '@tsdi/platform-server/log4js';
-import { ServerEndpointModule } from '@tsdi/platform-server/common'
+import { ServerCommonModule } from '@tsdi/platform-server/common'
 import { SwaggerModule } from '@tsdi/swagger';
 
 @Module({
@@ -42,7 +42,7 @@ import { SwaggerModule } from '@tsdi/swagger';
         LoggerModule.withOptions(logconfig),
         ServerModule,
         ServerLog4Module,
-        ServerEndpointModule,
+        ServerCommonModule,
         TransactionModule,
         TypeOrmModule.withConnection(connections),
         EndpointModule.register({

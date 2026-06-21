@@ -4,7 +4,7 @@
 // import { BadRequestException, ErrorResponse, Response, Transport, useSimpleJson } from '@tsdi/common';
 // import { provideClient, withInterceptors, withTransfers } from '@tsdi/common/client';
 // import { ServerModule } from '@tsdi/platform-server';
-// import { ServerEndpointModule } from '@tsdi/platform-server/common';
+// import { ServerCommonModule } from '@tsdi/platform-server/common';
 // import {
 //     RequestBody, RequestParam, RequestPath, RouteMapping, Handle,
 //     RedirectResult, provideService, withInterceptors, useJson, withBodyparser, useRouter,
@@ -104,7 +104,7 @@
 //         imports: [
 //             ServerModule,
 //             LoggerModule,
-//             ServerEndpointModule,
+//             ServerCommonModule,
 //             // provideClient({
 //             //     transport: 'tcp',
 //             //     microservice: false,

@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
+import { ServerCommonModule } from '@tsdi/platform-server/endpoints';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { TransactionModule } from '@tsdi/repository';
 
@@ -12,7 +12,7 @@ import { TransactionModule } from '@tsdi/repository';
     imports: [
         LoggerModule,
         ServerModule,
-        ServerEndpointModule,
+        ServerCommonModule,
         EndpointModule.register({
             transport: 'http',
             serverOpts: {

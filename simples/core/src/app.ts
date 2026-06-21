@@ -1,13 +1,13 @@
 import { MethodMetadata, Module } from '@tsdi/ioc';
 import { LoggerModule, LogConfigure, provideLogger } from '@tsdi/logger';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, provideService } from '@tsdi/endpoints';
-import { CorsInterceptor, HttpModule } from '@tsdi/http';
+import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor, provideService, useJson, useRouter, useStatics } from '@tsdi/service';
+import { CorsInterceptor, HttpModule, useHttpTransport } from '@tsdi/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
-import { provideTypeorm, TypeOrmModule } from '@tsdi/typeorm-adapter';
+import { provideTypeOrm, TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLog4Module } from '@tsdi/platform-server/log4js';
-import { ServerEndpointModule } from '@tsdi/platform-server/endpoints'
+import { ServerCommonModule } from '@tsdi/platform-server/common'
 import { provideSwagger, SwaggerModule } from '@tsdi/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -112,34 +112,35 @@ export class CheckRightAspect {
         provideLogger(logconfig),
         ServerModule,
         ServerLog4Module,
-        ServerEndpointModule,
+        ServerCommonModule,
         TransactionModule,
-        provideTypeorm(connections),
-        provideService({
-            transport: 'https',
-            config: {
-                majorVersion: 2,
-                serverOpts: {
-                    cert,
-                    key,
-                },
-                content: {
-                    index: true
-                },
-                interceptors: [
-                    CorsInterceptor,
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            }
-        }),
-        provideSwagger({
-            title: 'api document',
-            description: 'platform basic api',
-            version: 'v1',
-            prefix: 'api-doc'
-        })
+        // provideService({
+        //     transport: 'https',
+        //     config: {
+        //         majorVersion: 2,
+        //         serverOpts: {
+        //             cert,
+        //             key,
+        //         },
+        //         content: {
+        //             index: true
+        //         },
+        //         interceptors: [
+        //             CorsInterceptor,
+        //             ContentInterceptor,
+        //             JsonInterceptor,
+        //             BodyparserInterceptor,
+        //         ]
+        //     }
+        // }),
+        
+        // provideSwagger({
+        //     title: 'api document',
+        //     description: 'platform basic api',
+        //     version: 'v1',
+        //     prefix: 'api-doc'
+        // })
+
         // TypeOrmModule.withConnection(connections),
         // EndpointModule.register({
         //     transport: 'https',
@@ -166,7 +167,20 @@ export class CheckRightAspect {
     ],
     providers: [
         // AuthorizationAspect,
-        CheckRightAspect
+        CheckRightAspect,
+        provideTypeOrm(connections),        
+        provideService(
+            useRouter(),
+            useStatics(),
+            useJson(),
+            useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
+        ),
+        // provideSwagger({
+        //     title: 'api document',
+        //     description: 'platform basic api',
+        //     version: 'v1',
+        //     prefix: 'api-doc'
+        // })            
     ],
     declarations: [
         UserController,
