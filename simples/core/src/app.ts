@@ -134,12 +134,12 @@ export class CheckRightAspect {
         //     }
         // }),
         
-        // provideSwagger({
-        //     title: 'api document',
-        //     description: 'platform basic api',
-        //     version: 'v1',
-        //     prefix: 'api-doc'
-        // })
+        provideSwagger({
+            title: 'api document',
+            description: 'platform basic api',
+            version: 'v1',
+            prefix: 'api-doc'
+        })
 
         // TypeOrmModule.withConnection(connections),
         // EndpointModule.register({
