@@ -1,5 +1,5 @@
 import { Module, ModuleWithProviders, ProvdierOf, Provider, isArray, toProvider } from '@tsdi/ioc';
-import { AopModule } from '@tsdi/aop';
+import { AopModule, AopProvider } from '@tsdi/aop';
 import { AnnotationLogAspect } from './aspect';
 import { LoggerManager } from './LoggerManager';
 import { ConsoleLogManager, LoggerManagers } from './manager';
@@ -38,7 +38,10 @@ export class LoggerModule {
      * @returns 
      */
     static withOptions(config: ProvdierOf<LogConfigure> | ProvdierOf<LogConfigure>[] | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
-        return provideLogger(config, debug);
+        return {
+            module: LoggerModule,
+            providers: createLoggerOptionProviders(config, debug)
+        };
     }
 }
 
@@ -48,16 +51,19 @@ export class LoggerModule {
  * @param debug 
  * @returns 
  */
-export function provideLogger(config: ProvdierOf<LogConfigure> | ProvdierOf<LogConfigure>[] | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
+function createLoggerOptionProviders(config: ProvdierOf<LogConfigure> | ProvdierOf<LogConfigure>[] | null, debug?: boolean): Provider[] {
     const providers: Provider[] = config ? (isArray(config) ? config : [config]).map(cfg => toProvider(LOG_CONFIGURES, cfg, true)) : [{ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true }]
     if (debug) {
         providers.push(DebugLogAspect)
     }
 
-    return {
-        module: LoggerModule,
-        providers
-    }
+    return providers
 }
 
-
+export function provideLogger(config: ProvdierOf<LogConfigure> | ProvdierOf<LogConfigure>[] | null, debug?: boolean): Provider[] {
+    return [
+        AopProvider,
+        ...LOGGER_PROVIDERS,
+        ...createLoggerOptionProviders(config, debug)
+    ];
+}

@@ -1,4 +1,4 @@
-import { Module } from '@tsdi/ioc';
+import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { AgentModule } from '@tsdi/agent';
 import { GATEWAY_CONFIG } from './tokens';
 import { defaultGatewayConfig } from './contracts/GatewayConfig';
@@ -16,6 +16,8 @@ import { ToolsHandler } from './api/ToolsHandler';
 import { EventHandler } from './api/EventHandler';
 import { AuditHandler } from './api/AuditHandler';
 import { ChatWebSocket } from './ws/ChatWebSocket';
+import { GatewayConfig } from './contracts/GatewayConfig';
+import { createAgentGatewayProviders } from './provider';
 
 @Module({
     imports: [AgentModule],
@@ -55,4 +57,10 @@ import { ChatWebSocket } from './ws/ChatWebSocket';
     ]
 })
 export class AgentGatewayModule {
+    static withOptions(config?: GatewayConfig): ModuleWithProviders<AgentGatewayModule> {
+        return {
+            module: AgentGatewayModule,
+            providers: createAgentGatewayProviders(config)
+        };
+    }
 }

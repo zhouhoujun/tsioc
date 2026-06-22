@@ -1,6 +1,6 @@
 import { Injectable, Inject, Autowired, Container, Injector, createInjector, InjectUtil } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
-import { LoggerModule, InjectLog, Logger } from '../src';
+import { LoggerModule, InjectLog, Logger, provideLogger } from '../src';
 import { DebugLog1Aspect } from './debugLog';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
@@ -131,9 +131,31 @@ describe('logging test', () => {
 
     });
 
+    it('provideLogger returns providers and LoggerModule.withOptions returns module metadata', () => {
+        const providers = provideLogger({ adapter: 'console' });
+        expect(Array.isArray(providers)).toBe(true);
+        expect(providers.length).toBeGreaterThan(0);
+
+        const result = LoggerModule.withOptions({ adapter: 'console' });
+        expect(result.module).toBe(LoggerModule);
+        expect(Array.isArray(result.providers)).toBe(true);
+        expect(result.providers?.length).toBeGreaterThan(0);
+    });
+
+    it('provideLogger works when registered directly without importing LoggerModule', () => {
+        const direct = createInjector(provideLogger({ adapter: 'console' }));
+        try {
+            InjectUtil.register(direct, MethodTest3);
+            const mt3 = direct.get(MethodTest3);
+            expect(mt3.logger).toBeDefined();
+            expect(mt3.logger.constructor.name).toEqual('ConsoleLog');
+        } finally {
+            direct.destroy();
+        }
+    });
+
     after(() => {
         container.destroy();
     });
 
 });
-

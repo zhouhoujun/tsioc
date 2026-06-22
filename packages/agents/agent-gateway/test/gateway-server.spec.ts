@@ -15,6 +15,7 @@ import { InMemorySessionStore, InMemoryMemoryStore, AgentTurnStartedEvent, Agent
 import { MemoryHandler } from '../src/api/MemoryHandler';
 import { ToolsHandler } from '../src/api/ToolsHandler';
 import { ReadFileTool } from '../../agent-tools/src';
+import { AgentGatewayModule, provideAgentGateway } from '../src';
 
 @Suite('RouteMatcher')
 export class RouteMatcherTest {
@@ -57,6 +58,18 @@ export class RouteMatcherTest {
         m.add({ method: 'GET', path: '/api/*', handler: async (_req: any, _res: any) => {} });
         const r = m.match('GET', '/api/tools');
         expect(r).toBeTruthy();
+    }
+
+    @Test('provideAgentGateway returns providers and module withOptions returns module metadata')
+    gatewayProvidersShape() {
+        const providers = provideAgentGateway();
+        expect(Array.isArray(providers)).toBe(true);
+        expect(providers.length).toBeGreaterThan(0);
+
+        const result = AgentGatewayModule.withOptions();
+        expect(result.module).toBe(AgentGatewayModule);
+        expect(Array.isArray(result.providers)).toBe(true);
+        expect(result.providers?.length).toBeGreaterThan(0);
     }
 }
 

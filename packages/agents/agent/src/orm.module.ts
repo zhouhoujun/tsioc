@@ -18,14 +18,18 @@ export class AgentOrmModule {
     static withConnection(options: TypeormOptions): ModuleWithProviders<AgentOrmModule> {
         return {
             module: AgentOrmModule,
-            providers: provideAgentOrm(options)
+            providers: createAgentOrmProviders(options)
         }
     }
 }
 
 
-export function provideAgentOrm(options: TypeormOptions): Provider[] {
+function createAgentOrmProviders(options: TypeormOptions): Provider[] {
     options.entities ??= [];
     options.entities.push(AgentSessionEntity, AgentMessageEntity, AgentMemoryEntity, AgentScheduledTaskEntity, AgentAuditLogEntity);
     return provideTypeOrm(options);
+}
+
+export function provideAgentOrm(options: TypeormOptions): Provider[] {
+    return createAgentOrmProviders(options);
 }

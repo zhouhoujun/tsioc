@@ -2,12 +2,13 @@ import { Module, ModuleWithProviders, ProvdierOf, Provider, toProvider } from '@
 import { SWAGGER_SETUP_OPTIONS, SwaggerSetupOptions } from './swagger.config';
 import { SwaggerService } from './swagger.service';
 
+export const SWAGGER_PROVIDERS: Provider[] = [
+    SwaggerService
+];
+
 @Module({
     providedIn: 'root',
-    providers: [
-        // SwaggerJson,
-        SwaggerService
-    ]
+    providers: SWAGGER_PROVIDERS
 })
 export class SwaggerModule {
 
@@ -19,7 +20,7 @@ export class SwaggerModule {
     static withOptions(options: ProvdierOf<SwaggerSetupOptions>): ModuleWithProviders<SwaggerModule> {
         return {
             module: SwaggerModule,
-            providers: provideSwagger(options)
+            providers: createSwaggerOptionProviders(options)
         };
     }
 }
@@ -29,9 +30,15 @@ export class SwaggerModule {
  * @param options 
  * @returns 
  */
+function createSwaggerOptionProviders(options: ProvdierOf<SwaggerSetupOptions>): Provider[] {
+    return [
+        toProvider(SWAGGER_SETUP_OPTIONS, options)
+    ];
+}
+
 export function provideSwagger(options: ProvdierOf<SwaggerSetupOptions>): Provider[] {
     return [
-        SwaggerService,
-        toProvider(SWAGGER_SETUP_OPTIONS, options)
+        ...SWAGGER_PROVIDERS,
+        ...createSwaggerOptionProviders(options)
     ];
 }

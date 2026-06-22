@@ -1,5 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { OIDCModule, provideOIDC } from '../src';
 import { OIDCService, SessionUser } from '../src/auth/OIDCService';
 
 interface TokenResponse {
@@ -240,5 +241,27 @@ export class OIDCServiceTest {
         await expect(
             service.refreshAccessToken('')
         ).rejects.toThrow('Refresh token is required');
+    }
+
+    @Test('provideOIDC returns full providers and withOptions returns option providers')
+    provideModuleShape() {
+        const options = {
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            authorizationURL: 'https://issuer.example/auth',
+            tokenURL: 'https://issuer.example/token',
+            profileURL: 'https://issuer.example/profile',
+            callbackURL: 'https://app.example/callback',
+            issuer: 'https://issuer.example'
+        };
+        const providers = provideOIDC(options);
+        expect(Array.isArray(providers)).toBe(true);
+        expect(providers.length).toBeGreaterThan(0);
+
+        const result = OIDCModule.withOptions(options);
+        expect(result.module).toBe(OIDCModule);
+        expect(Array.isArray(result.providers)).toBe(true);
+        expect(result.providers?.length).toBeGreaterThan(0);
+        expect((result.providers as any[]).length).toBeLessThan(providers.length);
     }
 }

@@ -7,7 +7,6 @@ import { UnitRunner } from '../runner/Runner';
 import { SuiteRunner } from '../runner/SuiteRunner';
 import { OldTestRunner } from '../runner/OldTestRunner';
 import { E2ERunner } from '../runner/E2ERunner';
-import { E2ESuiteDescribe } from '../e2e/E2EMetadata';
 
 @Aspect({
     within: [SuiteRunner, OldTestRunner, E2ERunner],

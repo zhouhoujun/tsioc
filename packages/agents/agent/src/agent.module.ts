@@ -2,7 +2,7 @@ import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ConfigModule } from '@tsdi/microservices/config';
-import { AgentOptions, defaultAgentOptions, mergeAgentOptions } from './options';
+import { AgentOptions, defaultAgentOptions } from './options';
 import { AGENT_OPTIONS, AGENT_TOOLS } from './tokens';
 import { OpenAICompatibleModelAdapter } from './model/OpenAICompatibleModelAdapter';
 import { ModelAdapter } from './model/ModelAdapter';
@@ -45,6 +45,7 @@ import { AuditSink } from './harness/AuditSink';
 import { InMemoryAuditSink } from './harness/InMemoryAuditSink';
 import { TypeOrmAuditSink } from './harness/TypeOrmAuditSink';
 import { DefaultAuditSink } from './harness/DefaultAuditSink';
+import { createAgentProviders } from './provider';
 
 @Module({
     imports: [
@@ -129,12 +130,7 @@ export class AgentModule {
     static withOptions(options: AgentOptions): ModuleWithProviders<AgentModule> {
         return {
             module: AgentModule,
-            providers: [
-                { provide: AGENT_OPTIONS, useValue: mergeAgentOptions(options) }
-            ]
+            providers: createAgentProviders(options)
         };
     }
 }
-
-
-

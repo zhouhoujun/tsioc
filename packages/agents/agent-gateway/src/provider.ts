@@ -1,13 +1,13 @@
-import { ModuleWithProviders } from '@tsdi/ioc';
-import { AgentGatewayModule } from './agent-gateway.module';
+import { Provider } from '@tsdi/ioc';
 import { GATEWAY_CONFIG } from './tokens';
 import { GatewayConfig, defaultGatewayConfig } from './contracts/GatewayConfig';
 
-export function provideAgentGateway(config?: GatewayConfig): ModuleWithProviders<AgentGatewayModule> {
-    return {
-        module: AgentGatewayModule,
-        providers: [
-            { provide: GATEWAY_CONFIG, useValue: { ...defaultGatewayConfig, ...(config ?? {}) } }
-        ]
-    } as any;
+export function createAgentGatewayProviders(config?: GatewayConfig): Provider[] {
+    return [
+        { provide: GATEWAY_CONFIG, useValue: { ...defaultGatewayConfig, ...(config ?? {}) } }
+    ];
+}
+
+export function provideAgentGateway(config?: GatewayConfig): Provider[] {
+    return createAgentGatewayProviders(config);
 }

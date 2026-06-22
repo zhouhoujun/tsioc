@@ -1,7 +1,7 @@
 import { MethodMetadata, Module } from '@tsdi/ioc';
 import { LoggerModule, LogConfigure, provideLogger } from '@tsdi/logger';
 import { Transport } from '@tsdi/common';
-import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor, provideService, useJson, useRouter, useStatics } from '@tsdi/service';
+import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor, provideService, useCors, useJson, useLogger, useRouter, useStatics } from '@tsdi/service';
 import { CorsInterceptor, HttpModule, useHttpTransport } from '@tsdi/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
@@ -17,7 +17,7 @@ import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
 import { Role } from './models/Role';
-import { Aspect, Before, JoinPoint } from '@tsdi/aop';
+import { AopModule, Aspect, Before, JoinPoint } from '@tsdi/aop';
 import { AuthorizationAspect, AuthorizationPointcut } from '@tsdi/security';
 
 
@@ -109,8 +109,8 @@ export class CheckRightAspect {
 @Module({
     baseURL: __dirname,
     imports: [
+        AopModule,
         // LoggerModule.withOptions(logconfig),
-        provideLogger(logconfig),
         ServerModule,
         ServerLog4Module,
         ServerCommonModule,
@@ -162,8 +162,11 @@ export class CheckRightAspect {
     providers: [
         // AuthorizationAspect,
         CheckRightAspect,
+        provideLogger(logconfig),
         provideTypeOrm(connections),
         provideService(
+            useLogger(),
+            useCors(),
             useRouter(),
             useStatics(),
             useJson(),

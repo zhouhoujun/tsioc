@@ -3,7 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { Controller, Get, provideService, useJson, useRouter } from '@tsdi/service';
 import { useHttpTransport } from '@tsdi/http';
-import { SwaggerModule, provideSwagger } from '../src';
+import { provideSwagger } from '../src';
 import { Transport } from '@tsdi/common';
 import * as http from 'node:http';
 import expect = require('expect');
@@ -20,7 +20,7 @@ class HelloController {
 
 describe('Swagger E2E', () => {
     @Module({
-        imports: [LoggerModule, SwaggerModule],
+        imports: [LoggerModule],
         declarations: [HelloController],
         providers: [
             ...provideSwagger({

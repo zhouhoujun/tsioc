@@ -35,6 +35,7 @@ export class SwaggerLoadTest {
         });
         expect(Array.isArray(result)).toBe(true);
         expect(result.length).toBeGreaterThan(0);
+        expect(result.some((provider: any) => provider?.name === 'SwaggerService')).toBe(true);
     }
 
     @Test()

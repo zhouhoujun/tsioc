@@ -82,14 +82,29 @@ export class ModelProviderTest {
 
     @Test('provideAgent works with model config')
     async provideAgentWorks() {
-        const ctx = await Application.run(provideAgent({
-            model: { provider: 'echo', model: 'echo' }
-        }));
+        const ctx = await Application.run({
+            module: AgentModule,
+            providers: provideAgent({
+                model: { provider: 'echo', model: 'echo' }
+            })
+        });
         try {
             const adapter = ctx.get(ModelAdapter);
             expect(adapter).toBeTruthy();
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('provideAgent returns providers and AgentModule.withOptions returns module metadata')
+    provideAgentReturnsProviders() {
+        const providers = provideAgent({ model: { provider: 'echo', model: 'echo' } });
+        expect(Array.isArray(providers)).toBe(true);
+        expect(providers.length).toBeGreaterThan(0);
+
+        const result = AgentModule.withOptions({ model: { provider: 'echo', model: 'echo' } });
+        expect(result.module).toBe(AgentModule);
+        expect(Array.isArray(result.providers)).toBe(true);
+        expect(result.providers?.length).toBeGreaterThan(0);
     }
 }
