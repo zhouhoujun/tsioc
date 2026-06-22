@@ -15,7 +15,7 @@ import expect = require('expect');
 describe('HTTP Microservice', () => {
     describe('HttpServOptions', () => {
         it('should create valid HTTP server options', () => {
-            const options: Partial<HttpServOptions> = { transport: Transport.HTTP, side: TransferSide.server, microservice: true, listenOpts: { port: 3000, host: 'localhost' } };
+            const options: Partial<HttpServOptions> = { transport: Transport.HTTP, side: TransferSide.server, listenOpts: { port: 3000, host: 'localhost' } };
             expect(options.transport).toBe(Transport.HTTP);
             expect(options.listenOpts?.port).toBe(3000);
         });
@@ -69,7 +69,7 @@ describe('HTTP Microservice', () => {
             expect(feature.kind).toBeDefined();
             expect(feature.config.transport).toBe(Transport.HTTP);
             expect(feature.config.side).toBe(TransferSide.server);
-            expect(feature.config.microservice).toBe(true);
+            expect(feature.config.microservice).toBeUndefined();
             expect(feature.config.features?.bodyparser).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === HTTP_SERV_OPTIONS)).toBe(true);
             expect(feature.providers.some((p: any) => p.provide === ContentInterceptor && p.useClass?.name === 'HttpContentInterceptor')).toBe(true);

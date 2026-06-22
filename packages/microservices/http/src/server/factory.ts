@@ -27,7 +27,6 @@ export function httpTransportFactory(option: Partial<HttpServOptions>, asDefault
     const config = {
         transport: Transport.HTTP,
         side: TransferSide.server,
-        microservice: true,
         ...option,
         features: {
             bodyparser: true,

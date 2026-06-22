@@ -34,6 +34,14 @@ export class HttpJsonInterceptor implements RequestInterceptor<ReadableLike<Inco
     }
 
     protected streamify(input: ReadableLike<Incoming>, res: any, context: RequestContext) {
+        const adapter = context.get(MessageAdapter) as MessageAdapter & {
+            getBody?: () => any;
+            getResponseHeader?: (name: string) => string | undefined;
+        };
+        if (adapter?.getBody?.() != null) {
+            return res;
+        }
+
         const streamAdapter = context.get(StreamAdapter);
         const strm = streamAdapter.isStream(res);
         const json = streamAdapter.isJson(res);
@@ -43,14 +51,17 @@ export class HttpJsonInterceptor implements RequestInterceptor<ReadableLike<Inco
         }
 
         const pretty = this.pretty || hasOwn(input.query, this.paramName);
+        const responseType = String(adapter?.getResponseHeader?.('content-type') ?? context.get(CONTENT_TYPE) ?? '').toLowerCase();
+        const expectsJson = !responseType || responseType.includes('/json') || responseType.includes('+json');
 
-        const adapter = context.get(MessageAdapter);
-        if (strm && adapter?.accepts('json')) {
+        if (strm && expectsJson && adapter?.accepts('json')) {
             context.set(CONTENT_TYPE, ContentType.APPL_JSON);
             return streamAdapter.jsonSreamify(res, undefined, pretty ? this.spaces : 2);
-        } else if (json && pretty) {
+        } else if (json && pretty && expectsJson) {
             context.set(CONTENT_TYPE, ContentType.APPL_JSON_UTF8);
             return JSON.stringify(res, null, this.spaces);
         }
+
+        return res;
     }
 }

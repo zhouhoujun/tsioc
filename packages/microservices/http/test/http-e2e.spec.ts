@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, useRouter, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, MESSAGE_ROUTERS } from '@tsdi/service';
+import { provideService, useRouter, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, ROUTERS } from '@tsdi/service';
 import { useHttpTransport, HttpFileResult } from '../src/server';
 import { withHttpTransport } from '../src/client';
 import { provideClient, withTimeout, withFeatures } from '@tsdi/client';
@@ -342,7 +342,7 @@ describe('HTTP @Controller', () => {
     it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 
     it('should register controller route', () => {
-        const routers = ctx.get(MESSAGE_ROUTERS);
+        const routers = ctx.get(ROUTERS);
         expect(routers?.length).toBeGreaterThan(0);
         const patterns = routers[0].getPatterns();
         expect(patterns.routes).toContain('api/test');

@@ -1,5 +1,6 @@
 import { MethodMetadata, Module } from '@tsdi/ioc';
 import { LoggerModule, LogConfigure, provideLogger } from '@tsdi/logger';
+import { Transport } from '@tsdi/common';
 import { BodyParserInterceptor, ContentInterceptor, JsonInterceptor, provideService, useJson, useRouter, useStatics } from '@tsdi/service';
 import { CorsInterceptor, HttpModule, useHttpTransport } from '@tsdi/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
@@ -133,13 +134,6 @@ export class CheckRightAspect {
         //         ]
         //     }
         // }),
-        
-        provideSwagger({
-            title: 'api document',
-            description: 'platform basic api',
-            version: 'v1',
-            prefix: 'api-doc'
-        })
 
         // TypeOrmModule.withConnection(connections),
         // EndpointModule.register({
@@ -168,19 +162,20 @@ export class CheckRightAspect {
     providers: [
         // AuthorizationAspect,
         CheckRightAspect,
-        provideTypeOrm(connections),        
+        provideTypeOrm(connections),
         provideService(
             useRouter(),
             useStatics(),
             useJson(),
-            useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' }, asDefault: true }),
+            useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' } }),
         ),
-        // provideSwagger({
-        //     title: 'api document',
-        //     description: 'platform basic api',
-        //     version: 'v1',
-        //     prefix: 'api-doc'
-        // })            
+        provideSwagger({
+            title: 'api document',
+            description: 'platform basic api',
+            version: 'v1',
+            prefix: 'api-doc',
+            transport: Transport.HTTP
+        }),  
     ],
     declarations: [
         UserController,

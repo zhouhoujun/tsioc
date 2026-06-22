@@ -1,13 +1,15 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
-import { AbstractType, Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
+import { AbstractType, Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, Injector, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { LOCALHOST, joinPath, ContentType } from '@tsdi/common';
+import { LOCALHOST, joinPath, ContentType, CONTENT_TYPE, Transport } from '@tsdi/common';
 import { RouteMappingMetadata, Router, getRouter, SetupServices } from '@tsdi/service';
 import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
-import { HttpServer } from '@tsdi/http'
+import { HTTP_SERV_OPTIONS, HttpServer } from '@tsdi/http';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
 import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 
 
@@ -20,18 +22,30 @@ export class SwaggerService {
 
     private swaggerInit?: string;
 
+    protected resolveRouter(injector: Injector, transport?: Transport, microservice?: boolean): Router {
+        let current: Injector | null | undefined = injector;
+        while (current) {
+            try {
+                return getRouter(current, transport, microservice);
+            } catch {
+                current = current.getParent?.();
+            }
+        }
+        throw new Exception('swagger router has not register.');
+    }
+
 
     @Started()
     setup(ctx: ApplicationContext) {
         const moduleRef = ctx.getParent();
         const opts = moduleRef.get(SWAGGER_SETUP_OPTIONS, {} as SwaggerSetupOptions);
 
-        const router = getRouter(moduleRef);
+        const router = this.resolveRouter(moduleRef, opts.transport, opts.microservice);
 
-        const models = moduleRef.get(MODEL_RESOLVERS);
+        const models = moduleRef.get(MODEL_RESOLVERS, []);
 
         const getModelResolver = (target?: any) => {
-            if (!target || !isType(target)) return undefined;
+            if (!target || !isType(target)) return;
             return models.find(m => m.hasModel(target))
         }
 
@@ -101,20 +115,45 @@ export class SwaggerService {
         this.buildDoc(router, doc, getModelResolver);
 
         const prefix = opts.prefix ?? 'api-doc';
-        router.use(prefix, async (ctx: any, _next: any) => {
-            const html = this.generateHTML(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle);
-            ctx.contentType = ContentType.TEXT_HTML;
-            ctx.body = html;
+        const baseHref = `/${String(prefix).replace(/^\/+|\/+$/g, '')}/`;
+        const swaggerRoot = getAbsoluteFSPath();
+        router.use(prefix, async (_input: any, ctx: any) => {
+            const html = this.generateHTML(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle, baseHref);
+            ctx.set(CONTENT_TYPE, ContentType.TEXT_HTML);
+            const adapter = ctx.getMessageAdapter?.();
+            adapter?.setHeader?.('content-type', ContentType.TEXT_HTML);
+            adapter?.setBody?.(html);
+            return;
         });
+        const sendAsset = (file: string, contentType: string) => async (_input: any, ctx: any) => {
+            const adapter = ctx.getMessageAdapter?.();
+            const content = fs.readFileSync(path.join(swaggerRoot, file));
+            ctx.set(CONTENT_TYPE, contentType);
+            adapter?.setHeader?.('content-type', contentType);
+            adapter?.setBody?.(content);
+            return;
+        };
+        router.use(joinPath(prefix, 'swagger-ui.css'), sendAsset('swagger-ui.css', 'text/css; charset=utf-8'));
+        router.use(joinPath(prefix, 'swagger-ui-bundle.js'), sendAsset('swagger-ui-bundle.js', 'application/javascript; charset=utf-8'));
+        router.use(joinPath(prefix, 'swagger-ui-standalone-preset.js'), sendAsset('swagger-ui-standalone-preset.js', 'application/javascript; charset=utf-8'));
+        router.use(joinPath(prefix, 'swagger-ui-init.js'), async (_input: any, ctx: any) => {
+            const js = this.swaggerInit ?? '';
+            ctx.set(CONTENT_TYPE, 'application/javascript; charset=utf-8');
+            const adapter = ctx.getMessageAdapter?.();
+            adapter?.setHeader?.('content-type', 'application/javascript; charset=utf-8');
+            adapter?.setBody?.(js);
+            return;
+        });
+        router.use(joinPath(prefix, 'favicon-32x32.png'), sendAsset('favicon-32x32.png', 'image/png'));
+        router.use(joinPath(prefix, 'favicon-16x16.png'), sendAsset('favicon-16x16.png', 'image/png'));
 
         try {
             const httpRefs = ctx.runners.getRefs(HttpServer);
-            const fspath = getAbsoluteFSPath();
             httpRefs.forEach(httpRef => {
-                const http = httpRef.instance as any;
-                if (http.getOptions) {
-                    const httpopts = http.getOptions().listenOpts ?? {};
-                    this.logger.info('Swagger started!', 'access with url:', `${http.getOptions().protocol ?? 'http'}://${httpopts.host ?? LOCALHOST}:${httpopts.port ?? 3000}/${prefix}`, '!')
+                const httpOpts = httpRef.injector.get(HTTP_SERV_OPTIONS);
+                if (httpOpts) {
+                    const httpopts = httpOpts.listenOpts ?? {};
+                    this.logger.info('Swagger started!', 'access with url:', `${httpRef.instance.isSecure ? 'https' : 'http'}://${httpopts.host ?? LOCALHOST}:${httpopts.port ?? 3000}/${prefix}`, '!')
                 }
             });
         } catch { }
@@ -430,6 +469,7 @@ export class SwaggerService {
         customfavIcon?: string | boolean,
         swaggerUrl?: string | boolean,
         customSiteTitle?: string,
+        baseHref?: string,
         htmlTplString?: string,
         jsTplString?: string): string {
 
@@ -456,12 +496,14 @@ export class SwaggerService {
         customCss = explorerString + ' ' + customCss || explorerString;
         customfavIcon = customfavIcon || false;
         customSiteTitle = customSiteTitle || 'Swagger UI';
+        baseHref = baseHref || './';
         htmlTplString = htmlTplString || _htmlTplString;
         jsTplString = jsTplString || _jsTplString;
 
         const robotsMetaString = customRobots ? '<meta name="robots" content="' + customRobots + '" />' : ''
         const favIconString = customfavIcon ? '<link rel="icon" href="' + customfavIcon + '" />' : favIconHtml
-        const htmlWithCustomCss = htmlTplString.toString().replace('<% customCss %>', customCss)
+        const htmlWithBaseHref = htmlTplString.toString().replace('<% baseHref %>', baseHref)
+        const htmlWithCustomCss = htmlWithBaseHref.replace('<% customCss %>', customCss)
         const htmlWithCustomRobots = htmlWithCustomCss.replace('<% robotsMetaString %>', robotsMetaString)
         const htmlWithFavIcon = htmlWithCustomRobots.replace('<% favIconString %>', favIconString)
         const htmlWithCustomJsUrl = htmlWithFavIcon.replace('<% customJs %>', toTags(customJs, toExternalScriptTag))
@@ -496,6 +538,7 @@ const _htmlTplString = `
     <head>
         <meta charset="UTF-8">
         <% robotsMetaString %>
+        <base href="<% baseHref %>">
         <title><% title %></title>
         <link rel="stylesheet" type="text/css" href="./swagger-ui.css" >
         <% favIconString %>

@@ -38,7 +38,6 @@ describe('middleware', () => {
                     await next();
                 }),
                 useHttpTransport({
-                    microservice: false as any,
                     listenOpts: {
                         port: PORT,
                         host: '127.0.0.1'
@@ -49,7 +48,6 @@ describe('middleware', () => {
             provideClient(
                 withHttpTransport({
                     url: `http://127.0.0.1:${PORT}`,
-                    microservice: false,
                     asDefault: true
                 })
             )

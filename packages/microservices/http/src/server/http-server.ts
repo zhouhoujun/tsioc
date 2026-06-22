@@ -27,7 +27,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     @InjectLog() logger!: Logger;
 
-    protected isSecure: boolean;
+    public isSecure: boolean;
     private destroy$: Subject<void>;
     private activeConnections: Set<net.Socket> = new Set();
     private activeHttp2Sessions: Set<http2.ServerHttp2Session> = new Set();

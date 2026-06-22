@@ -1,4 +1,5 @@
 import { token } from '@tsdi/ioc';
+import { Transport } from '@tsdi/common';
 import { SwaggerConfigs } from 'swagger-ui-dist';
 
 
@@ -120,6 +121,14 @@ export interface SwaggerUiOptions {
  * Swagger setup options
  */
 export interface SwaggerSetupOptions {
+  /**
+   * target transport router for document generation.
+   */
+  transport?: Transport;
+  /**
+   * whether to resolve router from microservice router registry.
+   */
+  microservice?: boolean;
   /**
    * custom title for a page.
    */

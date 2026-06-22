@@ -117,7 +117,6 @@ class Https2DeviceController {
             useRouter(),
             useRouter({ microservice: true }),
             useHttpTransport({
-                microservice: false as any,
                 majorVersion: 2,
                 secure: true,
                 serverOpts: { key, cert, allowHTTP1: true } as any,
@@ -132,7 +131,6 @@ class Https2DeviceController {
             withHttpTransport({
                 authority: `https://localhost:${PORT}`,
                 connectOpts: { ca: cert },
-                microservice: false,
                 asDefault: true
             })
         )
