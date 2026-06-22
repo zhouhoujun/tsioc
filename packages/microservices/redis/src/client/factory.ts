@@ -66,6 +66,9 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
             useExisting: clientToken
         });
         if (config.formatter) {
+            if (config.formatter === RedisPatternFormatter) {
+                providers.push(RedisPatternFormatter);
+            }
             providers.push({
                 provide: PatternFormatter,
                 useFactory: (injector: Injector) => injector.get(config.formatter!),

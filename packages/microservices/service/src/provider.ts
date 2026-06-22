@@ -575,9 +575,11 @@ export function useCors(options?: CorsOptions): ServiceFeatureFn<ServiceFeatureK
     };
 }
 
-export function useAuth(options?: AuthOptions): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
+export function useAuth(options?: boolean | AuthOptions): ServiceFeatureFn<ServiceFeatureKind.Interceptors> {
     return (config) => {
-        const resolved = resolveFeatureOptions(options);
+        const resolved = options === false ? {
+            featureOptions: {} as Omit<AuthOptions, 'interceptor' | 'multiOrder'>
+        } : resolveFeatureOptions(isBoolean(options) ? undefined : options);
         return makeServiceFeature(
             ServiceFeatureKind.Interceptors,
             [
@@ -596,13 +598,13 @@ export const SERVICE_GRACEFUL_SHUTDOWN_OPTIONS = token<GracefulShutdownOptions>(
 export const SERVICE_STATICS_OPTIONS = token<any>('SERVICE_STATICS_OPTIONS');
 /** @deprecated use SERVICE_STATICS_OPTIONS */
 export const SERVICE_CONTENT_OPTIONS = SERVICE_STATICS_OPTIONS;
-export const SERVICE_AUTH_OPTIONS = token<any>('SERVICE_AUTH_OPTIONS');
+export const SERVICE_AUTH_OPTIONS = token<AuthOptions>('SERVICE_AUTH_OPTIONS');
 export const SERVICE_BODY_PARSER_OPTIONS = token<any>('SERVICE_BODY_PARSER_OPTIONS');
 export const SERVICE_BODY_SERIALIZER_OPTIONS = token<any>('SERVICE_BODY_SERIALIZER_OPTIONS');
 export const SERVICE_JSON_OPTIONS = token<any>('SERVICE_JSON_OPTIONS');
 export const SERVICE_SESSION_OPTIONS = token<any>('SERVICE_SESSION_OPTIONS');
 export const SERVICE_COOKIE_OPTIONS = token<any>('SERVICE_COOKIE_OPTIONS');
-export const SERVICE_CORS_OPTIONS = token<any>('SERVICE_CORS_OPTIONS');
+export const SERVICE_CORS_OPTIONS = token<CorsOptions>('SERVICE_CORS_OPTIONS');
 export const SERVICE_CONFIGS = token<ServiceOptions[]>('SERVICE_CONFIGS');
 export const SERV_OPTIONS = token<ServiceOptions>('SERV_OPTIONS');
 

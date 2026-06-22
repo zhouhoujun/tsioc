@@ -63,9 +63,21 @@ function createContext() {
     const store = new Map<string, string>();
     const resHeaders: Record<string, string> = {};
     let statusCode = 200;
+    let adapterStatus: number | undefined;
 
     return {
         secure: false,
+        get status() { return adapterStatus; },
+        set status(v: number | undefined) {
+            adapterStatus = v;
+            if (typeof v === 'number') {
+                statusCode = v;
+            }
+        },
+        setStatus(v: number) {
+            adapterStatus = v;
+            statusCode = v;
+        },
         response: {
             get statusCode() { return statusCode; },
             set statusCode(v: number) { statusCode = v; },
@@ -135,6 +147,7 @@ export class AuthControllerTest {
         const controller = new AuthController(new OIDCServiceStub() as any);
         const ctx = createContext();
         const result = await controller.userinfo(ctx);
+        expect(ctx.status).toBe(401);
         expect(ctx.response.statusCode).toBe(401);
         expect((result as any).error).toContain('Not authenticated');
     }
@@ -164,6 +177,7 @@ export class AuthControllerTest {
         const ctx = createContext();
         ctx.cookies.set('oidc_session', 'expired-token');
         const result = await controller.userinfo(ctx);
+        expect(ctx.status).toBe(401);
         expect(ctx.response.statusCode).toBe(401);
         expect((result as any).error).toContain('Invalid or expired');
     }
@@ -214,6 +228,7 @@ export class AuthControllerTest {
         const controller = new AuthController(new OIDCServiceStub() as any);
         const ctx = createContext();
         const result = await controller.refresh(ctx, {} as any);
+        expect(ctx.status).toBe(400);
         expect(ctx.response.statusCode).toBe(400);
         expect((result as any).error).toBeTruthy();
     }
@@ -223,6 +238,7 @@ export class AuthControllerTest {
         const controller = new AuthController(new OIDCServiceStub() as any);
         const ctx = createContext();
         await controller.refresh(ctx, { refreshToken: '' });
+        expect(ctx.status).toBe(400);
         expect(ctx.response.statusCode).toBe(400);
     }
 
@@ -241,6 +257,7 @@ export class AuthControllerTest {
         const controller = new AuthController(stub as any);
         const ctx = createContext();
         const result = await controller.refresh(ctx, { refreshToken: 'rt' });
+        expect(ctx.status).toBe(400);
         expect(ctx.response.statusCode).toBe(400);
         expect((result as any).error).toContain('Provider refresh failed');
     }
@@ -286,5 +303,30 @@ export class AuthControllerTest {
         expect(result.authorization_endpoint).toContain('auth.example.com');
         expect(result.token_endpoint).toContain('/auth/callback');
         expect(result.userinfo_endpoint).toContain('/auth/userinfo');
+    }
+
+    @Test('secure login and callback set secure cookies and header getter host wins')
+    async secureCookiesAndGetterHost() {
+        const controller = new AuthController(new OIDCServiceStub() as any);
+        const ctx = createContext();
+        const cookieCalls: any[] = [];
+        ctx.secure = true;
+        ctx.getHeader = (name: string) => name.toLowerCase() === 'host' ? 'adapter.example.com' : undefined;
+        const originalSet = ctx.cookies.set;
+        ctx.cookies.set = (name: string, value?: string, opts?: any) => {
+            cookieCalls.push({ name, value, opts });
+            return originalSet(name, value, opts);
+        };
+
+        controller.login(ctx);
+        ctx.cookies.set('oidc_state', 's1');
+        ctx.cookies.set('oidc_nonce', 'n1');
+        await controller.callback(ctx, 'code-1', 'state-1');
+        const config = controller.openidConfiguration(ctx);
+
+        expect(cookieCalls.some(call => call.name === 'oidc_state' && call.opts?.secure === true)).toBe(true);
+        expect(cookieCalls.some(call => call.name === 'oidc_nonce' && call.opts?.secure === true)).toBe(true);
+        expect(cookieCalls.some(call => call.name === 'oidc_session' && call.opts?.secure === true)).toBe(true);
+        expect(config.authorization_endpoint).toBe('https://adapter.example.com/auth/login');
     }
 }

@@ -137,7 +137,8 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
                 ...jsonRpcRequest,
                 url: '/' + jsonRpcRequest.method.replace(/\./g, '/'),
                 method: 'POST',
-                body: jsonRpcRequest.params
+                body: jsonRpcRequest.params,
+                headers: req.headers
             };
 
             const context = createRequestContext(this.injector, [

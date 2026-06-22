@@ -193,6 +193,10 @@ export class OIDCServiceTest {
     @Test('createSessionToken generates a JWT')
     async createSessionToken() {
         const service = this.createService();
+        const originalExpires = process.env.OIDC_SESSION_EXPIRES_IN;
+        const originalIssuer = process.env.OIDC_SESSION_ISSUER;
+        process.env.OIDC_SESSION_EXPIRES_IN = '12h';
+        process.env.OIDC_SESSION_ISSUER = 'custom-issuer';
         const user: SessionUser = {
             sub: 'user-1',
             name: 'Test User',
@@ -200,8 +204,13 @@ export class OIDCServiceTest {
             emailVerified: true,
             provider: 'https://issuer.example'
         };
-        const token = await service.createSessionToken(user);
-        expect(token).toBe('signed-token-for-user-1');
+        try {
+            const token = await service.createSessionToken(user);
+            expect(token).toBe('signed-token-for-user-1');
+        } finally {
+            process.env.OIDC_SESSION_EXPIRES_IN = originalExpires;
+            process.env.OIDC_SESSION_ISSUER = originalIssuer;
+        }
     }
 
     @Test('verifySessionToken returns user for valid token')
@@ -245,6 +254,8 @@ export class OIDCServiceTest {
 
     @Test('provideOIDC returns full providers and withOptions returns option providers')
     provideModuleShape() {
+        const originalExpires = process.env.OIDC_SESSION_EXPIRES_IN;
+        const originalIssuer = process.env.OIDC_SESSION_ISSUER;
         const options = {
             clientId: 'client-id',
             clientSecret: 'client-secret',
@@ -252,16 +263,33 @@ export class OIDCServiceTest {
             tokenURL: 'https://issuer.example/token',
             profileURL: 'https://issuer.example/profile',
             callbackURL: 'https://app.example/callback',
-            issuer: 'https://issuer.example'
+            issuer: 'https://issuer.example',
+            jwksURI: 'https://issuer.example/jwks',
+            scope: ['openid', 'profile'],
+            sessionExpiresIn: '6h',
+            sessionIssuer: 'issuer-test',
+            prompt: 'login',
+            loginHint: 'user@example.com'
         };
-        const providers = provideOIDC(options);
-        expect(Array.isArray(providers)).toBe(true);
-        expect(providers.length).toBeGreaterThan(0);
+        try {
+            const providers = provideOIDC(options);
+            expect(Array.isArray(providers)).toBe(true);
+            expect(providers.length).toBeGreaterThan(0);
 
-        const result = OIDCModule.withOptions(options);
-        expect(result.module).toBe(OIDCModule);
-        expect(Array.isArray(result.providers)).toBe(true);
-        expect(result.providers?.length).toBeGreaterThan(0);
-        expect((result.providers as any[]).length).toBeLessThan(providers.length);
+            const result = OIDCModule.withOptions(options);
+            expect(result.module).toBe(OIDCModule);
+            expect(Array.isArray(result.providers)).toBe(true);
+            expect(result.providers?.length).toBeGreaterThan(0);
+            expect((result.providers as any[]).length).toBeLessThan(providers.length);
+            expect(process.env.OIDC_SESSION_EXPIRES_IN).toBe('6h');
+            expect(process.env.OIDC_SESSION_ISSUER).toBe('issuer-test');
+            expect((result.providers as any[])[0]).toEqual({
+                provide: 'OIDC_AUTH_MODULE_OPTIONS',
+                useValue: options
+            });
+        } finally {
+            process.env.OIDC_SESSION_EXPIRES_IN = originalExpires;
+            process.env.OIDC_SESSION_ISSUER = originalIssuer;
+        }
     }
 }

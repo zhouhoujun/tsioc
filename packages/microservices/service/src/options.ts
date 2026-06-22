@@ -153,8 +153,20 @@ export interface CorsOptions extends FeatureInterceptorOptions {
     maxAge?: number | string;
 }
 
+export interface JwtAuthOptions {
+    publicKey?: string | Buffer;
+    issuer?: string | string[];
+    audience?: string | RegExp | Array<string | RegExp>;
+    algorithms?: string[];
+    clockTolerance?: number;
+}
+
 export interface AuthOptions extends FeatureInterceptorOptions {
-    [key: string]: any;
+    bearerToken?: string;
+    jwt?: JwtAuthOptions;
+    tokenQueryName?: string;
+    allowQueryToken?: boolean;
+    allowWebSocketProtocolToken?: boolean;
 }
 
 /**
@@ -281,4 +293,3 @@ export interface ServiceOptions<TReq = any, TRes = any, TContext extends Request
     messageReaderFactory?: any;
     transportFeature?: (options: ServiceOptions<TReq, TRes, TContext>, asDefault?: boolean) => ServiceTransportFeature;
 }
-

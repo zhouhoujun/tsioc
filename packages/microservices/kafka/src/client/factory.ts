@@ -43,6 +43,9 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
     if (asDefault) {
         providers.push({ provide: KafkaClient, useExisting: clientToken });
         if (config.formatter) {
+            if (config.formatter === KafkaPatternFormatter) {
+                providers.push(KafkaPatternFormatter);
+            }
             providers.push({
                 provide: PatternFormatter,
                 useFactory: (injector: Injector) => injector.get(config.formatter!),

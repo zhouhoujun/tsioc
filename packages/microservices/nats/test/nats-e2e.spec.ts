@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, POST } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { GET, POST, Transport } from '@tsdi/common';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useNatsTransport } from '../src/server';
 import { provideClient, withTimeout } from '@tsdi/client';
 import { withNatsTransport, NatsClient } from '../src/client';
@@ -23,6 +23,17 @@ class RouteCtrl {
 }
 
 const NATS_URL = 'nats://127.0.0.1:4222';
+
+interface PatternPayloadResponse<T> {
+    payload: T;
+}
+
+interface AuthResultResponse {
+    ok?: boolean;
+    body?: { ok?: boolean; body?: { ok?: boolean }; payload?: { ok?: boolean } };
+    payload?: { ok?: boolean; body?: { ok?: boolean }; payload?: { ok?: boolean } };
+    statusCode?: number;
+}
 
 describe('NATS E2E microservice:true', () => {
     @Module({
@@ -54,7 +65,7 @@ describe('NATS E2E microservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useNatsTransport({ microservice: false as any, url: NATS_URL, asDefault: true })),
+                useNatsTransport({ microservice: false, url: NATS_URL, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withNatsTransport({ url: NATS_URL, microservice: false, asDefault: true }))
@@ -172,7 +183,7 @@ describe('NATS E2E with provideService + provideClient (microservice:false)', ()
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useNatsTransport({ microservice: false as any, url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
+                useNatsTransport({ microservice: false, url: NATS_URL, subjects: [SUBJECT], asDefault: true })),
             provideClient(
                 withTimeout(),
                 withNatsTransport({ url: NATS_URL, microservice: false, asDefault: true }))
@@ -216,7 +227,7 @@ class NatsPatternService {
     @Handle('sensor.message.*')
     topic(@Payload() msg: string) { return msg; }
 
-    @Subscribe('sensor.*.start', undefined as any)
+    @Subscribe('sensor.*.start', Transport.NATS)
     subscribe(@Payload() msg: string) { return msg; }
 }
 
@@ -245,26 +256,93 @@ describe('NATS pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'echo' }, {
             payload: { msg: 'hello' },
             timeout: 50
-        } as any));
+        }));
         expect(result.payload).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', {
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.message.update', {
             payload: { msg: 'world' },
             timeout: 50
-        } as any));
+        }));
         expect(result.payload).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', {
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.temp.start', {
             payload: { msg: 'foo' },
             timeout: 50
-        } as any));
+        }));
         expect(result.payload).toEqual('foo');
+    });
+});
+
+describe('NATS auth E2E', () => {
+    const SUBJECT = 'e2e.auth.ping';
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class NatsSecureController {
+        @Get('/ping') ping() { return { ok: true }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [NatsSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useNatsTransport({ url: NATS_URL, subjects: [SUBJECT], asDefault: true })
+            ),
+            provideClient(
+                withTimeout(),
+                withNatsTransport({ url: NATS_URL, microservice: true, asDefault: true })
+            )
+        ]
+    })
+    class NatsAuthModule { }
+
+    let ctx: ApplicationContext;
+    let nc: NatsConnection;
+    const sc = StringCodec();
+
+    before(async () => {
+        ctx = await Application.run(NatsAuthModule);
+        nc = await connect({ servers: NATS_URL });
+    });
+
+    after(async () => {
+        if (nc) await nc.drain();
+        if (ctx) await ctx.destroy();
+    });
+
+    it('accepts requests with bearer token', async () => {
+        const msg = await nc.request(SUBJECT, sc.encode(JSON.stringify({
+            url: '/secure/ping',
+            method: 'GET',
+            headers: { authorization: 'Bearer secret-token' }
+        })), { timeout: 1500 });
+        const response = JSON.parse(sc.decode(msg.data)) as AuthResultResponse;
+        const ok = response.ok
+            ?? response.body?.ok
+            ?? response.payload?.ok
+            ?? response.body?.body?.ok
+            ?? response.body?.payload?.ok
+            ?? response.payload?.body?.ok
+            ?? response.payload?.payload?.ok;
+        expect(ok).toBe(true);
+    });
+
+    it('rejects requests without bearer token', async () => {
+        const msg = await nc.request(SUBJECT, sc.encode(JSON.stringify({
+            url: '/secure/ping',
+            method: 'GET'
+        })), { timeout: 1500 });
+        const response = JSON.parse(sc.decode(msg.data)) as AuthResultResponse;
+        expect(response.statusCode).toBe(401);
     });
 });

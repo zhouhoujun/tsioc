@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES, BodyParserInterceptor, ContentInterceptor, JsonInterceptor } from '@tsdi/service';
+import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, JsonInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
 import { CoapMessageAdapter } from './message-adapter';
@@ -39,6 +39,12 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
     config.providers.push(
         { provide: COAP_SERV_OPTIONS, useValue: config },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
@@ -49,13 +55,16 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         { provide: ContentInterceptor, useClass: CoapContentInterceptor },
         { provide: JsonInterceptor, useClass: CoapJsonInterceptor },
         { provide: BodyParserInterceptor, useClass: CoapBodyParserInterceptor },
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
                 const adapter = context.get(StatusMessageAdapter);
                 if (adapter) {
                     adapter.setStatus('4.04', 'Not Found')
-                        .setError({ message: 'Not Found' } as any)
+                        .setError(new Error('Not Found'))
                         .setPayload({ statusCode: '4.04', statusMessage: 'Not Found' });
                     return of(adapter);
                 }

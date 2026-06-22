@@ -69,8 +69,12 @@ export abstract class AbstractClient<
         observe?: 'body';
         responseType?: 'json';
     }): Observable<R>;
+    send<R = any>(pattern: Pattern, options: TReqOptions & {
+        observe: 'response' | 'emit' | 'observe';
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+    }): Observable<R>;
     send(req: TRequest): Observable<TResponse>;
-    send(req: TRequest | Pattern, options?: TReqOptions & ResponseAs): Observable<any> {
+    send(req: TRequest | Pattern, options?: TReqOptions & ResponseAs): Observable<unknown> {
         if (!req) {
             return throwError(() => new ArgumentException('Invalid message'));
         }
@@ -146,7 +150,7 @@ export abstract class AbstractClient<
     protected request(first: Pattern | TRequest, options: TReqOptions & {
         observe?: 'body';
         responseType?: 'json';
-    } = {} as any): Observable<any> {
+    } = {} as TReqOptions & { observe?: 'body'; responseType?: 'json' }): Observable<unknown> {
         const req = this.buildRequest(first, options);
         let context = options.context;
         if (!context) {

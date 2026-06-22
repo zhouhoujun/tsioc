@@ -2,13 +2,18 @@ import { Module, Injectable } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST, Transport } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Payload } from '@tsdi/service';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Payload } from '@tsdi/service';
 import { useTcpTransport } from '../src/server';
 import { withTcpTransport } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import { TcpClient } from '../src/client/client';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+
+interface AuthErrorResponse {
+    status?: number | string;
+    statusCode?: number | string;
+}
 
 @Controller('/api/test')
 class TestController {
@@ -56,7 +61,7 @@ describe('TCP E2E microservice:false', () => {
         providers: [
             provideService(useRouter(),
                 useRouter({ microservice: true }),
-                useTcpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
+                useTcpTransport({ microservice: false, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTcpTransport({ connectOpts: { port: PORTS.host, host: '127.0.0.1' }, microservice: false, asDefault: true }))
         ]
@@ -160,20 +165,20 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
 
     it('should send ping cmd and receive pong via client.send()', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
-            observe: 'response' as any,
-            responseType: 'text' as any,
+            observe: 'response',
+            responseType: 'text',
             timeout: 50
-        } as any).pipe(catchError(err => of(err))));
+        }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 
     it('should send echo cmd and receive echoed object', async () => {
         const testMsg = { message: 'hello tcp' };
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
-            observe: 'response' as any,
+            observe: 'response',
             payload: testMsg,
             timeout: 50
-        } as any).pipe(catchError(err => of(err))));
+        }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 });
@@ -192,7 +197,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
         providers: [
             provideService(useRouter(),
                 useRouter({ microservice: true }),
-                useTcpTransport({ microservice: false as any, listenOpts: { port: PORTS.hostClient, host: '127.0.0.1' }, asDefault: true })),
+                useTcpTransport({ microservice: false, listenOpts: { port: PORTS.hostClient, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTcpTransport({ connectOpts: { port: PORTS.hostClient, host: '127.0.0.1' }, microservice: false, asDefault: true }))
         ]
@@ -215,9 +220,64 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
 
     it('should send cmd and receive response in host mode', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
-            observe: 'response' as any,
-            responseType: 'text' as any
+            observe: 'response',
+            responseType: 'text'
         }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
+    });
+});
+
+if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP auth E2E', () => {
+    const AUTH_PORT = 3011;
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class TcpSecureController {
+        @Get('/ping')
+        ping() {
+            return { ok: true };
+        }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [TcpSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useTcpTransport({ microservice: false, listenOpts: { port: AUTH_PORT, host: '127.0.0.1' }, asDefault: true })
+            ),
+            provideClient(
+                withTimeout(),
+                withTcpTransport({ connectOpts: { port: AUTH_PORT, host: '127.0.0.1' }, microservice: false, asDefault: true })
+            )
+        ]
+    })
+    class TcpAuthModule { }
+
+    let ctx: ApplicationContext;
+    let client: TcpClient;
+
+    before(async () => {
+        ctx = await Application.run(TcpAuthModule);
+        client = ctx.get(TcpClient);
+    });
+
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('accepts requests with bearer token', async () => {
+        const result = await lastValueFrom(client.send('/secure/ping', {
+            headers: { authorization: 'Bearer secret-token' }
+        }));
+        expect(result.ok).toBe(true);
+    });
+
+    it('rejects requests without bearer token', async () => {
+        await expect(lastValueFrom<AuthErrorResponse>(client.send('/secure/ping', {
+            observe: 'response'
+        }))).rejects.toMatchObject({
+            statusCode: 401
+        });
     });
 });

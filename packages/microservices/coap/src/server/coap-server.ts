@@ -128,7 +128,8 @@ export class CoapServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         const method = String(requestSource.method || req.method || 'GET').toUpperCase();
         const headers = {
             ...this.toHeaderRecord((req as any).headers),
-            ...this.toHeaderRecord((req as any).options)
+            ...this.toHeaderRecord((req as any).options),
+            ...this.toHeaderRecord(requestSource.headers)
         };
         const query = requestSource.query ?? this.parseQuery(rawUrl);
 

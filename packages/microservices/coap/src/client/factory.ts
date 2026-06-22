@@ -107,7 +107,7 @@ function createCoapClientBackend(config: CoapClientOptions) {
             port: config.port ?? (target?.port ? Number(target.port) : 5683),
             pathname,
             method: request.method as any,
-            options: request.headers?.getHeaders?.() ?? undefined
+            options: undefined
         });
 
         let settled = false;

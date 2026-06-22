@@ -1,14 +1,22 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, POST } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { GET, POST, Transport } from '@tsdi/common';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useAmqpTransport } from '../src/server';
 import { withAmqpTransport, AmqpClient } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import * as amqp from 'amqplib';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
+
+interface PatternPayloadResponse<T> {
+    payload: T;
+}
+
+interface AmqpAuthResponse {
+    payload?: { ok?: boolean; error?: string; statusCode?: number };
+}
 
 @Controller('/api/test')
 class TestController {
@@ -54,7 +62,7 @@ describe('AMQP E2E microservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useAmqpTransport({ microservice: false as any, url: AMQP_URL, asDefault: true })),
+                useAmqpTransport({ microservice: false, url: AMQP_URL, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withAmqpTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
@@ -201,7 +209,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useAmqpTransport({ microservice: false as any, url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
+                useAmqpTransport({ microservice: false, url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withAmqpTransport({ url: AMQP_URL, microservice: false, asDefault: true }))
@@ -263,7 +271,7 @@ class AmqpPatternService {
     @Handle('sensor.message.*')
     topic(@Payload() msg: string) { return msg; }
 
-    @Subscribe('sensor.*.start', undefined as any)
+    @Subscribe('sensor.*.start', Transport.AMQP)
     subscribe(@Payload() msg: string) { return msg; }
 }
 
@@ -294,17 +302,17 @@ describe('AMQP pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
         expect(result.payload).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 500 } as any));
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 500 }));
         expect(result.payload).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 } as any));
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 }));
         expect(result.payload).toEqual('foo');
     });
 });
@@ -344,7 +352,90 @@ describe('AMQP pattern routing with custom routingKey', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns with custom routingKey', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
         expect(result.payload).toEqual('hello');
+    });
+});
+
+if (process.env.TSIO_TEST_AMQP) describe('AMQP auth E2E', () => {
+    const ROUTING_KEY = 'e2e.auth.ping';
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class AmqpSecureController {
+        @Get('/ping')
+        ping() { return { ok: true }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [AmqpSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useAmqpTransport({ url: AMQP_URL, routingKey: ROUTING_KEY, asDefault: true })
+            ),
+            provideClient(
+                withTimeout(),
+                withAmqpTransport({ url: AMQP_URL, microservice: true, asDefault: true })
+            )
+        ]
+    })
+    class AmqpAuthModule { }
+
+    let ctx: ApplicationContext;
+    let connection: amqp.Connection;
+    let channel: amqp.Channel;
+
+    before(async () => {
+        ctx = await Application.run(AmqpAuthModule);
+        connection = await amqp.connect(AMQP_URL);
+        channel = await connection.createChannel();
+    });
+
+    after(async () => {
+        if (channel) await channel.close();
+        if (connection) await connection.close();
+        if (ctx) await ctx.destroy();
+    });
+
+    function requestAuth(payload: Record<string, unknown>): Promise<AmqpAuthResponse> {
+        return new Promise(async (resolve, reject) => {
+            const replyQueue = await channel.assertQueue('', { exclusive: true });
+            const correlationId = `auth-${Date.now()}`;
+            const timer = setTimeout(() => reject(new Error('Timeout')), 1500);
+
+            await channel.consume(replyQueue.queue, (msg) => {
+                if (!msg || msg.properties.correlationId !== correlationId) {
+                    return;
+                }
+                clearTimeout(timer);
+                resolve(JSON.parse(msg.content.toString()) as AmqpAuthResponse);
+            }, { noAck: true });
+
+            channel.publish('tsdi', ROUTING_KEY, Buffer.from(JSON.stringify(payload)), {
+                replyTo: replyQueue.queue,
+                correlationId
+            });
+        });
+    }
+
+    it('accepts requests with bearer token', async () => {
+        const result = await requestAuth({
+            url: '/secure/ping',
+            method: 'GET',
+            headers: { authorization: 'Bearer secret-token' }
+        });
+        expect(result.payload?.ok).toBe(true);
+    });
+
+    it('rejects requests without bearer token', async () => {
+        const result = await requestAuth({
+            url: '/secure/ping',
+            method: 'GET'
+        });
+        expect(result.payload?.statusCode).toBe(401);
+        expect(result.payload?.error).toContain('Unauthorized');
     });
 });

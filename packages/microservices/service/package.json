@@ -34,7 +34,10 @@
     "url": "https://github.com/zhouhoujun/tsioc.git"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc#readme",
-  "dependencies": {},
+  "dependencies": {
+    "@types/jsonwebtoken": "^9.0.9",
+    "jsonwebtoken": "^9.0.2"
+  },
   "directories": {
     "lib": "lib",
     "test": "test"

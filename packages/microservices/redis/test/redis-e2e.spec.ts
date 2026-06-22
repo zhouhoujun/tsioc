@@ -2,11 +2,18 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody } from '@tsdi/service';
 import { useRedisTransport } from '../src/server';
 import { withRedisTransport, RedisClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
+import Redis from 'ioredis';
 import expect = require('expect');
+
+interface RedisAuthResponse {
+    ok?: boolean;
+    payload?: { ok?: boolean; error?: string; statusCode?: number };
+    statusCode?: number;
+}
 
 @Controller('/api/test')
 class TestController {
@@ -51,7 +58,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useRedisTransport({ microservice: false as any, url: REDIS_URL, asDefault: true })),
+                useRedisTransport({ microservice: false, url: REDIS_URL, asDefault: true })),
             provideClient(
                 withRedisTransport({ url: REDIS_URL, microservice: false, asDefault: true }))
         ]
@@ -107,4 +114,83 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis @RouteMapping', () => {
     after(async () => { if (ctx) await ctx.close(); });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
+});
+
+if (process.env.TSIO_TEST_REDIS) describe('Redis auth E2E', () => {
+    const CHANNEL = 'e2e.auth.ping';
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class RedisSecureController {
+        @Get('/ping')
+        ping() { return { ok: true }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [RedisSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useRedisTransport({ url: REDIS_URL, channels: [CHANNEL], asDefault: true })
+            ),
+            provideClient(
+                withRedisTransport({ url: REDIS_URL, microservice: true, asDefault: true })
+            )
+        ]
+    })
+    class RedisAuthModule { }
+
+    let ctx: ApplicationContext;
+    let publisher: Redis;
+    let subscriber: Redis;
+
+    before(async () => {
+        ctx = await Application.run(RedisAuthModule);
+        publisher = new Redis(REDIS_URL);
+        subscriber = new Redis(REDIS_URL);
+    });
+
+    after(async () => {
+        if (subscriber) {
+            await subscriber.quit();
+        }
+        if (publisher) {
+            await publisher.quit();
+        }
+        if (ctx) await ctx.destroy();
+    });
+
+    function requestAuth(message: Record<string, unknown>): Promise<RedisAuthResponse> {
+        return new Promise(async (resolve, reject) => {
+            const responseChannel = `${CHANNEL}:response`;
+            const timer = setTimeout(() => reject(new Error('Timeout')), 1500);
+
+            await subscriber.subscribe(responseChannel);
+            subscriber.once('message', (_channel, payload) => {
+                clearTimeout(timer);
+                resolve(JSON.parse(payload) as RedisAuthResponse);
+            });
+
+            await publisher.publish(CHANNEL, JSON.stringify(message));
+        });
+    }
+
+    it('accepts requests with bearer token', async () => {
+        const result = await requestAuth({
+            url: '/secure/ping',
+            method: 'GET',
+            headers: { authorization: 'Bearer secret-token' }
+        });
+        expect(result.ok ?? result.payload?.ok).toBe(true);
+    });
+
+    it('rejects requests without bearer token', async () => {
+        const result = await requestAuth({
+            url: '/secure/ping',
+            method: 'GET'
+        });
+        expect(result.statusCode ?? result.payload?.statusCode).toBe(401);
+    });
 });

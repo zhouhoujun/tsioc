@@ -1,10 +1,10 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
 import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { RedisServer } from './redis-server';
 import { RedisPatternFormatter } from './pattern';
 import { RedisServOptions, REDIS_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { RedisMessageAdapter } from './message-adapter';
@@ -38,12 +38,21 @@ export function redisTransportFactory(option: Partial<RedisServOptions>, asDefau
     config.providers.push(
         { provide: REDIS_SERV_OPTIONS, useValue: config },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         RedisPatternFormatter,
         RedisMessageAdapter,
         RedisMessageAdapterFactory,
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {

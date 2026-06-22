@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { NatsServer } from './nats-server';
 import { NatsPatternFormatter } from './pattern';
 import { NatsServOptions, NATS_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { NatsMessageAdapter } from './message-adapter';
 import { NatsMessageAdapterFactory } from './message-adapter.factory';
@@ -37,12 +37,21 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
     config.providers.push(
         { provide: NATS_SERV_OPTIONS, useValue: config },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         NatsPatternFormatter,
         NatsMessageAdapter,
         NatsMessageAdapterFactory,
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {

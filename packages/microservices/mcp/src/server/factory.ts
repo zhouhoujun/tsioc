@@ -7,6 +7,7 @@ const useMcpTransfer = () => () => ({
     filters: [McpTransportSenderFilter as unknown as RequestFilterLike]
 });
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { AuthInterceptor, MessageAuthInterceptor } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { McpMessageAdapter } from './message-adapter';
@@ -29,11 +30,20 @@ export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?:
     config.providers.push(
         { provide: MCP_SERV_OPTIONS, useValue: config },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         McpMessageAdapter,
         McpMessageAdapterFactory,
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
         { provide: backendToken, useValue: (_req: any, context: RequestContext): any => {
             const adapter = context.get(StatusMessageAdapter);
             const error = new NotFoundException('Not Found', 404);

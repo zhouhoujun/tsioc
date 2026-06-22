@@ -53,7 +53,7 @@ describe('gRPC E2E microservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useGrpcTransport({ microservice: false as any, port: PORTS.host, asDefault: true })),
+                useGrpcTransport({ microservice: false, port: PORTS.host, asDefault: true })),
             provideClient(
                 withGrpcTransport({ url: `localhost:${PORTS.host}`, microservice: false, asDefault: true }))
         ]
@@ -150,7 +150,7 @@ describe('gRPC E2E with provideService + provideClient (microservice:false)', ()
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useGrpcTransport({ microservice: false as any, port: E2E_HOST_PORT, asDefault: true })),
+                useGrpcTransport({ microservice: false, port: E2E_HOST_PORT, asDefault: true })),
             provideClient(
                 withGrpcTransport({ url: `localhost:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
         ]

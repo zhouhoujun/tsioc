@@ -1,7 +1,12 @@
 import { GrpcServer, GrpcServOptions, grpcTransportFactory, useGrpcTransport, GRPC_SERV_OPTIONS } from '../src/server';
 import { withGrpcTransport, GRPC_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
+import { MessageAuthInterceptor } from '@tsdi/service';
 import expect = require('expect');
+
+interface ProviderWithToken {
+    useExisting?: unknown;
+}
 
 describe('gRPC Microservice', () => {
     describe('GrpcServOptions', () => {
@@ -27,6 +32,17 @@ describe('gRPC Microservice', () => {
         });
         it('should use json packet transfer by default', () => {
             expect(grpcTransportFactory({ port: 50051 }).config.features?.defaultTransfer).toBeDefined();
+        });
+        it('should register auth interceptor provider when auth is enabled', () => {
+            const feature = grpcTransportFactory({
+                port: 50051,
+                features: { auth: { bearerToken: 'secret-token' } }
+            });
+            const hasAuthProvider = feature.providers.some((provider) => {
+                const typed = provider as ProviderWithToken;
+                return typed.useExisting === MessageAuthInterceptor;
+            });
+            expect(hasAuthProvider).toBe(true);
         });
     });
 

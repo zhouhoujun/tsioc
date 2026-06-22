@@ -35,6 +35,23 @@ export class HttpAuthServiceTest {
         })).toBeNull();
     }
 
+    @Test('supports custom query token names and ignores non bearer websocket protocols')
+    customQueryAndWsProtocols() {
+        const service = new HttpAuthService();
+        expect(service.extractToken({
+            headers: { host: 'localhost' },
+            url: '/ws/chat?access_token=query-token'
+        } as any, {
+            tokenQueryName: 'access_token'
+        })).toBe('query-token');
+        expect(service.extractToken({
+            headers: { 'sec-websocket-protocol': 'graphql-ws, chat, bearer.socket-token' }
+        } as any)).toBe('socket-token');
+        expect(service.extractToken({
+            headers: { 'sec-websocket-protocol': 'graphql-ws, chat' }
+        } as any)).toBeNull();
+    }
+
     @Test('verifies configured bearer token safely')
     verifiesBearerToken() {
         const service = new HttpAuthService();
@@ -52,6 +69,7 @@ export class HttpAuthServiceTest {
         const token = await jwtService.sign({ sub: 'u-1', role: 'admin' }, { privateKey: 'secret-key' as any });
         const claims = await service.verifyJwtToken(token, { publicKey: 'secret-key' as any, algorithms: ['HS256'] });
         expect(claims.sub).toBe('u-1');
+        expect(await service.verifyJwtToken(null, { publicKey: 'secret-key' as any })).toBeNull();
     }
 
     @Test('authenticates bearer strategy without allowing query fallback override')
@@ -66,6 +84,29 @@ export class HttpAuthServiceTest {
         });
         expect(result.authenticated).toBe(true);
         expect(result.token).toBe('secret-token');
+    }
+
+    @Test('authenticates without a configured strategy and fails closed on invalid jwt')
+    async authenticateWithoutStrategyAndInvalidJwt() {
+        const service = new HttpAuthService(new class extends JWTService {
+            async verify(): Promise<any> {
+                throw new Error('bad jwt');
+            }
+        }());
+
+        const passthrough = await service.authenticate({
+            headers: { authorization: 'Bearer any-token' }
+        } as any);
+        expect(passthrough.authenticated).toBe(true);
+        expect(passthrough.token).toBe('any-token');
+
+        const failed = await service.authenticate({
+            headers: { authorization: 'Bearer any-token' }
+        } as any, {
+            jwt: { publicKey: 'jwt-secret' }
+        });
+        expect(failed.authenticated).toBe(false);
+        expect(failed.token).toBe('any-token');
     }
 }
 

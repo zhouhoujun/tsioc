@@ -79,7 +79,7 @@ describe('HTTP Security', () => {
         });
 
         it('should keep supporting shared service CORS options token', async () => {
-            const resolved = ctx.get<any>(SERVICE_CORS_OPTIONS as any);
+            const resolved = ctx.get(SERVICE_CORS_OPTIONS);
             expect(resolved.origin).toBe('*');
             expect(resolved.allowMethods).toBe('GET,HEAD,PUT,POST,DELETE,PATCH');
         });
@@ -188,7 +188,7 @@ describe('HTTP Security', () => {
             providers: [
                 provideService(
                     useRouter(),
-                    useAuth({ bearerToken: 'secret-token' } as any),
+                    useAuth({ bearerToken: 'secret-token' }),
                     useHttpTransport({ listenOpts: { port: AUTH_PORT, host: '127.0.0.1' }, asDefault: true })
                 ),
                 provideClient(
@@ -261,7 +261,7 @@ describe('HTTP Security', () => {
                 providers: [
                     provideService(
                         useRouter(),
-                        useAuth(true as any),
+                        useAuth(true),
                         useHttpTransport({ listenOpts: { port: BROKEN_AUTH_PORT, host: '127.0.0.1' }, asDefault: true })
                     )
                 ]

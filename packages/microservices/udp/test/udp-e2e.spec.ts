@@ -1,14 +1,32 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, POST } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, RequestHeader, RequestParam, RequestPath, Handle, Subscribe, Payload } from '@tsdi/service';
+import { GET, POST, Transport } from '@tsdi/common';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, RequestHeader, RequestParam, RequestPath, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useUdpTransport } from '../src/server';
 import { withUdpTransport, UdpClient } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import * as dgram from 'node:dgram';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
+
+interface UdpEnvelope {
+    url?: string;
+    method?: string;
+    headers?: Record<string, string>;
+    query?: Record<string, string>;
+    body?: unknown;
+    payload?: unknown;
+}
+
+interface AuthResultResponse {
+    ok?: boolean;
+    body?: { ok?: boolean };
+    payload?: { ok?: boolean };
+    statusCode?: number;
+    statusMessage?: string;
+    message?: string;
+}
 
 @Controller('/api/test')
 class TestController {
@@ -83,7 +101,7 @@ describe('UDP E2E microservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useUdpTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
+                useUdpTransport({ microservice: false, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withUdpTransport({ port: PORTS.host, host: '127.0.0.1', microservice: false, asDefault: true }))
@@ -226,7 +244,7 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useUdpTransport({ microservice: false as any, features: { defaultTransfer: undefined }, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
+                useUdpTransport({ microservice: false, features: { defaultTransfer: undefined }, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withUdpTransport({ port: PORTS.hostE2e, host: '127.0.0.1', microservice: false, asDefault: true }))
@@ -293,7 +311,7 @@ describe('UDP parameter coverage matrix', () => {
         declarations: [UdpMatrixController],
         providers: [
             provideService(useRouter(),
-                useUdpTransport({ microservice: false as any, features: { defaultTransfer: undefined }, listenOpts: { port: MATRIX_PORT, host: '127.0.0.1' }, asDefault: true }))
+                useUdpTransport({ microservice: false, features: { defaultTransfer: undefined }, listenOpts: { port: MATRIX_PORT, host: '127.0.0.1' }, asDefault: true }))
         ]
     })
     class UdpMatrixModule { }
@@ -362,7 +380,7 @@ class UdpPatternService {
     @Handle('sensor.message.+')
     topic(@Payload() msg: string) { return msg; }
 
-    @Subscribe('sensor.+.start', undefined as any)
+    @Subscribe('sensor.+.start', Transport.UDP)
     subscribe(@Payload() msg: string) { return msg; }
 }
 
@@ -391,18 +409,108 @@ describe('UDP pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 } as any));
+        const result = await lastValueFrom<string>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
         console.log('udp cmd result:', result);
         expect(result).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 50 } as any));
+        const result = await lastValueFrom<string>(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 50 }));
         expect(result).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 } as any));
+        const result = await lastValueFrom<string>(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 }));
         expect(result).toEqual('foo');
+    });
+});
+
+describe('UDP auth E2E', () => {
+    const AUTH_PORT = 21130;
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class UdpSecureController {
+        @Get('/ping')
+        ping() { return { ok: true }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [UdpSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useUdpTransport({
+                    microservice: false,
+                    features: { defaultTransfer: undefined },
+                    listenOpts: { port: AUTH_PORT, host: '127.0.0.1' },
+                    asDefault: true
+                })
+            ),
+            provideClient(
+                withTimeout(),
+                withUdpTransport({ port: AUTH_PORT, host: '127.0.0.1', microservice: false, asDefault: true })
+            )
+        ]
+    })
+    class UdpAuthModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(UdpAuthModule);
+    });
+
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    function sendUdpAuthMessage(data: UdpEnvelope): Promise<AuthResultResponse> {
+        return new Promise((resolve, reject) => {
+            const client = dgram.createSocket('udp4');
+            const payload = Buffer.from(JSON.stringify(data));
+            const timer = setTimeout(() => {
+                try { client.close(); } catch { }
+                reject(new Error('Timeout'));
+            }, 1000);
+
+            client.send(payload, AUTH_PORT, '127.0.0.1', (err) => {
+                if (err) {
+                    clearTimeout(timer);
+                    try { client.close(); } catch { }
+                    reject(err);
+                }
+            });
+
+            client.on('message', (msg) => {
+                clearTimeout(timer);
+                try { client.close(); } catch { }
+                resolve(JSON.parse(msg.toString()) as AuthResultResponse);
+            });
+
+            client.on('error', (err) => {
+                clearTimeout(timer);
+                try { client.close(); } catch { }
+                reject(err);
+            });
+        });
+    }
+
+    it('accepts requests with bearer token', async () => {
+        const result = await sendUdpAuthMessage({
+            url: '/secure/ping',
+            method: 'GET',
+            headers: { authorization: 'Bearer secret-token' }
+        });
+        expect(result.ok ?? result.body?.ok ?? result.payload?.ok).toBe(true);
+    });
+
+    it('rejects requests without bearer token', async () => {
+        const result = await sendUdpAuthMessage({
+            url: '/secure/ping',
+            method: 'GET'
+        });
+        expect(result.statusCode).toBe(401);
+        expect(result.statusMessage ?? result.message).toContain('Unauthorized');
     });
 });

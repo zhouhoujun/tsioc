@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST, Transport } from '@tsdi/common';
-import { provideService, useRouter, useBodyParser, Controller, Get, Post, RouteMapping, RequestBody, RequestHeader, RequestParam, RequestPath, Handle, Subscribe, Payload } from '@tsdi/service';
+import { AuthOptions, provideService, useAuth, useRouter, useBodyParser, Controller, Get, Post, RouteMapping, RequestBody, RequestHeader, RequestParam, RequestPath, Handle, Subscribe, Payload } from '@tsdi/service';
 import { InternalServerException } from '@tsdi/common';
 import { useCoapTransport } from '../src/server';
 import { withCoapTransport } from '../src/client';
@@ -11,6 +11,17 @@ import { provideClient, withTimeout } from '@tsdi/client';
 import * as coap from 'coap';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+
+type CoapMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+interface CoapJsonResponse<T> {
+    body?: T;
+    payload?: T;
+    ok?: boolean;
+    status?: string | number;
+    statusCode?: string | number;
+    headers?: { options?: unknown[] } & Record<string, unknown>;
+}
 
 @Controller('/api/test')
 class TestController {
@@ -98,7 +109,7 @@ describe('CoAP E2E microservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useCoapTransport({ microservice: false as any, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
+                useCoapTransport({ microservice: false, listenOpts: { port: PORTS.host, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withCoapTransport({ port: PORTS.host, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
@@ -146,19 +157,19 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
-    function sendCoapRequest(method: string, pathname: string, payload?: any): Promise<any> {
+    function sendCoapRequest(method: CoapMethod, pathname: string, payload?: any): Promise<any> {
         return new Promise((resolve, reject) => {
             const req = coap.request({
                 host: '127.0.0.1',
                 port: E2E_PORT,
                 pathname,
-                method: method as any,
+                method,
                 options: { 'Accept': 'application/json' }
             });
             if (payload != null) {
                 req.write(JSON.stringify(payload));
             }
-            req.on('response', (res: any) => {
+            req.on('response', (res: coap.IncomingMessage) => {
                 const body = res.payload?.toString() || '';
                 try {
                     resolve(JSON.parse(body));
@@ -199,37 +210,41 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
 
     it('should preserve native status and response metadata for observe response', async () => {
         const client = ctx.get(CoapClient);
-        const result = await lastValueFrom(client.send('/api/test/info', { observe: 'response' as any }));
+        const result = await lastValueFrom<CoapJsonResponse<{ status: string }>>(client.send('/api/test/info', { observe: 'response' }));
         expect(result.status).toEqual('2.05');
         expect(result.ok).toBe(true);
         expect(result.body).toEqual({ status: 'ok' });
         expect(result.headers).toBeDefined();
-        expect(Array.isArray(result.headers.options)).toBe(true);
+        expect(Array.isArray(result.headers?.options)).toBe(true);
     });
 
     it('should preserve falsy scalar response bodies', async () => {
         const client = ctx.get(CoapClient);
-        const zero = await lastValueFrom(client.send('/api/test/zero', { observe: 'response' as any }));
-        const flag = await lastValueFrom(client.send('/api/test/flag', { observe: 'response' as any }));
+        const zero = await lastValueFrom<CoapJsonResponse<number>>(client.send('/api/test/zero', { observe: 'response' }));
+        const flag = await lastValueFrom<CoapJsonResponse<boolean>>(client.send('/api/test/flag', { observe: 'response' }));
         expect(zero.body).toBe(0);
         expect(flag.body).toBe(false);
     });
 
     it('should not leak internal server error details', async () => {
         const client = ctx.get(CoapClient);
-        const result = await lastValueFrom(client.send('/api/error/boom', { observe: 'response' as any }).pipe(catchError(err => of(err))));
+        const result = await lastValueFrom<CoapJsonResponse<{ statusCode: number; message: string }>>(
+            client.send('/api/error/boom', { observe: 'response' }).pipe(catchError(err => of(err)))
+        );
         expect(result.status).toEqual('5.00');
         expect(result.ok).toBe(false);
-        expect(result.body.statusCode).toEqual(500);
-        expect(result.body.message).not.toContain('secret internal detail');
+        expect(result.body?.statusCode).toEqual(500);
+        expect(result.body?.message).not.toContain('secret internal detail');
     });
 
     it('should preserve safe client error details', async () => {
         const client = ctx.get(CoapClient);
-        const result = await lastValueFrom(client.send('/api/error/bad-request', { observe: 'response' as any }).pipe(catchError(err => of(err))));
+        const result = await lastValueFrom<CoapJsonResponse<{ message: string }>>(
+            client.send('/api/error/bad-request', { observe: 'response' }).pipe(catchError(err => of(err)))
+        );
         expect(result.status).toEqual('4.00');
         expect(result.ok).toBe(false);
-        expect(result.body.message).toContain('bad request');
+        expect(result.body?.message).toContain('bad request');
     });
 });
 
@@ -243,7 +258,7 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
         providers: [
             provideService(useRouter(),
                 useRouter({ microservice: true }),
-                useCoapTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
+                useCoapTransport({ microservice: false, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withCoapTransport({ port: E2E_HOST_PORT, host: '127.0.0.1', microservice: false, asDefault: true }))
         ]
@@ -258,19 +273,19 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
-    function sendCoapRequest(method: string, pathname: string, payload?: any): Promise<any> {
+    function sendCoapRequest(method: CoapMethod, pathname: string, payload?: any): Promise<any> {
         return new Promise((resolve, reject) => {
             const req = coap.request({
                 host: '127.0.0.1',
                 port: E2E_HOST_PORT,
                 pathname,
-                method: method as any,
+                method,
                 options: { 'Accept': 'application/json' }
             });
             if (payload != null) {
                 req.write(JSON.stringify(payload));
             }
-            req.on('response', (res: any) => {
+            req.on('response', (res: coap.IncomingMessage) => {
                 const body = res.payload?.toString() || '';
                 try {
                     resolve(JSON.parse(body));
@@ -290,6 +305,60 @@ describe('CoAP E2E with provideService + provideClient (microservice:false)', ()
     it('should respond to CoAP request in host mode', async () => {
         const res = await sendCoapRequest('GET', '/api/test/info');
         expect(res).toEqual({ status: 'ok' });
+    });
+});
+
+describe('CoAP auth E2E', () => {
+    const AUTH_PORT = 21320;
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class CoapSecureController {
+        @Get('/ping') ping() { return { ok: true }; }
+        @Post('/ping') postPing() { return { ok: true }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [CoapSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useCoapTransport({ listenOpts: { port: AUTH_PORT, host: '127.0.0.1' }, asDefault: true })
+            ),
+            provideClient(
+                withCoapTransport({ port: AUTH_PORT, host: '127.0.0.1', microservice: true, asDefault: true })
+            )
+        ]
+    })
+    class CoapAuthModule { }
+
+    let ctx: ApplicationContext;
+    let client: CoapClient;
+
+    before(async () => {
+        ctx = await Application.run(CoapAuthModule);
+        client = ctx.get(CoapClient);
+    });
+
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('accepts requests with bearer token', async () => {
+        const result = await lastValueFrom(client.send('/secure/ping', {
+            method: 'GET',
+            headers: { authorization: 'Bearer secret-token' }
+        }));
+        expect(result).toEqual({ ok: true });
+    });
+
+    it('rejects requests without bearer token', async () => {
+        const result = await lastValueFrom<CoapJsonResponse<{ statusCode: number; message: string }>>(client.send('/secure/ping', {
+            observe: 'response'
+        }));
+        expect(result.statusCode).toBe(401);
+        expect(result.ok).toBe(false);
+        expect(result.body?.message).toContain('Unauthorized');
     });
 });
 
@@ -325,7 +394,7 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
         const client = ctx.get(CoapClient);
         expect(client).toBeDefined();
         const result = await lastValueFrom(client.send({ cmd: 'test' }, {
-            observe: 'response' as any
+            observe: 'response'
         }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
@@ -339,7 +408,7 @@ describe('CoAP parameter coverage matrix', () => {
         declarations: [CoapMatrixController],
         providers: [
             provideService(useRouter(),
-                useCoapTransport({ microservice: false as any, listenOpts: { port: MATRIX_PORT, host: '127.0.0.1' }, asDefault: true }))
+                useCoapTransport({ microservice: false, listenOpts: { port: MATRIX_PORT, host: '127.0.0.1' }, asDefault: true }))
         ]
     })
     class CoapMatrixModule { }
@@ -351,19 +420,19 @@ describe('CoAP parameter coverage matrix', () => {
     });
     after(async () => { if (ctx) await ctx.destroy(); });
 
-    function sendMatrix(method: string, pathname: string, payload?: any): Promise<any> {
+    function sendMatrix(method: CoapMethod, pathname: string, payload?: any): Promise<any> {
         return new Promise((resolve, reject) => {
             const req = coap.request({
                 host: '127.0.0.1',
                 port: MATRIX_PORT,
                 pathname,
-                method: method as any,
+                method,
                 options: { 'Accept': 'application/json' }
             });
             if (payload != null) {
                 req.write(JSON.stringify(payload));
             }
-            req.on('response', (res: any) => {
+            req.on('response', (res: coap.IncomingMessage) => {
                 const body = res.payload?.toString() || '';
                 try { resolve(JSON.parse(body)); } catch { resolve(body); }
             });
@@ -425,7 +494,7 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
     it('should send cmd via CoapClient.send()', async () => {
         const client = ctx.get(CoapClient);
         const result = await lastValueFrom(client.send({ cmd: 'test' }, {
-            observe: 'response' as any
+            observe: 'response'
         }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
@@ -493,7 +562,7 @@ describe('CoAP pattern routing', () => {
     });
 
     it('does not convert other topic patterns by default', async () => {
-        const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' }, observe: 'response' as any }));
+        const result = await lastValueFrom<CoapJsonResponse<string>>(client.send('sensor.message.update', { payload: { msg: 'world' }, observe: 'response' }));
         expect(result.status).toEqual('4.04');
         expect(result.ok).toBe(false);
     });

@@ -23,6 +23,19 @@ function getCookies(ctx: any): { get(name: string): string | undefined; set(name
     return ctx.cookies || { get: () => undefined, set: () => undefined };
 }
 
+function setResponseStatus(ctx: any, status: number): void {
+    if (typeof ctx?.setStatus === 'function') {
+        ctx.setStatus(status);
+        return;
+    }
+    if ('status' in (ctx ?? {})) {
+        ctx.status = status;
+    }
+    if (ctx?.response) {
+        ctx.response.statusCode = status;
+    }
+}
+
 @Controller('/auth')
 export class AuthController {
     constructor(private oidcService: OIDCService) {}
@@ -57,9 +70,9 @@ export class AuthController {
     async userinfo(@Inject(RestfulRequestAdapter) ctx: RestfulRequestAdapter): Promise<SessionUser | { error: string }> {
         const cookies = getCookies(ctx);
         const token = bearerToken(ctx) || cookies.get('oidc_session');
-        if (!token) { ctx.response.statusCode = 401; return { error: 'Not authenticated' }; }
+        if (!token) { setResponseStatus(ctx, 401); return { error: 'Not authenticated' }; }
         const user = await this.oidcService.verifySessionToken(token);
-        if (!user) { ctx.response.statusCode = 401; return { error: 'Invalid or expired session' }; }
+        if (!user) { setResponseStatus(ctx, 401); return { error: 'Invalid or expired session' }; }
         return user;
     }
 
@@ -88,12 +101,12 @@ export class AuthController {
         @RequestBody() body: { refreshToken: string }
     ): Promise<{ tokens: Record<string, unknown> } | { error: string }> {
         const refreshToken = body?.refreshToken;
-        if (!refreshToken) { ctx.response.statusCode = 400; return { error: 'Refresh token is required' }; }
+        if (!refreshToken) { setResponseStatus(ctx, 400); return { error: 'Refresh token is required' }; }
         try {
             const tokens = await this.oidcService.refreshAccessToken(refreshToken);
             return { tokens: tokens as unknown as Record<string, unknown> };
         } catch (err: unknown) {
-            ctx.response.statusCode = 400;
+            setResponseStatus(ctx, 400);
             return { error: err instanceof Error ? err.message : 'Token refresh failed' };
         }
     }

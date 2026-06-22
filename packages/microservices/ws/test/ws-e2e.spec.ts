@@ -3,12 +3,22 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { GET, POST, Transport } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload, MESSAGE_ROUTERS } from '@tsdi/service';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload, MESSAGE_ROUTERS } from '@tsdi/service';
 import { useWsTransport } from '../src/server';
 import { withWsTransport } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import { WsClient } from '../src/client/client';
 import { catchError, lastValueFrom, of } from 'rxjs';
+
+interface AuthErrorResponse {
+    ok?: boolean;
+    body?: unknown;
+    error?: unknown;
+    status?: number | string;
+    statusCode?: number | string;
+    message?: string;
+    statusMessage?: string;
+}
 
 const PORT = 11500;
 const HOST_PORT = 11501;
@@ -40,7 +50,7 @@ describe('WS E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [provideService(useRouter(),
-            useWsTransport({ microservice: false as any, listenOpts: { port: HOST_PORT, host: '127.0.0.1' }, asDefault: true }))]
+            useWsTransport({ microservice: false, listenOpts: { port: HOST_PORT, host: '127.0.0.1' }, asDefault: true }))]
     })
     class WsHostModule { }
 
@@ -144,10 +154,10 @@ describe('WS client.send via ctx.get(WsClient) (microservice:true)', () => {
 
     it('should send cmd via WsClient.send()', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
-            observe: 'response' as any,
-            responseType: 'text' as any,
+            observe: 'response',
+            responseType: 'text',
             timeout: 50
-        } as any).pipe(catchError(err => of(err))));
+        }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 });
@@ -158,7 +168,7 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useWsTransport({ microservice: false as any, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
+                useWsTransport({ microservice: false, listenOpts: { port: E2E_HOST_PORT, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withWsTransport({ url: `ws://127.0.0.1:${E2E_HOST_PORT}`, microservice: false, asDefault: true }))
@@ -182,10 +192,10 @@ describe('WS client.send via ctx.get(WsClient) (microservice:false)', () => {
 
     it('should send cmd via WsClient.send() in host mode', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'test' }, {
-            observe: 'response' as any,
-            responseType: 'text' as any,
+            observe: 'response',
+            responseType: 'text',
             timeout: 50
-        } as any).pipe(catchError(err => of(err))));
+        }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
     });
 });
@@ -238,7 +248,7 @@ describe('WS pattern routing', () => {
         const result = await lastValueFrom(client.send({ cmd: 'echo' }, {
             payload: { msg: 'hello' },
             timeout: 50
-        } as any).pipe(catchError(err => of({ error: err?.message ?? err }))));
+        }).pipe(catchError(err => of({ error: err?.message ?? err }))));
         expect(result).toBeDefined();
     });
 
@@ -246,7 +256,7 @@ describe('WS pattern routing', () => {
         const result = await lastValueFrom(client.send('sensor.message.update', { payload: { msg: 'world' } })
             .pipe(catchError(err => of({ error: err?.message ?? err }))));
         console.log('ws wildcard result', result);
-        const value = typeof result === 'string' ? result : (result as any)?.payload ?? (result as any)?.body ?? (result as any)?.message;
+        const value = typeof result === 'string' ? result : ('payload' in result ? result.payload : ('body' in result ? result.body : (result as { message?: string }).message));
         expect(value).toEqual('world');
     });
 
@@ -254,7 +264,65 @@ describe('WS pattern routing', () => {
         const result = await lastValueFrom(client.send('sensor.temp.start', { payload: { msg: 'foo' } })
             .pipe(catchError(err => of({ error: err?.message ?? err }))));
         console.log('ws subscribe result', result);
-        const value = typeof result === 'string' ? result : (result as any)?.payload ?? (result as any)?.body ?? (result as any)?.message;
+        const value = typeof result === 'string' ? result : ('payload' in result ? result.payload : ('body' in result ? result.body : (result as { message?: string }).message));
         expect(value).toEqual('foo');
+    });
+});
+
+describe('WS auth E2E', () => {
+    const AUTH_PORT = 21920;
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class WsSecureController {
+        @Get('/ping')
+        ping() { return { ok: true }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [WsSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useWsTransport({ microservice: false, listenOpts: { port: AUTH_PORT, host: '127.0.0.1' }, asDefault: true })
+            ),
+            provideClient(
+                withTimeout(),
+                withWsTransport({ url: `ws://127.0.0.1:${AUTH_PORT}`, microservice: false, asDefault: true })
+            )
+        ]
+    })
+    class WsAuthModule { }
+
+    let ctx: ApplicationContext;
+    let client: WsClient;
+
+    before(async () => {
+        ctx = await Application.run(WsAuthModule);
+        client = ctx.get(WsClient);
+    });
+
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('accepts requests with bearer token', async () => {
+        const result = await lastValueFrom(client.send('/secure/ping', {
+            method: 'GET',
+            headers: { authorization: 'Bearer secret-token' },
+            timeout: 100
+        }));
+        expect(result).toMatchObject({ ok: true });
+    });
+
+    it('rejects requests without bearer token', async () => {
+        const result = await lastValueFrom<AuthErrorResponse>(client.send('/secure/ping', {
+            method: 'GET',
+            observe: 'response',
+            timeout: 100
+        }));
+        expect(result.statusCode ?? result.status).toBe(401);
+        expect(result.ok).toBe(false);
+        expect(result.statusMessage ?? result.message).toContain('Unauthorized');
     });
 });

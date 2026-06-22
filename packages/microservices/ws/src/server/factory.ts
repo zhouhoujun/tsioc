@@ -3,7 +3,7 @@ import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestH
 import { of } from 'rxjs';
 import { WsServer } from './ws-server';
 import { WsServOptions, WS_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { useWsPacket } from '../transfer';
 import { WsMessageAdapter } from './message-adapter';
@@ -25,6 +25,9 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
 
     const serviceToken = getServiceToken(config);
     const backendToken = getServiceBackendToken(config);
+    getServiceInterceptorsToken(config);
+    getServiceFiltersToken(config);
+    getServiceGuardsToken(config);
 
     config.providers ??= [];
     config.providers.push(
@@ -41,11 +44,20 @@ export function wsTransportFactory(option: Partial<WsServOptions>, asDefault?: b
             return of(null);
         }, multi: true },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         WsMessageAdapter,
         WsMessageAdapterFactory,
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
 
         {
             provide: serviceToken,

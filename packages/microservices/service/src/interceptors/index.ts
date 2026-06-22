@@ -4,6 +4,7 @@ export * from './bodyparser';
 export * from './session';
 export * from './cookie';
 export * from './auth';
+export * from './message-auth';
 export * from './cors';
 export * from './ratelimiter';
 export * from './exception-logger';

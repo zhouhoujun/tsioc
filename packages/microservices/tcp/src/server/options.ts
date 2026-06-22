@@ -1,5 +1,5 @@
 import { token, Provider } from '@tsdi/ioc';
-import { ListenOpts, Transport } from '@tsdi/common';
+import { ListenOpts, PatternFormatter, Transport } from '@tsdi/common';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { ServiceOptions } from '@tsdi/service';
@@ -26,6 +26,10 @@ export interface TcpServOptions extends ServiceOptions {
      * server options for net or tls.
      */
     serverOpts?: net.ServerOpts | tls.TlsOptions;
+    /**
+     * Pattern formatter for tcp routes/topics.
+     */
+    formatter?: typeof PatternFormatter | PatternFormatter;
     /**
      * is secure server or not.
      */

@@ -27,7 +27,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     @InjectLog() logger!: Logger;
 
-    public isSecure: boolean;
+    readonly isSecure: boolean;
     private destroy$: Subject<void>;
     private activeConnections: Set<net.Socket> = new Set();
     private activeHttp2Sessions: Set<http2.ServerHttp2Session> = new Set();
@@ -175,8 +175,6 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private validOptions() {
-        const hasCert = !!(this.options.serverOpts as any)?.cert;
-        this.isSecure = hasCert || !!this.options.secure;
         const withCredentials = this.isSecure;
         this.options.listenOpts = {
             ...this.options.listenOpts,

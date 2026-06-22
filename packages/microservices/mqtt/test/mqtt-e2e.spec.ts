@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, POST } from '@tsdi/common';
-import { provideService, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
+import { GET, POST, Transport } from '@tsdi/common';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
 import { useMqttTransport } from '../src/server';
 import { withMqttTransport, MqttClient } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
@@ -11,6 +11,17 @@ import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 
 const MQTT_URL = process.env.TSIO_TEST_MQTT_URL || 'mqtt://127.0.0.1:1883';
+
+interface PatternPayloadResponse<T> {
+    payload: T;
+}
+
+interface AuthResultResponse {
+    ok?: boolean;
+    body?: { ok?: boolean };
+    payload?: { ok?: boolean };
+    statusCode?: number;
+}
 
 @Controller('/api/test')
 class TestController {
@@ -31,7 +42,7 @@ class MqttPatternService {
     @Handle('sensor/message/+')
     topic(@Payload() message: string) { return message; }
 
-    @Subscribe('sensor/+/start', undefined as any)
+    @Subscribe('sensor/+/start', Transport.MQTT)
     subscribe(@Payload() message: string) { return message; }
 }
 
@@ -66,7 +77,7 @@ describe('MQTT E2E microservice:false', () => {
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useMqttTransport({ microservice: false as any, url: MQTT_URL, asDefault: true })),
+                useMqttTransport({ microservice: false, url: MQTT_URL, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withMqttTransport({ url: MQTT_URL, microservice: false, asDefault: true }))
@@ -157,17 +168,17 @@ describe('MQTT pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns through the default formatter', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 5000 } as any));
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 5000 }));
         expect(result.payload).toEqual('ble');
     });
 
     it('routes wildcard mqtt topics', async () => {
-        const result = await lastValueFrom(client.send('sensor/message/update', { payload: { message: 'ble' }, timeout: 5000 } as any));
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor/message/update', { payload: { message: 'ble' }, timeout: 5000 }));
         expect(result.payload).toEqual('ble');
     });
 
     it('routes subscribe patterns via MQTT wildcard topic', async () => {
-        const result = await lastValueFrom(client.send('sensor/sensor01/start', { payload: { message: 'ble' }, timeout: 5000 } as any));
+        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor/sensor01/start', { payload: { message: 'ble' }, timeout: 5000 }));
         expect(result.payload).toEqual('ble');
     });
 });
@@ -250,7 +261,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
         providers: [
             provideService(useRouter(),
                 useMqttTransport({
-                    microservice: false as any,
+                    microservice: false,
                     url: MQTT_URL,
                     subscribeTopics: [{ topic: TOPIC, qos: 0 }],
                     asDefault: true
@@ -294,6 +305,89 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
         });
 
         expect(result).toBeDefined();
+    });
+});
+
+describe('MQTT auth E2E', () => {
+    const TOPIC = 'e2e/auth/ping';
+    const authOptions: AuthOptions = { bearerToken: 'secret-token' };
+
+    @Controller('/secure')
+    class MqttSecureController {
+        @Get('/ping') ping() { return { ok: true }; }
+    }
+
+    @Module({
+        imports: [LoggerModule],
+        declarations: [MqttSecureController],
+        providers: [
+            provideService(
+                useRouter(),
+                useAuth(authOptions),
+                useMqttTransport({
+                    url: MQTT_URL,
+                    subscribeTopics: [{ topic: TOPIC, qos: 0 }],
+                    asDefault: true
+                })
+            ),
+            provideClient(
+                withTimeout(),
+                withMqttTransport({ url: MQTT_URL, microservice: true, asDefault: true })
+            )
+        ]
+    })
+    class MqttAuthModule { }
+
+    let ctx: ApplicationContext;
+    let client: mqtt.MqttClient;
+
+    before(async () => {
+        ctx = await Application.run(MqttAuthModule);
+        client = mqtt.connect(MQTT_URL);
+    });
+
+    after(async () => {
+        if (client) client.end(true);
+        if (ctx) await ctx.destroy();
+    });
+
+    it('accepts requests with bearer token', async () => {
+        const responseTopic = TOPIC + '/response';
+        const result = await new Promise<AuthResultResponse>((resolve, reject) => {
+            client.subscribe(responseTopic, { qos: 0 }, () => {
+                client.publish(TOPIC, JSON.stringify({
+                    url: '/secure/ping',
+                    method: 'GET',
+                    headers: { authorization: 'Bearer secret-token' }
+                }));
+            });
+            client.once('message', (topic, payload) => {
+                if (topic === responseTopic) {
+                    resolve(JSON.parse(payload.toString()));
+                }
+            });
+            setTimeout(() => reject(new Error('Timeout')), 1500);
+        });
+        expect(result.payload?.ok ?? result.body?.ok ?? result.ok).toBe(true);
+    });
+
+    it('rejects requests without bearer token', async () => {
+        const responseTopic = TOPIC + '/response';
+        const result = await new Promise<AuthResultResponse>((resolve, reject) => {
+            client.subscribe(responseTopic, { qos: 0 }, () => {
+                client.publish(TOPIC, JSON.stringify({
+                    url: '/secure/ping',
+                    method: 'GET'
+                }));
+            });
+            client.once('message', (topic, payload) => {
+                if (topic === responseTopic) {
+                    resolve(JSON.parse(payload.toString()));
+                }
+            });
+            setTimeout(() => reject(new Error('Timeout')), 1500);
+        });
+        expect(result.statusCode).toBe(401);
     });
 });
 }

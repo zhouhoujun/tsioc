@@ -3,7 +3,7 @@ import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestH
 import { of } from 'rxjs';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { TcpMessageAdapter } from './message-adapter';
@@ -14,18 +14,22 @@ import { TcpMicroPatternFormatter } from '../pattern-formatter';
  * create TCP transport feature for microservice.
  */
 export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?: boolean): ServiceTransportFeature {
+    const formatter = option.formatter ?? TcpMicroPatternFormatter;
+    const routerFormatter = typeof option.features?.router === 'object' && option.features.router.formatter
+        ? option.features.router.formatter
+        : formatter;
     const config = {
         transport: Transport.TCP,
         side: TransferSide.server,
         microservice: true,
-        formatter: option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? TcpMicroPatternFormatter),
+        formatter,
         ...option,
         features: {
             defaultTransfer: useJsonPacket(),
             ...option.features,
             router: option.features?.router === false ? false : {
                 ...(typeof option.features?.router === 'object' ? option.features.router : {}),
-                formatter: (typeof option.features?.router === 'object' && option.features.router.formatter) || (option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? TcpMicroPatternFormatter))
+                formatter: routerFormatter
             }
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
@@ -42,12 +46,21 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
     config.providers.push(
         { provide: TCP_SERV_OPTIONS, useValue: config },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         TcpMicroPatternFormatter,
         TcpMessageAdapter,
         TcpMessageAdapterFactory,
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
         asProvider({
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {

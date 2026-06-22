@@ -1,9 +1,9 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
 import { NotFoundException, RequestContext, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { GrpcServer } from './grpc-server';
 import { GrpcServOptions, GRPC_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 
@@ -22,9 +22,18 @@ export function grpcTransportFactory(option: Partial<GrpcServOptions>, asDefault
     config.providers.push(
         { provide: GRPC_SERV_OPTIONS, useValue: config },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
         { provide: backendToken, useValue: (_req: any, _context: RequestContext): any => {
             const error = new NotFoundException('Not Found', 404);
             return of({ statusCode: error.statusCode, statusMessage: error.message, error });

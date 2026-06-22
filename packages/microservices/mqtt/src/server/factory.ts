@@ -3,7 +3,7 @@ import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestH
 import { of } from 'rxjs';
 import { MqttServer } from './mqtt-server';
 import { MqttServOptions, MQTT_SERV_OPTIONS } from './options';
-import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
+import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { MqttMessageAdapter } from './message-adapter';
 import { MqttMessageAdapterFactory } from './message-adapter.factory';
@@ -31,11 +31,20 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
     config.providers.push(
         { provide: MQTT_SERV_OPTIONS, useValue: config },
     );
+    const authProviders: Provider[] = config.features.auth ? [{
+        provide: getServiceInterceptorsToken(config),
+        useExisting: MessageAuthInterceptor,
+        multi: true,
+        multiOrder: -300
+    } as Provider & { multiOrder: number }] : [];
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
         MqttMessageAdapter,
         MqttMessageAdapterFactory,
+        { provide: AuthInterceptor, useClass: MessageAuthInterceptor },
+        { provide: MessageAuthInterceptor, useExisting: AuthInterceptor },
+        ...authProviders,
         {
             provide: backendToken,
             useValue: (_req: any, context: RequestContext): any => {
