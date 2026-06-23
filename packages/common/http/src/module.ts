@@ -1,10 +1,14 @@
 import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
-import { HttpBackend, HttpHandler } from './handler';
-import { HttpClient } from './client';
-import { HttpXhrBackend } from './xhr';
-import { HttpInterceptingHandler, HTTP_COMMON_INTERCEPTORS, NoopInterceptor } from './interceptor';
-import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
-import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_HEADER_NAME } from './xsrf';
+import {
+    provideHttpClient,
+    provideLegacyHttpClientFeatures,
+    provideLegacyHttpClientJsonp,
+    provideLegacyHttpClientNoXsrfProtection,
+    provideLegacyHttpClientXsrf,
+    LegacyHttpClientOptions,
+    withInterceptorsFromDi,
+    withXsrfConfiguration
+} from './provider';
 
 
 
@@ -22,11 +26,7 @@ import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, X
  */
 @Module({
     providers: [
-        HttpXsrfInterceptor,
-        { provide: HTTP_COMMON_INTERCEPTORS, useExisting: HttpXsrfInterceptor, multi: true },
-        { provide: HttpXsrfTokenExtractor, useClass: HttpXsrfCookieExtractor },
-        { provide: XSRF_COOKIE_NAME, useValue: 'XSRF-TOKEN' },
-        { provide: XSRF_HEADER_NAME, useValue: 'X-XSRF-TOKEN' },
+        ...provideLegacyHttpClientXsrf()
     ],
 })
 export class HttpClientXsrfModule {
@@ -37,7 +37,7 @@ export class HttpClientXsrfModule {
         return {
             module: HttpClientXsrfModule,
             providers: [
-                { provide: HttpXsrfInterceptor, useClass: NoopInterceptor },
+                ...provideLegacyHttpClientNoXsrfProtection(),
             ]
         };
     }
@@ -54,16 +54,11 @@ export class HttpClientXsrfModule {
         cookieName?: string,
         headerName?: string,
     } = {}): ModuleWithProviders<HttpClientXsrfModule> {
-        const providers: Provider[] = [];
-        if(options.cookieName) {
-            providers.push({ provide: XSRF_COOKIE_NAME, useValue: options.cookieName });
-        }
-        if(options.headerName) {
-            providers.push({ provide: XSRF_HEADER_NAME, useValue: options.headerName });
-        }
         return {
             module: HttpClientXsrfModule,
-            providers
+            providers: [
+                ...provideLegacyHttpClientXsrf(options)
+            ]
         };
     }
 }
@@ -75,24 +70,41 @@ export class HttpClientXsrfModule {
  * multiprovider for built-in {@link HTTP_COMMON_INTERCEPTORS}.
  */
 @Module({
-    /**
-    * Optional configuration for XSRF protection.
-    */
-    imports: [
-        HttpClientXsrfModule.withOptions({
-            cookieName: 'XSRF-TOKEN',
-            headerName: 'X-XSRF-TOKEN',
-        }),
-    ],
     providers: [
-        HttpClient,
-        { provide: HttpHandler, useClass: HttpInterceptingHandler },
-        HttpXhrBackend,
-        { provide: HttpBackend, useExisting: HttpXhrBackend }
+        ...provideHttpClient(
+            withInterceptorsFromDi(),
+            withXsrfConfiguration({
+                cookieName: 'XSRF-TOKEN',
+                headerName: 'X-XSRF-TOKEN',
+            })
+        )
     ]
 })
 export class HttpClientModule {
+    /**
+     * Configure `HttpClientModule` with an explicit backend and optional XSRF settings.
+     *
+     * Typical usage:
+     *
+     * ```ts
+     * imports: [
+     *   HttpClientModule.withOptions({ backend: 'fetch', xsrf: false })
+     * ]
+     * ```
+     */
+    static withOptions(options: LegacyHttpClientOptions = {}): ModuleWithProviders<HttpClientModule> {
+        const features = [
+            ...provideLegacyHttpClientFeatures(options),
+            withInterceptorsFromDi()
+        ];
 
+        return {
+            module: HttpClientModule,
+            providers: [
+                ...provideHttpClient(...features)
+            ]
+        };
+    }
 }
 
 /**
@@ -108,17 +120,8 @@ export class HttpClientModule {
  */
 @Module({
     providers: [
-        JsonpClientBackend,
-        { provide: JsonpCallbackContext, useFactory: jsonpCallbackContext },
-        { provide: HTTP_COMMON_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
+        ...provideLegacyHttpClientJsonp(),
     ],
 })
 export class HttpClientJsonpModule {
-}
-
-export function jsonpCallbackContext(): Object {
-    if (typeof window === 'object') {
-        return window
-    }
-    return {}
 }
