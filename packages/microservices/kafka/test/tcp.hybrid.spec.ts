@@ -13,6 +13,11 @@ import { BigFileInterceptor } from './BigFileInterceptor';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 
+const KAFKA_BROKERS = (process.env.TSIO_TEST_KAFKA_BROKERS || 'localhost:9092')
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+
 @RouteMapping('/content')
 class ContentController {
     @RouteMapping('/510100_full.json', GET)
@@ -36,7 +41,7 @@ const TCP_PORT = 21410;
                 listenOpts: { port: TCP_PORT, host: '127.0.0.1' },
                 asDefault: true
             }),
-            useKafkaTransport()
+            useKafkaTransport({ brokers: KAFKA_BROKERS })
         ),
         provideClient(
             withTcpTransport({
@@ -44,7 +49,7 @@ const TCP_PORT = 21410;
                 microservice: false,
                 asDefault: true
             }),
-            withKafkaTransport({ asDefault: true })
+            withKafkaTransport({ brokers: KAFKA_BROKERS, asDefault: true })
         )
     ]
 })

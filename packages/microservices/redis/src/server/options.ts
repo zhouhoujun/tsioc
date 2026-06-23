@@ -9,6 +9,7 @@ export interface RedisServOptions extends ServiceOptions {
     url?: string;
     connectOpts?: RedisOptions;
     channels?: string[];
+    responseChannelSuffix?: string;
 }
 
 export const REDIS_SERV_OPTIONS = token<RedisServOptions>('REDIS_SERV_OPTIONS');

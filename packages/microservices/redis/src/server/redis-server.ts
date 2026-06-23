@@ -99,6 +99,7 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         const url = parsed.url || channel;
         const method = parsed.method || 'GET';
         const requestData = { ...parsed, url, method, channel };
+        requestData.responseChannel ??= `${channel}${this.options.responseChannelSuffix ?? ':response'}`;
 
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],

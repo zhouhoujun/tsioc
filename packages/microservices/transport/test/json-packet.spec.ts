@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { of, lastValueFrom } from 'rxjs';
 import { createInjector } from '@tsdi/ioc';
-import { Header, PacketIdGenerator, PatternFormatter, StatusMessageAdapter, StreamAdapter, TransferSide, createRequestContext, useCatch } from '@tsdi/common';
+import { Header, PacketIdGenerator, PatternFormatter, StatusMessageAdapter, StreamAdapter, TransferSide, createRequestContext, useCatch, ErrorResponse } from '@tsdi/common';
 import { TcpRequest } from '@tsdi/tcp';
 import { useJsonPacket } from '../src/providers';
 
@@ -158,8 +158,26 @@ describe('transport json packet', () => {
         const server = useJsonPacket()({ side: TransferSide.server, transfer: {}, providers: [] } as any) as Function[];
         expect(client.length).toBeGreaterThan(3);
         expect(server.length).toBeGreaterThan(3);
-        expect(client[0]).toBe(useCatch);
+        expect(client[0]).not.toBe(useCatch);
         expect(server[0]).toBe(useCatch);
         expect(client[client.length - 1]).not.toBe(server[server.length - 1]);
+    });
+
+    it('throws ErrorResponse for body observe error packets on client side', async () => {
+        const config: any = { side: TransferSide.client, transfer: {}, providers: [] };
+        const interceptors = useJsonPacket()(config) as Function[];
+        const packetInterceptor = interceptors[0];
+        const context = createContext();
+        const request = new TcpRequest('/users', null, { observe: 'body' as any });
+        request.id = 'req-1';
+
+        const result$ = packetInterceptor(request, () => of({
+            id: 'req-1',
+            status: 500,
+            statusMessage: 'Boom',
+            error: { message: 'Boom' }
+        }), context);
+
+        await expect(lastValueFrom(result$)).rejects.toBeInstanceOf(ErrorResponse);
     });
 });

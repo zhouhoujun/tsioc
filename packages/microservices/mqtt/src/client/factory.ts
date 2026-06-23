@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events, parseQueryString } from '@tsdi/common'
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common'
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
@@ -92,15 +92,18 @@ function createMqttClientBackend(config: MqttClientOptions) {
         }
 
         const topic = request.url;
-        const responseTopic = config.responseTopic ?? `${topic}/response`;
+        const requestId = request.id ?? `${Date.now()}-${Math.random()}`;
+        const responseTopic = request.responseTopic ?? config.responseTopic ?? `${topic}/response`;
         const formatter = context.get(PatternFormatter, defaultFormatter);
         const payload = Buffer.isBuffer(input)
             ? input
-            : JSON.stringify(serializeRequest(request, formatter, 'payload'));
-        let settled = false;
+            : JSON.stringify(serializeRequest({ ...request, id: requestId }, formatter, 'payload'));
         let timer: NodeJS.Timeout | undefined;
+        let closed = false;
 
         const cleanup = () => {
+            if (closed) return;
+            closed = true;
             client.off(Events.MESSAGE, onMessage);
             if (timer) {
                 clearTimeout(timer);
@@ -109,34 +112,40 @@ function createMqttClientBackend(config: MqttClientOptions) {
             unsubscribeTopic(client, responseTopic).catch(() => undefined);
         };
 
-        const finish = (fn: () => void) => {
-            if (settled) return;
-            settled = true;
-            cleanup();
-            fn();
-        };
-
         const onMessage = (receivedTopic: string, message: Buffer) => {
             if (receivedTopic !== responseTopic) return;
-            finish(() => {
-                const text = message.toString();
-                if (request.responseType === 'text') {
-                    observer.next(text);
-                } else {
-                    try {
-                        observer.next(JSON.parse(text));
-                    } catch {
-                        observer.next(text);
-                    }
+            const parsed = parseReply(message.toString(), request, requestId);
+            if (!parsed) return;
+            if (request.observe === 'observe') {
+                if (parsed instanceof ErrorResponse) {
+                    cleanup();
+                    observer.error(parsed);
+                    return;
                 }
+                observer.next(parsed.body ?? parsed.payload ?? parsed);
+                return;
+            }
+            cleanup();
+            if (request.observe === 'response') {
+                observer.next(parsed);
                 observer.complete();
-            });
+                return;
+            }
+            if (parsed instanceof ErrorResponse) {
+                observer.error(parsed);
+                return;
+            }
+            observer.next(parsed.body ?? parsed.payload ?? parsed);
+            observer.complete();
         };
 
         if (request.observe === 'emit') {
             publishMessage(client, topic, payload)
-                .then(() => finish(() => observer.complete()))
-                .catch(err => finish(() => observer.error(err)));
+                .then(() => {
+                    observer.next({ type: 0 } as ResponseEventPacket);
+                    observer.complete();
+                })
+                .catch(err => observer.error(err));
             return cleanup;
         }
 
@@ -144,11 +153,18 @@ function createMqttClientBackend(config: MqttClientOptions) {
         subscribeTopic(client, responseTopic, normalizeSubscribeOptions(config.subscribeOpts))
             .then(() => publishMessage(client, topic, payload))
             .then(() => {
+                if (request.observe === 'observe') {
+                    return;
+                }
                 timer = setTimeout(() => {
-                    finish(() => observer.error(new Error('Timeout has occurred')));
+                    cleanup();
+                    observer.error(new Error('Timeout has occurred'));
                 }, request.timeout ?? 10000);
             })
-            .catch(err => finish(() => observer.error(err)));
+            .catch(err => {
+                cleanup();
+                observer.error(err);
+            });
 
         return cleanup;
     });
@@ -230,4 +246,60 @@ function publishMessage(client: mqtt.MqttClient, topic: string, payload: string 
             else resolve();
         });
     });
+}
+
+function parseReply(message: string, request: MqttRequest<any>, requestId: string | number) {
+    let parsed: any = message;
+    try {
+        parsed = JSON.parse(message);
+    } catch {
+        parsed = message;
+    }
+    if (parsed && typeof parsed === 'object' && parsed.id != null && parsed.id !== requestId) {
+        return null;
+    }
+    const normalized = normalizeResponse(parsed);
+    if (request.observe === 'response') {
+        return normalized;
+    }
+    if (!normalized.ok) {
+        return new ErrorResponse({
+            status: normalized.status,
+            statusMessage: normalized.statusMessage,
+            statusText: normalized.statusText,
+            headers: normalized.headers,
+            error: normalized.error ?? normalized.body ?? normalized.payload
+        });
+    }
+    return normalized;
+}
+
+function normalizeResponse(parsed: any) {
+    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
+        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
+        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
+        const body = parsed.body ?? parsed.payload;
+        return {
+            ...parsed,
+            status,
+            statusCode: parsed.statusCode ?? status,
+            statusMessage,
+            statusText: statusMessage,
+            ok: parsed.ok ?? (!parsed.error && status < 400),
+            body,
+            payload: body ?? parsed.payload,
+            error: parsed.error,
+            headers: parsed.headers ?? {}
+        };
+    }
+    return {
+        status: 200,
+        statusCode: 200,
+        statusMessage: 'OK',
+        statusText: 'OK',
+        ok: true,
+        body: parsed,
+        payload: parsed,
+        headers: {}
+    };
 }

@@ -12,6 +12,11 @@ import { DeviceController } from './controller';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 
+const KAFKA_BROKERS = (process.env.TSIO_TEST_KAFKA_BROKERS || 'localhost:9092')
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+
 @RouteMapping('/content')
 class ContentController {
     @RouteMapping('/510100_full.json', GET)
@@ -33,7 +38,7 @@ const HTTP_PORT = 21310;
                 microservice: false as any,
                 listenOpts: { port: HTTP_PORT, host: '127.0.0.1' }
             }),
-            useKafkaTransport()
+            useKafkaTransport({ brokers: KAFKA_BROKERS })
         ),
         provideClient(
             withHttpTransport({
@@ -41,7 +46,7 @@ const HTTP_PORT = 21310;
                 microservice: false,
                 asDefault: true
             }),
-            withKafkaTransport({ asDefault: true })
+            withKafkaTransport({ brokers: KAFKA_BROKERS, asDefault: true })
         )
     ]
 })

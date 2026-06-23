@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson, parseQueryString } from '@tsdi/common';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { COAP_CLIENT_OPTIONS, CoapClientOptions } from './options';
 import { CoapClient } from './client';
@@ -107,17 +107,20 @@ function createCoapClientBackend(config: CoapClientOptions) {
             port: config.port ?? (target?.port ? Number(target.port) : 5683),
             pathname,
             method: request.method as any,
+            observe: request.observe === 'observe',
             options: undefined
         });
 
         let settled = false;
         let timer: NodeJS.Timeout | undefined;
+        let observeResponse: any;
 
         const cleanup = () => {
             if (timer) {
                 clearTimeout(timer);
                 timer = undefined;
             }
+            observeResponse?.close?.();
         };
 
         const finish = (fn: () => void) => {
@@ -128,65 +131,36 @@ function createCoapClientBackend(config: CoapClientOptions) {
         };
 
         client.on('response', (res: any) => {
-            const raw = res.payload?.toString() ?? '';
+            if (request.observe === 'observe') {
+                observeResponse = res;
+                const onData = (chunk: Buffer | string) => {
+                    const parsed = parseCoapReply(typeof chunk === 'string' ? chunk : chunk?.toString?.() ?? '', request, res);
+                    if (parsed instanceof ErrorResponse) {
+                        finish(() => observer.error(parsed));
+                        return;
+                    }
+                    observer.next(parsed.body ?? parsed.payload ?? parsed);
+                };
+                const onError = (err: Error) => finish(() => observer.error(err));
+                const onEnd = () => finish(() => observer.complete());
+                res.on('data', onData);
+                res.on('error', onError);
+                res.on('end', onEnd);
+                return;
+            }
+
+            const parsed = parseCoapReply(res.payload?.toString() ?? '', request, res);
             finish(() => {
-                const shouldParseEnvelope = request.observe === 'response';
-                const shouldParseJson = shouldParseEnvelope || request.responseType !== 'text';
-                let parsed: any = raw;
-                if (raw && shouldParseJson) {
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch {
-                        parsed = raw;
-                    }
-                }
-                const parsedStatus = parsed && typeof parsed === 'object'
-                    ? (parsed.status ?? parsed.statusCode)
-                    : undefined;
-                const status = res.code ?? normalizeCoapStatus(parsedStatus) ?? '2.05';
-                const responseOptions = parsed && typeof parsed === 'object' && parsed.headers
-                    ? parsed.headers.options
-                    : (res as any).options;
-                const normalizedOptions = Array.isArray(responseOptions)
-                    ? responseOptions
-                    : responseOptions == null
-                        ? []
-                        : [responseOptions];
-                const isResponseEnvelope = parsed && typeof parsed === 'object' && ('body' in parsed || 'payload' in parsed || 'ok' in parsed || 'headers' in parsed || 'status' in parsed);
-                const response = isResponseEnvelope
-                    ? {
-                        ...parsed,
-                        status,
-                        statusCode: parsed.statusCode ?? status,
-                        ok: parsed.ok ?? (typeof status === 'string' ? status.startsWith('2.') : true),
-                        body: 'body' in parsed ? parsed.body : ('payload' in parsed ? parsed.payload : parsed),
-                        headers: {
-                            ...((res as any).headers ?? {}),
-                            ...(parsed.headers ?? {}),
-                            options: normalizedOptions
-                        }
-                    }
-                    : {
-                        ...(parsed && typeof parsed === 'object' ? parsed : {}),
-                        ok: typeof status === 'string' ? status.startsWith('2.') : true,
-                        status,
-                        statusCode: parsed && typeof parsed === 'object' ? (parsed.statusCode ?? status) : status,
-                        body: parsed,
-                        headers: {
-                            ...((res as any).headers ?? {}),
-                            options: normalizedOptions
-                        }
-                    };
                 if (request.observe === 'response') {
-                    observer.next(response);
+                    observer.next(parsed);
                     observer.complete();
                     return;
                 }
-                if (!response.ok) {
-                    observer.error(response);
+                if (parsed instanceof ErrorResponse) {
+                    observer.error(parsed);
                     return;
                 }
-                observer.next(response.statusMessage ? response : (response.body ?? response.payload ?? parsed));
+                observer.next(parsed.body ?? parsed.payload ?? parsed);
                 observer.complete();
             });
         });
@@ -197,7 +171,10 @@ function createCoapClientBackend(config: CoapClientOptions) {
                 client.write(payload);
             }
             client.end();
-            finish(() => observer.complete());
+            finish(() => {
+                observer.next({ type: 0 } as ResponseEventPacket);
+                observer.complete();
+            });
             return cleanup;
         }
 
@@ -229,6 +206,64 @@ function normalizeCoapStatus(status: any): string | undefined {
     if (status >= 300) return '3.00';
     if (status >= 200) return '2.05';
     return undefined;
+}
+
+function parseCoapReply(message: string, request: any, res: any) {
+    let parsed: any = message;
+    try {
+        parsed = JSON.parse(message);
+    } catch {
+        parsed = message;
+    }
+    const normalized = normalizeCoapResponse(parsed, res);
+    if (request.observe === 'response') {
+        return normalized;
+    }
+    if (!normalized.ok) {
+        return new ErrorResponse({
+            status: normalized.status,
+            statusMessage: normalized.statusMessage,
+            statusText: normalized.statusText,
+            headers: normalized.headers,
+            error: normalized.error ?? normalized.body ?? normalized.payload
+        });
+    }
+    return normalized;
+}
+
+function normalizeCoapResponse(parsed: any, res: any) {
+    const parsedStatus = parsed && typeof parsed === 'object'
+        ? (parsed.status ?? parsed.statusCode)
+        : undefined;
+    const status = parsedStatus ?? res.code ?? normalizeCoapStatus(parsedStatus) ?? '2.05';
+    const statusMessage = parsed?.statusMessage ?? parsed?.statusText ?? parsed?.error?.message ?? (String(status).startsWith('4') || String(status).startsWith('5') ? 'Error' : 'OK');
+    const responseOptions = parsed && typeof parsed === 'object' && parsed.headers
+        ? parsed.headers.options
+        : (res as any).options;
+    const normalizedOptions = Array.isArray(responseOptions)
+        ? responseOptions
+        : responseOptions == null
+            ? []
+            : [responseOptions];
+    const body = parsed && typeof parsed === 'object' && ('body' in parsed || 'payload' in parsed)
+        ? (parsed.body ?? parsed.payload)
+        : parsed;
+    return {
+        ...(parsed && typeof parsed === 'object' ? parsed : {}),
+        status,
+        statusCode: parsed?.statusCode ?? status,
+        statusMessage,
+        statusText: statusMessage,
+        ok: parsed?.ok ?? (!parsed?.error && !String(status).startsWith('4') && !String(status).startsWith('5')),
+        body,
+        payload: body,
+        error: parsed?.error,
+        headers: {
+            ...(res?.headers ?? {}),
+            ...(parsed?.headers ?? {}),
+            options: normalizedOptions
+        }
+    };
 }
 
 function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {

@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, parseQueryString } from '@tsdi/common';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common';
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { NATS_CLIENT_OPTIONS, NatsClientOptions } from './options';
@@ -100,29 +100,63 @@ function createNatsClientBackend(_config: NatsClientOptions) {
 
         const sc = StringCodec();
         const subject = request.url;
+        const requestId = request.id ?? `${Date.now()}-${Math.random()}`;
         const formatter = context.get(PatternFormatter, defaultFormatter);
         const payload = typeof input === 'string' || input instanceof Uint8Array
             ? input
-            : JSON.stringify(serializeRequest(request, formatter, 'payload'));
+            : JSON.stringify(serializeRequest({ ...request, id: requestId }, formatter, 'payload'));
 
         if (request.observe === 'emit') {
             nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload);
+            observer.next({ type: 0 } as ResponseEventPacket);
             observer.complete();
             return;
         }
 
+        if (request.observe === 'observe') {
+            const inbox = request.responseTopic ?? `_INBOX.tsdi.${requestId}`;
+            const sub = nc.subscribe(inbox);
+            let closed = false;
+            (async () => {
+                for await (const msg of sub) {
+                    if (closed) {
+                        break;
+                    }
+                    const parsed = parseReply(sc.decode(msg.data), request, requestId);
+                    if (!parsed) {
+                        continue;
+                    }
+                    if (parsed instanceof ErrorResponse) {
+                        observer.error(parsed);
+                        break;
+                    }
+                    observer.next(parsed.body ?? parsed.payload ?? parsed);
+                }
+            })().catch(err => observer.error(err));
+            nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { reply: inbox });
+            return () => {
+                closed = true;
+                sub.unsubscribe();
+            };
+        }
+
         nc.request(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { timeout: request.timeout ?? 10000 })
             .then(msg => {
-                const text = sc.decode(msg.data);
-                if (request.responseType === 'text') {
-                    observer.next(text);
-                } else {
-                    try {
-                        observer.next(JSON.parse(text));
-                    } catch {
-                        observer.next(text);
-                    }
+                const parsed = parseReply(sc.decode(msg.data), request, requestId);
+                if (!parsed) {
+                    observer.error(new Error('Response correlation mismatch'));
+                    return;
                 }
+                if (request.observe === 'response') {
+                    observer.next(parsed);
+                    observer.complete();
+                    return;
+                }
+                if (parsed instanceof ErrorResponse) {
+                    observer.error(parsed);
+                    return;
+                }
+                observer.next(parsed.body ?? parsed.payload ?? parsed);
                 observer.complete();
             })
             .catch(err => observer.error(err));
@@ -174,4 +208,60 @@ function serializeRequest(request: any, formatter: PatternFormatter, payloadKey:
         json[payloadKey] = request.body;
     }
     return json;
+}
+
+function parseReply(message: string, request: NatsRequest<any>, requestId: string | number) {
+    let parsed: any = message;
+    try {
+        parsed = JSON.parse(message);
+    } catch {
+        parsed = message;
+    }
+    if (parsed && typeof parsed === 'object' && parsed.id != null && parsed.id !== requestId) {
+        return null;
+    }
+    const normalized = normalizeResponse(parsed);
+    if (request.observe === 'response') {
+        return normalized;
+    }
+    if (!normalized.ok) {
+        return new ErrorResponse({
+            status: normalized.status,
+            statusMessage: normalized.statusMessage,
+            statusText: normalized.statusText,
+            headers: normalized.headers,
+            error: normalized.error ?? normalized.body ?? normalized.payload
+        });
+    }
+    return normalized;
+}
+
+function normalizeResponse(parsed: any) {
+    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
+        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
+        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
+        const body = parsed.body ?? parsed.payload;
+        return {
+            ...parsed,
+            status,
+            statusCode: parsed.statusCode ?? status,
+            statusMessage,
+            statusText: statusMessage,
+            ok: parsed.ok ?? (!parsed.error && status < 400),
+            body,
+            payload: body ?? parsed.payload,
+            error: parsed.error,
+            headers: parsed.headers ?? {}
+        };
+    }
+    return {
+        status: 200,
+        statusCode: 200,
+        statusMessage: 'OK',
+        statusText: 'OK',
+        ok: true,
+        body: parsed,
+        payload: parsed,
+        headers: {}
+    };
 }

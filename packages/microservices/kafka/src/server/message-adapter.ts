@@ -186,8 +186,20 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
             : response === this ? undefined : response;
         if (body === undefined) return;
 
-        const buf = Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
-        producer.send({ topic: topic + '.response', messages: [{ value: buf }] });
+        const message = {
+            id: this.requestData?.id,
+            status: this.responseStatus ?? 200,
+            statusCode: this.responseStatus ?? 200,
+            statusMessage: this.responseStatusMessage ?? 'OK',
+            ok: (this.responseStatus ?? 200) < 400,
+            headers: this.serializeHeaders(),
+            body,
+            payload: body
+        };
+        producer.send({
+            topic: this.requestData?.responseTopic ?? (topic + '.response'),
+            messages: [{ value: Buffer.from(JSON.stringify(message)) }]
+        });
     }
 
     /**
@@ -209,8 +221,31 @@ export class KafkaMessageAdapter extends StatusMessageAdapter<Record<string, any
 
         const topic = this.requestData?.topic;
         if (topic) {
-            const buf = Buffer.from(JSON.stringify(errorBody));
-            producer.send({ topic: topic + '.response', messages: [{ value: buf }] });
+            producer.send({
+                topic: this.requestData?.responseTopic ?? (topic + '.response'),
+                messages: [{
+                    value: Buffer.from(JSON.stringify({
+                        id: this.requestData?.id,
+                        status: err?.statusCode || err?.status || 500,
+                        statusCode: err?.statusCode || err?.status || 500,
+                        statusMessage: err?.statusMessage || err?.message || 'Error',
+                        ok: false,
+                        error: errorBody,
+                        body: errorBody,
+                        payload: errorBody,
+                        headers: this.serializeHeaders()
+                    }))
+                }]
+            });
         }
+    }
+
+    private serializeHeaders(): Record<string, Header> | undefined {
+        if (!this.responseHeaders.size) return undefined;
+        const headers: Record<string, Header> = {};
+        this.responseHeaders.forEach((value, key) => {
+            headers[key] = value;
+        });
+        return headers;
     }
 }

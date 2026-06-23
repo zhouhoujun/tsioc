@@ -144,7 +144,6 @@ export function useJsonPacket(options: PacketOptions = {}): TransferFilterFactor
         }
 
         return isClient ? [
-            useCatch,
             packetIdMessage(config, options),
             useSimpleJson(options)(config) as RequestInterceptorFn,
             delimiterUnpacket(config, options),

@@ -9,6 +9,7 @@ export interface RedisClientOptions extends ClientOptions {
     microservice?: boolean;
     url?: string;
     connectOpts?: RedisOptions;
+    responseChannelSuffix?: string;
 }
 
 export const REDIS_CLIENT_OPTIONS = token<RedisClientOptions>('REDIS_CLIENT_OPTIONS');

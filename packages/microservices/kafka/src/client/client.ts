@@ -1,6 +1,7 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
+import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { defer, Observable, switchMap } from 'rxjs';
 import { Kafka, Producer } from 'kafkajs';
@@ -23,7 +24,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
             if (this.producer) return this.producer;
             this.kafka = new Kafka({
                 clientId: this.options.clientId || 'tsdi-client',
-                brokers: this.options.brokers || ['localhost:9092'],
+                brokers: this.options.brokerCompatBrokers?.length ? this.options.brokerCompatBrokers : (this.options.brokers || ['localhost:9092']),
             });
             this.producer = this.kafka.producer();
             await this.producer.connect();
@@ -34,6 +35,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
     protected initContext(context: Context, req: KafkaRequest<any>): void {
         context.set(KafkaClient, this);
         context.set(KafkaRequest, req);
+        context.set(SOCKET, this.producer as any);
     }
 
     protected buildRequest(first: KafkaRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): KafkaRequest<any> {

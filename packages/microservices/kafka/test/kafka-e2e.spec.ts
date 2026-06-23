@@ -20,10 +20,15 @@ interface KafkaTopicConfig {
     fromBeginning?: boolean;
 }
 
+const TEST_BROKERS = (process.env.TSIO_TEST_KAFKA_BROKERS || 'localhost:9092')
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+
 describe('Kafka Transport E2E', () => {
     describe('Microservice Mode (microservice: true)', () => {
         it('factory creates feature with microservice config', () => {
-            const feature = kafkaTransportFactory({ microservice: true, brokers: ['127.0.0.1:29092'], asDefault: true });
+            const feature = kafkaTransportFactory({ microservice: true, brokers: TEST_BROKERS, asDefault: true });
             expect(feature.config.microservice).toBe(true);
             expect(feature.config.transport).toBe(Transport.Kafka);
             expect(feature.config.side).toBe(TransferSide.server);
@@ -32,7 +37,7 @@ describe('Kafka Transport E2E', () => {
         });
 
         it('includes KAFKA_SERV_OPTIONS provider', () => {
-            const feature = kafkaTransportFactory({ brokers: ['127.0.0.1:29092'] });
+            const feature = kafkaTransportFactory({ brokers: TEST_BROKERS });
             const configProviders = ((feature.config as KafkaServOptions).providers ?? []) as ProviderWithToken[];
             const has = feature.providers.some((provider) => {
                 const typed = provider as ProviderWithToken;
@@ -42,7 +47,7 @@ describe('Kafka Transport E2E', () => {
         });
 
         it('client transport factory produces microservice client config', () => {
-            const features = withKafkaTransport({ brokers: ['127.0.0.1:29092'], microservice: true });
+            const features = withKafkaTransport({ brokers: TEST_BROKERS, microservice: true });
             expect(features.length).toBe(1);
             expect(features[0].config.microservice).toBe(true);
             expect(features[0].config.transport).toBe(Transport.Kafka);
@@ -51,40 +56,40 @@ describe('Kafka Transport E2E', () => {
 
     describe('Host Service Mode (microservice: false)', () => {
         it('factory creates feature with host config', () => {
-            const feature = kafkaTransportFactory({ microservice: false, brokers: ['127.0.0.1:29093'], asDefault: true });
+            const feature = kafkaTransportFactory({ microservice: false, brokers: TEST_BROKERS, asDefault: true });
             expect(feature.config.microservice).toBe(false);
             expect(feature.config.transport).toBe(Transport.Kafka);
         });
 
         it('client transport factory produces host client config', () => {
-            const features = withKafkaTransport({ brokers: ['127.0.0.1:29093'], microservice: false });
+            const features = withKafkaTransport({ brokers: TEST_BROKERS, microservice: false });
             expect(features[0].config.microservice).toBe(false);
         });
     });
 
     describe('Module Registration', () => {
         it('provideService with useKafkaTransport creates providers for microservice:true', () => {
-            const transportFeatures = useKafkaTransport({ brokers: ['127.0.0.1:29092'], asDefault: true });
+            const transportFeatures = useKafkaTransport({ brokers: TEST_BROKERS, asDefault: true });
             const providers = provideService(useRouter(), ...transportFeatures);
             expect(providers.length).toBeGreaterThan(0);
             expect(transportFeatures[0].config.microservice).toBe(true);
         });
 
         it('provideService with useKafkaTransport creates providers for microservice:false', () => {
-            const transportFeatures = useKafkaTransport({ microservice: false, brokers: ['127.0.0.1:29093'], asDefault: true });
+            const transportFeatures = useKafkaTransport({ microservice: false, brokers: TEST_BROKERS, asDefault: true });
             const providers = provideService(useRouter(), ...transportFeatures);
             expect(providers.length).toBeGreaterThan(0);
             expect(transportFeatures[0].config.microservice).toBe(false);
         });
 
         it('provideClient with withKafkaTransport creates client providers for microservice:true', () => {
-            const clientFeatures = withKafkaTransport({ brokers: ['127.0.0.1:29092'], microservice: true, asDefault: true });
+            const clientFeatures = withKafkaTransport({ brokers: TEST_BROKERS, microservice: true, asDefault: true });
             const providers = provideClient(...clientFeatures);
             expect(providers.length).toBeGreaterThan(0);
         });
 
         it('provideClient with withKafkaTransport creates client providers for microservice:false', () => {
-            const clientFeatures = withKafkaTransport({ brokers: ['127.0.0.1:29093'], microservice: false, asDefault: true });
+            const clientFeatures = withKafkaTransport({ brokers: TEST_BROKERS, microservice: false, asDefault: true });
             const providers = provideClient(...clientFeatures);
             expect(providers.length).toBeGreaterThan(0);
         });
@@ -93,8 +98,8 @@ describe('Kafka Transport E2E', () => {
     describe('useKafkaTransport', () => {
         it('creates multiple features for multiple options', () => {
             const features = useKafkaTransport(
-                { brokers: ['127.0.0.1:29092'], asDefault: true },
-                { brokers: ['127.0.0.1:29093'] }
+                { brokers: TEST_BROKERS, asDefault: true },
+                { brokers: TEST_BROKERS }
             );
             expect(features.length).toBe(2);
             expect(features[0].config.microservice).toBe(true);
@@ -119,7 +124,7 @@ describe('Kafka Transport E2E', () => {
 
         it('registers message auth interceptor when auth is enabled', () => {
             const feature = kafkaTransportFactory({
-                brokers: ['127.0.0.1:29092'],
+                brokers: TEST_BROKERS,
                 features: { auth: { bearerToken: 'secret-token' } }
             });
             const hasAuthProvider = feature.providers.some((provider) => {
@@ -142,7 +147,7 @@ describe('Kafka Transport E2E', () => {
 });
 
 if (process.env.TSIO_TEST_KAFKA) describe('Kafka auth E2E', () => {
-    const BROKERS = ['127.0.0.1:29092'];
+    const BROKERS = TEST_BROKERS;
     const TOPIC = 'e2e.auth.ping';
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };
 

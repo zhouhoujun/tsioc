@@ -43,7 +43,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         try {
             this.kafka = new Kafka({
                 clientId: this.options.clientId || 'tsdi-microservice',
-                brokers: this.options.brokers || ['localhost:9092'],
+                brokers: this.options.brokerCompatBrokers?.length ? this.options.brokerCompatBrokers : (this.options.brokers || ['localhost:9092']),
             });
 
             this.consumer = this.kafka.consumer({ groupId: this.options.groupId || 'tsdi-group' });
@@ -52,7 +52,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             await this.consumer.connect();
             await this.producer.connect();
 
-            this.logger.info(getTypeName(this), `connected to Kafka, brokers: ${(this.options.brokers || ['localhost:9092']).join(',')}`);
+            this.logger.info(getTypeName(this), `connected to Kafka, brokers: ${(this.options.brokerCompatBrokers?.length ? this.options.brokerCompatBrokers : (this.options.brokers || ['localhost:9092'])).join(',')}`);
 
             const topics = this.options.topics || [{ topic: 'microservice' }];
             for (const t of topics) {
@@ -101,6 +101,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             body,
             payload: body,
             topic,
+            responseTopic: requestSource.responseTopic ?? `${topic}${this.options.responseTopicSuffix ?? '.response'}`,
             partition,
             key: message.key?.toString(),
         };

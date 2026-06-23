@@ -7,9 +7,11 @@ export interface KafkaServOptions extends ServiceOptions {
     providers?: Provider[];
     clientId?: string;
     brokers?: string[];
+    brokerCompatBrokers?: string[];
     groupId?: string;
     topics?: { topic: string; fromBeginning?: boolean }[];
     fromBeginning?: boolean;
+    responseTopicSuffix?: string;
 }
 
 export const KAFKA_SERV_OPTIONS = token<KafkaServOptions>('KAFKA_SERV_OPTIONS');

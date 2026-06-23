@@ -4,7 +4,7 @@ import { PipeTransform } from '@tsdi/core';
 import {
     AbstractRequest, CONTENT_LENGTH, createRequestContext, Events, IDuplex, MessageAdapter, Packet,
     PacketIdGenerator, PacketLengthException, RequestContext, RequestHandlerFn,
-    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST
+    RequestInterceptorFn, StreamAdapter, TransferConfig, TransferOptions, TransferSide, writePacket, REQUEST, ErrorResponse
 } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { defer, filter, fromEvent, map, mergeMap, from, race, take, takeUntil, Observable, share, of, throwError } from 'rxjs';
@@ -23,12 +23,12 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                     return res && res.id == req.id;
                 }),
                 req.observe !== 'observe' ? take(1) : map(r => r),
-                map(res => {
+                mergeMap(res => {
                     if (req.observe === 'response') {
                         const status = res?.status ?? res?.statusCode ?? res?.error?.status ?? res?.error?.statusCode ?? 200;
                         const statusMessage = res?.statusMessage ?? res?.statusText ?? res?.error?.statusMessage ?? res?.error?.message ?? 'OK';
                         const body = !isNil(res?.payload) ? res.payload : res?.body;
-                        return {
+                        return of({
                             id: res?.id,
                             url: req?.getUrlWithParams?.() ?? req?.url,
                             headers: res?.headers ?? {},
@@ -39,21 +39,26 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                             body,
                             payload: body,
                             error: res?.error,
-                        };
+                        });
                     }
-                    if (res?.error) {
-                        return res;
-                    }
-                    if ((res?.statusCode ?? res?.status) >= 400) {
-                        return res;
+                    const status = res?.statusCode ?? res?.status;
+                    if (res?.error || res?.ok === false || (isNumber(status) && status >= 400)) {
+                        return throwError(() => new ErrorResponse({
+                            status,
+                            statusCode: status,
+                            statusMessage: res?.statusMessage ?? res?.statusText ?? res?.error?.statusMessage ?? res?.error?.message,
+                            statusText: res?.statusText ?? res?.statusMessage ?? res?.error?.statusMessage ?? res?.error?.message,
+                            headers: res?.headers ?? {},
+                            error: res?.error ?? res?.payload ?? res?.body ?? res
+                        }));
                     }
                     if (!isNil(res?.payload)) {
-                        return res.payload;
+                        return of(res.payload);
                     }
                     if (!isNil(res?.body)) {
-                        return res.body;
+                        return of(res.body);
                     }
-                    return res;
+                    return of(res);
                 })
             );
     } : (req, next, context) => {
@@ -105,7 +110,7 @@ export function createSendMessageBackend(eventName: string = Events.DATA, socket
         return defer(() => writePacket(currSocket, req, context.get(StreamAdapter)))
             .pipe(
                 mergeMap(r => {
-                    if (context.get(AbstractRequest)?.observe === 'emit') return of(r);
+                    if (context.get(AbstractRequest)?.observe === 'emit') return of({ type: 0 });
                     return source$
                 })
             )

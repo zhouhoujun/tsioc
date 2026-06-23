@@ -8,6 +8,7 @@ import { withMcpTransport, McpClient } from '../src/client';
 import { provideClient } from '@tsdi/client';
 import * as http from 'node:http';
 import expect = require('expect');
+import { lastValueFrom } from 'rxjs';
 
 interface JsonRpcResponse<T = unknown> {
     jsonrpc: '2.0';
@@ -106,9 +107,11 @@ describe('MCP E2E with provideService + provideClient (microservice:true)', () =
     class McpE2eModule { }
 
     let ctx: ApplicationContext;
+    let client: McpClient;
 
     before(async () => {
         ctx = await Application.run(McpE2eModule);
+        client = ctx.get(McpClient);
         
     });
     after(async () => { if (ctx) await ctx.destroy(); });
@@ -153,6 +156,23 @@ describe('MCP E2E with provideService + provideClient (microservice:true)', () =
         const res = await sendJsonRpc<{ result: string }>('api.mcp.ping');
         expect(res).toBeDefined();
         expect(res.jsonrpc).toBe('2.0');
+    });
+
+    it('should return response envelope from McpClient.send', async () => {
+        const result: any = await lastValueFrom(client.send('/api/mcp/ping', {
+            method: 'GET',
+            observe: 'response'
+        } as any));
+        expect(result.ok).toBe(true);
+        expect(result.body).toEqual({ result: 'pong' });
+    });
+
+    it('should return body from McpClient.send by default', async () => {
+        const result = await lastValueFrom(client.send('/api/mcp/echo', {
+            method: 'POST',
+            body: { value: 'hello' }
+        } as any));
+        expect(result).toEqual({ received: { value: 'hello' } });
     });
 });
 

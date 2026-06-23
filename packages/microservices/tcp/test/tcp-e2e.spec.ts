@@ -7,7 +7,7 @@ import { useTcpTransport } from '../src/server';
 import { withTcpTransport } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import { TcpClient } from '../src/client/client';
-import { catchError, lastValueFrom, of } from 'rxjs';
+import { catchError, lastValueFrom, of, take, toArray } from 'rxjs';
 import expect = require('expect');
 
 interface AuthErrorResponse {
@@ -130,8 +130,16 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
         @Handle({ cmd: 'ping' }, Transport.TCP)
         ping() { return 'pong'; }
 
+        @Handle({ cmd: 'emit' }, Transport.TCP)
+        emitOnly() { return null; }
+
         @Handle({ cmd: 'echo' }, Transport.TCP)
         echo(@Payload() msg: any) { return { echoed: msg }; }
+
+        @Handle({ cmd: 'stream' }, Transport.TCP)
+        stream(@Payload() msg: any) {
+            return of(`${msg.message}-1`, `${msg.message}-2`, `${msg.message}-3`);
+        }
     }
 
     @Module({
@@ -180,6 +188,24 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
             timeout: 50
         }).pipe(catchError(err => of(err))));
         expect(result).toBeDefined();
+    });
+
+    it('should return ResponseEventPacket for emit observe', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'emit' }, {
+            observe: 'emit',
+            payload: { message: 'hello tcp' },
+            timeout: 50
+        } as any));
+        expect(result).toEqual({ type: 0 });
+    });
+
+    it('should stream multiple values for observe until unsubscribe', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'stream' }, {
+            observe: 'observe',
+            payload: { message: 'hello tcp' },
+            timeout: 100
+        } as any).pipe(take(2), toArray()));
+        expect(result).toEqual(['hello tcp-1', 'hello tcp-2']);
     });
 });
 

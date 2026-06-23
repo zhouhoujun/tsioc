@@ -256,7 +256,6 @@ export function useWsPacket(options: WsPacketOptions = {}): TransferFilterFactor
         }
 
         return isClient ? [
-            useCatch,
             packetIdMessage(config, options),
             wsMessage(config, options)
         ] : [

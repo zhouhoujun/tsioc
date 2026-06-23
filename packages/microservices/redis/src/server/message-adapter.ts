@@ -186,8 +186,17 @@ export class RedisMessageAdapter extends StatusMessageAdapter<Record<string, any
             : response === this ? undefined : response;
         if (body === undefined) return;
 
-        const msg = typeof body === 'string' ? body : JSON.stringify(body);
-        publisher.publish(channel + ':response', msg);
+        const message = {
+            id: this.requestData?.id,
+            status: this.responseStatus ?? 200,
+            statusCode: this.responseStatus ?? 200,
+            statusMessage: this.responseStatusMessage ?? 'OK',
+            ok: (this.responseStatus ?? 200) < 400,
+            headers: this.serializeHeaders(),
+            body,
+            payload: body
+        };
+        publisher.publish(this.requestData?.responseChannel ?? (channel + ':response'), JSON.stringify(message));
     }
 
     /**
@@ -209,7 +218,26 @@ export class RedisMessageAdapter extends StatusMessageAdapter<Record<string, any
 
         const channel = this.requestData?.channel;
         if (channel) {
-            publisher.publish(channel + ':response', JSON.stringify(errorBody));
+            publisher.publish(this.requestData?.responseChannel ?? (channel + ':response'), JSON.stringify({
+                id: this.requestData?.id,
+                status: err?.statusCode || err?.status || 500,
+                statusCode: err?.statusCode || err?.status || 500,
+                statusMessage: err?.statusMessage || err?.message || 'Error',
+                ok: false,
+                error: errorBody,
+                body: errorBody,
+                payload: errorBody,
+                headers: this.serializeHeaders()
+            }));
         }
+    }
+
+    private serializeHeaders(): Record<string, Header> | undefined {
+        if (!this.responseHeaders.size) return undefined;
+        const headers: Record<string, Header> = {};
+        this.responseHeaders.forEach((value, key) => {
+            headers[key] = value;
+        });
+        return headers;
     }
 }

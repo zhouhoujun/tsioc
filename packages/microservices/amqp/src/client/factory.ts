@@ -1,5 +1,5 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events, parseQueryString } from '@tsdi/common'
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common'
 import { SOCKET } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
@@ -129,24 +129,36 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
 
         if (request.observe === 'emit') {
             channel.publish(exchange, routingKey, publishPayload, { correlationId });
-            finish(() => observer.complete());
+            finish(() => {
+                observer.next({ type: 0 } as ResponseEventPacket);
+                observer.complete();
+            });
             return cleanup;
         }
 
         channel.assertQueue('', { exclusive: true })
             .then(({ queue }) => channel.consume(queue, (msg) => {
                 if (!msg || msg.properties.correlationId !== correlationId) return;
-                finish(() => {
-                    const text = msg.content.toString();
-                    if (request.responseType === 'text') {
-                        observer.next(text);
-                    } else {
-                        try {
-                            observer.next(JSON.parse(text));
-                        } catch {
-                            observer.next(text);
-                        }
+                const parsed = parseReply(msg.content.toString(), request);
+                if (request.observe === 'observe') {
+                    if (parsed instanceof ErrorResponse) {
+                        finish(() => observer.error(parsed));
+                        return;
                     }
+                    observer.next(parsed.body ?? parsed.payload ?? parsed);
+                    return;
+                }
+                finish(() => {
+                    if (request.observe === 'response') {
+                        observer.next(parsed);
+                        observer.complete();
+                        return;
+                    }
+                    if (parsed instanceof ErrorResponse) {
+                        observer.error(parsed);
+                        return;
+                    }
+                    observer.next(parsed.body ?? parsed.payload ?? parsed);
                     observer.complete();
                 });
             }, { noAck: true }).then(({ consumerTag: tag }) => {
@@ -155,9 +167,11 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
                     correlationId,
                     replyTo: queue
                 });
-                timer = setTimeout(() => {
-                    finish(() => observer.error(new Error('Timeout has occurred')));
-                }, request.timeout ?? 10000);
+                if (request.observe !== 'observe') {
+                    timer = setTimeout(() => {
+                        finish(() => observer.error(new Error('Timeout has occurred')));
+                    }, request.timeout ?? 10000);
+                }
             }))
             .catch(err => finish(() => observer.error(err)));
 
@@ -207,4 +221,57 @@ function serializeRequest(request: any, formatter: PatternFormatter, payloadKey:
         json[payloadKey] = request.body;
     }
     return json;
+}
+
+function parseReply(message: string, request: any) {
+    let parsed: any = message;
+    try {
+        parsed = JSON.parse(message);
+    } catch {
+        parsed = message;
+    }
+    const normalized = normalizeResponse(parsed);
+    if (request.observe === 'response') {
+        return normalized;
+    }
+    if (!normalized.ok) {
+        return new ErrorResponse({
+            status: normalized.status,
+            statusMessage: normalized.statusMessage,
+            statusText: normalized.statusText,
+            headers: normalized.headers,
+            error: normalized.error ?? normalized.body ?? normalized.payload
+        });
+    }
+    return normalized;
+}
+
+function normalizeResponse(parsed: any) {
+    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
+        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
+        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
+        const body = parsed.body ?? parsed.payload;
+        return {
+            ...parsed,
+            status,
+            statusCode: parsed.statusCode ?? status,
+            statusMessage,
+            statusText: statusMessage,
+            ok: parsed.ok ?? (!parsed.error && status < 400),
+            body,
+            payload: body ?? parsed.payload,
+            error: parsed.error,
+            headers: parsed.headers ?? {}
+        };
+    }
+    return {
+        status: 200,
+        statusCode: 200,
+        statusMessage: 'OK',
+        statusText: 'OK',
+        ok: true,
+        body: parsed,
+        payload: parsed,
+        headers: {}
+    };
 }

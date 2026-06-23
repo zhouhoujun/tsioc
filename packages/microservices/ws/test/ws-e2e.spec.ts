@@ -8,7 +8,7 @@ import { useWsTransport } from '../src/server';
 import { withWsTransport } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import { WsClient } from '../src/client/client';
-import { catchError, lastValueFrom, of } from 'rxjs';
+import { catchError, lastValueFrom, of, take, toArray } from 'rxjs';
 
 interface AuthErrorResponse {
     ok?: boolean;
@@ -205,6 +205,14 @@ class WsPatternService {
     @Handle({ cmd: 'echo' }, Transport.WS)
     echo(@Payload() msg: string) { return msg; }
 
+    @Handle({ cmd: 'emit' }, Transport.WS)
+    emitOnly(@Payload() _msg: string) { return null; }
+
+    @Handle({ cmd: 'stream' }, Transport.WS)
+    stream(@Payload() msg: string) {
+        return of(`${msg}-1`, `${msg}-2`, `${msg}-3`);
+    }
+
     @Handle('sensor.message.+', Transport.WS)
     topic(@Payload() msg: string) { return msg; }
 
@@ -250,6 +258,24 @@ describe('WS pattern routing', () => {
             timeout: 50
         }).pipe(catchError(err => of({ error: err?.message ?? err }))));
         expect(result).toBeDefined();
+    });
+
+    it('returns ResponseEventPacket for emit observe', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'emit' }, {
+            payload: { msg: 'hello' },
+            observe: 'emit',
+            timeout: 50
+        } as any));
+        expect(result).toEqual({ type: 0 });
+    });
+
+    it('streams multiple values for observe until unsubscribe', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'stream' }, {
+            payload: { msg: 'hello' },
+            observe: 'observe',
+            timeout: 100
+        } as any).pipe(take(2), toArray()));
+        expect(result).toEqual(['hello-1', 'hello-2']);
     });
 
     it('routes wildcard topic patterns', async () => {

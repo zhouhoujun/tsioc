@@ -8,7 +8,7 @@ import { withUdpTransport, UdpClient } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import * as dgram from 'node:dgram';
 import expect = require('expect');
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, of, take, toArray } from 'rxjs';
 
 interface UdpEnvelope {
     url?: string;
@@ -377,6 +377,14 @@ class UdpPatternService {
     @Handle({ cmd: 'echo' })
     echo(@Payload() msg: string) { return msg; }
 
+    @Handle({ cmd: 'emit' })
+    emitOnly() { return null; }
+
+    @Handle({ cmd: 'stream' })
+    stream(@Payload() msg: any) {
+        return of(`${msg.msg}-1`, `${msg.msg}-2`, `${msg.msg}-3`);
+    }
+
     @Handle('sensor.message.+')
     topic(@Payload() msg: string) { return msg; }
 
@@ -412,6 +420,24 @@ describe('UDP pattern routing', () => {
         const result = await lastValueFrom<string>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
         console.log('udp cmd result:', result);
         expect(result).toEqual('hello');
+    });
+
+    it('returns ResponseEventPacket for emit observe', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'emit' }, {
+            observe: 'emit',
+            payload: { msg: 'hello' },
+            timeout: 50
+        } as any));
+        expect(result).toEqual({ type: 0 });
+    });
+
+    it('streams multiple values for observe until unsubscribe', async () => {
+        const result = await lastValueFrom(client.send({ cmd: 'stream' }, {
+            observe: 'observe',
+            payload: { msg: 'hello' },
+            timeout: 100
+        } as any).pipe(take(2), toArray()));
+        expect(result).toEqual(['hello-1', 'hello-2']);
     });
 
     it('routes wildcard topic patterns', async () => {
