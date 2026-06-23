@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { ClientTransportStrategy, CLIENT_TRANSPORT_STRATEGY } from '@tsdi/client';
+import { ClientTransportStrategy } from '@tsdi/client';
 import { Pattern, RequestInitOpts } from '@tsdi/common';
 import { HttpRequest } from '../request';
 import { HttpClientOptions } from '../options';
@@ -39,5 +39,3 @@ export class HttpTransportStrategy
         return {} as HttpClientOptions;
     }
 }
-
-export const HttpTransportStrategyToken = CLIENT_TRANSPORT_STRATEGY;

@@ -55,9 +55,3 @@ export abstract class ClientTransportStrategy<
      */
     abstract isConnected(): boolean;
 }
-
-/**
- * Client transport strategy token.
- * 客户端传输策略令牌
- */
-export const CLIENT_TRANSPORT_STRATEGY = 'CLIENT_TRANSPORT_STRATEGY';

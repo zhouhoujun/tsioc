@@ -8,6 +8,11 @@ import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken
 import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions, ClientFeature, ClientFeatureFn, ClientFeatureKind, ClientFeatureLike, ClientOptions, ClientTransportFeature } from './options';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { loadBalanceInterceptor, circuitBreakerInterceptor, discoverInterceptor, retryInterceptor } from './interceptors/features';
+import { CircuitBreakerStrategy } from './strategies/CircuitBreakerStrategy';
+import { ClientDiscoveryStrategy } from './strategies/ClientDiscoveryStrategy';
+import { ClientLoadBalanceStrategy } from './strategies/LoadBalanceStrategy';
+import { RetryStrategy } from './strategies/RetryStrategy';
+import { DefaultCircuitBreakerStrategy, DefaultClientDiscoveryStrategy, DefaultClientLoadBalanceStrategy, DefaultRetryStrategy } from './strategies/defaults';
 
 
 
@@ -84,6 +89,39 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
     }
 }
 
+function isStrategyProvider<T>(value: any): value is ProvdierOf<T> {
+    return isFunction(value) || (!!value && typeof value === 'object' && (
+        'useClass' in value ||
+        'useValue' in value ||
+        'useFactory' in value ||
+        'useExisting' in value
+    ));
+}
+
+function normalizeFeatureOptions<T>(options?: T): T {
+    return (options ?? {}) as T;
+}
+
+function buildStrategyFeatureProviders<TOptions, TStrategy>(
+    config: ClientConfig,
+    strategyToken: any,
+    optionsToken: any,
+    interceptor: RequestInterceptorLike,
+    defaultFactory: new (options: TOptions) => TStrategy,
+    input?: TOptions | ProvdierOf<RequestInterceptorLike>
+): Provider[] {
+    const interceptorToken = getClientInterceptorsToken(config);
+    if (isStrategyProvider<RequestInterceptorLike>(input)) {
+        return [toProvider(interceptorToken, input, true)];
+    }
+    const options = normalizeFeatureOptions<TOptions>(input as TOptions | undefined);
+    return [
+        { provide: optionsToken, useValue: options },
+        { provide: strategyToken, useFactory: (opts: TOptions) => new defaultFactory(opts), deps: [optionsToken] },
+        { provide: interceptorToken, useValue: interceptor, multi: true }
+    ];
+}
+
 
 /**
  * Adds service discovery to the micro client, like Spring Cloud Eureka/Consul.
@@ -91,15 +129,18 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
  * @see {@link provideClient}
  * @publicApi
  */
-export function withDiscovery(options?: boolean | DiscoveryOptions): ClientFeatureFn<ClientFeatureKind.Discovery> {
+export function withDiscovery(options?: DiscoveryOptions | ProvdierOf<RequestInterceptorLike>): ClientFeatureFn<ClientFeatureKind.Discovery> {
     return (config) => {
-        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.Discovery,
-            [
-                { provide: MICRO_CLIENT_DISCOVERY_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
-                { provide: tk, useValue: discoverInterceptor, multi: true }
-            ],
+            buildStrategyFeatureProviders<DiscoveryOptions, ClientDiscoveryStrategy>(
+                config,
+                ClientDiscoveryStrategy,
+                MICRO_CLIENT_DISCOVERY_OPTIONS,
+                discoverInterceptor,
+                DefaultClientDiscoveryStrategy,
+                options
+            ),
             config
         );
     }
@@ -111,15 +152,18 @@ export function withDiscovery(options?: boolean | DiscoveryOptions): ClientFeatu
  * @see {@link provideClient}
  * @publicApi
  */
-export function withLoadBalance(options?: boolean | LoadBalanceOptions): ClientFeatureFn<ClientFeatureKind.LoadBalance> {
+export function withLoadBalance(options?: LoadBalanceOptions | ProvdierOf<RequestInterceptorLike>): ClientFeatureFn<ClientFeatureKind.LoadBalance> {
     return (config) => {
-        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.LoadBalance,
-            [
-                { provide: MICRO_CLIENT_LOADBALANCE_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
-                { provide: tk, useValue: loadBalanceInterceptor, multi: true }
-            ],
+            buildStrategyFeatureProviders<LoadBalanceOptions, ClientLoadBalanceStrategy>(
+                config,
+                ClientLoadBalanceStrategy,
+                MICRO_CLIENT_LOADBALANCE_OPTIONS,
+                loadBalanceInterceptor,
+                DefaultClientLoadBalanceStrategy,
+                options
+            ),
             config
         );
     }
@@ -131,15 +175,18 @@ export function withLoadBalance(options?: boolean | LoadBalanceOptions): ClientF
  * @see {@link provideClient}
  * @publicApi
  */
-export function withCircuitBreaker(options?: boolean | CircuitBreakerOptions): ClientFeatureFn<ClientFeatureKind.CircuitBreaker> {
+export function withCircuitBreaker(options?: CircuitBreakerOptions | ProvdierOf<RequestInterceptorLike>): ClientFeatureFn<ClientFeatureKind.CircuitBreaker> {
     return (config) => {
-        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.CircuitBreaker,
-            [
-                { provide: MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
-                { provide: tk, useValue: circuitBreakerInterceptor, multi: true }
-            ],
+            buildStrategyFeatureProviders<CircuitBreakerOptions, CircuitBreakerStrategy>(
+                config,
+                CircuitBreakerStrategy,
+                MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS,
+                circuitBreakerInterceptor,
+                DefaultCircuitBreakerStrategy,
+                options
+            ),
             config
         );
     }
@@ -151,15 +198,18 @@ export function withCircuitBreaker(options?: boolean | CircuitBreakerOptions): C
  * @see {@link provideClient}
  * @publicApi
  */
-export function withRetry(options?: boolean | RetryOptions): ClientFeatureFn<ClientFeatureKind.Retry> {
+export function withRetry(options?: RetryOptions | ProvdierOf<RequestInterceptorLike>): ClientFeatureFn<ClientFeatureKind.Retry> {
     return (config) => {
-        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.Retry,
-            [
-                { provide: MICRO_CLIENT_RETRY_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
-                { provide: tk, useValue: retryInterceptor, multi: true }
-            ],
+            buildStrategyFeatureProviders<RetryOptions, RetryStrategy>(
+                config,
+                RetryStrategy,
+                MICRO_CLIENT_RETRY_OPTIONS,
+                retryInterceptor,
+                DefaultRetryStrategy,
+                options
+            ),
             config
         );
     }
@@ -277,8 +327,8 @@ export const MICRO_CLIENT_RETRY_OPTIONS = token<RetryOptions>('MICRO_CLIENT_RETR
 
 
 const defaultClientOptions: Partial<ClientFeatureOptions> = {
-    discovery: true,
-    loadBalance: true,
+    discovery: {},
+    loadBalance: {},
     circuitBreaker: false,
     retry: false
 };
@@ -303,16 +353,16 @@ export function withFeatures(options?: ClientFeatureOptions): ClientFeatureFn<Ex
             features.push(withGuards(...opts.guards)(config));
         }
         if (opts.discovery) {
-            features.push(withDiscovery(opts.discovery)(config));
+            features.push(withDiscovery(isBoolean(opts.discovery) ? undefined : opts.discovery)(config));
         }
         if (opts.loadBalance) {
-            features.push(withLoadBalance(opts.loadBalance)(config));
+            features.push(withLoadBalance(isBoolean(opts.loadBalance) ? undefined : opts.loadBalance)(config));
         }
         if (opts.circuitBreaker) {
-            features.push(withCircuitBreaker(opts.circuitBreaker)(config));
+            features.push(withCircuitBreaker(isBoolean(opts.circuitBreaker) ? undefined : opts.circuitBreaker)(config));
         }
         if (opts.retry) {
-            features.push(withRetry(opts.retry)(config));
+            features.push(withRetry(isBoolean(opts.retry) ? undefined : opts.retry)(config));
         }
         if (opts.timeout != null) {
             features.push(withTimeout(opts.timeout)(config));

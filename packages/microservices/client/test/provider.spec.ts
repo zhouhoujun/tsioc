@@ -1,5 +1,6 @@
 import expect = require('expect');
-import { Transport, TransferSide } from '@tsdi/common';
+import { createInjector } from '@tsdi/ioc';
+import { RequestInterceptorFn, Transport, TransferSide } from '@tsdi/common';
 import {
     CLIENT_CONFIGS,
     MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS,
@@ -12,10 +13,22 @@ import {
     withTransfers,
     withDiscovery,
     withLoadBalance,
+    withCircuitBreaker,
+    withRetry,
     withTimeout
 } from '../src/provider';
 import { ClientFeatureKind } from '../src/options';
 import { getClientInterceptorsToken } from '../src/tokens';
+import {
+    CircuitBreakerStrategy,
+    ClientDiscoveryStrategy,
+    ClientLoadBalanceStrategy,
+    DefaultCircuitBreakerStrategy,
+    DefaultClientDiscoveryStrategy,
+    DefaultClientLoadBalanceStrategy,
+    DefaultRetryStrategy,
+    RetryStrategy
+} from '../src/strategies';
 
 const createConfig = (name = 'alpha') => ({
     name,
@@ -24,6 +37,8 @@ const createConfig = (name = 'alpha') => ({
     microservice: true,
     features: {}
 } as any);
+
+const customFeatureInterceptor: RequestInterceptorFn = (input: any, next: any, context: any) => next({ ...input, custom: true }, context);
 
 describe('client provider', () => {
     it('throws when transport feature is missing', () => {
@@ -78,15 +93,64 @@ describe('client provider', () => {
         expect(kinds).not.toContain(ClientFeatureKind.Retry);
     });
 
-    it('normalizes boolean retry and circuit breaker options', () => {
+    it('uses explicit empty options when retry and circuit breaker are enabled', () => {
         const config = createConfig();
-        const features = withFeatures({ retry: true, circuitBreaker: true })(config) as any[];
+        const features = withFeatures({ retry: {}, circuitBreaker: {} })(config) as any[];
         const retry = features.find(feature => feature.kind === ClientFeatureKind.Retry);
         const breaker = features.find(feature => feature.kind === ClientFeatureKind.CircuitBreaker);
-        expect(retry.providers[0].provide).toBe(MICRO_CLIENT_RETRY_OPTIONS);
-        expect(retry.providers[0].useValue).toEqual({});
-        expect(breaker.providers[0].provide).toBe(MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS);
-        expect(breaker.providers[0].useValue).toEqual({});
+        const retryOptionProvider = retry.providers.find((provider: any) => provider.provide === MICRO_CLIENT_RETRY_OPTIONS);
+        const breakerOptionProvider = breaker.providers.find((provider: any) => provider.provide === MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS);
+        expect(retryOptionProvider.useValue).toEqual({});
+        expect(breakerOptionProvider.useValue).toEqual({});
+    });
+
+    it('registers default strategies when feature options are provided', () => {
+        const config = createConfig();
+        const providers = provideClient(
+            withDiscovery({ serviceName: 'svc-a' }),
+            withLoadBalance({ cacheTtl: 3000 }),
+            withCircuitBreaker({ slidingWindowSize: 3 }),
+            withRetry({ maxAttempts: 2 }),
+            {
+                kind: ClientFeatureKind.Transport,
+                config,
+                providers: []
+            }
+        ) as any[];
+        const injector = createInjector(providers);
+
+        expect(injector.get(ClientDiscoveryStrategy)).toBeInstanceOf(DefaultClientDiscoveryStrategy);
+        expect((injector.get(ClientDiscoveryStrategy) as DefaultClientDiscoveryStrategy).options).toEqual({ serviceName: 'svc-a' });
+        expect(injector.get(ClientLoadBalanceStrategy)).toBeInstanceOf(DefaultClientLoadBalanceStrategy);
+        expect((injector.get(ClientLoadBalanceStrategy) as DefaultClientLoadBalanceStrategy).options).toEqual({ cacheTtl: 3000 });
+        expect(injector.get(CircuitBreakerStrategy)).toBeInstanceOf(DefaultCircuitBreakerStrategy);
+        expect((injector.get(CircuitBreakerStrategy) as DefaultCircuitBreakerStrategy).options).toEqual({ slidingWindowSize: 3 });
+        expect(injector.get(RetryStrategy)).toBeInstanceOf(DefaultRetryStrategy);
+        expect((injector.get(RetryStrategy) as DefaultRetryStrategy).options).toEqual({ maxAttempts: 2 });
+    });
+
+    it('registers custom interceptors when feature receives ProvdierOf<RequestInterceptorLike>', () => {
+        const config = createConfig();
+        const providers = provideClient(
+            withDiscovery(customFeatureInterceptor),
+            withLoadBalance(customFeatureInterceptor),
+            withCircuitBreaker(customFeatureInterceptor),
+            withRetry(customFeatureInterceptor),
+            {
+                kind: ClientFeatureKind.Transport,
+                config,
+                providers: []
+            }
+        ) as any[];
+        const injector = createInjector(providers);
+        const interceptors = injector.get(getClientInterceptorsToken(config));
+
+        expect(interceptors).toHaveLength(4);
+        expect(interceptors.every((interceptor: any) => interceptor === customFeatureInterceptor)).toBe(true);
+        expect(() => injector.get(ClientDiscoveryStrategy)).toThrow();
+        expect(() => injector.get(ClientLoadBalanceStrategy)).toThrow();
+        expect(() => injector.get(CircuitBreakerStrategy)).toThrow();
+        expect(() => injector.get(RetryStrategy)).toThrow();
     });
 
     it('registers feature interceptors for discovery, load balance, circuit breaker and retry', () => {
@@ -94,8 +158,8 @@ describe('client provider', () => {
         const interceptorToken = getClientInterceptorsToken(config);
         const discovery = withDiscovery()(config) as any;
         const loadBalance = withLoadBalance()(config) as any;
-        const breakerFeatures = withFeatures({ circuitBreaker: true })(config) as any[];
-        const retryFeatures = withFeatures({ retry: true })(config) as any[];
+        const breakerFeatures = withFeatures({ circuitBreaker: {} })(config) as any[];
+        const retryFeatures = withFeatures({ retry: {} })(config) as any[];
         const breaker = breakerFeatures.find((feature: any) => feature.kind === ClientFeatureKind.CircuitBreaker);
         const retry = retryFeatures.find((feature: any) => feature.kind === ClientFeatureKind.Retry);
 

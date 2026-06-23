@@ -36,9 +36,3 @@ export abstract class BodySerializeStrategy {
      */
     abstract canHandle(body: any): boolean;
 }
-
-/**
- * Body serialize strategy token.
- * 请求体序列化策略令牌
- */
-export const BODY_SERIALIZE_STRATEGY = 'BODY_SERIALIZE_STRATEGY';

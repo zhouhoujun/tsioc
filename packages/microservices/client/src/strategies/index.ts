@@ -5,3 +5,4 @@ export * from './RetryStrategy';
 export * from './ClientTransportStrategy';
 export * from './BodySerializeStrategy';
 export * from './TimeoutStrategy';
+export * from './defaults';

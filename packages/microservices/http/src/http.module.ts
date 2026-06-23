@@ -1,4 +1,5 @@
 import { Module } from '@tsdi/ioc';
+import { BodySerializeStrategy, ClientTransportStrategy } from '@tsdi/client';
 import { BodyParserInterceptor as AbstractBodyParserInterceptor, ContentInterceptor as AbstractContentInterceptor, CookieInterceptor as AbstractCookieInterceptor, JsonInterceptor as AbstractJsonInterceptor, SessionInterceptor as AbstractSessionInterceptor } from '@tsdi/service';
 import { HttpClient } from './client/client';
 import { HttpServer } from './server/http-server';
@@ -19,6 +20,8 @@ import { HttpJsonInterceptor } from './server/interceptors/json';
 @Module({
     providers: [
         HttpResponseEventFactory,
+        { provide: BodySerializeStrategy, useClass: HttpBodySerializeStrategy },
+        { provide: ClientTransportStrategy, useClass: HttpTransportStrategy },
         HttpBodySerializeStrategy,
         HttpTransportStrategy,
         HttpTimeoutStrategy,

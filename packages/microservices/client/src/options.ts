@@ -1,6 +1,6 @@
 import { ProvdierOf, Provider, Token } from '@tsdi/ioc';
 
-import { PatternFormatter, RequestContext, RequestHandlerOptions, TransferConfig, TransferFilterFactory, TransferSide } from '@tsdi/common';
+import { PatternFormatter, RequestContext, RequestHandlerOptions, RequestInterceptorLike, TransferConfig, TransferFilterFactory, TransferSide } from '@tsdi/common';
 import { ConnectionPoolOptions } from './pool';
 
 
@@ -61,10 +61,10 @@ export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends R
     timeout?: number;
     defaultTransfer?: TransferFilterFactory;
     transfers?: TransferFilterFactory[];
-    discovery?: boolean | DiscoveryOptions;
-    loadBalance?: boolean | LoadBalanceOptions;
-    circuitBreaker?: boolean | CircuitBreakerOptions;
-    retry?: boolean | RetryOptions;
+    discovery?: DiscoveryOptions | ProvdierOf<RequestInterceptorLike> | false;
+    loadBalance?: LoadBalanceOptions | ProvdierOf<RequestInterceptorLike> | false;
+    circuitBreaker?: CircuitBreakerOptions | ProvdierOf<RequestInterceptorLike> | false;
+    retry?: RetryOptions | ProvdierOf<RequestInterceptorLike> | false;
     messageReaderFactory?: any;
     messagerReaderFactory?: any;
 }
