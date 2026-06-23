@@ -1,7 +1,8 @@
 import expect = require('expect');
 import { createInjector, Injectable } from '@tsdi/ioc';
+import { Application } from '@tsdi/core';
 import { DOCUMENT, PLATFORM_BROWSER_ID, PLATFORM_ID } from '@tsdi/common';
-import { HttpClient } from '../src/client';
+import { HttpClient, HttpClientJsonpModule, HttpClientModule, HttpClientXsrfModule, JsonpCallbackContext } from '../src';
 import {
     provideHttpClient,
     withFetch,
@@ -12,7 +13,6 @@ import {
     withXsrfConfiguration
 } from '../src/provider';
 import { XhrFactory } from '../src/handler';
-import { HttpClientJsonpModule, HttpClientModule, HttpClientXsrfModule } from '../src/module';
 import { lastValueFrom } from 'rxjs';
 import { HTTP_COMMON_INTERCEPTORS, HttpInterceptor } from '../src/interceptor';
 import { HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_HEADER_NAME } from '../src/xsrf';
@@ -100,7 +100,7 @@ class FakeJsonpDocument {
         appendChild: (node: FakeJsonpScript) => {
             node.parentNode = this.body;
             this.createdScripts.push(node);
-            const match = /=(tsioc_jsonp_callback_\d+)(&|$)/.exec(node.src);
+            const match = /(?:[?&][^=]+=)(tsioc_jsonp_callback_\d+)(&|$)/.exec(node.src);
             if (match) {
                 this.callbackMap[match[1]]?.({ ok: true, transport: 'jsonp' });
             }
@@ -328,7 +328,9 @@ describe('provideHttpClient', () => {
         const injector = createInjector([
             { provide: PLATFORM_ID, useValue: PLATFORM_BROWSER_ID },
             { provide: DOCUMENT, useValue: document },
-            ...provideHttpClient(withNoXsrfProtection(), withJsonpSupport())
+            { provide: XhrFactory, useClass: FakeXhrFactory },
+            ...provideHttpClient(withNoXsrfProtection(), withJsonpSupport()),
+            { provide: JsonpCallbackContext, useValue: callbackMap }
         ] as any);
         const client = injector.get(HttpClient);
         const result = await lastValueFrom(client.jsonp('/test', 'callback'));
@@ -360,15 +362,26 @@ describe('provideHttpClient', () => {
     it('keeps HttpClientJsonpModule compatible with HttpClientModule imports', async () => {
         const callbackMap: Record<string, (data: any) => void> = {};
         const document = new FakeJsonpDocument(callbackMap);
-        const jsonpModule = { providers: (HttpClientJsonpModule as any).__mod?.providers ?? [] };
-        const injector = createInjector([
-            { provide: PLATFORM_ID, useValue: PLATFORM_BROWSER_ID },
-            { provide: DOCUMENT, useValue: document },
-            ...provideHttpClient(withInterceptorsFromDi(), withNoXsrfProtection()),
-            ...jsonpModule.providers
-        ] as any);
+        const app = await Application.run({
+            module: {
+                imports: [
+                    HttpClientModule,
+                    HttpClientJsonpModule
+                ],
+                providers: [
+                    { provide: PLATFORM_ID, useValue: PLATFORM_BROWSER_ID },
+                    { provide: DOCUMENT, useValue: document },
+                    { provide: JsonpCallbackContext, useValue: callbackMap },
+                    { provide: XhrFactory, useClass: FakeXhrFactory }
+                ]
+            }
+        } as any);
 
-        const result = await lastValueFrom(injector.get(HttpClient).jsonp('/test', 'callback'));
-        expect(result).toEqual({ ok: true, transport: 'jsonp' });
+        try {
+            const result = await lastValueFrom(app.get(HttpClient).jsonp('/test', 'callback'));
+            expect(result).toEqual({ ok: true, transport: 'jsonp' });
+        } finally {
+            await app.close();
+        }
     });
 });

@@ -8,4 +8,19 @@ export * from './request';
 export * from './response';
 export * from './client';
 export * from './module';
-export * from './provider';
+export {
+    HttpFeatureKind,
+    type HttpFeature,
+    type HttpClientBackendKind,
+    type HttpXsrfOptions,
+    type LegacyHttpClientOptions,
+    provideHttpClient,
+    provideLegacyHttpClientFeatures,
+    withFetch,
+    withInterceptors,
+    withInterceptorsFromDi,
+    withJsonpSupport,
+    withNoXsrfProtection,
+    withXhr,
+    withXsrfConfiguration
+} from './provider';

@@ -1,436 +1,318 @@
-import { Injector, Injectable, lang, token, isArray, Module, Handler, composeHandlers, toPromise } from '@tsdi/ioc';
+import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { BadRequestException } from '@tsdi/common';
-import {
-    RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, RestfulRequestContext, EndpointModule,
-    RedirectResult, ContentInterceptor, JsonInterceptor, BodyparserInterceptor,
-    createRouteProviders,
-    AbstractRequestContext
-} from '@tsdi/endpoints';
+import { BadRequestException, ErrorResponse, Response } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logger';
+import { provideClient } from '@tsdi/client';
+import { Controller, Get, Post, RedirectResult, RequestBody, RequestParam, RequestPath, provideService, useRouter } from '@tsdi/service';
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { ServerModule } from '@tsdi/platform-server';
-import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { ServerCommonModule } from '@tsdi/platform-server/common';
 import expect = require('expect');
-import { HttpClient, HttpClientModule } from '../src';
+import { HttpClient, withHttpTransport } from '@tsdi/microservices/http/src/client';
+import { useHttpTransport } from '@tsdi/microservices/http/src/server';
 
+const PORT = 21310;
+type HttpResult<T = any> = Response<T> | ErrorResponse;
 
-@RouteMapping('/device')
+function assertResponse<T>(result: HttpResult<T>): asserts result is Response<T> {
+    expect('body' in result).toBeTruthy();
+}
+
+@Controller()
+class HttpRootController {
+    @Get('/510100_full.json')
+    fullJson() {
+        return { features: [{ id: '1' }, { id: '2' }] };
+    }
+
+    @Post('/hdevice')
+    startup(@RequestBody('type') type: string) {
+        if (type !== 'startup') {
+            throw new BadRequestException();
+        }
+        return {
+            device: 'device next',
+            deviceA_state: 'startuped',
+            deviceB_state: 'startuped'
+        };
+    }
+}
+
+@Controller('/device')
 class DeviceController {
-
-    @RouteMapping('/init', 'POST')
-    req(name: string) {
-        console.log('DeviceController init:', name);
+    @Post('/init')
+    init(@RequestParam('name') name: string) {
         return { name };
     }
 
-    @RouteMapping('/usage', 'POST')
-    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
-        console.log('usage:', id, year, createAt);
+    @Post('/update')
+    update(@RequestParam('version') version: string) {
+        return version;
+    }
+
+    @Post('/usage')
+    usage(
+        @RequestBody('id') id: string,
+        @RequestBody('age', { pipe: 'int' }) year: number,
+        @RequestBody('createAt', { pipe: 'date' }) createAt: Date
+    ) {
         return { id, year, createAt };
     }
 
-    @RouteMapping('/usege/find', 'GET')
-    agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
-        console.log('limit:', limit);
+    @Get('/usege/find')
+    find(@RequestParam('age', { pipe: 'int' }) limit: number) {
         return limit;
     }
 
-    @RouteMapping('/:age/used', 'GET')
-    resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
-        console.log('age1:', age1);
-        if (age1 <= 0) {
+    @Get('/:age/used')
+    used(@RequestPath('age', { pipe: 'int' }) age: number) {
+        if (age <= 0) {
             throw new BadRequestException();
         }
-        return age1;
+        return age;
     }
 
-
-    @RouteMapping('/update', 'POST')
-    async update(version: string) {
-        // do smth.
-        console.log('update version:', version);
-        const defer = lang.defer();
-
-        setTimeout(() => {
-            defer.resolve(version);
-        }, 10);
-
-        return await defer.promise;
-    }
-
-
-    @RouteMapping('/status', 'GET')
-    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
+    @Get('/status')
+    status(@RequestParam('redirect', { nullable: true }) redirect?: string) {
         if (redirect === 'reload') {
             return new RedirectResult('/device/reload');
         }
         return of('working');
     }
 
-    @RouteMapping('/reload', 'GET')
-    redirect() {
+    @Get('/reload')
+    reload() {
         return 'reload';
     }
-
-    @Handle({ cmd: 'xxx' })
-    async subMessage() {
-
-    }
-
-    @Handle('dd*')
-    async subMessage1() {
-
-    }
-
-}
-
-// @RouteMapping('/map')
-// class MapController {
-
-//     @Inject() mapAdapter: MapAdapter;
-
-//     @RouteMapping('/mark', 'POST')
-//     drawMark(name: string, @Inject(CONTEXT) ctx: MessageContext ) {
-//         ctx.body;
-//         this.mapAdapter.drow(ctx.body);
-//     }
-
-// }
-
-@Handle({
-    route: '/hdevice'
-})
-class DeviceQueue implements Handler {
-
-    async handle(ctx: RestfulRequestContext, context: AbstractRequestContext): Promise<void> {
-
-        console.log('device msg start.');
-        ctx.set('device', 'device data')
-
-
-        console.log('device msg start.');
-        ctx.set('device', 'device data')
-        await toPromise(composeHandlers(ctx.get(DEVICE_MIDDLEWARES))(ctx, context));
-        ctx.set('device', 'device next');
-
-        const device = ctx.get('device');
-        const deviceA_state = ctx.get('deviceA_state');
-        const deviceB_state = ctx.get('deviceB_state');
-
-        ctx.body = {
-            device,
-            deviceA_state,
-            deviceB_state
-        };
-
-        console.log('device sub msg done.');
-
-    }
-}
-
-
-@Injectable()
-class DeviceStartupHandle implements Handler {
-
-    async handle(ctx: RestfulRequestContext): Promise<void> {
-
-        if (ctx.request.body.type === 'startup') {
-            // todo sth.
-            const ret = ctx.get(MyService).dosth();
-            ctx.set('deviceB_state', ret);
-        }
-    }
-}
-
-@Injectable()
-class DeviceAStartupHandle implements Handler {
-
-    async handle(ctx: RestfulRequestContext): Promise<void> {
-        if (ctx.request.body.type === 'startup') {
-            // todo sth.
-            const ret = ctx.get(MyService).dosth();
-            ctx.set('deviceA_state', ret);
-        }
-    }
-}
-
-export const DEVICE_MIDDLEWARES = token<Handler[]>('DEVICE_MIDDLEWARES');
-
-@Module({
-    providers: [
-        DeviceQueue,
-        { provide: DEVICE_MIDDLEWARES, useClass: DeviceStartupHandle, multi: true },
-        { provide: DEVICE_MIDDLEWARES, useClass: DeviceAStartupHandle, multi: true },
-
-    ]
-})
-class DeviceManageModule {
-
-}
-
-@Injectable()
-class MyService {
-    dosth() {
-        return 'startuped';
-    }
 }
 
 @Module({
+    imports: [LoggerModule],
+    declarations: [HttpRootController, DeviceController],
     providers: [
-        MyService,
-        DeviceAStartupHandle
+        provideService(
+            useRouter(),
+            useRouter({ microservice: true }),
+            useHttpTransport({
+                listenOpts: {
+                    port: PORT,
+                    host: '127.0.0.1'
+                },
+                asDefault: true
+            })
+        ),
+        provideClient(
+            withHttpTransport({
+                url: `http://127.0.0.1:${PORT}`,
+                asDefault: true
+            })
+        )
     ]
 })
-class DeviceAModule {
-
-}
-
-
-@Module({
-    baseURL: __dirname,
-    imports: [
-        ServerModule,
-        LoggerModule,
-        ServerCommonModule,
-        // RouterModule.forRoot('tcp', { microservice: true }),
-        HttpClientModule,
-        ServerHttpClientModule,
-        EndpointModule.register({
-            transport: 'http',
-            config: {
-                interceptors: [
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor
-                ]
-            }
-        }),
-        ServerHttpClientModule,
-        DeviceManageModule,
-        DeviceAModule
-    ],
-    providers: [
-        // DeviceController,
-        createRouteProviders('tcp', true),
-        DeviceStartupHandle
-    ],
-    declarations: [
-        DeviceController
-    ]
-})
-class MainApp {
-
-}
+class MainApp { }
 
 describe('HttpClient', () => {
     let ctx: ApplicationContext;
+    let client: HttpClient;
 
     before(async () => {
         ctx = await Application.run(MainApp);
+        client = ctx.get(HttpClient);
     });
 
-    it('make sure singleton', async () => {
-        // ctx.send('msg://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
-        // console.log(ctx.getMessager());
-        const a = ctx.get(DeviceQueue);
-        const b = ctx.get(DeviceQueue);
-        expect(a).toBeInstanceOf(DeviceQueue);
-        expect(a).toEqual(b);
+    after(async () => {
+        await ctx?.close();
     });
-
-    it('has registered', async () => {
-        const a = ctx.get(DEVICE_MIDDLEWARES);
-        expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
-        expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
-    });
-
 
     it('fetch json', async () => {
-
-        const client = ctx.resolve(HttpClient);
-        const res: any = await lastValueFrom(client.get('510100_full.json')
-            .pipe(
-                catchError((err, ct) => {
-                    ctx.getLogger().error(err);
-                    return of(err);
-                })));
-
+        const res = await lastValueFrom(client.get<{ features: any[] }>('/510100_full.json'));
         expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
-    })
-
-    it('msg work', async () => {
-        const client = ctx.resolve(HttpClient);
-        const rep = await lastValueFrom(client.request<any>('POST', '/hdevice', { observe: 'response', body: { type: 'startup' } }));
-        const device = rep.body['device'];
-        const aState = rep.body['deviceA_state'];
-        const bState = rep.body['deviceB_state'];
-
-        expect(device).toBe('device next');
-        expect(aState).toBe('startuped');
-        expect(bState).toBe('startuped');
+        expect(Array.isArray(res.features)).toBeTruthy();
     });
 
-    it('not found', async () => {
-        const client = ctx.resolve(HttpClient);
-        const a = await lastValueFrom(client.post<any>('/device/init5', null, { observe: 'response', params: { name: 'test' } })
-            .pipe(
+    it('msg work', async () => {
+        const rep = await lastValueFrom(
+            client.post<Record<string, string>>('/hdevice', { type: 'startup' }, { observe: 'response' }).pipe(
                 catchError(err => {
-                    console.log(err);
-                    return of(err)
+                    ctx.getLogger().error(err);
+                    return of(err as HttpResult<Record<string, string>>);
                 })
-            ));
-        expect(a.status).toEqual(404);
+            )
+        ) as HttpResult<Record<string, string>>;
+        assertResponse(rep);
+        const body = rep.body!;
+
+        expect(body.device).toBe('device next');
+        expect(body.deviceA_state).toBe('startuped');
+        expect(body.deviceB_state).toBe('startuped');
+    });
+
+    it('post not found', async () => {
+        const response = await lastValueFrom(
+            client.post('/device/init5', null, { observe: 'response', params: { name: 'test' } }).pipe(
+                catchError(err => of(err as HttpResult))
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(404);
     });
 
     it('bad request', async () => {
-        const client = ctx.resolve(HttpClient);
-        const a = await lastValueFrom(client.get('/device/-1/used', { observe: 'response', params: { age: '20' } })
-            .pipe(
-                catchError(err => {
-                    console.log(err);
-                    return of(err)
-                })
-            ));
-        expect(a.status).toEqual(400);
-    })
+        const response = await lastValueFrom(
+            client.get('/device/-1/used', { observe: 'response', params: { age: '20' } }).pipe(
+                catchError(err => of(err as HttpResult))
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(400);
+    });
 
     it('post route response object', async () => {
-        const a = await lastValueFrom(ctx.resolve(HttpClient).post<any>('/device/init', null, { observe: 'response', params: { name: 'test' } }));
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toBeDefined();
-        expect(a.body.name).toEqual('test');
+        const response = await lastValueFrom(
+            client.post<{ name: string }>('/device/init', null, { observe: 'response', params: { name: 'test' } })
+        ) as Response<{ name: string }>;
+        const body = response.body!;
+        expect(response.status).toEqual(200);
+        expect(response.ok).toBeTruthy();
+        expect(body.name).toEqual('test');
     });
 
     it('post route response string', async () => {
-        const b = await lastValueFrom(ctx.resolve(HttpClient).post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } })
-            .pipe(
-                catchError((err, ct) => {
+        const response = await lastValueFrom(
+            client.post('/device/update', null, { observe: 'response', responseType: 'text', params: { version: '1.0.0' } }).pipe(
+                catchError(err => {
                     ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(b.status).toEqual(200);
-        expect(b.ok).toBeTruthy();
-        expect(b.body).toEqual('1.0.0');
+                    return of(err as HttpResult<string>);
+                })
+            )
+        ) as HttpResult<string>;
+        assertResponse(response);
+        expect(response.status).toEqual(200);
+        expect(response.ok).toBeTruthy();
+        expect(response.body).toEqual('1.0.0');
     });
 
     it('route with request body pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(HttpClient).post<any>('/device/usage', { id: 'test1', age: '50', createAt: '2021-10-01' }, { observe: 'response' }));
-        // a.error && console.log(a.error);
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toBeDefined();
-        expect(a.body.year).toStrictEqual(50);
-        expect(new Date(a.body.createAt)).toEqual(new Date('2021-10-01'));
-    })
+        const response = await lastValueFrom(
+            client.post<{ year: number; createAt: string }>('/device/usage', { id: 'test1', age: '50', createAt: '2021-10-01' }, { observe: 'response' })
+        ) as Response<{ year: number; createAt: string }>;
+        const body = response.body!;
+        expect(response.status).toEqual(200);
+        expect(response.ok).toBeTruthy();
+        expect(body.year).toStrictEqual(50);
+        expect(new Date(body.createAt)).toEqual(new Date('2021-10-01'));
+    });
 
     it('route with request body pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).post('/device/usage', {}, { observe: 'response' })
-            .pipe(
-                catchError((err, ct) => {
+        const response = await lastValueFrom(
+            client.post('/device/usage', {}, { observe: 'response' }).pipe(
+                catchError(err => {
                     ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
-    })
+                    return of(err as HttpResult);
+                })
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(400);
+    });
 
     it('route with request body pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).post('/device/usage', { id: 'test1', age: 'test', createAt: '2021-10-01' }, { observe: 'response' })
-            .pipe(
-                catchError((err, ct) => {
+        const response = await lastValueFrom(
+            client.post('/device/usage', { id: 'test1', age: 'test', createAt: '2021-10-01' }, { observe: 'response' }).pipe(
+                catchError(err => {
                     ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
-    })
+                    return of(err as HttpResult);
+                })
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(400);
+    });
 
     it('route with request param pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toStrictEqual(20);
-    })
+        const response = await lastValueFrom(
+            client.get<number>('/device/usege/find', { observe: 'response', params: { age: '20' } })
+        ) as Response<number>;
+        expect(response.status).toEqual(200);
+        expect(response.ok).toBeTruthy();
+        expect(response.body).toStrictEqual(20);
+    });
 
     it('route with request param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response' })
-            .pipe(
-                catchError((err, ct) => {
+        const response = await lastValueFrom(
+            client.get('/device/usege/find', { observe: 'response' }).pipe(
+                catchError(err => {
                     ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(MissingParameterError)
-    })
+                    return of(err as HttpResult);
+                })
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(400);
+    });
 
     it('route with request param pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/usege/find', { observe: 'response', params: { age: 'test' } })
-            .pipe(
-                catchError((err, ct) => {
+        const response = await lastValueFrom(
+            client.get('/device/usege/find', { observe: 'response', params: { age: 'test' } }).pipe(
+                catchError(err => {
                     ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(ArgumentError)
-    })
+                    return of(err as HttpResult);
+                })
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(400);
+    });
 
-    it('route with request param pipe', async () => {
-        const a = await lastValueFrom(ctx.resolve(HttpClient).get('/device/30/used', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
-        expect(a.ok).toBeTruthy();
-        expect(a.body).toStrictEqual(30);
-    })
+    it('route with request restful param pipe', async () => {
+        const response = await lastValueFrom(
+            client.get<number>('/device/30/used', { observe: 'response', params: { age: '20' } })
+        ) as Response<number>;
+        expect(response.status).toEqual(200);
+        expect(response.ok).toBeTruthy();
+        expect(response.body).toStrictEqual(30);
+    });
 
     it('route with request restful param pipe throw missing argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device//used', { observe: 'response', params: { age: '20' } })
-            .pipe(
-                catchError((err, ct) => {
+        const response = await lastValueFrom(
+            client.get('/device//used', { observe: 'response', params: { age: '20' } }).pipe(
+                catchError(err => {
                     ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(404);
-        // expect(r.error).toBeInstanceOf(MissingParameterError);
-    })
+                    return of(err as HttpResult);
+                })
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(404);
+    });
 
     it('route with request restful param pipe throw argument err', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/age1/used', { observe: 'response', params: { age: '20' } })
-            .pipe(
-                catchError((err, ct) => {
+        const response = await lastValueFrom(
+            client.get('/device/age1/used', { observe: 'response', params: { age: '20' } }).pipe(
+                catchError(err => {
                     ctx.getLogger().error(err);
-                    return of(err);
-                })));
-        expect(r.status).toEqual(400);
-        // expect(r.error).toBeInstanceOf(ArgumentError);
-    })
-
+                    return of(err as HttpResult);
+                })
+            )
+        ) as HttpResult;
+        expect(response.status).toEqual(400);
+    });
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(
-            ctx.resolve(HttpClient).get('/device/status', { observe: 'response', responseType: 'text' })
-                .pipe(
-                    catchError(err=> {
-                        console.log(err);
-                        return err;
-                    })
-                )
-        ) as any;
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual('working');
-    })
+        const response = await lastValueFrom(
+            client.get('/device/status', { observe: 'response', responseType: 'text' }).pipe(
+                catchError(err => {
+                    ctx.getLogger().error(err);
+                    return of(err as HttpResult<string>);
+                })
+            )
+        ) as HttpResult<string>;
+        assertResponse(response);
+        expect(response.status).toEqual(200);
+        expect(response.body).toEqual('working');
+    });
 
     it('redirect', async () => {
-        const result = 'reload';
-        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
-        expect(r.status).toEqual(200);
-        expect(r.body).toEqual(result);
-    })
-
-    after(() => {
-        return ctx.destroy();
-    })
+        const response = await lastValueFrom(
+            client.get('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
+                catchError(err => {
+                    ctx.getLogger().error(err);
+                    return of(err as HttpResult<string>);
+                })
+            )
+        ) as HttpResult<string>;
+        expect(response.status).toEqual(302);
+        expect((response.headers as any)?.location).toEqual('/device/reload');
+    });
 });

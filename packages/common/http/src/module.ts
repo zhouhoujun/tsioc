@@ -1,14 +1,46 @@
 import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
+import { HTTP_COMMON_INTERCEPTORS, NoopInterceptor } from './interceptor';
+import { JsonpCallbackContext, JsonpClientBackend, JsonpInterceptor } from './jsonp';
 import {
     provideHttpClient,
     provideLegacyHttpClientFeatures,
-    provideLegacyHttpClientJsonp,
-    provideLegacyHttpClientNoXsrfProtection,
-    provideLegacyHttpClientXsrf,
+    HttpXsrfOptions,
     LegacyHttpClientOptions,
     withInterceptorsFromDi,
     withXsrfConfiguration
 } from './provider';
+import { HttpXsrfCookieExtractor, HttpXsrfInterceptor, HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_HEADER_NAME } from './xsrf';
+
+function provideLegacyHttpClientXsrf(options: HttpXsrfOptions = {}): Provider[] {
+    return [
+        HttpXsrfInterceptor,
+        { provide: HTTP_COMMON_INTERCEPTORS, useExisting: HttpXsrfInterceptor, multi: true },
+        { provide: HttpXsrfTokenExtractor, useClass: HttpXsrfCookieExtractor },
+        { provide: XSRF_COOKIE_NAME, useValue: options.cookieName ?? 'XSRF-TOKEN' },
+        { provide: XSRF_HEADER_NAME, useValue: options.headerName ?? 'X-XSRF-TOKEN' },
+    ];
+}
+
+function provideLegacyHttpClientNoXsrfProtection(): Provider[] {
+    return [
+        { provide: HttpXsrfInterceptor, useClass: NoopInterceptor }
+    ];
+}
+
+function provideLegacyJsonpCallbackContext(): Object {
+    if (typeof window === 'object') {
+        return window;
+    }
+    return {};
+}
+
+function provideLegacyHttpClientJsonp(): Provider[] {
+    return [
+        JsonpClientBackend,
+        { provide: JsonpCallbackContext, useFactory: provideLegacyJsonpCallbackContext },
+        { provide: HTTP_COMMON_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
+    ];
+}
 
 
 

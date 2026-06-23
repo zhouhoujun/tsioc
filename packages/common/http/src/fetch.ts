@@ -1,6 +1,6 @@
 /* eslint-disable no-constant-condition */
 /* eslint-disable no-case-declarations */
-import { Injectable, lang } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { HeaderMappings, HttpStatusCode, RequestContext } from '@tsdi/common';
 import { Observable, Observer } from 'rxjs';
 import { HttpBackend } from './handler';
@@ -94,35 +94,31 @@ export class FetchBackend implements HttpBackend {
       let partialText: string | undefined;
 
 
-      lang.nextTick(async () => {
-        while (true) {
-          const result = await reader.read();
+      while (true) {
+        const result = await reader.read();
 
-          if (result.done) {
-            break;
-          }
-
-          chunks.push(result.value);
-          receivedLength += result.value.length;
-
-          if (request.reportProgress) {
-            partialText =
-              request.responseType === 'text'
-                ? (partialText ?? '') +
-                (decoder ??= new TextDecoder()).decode(result.value, { stream: true })
-                : undefined;
-
-            const reportProgress = () =>
-              observer.next({
-                type: HttpEventType.DownloadProgress,
-                total: contentLength ? +contentLength : undefined,
-                loaded: receivedLength,
-                partialText,
-              } as HttpDownloadProgressEvent);
-            lang.nextTick(reportProgress);
-          }
+        if (result.done) {
+          break;
         }
-      });
+
+        chunks.push(result.value);
+        receivedLength += result.value.length;
+
+        if (request.reportProgress) {
+          partialText =
+            request.responseType === 'text'
+              ? (partialText ?? '') +
+              (decoder ??= new TextDecoder()).decode(result.value, { stream: true })
+              : undefined;
+
+          observer.next({
+            type: HttpEventType.DownloadProgress,
+            total: contentLength ? +contentLength : undefined,
+            loaded: receivedLength,
+            partialText,
+          } as HttpDownloadProgressEvent);
+        }
+      }
 
       // Combine all chunks.
       const chunksAll = this.concatChunks(chunks, receivedLength);
@@ -208,7 +204,9 @@ export class FetchBackend implements HttpBackend {
     const credentials: RequestCredentials | undefined = req.withCredentials ? 'include' : undefined;
 
     // Setting all the requested headers.
-    req.headers.forEach((name, values) => (headers[name] = (values as string[]).join(',')));
+    req.headers.forEach((name, values) => {
+      headers[name] = Array.isArray(values) ? values.join(',') : String(values);
+    });
 
     // Add an Accept header if one isn't present already.
     if (!req.headers.has(ACCEPT_HEADER)) {

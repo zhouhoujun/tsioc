@@ -5,7 +5,6 @@ import { HttpBackend, HttpHandler } from './handler';
 import {
     HttpInterceptorFn,
     HttpInterceptingHandler,
-    HTTP_COMMON_INTERCEPTORS,
     HTTP_FEATURE_INTERCEPTORS,
     HTTP_INCLUDE_LEGACY_INTERCEPTORS,
     NoopInterceptor
@@ -217,46 +216,22 @@ function jsonpCallbackContext(): Object {
     return {};
 }
 
-export function provideHttpClientXsrf(options: HttpXsrfOptions = {}): Provider[] {
+function provideHttpClientXsrf(options: HttpXsrfOptions = {}): Provider[] {
     return createXsrfProviders({
         cookieName: options.cookieName ?? 'XSRF-TOKEN',
         headerName: options.headerName ?? 'X-XSRF-TOKEN'
     });
 }
 
-export function provideHttpClientNoXsrfProtection(): Provider[] {
+function provideHttpClientNoXsrfProtection(): Provider[] {
     return createXsrfProviders(false);
 }
 
-export function provideHttpClientJsonp(): Provider[] {
+function provideHttpClientJsonp(): Provider[] {
     return [
         JsonpClientBackend,
         { provide: JsonpCallbackContext, useFactory: jsonpCallbackContext },
         { provide: HTTP_FEATURE_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
-    ];
-}
-
-export function provideLegacyHttpClientXsrf(options: HttpXsrfOptions = {}): Provider[] {
-    return [
-        HttpXsrfInterceptor,
-        { provide: HTTP_COMMON_INTERCEPTORS, useExisting: HttpXsrfInterceptor, multi: true },
-        { provide: HttpXsrfTokenExtractor, useClass: HttpXsrfCookieExtractor },
-        { provide: XSRF_COOKIE_NAME, useValue: options.cookieName ?? 'XSRF-TOKEN' },
-        { provide: XSRF_HEADER_NAME, useValue: options.headerName ?? 'X-XSRF-TOKEN' },
-    ];
-}
-
-export function provideLegacyHttpClientNoXsrfProtection(): Provider[] {
-    return [
-        { provide: HttpXsrfInterceptor, useClass: NoopInterceptor }
-    ];
-}
-
-export function provideLegacyHttpClientJsonp(): Provider[] {
-    return [
-        JsonpClientBackend,
-        { provide: JsonpCallbackContext, useFactory: jsonpCallbackContext },
-        { provide: HTTP_COMMON_INTERCEPTORS, useClass: JsonpInterceptor, multi: true },
     ];
 }
 
