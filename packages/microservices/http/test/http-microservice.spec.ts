@@ -2,6 +2,7 @@ import { HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTI
 import { HttpMessageAdapter } from '../src/server/message-adapter';
 import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
+import { BodySerializeStrategy, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor, SERVICE_STATICS_OPTIONS } from '@tsdi/service';
@@ -9,7 +10,12 @@ import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
 import { createInjector } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
 import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
-import { of } from 'rxjs';
+import { HttpModule } from '../src/http.module';
+import { HttpBodySerializeStrategy } from '../src/client/strategies/HttpBodySerializeStrategy';
+import { HttpTimeoutStrategy } from '../src/client/strategies/HttpTimeoutStrategy';
+import { lastValueFrom, of } from 'rxjs';
+import * as http from 'node:http';
+import { EventEmitter } from 'node:events';
 import expect = require('expect');
 
 describe('HTTP Microservice', () => {
@@ -37,6 +43,14 @@ describe('HTTP Microservice', () => {
         });
     });
 
+    describe('HttpModule strategy bindings', () => {
+        it('binds abstract client strategies to HTTP implementations', () => {
+            const injector = createInjector([HttpModule] as any);
+            expect(injector.get(BodySerializeStrategy)).toBeInstanceOf(HttpBodySerializeStrategy);
+            expect(injector.get(TimeoutStrategy)).toBeInstanceOf(HttpTimeoutStrategy);
+        });
+    });
+
     describe('withHttpTransport', () => {
         it('should create client transport feature with default values', () => {
             const features = withHttpTransport({ url: 'http://localhost:3000' });
@@ -60,6 +74,46 @@ describe('HTTP Microservice', () => {
         it('should mark transport as default when requested', () => {
             const feature = withHttpTransport({ url: 'http://localhost:3000', asDefault: true })[0];
             expect(feature.config.asDefault).toBe(true);
+        });
+
+        it('serializes request body through BodySerializeStrategy before sending', async () => {
+            const feature = withHttpTransport({ url: 'http://localhost:3000', asDefault: true })[0];
+            const injector = createInjector([HttpModule, ...feature.providers] as any);
+            const backend = injector.get(getClientBackendToken(feature.config)) as (req: any, context: any) => any;
+            const context = createRequestContext(injector);
+            const request = new HttpRequest('/serialize', null, {
+                body: { hello: 'world' },
+                method: 'POST'
+            } as any);
+
+            const originalRequest = http.request;
+            let writtenBody = '';
+            let writtenHeaders: Record<string, any> = {};
+            (http as any).request = (_target: URL, options: http.RequestOptions) => {
+                writtenHeaders = { ...(options.headers as Record<string, any> ?? {}) };
+                const reqEmitter = new EventEmitter() as any;
+                reqEmitter.end = (chunk?: any) => {
+                    writtenBody = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk ?? '');
+                    const resEmitter = new EventEmitter() as any;
+                    resEmitter.statusCode = 200;
+                    resEmitter.statusMessage = 'OK';
+                    resEmitter.headers = { 'content-type': 'application/json' };
+                    reqEmitter.emit('response', resEmitter);
+                    resEmitter.emit('data', Buffer.from('{"ok":true}', 'utf8'));
+                    resEmitter.emit('end');
+                };
+                reqEmitter.destroy = () => undefined;
+                return reqEmitter;
+            };
+
+            try {
+                const result = await lastValueFrom(backend(request, context));
+                expect(result).toEqual({ ok: true });
+                expect(writtenBody).toBe('{"hello":"world"}');
+                expect(writtenHeaders['content-type']).toBe('application/json');
+            } finally {
+                (http as any).request = originalRequest;
+            }
         });
     });
 

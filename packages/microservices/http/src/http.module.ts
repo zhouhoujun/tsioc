@@ -1,11 +1,10 @@
 import { Module } from '@tsdi/ioc';
-import { BodySerializeStrategy, ClientTransportStrategy } from '@tsdi/client';
+import { BodySerializeStrategy, TimeoutStrategy } from '@tsdi/client';
 import { BodyParserInterceptor as AbstractBodyParserInterceptor, ContentInterceptor as AbstractContentInterceptor, CookieInterceptor as AbstractCookieInterceptor, JsonInterceptor as AbstractJsonInterceptor, SessionInterceptor as AbstractSessionInterceptor } from '@tsdi/service';
 import { HttpClient } from './client/client';
 import { HttpServer } from './server/http-server';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpBodySerializeStrategy } from './client/strategies/HttpBodySerializeStrategy';
-import { HttpTransportStrategy } from './client/strategies/HttpTransportStrategy';
 import { HttpTimeoutStrategy } from './client/strategies/HttpTimeoutStrategy';
 import { Cors } from './server/interceptors/cors';
 import { HelmetMiddleware } from './server/interceptors/helmet';
@@ -21,9 +20,8 @@ import { HttpJsonInterceptor } from './server/interceptors/json';
     providers: [
         HttpResponseEventFactory,
         { provide: BodySerializeStrategy, useClass: HttpBodySerializeStrategy },
-        { provide: ClientTransportStrategy, useClass: HttpTransportStrategy },
+        { provide: TimeoutStrategy, useClass: HttpTimeoutStrategy },
         HttpBodySerializeStrategy,
-        HttpTransportStrategy,
         HttpTimeoutStrategy,
         CsrfTokensFactory,
         { provide: AbstractContentInterceptor, useClass: HttpContentInterceptor },

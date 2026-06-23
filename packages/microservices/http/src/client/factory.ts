@@ -1,6 +1,6 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, ContentType } from '@tsdi/common';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, BodySerializeStrategy, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
 import * as http from 'node:http';
@@ -55,11 +55,21 @@ export function withHttpTransport(...options: Partial<HttpClientOptions>[]): Cli
 function createHttpBackend(config: HttpClientOptions) {
     return (req: any, context: any) => new Observable<any>((observer: any) => {
         const client = context.get(HttpClient) as HttpClient | undefined;
-        const body = req.body ?? req.payload ?? null;
+        const rawBody = req.body ?? req.payload ?? null;
         const url = req.getUrlWithParams?.() ?? req.url;
         const baseUrl = config.authority ?? config.url ?? 'http://127.0.0.1';
         const target = new URL(url, baseUrl);
-        const headers = { ...(req.headers?.getHeaders?.() ?? {}) };
+        const bodySerializeStrategy = context.has(BodySerializeStrategy) ? context.get(BodySerializeStrategy) as BodySerializeStrategy : null;
+        const body = rawBody != null && bodySerializeStrategy?.canHandle(rawBody)
+            ? bodySerializeStrategy.serialize(rawBody, context)
+            : rawBody;
+        const headers = { ...(req.headers?.getHeaders?.() ?? {}) } as Record<string, any>;
+        if (!headers['content-type'] && rawBody != null && bodySerializeStrategy?.canHandle(rawBody)) {
+            const detectedContentType = bodySerializeStrategy.detectContentType(rawBody);
+            if (detectedContentType) {
+                headers['content-type'] = detectedContentType;
+            }
+        }
         const finish = (statusCode: number, statusMessage: string, responseHeaders: Record<string, any>, responseBody: any) => {
             const response = {
                 url: target.toString(),

@@ -66,7 +66,7 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         if (first instanceof HttpRequest) return first;
         const defaultMethod = this.options.microservice ? undefined : 'GET';
         if (isString(first)) return new HttpRequest(first, null, options, defaultMethod);
-        else return new HttpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
+        return new HttpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
     }
 
     protected override request(first: Pattern | HttpRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {

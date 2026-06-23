@@ -1,5 +1,6 @@
 import { RequestContext, RequestHandlerFn, RequestInterceptorFn, ResponseFactory } from '@tsdi/common';
-import { catchError, throwError, timeout } from 'rxjs';
+import { catchError, throwError, timeout, TimeoutError } from 'rxjs';
+import { TimeoutStrategy } from '../strategies/TimeoutStrategy';
 
 /**
  * Request timeout interceptor.
@@ -13,7 +14,11 @@ import { catchError, throwError, timeout } from 'rxjs';
  */
 export function requestTimeoutInterceptor(milliseconds?: number): RequestInterceptorFn {
     return (input: any, next: RequestHandlerFn, context: RequestContext) => {
-        const timeoutMs = input?.timeout ?? milliseconds;
+        const strategy = context.getInjector().get(TimeoutStrategy, null) as TimeoutStrategy | null;
+        if (strategy && !strategy.shouldApplyTimeout(context)) {
+            return next(input, context);
+        }
+        const timeoutMs = input?.timeout ?? milliseconds ?? strategy?.getTimeout();
         if (timeoutMs == null || timeoutMs === Infinity) {
             return next(input, context);
         }
@@ -21,9 +26,12 @@ export function requestTimeoutInterceptor(milliseconds?: number): RequestInterce
             .pipe(
                 timeout(timeoutMs),
                 catchError(err => {
-                    if (err.name == 'TimeoutError') {
+                    if (err instanceof TimeoutError || err?.name === 'TimeoutError') {
+                        const timeoutError = strategy
+                            ? strategy.handleTimeout(strategy.createTimeoutError(timeoutMs), context)
+                            : err;
                         const factory = context.get(ResponseFactory);
-                        return throwError(() => factory ? factory.create({ headers: {}, error: err, ok: false }) : err);
+                        return throwError(() => factory ? factory.create({ headers: {}, error: timeoutError, ok: false }) : timeoutError);
                     }
                     return throwError(() => err);
                 })

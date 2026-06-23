@@ -40,12 +40,6 @@ export abstract class TimeoutStrategy {
 }
 
 /**
- * Timeout strategy token.
- * 时策略令牌
- */
-export const TIMEOUT_STRATEGY = 'TIMEOUT_STRATEGY';
-
-/**
  * Default timeout in milliseconds.
  * 默认超时时间（毫秒）
  */
