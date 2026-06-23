@@ -88,7 +88,7 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
             ? input
             : Buffer.from(JSON.stringify(serializeRequest({ ...request, id: requestId }, formatter, 'payload')));
 
-        if (request.observe === 'emit') {
+        if (request.observe === 'events') {
             producer.send({ topic, messages: [{ value: payload }] })
                 .then(() => {
                     observer.next({ type: 0 } as ResponseEventPacket);

@@ -99,6 +99,7 @@ function createNatsClientBackend(_config: NatsClientOptions) {
         }
 
         const sc = StringCodec();
+        const replyRequest = request as NatsRequest<any> & { responseTopic?: string };
         const subject = request.url;
         const requestId = request.id ?? `${Date.now()}-${Math.random()}`;
         const formatter = context.get(PatternFormatter, defaultFormatter);
@@ -106,7 +107,7 @@ function createNatsClientBackend(_config: NatsClientOptions) {
             ? input
             : JSON.stringify(serializeRequest({ ...request, id: requestId }, formatter, 'payload'));
 
-        if (request.observe === 'emit') {
+        if (request.observe === 'events') {
             nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload);
             observer.next({ type: 0 } as ResponseEventPacket);
             observer.complete();
@@ -114,7 +115,7 @@ function createNatsClientBackend(_config: NatsClientOptions) {
         }
 
         if (request.observe === 'observe') {
-            const inbox = request.responseTopic ?? `_INBOX.tsdi.${requestId}`;
+            const inbox = replyRequest.responseTopic ?? `_INBOX.tsdi.${requestId}`;
             const sub = nc.subscribe(inbox);
             let closed = false;
             (async () => {

@@ -15,7 +15,7 @@ export interface ResponseAs {
     /**
      * response observe type
      */
-    observe?: 'body' | 'events' | 'response' | 'emit' | 'observe';
+    observe?: 'body' | 'events' | 'response' | 'observe';
     /**
      * response data type.
      */
@@ -109,7 +109,7 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
      * the requestee.
      */
     abstract get responseType(): 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-    abstract get observe(): 'body' | 'events' | 'response' | 'emit' | 'observe';
+    abstract get observe(): 'body' | 'events' | 'response' | 'observe';
     /**
      * Whether this request should be sent with outgoing credentials (cookies).
      */
@@ -245,7 +245,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
     readonly headers: HeaderMappings;
     readonly params: RequestParams;
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-    readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
+    readonly observe: 'body' | 'events' | 'response' | 'observe';
     readonly withCredentials: boolean | undefined;
     readonly payload: T | null;
     readonly forceJson: boolean;

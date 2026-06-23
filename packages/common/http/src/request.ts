@@ -91,7 +91,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
     readonly withCredentials: boolean = false;
 
 
-    readonly observe: 'body' | 'events' | 'response' | 'observe' | 'emit';
+    readonly observe: 'body' | 'events' | 'response' | 'observe';
 
     readonly forceJson: boolean;
     /**

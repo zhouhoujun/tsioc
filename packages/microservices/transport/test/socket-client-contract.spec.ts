@@ -48,7 +48,7 @@ describe('socket client contract', () => {
     it('returns ResponseEventPacket for emit', async () => {
         const handler = createBackend();
         const socket = new FakeSocket();
-        const request = new TcpRequest('/topic.emit', null, { observe: 'emit' } as any, 'POST');
+        const request = new TcpRequest('/topic.emit', null, { observe: 'events' } as any, 'POST');
 
         const result = await lastValueFrom(handler.handle(request, createContext(request, socket)));
         expect(result).toEqual({ type: 0 });

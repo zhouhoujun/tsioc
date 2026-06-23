@@ -424,7 +424,7 @@ describe('UDP pattern routing', () => {
 
     it('returns ResponseEventPacket for emit observe', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'emit' }, {
-            observe: 'emit',
+            observe: 'events',
             payload: { msg: 'hello' },
             timeout: 50
         } as any));

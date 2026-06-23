@@ -139,7 +139,7 @@ function createMqttClientBackend(config: MqttClientOptions) {
             observer.complete();
         };
 
-        if (request.observe === 'emit') {
+        if (request.observe === 'events') {
             publishMessage(client, topic, payload)
                 .then(() => {
                     observer.next({ type: 0 } as ResponseEventPacket);

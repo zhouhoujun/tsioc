@@ -127,7 +127,7 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
             fn();
         };
 
-        if (request.observe === 'emit') {
+        if (request.observe === 'events') {
             channel.publish(exchange, routingKey, publishPayload, { correlationId });
             finish(() => {
                 observer.next({ type: 0 } as ResponseEventPacket);

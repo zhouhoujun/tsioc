@@ -192,7 +192,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
 
     it('should return ResponseEventPacket for emit observe', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'emit' }, {
-            observe: 'emit',
+            observe: 'events',
             payload: { message: 'hello tcp' },
             timeout: 50
         } as any));

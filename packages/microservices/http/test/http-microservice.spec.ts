@@ -7,8 +7,9 @@ import { Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor, SERVICE_STATICS_OPTIONS } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
-import { createInjector } from '@tsdi/ioc';
+import { createInjector, importProvidersFrom } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
+import { HttpRequest } from '../src/client/request';
 import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
 import { HttpModule } from '../src/http.module';
 import { HttpBodySerializeStrategy } from '../src/client/strategies/HttpBodySerializeStrategy';
@@ -45,7 +46,7 @@ describe('HTTP Microservice', () => {
 
     describe('HttpModule strategy bindings', () => {
         it('binds abstract client strategies to HTTP implementations', () => {
-            const injector = createInjector([HttpModule] as any);
+            const injector = createInjector([importProvidersFrom(HttpModule)] as any);
             expect(injector.get(BodySerializeStrategy)).toBeInstanceOf(HttpBodySerializeStrategy);
             expect(injector.get(TimeoutStrategy)).toBeInstanceOf(HttpTimeoutStrategy);
         });
@@ -78,13 +79,26 @@ describe('HTTP Microservice', () => {
 
         it('serializes request body through BodySerializeStrategy before sending', async () => {
             const feature = withHttpTransport({ url: 'http://localhost:3000', asDefault: true })[0];
-            const injector = createInjector([HttpModule, ...feature.providers] as any);
-            const backend = injector.get(getClientBackendToken(feature.config)) as (req: any, context: any) => any;
-            const context = createRequestContext(injector);
+            const injector = createInjector([importProvidersFrom(HttpModule), ...feature.providers] as any);
+            const [backend] = injector.get(getClientBackendToken(feature.config)) as unknown as Array<(req: any, context: any) => any>;
             const request = new HttpRequest('/serialize', null, {
                 body: { hello: 'world' },
                 method: 'POST'
             } as any);
+            const context = {
+                get(token: any) {
+                    if (token === BodySerializeStrategy) {
+                        return injector.get(BodySerializeStrategy);
+                    }
+                    if (token === HttpClient) {
+                        return undefined;
+                    }
+                    return injector.get(token);
+                },
+                has(token: any) {
+                    return token === BodySerializeStrategy || token === HttpClient ? true : injector.has(token);
+                }
+            } as any;
 
             const originalRequest = http.request;
             let writtenBody = '';

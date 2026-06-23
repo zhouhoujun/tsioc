@@ -43,7 +43,7 @@ export abstract class AbstractClient<
         responseType?: 'json';
     }): Observable<R>;
     send<R = any>(pattern: Pattern, options: TReqOptions & {
-        observe: 'response' | 'emit' | 'observe';
+        observe: 'response' | 'events' | 'observe';
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     }): Observable<R>;
     send(req: TRequest): Observable<TResponse>;

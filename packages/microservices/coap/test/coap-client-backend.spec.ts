@@ -59,7 +59,7 @@ describe('CoAP client backend', () => {
         const fake = new FakeCoapRequest();
         require('coap').request = () => fake;
 
-        const request = new CoapRequest('/topic.emit', null, { observe: 'emit' } as any, 'POST');
+        const request = new CoapRequest('/topic.emit', null, { observe: 'events' } as any, 'POST');
         const result: any = await lastValueFrom(backend('payload', createContext(request)));
 
         expect(result).toEqual({ type: 0 });

@@ -111,7 +111,7 @@ function createRedisClientBackend(config: RedisClientOptions) {
             ? JSON.stringify({ id: requestId, payload: input })
             : JSON.stringify(serializeRequest({ ...request, id: requestId }, formatter, 'payload'));
 
-        if (request.observe === 'emit') {
+        if (request.observe === 'events') {
             client.publish(channel, payload)
                 .then(() => {
                     observer.next({ type: 0 } as ResponseEventPacket);

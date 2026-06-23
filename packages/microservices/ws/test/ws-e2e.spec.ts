@@ -206,7 +206,7 @@ class WsPatternService {
     echo(@Payload() msg: string) { return msg; }
 
     @Handle({ cmd: 'emit' }, Transport.WS)
-    emitOnly(@Payload() _msg: string) { return null; }
+    emitOnly() { return null; }
 
     @Handle({ cmd: 'stream' }, Transport.WS)
     stream(@Payload() msg: string) {
@@ -263,7 +263,7 @@ describe('WS pattern routing', () => {
     it('returns ResponseEventPacket for emit observe', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'emit' }, {
             payload: { msg: 'hello' },
-            observe: 'emit',
+            observe: 'events',
             timeout: 50
         } as any));
         expect(result).toEqual({ type: 0 });

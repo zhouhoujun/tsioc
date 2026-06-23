@@ -166,7 +166,7 @@ function createCoapClientBackend(config: CoapClientOptions) {
         });
         client.on('error', (err: Error) => finish(() => observer.error(err)));
 
-        if (request.observe === 'emit') {
+        if (request.observe === 'events') {
             if (payload != null) {
                 client.write(payload);
             }

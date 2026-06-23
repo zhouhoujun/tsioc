@@ -13,6 +13,9 @@ import { Socket } from './socket';
 
 export function packetIdMessage(config: TransferConfig, options: TransferOptions): RequestInterceptorFn {
     return config.side === TransferSide.client ? (req, next, context) => {
+        if (req.observe === 'events') {
+            return next(req, context).pipe(take(1));
+        }
 
         if (!req.id) {
             req.id = context.get(PacketIdGenerator).getPacketId();
@@ -45,7 +48,6 @@ export function packetIdMessage(config: TransferConfig, options: TransferOptions
                     if (res?.error || res?.ok === false || (isNumber(status) && status >= 400)) {
                         return throwError(() => new ErrorResponse({
                             status,
-                            statusCode: status,
                             statusMessage: res?.statusMessage ?? res?.statusText ?? res?.error?.statusMessage ?? res?.error?.message,
                             statusText: res?.statusText ?? res?.statusMessage ?? res?.error?.statusMessage ?? res?.error?.message,
                             headers: res?.headers ?? {},
@@ -110,7 +112,7 @@ export function createSendMessageBackend(eventName: string = Events.DATA, socket
         return defer(() => writePacket(currSocket, req, context.get(StreamAdapter)))
             .pipe(
                 mergeMap(r => {
-                    if (context.get(AbstractRequest)?.observe === 'emit') return of({ type: 0 });
+                    if (context.get(AbstractRequest)?.observe === 'events') return of({ type: 0 });
                     return source$
                 })
             )

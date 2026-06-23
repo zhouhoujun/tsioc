@@ -60,7 +60,7 @@ describe('AMQP client backend', () => {
     it('returns ResponseEventPacket for emit', async () => {
         const backend = createBackend();
         const socket = new FakeChannel();
-        const request = new AmqpRequest('topic.emit', null, { observe: 'emit' } as any, 'PUBLISH');
+        const request = new AmqpRequest('topic.emit', null, { observe: 'events' } as any, 'PUBLISH');
         const result: any = await lastValueFrom(backend('payload', createContext(request, socket)));
 
         expect(result).toEqual({ type: 0 });

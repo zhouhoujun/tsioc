@@ -82,7 +82,7 @@ describe('Kafka client backend', () => {
     it('returns ResponseEventPacket for emit after producer send succeeds', async () => {
         const backend = createBackend();
         const producer = new FakeProducer();
-        const request = new KafkaRequest('topic.emit', null, { observe: 'emit' } as any, 'SEND');
+        const request = new KafkaRequest('topic.emit', null, { observe: 'events' } as any, 'SEND');
         const result: any = await lastValueFrom(backend('payload', createContext(request, producer)));
 
         expect(result).toEqual({ type: 0 });

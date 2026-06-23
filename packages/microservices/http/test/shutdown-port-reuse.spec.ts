@@ -8,9 +8,10 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { provideService, useRouter, Controller, Get } from '@tsdi/service';
 import { useHttpTransport } from '../src/server';
+import * as net from 'node:net';
 import expect = require('expect');
 
-const PORT = 3000;
+let PORT = 0;
 
 @Controller()
 class PingCtrl {
@@ -36,6 +37,17 @@ function createModule() {
 }
 
 describe('HTTP shutdown port release', () => {
+  before(async () => {
+    PORT = await new Promise<number>((resolve, reject) => {
+      const server = net.createServer();
+      server.once('error', reject);
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address() as net.AddressInfo;
+        server.close((err) => err ? reject(err) : resolve(address.port));
+      });
+    });
+  });
+
   it('should start first app on port ' + PORT, async () => {
     const ctx = await Application.run(createModule());
     expect(ctx).toBeDefined();

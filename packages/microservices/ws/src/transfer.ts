@@ -1,6 +1,6 @@
 import { AbstractRequest, MessageAdapter, PacketIdGenerator, PatternFormatter, RequestContext, RequestInterceptorFn, StatusMessageAdapter, TransferFilterFactory, TransferOptions, TransferSide, useCatch, Events, REQUEST, parseQueryString } from '@tsdi/common';
 import { Provider, toProvider } from '@tsdi/ioc';
-import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, of, timeout as rxTimeout } from 'rxjs';
+import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, of, timeout as rxTimeout, Subscription } from 'rxjs';
 import { PacketNumberIdGenerator, packetIdMessage } from '@tsdi/transport';
 import { SOCKET } from './context';
 
@@ -155,13 +155,20 @@ function wsClose(socket: any): Observable<any> {
 function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn {
     const eventName = options.eventName || Events.MESSAGE;
     return config.side === TransferSide.client ? (req: any, next: any, context: any) => {
-        return defer(() => {
+        return new Observable(observer => {
             const socket = context.get(SOCKET);
             if (!socket) {
-                throw new Error('no socket in context');
+                observer.error(new Error('no socket in context'));
+                return;
             }
             const payload = options.mapping ? options.mapping(req, context) : req;
             const message = typeof payload === 'string' ? payload : JSON.stringify(payload, options.replacer, options.space);
+            socket.send(message);
+            if (req?.observe === 'events') {
+                observer.next({ type: 0 });
+                observer.complete();
+                return;
+            }
             let response$ = wsEvent(socket, eventName).pipe(
                 takeUntil(race(wsClose(socket)).pipe(take(1))),
                 filter(r => r !== null && r !== undefined),
@@ -174,8 +181,8 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
             if (req?.timeout != null && req.timeout !== Infinity) {
                 response$ = response$.pipe(rxTimeout(req.timeout));
             }
-            socket.send(message);
-            return response$;
+            const subscription: Subscription = response$.subscribe(observer);
+            return () => subscription.unsubscribe();
         });
     } : (_input: any, next: any, context: any) => {
         const socket = context.get(SOCKET);
