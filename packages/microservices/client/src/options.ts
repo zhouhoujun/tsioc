@@ -250,4 +250,3 @@ export interface ClientOptions<TReq = any, TRes = any, TContext extends RequestC
     messageReaderFactory?: any;
     transportFeature?: (options: ClientOptions<TReq, TRes, TContext>, asDefault?: boolean) => ClientTransportFeature;
 }
-

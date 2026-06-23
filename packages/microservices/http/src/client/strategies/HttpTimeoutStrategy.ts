@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { ITimeoutStrategy, DEFAULT_TIMEOUT } from '@tsdi/client';
+import { TimeoutStrategy, DEFAULT_TIMEOUT } from '@tsdi/client';
 import { RequestContext } from '@tsdi/common';
 
 @Injectable()
-export class HttpTimeoutStrategy implements ITimeoutStrategy {
+export class HttpTimeoutStrategy implements TimeoutStrategy {
     getTimeout(): number {
         return DEFAULT_TIMEOUT;
     }

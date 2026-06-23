@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { IBodySerializeStrategy } from '@tsdi/client';
+import { BodySerializeStrategy } from '@tsdi/client';
 import { RequestContext } from '@tsdi/common';
 
 @Injectable()
-export class HttpBodySerializeStrategy implements IBodySerializeStrategy {
+export class HttpBodySerializeStrategy implements BodySerializeStrategy {
     serialize(body: any, _context: RequestContext): string | null {
         if (body == null) return null;
         if (typeof body === 'string' || body instanceof String) {

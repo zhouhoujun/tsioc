@@ -1,12 +1,12 @@
 import { Injectable } from '@tsdi/ioc';
-import { IClientTransportStrategy, CLIENT_TRANSPORT_STRATEGY } from '@tsdi/client';
+import { ClientTransportStrategy, CLIENT_TRANSPORT_STRATEGY } from '@tsdi/client';
 import { Pattern, RequestInitOpts } from '@tsdi/common';
 import { HttpRequest } from '../request';
 import { HttpClientOptions } from '../options';
 
 @Injectable()
 export class HttpTransportStrategy
-    implements IClientTransportStrategy<HttpRequest<any>, any, HttpClientOptions> {
+    implements ClientTransportStrategy<HttpRequest<any>, any, HttpClientOptions> {
 
     private _connected = false;
 

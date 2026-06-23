@@ -9,7 +9,7 @@ import { ClientConfig } from '../options';
  * 客户端传输策略接口，定义协议特定的连接、请求创建和生命周期操作
  */
 @Abstract()
-export abstract class IClientTransportStrategy<
+export abstract class ClientTransportStrategy<
     TRequest = any,
     TResponse extends ResponseEvent<any> = ResponseEvent<any>,
     TConfig extends ClientConfig = ClientConfig

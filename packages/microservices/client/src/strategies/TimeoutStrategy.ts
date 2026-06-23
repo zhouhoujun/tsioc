@@ -7,7 +7,7 @@ import { RequestContext } from '@tsdi/common';
  * 超时策略接口，定义不同协议的超时处理方式
  */
 @Abstract()
-export abstract class ITimeoutStrategy {
+export abstract class TimeoutStrategy {
 
     /**
      * Get the timeout duration in milliseconds.

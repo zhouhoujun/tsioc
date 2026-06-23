@@ -7,6 +7,7 @@ import {
 import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken } from './tokens';
 import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions, ClientFeature, ClientFeatureFn, ClientFeatureKind, ClientFeatureLike, ClientOptions, ClientTransportFeature } from './options';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
+import { loadBalanceInterceptor, circuitBreakerInterceptor, discoverInterceptor, retryInterceptor } from './interceptors/features';
 
 
 
@@ -92,10 +93,12 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
  */
 export function withDiscovery(options?: boolean | DiscoveryOptions): ClientFeatureFn<ClientFeatureKind.Discovery> {
     return (config) => {
+        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.Discovery,
             [
-                { provide: MICRO_CLIENT_DISCOVERY_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) }
+                { provide: MICRO_CLIENT_DISCOVERY_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
+                { provide: tk, useValue: discoverInterceptor, multi: true }
             ],
             config
         );
@@ -110,10 +113,12 @@ export function withDiscovery(options?: boolean | DiscoveryOptions): ClientFeatu
  */
 export function withLoadBalance(options?: boolean | LoadBalanceOptions): ClientFeatureFn<ClientFeatureKind.LoadBalance> {
     return (config) => {
+        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.LoadBalance,
             [
-                { provide: MICRO_CLIENT_LOADBALANCE_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) }
+                { provide: MICRO_CLIENT_LOADBALANCE_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
+                { provide: tk, useValue: loadBalanceInterceptor, multi: true }
             ],
             config
         );
@@ -128,10 +133,12 @@ export function withLoadBalance(options?: boolean | LoadBalanceOptions): ClientF
  */
 export function withCircuitBreaker(options?: boolean | CircuitBreakerOptions): ClientFeatureFn<ClientFeatureKind.CircuitBreaker> {
     return (config) => {
+        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.CircuitBreaker,
             [
-                { provide: MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) }
+                { provide: MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
+                { provide: tk, useValue: circuitBreakerInterceptor, multi: true }
             ],
             config
         );
@@ -146,10 +153,12 @@ export function withCircuitBreaker(options?: boolean | CircuitBreakerOptions): C
  */
 export function withRetry(options?: boolean | RetryOptions): ClientFeatureFn<ClientFeatureKind.Retry> {
     return (config) => {
+        const tk = getClientInterceptorsToken(config);
         return makeClientFeature(
             ClientFeatureKind.Retry,
             [
-                { provide: MICRO_CLIENT_RETRY_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) }
+                { provide: MICRO_CLIENT_RETRY_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
+                { provide: tk, useValue: retryInterceptor, multi: true }
             ],
             config
         );

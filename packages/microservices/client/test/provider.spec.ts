@@ -15,6 +15,7 @@ import {
     withTimeout
 } from '../src/provider';
 import { ClientFeatureKind } from '../src/options';
+import { getClientInterceptorsToken } from '../src/tokens';
 
 const createConfig = (name = 'alpha') => ({
     name,
@@ -86,6 +87,22 @@ describe('client provider', () => {
         expect(retry.providers[0].useValue).toEqual({});
         expect(breaker.providers[0].provide).toBe(MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS);
         expect(breaker.providers[0].useValue).toEqual({});
+    });
+
+    it('registers feature interceptors for discovery, load balance, circuit breaker and retry', () => {
+        const config = createConfig();
+        const interceptorToken = getClientInterceptorsToken(config);
+        const discovery = withDiscovery()(config) as any;
+        const loadBalance = withLoadBalance()(config) as any;
+        const breakerFeatures = withFeatures({ circuitBreaker: true })(config) as any[];
+        const retryFeatures = withFeatures({ retry: true })(config) as any[];
+        const breaker = breakerFeatures.find((feature: any) => feature.kind === ClientFeatureKind.CircuitBreaker);
+        const retry = retryFeatures.find((feature: any) => feature.kind === ClientFeatureKind.Retry);
+
+        expect(discovery.providers.some((provider: any) => provider.provide === interceptorToken)).toBe(true);
+        expect(loadBalance.providers.some((provider: any) => provider.provide === interceptorToken)).toBe(true);
+        expect(breaker.providers.some((provider: any) => provider.provide === interceptorToken)).toBe(true);
+        expect(retry.providers.some((provider: any) => provider.provide === interceptorToken)).toBe(true);
     });
 
     it('omits discovery and load balance features when disabled explicitly', () => {

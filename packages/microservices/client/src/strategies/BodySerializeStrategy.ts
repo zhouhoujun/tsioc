@@ -7,7 +7,7 @@ import { RequestContext, IStream, ContentType } from '@tsdi/common';
  * 请求体序列化策略接口，定义不同协议的请求体序列化方式
  */
 @Abstract()
-export abstract class IBodySerializeStrategy {
+export abstract class BodySerializeStrategy {
 
     /**
      * Serialize the body for transmission.
