@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, useRouter, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, ROUTERS } from '@tsdi/service';
+import { provideService, useRouter, useStatics, Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, ROUTERS } from '@tsdi/service';
 import { useHttpTransport, HttpFileResult } from '../src/server';
 import { withHttpTransport } from '../src/client';
 import { provideClient, withTimeout, withFeatures } from '@tsdi/client';
@@ -139,6 +139,33 @@ class HttpMatrixModule { }
         }))]
 })
 class HttpStaticModule { }
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(
+        useRouter(),
+        useStatics({ root: path.resolve(__dirname, 'fixtures') }),
+        useHttpTransport({
+            listenOpts: { port: PORTS.static + 10, host: '127.0.0.1' },
+            asDefault: true
+        }))]
+})
+class HttpUseStaticsModule { }
+
+@Module({
+    baseURL: __dirname,
+    imports: [LoggerModule],
+    declarations: [HttpTestController],
+    providers: [provideService(
+        useRouter(),
+        useStatics(),
+        useHttpTransport({
+            listenOpts: { port: PORTS.static + 11, host: '127.0.0.1' },
+            asDefault: true
+        }))]
+})
+class HttpUseStaticsDefaultModule { }
 
 @Module({
     imports: [LoggerModule],
@@ -503,6 +530,80 @@ describe('HTTP static/media support', () => {
         }, body);
         expect(response.status).toBe(200);
         expect(JSON.parse(response.body.toString('utf8'))).toEqual({ title: 'hello', filename: 'upload.txt', content: 'world' });
+    });
+});
+
+describe('HTTP static/media support via useStatics()', () => {
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(HttpUseStaticsModule);
+    });
+    after(async () => {
+        await ctx.close();
+    });
+
+    function request(method: string, targetPath: string): Promise<{ status: number; body: Buffer }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: PORTS.static + 10,
+                path: targetPath,
+                method
+            }, res => {
+                const chunks: Uint8Array[] = [];
+                res.on('data', chunk => chunks.push(Uint8Array.from(Buffer.from(chunk))));
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks) }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('should serve static file from public-like root configured by useStatics()', async () => {
+        const response = await request('GET', '/hello.txt');
+        expect(response.status).toBe(200);
+        expect(response.body.toString('utf8')).toBe('hello static world\n');
+    });
+});
+
+describe('HTTP static/media support via default public root', () => {
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(HttpUseStaticsDefaultModule);
+    });
+    after(async () => {
+        await ctx.close();
+    });
+
+    function request(method: string, targetPath: string): Promise<{ status: number; body: Buffer }> {
+        return new Promise((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: PORTS.static + 11,
+                path: targetPath,
+                method
+            }, res => {
+                const chunks: Uint8Array[] = [];
+                res.on('data', chunk => chunks.push(Uint8Array.from(Buffer.from(chunk))));
+                res.on('end', () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks) }));
+            });
+            req.on('error', reject);
+            req.end();
+        });
+    }
+
+    it('should serve static file from module public directory by default', async () => {
+        const response = await request('GET', '/hello-default.txt');
+        expect(response.status).toBe(200);
+        expect(response.body.toString('utf8')).toBe('hello default public\n');
+    });
+
+    it('should serve public index.html for root path by default', async () => {
+        const response = await request('GET', '/');
+        expect(response.status).toBe(200);
+        expect(response.body.toString('utf8')).toContain('default public index');
     });
 });
 

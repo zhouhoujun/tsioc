@@ -1,5 +1,5 @@
-import { Inject, Injectable, Optional, token, isNil } from '@tsdi/ioc';
-import { Interceptor, Handler } from '@tsdi/core';
+import { Inject, Injectable, Optional, token, isNil, Injector, ModuleRef } from '@tsdi/ioc';
+import { Interceptor, Handler, ApplicationContext } from '@tsdi/core';
 import {
     ContentSendAdapter, FileAdapter, GET, HEAD, Incoming, NotFoundException,
     Outgoing, ReadableLike, RequestContext, RestfulRequestAdapter, TopicIncoming, UrlIncoming, Header, HttpStatusCode, MimeAdapter
@@ -7,6 +7,7 @@ import {
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { HttpFileResult } from '../file-result';
 import { HttpStaticOptions } from '../options';
+import { SERVICE_STATICS_OPTIONS } from '@tsdi/service';
 
 export interface StaticsOptions extends HttpStaticOptions {
     defer?: boolean;
@@ -26,9 +27,10 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
 
     constructor(
         @Optional() @Inject(STATICS_OPTIONS) options: StaticsOptions,
+        @Optional() @Inject(SERVICE_STATICS_OPTIONS) serviceOptions: StaticsOptions,
         @Inject() private sender: ContentSendAdapter
     ) {
-        this.options = { ...defOpts, ...options };
+        this.options = { ...defOpts, ...serviceOptions, ...options };
     }
 
     intercept(input: ReadableLike<Incoming>, next: Handler<ReadableLike<Incoming>, any>, context: RequestContext): Observable<any> {
@@ -57,7 +59,7 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         return next.handle(input, context)
             .pipe(
                 mergeMap(async (res: Outgoing) => {
-                    const file = await this.find(path, res, fileAdapter, options);
+                    const file = await this.find(path, res, fileAdapter, context, options);
                     if (!file) {
                         return throwError(() => new NotFoundException());
                     }
@@ -66,11 +68,14 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
             );
     }
 
-    protected find(path: string, res: Outgoing, fileAdapter: FileAdapter, options: StaticsOptions) {
+    protected find(path: string, res: Outgoing, fileAdapter: FileAdapter, context: RequestContext, options: StaticsOptions) {
         if (res.statusCode && !(res.error instanceof NotFoundException)) {
             return Promise.resolve(null);
         }
-        return fileAdapter.find(path, options);
+        return fileAdapter.find(path, {
+            ...options,
+            baseUrl: options.baseUrl ?? this.resolveBaseUrl(context.getInjector())
+        });
     }
 
     private async mapResponse(response: any, input: ReadableLike<Incoming>, context: RequestContext): Promise<any> {
@@ -110,6 +115,7 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         }
         const file = await this.sender.send(adapter, fileAdapter, pathname, {
             ...options,
+            baseUrl: options.baseUrl ?? this.resolveBaseUrl(context.getInjector()),
             method,
             headers: options.headers,
             disposition: options.disposition,
@@ -183,6 +189,47 @@ export class HttpContentInterceptor implements Interceptor<ReadableLike<Incoming
         }
         const queryIndex = path.indexOf('?');
         return queryIndex >= 0 ? path.slice(0, queryIndex) : path;
+    }
+
+    private resolveBaseUrl(injector: Injector | null | undefined): string | undefined {
+        let current = injector;
+        while (current) {
+            if (current instanceof ModuleRef) {
+                const moduleAnnotation = current.moduleReflect?.getAnnotation?.() as { baseURL?: string } | undefined;
+                const baseURL = moduleAnnotation?.baseURL;
+                if (baseURL) {
+                    return baseURL;
+                }
+            }
+            try {
+                const appContext = current.get(ApplicationContext, null);
+                const baseURL = appContext?.getArguments?.()?.baseURL ?? appContext?.baseURL;
+                if (baseURL) {
+                    return baseURL;
+                }
+            } catch {
+                // Continue walking parent injectors when the current scope has no app context.
+            }
+            const parent = current.getParent?.();
+            if (!parent || parent === current) {
+                break;
+            }
+            current = parent;
+        }
+        try {
+            const modules = injector?.getRuntime?.().getModules?.();
+            if (modules?.size) {
+                for (const moduleRef of modules.values()) {
+                    const moduleAnnotation = moduleRef.moduleReflect?.getAnnotation?.() as { baseURL?: string } | undefined;
+                    if (moduleAnnotation?.baseURL) {
+                        return moduleAnnotation.baseURL;
+                    }
+                }
+            }
+        } catch {
+            // Ignore runtime lookup failures and fall back to default process resolution.
+        }
+        return undefined;
     }
 
     private applyResponseHeaders(outgoing: { setHeader(name: string, value: Header): void }, headers?: Record<string, Header>) {
