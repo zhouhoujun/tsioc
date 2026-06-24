@@ -4,12 +4,12 @@ export class MqttRequest<T = any> extends BaseTopicRequest<T, TopicRequestOption
 
 
     constructor(
-        url: string,
+        topic: string,
         pattern: Pattern | null | undefined,
         init: RequestInitOpts<T, TopicRequestOptions>,
         defaultMethod = ''
     ) {
-        super(url, pattern, init, defaultMethod);
+        super(topic, pattern, init, defaultMethod);
     }
 
     protected override getResponseTopic(topic: string): string {

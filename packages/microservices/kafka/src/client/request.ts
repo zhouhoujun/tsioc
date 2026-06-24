@@ -2,7 +2,7 @@ import { BaseTopicRequest, RequestCloneOpts, TopicRequestOptions, RequestInitOpt
 
 export class KafkaRequest<T = any> extends BaseTopicRequest<T, TopicRequestOptions> {
     constructor(topic: string, pattern: Pattern | null | undefined, init: RequestInitOpts<T, TopicRequestOptions>, _defaultMethod = '') {
-        super(topic, pattern, init);
+        super(topic, pattern, init, _defaultMethod);
     }
 
     protected override getResponseTopic(topic: string): string {

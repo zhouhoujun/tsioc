@@ -7,7 +7,7 @@ export class RedisRequest<T = any> extends BaseTopicRequest<T, TopicRequestOptio
         init: RequestInitOpts<T, TopicRequestOptions>,
         _defaultMethod = ''
     ) {
-        super(topic, pattern, init);
+        super(topic, pattern, init, _defaultMethod);
     }
 
     protected override getResponseTopic(topic: string): string {

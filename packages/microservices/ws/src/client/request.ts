@@ -5,9 +5,6 @@ import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions, RequestInitOpts, P
  * 微服务 WebSocket 请求实现
  */
 export class WsRequest<T = any> extends BaseUrlRequest<T, UrlRequestOptions> {
-    declare readonly url: string;
-    declare readonly pattern: Pattern | null | undefined;
-    declare readonly method: string;
 
     constructor(
         url: string,
@@ -17,8 +14,6 @@ export class WsRequest<T = any> extends BaseUrlRequest<T, UrlRequestOptions> {
     ) {
         super(url, pattern, init, defaultMethod);
     }
-
-    protected declare cloneOpts: (update: RequestCloneOpts<any, UrlRequestOptions>) => RequestInitOpts<any, UrlRequestOptions>;
 
     clone(): WsRequest<T>;
     clone<V>(update: RequestCloneOpts<V, UrlRequestOptions>): WsRequest<V>;
