@@ -1,18 +1,19 @@
-import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
+import { BaseTopicRequest, RequestCloneOpts, TopicRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
 
-export class KafkaRequest<T = any> extends BaseUrlRequest<T, UrlRequestOptions> {
-    declare readonly url: string;
-    declare readonly pattern: Pattern | null | undefined;
-    declare readonly method: string;
-    constructor(url: string, pattern: Pattern | null | undefined, init: RequestInitOpts<T, UrlRequestOptions>, defaultMethod = '') {
-        super(url, pattern, init, defaultMethod);
+export class KafkaRequest<T = any> extends BaseTopicRequest<T, TopicRequestOptions> {
+    constructor(topic: string, pattern: Pattern | null | undefined, init: RequestInitOpts<T, TopicRequestOptions>, _defaultMethod = '') {
+        super(topic, pattern, init);
     }
-    protected declare cloneOpts: (update: RequestCloneOpts<any, UrlRequestOptions>) => RequestInitOpts<any, UrlRequestOptions>;
+
+    protected override getResponseTopic(topic: string): string {
+        return `${topic}.response`;
+    }
+
     clone(): KafkaRequest<T>;
-    clone<V>(update: RequestCloneOpts<V, UrlRequestOptions>): KafkaRequest<V>;
-    clone(update: RequestCloneOpts<T, UrlRequestOptions>): KafkaRequest<T>;
-    clone(update: RequestCloneOpts<any, UrlRequestOptions> = {}): KafkaRequest<any> {
+    clone<V>(update: RequestCloneOpts<V, TopicRequestOptions>): KafkaRequest<V>;
+    clone(update: RequestCloneOpts<T, TopicRequestOptions>): KafkaRequest<T>;
+    clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): KafkaRequest<any> {
         const opts = this.cloneOpts(update);
-        return new KafkaRequest(update.url ?? this.url, this.pattern, opts, this.method);
+        return new KafkaRequest(update.topic ?? this.topic, this.pattern, opts);
     }
 }

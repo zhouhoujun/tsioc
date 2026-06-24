@@ -7,6 +7,16 @@ export class ServiceMessageValueReader extends MessageValueReader {
         if (isNil(payload) || !section) {
             return { success: false, value: undefined };
         }
+        const isEnvelope = 'body' in payload
+            || 'payload' in payload
+            || 'query' in payload
+            || 'params' in payload
+            || 'headers' in payload
+            || 'paths' in payload
+            || 'path' in payload
+            || 'topic' in payload
+            || 'url' in payload
+            || 'pattern' in payload;
         const scopeVal = section === 'path'
             ? (payload.paths ?? payload.path)
             : section === 'query'
@@ -14,7 +24,7 @@ export class ServiceMessageValueReader extends MessageValueReader {
                 : section === 'payload'
                     ? (payload.payload ?? payload.body)
                     : section === 'body'
-                        ? (payload.body ?? payload.payload)
+                        ? (payload.body ?? payload.payload ?? (!isEnvelope ? payload : undefined))
                         : payload[section];
         if (isNil(scopeVal)) {
             return { success: false, value: undefined };

@@ -1,5 +1,5 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter, defaultFormatter } from '@tsdi/common';
+import { Pattern, RequestInitOpts, TopicRequestOptions, ResponseEvent, Events, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -9,7 +9,7 @@ import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
 import { MqttRequest } from './request';
 
 @Injectable()
-export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
+export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<any>, TopicRequestOptions> {
 
     @InjectLog()
     private logger!: Logger;
@@ -77,20 +77,19 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
         context.set(SOCKET, this.connection as any);
     }
 
-    protected buildRequest(first: MqttRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): MqttRequest<any> {
+    protected buildRequest(first: MqttRequest<any> | Pattern, options: RequestInitOpts<any, TopicRequestOptions>): MqttRequest<any> {
         if (first instanceof MqttRequest) {
             return first;
         }
-        const defaultMethod = this.options.microservice ? undefined : 'PUBLISH';
         if (isString(first)) {
-            return new MqttRequest(first, null, options, defaultMethod);
+            return new MqttRequest(first, null, options);
         } else {
             const formatter = this.handler.injector.get(PatternFormatter, defaultFormatter);
-            return new MqttRequest(formatter.format(first), first, options, defaultMethod);
+            return new MqttRequest(formatter.format(first), first, options);
         }
     }
 
-    protected override request(first: Pattern | MqttRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
+    protected override request(first: Pattern | MqttRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
         return this.connect().pipe(
             switchMap(() => super.request(first, options))
         );

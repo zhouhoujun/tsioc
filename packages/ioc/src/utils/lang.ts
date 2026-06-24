@@ -295,6 +295,14 @@ export function getTypes(mds: Modules | Modules[]): Type[] {
     return types
 }
 
+export function getAbstractTypes(mds: Modules<AbstractType> | Modules<AbstractType>[]): AbstractType[] {
+    const types: AbstractType[] = [];
+    mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
+        isFunction(ty) && types.push(ty)
+    }, v => isPlainObject(v));
+    return types;
+}
+
 const cleanKeys = ['injector', 'platform', 'context'];
 /**
  * clean object.

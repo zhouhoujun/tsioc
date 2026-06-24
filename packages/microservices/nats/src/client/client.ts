@@ -1,5 +1,5 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
+import { Pattern, RequestInitOpts, TopicRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -9,7 +9,7 @@ import { NATS_CLIENT_OPTIONS, NatsClientOptions } from './options';
 import { NatsRequest } from './request';
 
 @Injectable()
-export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
+export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<any>, TopicRequestOptions> {
 
     @InjectLog()
     private logger!: Logger;
@@ -46,19 +46,18 @@ export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<a
         context.set(SOCKET, this.nc as any);
     }
 
-    protected buildRequest(first: NatsRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): NatsRequest<any> {
+    protected buildRequest(first: NatsRequest<any> | Pattern, options: RequestInitOpts<any, TopicRequestOptions>): NatsRequest<any> {
         if (first instanceof NatsRequest) {
             return first;
         }
-        const defaultMethod = this.options.microservice ? undefined : 'PUBLISH';
         if (isString(first)) {
-            return new NatsRequest(first, null, options, defaultMethod);
+            return new NatsRequest(first, null, options);
         } else {
-            return new NatsRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
+            return new NatsRequest(this.handler.injector.get(PatternFormatter).format(first), first, options);
         }
     }
 
-    protected override request(first: Pattern | NatsRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
+    protected override request(first: Pattern | NatsRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
         return this.connect().pipe(
             switchMap(() => super.request(first, options))
         );

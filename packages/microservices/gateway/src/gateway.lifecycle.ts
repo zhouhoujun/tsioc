@@ -120,7 +120,7 @@ export class GatewayLifecycle implements OnDestroy {
             return;
         }
         const probe = this.options.healthProbe;
-        if (!probe || probe === false) {
+        if (!probe) {
             return;
         }
         const routes = this.runtime.getRoutes(this.options.routes);

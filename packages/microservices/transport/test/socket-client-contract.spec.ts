@@ -1,12 +1,95 @@
 import expect = require('expect');
 import { EventEmitter } from 'events';
 import { createInjector } from '@tsdi/ioc';
-import { createRequestContext, ErrorResponse, REQUEST } from '@tsdi/common';
+import { createRequestContext, ErrorResponse, REQUEST, StreamAdapter } from '@tsdi/common';
 import { SOCKET } from '../src/context';
 import { useJsonPacket } from '../src/providers';
 import { createRequestHandler } from '@tsdi/common';
 import { lastValueFrom, take, toArray } from 'rxjs';
 import { TcpRequest } from '@tsdi/tcp';
+import { RESOLVER_PROVIDERS } from '@tsdi/core';
+import { PassThrough, Readable, Writable, pipeline as nodePipeline } from 'node:stream';
+import { pipeline as promisePipeline } from 'node:stream/promises';
+import * as zlib from 'node:zlib';
+
+class TestStreamAdapter extends StreamAdapter {
+    async read<T extends Uint8Array>(readable: any): Promise<T> {
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of readable) {
+            chunks.push(chunk);
+        }
+        return Buffer.concat(chunks) as unknown as T;
+    }
+    async pipeTo(source: any, destination: any, options?: { end?: boolean; signal?: any; }): Promise<void> {
+        await promisePipeline(source, destination, options);
+    }
+    pipeline<T extends any>(...args: any[]): T {
+        return (nodePipeline as any)(...args) as T;
+    }
+    jsonSreamify(value: any): any {
+        return Readable.from([JSON.stringify(value)]);
+    }
+    isStream(target: any): target is any {
+        return !!target && typeof target.pipe === 'function';
+    }
+    isEventEmitter(target: any): target is any {
+        return target instanceof EventEmitter;
+    }
+    isReadable(stream: any): stream is any {
+        return !!stream && typeof stream.pipe === 'function' && typeof stream.on === 'function';
+    }
+    isWritable(stream: any): stream is any {
+        return !!stream && typeof stream.write === 'function';
+    }
+    createWritable(options?: any): any {
+        return new Writable(options);
+    }
+    createPassThrough(options?: any): any {
+        return new PassThrough(options);
+    }
+    getZipConstants<T = any>(): T {
+        return zlib.constants as T;
+    }
+    gzip<T extends Uint8Array>(buff: T): Promise<T> {
+        return Promise.resolve(buff);
+    }
+    gunzip<T extends Uint8Array>(buff: T): Promise<T> {
+        return Promise.resolve(buff);
+    }
+    createGzip(): any {
+        return new PassThrough();
+    }
+    createGunzip(): any {
+        return new PassThrough();
+    }
+    createInflate(): any {
+        return new PassThrough();
+    }
+    createInflateRaw(): any {
+        return new PassThrough();
+    }
+    createBrotliCompress(): any {
+        return new PassThrough();
+    }
+    createBrotliDecompress(): any {
+        return new PassThrough();
+    }
+    isDuplex(target: any): target is any {
+        return this.isReadable(target) && this.isWritable(target);
+    }
+    isFormDataLike(): boolean {
+        return false;
+    }
+    rawbody(stream: any): Promise<any> {
+        return this.read(stream);
+    }
+    createFormData(): any {
+        throw new Error('Not implemented for tests');
+    }
+    isJson(target: any): boolean {
+        return !!target && typeof target === 'object' && !Buffer.isBuffer(target) && !this.isStream(target);
+    }
+}
 
 class FakeSocket extends EventEmitter {
     public writes: any[] = [];
@@ -30,7 +113,10 @@ describe('socket client contract', () => {
             side: 0,
             transport: 'tcp',
             transfer: {},
-            providers: [],
+            providers: [
+                RESOLVER_PROVIDERS as any,
+                { provide: StreamAdapter, useClass: TestStreamAdapter }
+            ],
             features: { defaultTransfer: useJsonPacket() }
         };
         const injector = createInjector(config.providers as any);
@@ -38,7 +124,10 @@ describe('socket client contract', () => {
     }
 
     function createContext(request: TcpRequest<any>, socket: FakeSocket) {
-        const injector = createInjector();
+        const injector = createInjector([
+            RESOLVER_PROVIDERS as any,
+            { provide: StreamAdapter, useClass: TestStreamAdapter }
+        ] as any);
         return createRequestContext(injector, [
             [REQUEST, request],
             [SOCKET, socket]

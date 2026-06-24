@@ -10,10 +10,6 @@ import * as amqp from 'amqplib';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 
-interface PatternPayloadResponse<T> {
-    payload: T;
-}
-
 interface AmqpAuthResponse {
     payload?: { ok?: boolean; error?: string; statusCode?: number };
 }
@@ -197,7 +193,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
     it('should preserve request method in envelope', async () => {
         const client = ctx.get(AmqpClient);
         const result = await lastValueFrom(client.send('/e2e/echo', { method: 'POST', payload: { value: 'hello' } }));
-        expect(result.payload.received).toEqual({ value: 'hello' });
+        expect(result.received).toEqual({ value: 'hello' });
     });
 });
 
@@ -302,18 +298,18 @@ describe('AMQP pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
-        expect(result.payload).toEqual('hello');
+        const result = await lastValueFrom<string>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
+        expect(result).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 500 }));
-        expect(result.payload).toEqual('world');
+        const result = await lastValueFrom<string>(client.send('sensor.message.update', { payload: { msg: 'world' }, timeout: 500 }));
+        expect(result).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 }));
-        expect(result.payload).toEqual('foo');
+        const result = await lastValueFrom<string>(client.send('sensor.temp.start', { payload: { msg: 'foo' }, timeout: 50 }));
+        expect(result).toEqual('foo');
     });
 });
 
@@ -352,8 +348,8 @@ describe('AMQP pattern routing with custom routingKey', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns with custom routingKey', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
-        expect(result.payload).toEqual('hello');
+        const result = await lastValueFrom<string>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
+        expect(result).toEqual('hello');
     });
 });
 

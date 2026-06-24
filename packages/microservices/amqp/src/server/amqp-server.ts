@@ -118,19 +118,30 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         const routingKey = msg.fields.routingKey;
         const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const rawUrl = requestSource.url || routingKey;
-        const url = typeof rawUrl === 'string' && rawUrl.startsWith('/') ? rawUrl.slice(1).replace(/\//g, '.') : rawUrl;
+        const topic = requestSource.topic ?? routingKey;
+        const rawUrl = requestSource.url
+            ?? (typeof requestSource.topic === 'string' && requestSource.topic.includes('/')
+                ? requestSource.topic
+                : undefined);
+        const url = typeof rawUrl === 'string'
+            ? rawUrl.replace(/^\/+/, '').replace(/\//g, '.')
+            : undefined;
+        const pattern = requestSource.pattern ?? topic;
         const method = requestSource.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         const requestData = {
             ...requestSource,
             url,
+            topic,
             method,
             body,
             payload: body,
             replyTo: msg.properties.replyTo,
             correlationId: msg.properties.correlationId,
         };
+        if (pattern !== undefined) {
+            requestData.pattern = pattern;
+        }
 
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],

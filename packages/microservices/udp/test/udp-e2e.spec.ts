@@ -382,7 +382,8 @@ class UdpPatternService {
 
     @Handle({ cmd: 'stream' })
     stream(@Payload() msg: any) {
-        return of(`${msg.msg}-1`, `${msg.msg}-2`, `${msg.msg}-3`);
+        const value = typeof msg === 'object' && msg !== null ? msg.msg : msg;
+        return of(`${value}-1`, `${value}-2`, `${value}-3`);
     }
 
     @Handle('sensor.message.+')

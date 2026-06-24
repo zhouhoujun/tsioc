@@ -10,7 +10,7 @@ import { Provider, StaticProvider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
 import { InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
-import { getTypes } from '../utils/lang';
+import { getAbstractTypes, getTypes } from '../utils/lang';
 import { ActionType, DecoratorOption } from './define';
 import { ModuleDef } from './type.def';
 
@@ -64,9 +64,9 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                         def.providers.push(...metadata.providers);
                     }
                     if (metadata.imports) def.imports = getModuleType(metadata.imports);
-                    if (metadata.exports) def.exports = getTypes(metadata.exports);
+                    if (metadata.exports) def.exports = getAbstractTypes(metadata.exports);
                     if (metadata.declarations) def.declarations = getTypes(metadata.declarations);
-                    if (metadata.bootstrap) def.bootstrap = getTypes(metadata.bootstrap);
+                    if (metadata.bootstrap) def.bootstrap = getAbstractTypes(metadata.bootstrap);
                 },
                 ...isArray(hd) ? hd : [hd]
             ]

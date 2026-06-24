@@ -1,5 +1,5 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, Events, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter, defaultFormatter } from '@tsdi/common';
+import { Pattern, Events, RequestInitOpts, TopicRequestOptions, ResponseEvent, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -9,7 +9,7 @@ import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpRequest } from './request';
 
 @Injectable()
-export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
+export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<any>, TopicRequestOptions> {
 
     @InjectLog()
     private logger!: Logger;
@@ -52,20 +52,19 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
         context.set(SOCKET, this.channel as any);
     }
 
-    protected buildRequest(first: AmqpRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): AmqpRequest<any> {
+    protected buildRequest(first: AmqpRequest<any> | Pattern, options: RequestInitOpts<any, TopicRequestOptions>): AmqpRequest<any> {
         if (first instanceof AmqpRequest) {
             return first;
         }
-        const defaultMethod = this.options.microservice ? undefined : 'PUBLISH';
         if (isString(first)) {
-            return new AmqpRequest(first, null, options, defaultMethod);
+            return new AmqpRequest(first, null, options);
         } else {
             const formatter = this.handler.injector.get(PatternFormatter, defaultFormatter);
-            return new AmqpRequest(formatter.format(first), first, options, defaultMethod);
+            return new AmqpRequest(formatter.format(first), first, options);
         }
     }
 
-    protected override request(first: Pattern | AmqpRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
+    protected override request(first: Pattern | AmqpRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
         return this.connect().pipe(
             switchMap(() => super.request(first, options))
         );

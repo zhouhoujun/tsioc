@@ -1,26 +1,26 @@
-import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
+import { BaseTopicRequest, RequestCloneOpts, TopicRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
 
-export class MqttRequest<T = any> extends BaseUrlRequest<T, UrlRequestOptions> {
-    declare readonly url: string;
-    declare readonly pattern: Pattern | null | undefined;
-    declare readonly method: string;
+export class MqttRequest<T = any> extends BaseTopicRequest<T, TopicRequestOptions> {
+
 
     constructor(
         url: string,
         pattern: Pattern | null | undefined,
-        init: RequestInitOpts<T, UrlRequestOptions>,
+        init: RequestInitOpts<T, TopicRequestOptions>,
         defaultMethod = ''
     ) {
         super(url, pattern, init, defaultMethod);
     }
 
-    protected declare cloneOpts: (update: RequestCloneOpts<any, UrlRequestOptions>) => RequestInitOpts<any, UrlRequestOptions>;
+    protected override getResponseTopic(topic: string): string {
+        return `${topic}/response`;
+    }
 
     clone(): MqttRequest<T>;
-    clone<V>(update: RequestCloneOpts<V, UrlRequestOptions>): MqttRequest<V>;
-    clone(update: RequestCloneOpts<T, UrlRequestOptions>): MqttRequest<T>;
-    clone(update: RequestCloneOpts<any, UrlRequestOptions> = {}): MqttRequest<any> {
+    clone<V>(update: RequestCloneOpts<V, TopicRequestOptions>): MqttRequest<V>;
+    clone(update: RequestCloneOpts<T, TopicRequestOptions>): MqttRequest<T>;
+    clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): MqttRequest<any> {
         const opts = this.cloneOpts(update);
-        return new MqttRequest(update.url ?? this.url, this.pattern, opts, this.method);
+        return new MqttRequest(update.topic ?? this.topic, this.pattern, opts);
     }
 }

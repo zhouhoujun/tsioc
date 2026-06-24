@@ -42,7 +42,7 @@ interface MappedRequestLike {
 const requestMapping = (req: any, context: RequestContext) => {
     if (req instanceof AbstractRequest) {
         const request = req as AbstractRequest<any> & MappedRequestLike;
-        const payloadKey = request.pattern ? 'payload' : 'body';
+        const payloadKey = request.topic || request.pattern ? 'payload' : 'body';
         const json: Record<string, any> = {};
         if (request.url) {
             const fullUrl = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;

@@ -47,7 +47,8 @@ describe('Redis client backend', () => {
 
     function createBackend() {
         const injector = createInjector(feature.providers as any);
-        return injector.get(backendToken) as (input: any, context: any) => any;
+        const [backend] = injector.get(backendToken) as unknown as Array<(input: any, context: any) => any>;
+        return backend;
     }
 
     function createContext(request: RedisRequest<any>, socket: FakeRedis) {

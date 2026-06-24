@@ -1,8 +1,8 @@
 import expect = require('expect');
 import * as zlib from 'zlib';
 import { of } from 'rxjs';
-import { ContextToken } from '@tsdi/ioc';
-import { RequestContext, REQUEST, Transport, TransferSide } from '@tsdi/common';
+import { createInjector } from '@tsdi/ioc';
+import { createRequestContext, RequestContext, REQUEST, Transport, TransferSide } from '@tsdi/common';
 import { HmacSignatureService, JWTService } from '@tsdi/security';
 import { Logger } from '@tsdi/logger';
 import { InMemoryServiceDiscovery } from '../../discovery/src';
@@ -12,16 +12,9 @@ import { DefaultConfigurationManager } from '../../config/src';
 
 describe('Gateway', () => {
     function createContext(adapter: any = {}, extra = new Map<any, any>()) {
-        const store = new Map<any, any>();
-        extra.forEach((v, k) => store.set(k, v));
-        return {
-            get(token: any) {
-                return store.get(token);
-            },
-            set(token: any, value: any) {
-                store.set(token, value);
-            }
-        } as unknown as RequestContext & { _responseToken?: ContextToken<any> };
+        const context = createRequestContext(createInjector());
+        extra.forEach((v, k) => context.set(k, v));
+        return context;
     }
 
     it('forwards gateway requests to the upstream service', async () => {
@@ -871,7 +864,7 @@ describe('Gateway', () => {
                 enabled: true,
                 key: 'gateway'
             }
-        }, runtime, config as any, null as any);
+        }, runtime, config as any, null as any, null as any);
         lifecycle.start();
 
         config.set('gateway', {
@@ -998,7 +991,7 @@ describe('Gateway', () => {
                 interval: 5,
                 evictFor: 1000
             }
-        }, runtime, null as any, discovery as any);
+        }, runtime, null as any, null as any, discovery as any);
         lifecycle.start();
 
         await new Promise(resolve => setTimeout(resolve, 20));

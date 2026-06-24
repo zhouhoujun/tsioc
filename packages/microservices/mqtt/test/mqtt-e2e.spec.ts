@@ -12,10 +12,6 @@ import { lastValueFrom } from 'rxjs';
 
 const MQTT_URL = process.env.TSIO_TEST_MQTT_URL || 'mqtt://127.0.0.1:1883';
 
-interface PatternPayloadResponse<T> {
-    payload: T;
-}
-
 interface AuthResultResponse {
     ok?: boolean;
     body?: { ok?: boolean };
@@ -168,18 +164,18 @@ describe('MQTT pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns through the default formatter', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 5000 }));
-        expect(result.payload).toEqual('ble');
+        const result = await lastValueFrom<string>(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 5000 }));
+        expect(result).toEqual('ble');
     });
 
     it('routes wildcard mqtt topics', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor/message/update', { payload: { message: 'ble' }, timeout: 5000 }));
-        expect(result.payload).toEqual('ble');
+        const result = await lastValueFrom<string>(client.send('sensor/message/update', { payload: { message: 'ble' }, timeout: 5000 }));
+        expect(result).toEqual('ble');
     });
 
     it('routes subscribe patterns via MQTT wildcard topic', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor/sensor01/start', { payload: { message: 'ble' }, timeout: 5000 }));
-        expect(result.payload).toEqual('ble');
+        const result = await lastValueFrom<string>(client.send('sensor/sensor01/start', { payload: { message: 'ble' }, timeout: 5000 }));
+        expect(result).toEqual('ble');
     });
 });
 

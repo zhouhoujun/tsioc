@@ -8,7 +8,6 @@ import { ConfigurationManagerGatewayAdapter, GatewayConfigAdapter, GATEWAY_CONFI
 @Module({
     providers: [
         GatewayRuntime,
-        { provide: GATEWAY_CONFIG_ADAPTER_OPTIONS, useValue: undefined },
         ConfigurationManagerGatewayAdapter,
         { provide: GatewayConfigAdapter, useExisting: ConfigurationManagerGatewayAdapter },
         GatewayLifecycle,

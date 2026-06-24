@@ -257,7 +257,7 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Modules[]}
      */
-    exports?: Modules<Type>[];
+    exports?: Modules<AbstractType>[];
     /**
      * declaration the set of components, directives, pipes ... of this module.
      */

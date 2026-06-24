@@ -66,7 +66,7 @@ describe('Kafka client backend', () => {
         const originalKafka = require('kafkajs').Kafka;
         require('kafkajs').Kafka = fakeKafkaCtor;
         const injector = createInjector(feature.providers as any);
-        const backend = injector.get(backendToken) as (input: any, context: any) => any;
+        const [backend] = injector.get(backendToken) as unknown as Array<(input: any, context: any) => any>;
         require('kafkajs').Kafka = originalKafka;
         return backend;
     }

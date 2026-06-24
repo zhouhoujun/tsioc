@@ -1,26 +1,24 @@
-import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
+import { BaseTopicRequest, RequestCloneOpts, TopicRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
 
-export class NatsRequest<T = any> extends BaseUrlRequest<T, UrlRequestOptions> {
-    declare readonly url: string;
-    declare readonly pattern: Pattern | null | undefined;
-    declare readonly method: string;
-
+export class NatsRequest<T = any> extends BaseTopicRequest<T, TopicRequestOptions> {
     constructor(
-        url: string,
+        topic: string,
         pattern: Pattern | null | undefined,
-        init: RequestInitOpts<T, UrlRequestOptions>,
-        defaultMethod = ''
+        init: RequestInitOpts<T, TopicRequestOptions>,
+        _defaultMethod = ''
     ) {
-        super(url, pattern, init, defaultMethod);
+        super(topic, pattern, init);
     }
 
-    protected declare cloneOpts: (update: RequestCloneOpts<any, UrlRequestOptions>) => RequestInitOpts<any, UrlRequestOptions>;
+    protected override getResponseTopic(topic: string): string {
+        return `_INBOX.tsdi.${topic}`;
+    }
 
     clone(): NatsRequest<T>;
-    clone<V>(update: RequestCloneOpts<V, UrlRequestOptions>): NatsRequest<V>;
-    clone(update: RequestCloneOpts<T, UrlRequestOptions>): NatsRequest<T>;
-    clone(update: RequestCloneOpts<any, UrlRequestOptions> = {}): NatsRequest<any> {
+    clone<V>(update: RequestCloneOpts<V, TopicRequestOptions>): NatsRequest<V>;
+    clone(update: RequestCloneOpts<T, TopicRequestOptions>): NatsRequest<T>;
+    clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): NatsRequest<any> {
         const opts = this.cloneOpts(update);
-        return new NatsRequest(update.url ?? this.url, this.pattern, opts, this.method);
+        return new NatsRequest(update.topic ?? this.topic, this.pattern, opts);
     }
 }

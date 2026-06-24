@@ -110,16 +110,26 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         }
 
         const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || subject;
+        const actualSubject = msg?.subject ?? subject;
+        const topic = requestSource.topic ?? actualSubject;
+        const rawUrl = requestSource.url
+            ?? (typeof requestSource.topic === 'string' && requestSource.topic.includes('/')
+                ? requestSource.topic
+                : undefined);
+        const url = typeof rawUrl === 'string'
+            ? rawUrl.replace(/^\/+/, '').replace(/\//g, '.')
+            : undefined;
+        const pattern = requestSource.pattern ?? topic;
         const method = requestSource.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         const requestData = {
             ...requestSource,
             url,
+            topic,
             method,
             body,
             payload: body,
-            subject,
+            subject: actualSubject,
             _respond: (data: any) => {
                 if (msg.respond) {
                     const buf = sc.encode(JSON.stringify(data));
@@ -127,6 +137,9 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 }
             },
         };
+        if (pattern !== undefined) {
+            requestData.pattern = pattern;
+        }
 
         const context = createRequestContext(this.injector, [
             [REQUEST, requestData],

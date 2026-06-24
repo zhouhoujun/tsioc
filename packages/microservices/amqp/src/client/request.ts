@@ -1,26 +1,24 @@
-import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
+import { BaseTopicRequest, RequestCloneOpts, TopicRequestOptions, RequestInitOpts, Pattern } from '@tsdi/common';
 
-export class AmqpRequest<T = any> extends BaseUrlRequest<T, UrlRequestOptions> {
-    declare readonly url: string;
-    declare readonly pattern: Pattern | null | undefined;
-    declare readonly method: string;
-
+export class AmqpRequest<T = any> extends BaseTopicRequest<T, TopicRequestOptions> {
     constructor(
-        url: string,
+        topic: string,
         pattern: Pattern | null | undefined,
-        init: RequestInitOpts<T, UrlRequestOptions>,
-        defaultMethod = ''
+        init: RequestInitOpts<T, TopicRequestOptions>,
+        _defaultMethod = ''
     ) {
-        super(url, pattern, init, defaultMethod);
+        super(topic, pattern, init);
     }
 
-    protected declare cloneOpts: (update: RequestCloneOpts<any, UrlRequestOptions>) => RequestInitOpts<any, UrlRequestOptions>;
+    protected override getResponseTopic(topic: string): string {
+        return `${topic}.response`;
+    }
 
     clone(): AmqpRequest<T>;
-    clone<V>(update: RequestCloneOpts<V, UrlRequestOptions>): AmqpRequest<V>;
-    clone(update: RequestCloneOpts<T, UrlRequestOptions>): AmqpRequest<T>;
-    clone(update: RequestCloneOpts<any, UrlRequestOptions> = {}): AmqpRequest<any> {
+    clone<V>(update: RequestCloneOpts<V, TopicRequestOptions>): AmqpRequest<V>;
+    clone(update: RequestCloneOpts<T, TopicRequestOptions>): AmqpRequest<T>;
+    clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): AmqpRequest<any> {
         const opts = this.cloneOpts(update);
-        return new AmqpRequest(update.url ?? this.url, this.pattern, opts, this.method);
+        return new AmqpRequest(update.topic ?? this.topic, this.pattern, opts);
     }
 }

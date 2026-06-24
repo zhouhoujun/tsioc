@@ -1,5 +1,5 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
+import { Pattern, RequestInitOpts, TopicRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -9,7 +9,7 @@ import { KAFKA_CLIENT_OPTIONS, KafkaClientOptions } from './options';
 import { KafkaRequest } from './request';
 
 @Injectable()
-export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
+export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent<any>, TopicRequestOptions> {
 
     private producer?: Producer;
     private kafka?: Kafka;
@@ -38,14 +38,13 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
         context.set(SOCKET, this.producer as any);
     }
 
-    protected buildRequest(first: KafkaRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): KafkaRequest<any> {
+    protected buildRequest(first: KafkaRequest<any> | Pattern, options: RequestInitOpts<any, TopicRequestOptions>): KafkaRequest<any> {
         if (first instanceof KafkaRequest) return first;
-        const defaultMethod = this.options.microservice ? undefined : 'SEND';
-        if (isString(first)) return new KafkaRequest(first, null, options, defaultMethod);
-        else return new KafkaRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
+        if (isString(first)) return new KafkaRequest(first, null, options);
+        else return new KafkaRequest(this.handler.injector.get(PatternFormatter).format(first), first, options);
     }
 
-    protected override request(first: Pattern | KafkaRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
+    protected override request(first: Pattern | KafkaRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
         return this.connect().pipe(switchMap(() => super.request(first, options)));
     }
 

@@ -28,7 +28,7 @@ const defaultOptions = {
 
 const requestMapping = (req: any, context: RequestContext) => {
     if (req instanceof AbstractRequest) {
-        const payloadKey = (req as any).pattern ? 'payload' : 'body';
+        const payloadKey = (req as any).topic || (req as any).pattern ? 'payload' : 'body';
         const json: Record<string, any> = {};
         if ((req as any).url) {
             const fullUrl = typeof (req as any).getUrlWithParams === 'function' ? (req as any).getUrlWithParams() : (req as any).url;

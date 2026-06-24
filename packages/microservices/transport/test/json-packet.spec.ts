@@ -4,6 +4,90 @@ import { createInjector } from '@tsdi/ioc';
 import { Header, PacketIdGenerator, PatternFormatter, StatusMessageAdapter, StreamAdapter, TransferSide, createRequestContext, useCatch, ErrorResponse } from '@tsdi/common';
 import { TcpRequest } from '@tsdi/tcp';
 import { useJsonPacket } from '../src/providers';
+import { RESOLVER_PROVIDERS } from '@tsdi/core';
+import { EventEmitter } from 'node:events';
+import { PassThrough, Readable, Writable, pipeline as nodePipeline } from 'node:stream';
+import { pipeline as promisePipeline } from 'node:stream/promises';
+import * as zlib from 'node:zlib';
+
+class TestStreamAdapter extends StreamAdapter {
+    async read<T extends Uint8Array>(readable: any): Promise<T> {
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of readable) {
+            chunks.push(chunk);
+        }
+        return Buffer.concat(chunks) as unknown as T;
+    }
+    async pipeTo(source: any, destination: any, options?: { end?: boolean; signal?: any; }): Promise<void> {
+        await promisePipeline(source, destination, options);
+    }
+    pipeline<T extends any>(...args: any[]): T {
+        return (nodePipeline as any)(...args) as T;
+    }
+    jsonSreamify(value: any): any {
+        return Readable.from([JSON.stringify(value)]);
+    }
+    isStream(target: any): target is any {
+        return !!target && typeof target.pipe === 'function';
+    }
+    isEventEmitter(target: any): target is any {
+        return target instanceof EventEmitter;
+    }
+    isReadable(stream: any): stream is any {
+        return !!stream && typeof stream.pipe === 'function' && typeof stream.on === 'function';
+    }
+    isWritable(stream: any): stream is any {
+        return !!stream && typeof stream.write === 'function';
+    }
+    createWritable(options?: any): any {
+        return new Writable(options);
+    }
+    createPassThrough(options?: any): any {
+        return new PassThrough(options);
+    }
+    getZipConstants<T = any>(): T {
+        return zlib.constants as T;
+    }
+    gzip<T extends Uint8Array>(buff: T): Promise<T> {
+        return Promise.resolve(buff);
+    }
+    gunzip<T extends Uint8Array>(buff: T): Promise<T> {
+        return Promise.resolve(buff);
+    }
+    createGzip(): any {
+        return new PassThrough();
+    }
+    createGunzip(): any {
+        return new PassThrough();
+    }
+    createInflate(): any {
+        return new PassThrough();
+    }
+    createInflateRaw(): any {
+        return new PassThrough();
+    }
+    createBrotliCompress(): any {
+        return new PassThrough();
+    }
+    createBrotliDecompress(): any {
+        return new PassThrough();
+    }
+    isDuplex(target: any): target is any {
+        return this.isReadable(target) && this.isWritable(target);
+    }
+    isFormDataLike(): boolean {
+        return false;
+    }
+    rawbody(stream: any): Promise<any> {
+        return this.read(stream);
+    }
+    createFormData(): any {
+        throw new Error('Not implemented for tests');
+    }
+    isJson(target: any): boolean {
+        return !!target && typeof target === 'object' && !Buffer.isBuffer(target) && !this.isStream(target);
+    }
+}
 
 class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
     private headers = new Map<string, Header>();
@@ -71,7 +155,8 @@ class TestStatusAdapter extends StatusMessageAdapter<any, any, number> {
 describe('transport json packet', () => {
     function createContext(adapter?: any) {
         const injector = createInjector([
-            { provide: StreamAdapter, useValue: { isReadable: () => false } },
+            RESOLVER_PROVIDERS as any,
+            { provide: StreamAdapter, useClass: TestStreamAdapter },
         ] as any);
         const context = createRequestContext(injector);
         context.set(PatternFormatter as any, { format: (pattern: any) => String(pattern) });
@@ -146,10 +231,10 @@ describe('transport json packet', () => {
         expect(JSON.parse(response as string)).toEqual({
             id: 'resp-1',
             status: 202,
-            statusCode: 202,
             statusMessage: 'Accepted',
             headers: { 'x-test': '1' },
-            body: { ok: true }
+            body: { ok: true },
+            payload: { ok: true }
         });
     });
 

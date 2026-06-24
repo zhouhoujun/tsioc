@@ -206,6 +206,8 @@ export abstract class UrlRequest<T = any, TOptions extends UrlRequestOptions = U
  */
 export interface TopicRequestOptions<T = any> extends RequestOptions<T> {
     topic?: string;
+    method?: string;
+    responseTopic?: string;
 }
 
 
@@ -221,6 +223,8 @@ export abstract class TopicRequest<T = any, TOptions extends TopicRequestOptions
      * the outgoing topic.
      */
     abstract get topic(): string;
+
+    abstract get method(): string;
 
     abstract get responseTopic(): string;
 }
@@ -425,12 +429,14 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
 export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends BaseRequest<T, TOptions> implements TopicRequest<T, TOptions> {
     readonly responseTopic: string;
     readonly topic: string
+    readonly method: string;
 
     constructor(topic: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super(init, defaultMethod);
         topic = normalize(topic);
         this.topic = topic;
-        this.responseTopic = this.getResponseTopic(topic, init);
+        this.method = init.method ?? defaultMethod;
+        this.responseTopic = init.responseTopic ?? this.getResponseTopic(topic, init);
     }
 
     protected getResponseTopic(topic: string, options: RequestInitOpts<T, TOptions>): string {
@@ -447,6 +453,9 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
             topic: this.topic,
             responseTopic: this.responseTopic
         };
+        if (this.method) {
+            json.method = this.method;
+        }
         if (this.id) {
             json.id = this.id;
         }
@@ -467,5 +476,11 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
     abstract clone(): BaseTopicRequest<T>;
     abstract clone<V>(update: RequestCloneOpts<V, TOptions>): BaseTopicRequest<V, TOptions>;
     abstract clone(update: RequestCloneOpts<T, TOptions>): BaseTopicRequest<T, TOptions>;
+
+    protected override cloneOpts(update: RequestCloneOpts<any, TOptions>): RequestInitOpts<any, TOptions> {
+        const opts = super.cloneOpts(update) as RequestInitOpts<any, TOptions>;
+        opts.method = update.method ?? this.method;
+        return opts;
+    }
 
 }

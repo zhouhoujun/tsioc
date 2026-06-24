@@ -78,8 +78,7 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
             return;
         }
         const replyRequest = request as KafkaRequest<any> & { responseTopic?: string };
-
-        const topic = request.url;
+        const topic = request.topic;
         const requestId = request.id ?? `${Date.now()}-${Math.random()}`;
         const responseTopic = replyRequest.responseTopic
             ?? `${topic}${config.responseTopicSuffix ?? '.response'}`;
@@ -182,40 +181,28 @@ function mapRequestValue(value: any, context: any) {
 }
 
 function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
-    const json: Record<string, any> = {};
+    const json: Record<string, any> = typeof request?.toJson === 'function'
+        ? request.toJson({ formatter, payloadKey })
+        : {};
+    json.topic ??= request.topic ?? normalizeTopicFromUrl(request.url);
     if (request.url) {
-        const fullUrl = typeof request.getUrlWithParams === 'function' ? request.getUrlWithParams() : request.url;
-        const [url, rawQuery] = String(fullUrl).split('?', 2);
-        json.url = url.startsWith('/') ? url.slice(1).replace(/\//g, '.') : url;
-        if (rawQuery) {
-            json.query = parseQueryString(rawQuery);
-        }
+        json.url ??= request.url;
     }
-    if (request.responseTopic) {
-        json.responseTopic = request.responseTopic;
-    }
-    if (request.id !== undefined && request.id !== null) {
-        json.id = request.id;
-    }
-    if (request.pattern) {
-        json.pattern = formatter ? formatter.format(request.pattern) : request.pattern;
-    }
-    if (request.method) {
-        json.method = request.method;
-    }
-    if (request.headers?.size) {
-        json.headers = request.headers.getHeaders();
-    }
-    if (request.params) {
+    if (request.params && !json.params) {
         json.params = typeof request.params?.toRecord === 'function' ? request.params.toRecord() : request.params;
     }
-    if (request.query && !json.query) {
+    if (request.url && request.query && !json.query) {
         json.query = request.query;
     }
-    if (request.body !== undefined && request.body !== null) {
-        json[payloadKey] = request.body;
-    }
     return json;
+}
+
+function normalizeTopicFromUrl(url?: string) {
+    if (!url) {
+        return undefined;
+    }
+    const [pathname] = String(url).split('?', 2);
+    return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
 }
 
 function parseKafkaReply(message: string, request: KafkaRequest<any>, requestId: string | number) {

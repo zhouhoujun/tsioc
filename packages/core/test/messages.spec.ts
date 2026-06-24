@@ -88,4 +88,20 @@ describe('Message resolve interceptors', () => {
         expect(firstField).toBe('one');
         expect(secondField).toBe(20);
     });
+
+    it('should treat raw object payload as request body when envelope fields are absent', () => {
+        const injector = createInjector([
+            { provide: MessageValueReader, useClass: DefaultMessageValueReader }
+        ]);
+        const context = createRunContext(injector);
+        context.setPayload({ id: 'topic-payload', age: 18 });
+        const interceptor = createMessageResolveInterceptors()[0];
+        const next = () => 'next' as any;
+
+        const wholeBody = interceptor({ scope: 'body', nullable: false } as any, next, context);
+        const bodyField = interceptor({ scope: 'body', field: 'id', name: 'id', nullable: false } as any, next, context);
+
+        expect(wholeBody).toEqual({ id: 'topic-payload', age: 18 });
+        expect(bodyField).toBe('topic-payload');
+    });
 });

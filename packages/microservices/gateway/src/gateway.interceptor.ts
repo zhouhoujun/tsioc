@@ -652,7 +652,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private validateApiKey(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
         const options = route.apiKey;
-        if (!options || options === false) {
+        if (!options) {
             return;
         }
         const headerName = options.header ?? 'x-api-key';
@@ -669,7 +669,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private validateSignature(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
         const options = route.signature;
-        if (!options || options === false) {
+        if (!options) {
             return;
         }
         const signatureHeader = options.header ?? 'x-signature';
@@ -723,7 +723,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private enforceAuthorization(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
         const options = route.authorize;
-        if (!options || options === false) {
+        if (!options) {
             return;
         }
         const claims = request._auth?.claims ?? {};
@@ -1146,7 +1146,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         status: number,
         meta?: GatewayForwardMeta
     ): Record<string, string> {
-        const metricsOptions = this.runtime.getOption('observability', this.options.observability)?.metrics;
+        const observability = this.runtime.getOption('observability', this.options.observability);
+        const metricsOptions = observability ? observability.metrics : undefined;
         const labels: Record<string, string> = {
             route: route.path,
             service: route.service,

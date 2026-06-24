@@ -70,7 +70,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
      * exports.
      */
-    exports?: Type[];
+    exports?: AbstractType[];
     /**
      *  components, directives, pipes ... of current module.
      */

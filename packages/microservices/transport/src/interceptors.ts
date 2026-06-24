@@ -112,7 +112,8 @@ export function createSendMessageBackend(eventName: string = Events.DATA, socket
         return defer(() => writePacket(currSocket, req, context.get(StreamAdapter)))
             .pipe(
                 mergeMap(r => {
-                    if (context.get(AbstractRequest)?.observe === 'events') return of({ type: 0 });
+                    const currentRequest = context.get(REQUEST) as AbstractRequest<any> | undefined ?? context.get(AbstractRequest) as AbstractRequest<any> | undefined;
+                    if (currentRequest?.observe === 'events') return of({ type: 0 });
                     return source$
                 })
             )
@@ -152,15 +153,6 @@ export function socketMessage(config: TransferConfig, options: TransferOptions):
             mergeMap(async res => {
                 if (!res) return;
                 const streamAdapter = context.get(StreamAdapter);
-                console.log('tcp-socket-write', {
-                    type: typeof res,
-                    ctor: (res as any)?.constructor?.name,
-                    isReadable: streamAdapter.isReadable(res),
-                    hasId: (res as any)?.id,
-                    hasStatus: (res as any)?.status,
-                    hasPayloadType: typeof (res as any)?.payload,
-                    hasBodyType: typeof (res as any)?.body,
-                });
                 const socket = context.get(SOCKET);
                 return await writePacket(socket, res, streamAdapter);
             })
@@ -199,7 +191,19 @@ export function delimiterUnpacket(config: TransferConfig, options: TransferOptio
         const streamAdapter = context.get(StreamAdapter);
         return next(req, context)
             .pipe(
-                mergeMap(res => handle(context, options, cache, res, streamAdapter)),
+                mergeMap(res => {
+                    if (!Buffer.isBuffer(res) && !isString(res) && !streamAdapter.isReadable(res)) {
+                        return of([res]);
+                    }
+                    if (Buffer.isBuffer(res)) {
+                        return handle(context, options, cache, res, streamAdapter);
+                    }
+                    if (isString(res)) {
+                        return handle(context, options, cache, Buffer.from(res), streamAdapter);
+                    }
+                    return defer(() => streamAdapter.read(res as IDuplex))
+                        .pipe(mergeMap(buffer => handle(context, options, cache, buffer as Buffer, streamAdapter)));
+                }),
                 mergeMap(pkgs => from(pkgs))
             )
     } : (req, next, context) => {

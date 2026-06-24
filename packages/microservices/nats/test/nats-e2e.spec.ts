@@ -24,10 +24,6 @@ class RouteCtrl {
 
 const NATS_URL = 'nats://127.0.0.1:4222';
 
-interface PatternPayloadResponse<T> {
-    payload: T;
-}
-
 interface AuthResultResponse {
     ok?: boolean;
     body?: { ok?: boolean; body?: { ok?: boolean }; payload?: { ok?: boolean } };
@@ -256,27 +252,27 @@ describe('NATS pattern routing', () => {
     after(async () => { if (ctx) await ctx.destroy(); });
 
     it('routes object cmd patterns', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send({ cmd: 'echo' }, {
+        const result = await lastValueFrom<string>(client.send({ cmd: 'echo' }, {
             payload: { msg: 'hello' },
             timeout: 50
         }));
-        expect(result.payload).toEqual('hello');
+        expect(result).toEqual('hello');
     });
 
     it('routes wildcard topic patterns', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.message.update', {
+        const result = await lastValueFrom<string>(client.send('sensor.message.update', {
             payload: { msg: 'world' },
             timeout: 50
         }));
-        expect(result.payload).toEqual('world');
+        expect(result).toEqual('world');
     });
 
     it('routes subscribe patterns with wildcard', async () => {
-        const result = await lastValueFrom<PatternPayloadResponse<string>>(client.send('sensor.temp.start', {
+        const result = await lastValueFrom<string>(client.send('sensor.temp.start', {
             payload: { msg: 'foo' },
             timeout: 50
         }));
-        expect(result.payload).toEqual('foo');
+        expect(result).toEqual('foo');
     });
 });
 

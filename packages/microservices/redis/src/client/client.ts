@@ -1,5 +1,5 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
-import { Pattern, Events, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
+import { Pattern, Events, LOCALHOST, RequestInitOpts, TopicRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -9,7 +9,7 @@ import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisRequest } from './request';
 
 @Injectable()
-export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent<any>, UrlRequestOptions> {
+export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent<any>, TopicRequestOptions> {
 
     @InjectLog()
     private logger!: Logger;
@@ -68,19 +68,18 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
         context.set(SOCKET, this.connection as any);
     }
 
-    protected buildRequest(first: RedisRequest<any> | Pattern, options: RequestInitOpts<any, UrlRequestOptions>): RedisRequest<any> {
+    protected buildRequest(first: RedisRequest<any> | Pattern, options: RequestInitOpts<any, TopicRequestOptions>): RedisRequest<any> {
         if (first instanceof RedisRequest) {
             return first;
         }
-        const defaultMethod = this.options.microservice ? undefined : 'PUBLISH';
         if (isString(first)) {
-            return new RedisRequest(first, null, options, defaultMethod);
+            return new RedisRequest(first, null, options);
         } else {
-            return new RedisRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
+            return new RedisRequest(this.handler.injector.get(PatternFormatter).format(first), first, options);
         }
     }
 
-    protected override request(first: Pattern | RedisRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
+    protected override request(first: Pattern | RedisRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
         return this.connect().pipe(
             switchMap(() => super.request(first, options))
         );
