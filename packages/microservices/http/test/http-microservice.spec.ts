@@ -1,9 +1,13 @@
-import { HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult, HttpRequestMessage, HttpServResponse, HTTP_COOKIES, HTTP_RESPONSE } from '../src/server';
+import {
+    HttpServOptions, httpTransportFactory, useHttpTransport, HTTP_SERV_OPTIONS, HttpFileResult,
+    HttpRequestMessage, HttpServResponse, HTTP_COOKIES, HTTP_RESPONSE, HttpContextUtil,
+    HTTP_PROXY_ENABLED, HTTP_PROXY_IP_HEADER, HTTP_MAX_IPS_COUNT, HttpBodyParserInterceptor
+} from '../src/server';
 import { HttpMessageAdapter } from '../src/server/message-adapter';
 import { HTTP_AUTH_OPTIONS } from '../src/server/interceptors/auth';
 import { withHttpTransport, HTTP_CLIENT_OPTIONS, HttpClientOptions } from '../src/client';
 import { BodySerializeStrategy, getClientBackendToken, TimeoutStrategy } from '@tsdi/client';
-import { Transport, TransferSide } from '@tsdi/common';
+import { FileAdapter, MimeAdapter, MimeTypes, RestfulRequestAdapter, StreamAdapter, Transport, TransferSide } from '@tsdi/common';
 import { parseMultipartBody } from '../src/server/multipart';
 import { BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, JsonInterceptor, SessionInterceptor, SERVICE_STATICS_OPTIONS } from '@tsdi/service';
 import { createRequestContext, REQUEST, RESPONSE } from '@tsdi/common';
@@ -11,6 +15,7 @@ import { createInjector, importProvidersFrom } from '@tsdi/ioc';
 import { HttpClient } from '../src/client/client';
 import { HttpRequest } from '../src/client/request';
 import { HttpCookieInterceptor } from '../src/server/interceptors/cookie';
+import { HttpContentInterceptor } from '../src/server/interceptors/content';
 import { HttpModule } from '../src/http.module';
 import { HttpBodySerializeStrategy } from '../src/client/strategies/HttpBodySerializeStrategy';
 import { HttpTimeoutStrategy } from '../src/client/strategies/HttpTimeoutStrategy';
@@ -207,6 +212,109 @@ describe('HTTP Microservice', () => {
             const feature = httpTransportFactory({ listenOpts: { port: 3000 }, upload: { limit: '5mb' } });
             expect((feature.config as HttpServOptions).upload).toEqual({ limit: '5mb' });
         });
+
+        it('should parse json body without content-type headers from raw buffers', async () => {
+            const interceptor = new HttpBodyParserInterceptor(undefined, undefined);
+            const context = createRequestContext(createInjector());
+            context.set(StreamAdapter, {
+                isReadable: () => false,
+                isStream: () => false,
+            } as any);
+            const input = { body: Buffer.from('{"ok":true}') } as any;
+
+            await lastValueFrom(interceptor.intercept(input, {
+                handle: (req: any) => {
+                    expect(req.body).toEqual({ ok: true });
+                    expect(req.rawBody).toBe('{"ok":true}');
+                    return of(req.body);
+                }
+            } as any, context));
+        });
+
+        it('should parse urlencoded body without content-type headers from raw buffers', async () => {
+            const interceptor = new HttpBodyParserInterceptor(undefined, undefined);
+            const context = createRequestContext(createInjector());
+            context.set(StreamAdapter, {
+                isReadable: () => false,
+                isStream: () => false,
+            } as any);
+            const input = { body: Buffer.from('name=zhou&role=admin') } as any;
+
+            await lastValueFrom(interceptor.intercept(input, {
+                handle: (req: any) => {
+                    expect(req.body).toEqual({ name: 'zhou', role: 'admin' });
+                    expect(req.rawBody).toBe('name=zhou&role=admin');
+                    return of(req.body);
+                }
+            } as any, context));
+        });
+
+        it('should reject unsupported content-encoding values', async () => {
+            const interceptor = new HttpBodyParserInterceptor({ enableTypes: ['text'] } as any, undefined);
+            const context = createRequestContext(createInjector());
+            const streamBody = {
+                pipe: () => ({})
+            };
+            context.set(StreamAdapter, {
+                isReadable: (target: any) => target === streamBody,
+                isStream: () => false,
+            } as any);
+            context.set(MimeAdapter, {
+                normalize: (value: string) => value,
+                match: (types: string[]) => types[0],
+            } as any);
+            context.set(MimeTypes, { text: ['text/plain'] } as any);
+            const input = {
+                headers: {
+                    'content-type': 'text/plain',
+                    'content-encoding': 'br',
+                    'content-length': '4'
+                },
+                body: streamBody
+            } as any;
+
+            await expect(lastValueFrom(interceptor.intercept(input, {
+                handle: () => of(null)
+            } as any, context))).rejects.toMatchObject({ status: 415 });
+        });
+
+        it('should parse gzip-encoded text bodies through the stream adapter', async () => {
+            const interceptor = new HttpBodyParserInterceptor({ enableTypes: ['text'] } as any, undefined);
+            const context = createRequestContext(createInjector());
+            const gunzipResult = { marker: 'gunzip-stream' };
+            const input = {
+                headers: {
+                    'content-type': 'text/plain',
+                    'content-encoding': 'gzip',
+                    'content-length': '5'
+                },
+                body: {
+                    pipe: () => gunzipResult
+                }
+            } as any;
+            context.set(StreamAdapter, {
+                isReadable: (target: any) => target === input.body,
+                isStream: () => false,
+                createGunzip: () => ({ gunzip: true }),
+                rawbody: async (target: any) => {
+                    expect(target).toBe(gunzipResult);
+                    return 'hello gzip';
+                }
+            } as any);
+            context.set(MimeAdapter, {
+                normalize: (value: string) => value,
+                match: (types: string[]) => types[0],
+            } as any);
+            context.set(MimeTypes, { text: ['text/plain'] } as any);
+
+            await lastValueFrom(interceptor.intercept(input, {
+                handle: (req: any) => {
+                    expect(req.body).toBe('hello gzip');
+                    expect(req.rawBody).toBe('hello gzip');
+                    return of(req.body);
+                }
+            } as any, context));
+        });
     });
 
     describe('HttpMessageAdapter', () => {
@@ -313,6 +421,256 @@ describe('HTTP Microservice', () => {
                     error: reject
                 });
             });
+        });
+    });
+
+    describe('HttpContentInterceptor', () => {
+        function createRestAdapter() {
+            const headers = new Map<string, any>();
+            return {
+                status: undefined as number | undefined,
+                payload: undefined as any,
+                hasHeader(name: string) {
+                    return headers.has(name.toLowerCase());
+                },
+                setHeader(name: string, value: any) {
+                    headers.set(name.toLowerCase(), value);
+                    return this;
+                },
+                getHeader(name: string) {
+                    return headers.get(name.toLowerCase());
+                },
+                getHeaderNames() {
+                    return [...headers.keys()];
+                },
+                setStatus(status: number) {
+                    this.status = status;
+                    return this;
+                },
+                setPayload(payload: any) {
+                    this.payload = payload;
+                    return this;
+                }
+            };
+        }
+
+        function createRuntimeInjector(baseURL = '/module-base') {
+            return {
+                get: () => null,
+                getParent: () => null,
+                getRuntime: () => ({
+                    getModules: () => new Map<any, any>([
+                        ['module', {
+                            moduleReflect: {
+                                getAnnotation: () => ({ baseURL })
+                            }
+                        }]
+                    ])
+                })
+            };
+        }
+
+        it('should resolve baseUrl from runtime modules for default static roots', async () => {
+            let capturedOptions: any;
+            const sender = {
+                send: async (_adapter: any, _fileAdapter: any, _path: string, options: any) => {
+                    capturedOptions = options;
+                    return { filename: '/tmp/hello.txt', stats: {} };
+                }
+            };
+            const interceptor = new HttpContentInterceptor(undefined as any, undefined as any, sender as any);
+            const context = createRequestContext(createInjector());
+            const adapter = createRestAdapter();
+            context.set(FileAdapter, {} as any);
+            context.set(RestfulRequestAdapter, adapter as any);
+            (context as any).getInjector = () => createRuntimeInjector('/runtime-public');
+
+            let nextCalled = false;
+            const result = await lastValueFrom(interceptor.intercept({ url: '/hello.txt', method: 'GET' } as any, {
+                handle: () => {
+                    nextCalled = true;
+                    return of('next');
+                }
+            } as any, context));
+
+            expect(nextCalled).toBe(false);
+            expect(result).toBe(null);
+            expect(capturedOptions.baseUrl).toBe('/runtime-public');
+        });
+
+        it('should pass resolved baseUrl into deferred static file lookup', async () => {
+            let capturedOptions: any;
+            const file = { filename: '/tmp/deferred.txt', stats: { size: 3 } };
+            const fileAdapter = {
+                find: async (_path: string, options: any) => {
+                    capturedOptions = options;
+                    return file;
+                }
+            };
+            const interceptor = new HttpContentInterceptor(undefined as any, { defer: true } as any, {} as any);
+            const context = createRequestContext(createInjector());
+            context.set(FileAdapter, fileAdapter as any);
+            (context as any).getInjector = () => createRuntimeInjector('/deferred-base');
+
+            const result = await lastValueFrom(interceptor.intercept({ url: '/hello.txt', method: 'GET' } as any, {
+                handle: () => of({})
+            } as any, context));
+
+            expect(result).toBe(file);
+            expect(capturedOptions.baseUrl).toBe('/deferred-base');
+        });
+
+        it('should map direct HttpFileResult buffer responses onto the restful adapter', async () => {
+            const sender = {
+                send: async () => null
+            };
+            const interceptor = new HttpContentInterceptor(undefined as any, undefined as any, sender as any);
+            const context = createRequestContext(createInjector());
+            const adapter = createRestAdapter();
+            context.set(FileAdapter, {
+                extname: () => '.txt'
+            } as any);
+            context.set(RestfulRequestAdapter, adapter as any);
+            context.set(MimeAdapter, {
+                lookup: () => 'text/plain'
+            } as any);
+            (context as any).getInjector = () => createRuntimeInjector();
+
+            const fileResult = new HttpFileResult(Buffer.from('hello'), {
+                filename: 'hello.txt',
+                disposition: 'attachment',
+                headers: { 'x-inline': '1' } as any,
+                statusCode: 201
+            });
+
+            const result = await lastValueFrom(interceptor.intercept({ url: '/download', method: 'GET' } as any, {
+                handle: () => of(fileResult)
+            } as any, context));
+
+            expect(result).toBe(adapter);
+            expect(adapter.status).toBe(201);
+            expect(adapter.payload.toString('utf8')).toBe('hello');
+            expect(adapter.getHeader('content-type')).toBe('text/plain');
+            expect(adapter.getHeader('content-disposition')).toContain('attachment');
+            expect(adapter.getHeader('content-length')).toBe(5);
+            expect(adapter.getHeader('x-inline')).toBe('1');
+        });
+
+        it('should merge wrapped HttpFileResult responses with outer headers and status', async () => {
+            const sender = {
+                send: async () => null
+            };
+            const interceptor = new HttpContentInterceptor(undefined as any, undefined as any, sender as any);
+            const context = createRequestContext(createInjector());
+            const adapter = createRestAdapter();
+            context.set(FileAdapter, {
+                extname: () => '.txt'
+            } as any);
+            context.set(RestfulRequestAdapter, adapter as any);
+            context.set(MimeAdapter, {
+                lookup: () => 'text/plain'
+            } as any);
+            (context as any).getInjector = () => createRuntimeInjector();
+
+            const wrapped = {
+                body: new HttpFileResult(Buffer.from('body'), {
+                    filename: 'wrapped.txt'
+                }),
+                statusCode: 202,
+                getHeaderNames: () => ['x-outer'],
+                getHeader: () => 'outer'
+            };
+
+            const result = await lastValueFrom(interceptor.intercept({ url: '/wrapped', method: 'GET' } as any, {
+                handle: () => of(wrapped)
+            } as any, context));
+
+            expect(result).toBe(adapter);
+            expect(adapter.status).toBe(200);
+            expect(adapter.getHeader('x-outer')).toBe('outer');
+            expect(adapter.getHeader('content-type')).toBe('text/plain');
+            expect(adapter.payload.toString('utf8')).toBe('body');
+        });
+    });
+
+    describe('HttpContextUtil', () => {
+        it('should resolve proxy ip list, forwarded protocol, vary header and writable state', () => {
+            const request = {
+                method: 'GET',
+                headers: {
+                    'x-real-ip': '10.0.0.1, 10.0.0.2, 10.0.0.3',
+                    'x-forwarded-proto': 'https, http'
+                },
+                socket: { remoteAddress: '127.0.0.1', encrypted: false }
+            } as any;
+            const response = {
+                statusCode: 200,
+                headersSent: false,
+                socket: { writable: true },
+                getHeader(name: string) {
+                    return this.headers?.[name];
+                },
+                setHeader(name: string, value: any) {
+                    this.headers = this.headers ?? {};
+                    this.headers[name] = value;
+                }
+            } as any;
+            const context = createRequestContext(createInjector(), [
+                [REQUEST, request],
+                [HTTP_RESPONSE, response],
+                [HTTP_PROXY_ENABLED, true],
+                [HTTP_PROXY_IP_HEADER, 'x-real-ip'],
+                [HTTP_MAX_IPS_COUNT, 2]
+            ]);
+
+            const httpContext = HttpContextUtil.from(context);
+            httpContext.vary('accept-encoding');
+
+            expect(httpContext.ips).toEqual(['10.0.0.2', '10.0.0.3']);
+            expect(httpContext.ip).toBe('10.0.0.2');
+            expect(httpContext.protocol).toBe('https');
+            expect(httpContext.secure).toBe(true);
+            expect(httpContext.writable).toBe(true);
+            expect(response.headers.vary).toBe('accept-encoding');
+        });
+
+        it('should evaluate freshness based on etag, cache-control and last-modified headers', () => {
+            const request = {
+                method: 'GET',
+                headers: {
+                    'if-none-match': '"abc"',
+                    'if-modified-since': 'Wed, 01 Jan 2020 00:00:00 GMT'
+                },
+                socket: { remoteAddress: '127.0.0.1', encrypted: false }
+            } as any;
+            const headers = new Map<string, any>([
+                ['etag', '"abc"'],
+                ['last-modified', 'Wed, 01 Jan 2020 00:00:00 GMT']
+            ]);
+            const response = {
+                statusCode: 200,
+                headersSent: false,
+                socket: { writable: false },
+                getHeader(name: string) {
+                    return headers.get(name.toLowerCase());
+                },
+                setHeader(name: string, value: any) {
+                    headers.set(name.toLowerCase(), value);
+                }
+            } as any;
+            const context = createRequestContext(createInjector(), [
+                [REQUEST, request],
+                [HTTP_RESPONSE, response]
+            ]);
+
+            const httpContext = HttpContextUtil.from(context);
+            expect(httpContext.fresh).toBe(true);
+            expect(httpContext.stale).toBe(false);
+            expect(httpContext.writable).toBe(false);
+
+            request.headers['cache-control'] = 'no-cache';
+            expect(httpContext.fresh).toBe(false);
+            expect(httpContext.stale).toBe(true);
         });
     });
 

@@ -19,6 +19,12 @@ interface V8CoverageResult {
     result: V8CoverageScript[];
 }
 
+interface V8CoverageRange {
+    startOffset: number;
+    endOffset: number;
+    count: number;
+}
+
 @Injectable()
 export class V8CoverageCollector extends CoverageCollector {
     private fileCoverages: Map<string, FileCoverageData> = new Map();
@@ -85,7 +91,8 @@ export class V8CoverageCollector extends CoverageCollector {
             const source = fs.readFileSync(filePath, 'utf-8');
             const fileCov = this.processScript(script, source, filePath);
             if (fileCov) {
-                this.fileCoverages.set(filePath, fileCov);
+                const previous = this.fileCoverages.get(filePath);
+                this.fileCoverages.set(filePath, previous ? this.mergeFileCoverage(previous, fileCov) : fileCov);
             }
         }
     }
@@ -108,31 +115,29 @@ export class V8CoverageCollector extends CoverageCollector {
             lines.set(i, 0);
         }
 
+        this.applyLineCoverage(lines, script.functions, lineOffsets, sourceLines, source);
+
         for (const func of script.functions) {
-            const funcStartLine = this.findLineAtOffset(func.ranges[0]?.startOffset || 0, lineOffsets);
-            if (funcStartLine > 0) {
+            const rootRange = func.ranges[0];
+            const isTopLevelWrapper = this.isTopLevelWrapper(func, source.length);
+            const funcStartLine = this.findLineAtOffset(rootRange?.startOffset || 0, lineOffsets);
+            if (!isTopLevelWrapper && funcStartLine > 0) {
                 const funcCovered = func.ranges.some(r => r.count > 0);
-                functions.set(funcStartLine, funcCovered ? 1 : 0);
+                functions.set(funcStartLine, Math.max(functions.get(funcStartLine) ?? 0, funcCovered ? 1 : 0));
             }
 
-            for (const range of func.ranges) {
+            for (let index = 0; index < func.ranges.length; index++) {
+                const range = func.ranges[index];
                 const startLine = this.findLineAtOffset(range.startOffset, lineOffsets);
-                const endLine = this.findLineAtOffset(range.endOffset - 1, lineOffsets);
 
-                for (let line = startLine; line <= endLine && line > 0; line++) {
-                    if (range.count > 0) {
-                        lines.set(line, Math.max(lines.get(line) || 0, range.count));
-                    }
+                if (startLine > 0 && !(isTopLevelWrapper && index === 0)) {
+                    statements.set(startLine, Math.max(statements.get(startLine) ?? 0, range.count));
                 }
 
-                if (startLine > 0) {
-                    statements.set(startLine, range.count);
-                }
-
-                if (func.isBlockCoverage && func.ranges.length > 1) {
+                if (func.isBlockCoverage && index > 0) {
                     const branchLine = this.findLineAtOffset(range.startOffset, lineOffsets);
                     if (branchLine > 0) {
-                        branches.set(branchLine, range.count > 0 ? 1 : 0);
+                        branches.set(branchLine, Math.max(branches.get(branchLine) ?? 0, range.count > 0 ? 1 : 0));
                     }
                 }
             }
@@ -157,6 +162,95 @@ export class V8CoverageCollector extends CoverageCollector {
         return 0;
     }
 
+    private applyLineCoverage(
+        lines: Map<number, number>,
+        scriptFunctions: V8CoverageScript['functions'],
+        lineOffsets: number[],
+        sourceLines: string[],
+        source: string
+    ): void {
+        const sourceLength = source.length;
+        const ranges = scriptFunctions
+            .flatMap(func => func.ranges)
+            .filter(range => range.endOffset > range.startOffset)
+            .map(range => ({
+                startOffset: Math.max(0, range.startOffset),
+                endOffset: Math.min(sourceLength, range.endOffset),
+                count: range.count
+            }));
+
+        const boundaries = new Set<number>([0, sourceLength]);
+        ranges.forEach(range => {
+            boundaries.add(range.startOffset);
+            boundaries.add(range.endOffset);
+        });
+
+        const ordered = Array.from(boundaries).sort((a, b) => a - b);
+        for (let lineIndex = 0; lineIndex < sourceLines.length; lineIndex++) {
+            const lineStart = lineOffsets[lineIndex];
+            const lineEnd = lineStart + sourceLines[lineIndex].length;
+            if (lineEnd <= lineStart) {
+                continue;
+            }
+
+            const lineBoundaries = ordered.filter(point => point >= lineStart && point <= lineEnd);
+            if (lineBoundaries[0] !== lineStart) {
+                lineBoundaries.unshift(lineStart);
+            }
+            if (lineBoundaries[lineBoundaries.length - 1] !== lineEnd) {
+                lineBoundaries.push(lineEnd);
+            }
+
+            let covered = 0;
+            for (let boundaryIndex = 0; boundaryIndex < lineBoundaries.length - 1; boundaryIndex++) {
+                const startOffset = lineBoundaries[boundaryIndex];
+                const endOffset = lineBoundaries[boundaryIndex + 1];
+                if (endOffset <= startOffset) {
+                    continue;
+                }
+                if (!/\S/.test(source.slice(startOffset, endOffset))) {
+                    continue;
+                }
+                const effectiveRange = this.resolveEffectiveRange(ranges, startOffset, endOffset);
+                if (effectiveRange?.count) {
+                    covered = Math.max(covered, effectiveRange.count);
+                }
+            }
+            lines.set(lineIndex + 1, covered);
+        }
+    }
+
+    private resolveEffectiveRange(ranges: V8CoverageRange[], startOffset: number, endOffset: number): V8CoverageRange | null {
+        let selected: V8CoverageRange | null = null;
+
+        for (const range of ranges) {
+            if (range.startOffset > startOffset || range.endOffset < endOffset) {
+                continue;
+            }
+
+            if (!selected) {
+                selected = range;
+                continue;
+            }
+
+            const rangeWidth = range.endOffset - range.startOffset;
+            const selectedWidth = selected.endOffset - selected.startOffset;
+            if (rangeWidth < selectedWidth) {
+                selected = range;
+            }
+        }
+
+        return selected;
+    }
+
+    private isTopLevelWrapper(func: V8CoverageScript['functions'][number], sourceLength: number): boolean {
+        const rootRange = func.ranges[0];
+        return !!rootRange
+            && func.functionName === ''
+            && rootRange.startOffset === 0
+            && rootRange.endOffset >= sourceLength;
+    }
+
     private calculateSummary(
         lines: Map<number, number>,
         statements: Map<number, number>,
@@ -176,6 +270,30 @@ export class V8CoverageCollector extends CoverageCollector {
             functions: { total: functions.size, covered: functionsCovered, percentage: pct(functionsCovered, functions.size) },
             branches: { total: branches.size, covered: branchesCovered, percentage: pct(branchesCovered, branches.size) }
         };
+    }
+
+    private mergeFileCoverage(previous: FileCoverageData, next: FileCoverageData): FileCoverageData {
+        const lines = this.mergeCoverageMap(previous.lines, next.lines);
+        const statements = this.mergeCoverageMap(previous.statements, next.statements);
+        const functions = this.mergeCoverageMap(previous.functions, next.functions);
+        const branches = this.mergeCoverageMap(previous.branches, next.branches);
+
+        return {
+            path: next.path,
+            lines,
+            statements,
+            functions,
+            branches,
+            summary: this.calculateSummary(lines, statements, functions, branches)
+        };
+    }
+
+    private mergeCoverageMap(previous: Map<number, number>, next: Map<number, number>): Map<number, number> {
+        const merged = new Map<number, number>(previous);
+        next.forEach((count, key) => {
+            merged.set(key, Math.max(merged.get(key) ?? 0, count));
+        });
+        return merged;
     }
 
     private matchesPatterns(filePath: string, include: string[], exclude: string[]): boolean {
