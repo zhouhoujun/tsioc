@@ -23,6 +23,13 @@ interface CoapJsonResponse<T> {
     headers?: { options?: unknown[] } & Record<string, unknown>;
 }
 
+class CoapClientCommandService {
+    @Handle({ cmd: 'test' }, Transport.CoAP)
+    test(@Payload() msg: string) {
+        return msg;
+    }
+}
+
 @Controller('/api/test')
 class TestController {
     @Get('/info') info() { return { status: 'ok' }; }
@@ -210,10 +217,11 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
 
     it('should preserve native status and response metadata for observe response', async () => {
         const client = ctx.get(CoapClient);
-        const result = await lastValueFrom<CoapJsonResponse<{ status: string }>>(client.send('/api/test/info', { observe: 'response' }));
+        const result = await lastValueFrom<CoapJsonResponse<{ result: string }>>(client.send('/api/e2e/ping', { observe: 'response' }));
         expect(result.status).toEqual('2.05');
         expect(result.ok).toBe(true);
-        expect(result.body).toEqual({ status: 'ok' });
+        expect(result.statusCode).toEqual('2.05');
+        expect(result.body).toEqual({ result: 'pong' });
         expect(result.headers).toBeDefined();
         expect(Array.isArray(result.headers?.options)).toBe(true);
     });
@@ -231,8 +239,9 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
         const result = await lastValueFrom<CoapJsonResponse<{ statusCode: number; message: string }>>(
             client.send('/api/error/boom', { observe: 'response' }).pipe(catchError(err => of(err)))
         );
-        expect(result.status).toEqual('5.00');
+        expect(result.status).toEqual(500);
         expect(result.ok).toBe(false);
+        expect(result.statusCode).toEqual(500);
         expect(result.body?.statusCode).toEqual(500);
         expect(result.body?.message).not.toContain('secret internal detail');
     });
@@ -242,8 +251,9 @@ describe('CoAP E2E with provideService + provideClient (microservice:true)', () 
         const result = await lastValueFrom<CoapJsonResponse<{ message: string }>>(
             client.send('/api/error/bad-request', { observe: 'response' }).pipe(catchError(err => of(err)))
         );
-        expect(result.status).toEqual('4.00');
+        expect(result.status).toEqual(400);
         expect(result.ok).toBe(false);
+        expect(result.statusCode).toEqual(400);
         expect(result.body?.message).toContain('bad request');
     });
 });
@@ -367,6 +377,7 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
 
     @Module({
         imports: [LoggerModule],
+        declarations: [CoapClientCommandService],
         providers: [
             provideService(useRouter(),
                 useCoapTransport({ listenOpts: { port: 21320, host: '127.0.0.1' }, asDefault: true })),
@@ -393,10 +404,13 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
     it('should get CoapClient via ctx.get() and send cmd', async () => {
         const client = ctx.get(CoapClient);
         expect(client).toBeDefined();
-        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
+        const result = await lastValueFrom<CoapJsonResponse<string>>(client.send({ cmd: 'test' }, {
+            payload: { msg: 'pong' },
             observe: 'response'
         }).pipe(catchError(err => of(err))));
-        expect(result).toBeDefined();
+        expect(result.ok).toBe(true);
+        expect(result.status).toEqual('2.05');
+        expect(result.body).toEqual('pong');
     });
 });
 
@@ -468,6 +482,7 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
 
     @Module({
         imports: [LoggerModule],
+        declarations: [CoapClientCommandService],
         providers: [
             provideService(useRouter(),
                 useCoapTransport({ listenOpts: { port: P, host: '127.0.0.1' }, asDefault: true })),
@@ -493,10 +508,13 @@ describe('CoAP client via ctx.get(CoapClient)', () => {
 
     it('should send cmd via CoapClient.send()', async () => {
         const client = ctx.get(CoapClient);
-        const result = await lastValueFrom(client.send({ cmd: 'test' }, {
+        const result = await lastValueFrom<CoapJsonResponse<string>>(client.send({ cmd: 'test' }, {
+            payload: { msg: 'pong' },
             observe: 'response'
         }).pipe(catchError(err => of(err))));
-        expect(result).toBeDefined();
+        expect(result.ok).toBe(true);
+        expect(result.status).toEqual('2.05');
+        expect(result.body).toEqual('pong');
     });
 });
 

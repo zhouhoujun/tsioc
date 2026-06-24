@@ -134,11 +134,11 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
         emitOnly() { return null; }
 
         @Handle({ cmd: 'echo' }, Transport.TCP)
-        echo(@Payload() msg: any) { return { echoed: msg }; }
+        echo(@Payload('message') message: string) { return { echoed: { message } }; }
 
         @Handle({ cmd: 'stream' }, Transport.TCP)
-        stream(@Payload() msg: any) {
-            return of(`${msg.message}-1`, `${msg.message}-2`, `${msg.message}-3`);
+        stream(@Payload('message') message: string) {
+            return of(`${message}-1`, `${message}-2`, `${message}-3`);
         }
     }
 
@@ -177,7 +177,11 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
             responseType: 'text',
             timeout: 50
         }).pipe(catchError(err => of(err))));
-        expect(result).toBeDefined();
+        expect(result).toMatchObject({
+            status: 200,
+            ok: true,
+            body: 'pong'
+        });
     });
 
     it('should send echo cmd and receive echoed object', async () => {
@@ -187,7 +191,11 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
             payload: testMsg,
             timeout: 50
         }).pipe(catchError(err => of(err))));
-        expect(result).toBeDefined();
+        expect(result).toMatchObject({
+            status: 200,
+            ok: true,
+            body: { echoed: testMsg }
+        });
     });
 
     it('should return ResponseEventPacket for emit observe', async () => {
@@ -211,9 +219,9 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
 
 // ----- TCP with provideService + provideClient (microservice:false) -----
 if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
-    @Injectable()
+    @Controller('/host')
     class TcpHostHandler {
-        @Handle({ cmd: 'ping' }, Transport.TCP)
+        @Get('/ping')
         ping() { return 'pong'; }
     }
 
@@ -245,11 +253,15 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
     });
 
     it('should send cmd and receive response in host mode', async () => {
-        const result = await lastValueFrom(client.send({ cmd: 'ping' }, {
+        const result = await lastValueFrom(client.send('/host/ping', {
             observe: 'response',
             responseType: 'text'
         }).pipe(catchError(err => of(err))));
-        expect(result).toBeDefined();
+        expect(result).toMatchObject({
+            status: 200,
+            ok: true,
+            body: 'pong'
+        });
     });
 });
 
@@ -300,10 +312,12 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP auth E2E', () => {
     });
 
     it('rejects requests without bearer token', async () => {
-        await expect(lastValueFrom<AuthErrorResponse>(client.send('/secure/ping', {
+        const result = await lastValueFrom<AuthErrorResponse & { ok?: boolean; body?: any; status?: number | string }>(client.send('/secure/ping', {
             observe: 'response'
-        }))).rejects.toMatchObject({
-            statusCode: 401
+        }));
+        expect(result).toMatchObject({
+            status: 401,
+            ok: false
         });
     });
 });

@@ -166,8 +166,9 @@ describe('NATS E2E with provideService + provideClient (microservice:true)', () 
             method: 'GET'
         })), { timeout: 1000 });
         const response = JSON.parse(sc.decode(msg.data));
-        expect(response).toBeDefined();
-        expect(response).toBeDefined();
+        expect(response).toEqual({
+            payload: { result: 'pong' }
+        });
     });
 });
 
@@ -211,7 +212,12 @@ describe('NATS E2E with provideService + provideClient (microservice:false)', ()
             method: 'GET'
         })), { timeout: 1000 });
         const response = JSON.parse(sc.decode(msg.data));
-        expect(response).toBeDefined();
+        expect(response).toEqual({
+            payload: {
+                statusCode: 404,
+                statusMessage: 'Not Found'
+            }
+        });
     });
 });
 

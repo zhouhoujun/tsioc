@@ -97,7 +97,7 @@ function createMqttClientBackend(config: MqttClientOptions) {
         const formatter = context.get(PatternFormatter, defaultFormatter);
         const payload = Buffer.isBuffer(input)
             ? input
-            : JSON.stringify(serializeRequest({ ...request, id: requestId }, formatter, 'payload'));
+            : JSON.stringify(serializeRequest(request, formatter, 'payload', requestId));
         let timer: NodeJS.Timeout | undefined;
         let closed = false;
 
@@ -177,10 +177,13 @@ function mapRequestValue(value: any, context: any) {
     return value;
 }
 
-function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
+function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload', requestId?: string | number) {
     const json: Record<string, any> = typeof request?.toJson === 'function'
         ? request.toJson({ formatter, payloadKey })
         : {};
+    if (requestId != null) {
+        json.id = requestId;
+    }
     json.topic ??= request.topic ?? request.url;
     if (request.url) {
         json.url ??= request.url;

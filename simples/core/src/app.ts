@@ -110,31 +110,11 @@ export class CheckRightAspect {
     baseURL: __dirname,
     imports: [
         AopModule,
-        // LoggerModule.withOptions(logconfig),
         ServerModule,
         ServerLog4Module,
         ServerCommonModule,
         TransactionModule,
-        // provideService({
-        //     transport: 'https',
-        //     config: {
-        //         majorVersion: 2,
-        //         serverOpts: {
-        //             cert,
-        //             key,
-        //         },
-        //         content: {
-        //             index: true
-        //         },
-        //         interceptors: [
-        //             CorsInterceptor,
-        //             ContentInterceptor,
-        //             JsonInterceptor,
-        //             BodyparserInterceptor,
-        //         ]
-        //     }
-        // }),
-
+        // LoggerModule.withOptions(logconfig),
         // TypeOrmModule.withConnection(connections),
         // EndpointModule.register({
         //     transport: 'https',

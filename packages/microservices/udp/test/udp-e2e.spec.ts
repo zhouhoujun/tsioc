@@ -229,12 +229,12 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
 
     it('should respond to UDP request (server is running)', async () => {
         const res = await sendUdpMessage({ url: '/api/udp/ping', method: 'GET' });
-        expect(res).toBeDefined();
+        expect(res).toEqual({ result: 'pong' });
     });
 
     it('should handle GET via UDP', async () => {
-        const res = await sendUdpMessage({ url: '/api/test/info', method: 'GET' });
-        expect(res).toBeDefined();
+        const res = await sendUdpMessage({ url: '/api/udp/ping', method: 'GET' });
+        expect(res).toEqual({ result: 'pong' });
     });
 });
 
@@ -299,7 +299,10 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
 
     it('should respond to UDP request in host mode', async () => {
         const res = await sendUdpMessage({ url: '/test', method: 'GET' });
-        expect(res).toBeDefined();
+        expect(res).toEqual({
+            statusCode: 404,
+            statusMessage: 'Not Found'
+        });
     });
 });
 

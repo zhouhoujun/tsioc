@@ -1,9 +1,11 @@
 import expect = require('expect');
 import { EventEmitter } from 'events';
 import { createInjector } from '@tsdi/ioc';
-import { createRequestContext, ErrorResponse, REQUEST, StreamAdapter } from '@tsdi/common';
+import { createRequestContext, ErrorResponse, PacketIdGenerator, REQUEST, StreamAdapter, TransferSide } from '@tsdi/common';
 import { SOCKET } from '../src/context';
 import { useJsonPacket } from '../src/providers';
+import { createSendMessageBackend } from '../src/interceptors';
+import { PacketNumberIdGenerator } from '../src/PacketId';
 import { createRequestHandler } from '@tsdi/common';
 import { lastValueFrom, take, toArray } from 'rxjs';
 import { TcpRequest } from '@tsdi/tcp';
@@ -107,18 +109,23 @@ class FakeSocket extends EventEmitter {
     }
 }
 
+function getSentId(socket: FakeSocket, request: TcpRequest<any>) {
+    return socket.writes[0]?.id ?? request.id;
+}
+
 describe('socket client contract', () => {
     function createBackend() {
         const config: any = {
-            side: 0,
+            side: TransferSide.client,
             transport: 'tcp',
             transfer: {},
             providers: [
                 RESOLVER_PROVIDERS as any,
                 { provide: StreamAdapter, useClass: TestStreamAdapter }
             ],
-            features: { defaultTransfer: useJsonPacket() }
+            backend: createSendMessageBackend()
         };
+        config.transferFilters = useJsonPacket()(config) as any[];
         const injector = createInjector(config.providers as any);
         return createRequestHandler(injector, config) as any;
     }
@@ -126,7 +133,8 @@ describe('socket client contract', () => {
     function createContext(request: TcpRequest<any>, socket: FakeSocket) {
         const injector = createInjector([
             RESOLVER_PROVIDERS as any,
-            { provide: StreamAdapter, useClass: TestStreamAdapter }
+            { provide: StreamAdapter, useClass: TestStreamAdapter },
+            { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator }
         ] as any);
         return createRequestContext(injector, [
             [REQUEST, request],
@@ -150,8 +158,8 @@ describe('socket client contract', () => {
         const result$ = handler.handle(request, createContext(request, socket));
 
         setTimeout(() => {
-            const sent = JSON.parse(socket.writes[0].toString());
-            socket.emit('data', Buffer.from(JSON.stringify({ id: sent.id, status: 200, payload: 'done' }) + '\r\n'));
+            const sentId = getSentId(socket, request);
+            socket.emit('data', Buffer.from(JSON.stringify({ id: sentId, status: 200, payload: 'done' }) + '\r\n'));
         }, 0);
 
         const result = await lastValueFrom(result$);
@@ -165,8 +173,8 @@ describe('socket client contract', () => {
         const result$ = handler.handle(request, createContext(request, socket));
 
         setTimeout(() => {
-            const sent = JSON.parse(socket.writes[0].toString());
-            socket.emit('data', Buffer.from(JSON.stringify({ id: sent.id, status: 201, statusMessage: 'Created', payload: { ok: true } }) + '\r\n'));
+            const sentId = getSentId(socket, request);
+            socket.emit('data', Buffer.from(JSON.stringify({ id: sentId, status: 201, statusMessage: 'Created', payload: { ok: true } }) + '\r\n'));
         }, 0);
 
         const result: any = await lastValueFrom(result$);
@@ -182,8 +190,8 @@ describe('socket client contract', () => {
         const result$ = handler.handle(request, createContext(request, socket));
 
         setTimeout(() => {
-            const sent = JSON.parse(socket.writes[0].toString());
-            socket.emit('data', Buffer.from(JSON.stringify({ id: sent.id, status: 500, statusMessage: 'Boom', error: { message: 'Boom' } }) + '\r\n'));
+            const sentId = getSentId(socket, request);
+            socket.emit('data', Buffer.from(JSON.stringify({ id: sentId, status: 500, statusMessage: 'Boom', error: { message: 'Boom' } }) + '\r\n'));
         }, 0);
 
         await expect(lastValueFrom(result$)).rejects.toBeInstanceOf(ErrorResponse);
@@ -197,10 +205,10 @@ describe('socket client contract', () => {
         const resultPromise = lastValueFrom(result$.pipe(take(2), toArray()));
 
         setTimeout(() => {
-            const sent = JSON.parse(socket.writes[0].toString());
+            const sentId = getSentId(socket, request);
             socket.emit('data', Buffer.from(JSON.stringify({ id: 'other', status: 200, payload: 'skip' }) + '\r\n'));
-            socket.emit('data', Buffer.from(JSON.stringify({ id: sent.id, status: 200, payload: 'one' }) + '\r\n'));
-            socket.emit('data', Buffer.from(JSON.stringify({ id: sent.id, status: 200, payload: 'two' }) + '\r\n'));
+            socket.emit('data', Buffer.from(JSON.stringify({ id: sentId, status: 200, payload: 'one' }) + '\r\n'));
+            socket.emit('data', Buffer.from(JSON.stringify({ id: sentId, status: 200, payload: 'two' }) + '\r\n'));
         }, 0);
 
         const result = await resultPromise;

@@ -188,10 +188,10 @@ describe('transport json packet', () => {
         expect(config.providers.some((provider: any) => provider.provide === PacketIdGenerator)).toBe(false);
     });
 
-    it('maps client requests into json payloads with parsed query and pattern body aliasing', async () => {
+    it('maps client requests into json payloads with parsed query and payload for pattern requests', async () => {
         const config: any = { side: TransferSide.client, transfer: {}, providers: [] };
         const interceptors = useJsonPacket()(config) as Function[];
-        const jsonInterceptor = interceptors[2];
+        const jsonInterceptor = interceptors[1];
         const context = createContext();
         const request = new TcpRequest('/users?name=zhou', 'users.create', {
             method: 'POST',

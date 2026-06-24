@@ -13,7 +13,7 @@ const statify = promisify(fs.stat);
 export class BigFileInterceptor implements RequestInterceptor {
     intercept(req: Incoming, next: RequestHandler<any, any>, context: RequestContext): Observable<any> {
 
-        if (context.url == '/content/big.json') {
+        if (req.pattern == '/content/big.json') {
             return from(this.genedata(context))
         }
         return next.handle(req, context);

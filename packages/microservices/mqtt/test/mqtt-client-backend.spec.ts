@@ -58,6 +58,44 @@ describe('MQTT client backend', () => {
         expect(socket.published[0].topic).toBe('topic.emit');
     });
 
+    it('serializes topic requests with payload only and generated response topic', async () => {
+        const backend = createBackend();
+        const socket = new FakeMqttClient();
+        const request = new MqttRequest('topic.payload', null, {
+            observe: 'events',
+            payload: { hello: 'world' },
+            headers: { 'x-test': '1' }
+        }, 'PUBLISH');
+
+        await lastValueFrom(backend({ hello: 'world' }, createContext(request, socket)));
+
+        const published = JSON.parse(String(socket.published[0].payload));
+        expect(published.topic).toBe('topic.payload');
+        expect(published.responseTopic).toBe('topic.payload/response');
+        expect(published.method).toBe('PUBLISH');
+        expect(published.payload).toEqual({ hello: 'world' });
+        expect(published.body).toBeUndefined();
+        expect(published.headers).toEqual({ 'x-test': '1' });
+    });
+
+    it('preserves custom responseTopic and formatted pattern in published payload', async () => {
+        const backend = createBackend();
+        const socket = new FakeMqttClient();
+        const request = new MqttRequest('cmd:device.status', { cmd: 'device.status' }, {
+            observe: 'events',
+            payload: { id: 'a1' },
+            responseTopic: 'custom/replies'
+        }, 'PUBLISH');
+
+        await lastValueFrom(backend({ id: 'a1' }, createContext(request, socket)));
+
+        const published = JSON.parse(String(socket.published[0].payload));
+        expect(published.responseTopic).toBe('custom/replies');
+        expect(published.pattern).toEqual({ cmd: 'device.status' });
+        expect(published.payload).toEqual({ id: 'a1' });
+        expect(socket.published[0].topic).toBe('cmd:device.status');
+    });
+
     it('returns body for body observe', async () => {
         const backend = createBackend();
         const socket = new FakeMqttClient();
@@ -89,6 +127,27 @@ describe('MQTT client backend', () => {
         expect(result.status).toBe(201);
         expect(result.statusText).toBe('Created');
         expect(result.body).toEqual({ ok: true });
+    });
+
+    it('subscribes and unsubscribes custom response topic for body observe', async () => {
+        const backend = createBackend();
+        const socket = new FakeMqttClient();
+        const request = new MqttRequest('topic.custom-response', null, {
+            observe: 'body',
+            responseTopic: 'custom/replies'
+        }, 'PUBLISH');
+        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const resultPromise = lastValueFrom(result$);
+
+        setTimeout(() => {
+            const reqId = JSON.parse(String(socket.published[0].payload)).id;
+            socket.emit('message', 'custom/replies', Buffer.from(JSON.stringify({ id: reqId, status: 200, payload: 'done' })));
+        }, 0);
+
+        const result = await resultPromise;
+        expect(result).toBe('done');
+        expect(socket.subscriptions).toContain('custom/replies');
+        expect(socket.unsubscriptions).toContain('custom/replies');
     });
 
     it('throws ErrorResponse for failed body observe reply', async () => {

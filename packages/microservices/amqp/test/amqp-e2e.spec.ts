@@ -186,8 +186,9 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
             setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
-        expect(result).toBeDefined();
-        expect(result).toBeDefined();
+        expect(result).toEqual({
+            payload: { result: 'pong' }
+        });
     });
 
     it('should preserve request method in envelope', async () => {
@@ -255,7 +256,12 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
             setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
-        expect(result).toBeDefined();
+        expect(result).toEqual({
+            payload: {
+                statusCode: 404,
+                statusMessage: 'Not Found'
+            }
+        });
     });
 });
 

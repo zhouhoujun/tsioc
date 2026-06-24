@@ -190,7 +190,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
 
     @Module({
         imports: [LoggerModule],
-        declarations: [MqttE2eController],
+        declarations: [MqttE2eController, TestController],
         providers: [
             provideService(useRouter(),
                 useMqttTransport({
@@ -207,10 +207,12 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
 
     let ctx: ApplicationContext;
     let client: mqtt.MqttClient;
+    let tsdiClient: MqttClient;
 
     before(async () => {
         ctx = await Application.run(MqttE2eModule);
         client = mqtt.connect(MQTT_URL);
+        tsdiClient = ctx.get(MqttClient);
     });
     after(async () => {
         if (client) client.end(true);
@@ -243,8 +245,69 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
             setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
-        expect(result).toBeDefined();
-        expect(result).toBeDefined();
+        expect(result).toEqual({
+            payload: { result: 'pong' }
+        });
+    });
+
+    it('binds payload body for controller POST requests from native MQTT publish', async () => {
+        const responseTopic = TOPIC + '/response';
+        const result = await new Promise<any>((resolve, reject) => {
+            client.subscribe(responseTopic, { qos: 0 }, () => {
+                client.publish(TOPIC, JSON.stringify({
+                    url: '/api/test/echo',
+                    method: 'POST',
+                    payload: { id: 'u1', enabled: true }
+                }));
+            });
+            client.once('message', (topic, payload) => {
+                if (topic === responseTopic) {
+                    resolve(JSON.parse(payload.toString()));
+                }
+            });
+            setTimeout(() => reject(new Error('Timeout')), 1500);
+        });
+
+        expect(result.payload).toEqual({
+            received: { id: 'u1', enabled: true }
+        });
+    });
+
+    it('returns response envelopes for observe:response client requests', async () => {
+        const result: any = await lastValueFrom(tsdiClient.send('/api/test/info', {
+            observe: 'response',
+            method: 'GET',
+            timeout: 5000
+        }));
+
+        expect(result.status).toBe(200);
+        expect(result.ok).toBe(true);
+        expect(result.body).toEqual({ status: 'ok' });
+        expect(result.payload).toEqual({ status: 'ok' });
+    });
+
+    it('supports custom response topics for native MQTT request-response flows', async () => {
+        const responseTopic = 'e2e/test/custom-replies';
+        const result = await new Promise<any>((resolve, reject) => {
+            client.subscribe(responseTopic, { qos: 0 }, () => {
+                client.publish(TOPIC, JSON.stringify({
+                    url: '/api/test/echo',
+                    method: 'POST',
+                    payload: { id: 'custom' },
+                    responseTopic
+                }));
+            });
+            client.once('message', (topic, payload) => {
+                if (topic === responseTopic) {
+                    resolve(JSON.parse(payload.toString()));
+                }
+            });
+            setTimeout(() => reject(new Error('Timeout')), 1500);
+        });
+
+        expect(result.payload).toEqual({
+            received: { id: 'custom' }
+        });
     });
 });
 
@@ -300,7 +363,9 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
             setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
-        expect(result).toBeDefined();
+        expect(result).toEqual({
+            payload: null
+        });
     });
 });
 

@@ -179,15 +179,15 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
     sendResponse(response?: any): void {
         const client = this.client;
         if (!client) return;
-        const topic = this.requestData?.topic;
-        if (!topic) return;
+        const responseTopic = this.requestData?.responseTopic ?? (this.requestData?.topic ? this.requestData.topic + '/response' : undefined);
+        if (!responseTopic) return;
 
         const body = !isNil(this.payload) ? this.payload
             : response === this ? undefined : response;
         if (body === undefined) return;
 
         const msg = JSON.stringify({ payload: body });
-        client.publish(topic + '/response', msg);
+        client.publish(responseTopic, msg);
     }
 
     /**
@@ -207,9 +207,9 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
         };
         this.setPayload(errorBody);
 
-        const topic = this.requestData?.topic;
-        if (topic) {
-            client.publish(topic + '/response', JSON.stringify(errorBody));
+        const responseTopic = this.requestData?.responseTopic ?? (this.requestData?.topic ? this.requestData.topic + '/response' : undefined);
+        if (responseTopic) {
+            client.publish(responseTopic, JSON.stringify(errorBody));
         }
     }
 }
