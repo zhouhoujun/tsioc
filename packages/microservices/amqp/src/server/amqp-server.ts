@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AmqpServOptions, AMQP_SERV_OPTIONS, AMQP_BIND_INTERCEPTORS, AMQP_BIND_FILTERS, AMQP_BIND_GUARDS } from './options';
@@ -54,24 +54,27 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             const exchange = this.options.exchange || 'tsdi';
             const exchangeType = this.options.exchangeType || 'topic';
             const queue = this.options.queue || '';
-            const routingKey = this.options.routingKey || '*.microservice';
+            const routingKeys = mergeSubscribePatterns(
+                this.options.routingKey ? [this.options.routingKey] : undefined,
+                getSubscribePatterns(this.options, this.injector),
+                ['*.microservice']
+            );
 
             await this.channel.assertExchange(exchange, exchangeType, { durable: true });
             const q = await this.channel.assertQueue(queue, { exclusive: !queue });
-            await this.channel.bindQueue(q.queue, exchange, routingKey);
-            if (routingKey !== '*.microservice') {
-                await this.channel.bindQueue(q.queue, exchange, '*.microservice');
+            for (const routingKey of routingKeys) {
+                await this.channel.bindQueue(q.queue, exchange, routingKey);
             }
 
             if (this.options.prefetch) {
                 await this.channel.prefetch(this.options.prefetch);
             }
 
-            this.logger.info(getTypeName(this), `connected to AMQP broker, consuming from exchange: ${exchange}, routingKey: ${routingKey}`);
+            this.logger.info(getTypeName(this), `connected to AMQP broker, consuming from exchange: ${exchange}, routingKeys: ${routingKeys.join(',')}`);
 
             await this.channel.consume(q.queue, (msg) => {
                 if (msg) {
-                    this.handleMessage(msg, exchange, routingKey);
+                    this.handleMessage(msg, exchange, routingKeys[0]);
                 }
             }, { noAck: false });
 

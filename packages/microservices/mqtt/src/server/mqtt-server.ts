@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
@@ -51,7 +51,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.client.on(Events.CONNECT, () => {
             this.logger.info(getTypeName(this), 'connected to MQTT broker:', url);
 
-            const topics = this.options.subscribeTopics || [{ topic: '+/+/+', qos: 0 as const }];
+            const topics = this.resolveSubscribeTopics();
             topics.forEach(({ topic, qos }) => {
                 this.client?.subscribe(topic, { qos: qos ?? 0 }, (err) => {
                     if (err) {
@@ -90,6 +90,21 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.client.removeAllListeners();
         this.client = null;
 
+    }
+
+    private resolveSubscribeTopics(): Array<{ topic: string; qos?: 0 | 1 | 2 }> {
+        const explicit = this.options.subscribeTopics ?? [];
+        const discovered = getSubscribePatterns(this.options, this.injector);
+        const merged = mergeSubscribePatterns(
+            explicit.map(item => item.topic),
+            discovered,
+            ['+/+/+']
+        );
+
+        return merged.map(topic => {
+            const current = explicit.find(item => item.topic === topic);
+            return current ?? { topic, qos: 0 };
+        });
     }
 
     private handleMessage(topic: string, payload: Buffer) {

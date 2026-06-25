@@ -1,6 +1,8 @@
 import { getClassRef } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
 import {
+    getSubscribePatterns,
+    getServiceRouterToken,
     Controller,
     Get,
     Handle,
@@ -11,6 +13,7 @@ import {
     RequestPath,
     Subscribe
 } from '../src';
+import { createInjector } from '@tsdi/ioc';
 import expect = require('expect');
 
 describe('service metadata', () => {
@@ -75,7 +78,31 @@ describe('service metadata', () => {
         const define = typeRef.getDefines(Subscribe as any).find((item: any) => item.propertyKey === 'onEvent');
         expect(define?.metadata?.route).toBe('users.events');
         expect(define?.metadata?.transport).toBe(Transport.TCP);
+        expect(define?.metadata?.subscribe).toBe(true);
         expect(define?.metadata?.resolvers?.length ?? 0).toBeGreaterThan(1);
+    });
+
+    it('extracts subscribe patterns from subscribe routes only', () => {
+        const config = {
+            transport: Transport.TCP,
+            microservice: true,
+            features: {}
+        } as any;
+        const injector = createInjector([
+            {
+                provide: getServiceRouterToken(config),
+                useValue: {
+                    formatter: { format: (pattern: any) => String(pattern) },
+                    routes: [
+                        { pattern: 'users.events', subscribe: true },
+                        { pattern: 'users.created', subscribe: true },
+                        { pattern: 'users.echo', subscribe: false }
+                    ]
+                }
+            } as any
+        ]);
+
+        expect(getSubscribePatterns(config, injector)).toEqual(['users.events', 'users.created']);
     });
 
     it('stores method route metadata for HTTP decorators', () => {

@@ -5,7 +5,7 @@ import { connect, StringCodec, NatsConnection, Subscription } from 'nats';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import { NatsServOptions, NATS_SERV_OPTIONS, NATS_BIND_INTERCEPTORS, NATS_BIND_FILTERS, NATS_BIND_GUARDS } from './options';
 import { NatsMessageAdapter } from './message-adapter';
@@ -53,7 +53,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
             this.logger.info(getTypeName(this), 'connected to NATS:', this.options.url || 'nats://127.0.0.1:4222');
 
-            const subjects = this.options.subjects || ['>'];
+            const subjects = mergeSubscribePatterns(this.options.subjects, getSubscribePatterns(this.options, this.injector), ['>']);
             const sc = StringCodec();
 
             for (const subject of subjects) {

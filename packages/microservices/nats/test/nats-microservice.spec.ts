@@ -1,6 +1,8 @@
 import { NatsServer, NatsServOptions, natsTransportFactory, useNatsTransport, NATS_SERV_OPTIONS } from '../src/server';
 import { withNatsTransport, NATS_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
+import { createInjector } from '@tsdi/ioc';
+import { getServiceRouterToken, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import expect = require('expect');
 
 describe('NATS Microservice', () => {
@@ -146,6 +148,26 @@ describe('NATS Microservice', () => {
         it('should exist as a class', () => {
             expect(NatsServer).toBeDefined();
             expect(typeof NatsServer).toBe('function');
+        });
+
+        it('merges subscribe routes into nats subjects', () => {
+            const options = natsTransportFactory({ url: 'nats://localhost:4222' }).config as NatsServOptions;
+            const injector = createInjector([
+                {
+                    provide: getServiceRouterToken(options as any),
+                    useValue: {
+                        formatter: { format: (pattern: any) => String(pattern) },
+                        routes: [
+                            { pattern: 'sensor.*.start', subscribe: true },
+                            { pattern: 'sensor.ignore', subscribe: false }
+                        ]
+                    }
+                } as any
+            ]);
+            const server = new NatsServer({ injector } as any, options);
+            const subjects = mergeSubscribePatterns(options.subjects, getSubscribePatterns(options, server.injector), ['>']);
+
+            expect(subjects).toEqual(['sensor.*.start']);
         });
     });
 });

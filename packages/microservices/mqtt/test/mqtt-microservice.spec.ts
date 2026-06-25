@@ -1,6 +1,8 @@
 import { MqttServer, MqttServOptions, mqttTransportFactory, useMqttTransport, MQTT_SERV_OPTIONS } from '../src/server';
 import { withMqttTransport, MQTT_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
+import { createInjector } from '@tsdi/ioc';
+import { getServiceRouterToken } from '@tsdi/service';
 import expect = require('expect');
 
 describe('MQTT Microservice', () => {
@@ -147,6 +149,28 @@ describe('MQTT Microservice', () => {
         it('should exist as a class', () => {
             expect(MqttServer).toBeDefined();
             expect(typeof MqttServer).toBe('function');
+        });
+
+        it('merges subscribe routes into mqtt topics', () => {
+            const options = mqttTransportFactory({ url: 'mqtt://localhost:1883' }).config as MqttServOptions;
+            const injector = createInjector([
+                {
+                    provide: getServiceRouterToken(options as any),
+                    useValue: {
+                        formatter: { format: (pattern: any) => String(pattern) },
+                        routes: [
+                            { pattern: 'sensor/+/start', subscribe: true },
+                            { pattern: 'sensor/+/start', subscribe: true },
+                            { pattern: 'sensor/ignore', subscribe: false }
+                        ]
+                    }
+                } as any
+            ]);
+            const server = new MqttServer({ injector } as any, options);
+
+            expect((server as any).resolveSubscribeTopics()).toEqual([
+                { topic: 'sensor/+/start', qos: 0 }
+            ]);
         });
     });
 });

@@ -1,6 +1,8 @@
 import { KafkaServer, KafkaServOptions, kafkaTransportFactory, useKafkaTransport, KAFKA_SERV_OPTIONS } from '../src/server';
 import { withKafkaTransport, KAFKA_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
+import { createInjector } from '@tsdi/ioc';
+import { getServiceRouterToken } from '@tsdi/service';
 import expect = require('expect');
 
 describe('Kafka Microservice', () => {
@@ -62,6 +64,28 @@ describe('Kafka Microservice', () => {
     describe('KafkaServer', () => {
         it('should exist as a class', () => {
             expect(typeof KafkaServer).toBe('function');
+        });
+
+        it('merges subscribe routes into kafka topics', () => {
+            const options = kafkaTransportFactory({ brokers: ['localhost:9092'] }).config as KafkaServOptions;
+            const injector = createInjector([
+                {
+                    provide: getServiceRouterToken(options as any),
+                    useValue: {
+                        formatter: { format: (pattern: any) => String(pattern) },
+                        routes: [
+                            { pattern: 'device.events', subscribe: true },
+                            { pattern: 'device.events', subscribe: true },
+                            { pattern: 'device.ignore', subscribe: false }
+                        ]
+                    }
+                } as any
+            ]);
+            const server = new KafkaServer({ injector } as any, options);
+
+            expect((server as any).resolveTopics()).toEqual([
+                { topic: 'device.events', fromBeginning: options.fromBeginning }
+            ]);
         });
     });
 });

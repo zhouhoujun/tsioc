@@ -36,6 +36,10 @@ export interface Subscribe {
     (topic: string, transport?: Transport, option?: RouteOptions): MethodDecorator;
 }
 
+interface SubscribeMetadata<TArg = any> extends HandleMetadata<TArg> {
+    subscribe?: boolean;
+}
+
 const primitiveResolvers = createMessageResolveInterceptors();
 
 /**
@@ -44,10 +48,12 @@ const primitiveResolvers = createMessageResolveInterceptors();
  *
  * @exports {@link Handle}
  */
-export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe', {
+export const Subscribe: Subscribe = createDecorator<SubscribeMetadata>('Subscribe', {
     actionType: ActionType.annoation | ActionType.runnable,
     props: (route: string, arg1?: Transport | RouteOptions, option?: RouteOptions) =>
-        (isNumber(arg1) ? ({ route, transport: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
+        (isNumber(arg1)
+            ? ({ route, transport: arg1, subscribe: true, ...option })
+            : ({ route, subscribe: true, ...arg1 })) as SubscribeMetadata,
     appendProps: (meta) => {
         if (!meta.resolvers) {
             meta.resolvers = [];
@@ -57,7 +63,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     design: {
         method: (typeRef, ctx) => {
 
-            const defines = typeRef.getDefines<HandleMetadata>(ctx.currDecor!);
+            const defines = typeRef.getDefines<SubscribeMetadata>(ctx.currDecor!);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
@@ -74,6 +80,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
                     prefix,
                     path,
                     pattern: metadata.route,
+                    subscribe: metadata.subscribe,
                     paths: metadata.paths,
                     handler
                 } as Route;

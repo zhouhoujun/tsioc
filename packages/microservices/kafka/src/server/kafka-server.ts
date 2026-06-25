@@ -2,7 +2,7 @@ import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { createRequestContext, RequestContext, Transport, REQUEST } from '@tsdi/common';
-import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import { Kafka, Consumer, Producer, EachMessagePayload } from 'kafkajs';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS, KAFKA_BIND_INTERCEPTORS, KAFKA_BIND_FILTERS, KAFKA_BIND_GUARDS } from './options';
@@ -54,7 +54,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
 
             this.logger.info(getTypeName(this), `connected to Kafka, brokers: ${(this.options.brokerCompatBrokers?.length ? this.options.brokerCompatBrokers : (this.options.brokers || ['localhost:9092'])).join(',')}`);
 
-            const topics = this.options.topics || [{ topic: 'microservice' }];
+            const topics = this.resolveTopics();
             for (const t of topics) {
                 await this.consumer.subscribe({ topic: t.topic, fromBeginning: t.fromBeginning ?? this.options.fromBeginning ?? false });
                 this.logger.info(`Subscribed to Kafka topic '${t.topic}'`);
@@ -81,6 +81,21 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         if (this.consumer) { await this.consumer.disconnect(); this.consumer = null; }
         if (this.producer) { await this.producer.disconnect(); this.producer = null; }
 
+    }
+
+    private resolveTopics(): Array<{ topic: string; fromBeginning?: boolean }> {
+        const explicit = this.options.topics ?? [];
+        const discovered = getSubscribePatterns(this.options, this.injector);
+        const merged = mergeSubscribePatterns(
+            explicit.map(item => item.topic),
+            discovered,
+            ['microservice']
+        );
+
+        return merged.map(topic => {
+            const current = explicit.find(item => item.topic === topic);
+            return current ?? { topic, fromBeginning: this.options.fromBeginning };
+        });
     }
 
     private handleMessage(payload: EachMessagePayload) {

@@ -1,6 +1,8 @@
 import { AmqpServer, AmqpServOptions, amqpTransportFactory, useAmqpTransport, AMQP_SERV_OPTIONS } from '../src/server';
 import { withAmqpTransport, AMQP_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
+import { createInjector } from '@tsdi/ioc';
+import { getServiceRouterToken, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import expect = require('expect');
 
 describe('AMQP Microservice', () => {
@@ -149,6 +151,26 @@ describe('AMQP Microservice', () => {
         it('should exist as a class', () => {
             expect(AmqpServer).toBeDefined();
             expect(typeof AmqpServer).toBe('function');
+        });
+
+        it('merges subscribe routes into amqp routing keys', () => {
+            const options = amqpTransportFactory({ url: 'amqp://localhost:5672' }).config as AmqpServOptions;
+            const injector = createInjector([
+                {
+                    provide: getServiceRouterToken(options as any),
+                    useValue: {
+                        formatter: { format: (pattern: any) => String(pattern) },
+                        routes: [
+                            { pattern: 'sensor.*.start', subscribe: true },
+                            { pattern: 'sensor.ignore', subscribe: false }
+                        ]
+                    }
+                } as any
+            ]);
+            const server = new AmqpServer({ injector } as any, options);
+            const routingKeys = mergeSubscribePatterns(options.routingKey ? [options.routingKey] : undefined, getSubscribePatterns(options, server.injector), ['*.microservice']);
+
+            expect(routingKeys).toEqual(['sensor.*.start']);
         });
     });
 });
