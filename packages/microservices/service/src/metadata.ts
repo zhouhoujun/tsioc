@@ -94,20 +94,20 @@ export type HandleDecorator = <TFunction extends AbstractType<Handler>>(target: 
  */
 export interface Handle {
     /**
-     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     * message handle. use to handle route message event, in class with decorator {@link Handle}.
      *
      * @param {RouteMappingMetadata} option message match option.
      */
     (option: RouteMappingMetadata): HandleDecorator;
     /**
-     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     * message handle. use to handle route message event, in class with decorator {@link Handle}.
      *
      * @param {Pattern} pattern message match pattern.
      * @param {RouteOptions} option message match option.
      */
     (pattern: Pattern, option?: RouteOptions): MethodDecorator;
     /**
-     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     * message handle. use to handle route message event, in class with decorator {@link Handle}.
      *
      * @param {Pattern} pattern message match pattern.
      * @param {Transport} transport message transport.
