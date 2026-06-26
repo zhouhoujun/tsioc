@@ -8,7 +8,6 @@ import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeS
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AmqpServOptions, AMQP_SERV_OPTIONS, AMQP_BIND_INTERCEPTORS, AMQP_BIND_FILTERS, AMQP_BIND_GUARDS } from './options';
-import { AmqpMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * AMQP server for microservices.
@@ -110,61 +109,13 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private handleMessage(msg: amqp.ConsumeMessage, _exchange: string, _routingKey: string) {
-        const content = msg.content.toString();
-
-        let parsed: any;
-        try {
-            parsed = JSON.parse(content);
-        } catch {
-            parsed = content;
-        }
-
-        const routingKey = msg.fields.routingKey;
-        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const topic = requestSource.topic ?? routingKey;
-        const rawUrl = requestSource.url
-            ?? (typeof requestSource.topic === 'string' && requestSource.topic.includes('/')
-                ? requestSource.topic
-                : undefined);
-        const url = typeof rawUrl === 'string'
-            ? rawUrl.replace(/^\/+/, '').replace(/\//g, '.')
-            : undefined;
-        const pattern = requestSource.pattern ?? topic;
-        const method = requestSource.method || 'GET';
-        const body = requestSource.body ?? requestSource.payload ?? parsed;
-        const requestData = {
-            ...requestSource,
-            url,
-            topic,
-            method,
-            body,
-            payload: body,
-            replyTo: msg.properties.replyTo,
-            correlationId: msg.properties.correlationId,
-        };
-        if (pattern !== undefined) {
-            requestData.pattern = pattern;
-        }
-
         const context = createRequestContext(this.injector, [
-            [REQUEST, requestData],
+            [REQUEST, msg as any],
         ]);
-        const adapter = this.injector.get(AmqpMessageAdapterFactory).create({ request: requestData, response: this.channel!, context });
-        context.setMessageAdapter(adapter);
-        context.setPayload(requestData);
 
-        this.handler.handle(requestData as TReq, context)
+        this.handler.handle(msg as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe({
-                next: (response: any) => {
-                    adapter.sendResponse(response);
-                    this.channel?.ack(msg);
-                },
-                error: (err) => {
-                    adapter.sendError(err);
-                    this.channel?.nack(msg, false, false);
-                }
-            });
+            ).subscribe();
     }
 }

@@ -64,7 +64,7 @@ describe('Redis client backend', () => {
         const backend = createBackend();
         const socket = new FakeRedis();
         const request = new RedisRequest('topic.emit', null, { observe: 'events' } as any, 'PUBLISH');
-        const result: any = await lastValueFrom(backend('payload', createContext(request, socket)));
+        const result: any = await lastValueFrom(backend(request.clone({ payload: 'payload' }), createContext(request, socket)));
 
         expect(result).toEqual({ type: 0 });
         expect(socket.published).toHaveLength(1);
@@ -75,7 +75,7 @@ describe('Redis client backend', () => {
         const backend = createBackend();
         const socket = new FakeRedis();
         const request = new RedisRequest('topic.body', null, { observe: 'body', responseType: 'text' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const dup = socket.duplicates[0];
@@ -98,7 +98,7 @@ describe('Redis client backend', () => {
         const backend = createBackend();
         const socket = new FakeRedis();
         const request = new RedisRequest('topic.response', null, { observe: 'response' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const dup = socket.duplicates[0];
@@ -120,7 +120,7 @@ describe('Redis client backend', () => {
         const backend = createBackend();
         const socket = new FakeRedis();
         const request = new RedisRequest('topic.error', null, { observe: 'body' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         setTimeout(() => {
             const dup = socket.duplicates[0];
             dup.emit('message', 'topic.error:response', JSON.stringify({
@@ -139,7 +139,7 @@ describe('Redis client backend', () => {
         const backend = createBackend();
         const socket = new FakeRedis();
         const request = new RedisRequest('topic.observe', null, { observe: 'observe' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
 
         const promise = lastValueFrom(result$.pipe(take(2), toArray()));
         setTimeout(() => {

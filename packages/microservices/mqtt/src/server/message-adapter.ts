@@ -173,43 +173,4 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
         this.setError(error);
     }
 
-    /**
-     * Send the adapter's response payload to MQTT reply topic (topic + '/response').
-     */
-    sendResponse(response?: any): void {
-        const client = this.client;
-        if (!client) return;
-        const responseTopic = this.requestData?.responseTopic ?? (this.requestData?.topic ? this.requestData.topic + '/response' : undefined);
-        if (!responseTopic) return;
-
-        const body = !isNil(this.payload) ? this.payload
-            : response === this ? undefined : response;
-        if (body === undefined) return;
-
-        const msg = JSON.stringify({ payload: body });
-        client.publish(responseTopic, msg);
-    }
-
-    /**
-     * Send an error response to MQTT reply topic (topic + '/response').
-     */
-    sendError(err: any): void {
-        const client = this.client;
-        if (!client) return;
-
-        this.setError(err);
-        this.setStatus(err?.statusCode || err?.status || 500);
-
-        const errorBody = {
-            error: err?.message || err?.statusMessage || 'Error',
-            statusCode: err?.statusCode || err?.status || 500,
-            ...(err?.details ? { details: err.details } : {}),
-        };
-        this.setPayload(errorBody);
-
-        const responseTopic = this.requestData?.responseTopic ?? (this.requestData?.topic ? this.requestData.topic + '/response' : undefined);
-        if (responseTopic) {
-            client.publish(responseTopic, JSON.stringify(errorBody));
-        }
-    }
 }

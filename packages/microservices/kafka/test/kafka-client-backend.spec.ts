@@ -83,7 +83,7 @@ describe('Kafka client backend', () => {
         const backend = createBackend();
         const producer = new FakeProducer();
         const request = new KafkaRequest('topic.emit', null, { observe: 'events' } as any, 'SEND');
-        const result: any = await lastValueFrom(backend('payload', createContext(request, producer)));
+        const result: any = await lastValueFrom(backend(request.clone({ payload: 'payload' }), createContext(request, producer)));
 
         expect(result).toEqual({ type: 0 });
         expect(producer.sent).toHaveLength(1);
@@ -95,7 +95,7 @@ describe('Kafka client backend', () => {
         const backend = createBackend(class extends FakeKafka { constructor() { super(); return fakeKafka as any; } });
         const producer = new FakeProducer();
         const request = new KafkaRequest('topic.body', null, { observe: 'body', responseType: 'text' } as any, 'SEND');
-        const result$ = backend({ hello: 'world' }, createContext(request, producer));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, producer));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const reqId = JSON.parse(producer.sent[0].messages[0].value.toString()).id;
@@ -112,7 +112,7 @@ describe('Kafka client backend', () => {
         const backend = createBackend(class extends FakeKafka { constructor() { super(); return fakeKafka as any; } });
         const producer = new FakeProducer();
         const request = new KafkaRequest('topic.response', null, { observe: 'response' } as any, 'SEND');
-        const result$ = backend({ hello: 'world' }, createContext(request, producer));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, producer));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const reqId = JSON.parse(producer.sent[0].messages[0].value.toString()).id;
@@ -130,7 +130,7 @@ describe('Kafka client backend', () => {
         const backend = createBackend(class extends FakeKafka { constructor() { super(); return fakeKafka as any; } });
         const producer = new FakeProducer();
         const request = new KafkaRequest('topic.error', null, { observe: 'body' } as any, 'SEND');
-        const result$ = backend({ hello: 'world' }, createContext(request, producer));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, producer));
 
         setTimeout(() => {
             const reqId = JSON.parse(producer.sent[0].messages[0].value.toString()).id;
@@ -145,7 +145,7 @@ describe('Kafka client backend', () => {
         const backend = createBackend(class extends FakeKafka { constructor() { super(); return fakeKafka as any; } });
         const producer = new FakeProducer();
         const request = new KafkaRequest('topic.observe', null, { observe: 'observe' } as any, 'SEND');
-        const result$ = backend({ hello: 'world' }, createContext(request, producer));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, producer));
 
         const promise = lastValueFrom(result$.pipe(take(2), toArray()));
         setTimeout(() => {

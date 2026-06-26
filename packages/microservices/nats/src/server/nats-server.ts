@@ -8,8 +8,6 @@ import {
 import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import { NatsServOptions, NATS_SERV_OPTIONS, NATS_BIND_INTERCEPTORS, NATS_BIND_FILTERS, NATS_BIND_GUARDS } from './options';
-import { NatsMessageAdapter } from './message-adapter';
-import { NatsMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * NATS server for microservices.
@@ -100,65 +98,13 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private handleMessage(subject: string, data: Uint8Array, sc: any, msg: any) {
-        const content = sc.decode(data);
-
-        let parsed: any;
-        try {
-            parsed = JSON.parse(content);
-        } catch {
-            parsed = content;
-        }
-
-        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const actualSubject = msg?.subject ?? subject;
-        const topic = requestSource.topic ?? actualSubject;
-        const rawUrl = requestSource.url
-            ?? (typeof requestSource.topic === 'string' && requestSource.topic.includes('/')
-                ? requestSource.topic
-                : undefined);
-        const url = typeof rawUrl === 'string'
-            ? rawUrl.replace(/^\/+/, '').replace(/\//g, '.')
-            : undefined;
-        const pattern = requestSource.pattern ?? topic;
-        const method = requestSource.method || 'GET';
-        const body = requestSource.body ?? requestSource.payload ?? parsed;
-        const requestData = {
-            ...requestSource,
-            url,
-            topic,
-            method,
-            body,
-            payload: body,
-            subject: actualSubject,
-            _respond: (data: any) => {
-                if (msg.respond) {
-                    const buf = sc.encode(JSON.stringify(data));
-                    msg.respond(buf);
-                }
-            },
-        };
-        if (pattern !== undefined) {
-            requestData.pattern = pattern;
-        }
-
         const context = createRequestContext(this.injector, [
-            [REQUEST, requestData],
+            [REQUEST, { subject, data, sc, msg } as any],
         ]);
-        const adapter = this.injector.get(NatsMessageAdapterFactory).create({ request: requestData, response: this.nc!, context });
-        context.setMessageAdapter(adapter);
-        context.setPayload(requestData);
-        adapter.setRequestData(requestData);
 
-        this.handler.handle(requestData as TReq, context)
+        this.handler.handle({ subject, data, sc, msg } as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe({
-                next: (response: any) => {
-                    adapter.sendResponse(response);
-                },
-                error: (err) => {
-                    adapter.sendError(err);
-                }
-            });
+            ).subscribe();
     }
 }

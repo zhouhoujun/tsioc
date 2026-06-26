@@ -10,8 +10,6 @@ import { Subject, race, take, takeUntil } from 'rxjs';
 import * as dgram from 'node:dgram';
 import { SOCKET } from '@tsdi/transport';
 import { UdpServOptions, UDP_SERV_OPTIONS, UDP_BIND_INTERCEPTORS, UDP_BIND_FILTERS, UDP_BIND_GUARDS } from './options';
-import { UdpMessageAdapter } from './message-adapter';
-import { UdpMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * UDP server for microservices.
@@ -116,77 +114,14 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
     }
 
     private handleMessage(msg: Buffer, rinfo: dgram.RemoteInfo) {
-        let data = msg.toString();
-        const framed = data.endsWith('\r\n');
-        if (framed) {
-            data = data.slice(0, -2);
-        }
-
-        let parsed: any;
-        try {
-            parsed = JSON.parse(data);
-        } catch {
-            parsed = data;
-        }
-
-        const url = parsed.url || '/';
-        const method = parsed.method || 'GET';
-        const requestData = { ...parsed, url, method };
-
         const context = createRequestContext(this.injector, [
             [SOCKET, this.socket],
-            [REQUEST, requestData],
+            [REQUEST, { message: msg, rinfo, framed: msg.toString().endsWith('\r\n') } as any],
         ]);
-        const adapter = this.injector.get(UdpMessageAdapterFactory).create({ request: this.socket!, response: this.socket!, context });
-        context.setMessageAdapter(adapter);
-        adapter.setRequestData(requestData);
-        context.setPayload(requestData);
 
-        this.handler.handle(requestData as TReq, context)
+        this.handler.handle({ message: msg } as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe({
-                next: (response: any) => {
-                    if (!this.socket) return;
-                    const body = adapter.payload ?? (response === adapter ? undefined : response);
-                    let payload = body;
-                    if (requestData?.id !== undefined && requestData?.id !== null) {
-                        if (payload === null || payload === undefined || (typeof payload !== 'object' && typeof payload !== 'function')) {
-                            payload = { id: requestData.id, payload };
-                        } else if (payload.id === undefined || payload.id === null) {
-                            payload.id = requestData.id;
-                        }
-                    }
-                    this.sendResponse(payload, rinfo, framed);
-                },
-                error: (err: any) => {
-                    this.logger.error(err);
-                    if (!this.socket) return;
-                    const errorPayload = this.buildErrorPayload(err, requestData);
-                    this.sendResponse(errorPayload, rinfo, framed);
-                }
-            });
-    }
-
-    private buildErrorPayload(err: any, requestData: any): any {
-        const statusCode = err?.statusCode ?? err?.status ?? 500;
-        const statusMessage = err?.statusMessage || err?.message || 'Internal Server Error';
-        const payload: Record<string, any> = {
-            statusCode,
-            statusMessage,
-            message: statusMessage,
-            ...(err?.details ? { details: err.details } : {})
-        };
-        if (requestData?.id !== undefined && requestData?.id !== null) {
-            payload.id = requestData.id;
-        }
-        return payload;
-    }
-
-    private sendResponse(payload: any, rinfo: dgram.RemoteInfo, framed: boolean): void {
-        if (!this.socket) return;
-        const responseText = typeof payload === 'string' ? payload : JSON.stringify(payload);
-        const buf = Buffer.from(framed ? responseText + '\r\n' : responseText);
-        this.socket.send(buf, rinfo.port, rinfo.address);
+            ).subscribe();
     }
 }

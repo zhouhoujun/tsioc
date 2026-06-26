@@ -1,7 +1,7 @@
-import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, useSimpleJson, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common';
-import { SOCKET } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
+import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisClient } from './client';
 import { RedisPatternFormatter } from '../server';
@@ -16,8 +16,39 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
         side: TransferSide.client,
         ...option,
         features: {
-            defaultTransfer: useSimpleJson({
-                mapping: (value, context) => mapRequestValue(value, context)
+            defaultTransfer: useBrokerClientTransfer<RedisRequest<any>>({
+                mapping: (request) => JSON.stringify(serializeRequest(request, 'payload', request?.id)),
+                match: (response, request) => !(response && typeof response === 'object' && response.id != null && response.id !== request?.id),
+                normalize: (parsed, request) => {
+                    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
+                        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
+                        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
+                        const body = !isNil(parsed.body) ? parsed.body : parsed.payload;
+                        return {
+                            ...parsed,
+                            status,
+                            statusCode: parsed.statusCode ?? status,
+                            statusMessage,
+                            statusText: statusMessage,
+                            ok: parsed.ok ?? (!parsed.error && status < 400),
+                            body,
+                            payload: !isNil(body) ? body : parsed.payload,
+                            error: parsed.error,
+                            headers: parsed.headers ?? {}
+                        };
+                    }
+                    return {
+                        status: 200,
+                        statusCode: 200,
+                        statusMessage: 'OK',
+                        statusText: 'OK',
+                        ok: true,
+                        body: parsed,
+                        payload: parsed,
+                        headers: {},
+                        responseType: request.responseType
+                    };
+                }
             }),
             ...option.features
         },
@@ -36,14 +67,13 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: () => createRedisClientBackend(config),
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createRedisClientBackend(config)),
+            deps: [Injector],
             multi: true
         }),
         {
             provide: hanlderToken,
-            useFactory: (injector: Injector) => {
-                return createRequestHandler(injector, config)
-            },
+            useFactory: (injector: Injector) => createRequestHandler(injector, config),
             deps: [
                 Injector
             ]
@@ -106,10 +136,9 @@ function createRedisClientBackend(config: RedisClientOptions) {
         const responseChannel = request.responseTopic
             ?? replyRequest.responseChannel
             ?? `${channel}${config.responseChannelSuffix ?? ':response'}`;
-        const formatter = context.get(PatternFormatter, defaultFormatter);
         const payload = typeof input === 'string'
-            ? JSON.stringify({ id: requestId, payload: input })
-            : JSON.stringify(serializeRequest({ ...request, id: requestId }, formatter, 'payload'));
+            ? input
+            : JSON.stringify(serializeRequest(request, 'payload', requestId, input));
 
         if (request.observe === 'events') {
             client.publish(channel, payload)
@@ -145,29 +174,21 @@ function createRedisClientBackend(config: RedisClientOptions) {
 
         subscriber.on('message', (_incomingChannel, message) => {
             try {
-                const parsed = parseReply(message, request, requestId);
-                if (!parsed) {
+                let parsed: any = message.toString();
+                try {
+                    parsed = JSON.parse(parsed);
+                } catch {
+                    // keep raw string payload
+                }
+                if (parsed && typeof parsed === 'object' && parsed.id != null && parsed.id !== requestId) {
                     return;
                 }
                 if (request.observe === 'observe') {
-                    if (parsed instanceof ErrorResponse) {
-                        fail(parsed);
-                        return;
-                    }
-                    observer.next(parsed.body ?? parsed.payload ?? parsed);
+                    observer.next(parsed);
                     return;
                 }
                 cleanup();
-                if (request.observe === 'response') {
-                    observer.next(parsed);
-                    observer.complete();
-                    return;
-                }
-                if (parsed instanceof ErrorResponse) {
-                    observer.error(parsed);
-                    return;
-                }
-                observer.next(parsed.body ?? parsed.payload ?? parsed);
+                observer.next(parsed);
                 observer.complete();
             } catch (err) {
                 fail(err);
@@ -191,31 +212,21 @@ function createRedisClientBackend(config: RedisClientOptions) {
     });
 }
 
-function mapRequestValue(value: any, context: any) {
-    if (value && typeof value === 'object' && ('url' in value || 'topic' in value || 'pattern' in value)) {
-        return serializeRequest(value, context.get(PatternFormatter) ?? defaultFormatter, 'payload');
-    }
-    return value;
-}
-
-function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
+function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestId?: string | number, payloadValue?: any) {
     const json: Record<string, any> = typeof request?.toJson === 'function'
-        ? request.toJson({ formatter, payloadKey })
+        ? request.toJson({ payloadKey })
         : {};
-    json.topic ??= request.topic ?? normalizeTopicFromUrl(request.url);
+    if (requestId != null) {
+        json.id = requestId;
+    }
     const responseTopic = request.responseTopic ?? request.responseChannel;
     if (responseTopic) {
         json.responseTopic ??= responseTopic;
         json.responseChannel = json.responseTopic;
     }
-    if (request.url) {
-        json.url ??= request.url;
-    }
-    if (request.params && !json.params) {
-        json.params = typeof request.params?.toRecord === 'function' ? request.params.toRecord() : request.params;
-    }
-    if (request.url && request.query && !json.query) {
-        json.query = request.query;
+    const nextPayload = !isNil(payloadValue) ? payloadValue : request[payloadKey];
+    if (!isNil(nextPayload)) {
+        json[payloadKey] = nextPayload;
     }
     return json;
 }
@@ -229,63 +240,4 @@ function normalizeTopicFromUrl(url?: string) {
         return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
     }
     return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
-}
-
-function parseReply(message: string, request: RedisRequest<any>, requestId: string | number) {
-    const raw = message.toString();
-    let parsed: any = raw;
-    try {
-        parsed = JSON.parse(raw);
-    } catch {
-        parsed = raw;
-    }
-    if (parsed && typeof parsed === 'object' && parsed.id != null && parsed.id !== requestId) {
-        return null;
-    }
-    if (request.observe === 'response') {
-        return normalizeResponse(parsed, request);
-    }
-    const normalized = normalizeResponse(parsed, request);
-    if (!normalized.ok) {
-        return new ErrorResponse({
-            status: normalized.status,
-            statusMessage: normalized.statusMessage,
-            statusText: normalized.statusText,
-            headers: normalized.headers,
-            error: normalized.error ?? normalized.body ?? normalized.payload
-        });
-    }
-    return normalized;
-}
-
-function normalizeResponse(parsed: any, request: RedisRequest<any>) {
-    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
-        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
-        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
-        const body = parsed.body ?? parsed.payload;
-        return {
-            ...parsed,
-            status,
-            statusCode: parsed.statusCode ?? status,
-            statusMessage,
-            statusText: statusMessage,
-            ok: parsed.ok ?? (!parsed.error && status < 400),
-            body,
-            payload: body ?? parsed.payload,
-            error: parsed.error,
-            headers: parsed.headers ?? {}
-        };
-    }
-    const body = parsed;
-    return {
-        status: 200,
-        statusCode: 200,
-        statusMessage: 'OK',
-        statusText: 'OK',
-        ok: true,
-        body,
-        payload: body,
-        headers: {},
-        responseType: request.responseType
-    };
 }

@@ -180,7 +180,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         if (!context.has(REQUEST)) {
             context.set(REQUEST, req as Incoming);
         }
-        context.setPayload(req as Incoming);
+        if (!context.getPayload()) {
+            context.setPayload(req as Incoming);
+        }
         const adapter = context.get(StatusMessageAdapter);
         if (adapter) {
             const status = adapter.status;

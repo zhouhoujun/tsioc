@@ -1,12 +1,106 @@
 import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
+import * as dgram from 'node:dgram';
 import { UdpServer } from './udp-server';
 import { UdpServOptions, UDP_SERV_OPTIONS } from './options';
 import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
+import { SOCKET } from '@tsdi/transport';
 import { UdpMessageAdapter } from './message-adapter';
 import { UdpMessageAdapterFactory } from './message-adapter.factory';
+import { useBrokerMessageTransfer } from '@tsdi/transport';
+
+function isUdpSocket(socket: unknown): socket is dgram.Socket {
+    return !!socket && typeof (socket as dgram.Socket).send === 'function';
+}
+
+const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer }, Record<string, any>>({
+    canHandle: (input) => !!input && Buffer.isBuffer(input.message),
+    normalize: ({ message }) => {
+        let data = message.toString();
+        if (data.endsWith('\r\n')) {
+            data = data.slice(0, -2);
+        }
+
+        let parsed: any;
+        try {
+            parsed = JSON.parse(data);
+        } catch {
+            parsed = data;
+        }
+        const requestSource: Record<string, any> = parsed && typeof parsed === 'object' ? parsed : {};
+        const url = requestSource.url || '/';
+        const method = requestSource.method || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        return {
+            ...requestSource,
+            url,
+            method,
+            body,
+            payload: body
+        };
+    },
+    adapter: {
+        factory: UdpMessageAdapterFactory,
+        response: (_input, _requestData, context) => context.get(SOCKET)
+    },
+    sender: {
+        canSend: (_response, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            return !!context.get(SOCKET) && !!requestData?.rinfo;
+        },
+        send: (response, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            const adapter = context.has(StatusMessageAdapter) ? context.get(StatusMessageAdapter) : null;
+            const socket = context.get(SOCKET);
+            const rinfo = requestData?.rinfo;
+            if (!isUdpSocket(socket) || !rinfo) {
+                return;
+            }
+            let payload = response;
+            if (requestData?.id !== undefined && requestData?.id !== null) {
+                if (payload === null || payload === undefined || (typeof payload !== 'object' && typeof payload !== 'function')) {
+                    payload = { id: requestData.id, payload };
+                } else if ((payload as Record<string, any>).id === undefined || (payload as Record<string, any>).id === null) {
+                    (payload as Record<string, any>).id = requestData.id;
+                }
+            }
+            adapter?.setPayload(payload);
+            const responseText = typeof payload === 'string' ? payload : JSON.stringify(payload);
+            const buf = Buffer.from(requestData?.framed ? responseText + '\r\n' : responseText);
+            socket.send(buf, rinfo.port, rinfo.address);
+        },
+        canSendError: (err: any, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            return !!err && !!context.get(SOCKET) && !!requestData?.rinfo;
+        },
+        sendError: (err: any, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            const adapter = context.has(StatusMessageAdapter) ? context.get(StatusMessageAdapter) : null;
+            const socket = context.get(SOCKET);
+            const rinfo = requestData?.rinfo;
+            if (!isUdpSocket(socket) || !rinfo) {
+                return;
+            }
+            const payload: Record<string, any> = {
+                statusCode: err?.statusCode ?? err?.status ?? 500,
+                statusMessage: err?.statusMessage || err?.message || 'Internal Server Error',
+                message: err?.statusMessage || err?.message || 'Internal Server Error',
+                ...(err?.details ? { details: err.details } : {})
+            };
+            if (requestData?.id !== undefined && requestData?.id !== null) {
+                payload.id = requestData.id;
+            }
+            adapter?.setError(err);
+            adapter?.setStatus(err?.statusCode || err?.status || 500, err?.statusMessage || err?.message);
+            adapter?.setPayload(payload);
+            const responseText = JSON.stringify(payload);
+            const buf = Buffer.from(requestData?.framed ? responseText + '\r\n' : responseText);
+            socket.send(buf, rinfo.port, rinfo.address);
+        }
+    }
+});
 
 export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -15,6 +109,7 @@ export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?:
         microservice: true,
         ...option,
         features: {
+            defaultTransfer: useUdpMessageTransfer(),
             ...option.features
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,

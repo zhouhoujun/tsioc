@@ -51,7 +51,7 @@ describe('MQTT client backend', () => {
         const backend = createBackend();
         const socket = new FakeMqttClient();
         const request = new MqttRequest('topic.emit', null, { observe: 'events' } as any, 'PUBLISH');
-        const result: any = await lastValueFrom(backend('payload', createContext(request, socket)));
+        const result: any = await lastValueFrom(backend(request.clone({ payload: 'payload' }), createContext(request, socket)));
 
         expect(result).toEqual({ type: 0 });
         expect(socket.published).toHaveLength(1);
@@ -67,7 +67,7 @@ describe('MQTT client backend', () => {
             headers: { 'x-test': '1' }
         }, 'PUBLISH');
 
-        await lastValueFrom(backend({ hello: 'world' }, createContext(request, socket)));
+        await lastValueFrom(backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket)));
 
         const published = JSON.parse(String(socket.published[0].payload));
         expect(published.topic).toBe('topic.payload');
@@ -86,8 +86,13 @@ describe('MQTT client backend', () => {
             payload: { id: 'a1' },
             responseTopic: 'custom/replies'
         }, 'PUBLISH');
+        const outbound = new MqttRequest('cmd:device.status', { cmd: 'device.status' }, {
+            observe: 'events',
+            payload: { id: 'a1' },
+            responseTopic: 'custom/replies'
+        }, 'PUBLISH');
 
-        await lastValueFrom(backend({ id: 'a1' }, createContext(request, socket)));
+        await lastValueFrom(backend(outbound, createContext(request, socket)));
 
         const published = JSON.parse(String(socket.published[0].payload));
         expect(published.responseTopic).toBe('custom/replies');
@@ -100,7 +105,7 @@ describe('MQTT client backend', () => {
         const backend = createBackend();
         const socket = new FakeMqttClient();
         const request = new MqttRequest('topic.body', null, { observe: 'body' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const reqId = JSON.parse(String(socket.published[0].payload)).id;
@@ -116,7 +121,7 @@ describe('MQTT client backend', () => {
         const backend = createBackend();
         const socket = new FakeMqttClient();
         const request = new MqttRequest('topic.response', null, { observe: 'response' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const reqId = JSON.parse(String(socket.published[0].payload)).id;
@@ -136,7 +141,7 @@ describe('MQTT client backend', () => {
             observe: 'body',
             responseTopic: 'custom/replies'
         }, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$);
 
         setTimeout(() => {
@@ -154,7 +159,7 @@ describe('MQTT client backend', () => {
         const backend = createBackend();
         const socket = new FakeMqttClient();
         const request = new MqttRequest('topic.error', null, { observe: 'body' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         setTimeout(() => {
             const reqId = JSON.parse(String(socket.published[0].payload)).id;
             socket.emit('message', 'topic.error/response', Buffer.from(JSON.stringify({ id: reqId, status: 500, statusMessage: 'Boom', error: { message: 'Boom' } })));
@@ -167,7 +172,7 @@ describe('MQTT client backend', () => {
         const backend = createBackend();
         const socket = new FakeMqttClient();
         const request = new MqttRequest('topic.observe', null, { observe: 'observe' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$.pipe(take(2), toArray()));
 
         setTimeout(() => {

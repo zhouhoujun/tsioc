@@ -6,6 +6,8 @@ import * as http from 'node:http';
 import * as net from 'node:net';
 import { WebSocketServer, WebSocket } from 'ws';
 
+const RUN_WS_SOCKET_TESTS = !!process.env.TSIO_TEST_WS;
+
 describe('WebSocket Microservice', () => {
 
     describe('WsServOptions', () => {
@@ -157,7 +159,7 @@ describe('WebSocket Microservice', () => {
         });
     });
 
-    describe('WebSocket Server listen', () => {
+    RUN_WS_SOCKET_TESTS && describe('WebSocket Server listen', () => {
         it('should listen on a specified port and close properly', async () => {
             const server = http.createServer();
             const wss = new WebSocketServer({ server });

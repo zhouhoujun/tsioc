@@ -4,12 +4,10 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import Redis from 'ioredis';
 import { RedisServOptions, REDIS_SERV_OPTIONS, REDIS_BIND_INTERCEPTORS, REDIS_BIND_FILTERS, REDIS_BIND_GUARDS } from './options';
-import { RedisMessageAdapter } from './message-adapter';
-import { RedisMessageAdapterFactory } from './message-adapter.factory';
 
 @Injectable()
 export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
@@ -47,7 +45,7 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         this.subscriber = new Redis(url);
         this.publisher = new Redis(url);
 
-        const channels = this.options.channels || ['microservice.*'];
+        const channels = this.resolveChannels();
         (this.subscriber as Redis).subscribe(...channels, (err: any) => {
             if (err) {
                 this.logger.error('Redis subscribe error:', err);
@@ -88,37 +86,22 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         }
     }
 
+    private resolveChannels(): string[] {
+        return mergeSubscribePatterns(
+            this.options.channels,
+            getSubscribePatterns(this.options, this.injector),
+            ['microservice.*']
+        );
+    }
+
     private handleMessage(channel: string, message: string) {
-        let parsed: any;
-        try {
-            parsed = JSON.parse(message);
-        } catch {
-            parsed = message;
-        }
-
-        const url = parsed.url || channel;
-        const method = parsed.method || 'GET';
-        const requestData = { ...parsed, url, method, channel };
-        requestData.responseChannel ??= requestData.responseTopic ?? `${channel}${this.options.responseChannelSuffix ?? ':response'}`;
-
         const context = createRequestContext(this.injector, [
-            [REQUEST, requestData],
+            [REQUEST, { channel, message }],
         ]);
-        const adapter = this.injector.get(RedisMessageAdapterFactory).create({ request: requestData, response: this.publisher!, context });
-        context.setMessageAdapter(adapter);
-        context.setPayload(requestData);
-        adapter.setRequestData(requestData);
 
-        this.handler.handle(requestData as TReq, context)
+        this.handler.handle({ channel, message } as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe({
-                next: (response: any) => {
-                    adapter.sendResponse(response);
-                },
-                error: (err) => {
-                    adapter.sendError(err);
-                }
-            });
+            ).subscribe();
     }
 }

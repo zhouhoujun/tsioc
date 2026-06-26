@@ -62,7 +62,7 @@ describe('AMQP client backend', () => {
         const backend = createBackend();
         const socket = new FakeChannel();
         const request = new AmqpRequest('topic.emit', null, { observe: 'events' } as any, 'PUBLISH');
-        const result: any = await lastValueFrom(backend('payload', createContext(request, socket)));
+        const result: any = await lastValueFrom(backend(request.clone({ payload: 'payload' }), createContext(request, socket)));
 
         expect(result).toEqual({ type: 0 });
         expect(socket.published).toHaveLength(1);
@@ -72,7 +72,7 @@ describe('AMQP client backend', () => {
         const backend = createBackend();
         const socket = new FakeChannel();
         const request = new AmqpRequest('topic.body', null, { observe: 'body' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const correlationId = socket.published[0].options.correlationId;
@@ -88,7 +88,7 @@ describe('AMQP client backend', () => {
         const backend = createBackend();
         const socket = new FakeChannel();
         const request = new AmqpRequest('topic.response', null, { observe: 'response' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$);
         setTimeout(() => {
             const correlationId = socket.published[0].options.correlationId;
@@ -105,7 +105,7 @@ describe('AMQP client backend', () => {
         const backend = createBackend();
         const socket = new FakeChannel();
         const request = new AmqpRequest('topic.error', null, { observe: 'body' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         setTimeout(() => {
             const correlationId = socket.published[0].options.correlationId;
             socket.emitMessage({ status: 500, statusMessage: 'Boom', error: { message: 'Boom' } }, correlationId);
@@ -118,7 +118,7 @@ describe('AMQP client backend', () => {
         const backend = createBackend();
         const socket = new FakeChannel();
         const request = new AmqpRequest('topic.observe', null, { observe: 'observe' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
         const resultPromise = lastValueFrom(result$.pipe(take(2), toArray()));
 
         setTimeout(() => {

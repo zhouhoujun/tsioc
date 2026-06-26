@@ -1,5 +1,5 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
+import { NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { NatsServer } from './nats-server';
 import { NatsPatternFormatter } from './pattern';
@@ -8,6 +8,84 @@ import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, Servi
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { NatsMessageAdapter } from './message-adapter';
 import { NatsMessageAdapterFactory } from './message-adapter.factory';
+import { useBrokerMessageTransfer } from '@tsdi/transport';
+
+const useNatsMessageTransfer = () => useBrokerMessageTransfer<any, Record<string, any>>({
+    canHandle: (input) => !!input && typeof input.subject === 'string' && !!input.data,
+    normalize: ({ subject, data, sc, msg }) => {
+        const content = sc.decode(data);
+        let parsed: any;
+        try {
+            parsed = JSON.parse(content);
+        } catch {
+            parsed = content;
+        }
+
+        const requestSource: Record<string, any> = parsed && typeof parsed === 'object' ? parsed : {};
+        const actualSubject = msg?.subject ?? subject;
+        const topic = requestSource.topic ?? actualSubject;
+        const rawUrl = requestSource.url
+            ?? (typeof requestSource.topic === 'string' && requestSource.topic.includes('/')
+                ? requestSource.topic
+                : undefined);
+        const url = typeof rawUrl === 'string'
+            ? rawUrl.replace(/^\/+/, '').replace(/\//g, '.')
+            : undefined;
+        const pattern = requestSource.pattern ?? topic;
+        const method = requestSource.method || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        const requestData: Record<string, any> = {
+            ...requestSource,
+            url,
+            topic,
+            method,
+            body,
+            payload: body,
+            subject: actualSubject,
+            _respond: (data: any) => {
+                if (msg.respond) {
+                    const buf = sc.encode(JSON.stringify(data));
+                    msg.respond(buf);
+                }
+            },
+        };
+        if (pattern !== undefined) {
+            requestData.pattern = pattern;
+        }
+        return requestData;
+    },
+    adapter: {
+        factory: NatsMessageAdapterFactory,
+        response: (_input, _requestData, context) => context.getInjector().get(NatsServer).nc!
+    },
+    sender: {
+        canSend: (_response, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            return typeof requestData?._respond === 'function';
+        },
+        send: (response, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            requestData?._respond?.({ payload: response });
+        },
+        canSendError: (err: any, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            return !!err && typeof requestData?._respond === 'function';
+        },
+        sendError: (err: any, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            const adapter = context.has(StatusMessageAdapter) ? context.get(StatusMessageAdapter) : null;
+            const errorBody = {
+                error: err?.message || err?.statusMessage || 'Error',
+                statusCode: err?.statusCode || err?.status || 500,
+                ...(err?.details ? { details: err.details } : {}),
+            };
+            adapter?.setError(err);
+            adapter?.setStatus(err?.statusCode || err?.status || 500, err?.statusMessage || err?.message);
+            adapter?.setPayload(errorBody);
+            requestData?._respond?.(errorBody);
+        }
+    }
+});
 
 export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -16,7 +94,7 @@ export function natsTransportFactory(option: Partial<NatsServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
-            defaultTransfer: () => [],
+            defaultTransfer: useNatsMessageTransfer(),
             ...option.features,
             router: option.features?.router === false ? false : {
                 ...(typeof option.features?.router === 'object' ? option.features.router : {}),

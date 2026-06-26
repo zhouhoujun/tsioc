@@ -1,6 +1,8 @@
 import { RedisServer, RedisServOptions, redisTransportFactory, useRedisTransport, REDIS_SERV_OPTIONS } from '../src/server';
 import { withRedisTransport, REDIS_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
+import { createInjector } from '@tsdi/ioc';
+import { getServiceRouterToken } from '@tsdi/service';
 import expect = require('expect');
 
 describe('Redis Microservice', () => {
@@ -133,6 +135,26 @@ describe('Redis Microservice', () => {
         it('should exist as a class', () => {
             expect(RedisServer).toBeDefined();
             expect(typeof RedisServer).toBe('function');
+        });
+
+        it('merges subscribe routes into redis channels', () => {
+            const options = redisTransportFactory({}).config as RedisServOptions;
+            const injector = createInjector([
+                {
+                    provide: getServiceRouterToken(options as any),
+                    useValue: {
+                        formatter: { format: (pattern: any) => String(pattern) },
+                        routes: [
+                            { pattern: 'device.events', subscribe: true },
+                            { pattern: 'device.events', subscribe: true },
+                            { pattern: 'device.ignore', subscribe: false }
+                        ]
+                    }
+                } as any
+            ]);
+            const server = new RedisServer({ injector } as any, options);
+
+            expect((server as any).resolveChannels()).toEqual(['device.events']);
         });
     });
 });

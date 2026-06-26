@@ -1,7 +1,7 @@
-import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common'
-import { SOCKET } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, Events, ResponseEventPacket } from '@tsdi/common'
+import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
 import { MqttClient } from './client';
 import { MqttRequest } from './request';
@@ -14,8 +14,38 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
         side: TransferSide.client,
         ...option,
         features: {
-            defaultTransfer: useSimpleJson({
-                mapping: (value, context) => mapRequestValue(value, context)
+            defaultTransfer: useBrokerClientTransfer<MqttRequest<any>>({
+                mapping: (request) => JSON.stringify(serializeRequest(request, 'payload', request?.id)),
+                match: (response, request) => !(response && typeof response === 'object' && response.id != null && response.id !== request?.id),
+                normalize: (parsed) => {
+                    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
+                        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
+                        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
+                        const body = !isNil(parsed.body) ? parsed.body : parsed.payload;
+                        return {
+                            ...parsed,
+                            status,
+                            statusCode: parsed.statusCode ?? status,
+                            statusMessage,
+                            statusText: statusMessage,
+                            ok: parsed.ok ?? (!parsed.error && status < 400),
+                            body,
+                            payload: !isNil(body) ? body : parsed.payload,
+                            error: parsed.error,
+                            headers: parsed.headers ?? {}
+                        };
+                    }
+                    return {
+                        status: 200,
+                        statusCode: 200,
+                        statusMessage: 'OK',
+                        statusText: 'OK',
+                        ok: true,
+                        body: parsed,
+                        payload: parsed,
+                        headers: {}
+                    };
+                }
             }),
             ...option.features
         },
@@ -33,14 +63,13 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: () => createMqttClientBackend(config),
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createMqttClientBackend(config)),
+            deps: [Injector],
             multi: true
         }),
         {
             provide: hanlderToken,
-            useFactory: (injector: Injector) => {
-                return createRequestHandler(injector, config)
-            },
+            useFactory: (injector: Injector) => createRequestHandler(injector, config),
             deps: [
                 Injector
             ]
@@ -94,10 +123,9 @@ function createMqttClientBackend(config: MqttClientOptions) {
         const topic = request.topic;
         const requestId = request.id ?? `${Date.now()}-${Math.random()}`;
         const responseTopic = request.responseTopic ?? config.responseTopic ?? `${topic}/response`;
-        const formatter = context.get(PatternFormatter, defaultFormatter);
-        const payload = Buffer.isBuffer(input)
+        const payload = Buffer.isBuffer(input) || typeof input === 'string'
             ? input
-            : JSON.stringify(serializeRequest(request, formatter, 'payload', requestId));
+            : JSON.stringify(serializeRequest(request, 'payload', requestId, input));
         let timer: NodeJS.Timeout | undefined;
         let closed = false;
 
@@ -114,28 +142,19 @@ function createMqttClientBackend(config: MqttClientOptions) {
 
         const onMessage = (receivedTopic: string, message: Buffer) => {
             if (receivedTopic !== responseTopic) return;
-            const parsed = parseReply(message.toString(), request, requestId);
-            if (!parsed) return;
+            let parsed: any = message.toString();
+            try {
+                parsed = JSON.parse(parsed);
+            } catch {
+                // keep raw string payload
+            }
+            if (parsed && typeof parsed === 'object' && parsed.id != null && parsed.id !== requestId) return;
             if (request.observe === 'observe') {
-                if (parsed instanceof ErrorResponse) {
-                    cleanup();
-                    observer.error(parsed);
-                    return;
-                }
-                observer.next(parsed.body ?? parsed.payload ?? parsed);
+                observer.next(parsed);
                 return;
             }
             cleanup();
-            if (request.observe === 'response') {
-                observer.next(parsed);
-                observer.complete();
-                return;
-            }
-            if (parsed instanceof ErrorResponse) {
-                observer.error(parsed);
-                return;
-            }
-            observer.next(parsed.body ?? parsed.payload ?? parsed);
+            observer.next(parsed);
             observer.complete();
         };
 
@@ -170,29 +189,16 @@ function createMqttClientBackend(config: MqttClientOptions) {
     });
 }
 
-function mapRequestValue(value: any, context: any) {
-    if (value && typeof value === 'object' && ('url' in value || 'topic' in value || 'pattern' in value)) {
-        return serializeRequest(value, context.get(PatternFormatter) ?? defaultFormatter, 'payload');
-    }
-    return value;
-}
-
-function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload', requestId?: string | number) {
+function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestId?: string | number, payloadValue?: any) {
     const json: Record<string, any> = typeof request?.toJson === 'function'
-        ? request.toJson({ formatter, payloadKey })
+        ? request.toJson({ payloadKey })
         : {};
     if (requestId != null) {
         json.id = requestId;
     }
-    json.topic ??= request.topic ?? request.url;
-    if (request.url) {
-        json.url ??= request.url;
-    }
-    if (request.params && !json.params) {
-        json.params = typeof request.params?.toRecord === 'function' ? request.params.toRecord() : request.params;
-    }
-    if (request.url && request.query && !json.query) {
-        json.query = request.query;
+    const nextPayload = !isNil(payloadValue) ? payloadValue : request[payloadKey];
+    if (!isNil(nextPayload)) {
+        json[payloadKey] = nextPayload;
     }
     return json;
 }
@@ -226,60 +232,4 @@ function publishMessage(client: mqtt.MqttClient, topic: string, payload: string 
             else resolve();
         });
     });
-}
-
-function parseReply(message: string, request: MqttRequest<any>, requestId: string | number) {
-    let parsed: any = message;
-    try {
-        parsed = JSON.parse(message);
-    } catch {
-        parsed = message;
-    }
-    if (parsed && typeof parsed === 'object' && parsed.id != null && parsed.id !== requestId) {
-        return null;
-    }
-    const normalized = normalizeResponse(parsed);
-    if (request.observe === 'response') {
-        return normalized;
-    }
-    if (!normalized.ok) {
-        return new ErrorResponse({
-            status: normalized.status,
-            statusMessage: normalized.statusMessage,
-            statusText: normalized.statusText,
-            headers: normalized.headers,
-            error: normalized.error ?? normalized.body ?? normalized.payload
-        });
-    }
-    return normalized;
-}
-
-function normalizeResponse(parsed: any) {
-    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
-        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
-        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
-        const body = parsed.body ?? parsed.payload;
-        return {
-            ...parsed,
-            status,
-            statusCode: parsed.statusCode ?? status,
-            statusMessage,
-            statusText: statusMessage,
-            ok: parsed.ok ?? (!parsed.error && status < 400),
-            body,
-            payload: body ?? parsed.payload,
-            error: parsed.error,
-            headers: parsed.headers ?? {}
-        };
-    }
-    return {
-        status: 200,
-        statusCode: 200,
-        statusMessage: 'OK',
-        statusText: 'OK',
-        ok: true,
-        body: parsed,
-        payload: parsed,
-        headers: {}
-    };
 }

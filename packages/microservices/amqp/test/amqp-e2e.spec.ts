@@ -27,8 +27,9 @@ class RouteCtrl {
 }
 
 const AMQP_URL = 'amqp://127.0.0.1:5672?frameMax=16384';
+const RUN_AMQP_E2E = !!process.env.TSIO_TEST_AMQP;
 
-describe('AMQP E2E microservice:true', () => {
+RUN_AMQP_E2E && describe('AMQP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -53,7 +54,7 @@ describe('AMQP E2E microservice:true', () => {
     it('should bootstrap AMQP with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 
-describe('AMQP E2E microservice:false', () => {
+RUN_AMQP_E2E && describe('AMQP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -77,7 +78,7 @@ describe('AMQP E2E microservice:false', () => {
     it('should bootstrap AMQP with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
 
-describe('AMQP @Controller', () => {
+RUN_AMQP_E2E && describe('AMQP @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
@@ -97,7 +98,7 @@ describe('AMQP @Controller', () => {
     it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 });
 
-describe('AMQP @RouteMapping', () => {
+RUN_AMQP_E2E && describe('AMQP @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
@@ -118,7 +119,7 @@ describe('AMQP @RouteMapping', () => {
 });
 
 // ----- AMQP E2E request/response via native client -----
-describe('AMQP E2E with provideService + provideClient (microservice:true)', () => {
+RUN_AMQP_E2E && describe('AMQP E2E with provideService + provideClient (microservice:true)', () => {
     const ROUTING_KEY = 'e2e.microservice';
 
     @Controller('/e2e')
@@ -199,7 +200,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
 });
 
 // ----- microservice:false -----
-describe('AMQP E2E with provideService + provideClient (microservice:false)', () => {
+RUN_AMQP_E2E && describe('AMQP E2E with provideService + provideClient (microservice:false)', () => {
     const ROUTING_KEY = 'e2e.host.microservice';
 
     @Module({
@@ -277,7 +278,7 @@ class AmqpPatternService {
     subscribe(@Payload() msg: string) { return msg; }
 }
 
-describe('AMQP pattern routing', () => {
+RUN_AMQP_E2E && describe('AMQP pattern routing', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [AmqpPatternService],
@@ -319,7 +320,7 @@ describe('AMQP pattern routing', () => {
     });
 });
 
-describe('AMQP pattern routing with custom routingKey', () => {
+RUN_AMQP_E2E && describe('AMQP pattern routing with custom routingKey', () => {
     const ROUTING_KEY = 'custom.pattern.route';
 
     @Module({
@@ -359,7 +360,7 @@ describe('AMQP pattern routing with custom routingKey', () => {
     });
 });
 
-if (process.env.TSIO_TEST_AMQP) describe('AMQP auth E2E', () => {
+RUN_AMQP_E2E && describe('AMQP auth E2E', () => {
     const ROUTING_KEY = 'e2e.auth.ping';
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };
 

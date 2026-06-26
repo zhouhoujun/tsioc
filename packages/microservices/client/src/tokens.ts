@@ -23,6 +23,13 @@ export function getClientFiltersToken(config: ClientConfig): Token<RequestFilter
     return config.features.filtersToken;
 }
 
+export function getClientTransferFiltersToken(config: ClientConfig): Token<RequestFilterLike[]> {
+    if (!config.features.transferFiltersToken) {
+        config.features.transferFiltersToken = getToken<RequestFilterLike[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_TRANSFER_FILTERS`, toMicroName(config.microservice));
+    }
+    return config.features.transferFiltersToken;
+}
+
 export function getClientInterceptorsToken(config: ClientConfig): Token<RequestInterceptorLike[]> {
     if (!config.features.interceptorsToken) {
         config.features.interceptorsToken = getToken<RequestInterceptor[]>(`${Transport[config.transport].toUpperCase()}_MICRO_CLIENT_INTERCEPTORS`, toMicroName(config.microservice));

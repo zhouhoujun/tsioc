@@ -1,11 +1,18 @@
 import { Injectable, isNil, isObject } from '@tsdi/ioc';
 import { MessageValueReader, ReadResult } from '@tsdi/core';
+import { MessageAdapter } from '@tsdi/common';
 
 @Injectable()
 export class ServiceMessageValueReader extends MessageValueReader {
     read(name: string | undefined, payload: any, section?: string): ReadResult {
         if (isNil(payload) || !section) {
             return { success: false, value: undefined };
+        }
+        if (payload instanceof MessageAdapter) {
+            const value = payload.read(section as any, name);
+            return isNil(value)
+                ? { success: false, value: undefined }
+                : { success: true, value };
         }
         const isEnvelope = 'body' in payload
             || 'payload' in payload
@@ -36,15 +43,12 @@ export class ServiceMessageValueReader extends MessageValueReader {
         if (!isNil(value)) {
             return { success: true, value };
         }
-        // For body scope, fall back to whole section (@RequestBody() shorthand).
         if (section === 'body') {
             return { success: true, value: scopeVal };
         }
-        // Name specified but not found in object scope → failure.
         if (isObject(scopeVal)) {
             return { success: false, value: undefined };
         }
-        // Scalar scopeVal → return as-is.
         return { success: true, value: scopeVal };
     }
 }

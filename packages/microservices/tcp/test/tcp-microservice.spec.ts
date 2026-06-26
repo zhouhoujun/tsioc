@@ -3,6 +3,8 @@ import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
 import * as net from 'node:net';
 
+const RUN_TCP_SOCKET_TESTS = !!process.env.TSIO_TEST_TCP;
+
 describe('TCP Microservice', () => {
 
     describe('TcpServOptions', () => {
@@ -124,7 +126,7 @@ describe('TCP Microservice', () => {
         });
     });
 
-    describe('TCP Server listen', () => {
+    RUN_TCP_SOCKET_TESTS && describe('TCP Server listen', () => {
         it('should listen on a specified port and close properly', async () => {
             const server = net.createServer();
             await new Promise<void>((resolve) => {

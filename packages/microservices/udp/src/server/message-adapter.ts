@@ -12,6 +12,7 @@ export class UdpMessageAdapter extends StatusMessageAdapter<dgram.Socket, dgram.
 
     constructor(
         private socket: dgram.Socket,
+        private responseSocket: dgram.Socket = socket,
     ) {
         super();
         this.currentRequest = socket;
@@ -22,7 +23,7 @@ export class UdpMessageAdapter extends StatusMessageAdapter<dgram.Socket, dgram.
     }
 
     get response(): dgram.Socket {
-        return this.socket;
+        return this.responseSocket;
     }
 
     get status(): any {
@@ -62,7 +63,7 @@ export class UdpMessageAdapter extends StatusMessageAdapter<dgram.Socket, dgram.
     }
 
     forkRequest(request: any): UdpMessageAdapter {
-        const adapter = new UdpMessageAdapter(this.socket);
+        const adapter = new UdpMessageAdapter(this.socket, this.responseSocket);
         adapter.setRequestData(request);
         return adapter;
     }
@@ -161,4 +162,5 @@ export class UdpMessageAdapter extends StatusMessageAdapter<dgram.Socket, dgram.
         this.responseError = error;
         return this;
     }
+
 }

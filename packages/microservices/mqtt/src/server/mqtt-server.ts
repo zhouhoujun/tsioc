@@ -8,7 +8,6 @@ import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeS
 import { Subject, race, take, takeUntil } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
-import { MqttMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * MQTT server for microservices.
@@ -108,46 +107,13 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     private handleMessage(topic: string, payload: Buffer) {
-        const data = payload.toString();
-
-        let parsed: any;
-        try {
-            parsed = JSON.parse(data);
-        } catch {
-            parsed = data;
-        }
-
-        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || '/' + topic.replace(/\//g, '/');
-        const method = requestSource.method || 'GET';
-        const body = requestSource.body ?? requestSource.payload ?? parsed;
-        const requestData = {
-            ...requestSource,
-            url,
-            method,
-            body,
-            payload: body,
-            topic,
-        };
-
         const context = createRequestContext(this.injector, [
-            [REQUEST, requestData],
+            [REQUEST, { topic, payload } as any],
         ]);
-        const adapter = this.injector.get(MqttMessageAdapterFactory).create({ request: requestData, response: this.client!, context });
-        context.setMessageAdapter(adapter);
-        context.setPayload(requestData);
-        adapter.setRequestData(requestData);
 
-        this.handler.handle(requestData as TReq, context)
+        this.handler.handle({ topic, payload } as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe({
-                next: (response: any) => {
-                    adapter.sendResponse(response);
-                },
-                error: (err) => {
-                    adapter.sendError(err);
-                }
-            });
+            ).subscribe();
     }
 }

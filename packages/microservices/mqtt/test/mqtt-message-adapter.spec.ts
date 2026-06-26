@@ -28,74 +28,19 @@ describe('MQTT message adapter auth-facing reads', () => {
         expect(adapter.payload).toEqual({ ok: true });
     });
 
-    it('publishes response payload to default response topic', () => {
-        const published: Array<{ topic: string; payload: string }> = [];
-        const client = {
-            publish(topic: string, payload: string) {
-                published.push({ topic, payload });
-                return true;
-            }
-        };
-        const adapter = new MqttMessageAdapter({ topic: 'sensor/message/start' }, client as any);
-
-        adapter.sendResponse({ ok: true });
-
-        expect(published).toEqual([{
-            topic: 'sensor/message/start/response',
-            payload: JSON.stringify({ payload: { ok: true } })
-        }]);
-    });
-
-    it('publishes response payload to custom response topic', () => {
-        const published: Array<{ topic: string; payload: string }> = [];
-        const client = {
-            publish(topic: string, payload: string) {
-                published.push({ topic, payload });
-                return true;
-            }
-        };
-        const adapter = new MqttMessageAdapter({
-            topic: 'sensor/message/start',
-            responseTopic: 'custom/replies'
-        }, client as any);
-
-        adapter.write({ ok: true });
-        adapter.sendResponse();
-
-        expect(published).toEqual([{
-            topic: 'custom/replies',
-            payload: JSON.stringify({ payload: { ok: true } })
-        }]);
-    });
-
-    it('publishes error payload with statusCode to custom response topic', () => {
-        const published: Array<{ topic: string; payload: string }> = [];
-        const client = {
-            publish(topic: string, payload: string) {
-                published.push({ topic, payload });
-                return true;
-            }
-        };
+    it('stores response payload and error state for transfer filters to send', () => {
         const adapter = new MqttMessageAdapter({
             topic: 'sensor/message/start',
             responseTopic: 'custom/errors'
-        }, client as any);
+        }, {} as any);
 
-        adapter.sendError({ message: 'Boom', statusCode: 503, details: { retry: true } });
+        adapter.write({ ok: true });
+        expect(adapter.payload).toEqual({ ok: true });
+
+        adapter.setError({ message: 'Boom', statusCode: 503, details: { retry: true } } as any);
+        adapter.setStatus(503, 'Boom');
 
         expect(adapter.status).toBe(503);
-        expect(adapter.payload).toEqual({
-            error: 'Boom',
-            statusCode: 503,
-            details: { retry: true }
-        });
-        expect(published).toEqual([{
-            topic: 'custom/errors',
-            payload: JSON.stringify({
-                error: 'Boom',
-                statusCode: 503,
-                details: { retry: true }
-            })
-        }]);
+        expect(adapter.error).toEqual({ message: 'Boom', statusCode: 503, details: { retry: true } });
     });
 });

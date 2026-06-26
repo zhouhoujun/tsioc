@@ -173,36 +173,4 @@ export class NatsMessageAdapter extends StatusMessageAdapter<Record<string, any>
         this.setError(error);
     }
 
-    /**
-     * Send the adapter's response payload via the NATS message respond callback.
-     */
-    sendResponse(response?: any): void {
-        const respond = this.requestData?._respond;
-        if (!respond) return;
-
-        const body = !isNil(this.payload) ? this.payload
-            : response === this ? undefined : response;
-        if (body === undefined) return;
-
-        respond({ payload: body });
-    }
-
-    /**
-     * Send an error response via the NATS message respond callback.
-     */
-    sendError(err: any): void {
-        const respond = this.requestData?._respond;
-        if (!respond) return;
-
-        this.setError(err);
-        this.setStatus(err?.statusCode || err?.status || 500);
-
-        const errorBody = {
-            error: err?.message || err?.statusMessage || 'Error',
-            statusCode: err?.statusCode || err?.status || 500,
-            ...(err?.details ? { details: err.details } : {}),
-        };
-        this.setPayload(errorBody);
-        respond(errorBody);
-    }
 }

@@ -79,7 +79,7 @@ describe('NATS client backend', () => {
         const backend = createBackend();
         const socket = new FakeNatsConnection();
         const request = new NatsRequest('topic.emit', null, { observe: 'events' } as any, 'PUBLISH');
-        const result: any = await lastValueFrom(backend('payload', createContext(request, socket)));
+        const result: any = await lastValueFrom(backend(request.clone({ payload: 'payload' }), createContext(request, socket)));
 
         expect(result).toEqual({ type: 0 });
         expect(socket.published).toHaveLength(1);
@@ -91,7 +91,7 @@ describe('NATS client backend', () => {
         const socket = new FakeNatsConnection();
         socket.requestResponse = { status: 200, payload: 'done' };
         const request = new NatsRequest('topic.body', null, { observe: 'body' } as any, 'PUBLISH');
-        const result = await lastValueFrom(backend({ hello: 'world' }, createContext(request, socket)));
+        const result = await lastValueFrom(backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket)));
 
         expect(result).toBe('done');
     });
@@ -101,7 +101,7 @@ describe('NATS client backend', () => {
         const socket = new FakeNatsConnection();
         socket.requestResponse = { status: 202, statusMessage: 'Accepted', payload: { ok: true } };
         const request = new NatsRequest('topic.response', null, { observe: 'response' } as any, 'PUBLISH');
-        const result: any = await lastValueFrom(backend({ hello: 'world' }, createContext(request, socket)));
+        const result: any = await lastValueFrom(backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket)));
 
         expect(result.status).toBe(202);
         expect(result.statusText).toBe('Accepted');
@@ -114,14 +114,14 @@ describe('NATS client backend', () => {
         socket.requestResponse = { status: 500, statusMessage: 'Boom', error: { message: 'Boom' } };
         const request = new NatsRequest('topic.error', null, { observe: 'body' } as any, 'PUBLISH');
 
-        await expect(lastValueFrom(backend({ hello: 'world' }, createContext(request, socket)))).rejects.toBeInstanceOf(ErrorResponse);
+        await expect(lastValueFrom(backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket)))).rejects.toBeInstanceOf(ErrorResponse);
     });
 
     it('streams matching replies for observe until unsubscribe', async () => {
         const backend = createBackend();
         const socket = new FakeNatsConnection();
         const request = new NatsRequest('topic.observe', null, { observe: 'observe' } as any, 'PUBLISH');
-        const result$ = backend({ hello: 'world' }, createContext(request, socket));
+        const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
 
         const resultPromise = lastValueFrom(result$.pipe(take(2), toArray()));
         setTimeout(() => {

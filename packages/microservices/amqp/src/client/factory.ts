@@ -1,7 +1,7 @@
-import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, useSimpleJson, REQUEST, Events, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common'
-import { SOCKET } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common'
+import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpClient } from './client';
 import { AmqpPatternFormatter } from '../server';
@@ -14,8 +14,37 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
         side: TransferSide.client,
         ...option,
         features: {
-            defaultTransfer: useSimpleJson({
-                mapping: (value, context) => mapRequestValue(value, context)
+            defaultTransfer: useBrokerClientTransfer<any>({
+                mapping: (request) => JSON.stringify(serializeRequest(request, 'payload', request?.id)),
+                normalize: (parsed) => {
+                    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
+                        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
+                        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
+                        const body = !isNil(parsed.body) ? parsed.body : parsed.payload;
+                        return {
+                            ...parsed,
+                            status,
+                            statusCode: parsed.statusCode ?? status,
+                            statusMessage,
+                            statusText: statusMessage,
+                            ok: parsed.ok ?? (!parsed.error && status < 400),
+                            body,
+                            payload: !isNil(body) ? body : parsed.payload,
+                            error: parsed.error,
+                            headers: parsed.headers ?? {}
+                        };
+                    }
+                    return {
+                        status: 200,
+                        statusCode: 200,
+                        statusMessage: 'OK',
+                        statusText: 'OK',
+                        ok: true,
+                        body: parsed,
+                        payload: parsed,
+                        headers: {}
+                    };
+                }
             }),
             ...option.features
         },
@@ -33,14 +62,13 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: () => createAmqpClientBackend(config),
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createAmqpClientBackend(config)),
+            deps: [Injector],
             multi: true
         }),
         {
             provide: hanlderToken,
-            useFactory: (injector: Injector) => {
-                return createRequestHandler(injector, config)
-            },
+            useFactory: (injector: Injector) => createRequestHandler(injector, config),
             deps: [
                 Injector
             ]
@@ -98,10 +126,11 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
         const exchange = config.exchange ?? 'tsdi';
         const routingKey = config.routingKey ?? '*.microservice';
         const correlationId = String(request.id ?? `${Date.now()}-${Math.random()}`);
-        const formatter = context.get(PatternFormatter, defaultFormatter);
         const publishPayload = Buffer.isBuffer(input)
             ? input
-            : Buffer.from(JSON.stringify(serializeRequest(request, formatter, 'payload')));
+            : typeof input === 'string'
+                ? Buffer.from(input)
+                : Buffer.from(JSON.stringify(serializeRequest(request, 'payload', correlationId, input)));
         let consumerTag: string | undefined;
         let settled = false;
         let timer: NodeJS.Timeout | undefined;
@@ -136,26 +165,18 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
         channel.assertQueue('', { exclusive: true })
             .then(({ queue }) => channel.consume(queue, (msg) => {
                 if (!msg || msg.properties.correlationId !== correlationId) return;
-                const parsed = parseReply(msg.content.toString(), request);
+                let parsed: any = msg.content.toString();
+                try {
+                    parsed = JSON.parse(parsed);
+                } catch {
+                    // keep raw string payload
+                }
                 if (request.observe === 'observe') {
-                    if (parsed instanceof ErrorResponse) {
-                        finish(() => observer.error(parsed));
-                        return;
-                    }
-                    observer.next(parsed.body ?? parsed.payload ?? parsed);
+                    observer.next(parsed);
                     return;
                 }
                 finish(() => {
-                    if (request.observe === 'response') {
-                        observer.next(parsed);
-                        observer.complete();
-                        return;
-                    }
-                    if (parsed instanceof ErrorResponse) {
-                        observer.error(parsed);
-                        return;
-                    }
-                    observer.next(parsed.body ?? parsed.payload ?? parsed);
+                    observer.next(parsed);
                     observer.complete();
                 });
             }, { noAck: true }).then(({ consumerTag: tag }) => {
@@ -176,26 +197,16 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
     });
 }
 
-function mapRequestValue(value: any, context: any) {
-    if (value && typeof value === 'object' && ('url' in value || 'topic' in value || 'pattern' in value)) {
-        return serializeRequest(value, context.get(PatternFormatter) ?? defaultFormatter, 'payload');
-    }
-    return value;
-}
-
-function serializeRequest(request: any, formatter: PatternFormatter, payloadKey: 'body' | 'payload') {
+function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestId?: string | number, payloadValue?: any) {
     const json: Record<string, any> = typeof request?.toJson === 'function'
-        ? request.toJson({ formatter, payloadKey })
+        ? request.toJson({ payloadKey })
         : {};
-    json.topic ??= request.topic ?? normalizeTopicFromUrl(request.url);
-    if (request.url) {
-        json.url ??= request.url;
+    if (requestId != null) {
+        json.id = requestId;
     }
-    if (request.params && !json.params) {
-        json.params = typeof request.params?.toRecord === 'function' ? request.params.toRecord() : request.params;
-    }
-    if (request.url && request.query && !json.query) {
-        json.query = request.query;
+    const nextPayload = !isNil(payloadValue) ? payloadValue : request[payloadKey];
+    if (!isNil(nextPayload)) {
+        json[payloadKey] = nextPayload;
     }
     return json;
 }
@@ -206,57 +217,4 @@ function normalizeTopicFromUrl(url?: string) {
     }
     const [pathname] = String(url).split('?', 2);
     return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
-}
-
-function parseReply(message: string, request: any) {
-    let parsed: any = message;
-    try {
-        parsed = JSON.parse(message);
-    } catch {
-        parsed = message;
-    }
-    const normalized = normalizeResponse(parsed);
-    if (request.observe === 'response') {
-        return normalized;
-    }
-    if (!normalized.ok) {
-        return new ErrorResponse({
-            status: normalized.status,
-            statusMessage: normalized.statusMessage,
-            statusText: normalized.statusText,
-            headers: normalized.headers,
-            error: normalized.error ?? normalized.body ?? normalized.payload
-        });
-    }
-    return normalized;
-}
-
-function normalizeResponse(parsed: any) {
-    if (parsed && typeof parsed === 'object' && ('status' in parsed || 'statusCode' in parsed || 'ok' in parsed || 'body' in parsed || 'payload' in parsed || 'error' in parsed)) {
-        const status = parsed.status ?? parsed.statusCode ?? (parsed.error ? 500 : 200);
-        const statusMessage = parsed.statusMessage ?? parsed.statusText ?? parsed.error?.message ?? (status >= 400 ? 'Error' : 'OK');
-        const body = parsed.body ?? parsed.payload;
-        return {
-            ...parsed,
-            status,
-            statusCode: parsed.statusCode ?? status,
-            statusMessage,
-            statusText: statusMessage,
-            ok: parsed.ok ?? (!parsed.error && status < 400),
-            body,
-            payload: body ?? parsed.payload,
-            error: parsed.error,
-            headers: parsed.headers ?? {}
-        };
-    }
-    return {
-        status: 200,
-        statusCode: 200,
-        statusMessage: 'OK',
-        statusText: 'OK',
-        ok: true,
-        body: parsed,
-        payload: parsed,
-        headers: {}
-    };
 }

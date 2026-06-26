@@ -1,5 +1,5 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
+import { NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { MqttServer } from './mqtt-server';
 import { MqttServOptions, MQTT_SERV_OPTIONS } from './options';
@@ -7,6 +7,74 @@ import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, Servi
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { MqttMessageAdapter } from './message-adapter';
 import { MqttMessageAdapterFactory } from './message-adapter.factory';
+import { useBrokerMessageTransfer } from '@tsdi/transport';
+
+const useMqttMessageTransfer = () => useBrokerMessageTransfer<{ topic: string; payload: Buffer }, Record<string, any>>({
+    canHandle: (input) => !!input && typeof input.topic === 'string' && Buffer.isBuffer(input.payload),
+    normalize: ({ topic, payload }) => {
+        const data = payload.toString();
+        let parsed: any;
+        try {
+            parsed = JSON.parse(data);
+        } catch {
+            parsed = data;
+        }
+
+        const requestSource: Record<string, any> = parsed && typeof parsed === 'object' ? parsed : {};
+        const url = requestSource.url || '/' + topic.replace(/\//g, '/');
+        const method = requestSource.method || 'GET';
+        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        return {
+            ...requestSource,
+            url,
+            method,
+            body,
+            payload: body,
+            topic,
+        };
+    },
+    adapter: {
+        factory: MqttMessageAdapterFactory,
+        response: (_input, _requestData, context) => context.getInjector().get(MqttServer).client!
+    },
+    sender: {
+        canSend: (_response, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            return !!(requestData?.responseTopic ?? (requestData?.topic ? `${requestData.topic}/response` : undefined));
+        },
+        send: (response, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            const client = context.getInjector().get(MqttServer).client;
+            const responseTopic = requestData?.responseTopic ?? (requestData?.topic ? `${requestData.topic}/response` : undefined);
+            if (!client || !responseTopic || response === undefined) {
+                return;
+            }
+            client.publish(responseTopic, JSON.stringify({ payload: response }));
+        },
+        canSendError: (err: any, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            return !!err && !!(requestData?.responseTopic ?? (requestData?.topic ? `${requestData.topic}/response` : undefined));
+        },
+        sendError: (err: any, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            const adapter = context.has(StatusMessageAdapter) ? context.get(StatusMessageAdapter) : null;
+            const client = context.getInjector().get(MqttServer).client;
+            const responseTopic = requestData?.responseTopic ?? (requestData?.topic ? `${requestData.topic}/response` : undefined);
+            if (!client || !responseTopic) {
+                return;
+            }
+            const errorBody = {
+                error: err?.message || err?.statusMessage || 'Error',
+                statusCode: err?.statusCode || err?.status || 500,
+                ...(err?.details ? { details: err.details } : {}),
+            };
+            adapter?.setError(err);
+            adapter?.setStatus(err?.statusCode || err?.status || 500, err?.statusMessage || err?.message);
+            adapter?.setPayload(errorBody);
+            client.publish(responseTopic, JSON.stringify(errorBody));
+        }
+    }
+});
 
 export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -15,6 +83,7 @@ export function mqttTransportFactory(option: Partial<MqttServOptions>, asDefault
         microservice: true,
         ...option,
         features: {
+            defaultTransfer: useMqttMessageTransfer(),
             ...option.features
         },
         connectOpts: option.connectOpts ? { ...option.connectOpts } : undefined,

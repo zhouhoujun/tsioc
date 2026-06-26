@@ -72,11 +72,11 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
         if (first instanceof RedisRequest) {
             return first;
         }
+        const formatter = this.handler.injector.get(PatternFormatter);
         if (isString(first)) {
-            return new RedisRequest(first, null, options);
-        } else {
-            return new RedisRequest(this.handler.injector.get(PatternFormatter).format(first), first, options);
+            return new RedisRequest(formatter.format(first), first, options);
         }
+        return new RedisRequest(formatter.format(first), first, options);
     }
 
     protected override request(first: Pattern | RedisRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {

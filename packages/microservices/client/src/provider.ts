@@ -1,10 +1,10 @@
-import { ArgumentException, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
+import { ArgumentException, Injector, ProvdierOf, Provider, StaticProvider, isArray, isBoolean, isFunction, toProvider, toProviders, token } from '@tsdi/ioc';
 import { GuardLike } from '@tsdi/core';
 import {
     matchTransport, TransportConfig, RequestInterceptorLike, TransferFilterFactory,
-    AbstractRequest, ResponseEvent, RequestFilterLike,
+    AbstractRequest, ResponseEvent, RequestFilterLike, RequestHandlerLike, RequestContext,
 } from '@tsdi/common';
-import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken } from './tokens';
+import { getClientFiltersToken, getClientGuardsToken, getClientInterceptorsToken, getClientTransferFiltersToken } from './tokens';
 import { ClientConfig, CircuitBreakerOptions, DiscoveryOptions, LoadBalanceOptions, RetryOptions, ClientFeatureOptions, ClientFeature, ClientFeatureFn, ClientFeatureKind, ClientFeatureLike, ClientOptions, ClientTransportFeature } from './options';
 import { requestTimeoutInterceptor } from './interceptors/timeout';
 import { loadBalanceInterceptor, circuitBreakerInterceptor, discoverInterceptor, retryInterceptor } from './interceptors/features';
@@ -87,6 +87,46 @@ export function makeClientFeature<T extends ClientFeatureKind>(kind: T, provider
         config,
         providers
     }
+}
+
+function normalizeClientTransferFilters(result: any): RequestFilterLike[] {
+    const filters = result && !isArray(result) && result.filters ? result.filters : (isArray(result) ? result : [result]);
+    return (filters ?? []).filter(Boolean).filter((item: any) => isFunction(item) || typeof item?.doFilter === 'function');
+}
+
+export function resolveClientTransferFilters<TReq = any, TRes = any>(
+    injector: Injector,
+    config: ClientConfig<TReq, TRes>
+): RequestFilterLike<TReq, TRes, RequestContext>[] {
+    const transferToken = getClientTransferFiltersToken(config);
+    const registered = injector.get(transferToken, null) as RequestFilterLike<TReq, TRes, RequestContext>[] | null;
+    if (registered?.length) {
+        return registered;
+    }
+    if (config.features.defaultTransfer) {
+        return normalizeClientTransferFilters(config.features.defaultTransfer(config)) as RequestFilterLike<TReq, TRes, RequestContext>[];
+    }
+    return [];
+}
+
+export function wrapClientBackendWithTransfer<TReq = any, TRes = any>(
+    injector: Injector,
+    config: ClientConfig<TReq, TRes>,
+    backend: RequestHandlerLike<TReq, TRes, RequestContext>
+): RequestHandlerLike<TReq, TRes, RequestContext> {
+    const transferFilters = resolveClientTransferFilters(injector, config);
+    if (!transferFilters.length) {
+        return backend;
+    }
+    return ((input: TReq, context: RequestContext) => {
+        const chain = transferFilters.reduceRight<(req: TReq, ctx: RequestContext) => any>((next, filterLike) => {
+            const filterFn = isFunction(filterLike)
+                ? filterLike as any
+                : (req: TReq, downstream: any, ctx: RequestContext) => filterLike.doFilter(req, { handle: downstream }, ctx);
+            return (req: TReq, ctx: RequestContext) => filterFn(req, (innerReq: TReq, innerCtx: RequestContext) => next(innerReq, innerCtx), ctx);
+        }, (req: TReq, ctx: RequestContext) => isFunction(backend) ? backend(req, ctx) : backend.handle(req, ctx));
+        return chain(input, context);
+    }) as RequestHandlerLike<TReq, TRes, RequestContext>;
 }
 
 function isStrategyProvider<T>(value: any): value is ProvdierOf<T> {
@@ -299,7 +339,7 @@ export function withTransfers(
     ...selectors: TransferFilterFactory[]
 ): ClientFeatureFn<ClientFeatureKind.Transfer> {
     return (config) => {
-        const filterToken = getClientFiltersToken(config);
+        const filterToken = getClientTransferFiltersToken(config);
         const providers: Provider[] = [];
         const resolvedSelectors = selectors.length ? selectors : (config.features.defaultTransfer ? [config.features.defaultTransfer] : []);
         resolvedSelectors.forEach((fac) => {

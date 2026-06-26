@@ -61,6 +61,7 @@ export interface ClientFeatureOptions<TReq = any, TRes = any, TContext extends R
     timeout?: number;
     defaultTransfer?: TransferFilterFactory;
     transfers?: TransferFilterFactory[];
+    transferFiltersToken?: Token<any[]>;
     discovery?: DiscoveryOptions | ProvdierOf<RequestInterceptorLike> | false;
     loadBalance?: LoadBalanceOptions | ProvdierOf<RequestInterceptorLike> | false;
     circuitBreaker?: CircuitBreakerOptions | ProvdierOf<RequestInterceptorLike> | false;

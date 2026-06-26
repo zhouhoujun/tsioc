@@ -6,7 +6,6 @@ import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeS
 import { Subject, race, take, takeUntil } from 'rxjs';
 import { Kafka, Consumer, Producer, EachMessagePayload } from 'kafkajs';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS, KAFKA_BIND_INTERCEPTORS, KAFKA_BIND_FILTERS, KAFKA_BIND_GUARDS } from './options';
-import { KafkaMessageAdapterFactory } from './message-adapter.factory';
 
 @Injectable()
 export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
@@ -99,43 +98,12 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     }
 
     private handleMessage(payload: EachMessagePayload) {
-        const { topic, partition, message } = payload;
-        const content = message.value?.toString() || '';
-
-        let parsed: any;
-        try { parsed = JSON.parse(content); } catch { parsed = content; }
-
-        const requestSource = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || topic;
-        const method = requestSource.method || 'GET';
-        const body = requestSource.body ?? requestSource.payload ?? parsed;
-        const requestData = {
-            ...requestSource,
-            url,
-            method,
-            body,
-            payload: body,
-            topic,
-            responseTopic: requestSource.responseTopic ?? `${topic}${this.options.responseTopicSuffix ?? '.response'}`,
-            partition,
-            key: message.key?.toString(),
-        };
         const context = createRequestContext(this.injector, [
-            [REQUEST, requestData],
+            [REQUEST, payload as any],
         ]);
-        const adapter = this.injector.get(KafkaMessageAdapterFactory).create({ request: requestData, response: this.producer!, context });
-        context.setMessageAdapter(adapter);
-        context.setPayload(requestData);
 
-        this.handler.handle(requestData as TReq, context)
+        this.handler.handle(payload as TReq, context)
             .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
-            .subscribe({
-                next: (response: any) => {
-                    adapter.sendResponse(response);
-                },
-                error: (err) => {
-                    adapter.sendError(err);
-                }
-            });
+            .subscribe();
     }
 }
