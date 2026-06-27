@@ -3,6 +3,7 @@ import { Provider, toProvider } from '@tsdi/ioc';
 import { Observable, defer, filter, mergeMap, race, take, takeUntil, catchError, of, timeout as rxTimeout, Subscription } from 'rxjs';
 import { PacketNumberIdGenerator, packetIdMessage } from '@tsdi/transport';
 import { SOCKET } from './context';
+import { WsMessageAdapterFactory } from './server/message-adapter.factory';
 
 export interface WsPacketOptions extends TransferOptions {
     /**
@@ -200,7 +201,14 @@ function wsMessage(config: any, options: WsPacketOptions): RequestInterceptorFn 
                     }
                     context.set(REQUEST, parsed);
                     context.setPayload(parsed);
-                    const adapter = context.get(MessageAdapter);
+                    let adapter = context.get(MessageAdapter, null);
+                    if (!adapter) {
+                        const factory = context.getInjector()?.get(WsMessageAdapterFactory, null);
+                        if (factory) {
+                            adapter = factory.create({ request: socket, response: socket, context });
+                            context.setMessageAdapter(adapter);
+                        }
+                    }
                     if (adapter) {
                         const forked = adapter.forkRequest(parsed);
                         if (forked !== adapter) {

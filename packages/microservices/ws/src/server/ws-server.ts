@@ -13,7 +13,6 @@ import * as net from 'node:net';
 import { WebSocketServer, WebSocket } from 'ws';
 import { WsServOptions, WS_SERV_OPTIONS, WS_BIND_INTERCEPTORS, WS_BIND_FILTERS, WS_BIND_GUARDS } from './options';
 import { SOCKET } from '../context';
-import { WsMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * WebSocket server for microservices.
@@ -220,8 +219,6 @@ export class WsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reques
             [SOCKET, ws],
             [REQUEST, request],
         ]);
-        const adapter = this.injector.get(WsMessageAdapterFactory).create({ request: ws, response: ws, context });
-        context.setMessageAdapter(adapter);
 
         // Handle messages through service handler
         this.handler.handle(ws as TReq, context)

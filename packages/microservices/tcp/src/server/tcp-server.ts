@@ -11,8 +11,6 @@ import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { SOCKET } from '@tsdi/transport';
 import { TcpServOptions, TCP_SERV_OPTIONS, TCP_BIND_INTERCEPTORS, TCP_BIND_FILTERS, TCP_BIND_GUARDS } from './options';
-import { TcpMessageAdapter } from './message-adapter';
-import { TcpMessageAdapterFactory } from './message-adapter.factory';
 
 /**
  * tcp server of `tcp` or `ipc`.
@@ -176,9 +174,6 @@ export class TcpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
             [SOCKET, socket],
             [REQUEST, socket],
         ]);
-        const adapter = this.injector.get(TcpMessageAdapterFactory).create({ request: socket, response: socket, context });
-        context.setMessageAdapter(adapter);
-        context.setPayload(socket as any);
 
         this.handler.handle(socket as TReq, context)
             .pipe(

@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { TcpServer } from './tcp-server';
 import { TcpServOptions, TCP_SERV_OPTIONS } from './options';
 import { AuthInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
+import { useTcpMessageTransfer } from './transfer';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { TcpMessageAdapter } from './message-adapter';
 import { TcpMessageAdapterFactory } from './message-adapter.factory';
@@ -25,7 +25,7 @@ export function tcpTransportFactory(option: Partial<TcpServOptions>, asDefault?:
         formatter,
         ...option,
         features: {
-            defaultTransfer: useJsonPacket(),
+            defaultTransfer: useTcpMessageTransfer(),
             ...option.features,
             router: option.features?.router === false ? false : {
                 ...(typeof option.features?.router === 'object' ? option.features.router : {}),

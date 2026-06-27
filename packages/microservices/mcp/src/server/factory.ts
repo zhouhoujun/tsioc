@@ -3,16 +3,20 @@ import { NotFoundException, RequestContext, RequestFilterLike, StatusMessageAdap
 import { of } from 'rxjs';
 import { McpServer } from './mcp-server';
 import { McpServOptions, MCP_SERV_OPTIONS } from './options';
-const useMcpTransfer = () => () => ({
-    filters: [McpTransportSenderFilter as unknown as RequestFilterLike]
-});
 import { ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { AuthInterceptor, MessageAuthInterceptor } from '@tsdi/service';
-import { useJsonPacket } from '@tsdi/transport';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { McpMessageAdapter } from './message-adapter';
 import { McpMessageAdapterFactory } from './message-adapter.factory';
 import { McpTransportSenderFilter } from './sender-filter';
+import { McpEnsureAdapterFilter } from './ensure-adapter';
+
+const useMcpTransfer = () => () => ({
+    filters: [
+        McpEnsureAdapterFilter as unknown as RequestFilterLike,
+        McpTransportSenderFilter as unknown as RequestFilterLike
+    ]
+});
 
 export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -39,6 +43,7 @@ export function mcpTransportFactory(option: Partial<McpServOptions>, asDefault?:
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        McpEnsureAdapterFilter,
         McpMessageAdapter,
         McpMessageAdapterFactory,
         { provide: AuthInterceptor, useClass: MessageAuthInterceptor },

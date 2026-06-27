@@ -1,15 +1,24 @@
-import { Provider, getClassRef, Injector, importProvidersFrom, toProvider } from '@tsdi/ioc';
-import { RequestContext, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
+import { NotFoundException, RequestContext, RequestFilterLike, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
 import { of } from 'rxjs';
 import { CoapServer } from './coap-server';
-import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
 import { CoapServOptions, COAP_SERV_OPTIONS } from './options';
+import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from './pattern';
 import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, JsonInterceptor, MessageAuthInterceptor, ServiceTransportFeature, ServiceFeatureKind, getServiceToken, getServiceBackendToken, getServiceInterceptorsToken, getServiceFiltersToken, getServiceGuardsToken, ServiceHandler, REGISTER_MICRO_SERVICES } from '@tsdi/service';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { CoapBodyParserInterceptor, CoapContentInterceptor, CoapJsonInterceptor } from './interceptors';
 import { CoapMessageAdapter } from './message-adapter';
 import { CoapMessageAdapterFactory } from './message-adapter.factory';
 import { COAP_SERV_INTERCEPTORS } from '../coap.module';
+import { CoapNormalizeAdapterFilter } from './normalize-filter';
+import { CoapTransportSenderFilter } from './sender-filter';
+
+const useCoapMessageTransfer = () => () => ({
+    filters: [
+        CoapNormalizeAdapterFilter as unknown as RequestFilterLike,
+        CoapTransportSenderFilter as unknown as RequestFilterLike
+    ]
+});
 
 export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault?: boolean): ServiceTransportFeature {
     const config = {
@@ -19,6 +28,7 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
         ...option,
         features: {
             ...option.features,
+            ...(option.features?.defaultTransfer ? {} : { defaultTransfer: useCoapMessageTransfer() }),
             router: option.features?.router === false ? false : {
                 ...(typeof option.features?.router === 'object' ? option.features.router : {}),
                 formatter: (typeof option.features?.router === 'object' && option.features.router.formatter)
@@ -48,6 +58,8 @@ export function coapTransportFactory(option: Partial<CoapServOptions>, asDefault
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        CoapNormalizeAdapterFilter,
+        CoapTransportSenderFilter,
         CoapMessageAdapter,
         CoapMessageAdapterFactory,
         CoapPatternFormatter,

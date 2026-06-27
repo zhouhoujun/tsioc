@@ -1,11 +1,10 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { createSendMessageBackend } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsClient } from './client';
 import { useWsPacket } from '../transfer';
-
 
 function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
@@ -30,7 +29,8 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: createSendMessageBackend,
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createSendMessageBackend()),
+            deps: [Injector],
             multi: true
         }),
         {
@@ -72,7 +72,6 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
 
 export function withWsTransport(...options: Partial<WsClientOptions>[]): ClientTransportFeature[] {
     return options.map((option, idx) => {
-        // First option is default unless explicitly specified
         const asDefault = option.asDefault ?? (idx === 0);
         return wsClientTransportFactory(option, asDefault);
     });
