@@ -26,10 +26,10 @@ class ContentController {
     providers: [
         provideService(useRouter(), useRouter({ microservice: true }),
             useHttpTransport({ microservice: false as any, listenOpts: { port: HTTP_PORT, host: '127.0.0.1' } }),
-            useAmqpTransport({ url: 'amqp://127.0.0.1:5672?frameMax=16384' })),
+            useAmqpTransport({ url: 'amqp://127.0.0.1:5672?frameMax=16384', routingKey: 'hybrid' })),
         provideClient(
             withHttpTransport({ url: `http://127.0.0.1:${HTTP_PORT}`, microservice: false, asDefault: true }),
-            withAmqpTransport({ url: 'amqp://127.0.0.1:5672?frameMax=16384' }))
+            withAmqpTransport({ url: 'amqp://127.0.0.1:5672?frameMax=16384', microservice: true, routingKey: 'hybrid' }))
     ]
 })
 class AmqpHttpHybridModule { }
