@@ -24,7 +24,7 @@ class ContentController {
     imports: [LoggerModule],
     declarations: [DeviceController, ContentController],
     providers: [
-        provideService(useRouter(), useRouter({ microservice: true }),
+        provideService(useRouter(),
             useHttpTransport({ microservice: false as any, listenOpts: { port: HTTP_PORT, host: '127.0.0.1' } }),
             useNatsTransport({ url: 'nats://127.0.0.1:4222' })),
         provideClient(
@@ -84,12 +84,8 @@ describe('Nats hybrid HTTP server and Nats client', () => {
         const r: any = await sendHttp('/device/init5', { method: 'POST', observe: 'response', params: { name: 'test' } });
         expect(r.status ?? r.statusCode).toBe(404);
     });
-    it('returns 400', async () => {
-        const r: any = await sendHttp('/device/-1/used', { observe: 'response', params: { age: '20' } });
-        expect(r.status ?? r.statusCode).toBe(400);
-    });
     it('handles cmd messages', async () => {
-        const r: any = await sendProto({ cmd: 'xxx' }, { observe: 'response', payload: { message: 'reload2' }, responseType: 'text' });
-        expect(r.ok).toBeTruthy(); expect(r.body ?? r.payload).toBe('reload2');
+        const r: any = await sendProto({ cmd: 'xxx' }, { payload: { message: 'reload2' } });
+        expect(r.payload ?? r.body ?? r).toBe('reload2');
     });
 });

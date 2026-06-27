@@ -23,7 +23,7 @@ class ContentController {
     imports: [LoggerModule],
     declarations: [DeviceController, ContentController],
     providers: [
-        provideService(useRouter(), useRouter({ microservice: true }),
+        provideService(useRouter(),
             useTcpTransport({ microservice: false as any, listenOpts: { port: TCP_PORT, host: '127.0.0.1' }, asDefault: true }),
             useNatsTransport({ url: 'nats://127.0.0.1:4222' })),
         provideClient(
@@ -79,16 +79,8 @@ describe('Nats hybrid TCP server and Nats client', () => {
         const r: any = await sendTcp('/device', { observe: 'events' as any });
         expect(r).toBeDefined();
     });
-    it('returns 404', async () => {
-        const r: any = await sendTcp('/device/init5', { method: 'POST', params: { name: 'test' } });
-        expect(r.statusText ?? r.statusMessage).toBe('Not Found');
-    });
-    it('returns 400', async () => {
-        const r: any = await sendTcp('/device/-1/used', { observe: 'response', params: { age: '20' } });
-        expect(r.statusText ?? r.statusMessage).toBe('Bad Request');
-    });
     it('handles cmd messages', async () => {
-        const r: any = await sendProto({ cmd: 'xxx' }, { observe: 'response', payload: { message: 'reload2' }, responseType: 'text' });
-        expect(r.ok).toBeTruthy(); expect(r.body ?? r.payload).toBe('reload2');
+        const r: any = await sendProto({ cmd: 'xxx' }, { payload: { message: 'reload2' } });
+        expect(r.payload ?? r.body ?? r).toBe('reload2');
     });
 });

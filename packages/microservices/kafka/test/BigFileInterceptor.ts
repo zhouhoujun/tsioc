@@ -19,7 +19,7 @@ type BigFileRequestContext = RequestContext & {
 export class BigFileInterceptor implements RequestInterceptor {
     intercept(req: Incoming, next: RequestHandler<any, any>, context: BigFileRequestContext): Observable<any> {
 
-        if (context.url == '/content/big.json') {
+        if (ctx.url == '/content/big.json') {
             return from(this.genedata(context))
         }
         return next.handle(req, context);

@@ -12,14 +12,15 @@ const statify = promisify(fs.stat);
 @Injectable()
 export class BigFileInterceptor implements RequestInterceptor {
     intercept(req: Incoming, next: RequestHandler<any, any>, context: RequestContext): Observable<any> {
+        const ctx = context as any;
 
-        if (context.url == '/content/big.json') {
+        if (ctx.url == '/content/big.json') {
             return from(this.genedata(context))
         }
         return next.handle(req, context);
     }
 
-    async genedata(input: RequestContext) {
+    async genedata(input: any) {
         const filename = join(__dirname, './public/big-temp.json');
         if (!fs.existsSync(filename)) {
             const defer = lang.defer();

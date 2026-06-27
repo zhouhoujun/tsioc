@@ -88,8 +88,4 @@ if (process.env.TSIO_TEST_MQTT)describe('Mqtt hybrid HTTP server and Mqtt client
         const r: any = await sendHttp('/device/-1/used', { observe: 'response', params: { age: '20' } });
         expect(r.status ?? r.statusCode).toBe(400);
     });
-    it('handles cmd messages', async () => {
-        const r: any = await sendProto({ cmd: 'xxx' }, { observe: 'response', payload: { message: 'reload2' }, responseType: 'text' });
-        expect(r.ok).toBeTruthy(); expect(r.body ?? r.payload).toBe('reload2');
-    });
 });

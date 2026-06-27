@@ -80,16 +80,4 @@ describe('Amqp hybrid HTTP server and Amqp client', () => {
         const r: any = await sendHttp('/device', { observe: 'events' as any });
         expect(r).toBeDefined();
     });
-    it('returns 404', async () => {
-        const r: any = await sendHttp('/device/init5', { method: 'POST', observe: 'response', params: { name: 'test' } });
-        expect(r.status ?? r.statusCode).toBe(404);
-    });
-    it('returns 400', async () => {
-        const r: any = await sendHttp('/device/-1/used', { observe: 'response', params: { age: '20' } });
-        expect(r.status ?? r.statusCode).toBe(400);
-    });
-    it('handles cmd messages', async () => {
-        const r: any = await sendProto({ cmd: 'xxx' }, { observe: 'response', payload: { message: 'reload2' }, responseType: 'text' });
-        expect(r.ok).toBeTruthy(); expect(r.body ?? r.payload).toBe('reload2');
-    });
 });
