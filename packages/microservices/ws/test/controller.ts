@@ -1,5 +1,5 @@
 import { lang } from '@tsdi/ioc';
-import { BadRequestException } from '@tsdi/transport';
+import { BadRequestException, Transport } from '@tsdi/common';
 import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/service';
 import { of } from 'rxjs';
 
