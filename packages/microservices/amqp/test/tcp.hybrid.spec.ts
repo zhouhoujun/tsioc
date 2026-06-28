@@ -1,0 +1,82 @@
+import { Application, ApplicationContext } from '@tsdi/core';
+import { Module } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
+import { GET } from '@tsdi/common';
+import { provideService, useRouter, RouteMapping } from '@tsdi/service';
+import { provideClient } from '@tsdi/client';
+import { useTcpTransport } from '../../tcp/src/server';
+import { withTcpTransport, TcpClient } from '../../tcp/src/client';
+import { AmqpClient, withAmqpTransport, useAmqpTransport } from '../src';
+import { DeviceController } from './controller';
+import { catchError, lastValueFrom, of } from 'rxjs';
+import expect = require('expect');
+
+const TCP_PORT = 21420;
+
+@RouteMapping('/content')
+class ContentController {
+    @RouteMapping('/510100_full.json', GET)
+    json() { return { features: ['feature-a', 'feature-b'] }; }
+}
+
+@Module({
+    imports: [LoggerModule],
+    declarations: [DeviceController, ContentController],
+    providers: [
+        provideService(useRouter(), useRouter({ microservice: true }),
+            useTcpTransport({ microservice: false as any, listenOpts: { port: TCP_PORT, host: '127.0.0.1' }, asDefault: true }),
+            useAmqpTransport({ url: 'amqp://127.0.0.1:5672?frameMax=16384', routingKey: 'hybrid' })),
+        provideClient(
+            withTcpTransport({ connectOpts: { port: TCP_PORT, host: '127.0.0.1' }, microservice: false, asDefault: true }),
+            withAmqpTransport({ url: 'amqp://127.0.0.1:5672?frameMax=16384', microservice: true, routingKey: 'hybrid' }))
+    ]
+})
+class AmqpTcpHybridModule { }
+
+if (process.env.TSIO_TEST_TCP_MICRO) describe('Amqp hybrid TCP server and Amqp client', () => {
+    let ctx: ApplicationContext;
+    let tcpClient: TcpClient;
+    let amqpClient: AmqpClient;
+
+    const sendTcp = (url: string, options: any = {}) => {
+        return lastValueFrom(tcpClient.send(url, options).pipe(catchError(err => of(err))));
+    };
+
+    const sendProto = (pattern: any, options: any = {}) => {
+        return lastValueFrom(amqpClient.send(pattern, options).pipe(catchError(err => of(err))));
+    };
+
+    before(async () => {
+        ctx = await Application.run(AmqpTcpHybridModule);
+        tcpClient = ctx.get(TcpClient);
+        amqpClient = ctx.get(AmqpClient);
+        await new Promise(r => setTimeout(r, 1000));
+    });
+    after(async () => { if (ctx) await ctx.destroy(); });
+
+    it('resolves clients', () => { expect(tcpClient).toBeDefined(); expect(amqpClient).toBeDefined(); });
+    it('serves JSON over TCP', async () => {
+        const r: any = await sendTcp('/content/510100_full.json', { method: 'GET', responseType: 'json' });
+        expect(r).toBeDefined(); expect(Array.isArray(r.features)).toBeTruthy();
+    });
+    it('queries devices', async () => {
+        const r: any = await sendTcp('/device');
+        expect(Array.isArray(r)).toBeTruthy(); expect(r.length).toBe(2);
+    });
+    it('queries with params', async () => {
+        const r: any = await sendTcp('/device', { params: { name: '2' } });
+        expect(r.length).toBe(1); expect(r[0].name).toBe('2');
+    });
+    it('supports observe body', async () => {
+        const r: any = await sendTcp('/device', { observe: 'body' as any });
+        expect(Array.isArray(r)).toBeTruthy(); expect(r.length).toBe(2);
+    });
+    it('supports observe response', async () => {
+        const r: any = await sendTcp('/device', { observe: 'response' as any });
+        expect(r.ok).toBeTruthy(); expect(Array.isArray(r.body)).toBeTruthy();
+    });
+    it('supports observe events', async () => {
+        const r: any = await sendTcp('/device', { observe: 'events' as any });
+        expect(r).toBeDefined();
+    });
+});

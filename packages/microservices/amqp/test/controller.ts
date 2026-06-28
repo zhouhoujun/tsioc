@@ -1,5 +1,5 @@
 import { lang } from '@tsdi/ioc';
-import { BadRequestException } from '@tsdi/common';
+import { BadRequestException, Transport } from '@tsdi/common';
 import { Handle, Payload, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/service';
 import { of } from 'rxjs';
 import { AmqpClient } from '../src';
@@ -72,7 +72,7 @@ export class DeviceController {
     }
 
 
-    @Handle({ cmd: 'xxx' }, 'amqp')
+    @Handle({ cmd: 'xxx' }, Transport.AMQP)
     async subMessage(@Payload() message: string) {
         return message;
     }
