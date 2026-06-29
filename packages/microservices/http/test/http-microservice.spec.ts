@@ -21,6 +21,7 @@ import { HttpBodySerializeStrategy } from '../src/client/strategies/HttpBodySeri
 import { HttpTimeoutStrategy } from '../src/client/strategies/HttpTimeoutStrategy';
 import { lastValueFrom, of } from 'rxjs';
 import * as http from 'node:http';
+import * as http2 from 'node:http2';
 import { EventEmitter } from 'node:events';
 import expect = require('expect');
 
@@ -54,6 +55,59 @@ describe('HTTP Microservice', () => {
             const injector = createInjector([importProvidersFrom(HttpModule)] as any);
             expect(injector.get(BodySerializeStrategy)).toBeInstanceOf(HttpBodySerializeStrategy);
             expect(injector.get(TimeoutStrategy)).toBeInstanceOf(HttpTimeoutStrategy);
+        });
+    });
+
+    describe('HttpClient shutdown guards', () => {
+        class TestHttpClient extends HttpClient {
+            public setSession(session: any) {
+                (this as any).session = session;
+            }
+
+            public async shutdownClient() {
+                await this.onShutdown();
+            }
+        }
+
+        function createHttpClient(options: any = {}) {
+            const injector = createInjector();
+            const handler = { injector } as any;
+            return new TestHttpClient(handler, options);
+        }
+
+        it('returns early when the session is already closed', async () => {
+            const client = createHttpClient({ authority: 'http://127.0.0.1:3000' });
+            const session = { closed: true, destroyed: false, destroy() { throw new Error('should not destroy'); } };
+            client.setSession(session);
+
+            await client.shutdownClient();
+
+            expect(client.getSession()).toBeUndefined();
+        });
+
+        it('destroys the session when close callback fails', async () => {
+            const client = createHttpClient({ authority: 'http://127.0.0.1:3000' });
+            let destroyed = 0;
+            const session = {
+                closed: false,
+                destroyed: false,
+                socket: { unref() {} },
+                close(callback: (err?: Error | null) => void) {
+                    callback(new Error('close failed'));
+                },
+                destroy() {
+                    destroyed += 1;
+                    this.destroyed = true;
+                },
+                off() { return this; },
+                once() { return this; }
+            } as any as http2.ClientHttp2Session;
+
+            client.setSession(session);
+            await client.shutdownClient();
+
+            expect(destroyed).toBe(1);
+            expect(client.getSession()).toBeUndefined();
         });
     });
 

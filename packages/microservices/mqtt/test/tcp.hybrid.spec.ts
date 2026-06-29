@@ -33,7 +33,7 @@ class ContentController {
 })
 class MqttTcpHybridModule { }
 
-if (process.env.TSIO_TEST_MQTT)describe('Mqtt hybrid TCP server and Mqtt client', () => {
+describe('Mqtt hybrid TCP server and Mqtt client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let mqttClient: MqttClient;

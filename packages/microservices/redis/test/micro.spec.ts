@@ -53,7 +53,7 @@ export class MicroTestModule {
 
 }
 
-if (process.env.TSIO_TEST_REDIS) describe('REDIS Micro Service', () => {
+describe('REDIS Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

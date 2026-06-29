@@ -68,10 +68,9 @@ class UdpMatrixController {
 }
 
 const PORTS = { ms: 21100, host: 21101, ctrl: 21102, route: 21103, e2e: 21110, hostE2e: 21111 };
-const RUN_UDP_E2E = !!process.env.TSIO_TEST_UDP;
 
 // ----- microservice:true -----
-RUN_UDP_E2E && describe('UDP E2E microservice:true', () => {
+describe('UDP E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -97,7 +96,7 @@ RUN_UDP_E2E && describe('UDP E2E microservice:true', () => {
 });
 
 // ----- microservice:false -----
-RUN_UDP_E2E && describe('UDP E2E microservice:false', () => {
+describe('UDP E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -122,7 +121,7 @@ RUN_UDP_E2E && describe('UDP E2E microservice:false', () => {
 });
 
 // ----- @Controller / @Get / @Post -----
-RUN_UDP_E2E && describe('UDP @Controller / @Get / @Post', () => {
+describe('UDP @Controller / @Get / @Post', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
@@ -143,7 +142,7 @@ RUN_UDP_E2E && describe('UDP @Controller / @Get / @Post', () => {
 });
 
 // ----- @RouteMapping -----
-RUN_UDP_E2E && describe('UDP @RouteMapping', () => {
+describe('UDP @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
@@ -164,7 +163,7 @@ RUN_UDP_E2E && describe('UDP @RouteMapping', () => {
 });
 
 // ----- UDP E2E Request/Response -----
-RUN_UDP_E2E && describe('UDP E2E with provideService + provideClient (microservice:true)', () => {
+describe('UDP E2E with provideService + provideClient (microservice:true)', () => {
     @Controller('/api/udp')
     class UdpDataController {
         @Get('/ping') ping() { return { result: 'pong' }; }
@@ -240,7 +239,7 @@ RUN_UDP_E2E && describe('UDP E2E with provideService + provideClient (microservi
 });
 
 // ----- microservice:false full e2e -----
-RUN_UDP_E2E && describe('UDP E2E with provideService + provideClient (microservice:false)', () => {
+describe('UDP E2E with provideService + provideClient (microservice:false)', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -307,7 +306,7 @@ RUN_UDP_E2E && describe('UDP E2E with provideService + provideClient (microservi
     });
 });
 
-RUN_UDP_E2E && describe('UDP parameter coverage matrix', () => {
+describe('UDP parameter coverage matrix', () => {
     const MATRIX_PORT = 21120;
 
     @Module({
@@ -397,7 +396,7 @@ class UdpPatternService {
     subscribe(@Payload() msg: string) { return msg; }
 }
 
-RUN_UDP_E2E && describe('UDP pattern routing', () => {
+describe('UDP pattern routing', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [UdpPatternService],
@@ -456,7 +455,7 @@ RUN_UDP_E2E && describe('UDP pattern routing', () => {
     });
 });
 
-RUN_UDP_E2E && describe('UDP auth E2E', () => {
+describe('UDP auth E2E', () => {
     const AUTH_PORT = 21130;
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };
 

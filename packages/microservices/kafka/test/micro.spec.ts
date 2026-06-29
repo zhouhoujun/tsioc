@@ -53,7 +53,7 @@ export class MicroTestModule {
 
 }
 
-if (process.env.TSIO_TEST_KAFKA) describe('KAFKA Micro Service', () => {
+describe('KAFKA Micro Service', () => {
     let ctx: ApplicationContext;
 
     before(async () => {

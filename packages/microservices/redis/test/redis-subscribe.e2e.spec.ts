@@ -10,7 +10,7 @@ import expect = require('expect');
 const REDIS_URL = 'redis://127.0.0.1:6379';
 const CHANNEL = 'topic-device';
 
-if (process.env.TSIO_TEST_REDIS) describe('Redis subscribe routing', () => {
+describe('Redis subscribe routing', () => {
     class RedisPatternService {
         @Subscribe(CHANNEL, Transport.Redis)
         subscribe(@Payload() payload: any, @Payload('message') message: string, @Inject(REQUEST) request: any) {

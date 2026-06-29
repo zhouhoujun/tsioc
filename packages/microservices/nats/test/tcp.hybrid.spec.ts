@@ -33,7 +33,7 @@ class ContentController {
 })
 class NatsTcpHybridModule { }
 
-if (process.env.TSIO_TEST_TCP_MICRO) describe('Nats hybrid TCP server and Nats client', () => {
+describe('Nats hybrid TCP server and Nats client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let natsClient: NatsClient;

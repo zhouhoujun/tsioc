@@ -124,7 +124,7 @@ describe('TCP @RouteMapping', () => {
 });
 
 // ----- TCP client.send via ctx.get(TcpClient) (microservice:true) -----
-if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
+describe('TCP client.send via ctx.get(TcpClient) (microservice:true)', () => {
     @Injectable()
     class TcpEchoHandler {
         @Handle({ cmd: 'ping' }, Transport.TCP)
@@ -218,7 +218,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
 });
 
 // ----- TCP with provideService + provideClient (microservice:false) -----
-if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
+describe('TCP client.send via ctx.get(TcpClient) (microservice:false)', () => {
     @Controller('/host')
     class TcpHostHandler {
         @Get('/ping')
@@ -265,7 +265,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP client.send via ctx.get(TcpCl
     });
 });
 
-if (process.env.TSIO_TEST_TCP_MICRO) describe('TCP auth E2E', () => {
+describe('TCP auth E2E', () => {
     const AUTH_PORT = 3011;
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };
 

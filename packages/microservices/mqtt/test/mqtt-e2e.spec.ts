@@ -42,7 +42,6 @@ class MqttPatternService {
     subscribe(@Payload() message: string) { return message; }
 }
 
-if (process.env.TSIO_TEST_MQTT) {
 describe('MQTT E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
@@ -451,4 +450,3 @@ describe('MQTT auth E2E', () => {
         expect(result.statusCode).toBe(401);
     });
 });
-}

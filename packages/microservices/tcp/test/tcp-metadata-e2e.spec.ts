@@ -155,7 +155,7 @@ describe('Multiple controllers', () => {
 });
 
 // ----- 8. @Subscribe pattern -----
-if (process.env.TSIO_TEST_TCP_MICRO) describe('@Subscribe pattern', () => {
+describe('@Subscribe pattern', () => {
     class SH {
         @Subscribe('device/:id/event', Transport.TCP)
         event(@RequestPath('id') id: string, @Payload() p: any) { return { id, p }; }
@@ -174,7 +174,7 @@ if (process.env.TSIO_TEST_TCP_MICRO) describe('@Subscribe pattern', () => {
 });
 
 // ----- 9. @Handle cmd pattern -----
-if (process.env.TSIO_TEST_TCP_MICRO) describe('@Handle cmd pattern', () => {
+describe('@Handle cmd pattern', () => {
     class HH {
         @Handle({ cmd: 'echo' }, Transport.TCP)
         echo(@Payload() p: any) { return p; }

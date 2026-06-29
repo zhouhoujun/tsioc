@@ -1,4 +1,4 @@
-import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
+import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, Events, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
@@ -120,7 +120,14 @@ export class TcpClient extends AbstractClient<TcpRequest<any>, ResponseEvent<any
 
         const connection = this.connection;
         this.connection = null!;
-        await promisify(connection.destroy, connection)(null!);
+        try {
+            if (typeof (connection as any).unref === 'function') {
+                (connection as any).unref();
+            }
+        } catch {
+            // ignore socket unref errors during shutdown
+        }
+        connection.destroy();
         connection.removeAllListeners();
     }
 

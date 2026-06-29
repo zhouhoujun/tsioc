@@ -23,8 +23,6 @@ class RouteCtrl {
 }
 
 const NATS_URL = 'nats://127.0.0.1:4222';
-const RUN_NATS_E2E = !!process.env.TSIO_TEST_NATS;
-
 interface AuthResultResponse {
     ok?: boolean;
     body?: { ok?: boolean; body?: { ok?: boolean }; payload?: { ok?: boolean } };
@@ -32,7 +30,7 @@ interface AuthResultResponse {
     statusCode?: number;
 }
 
-RUN_NATS_E2E && describe('NATS E2E microservice:true', () => {
+describe('NATS E2E microservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -57,7 +55,7 @@ RUN_NATS_E2E && describe('NATS E2E microservice:true', () => {
     it('should bootstrap NATS with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 
-RUN_NATS_E2E && describe('NATS E2E microservice:false', () => {
+describe('NATS E2E microservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -81,7 +79,7 @@ RUN_NATS_E2E && describe('NATS E2E microservice:false', () => {
     it('should bootstrap NATS with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
 
-RUN_NATS_E2E && describe('NATS @Controller', () => {
+describe('NATS @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
@@ -101,7 +99,7 @@ RUN_NATS_E2E && describe('NATS @Controller', () => {
     it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 });
 
-RUN_NATS_E2E && describe('NATS @RouteMapping', () => {
+describe('NATS @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
@@ -122,7 +120,7 @@ RUN_NATS_E2E && describe('NATS @RouteMapping', () => {
 });
 
 // ----- NATS E2E request/response via native client -----
-RUN_NATS_E2E && describe('NATS E2E with provideService + provideClient (microservice:true)', () => {
+describe('NATS E2E with provideService + provideClient (microservice:true)', () => {
     const SUBJECT = 'e2e.test.ping';
 
     @Controller('/e2e/test')
@@ -174,7 +172,7 @@ RUN_NATS_E2E && describe('NATS E2E with provideService + provideClient (microser
 });
 
 // ----- microservice:false -----
-RUN_NATS_E2E && describe('NATS E2E with provideService + provideClient (microservice:false)', () => {
+describe('NATS E2E with provideService + provideClient (microservice:false)', () => {
     const SUBJECT = 'e2e.host.ping';
 
     @Module({
@@ -234,7 +232,7 @@ class NatsPatternService {
     subscribe(@Payload() msg: string) { return msg; }
 }
 
-RUN_NATS_E2E && describe('NATS pattern routing', () => {
+describe('NATS pattern routing', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [NatsPatternService],
@@ -283,7 +281,7 @@ RUN_NATS_E2E && describe('NATS pattern routing', () => {
     });
 });
 
-RUN_NATS_E2E && describe('NATS auth E2E', () => {
+describe('NATS auth E2E', () => {
     const SUBJECT = 'e2e.auth.ping';
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };
 

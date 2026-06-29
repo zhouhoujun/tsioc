@@ -89,7 +89,13 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
         if (!this.connection) return;
 
         return new Promise<void>((resolve) => {
+            let settled = false;
             const cleanup = () => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(timeout);
                 this.connection?.removeAllListeners();
                 this.connection = undefined!;
                 resolve();
@@ -99,8 +105,15 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
 
             const timeout = setTimeout(() => {
                 this.logger?.warn('Redis client shutdown timeout, forcing disconnect');
-                this.connection?.disconnect();
+                try {
+                    this.connection?.disconnect();
+                } finally {
+                    cleanup();
+                }
             }, 5000);
+            if (typeof (timeout as any).unref === 'function') {
+                (timeout as any).unref();
+            }
 
             this.connection!.once(Events.CLOSE, () => {
                 clearTimeout(timeout);

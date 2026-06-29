@@ -16,7 +16,7 @@ class LifecycleController {
     }
 }
 
-if (process.env.TSIO_TEST_SERVICE_E2E) describe('service discovery lifecycle e2e', () => {
+describe('service discovery lifecycle e2e', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [LifecycleController],

@@ -97,8 +97,21 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         if (!bindServer) {
             if (!this.options.listenOpts) this.options.listenOpts = { host: LOCALHOST, port: 3100 };
             await new Promise<void>((resolve, reject) => {
-                this.listen(this.options.listenOpts!, resolve);
-                this.server!.once('error', reject);
+                const cleanup = () => {
+                    this.server?.off('listening', onListening);
+                    this.server?.off('error', onError);
+                };
+                const onListening = () => {
+                    cleanup();
+                    resolve();
+                };
+                const onError = (err: Error) => {
+                    cleanup();
+                    reject(err);
+                };
+                this.server!.once('listening', onListening);
+                this.server!.once('error', onError);
+                this.listen(this.options.listenOpts!);
             });
         }
     }
@@ -107,10 +120,20 @@ export class McpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         if (!this.server) return;
         this.destroy$.next();
         this.destroy$.complete();
+        const server = this.server;
 
-        await promisify(this.server.close, this.server)();
+        if (typeof (server as any).unref === 'function') {
+            (server as any).unref();
+        }
+        try {
+            await promisify(server.close, server)();
+        } catch (err: any) {
+            if (err?.code !== 'ERR_SERVER_NOT_RUNNING') {
+                throw err;
+            }
+        }
 
-        this.server?.removeAllListeners();
+        server.removeAllListeners();
         this.server = null;
     }
 

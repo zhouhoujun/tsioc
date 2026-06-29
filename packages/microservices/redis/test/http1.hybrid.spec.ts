@@ -48,7 +48,7 @@ const REDIS_URL = 'redis://127.0.0.1:6379';
 })
 class RedisHttpHybridModule { }
 
-if (process.env.TSIO_TEST_REDIS) describe('Redis hybrid HTTP server and Redis client', () => {
+describe('Redis hybrid HTTP server and Redis client', () => {
     let ctx: ApplicationContext;
     let httpClient: HttpClient;
     let redisClient: RedisClient;

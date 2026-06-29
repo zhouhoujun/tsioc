@@ -55,7 +55,7 @@ const TCP_PORT = 21410;
 })
 class KafkaTcpHybridModule { }
 
-if (process.env.TSIO_TEST_KAFKA) describe('Kafka hybrid TCP server and Kafka client', () => {
+describe('Kafka hybrid TCP server and Kafka client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let kafkaClient: KafkaClient;

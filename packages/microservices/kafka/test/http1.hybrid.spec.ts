@@ -52,7 +52,7 @@ const HTTP_PORT = 21310;
 })
 class KafkaHttpHybridModule { }
 
-if (process.env.TSIO_TEST_KAFKA) describe('Kafka hybrid HTTP server and Kafka client', () => {
+describe('Kafka hybrid HTTP server and Kafka client', () => {
     let ctx: ApplicationContext;
     let httpClient: HttpClient;
     let kafkaClient: KafkaClient;

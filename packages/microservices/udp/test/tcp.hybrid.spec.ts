@@ -33,7 +33,7 @@ class ContentController {
 })
 class UdpTcpHybridModule { }
 
-if (process.env.TSIO_TEST_TCP_MICRO) describe('Udp hybrid TCP server and Udp client', () => {
+describe('Udp hybrid TCP server and Udp client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let udpClient: UdpClient;

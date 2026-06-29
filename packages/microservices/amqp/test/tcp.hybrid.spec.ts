@@ -33,7 +33,7 @@ class ContentController {
 })
 class AmqpTcpHybridModule { }
 
-if (process.env.TSIO_TEST_TCP_MICRO) describe('Amqp hybrid TCP server and Amqp client', () => {
+describe('Amqp hybrid TCP server and Amqp client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let amqpClient: AmqpClient;

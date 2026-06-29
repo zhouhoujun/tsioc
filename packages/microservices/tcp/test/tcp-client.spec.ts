@@ -291,4 +291,60 @@ describe('TcpClient', () => {
             expect(setCalls[1].value).toBe(req);
         });
     });
+
+    describe('onShutdown', () => {
+        it('should destroy and clear an active connection without waiting for a callback', async () => {
+            const handler = createMockHandler();
+            const client = new TcpClient(handler, {} as TcpClientOptions);
+            let unrefCalls = 0;
+            let destroyCalls = 0;
+            let removeAllListenersCalls = 0;
+            const connection = {
+                destroyed: false,
+                closed: false,
+                unref() {
+                    unrefCalls += 1;
+                    return this;
+                },
+                destroy() {
+                    destroyCalls += 1;
+                    this.destroyed = true;
+                },
+                removeAllListeners() {
+                    removeAllListenersCalls += 1;
+                    return this;
+                }
+            } as any;
+
+            (client as any).connection = connection;
+            await (client as any).onShutdown();
+
+            expect(unrefCalls).toBe(1);
+            expect(destroyCalls).toBe(1);
+            expect(removeAllListenersCalls).toBe(1);
+            expect((client as any).connection).toBe(null);
+        });
+
+        it('should no-op when the connection is already destroyed', async () => {
+            const handler = createMockHandler();
+            const client = new TcpClient(handler, {} as TcpClientOptions);
+            let destroyCalls = 0;
+            const connection = {
+                destroyed: true,
+                closed: false,
+                destroy() {
+                    destroyCalls += 1;
+                },
+                removeAllListeners() {
+                    return this;
+                }
+            } as any;
+
+            (client as any).connection = connection;
+            await (client as any).onShutdown();
+
+            expect(destroyCalls).toBe(0);
+            expect((client as any).connection).toBe(connection);
+        });
+    });
 });

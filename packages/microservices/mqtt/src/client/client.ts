@@ -99,7 +99,13 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
         if (!this.connection) return;        
 
         return new Promise<void>((resolve) => {
+            let settled = false;
             const cleanup = () => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(timeout);
                 this.connection?.removeAllListeners();
                 this.connection = undefined!;
                 resolve();
@@ -109,8 +115,15 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
 
             const timeout = setTimeout(() => {
                 this.logger?.warn('MQTT client shutdown timeout, forcing end');
-                this.connection?.end(true);
+                try {
+                    this.connection?.end(true);
+                } finally {
+                    cleanup();
+                }
             }, 5000);
+            if (typeof (timeout as any).unref === 'function') {
+                (timeout as any).unref();
+            }
 
             this.connection!.once(Events.CLOSE, () => {
                 clearTimeout(timeout);

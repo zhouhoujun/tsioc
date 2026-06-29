@@ -33,7 +33,7 @@ class ContentController {
 })
 class WsTcpHybridModule { }
 
-if (process.env.TSIO_TEST_TCP_MICRO) describe('WS hybrid TCP server and Ws client', () => {
+describe('WS hybrid TCP server and Ws client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let wsClient: WsClient;

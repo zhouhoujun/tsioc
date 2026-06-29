@@ -146,7 +146,7 @@ describe('Kafka Transport E2E', () => {
     });
 });
 
-if (process.env.TSIO_TEST_KAFKA) describe('Kafka auth E2E', () => {
+describe('Kafka auth E2E', () => {
     const BROKERS = TEST_BROKERS;
     const TOPIC = 'e2e.auth.ping';
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };

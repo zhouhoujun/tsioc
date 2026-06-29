@@ -207,6 +207,9 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
                 timer = null;
                 reject(new Error('Receive timeout'));
             }, 30000);
+            if (typeof (timer as any).unref === 'function') {
+                (timer as any).unref();
+            }
         });
     }
 

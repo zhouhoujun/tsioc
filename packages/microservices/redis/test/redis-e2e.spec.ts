@@ -29,7 +29,7 @@ class RouteCtrl {
 
 const REDIS_URL = 'redis://127.0.0.1:6379';
 
-if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:true', () => {
+describe('Redis E2Emicroservice:true', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -53,7 +53,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:true', () => {
     it('should bootstrap Redis with microservice:true', () => { expect(ctx).toBeDefined(); });
 });
 
-if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:false', () => {
+describe('Redis E2Emicroservice:false', () => {
     @Module({
         imports: [LoggerModule],
         providers: [
@@ -76,7 +76,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis E2Emicroservice:false', () => {
     it('should bootstrap Redis with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
 
-if (process.env.TSIO_TEST_REDIS) describe('Redis @Controller', () => {
+describe('Redis @Controller', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [TestController],
@@ -96,7 +96,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis @Controller', () => {
     it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 });
 
-if (process.env.TSIO_TEST_REDIS) describe('Redis @RouteMapping', () => {
+describe('Redis @RouteMapping', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [RouteCtrl],
@@ -116,7 +116,7 @@ if (process.env.TSIO_TEST_REDIS) describe('Redis @RouteMapping', () => {
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });
 
-if (process.env.TSIO_TEST_REDIS) describe('Redis auth E2E', () => {
+describe('Redis auth E2E', () => {
     const CHANNEL = 'e2e.auth.ping';
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };
 

@@ -32,7 +32,7 @@ class UdpPatternService {
     }
 }
 
-if (process.env.TSIO_TEST_GATEWAY_E2E) describe('Gateway E2E', () => {
+describe('Gateway E2E', () => {
     @Module({
         imports: [LoggerModule],
         declarations: [UpstreamController],
