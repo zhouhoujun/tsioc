@@ -4,12 +4,12 @@ import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
 import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { UDP_CLIENT_OPTIONS, UdpClientOptions } from './options';
 import { UdpClient } from './client';
-import { TcpMicroPatternFormatter } from '../../tcp/src/pattern-formatter';
+import { UdpMicroPatternFormatter } from '../pattern-formatter';
 
 function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
         transport: Transport.UDP, side: TransferSide.client,
-        formatter: option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? TcpMicroPatternFormatter),
+        formatter: option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? UdpMicroPatternFormatter),
         ...option,
         features: { defaultTransfer: useJsonPacket({ eventName: Events.MESSAGE }), ...option.features },
     } as UdpClientOptions;

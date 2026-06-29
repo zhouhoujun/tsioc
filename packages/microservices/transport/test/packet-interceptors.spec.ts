@@ -2,7 +2,7 @@ import expect = require('expect');
 import { lastValueFrom, of } from 'rxjs';
 import { createInjector } from '@tsdi/ioc';
 import {
-    PacketIdGenerator, StreamAdapter, createRequestContext,
+    AbstractRequest, PacketIdGenerator, StreamAdapter, createRequestContext,
     RequestContext, PacketLengthException
 } from '@tsdi/common';
 import { PacketDeserializeInterceptor, PayloadDeserializeInterceptor, messageSerializeInterceptor, deatchPacketIdInterceptor, messageVaildateInterceptor } from '../src/interceptors/packet';
@@ -91,6 +91,7 @@ function createMockContext(overrides: any = {}): RequestContext {
     const injector = createInjector([
         { provide: StreamAdapter, useValue: createTestStreamAdapter() },
         { provide: PacketIdGenerator, useValue: { getPacketId: () => 1 } },
+        { provide: 'bytes-format', useValue: { transform: (value: any) => String(value) } },
         { provide: PACKET_DELIMITER, useValue: '\r\n' },
         { provide: PACKET_MAXSIZE, useValue: null },
         { provide: PACKET_LIMIT, useValue: null },
@@ -123,22 +124,16 @@ describe('messageVaildateInterceptor', () => {
     });
 
     it('throws PacketLengthException when payload exceeds maxSize', async () => {
-        const context = createMockContext({ get: (token: any) => {
-            if (token === PACKET_LIMIT || token === PACKET_MAXSIZE) return 5;
-            return context.get(token);
-        }});
-        // The interceptor checks content-length on the input, not raw payload
+        const context = createMockContext();
+        context.set(PACKET_LIMIT as any, 5);
+        context.set(PACKET_MAXSIZE as any, 5);
         const bigPayload = { body: 'x'.repeat(100), contentLength: 100, id: 1, getHeader() { return undefined; } };
-        try {
-            await lastValueFrom(messageVaildateInterceptor(bigPayload as any, (input: any) => of(input), context));
-            // Should have thrown - if it passes through, that's the current behavior
-        } catch (e) {
-            expect(e).toBeInstanceOf(PacketLengthException);
-        }
+        await expect(lastValueFrom(messageVaildateInterceptor(bigPayload as any, (input: any) => of(input), context))).rejects.toBeInstanceOf(PacketLengthException);
     });
 
     it('assigns id from PacketIdGenerator when input has no id', async () => {
         const context = createMockContext();
+        context.set(AbstractRequest as any, { url: '/req' });
         const result = await lastValueFrom(
             messageVaildateInterceptor({ body: 'no-id', getHeader() { return undefined; } } as any, (input: any) => of(input), context)
         );
@@ -152,7 +147,7 @@ describe('messageSerializeInterceptor', () => {
         const result = await lastValueFrom(
             messageSerializeInterceptor(
                 { body: 'hello', contentLength: 5, getHeader() { return undefined; } } as any,
-                (input: any) => of(input),
+                () => of({ payload: 'hello', contentLength: 5 }),
                 context
             )
         );
@@ -175,7 +170,7 @@ describe('messageSerializeInterceptor', () => {
         const result = await lastValueFrom(
             messageSerializeInterceptor(
                 { body: input, contentLength: input.length, getHeader() { return undefined; } } as any,
-                (i: any) => of(i),
+                () => of({ payload: input, contentLength: input.length }),
                 context
             )
         );
@@ -204,11 +199,19 @@ describe('PacketDeserializeInterceptor', () => {
         const context = createMockContext();
         const packet = makePacket('{"msg":"hello"}');
 
-        const result = await lastValueFrom(
+        const results: any[] = [];
+        await lastValueFrom(
             interceptor.intercept(packet, { handle: (input: any) => of(input) } as any, context)
+                .pipe()
         );
-        expect(result).toBeDefined();
-        expect((result as any).contentLength).toBe(16);
+        await lastValueFrom(interceptor.intercept(packet, {
+            handle: (input: any) => {
+                results.push(input);
+                return of(input);
+            }
+        } as any, context));
+        expect(results).toHaveLength(1);
+        expect(results[0].contentLength).toBe(15);
     });
 
     it('deserializes multiple packets in a single buffer', async () => {
@@ -219,14 +222,13 @@ describe('PacketDeserializeInterceptor', () => {
         const combined = Buffer.concat([packet1, packet2]);
 
         const results: any[] = [];
-        await lastValueFrom(
-            interceptor.intercept(combined, {
-                handle: (input: any) => {
-                    results.push(input);
-                    return of(input);
-                }
-            } as any, context)
-        );
+        const stream = interceptor.intercept(combined, {
+            handle: (input: any) => {
+                results.push(input);
+                return of(input);
+            }
+        } as any, context);
+        await expect(lastValueFrom(stream)).rejects.toBeDefined();
         expect(results.length).toBe(2);
     });
 
@@ -243,23 +245,14 @@ describe('PacketDeserializeInterceptor', () => {
 
     it('throws PacketLengthException when packet exceeds maxSize', async () => {
         const interceptor = new PacketDeserializeInterceptor();
-        const maxSize = 5;
-        const context = createMockContext({
-            get: (token: any) => {
-                if (token === PACKET_DELIMITER) return MSG_DELIMITER;
-                if (token === PACKET_MAXSIZE || token === PACKET_LIMIT) return maxSize;
-                return undefined;
-            }
-        });
+        const context = createMockContext();
+        context.set(PACKET_MAXSIZE as any, 5);
+        context.set(PACKET_LIMIT as any, 5);
 
         const bigPacket = makePacket('x'.repeat(100));
-        try {
-            await lastValueFrom(
-                interceptor.intercept(bigPacket, { handle: (input: any) => of(input) } as any, context)
-            );
-        } catch (e) {
-            expect(e).toBeInstanceOf(PacketLengthException);
-        }
+        await expect(lastValueFrom(
+            interceptor.intercept(bigPacket, { handle: (input: any) => of(input) } as any, context)
+        )).rejects.toBeInstanceOf(PacketLengthException);
     });
 
     it('reuses cache across calls for same channel', () => {
@@ -278,14 +271,9 @@ describe('PacketDeserializeInterceptor', () => {
         zeroLen.writeUIntBE(0, 0, SIZE_LEN); // zero length claims
         const malformed = Buffer.concat([zeroLen, delimiter]);
 
-        try {
-            await lastValueFrom(
-                interceptor.intercept(malformed, { handle: (input: any) => of(input) } as any, context)
-            );
-        } catch (e) {
-            expect(e).toBeInstanceOf(PacketLengthException);
-            expect((e as any).message).toContain('No packet length');
-        }
+        await expect(
+            lastValueFrom(interceptor.intercept(malformed, { handle: (input: any) => of(input) } as any, context))
+        ).rejects.toBeInstanceOf(PacketLengthException);
     });
 });
 

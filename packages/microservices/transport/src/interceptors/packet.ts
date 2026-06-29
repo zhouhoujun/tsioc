@@ -73,20 +73,21 @@ export class PacketDeserializeInterceptor implements RequestInterceptor<string |
             const delimiter = context.get(PACKET_DELIMITER);
             const maxSize = context.get(PACKET_MAXSIZE);
             const countLen = 4;
+            const delimiterLen = Buffer.byteLength(Buffer.from(delimiter));
             const i = data.indexOf(delimiter);
             if (i !== -1) {
                 let buffer: Buffer;
                 if (i < countLen) {
                     const idx = cache.length + i;
                     cache.payload.write(data.subarray(0, i));
-                    data = data.subarray(i + 1);
+                    data = data.subarray(i + delimiterLen);
                     buffer = cache.payload.read(idx);
                     if (buffer.length > countLen) {
                         buffer = buffer.subarray(buffer.length - countLen);
                     }
                 } else {
                     buffer = data.subarray(i - countLen, i);
-                    data = data.subarray(i + 1);
+                    data = data.subarray(i + delimiterLen);
                 }
                 const rawContentLength = buffer.readUIntBE(0, countLen);
                 if (isNaN(rawContentLength) || (maxSize && rawContentLength > maxSize)) {

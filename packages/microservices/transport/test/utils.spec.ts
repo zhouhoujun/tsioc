@@ -20,19 +20,19 @@ describe('transport utils', () => {
 
     describe('toBuffer', () => {
         it('reads Readable and returns Buffer', async () => {
-            const stream = Readable.from(['hello', ' ', 'world']);
+            const stream = Readable.from([Buffer.from('hello'), Buffer.from(' '), Buffer.from('world')]);
             const result = await toBuffer(stream as any);
             expect(Buffer.isBuffer(result)).toBe(true);
             expect(result.toString()).toBe('hello world');
         });
 
         it('throws TypeException when limit is exceeded', async () => {
-            const stream = Readable.from(['hello', ' ', 'world']);
+            const stream = Readable.from([Buffer.from('hello'), Buffer.from(' '), Buffer.from('world')]);
             await expect(toBuffer(stream as any, 5)).rejects.toThrow();
         });
 
         it('returns concatenated buffer for multiple chunks', async () => {
-            const stream = Readable.from(['aa', 'bb', 'cc']);
+            const stream = Readable.from([Buffer.from('aa'), Buffer.from('bb'), Buffer.from('cc')]);
             const result = await toBuffer(stream as any);
             expect(result.toString()).toBe('aabbcc');
         });
