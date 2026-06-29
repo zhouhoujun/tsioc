@@ -28,7 +28,7 @@ class ContentController {
             useWsTransport({ listenOpts: { port: 11600, host: '127.0.0.1' } })),
         provideClient(
             withTcpTransport({ connectOpts: { port: TCP_PORT, host: '127.0.0.1' }, microservice: false, asDefault: true }),
-            withWsTransport({ url: 'ws://127.0.0.1:11600', asDefault: true }))
+            withWsTransport({ url: 'ws://127.0.0.1:11600' }))
     ]
 })
 class WsTcpHybridModule { }

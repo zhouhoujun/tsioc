@@ -15,9 +15,9 @@ function isUdpSocket(socket: unknown): socket is dgram.Socket {
     return !!socket && typeof (socket as dgram.Socket).send === 'function';
 }
 
-const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer }, Record<string, any>>({
+const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer, rinfo?: dgram.RemoteInfo, framed?: boolean, id?: any }, Record<string, any>>({
     canHandle: (input) => !!input && Buffer.isBuffer(input.message),
-    normalize: ({ message }) => {
+    normalize: ({ message, rinfo, framed, id }) => {
         let data = message.toString();
         if (data.endsWith('\r\n')) {
             data = data.slice(0, -2);
@@ -35,6 +35,9 @@ const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer }
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         return {
             ...requestSource,
+            ...(id !== undefined && id !== null ? { id } : {}),
+            ...(rinfo ? { rinfo } : {}),
+            ...(framed !== undefined ? { framed } : {}),
             url,
             method,
             body,

@@ -174,7 +174,7 @@ describe('UDP E2E with provideService + provideClient (microservice:true)', () =
         declarations: [UdpDataController],
         providers: [
             provideService(useRouter(),
-                useUdpTransport({ features: { defaultTransfer: undefined }, listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
+                useUdpTransport({ listenOpts: { port: PORTS.e2e, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withUdpTransport({ port: PORTS.e2e, host: '127.0.0.1', microservice: true, asDefault: true }))
@@ -244,7 +244,7 @@ describe('UDP E2E with provideService + provideClient (microservice:false)', () 
         imports: [LoggerModule],
         providers: [
             provideService(useRouter(),
-                useUdpTransport({ microservice: false, features: { defaultTransfer: undefined }, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
+                useUdpTransport({ microservice: false, listenOpts: { port: PORTS.hostE2e, host: '127.0.0.1' }, asDefault: true })),
             provideClient(
                 withTimeout(),
                 withUdpTransport({ port: PORTS.hostE2e, host: '127.0.0.1', microservice: false, asDefault: true }))
@@ -314,7 +314,7 @@ describe('UDP parameter coverage matrix', () => {
         declarations: [UdpMatrixController],
         providers: [
             provideService(useRouter(),
-                useUdpTransport({ microservice: false, features: { defaultTransfer: undefined }, listenOpts: { port: MATRIX_PORT, host: '127.0.0.1' }, asDefault: true }))
+                useUdpTransport({ microservice: false, listenOpts: { port: MATRIX_PORT, host: '127.0.0.1' }, asDefault: true }))
         ]
     })
     class UdpMatrixModule { }
@@ -422,7 +422,6 @@ describe('UDP pattern routing', () => {
 
     it('routes object cmd patterns', async () => {
         const result = await lastValueFrom<string>(client.send({ cmd: 'echo' }, { payload: { msg: 'hello' }, timeout: 50 }));
-        console.log('udp cmd result:', result);
         expect(result).toEqual('hello');
     });
 
@@ -474,7 +473,6 @@ describe('UDP auth E2E', () => {
                 useAuth(authOptions),
                 useUdpTransport({
                     microservice: false,
-                    features: { defaultTransfer: undefined },
                     listenOpts: { port: AUTH_PORT, host: '127.0.0.1' },
                     asDefault: true
                 })

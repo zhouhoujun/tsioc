@@ -114,12 +114,13 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
     }
 
     private handleMessage(msg: Buffer, rinfo: dgram.RemoteInfo) {
+        const request = { message: msg, rinfo, framed: msg.toString().endsWith('\r\n') } as any;
         const context = createRequestContext(this.injector, [
             [SOCKET, this.socket],
-            [REQUEST, { message: msg, rinfo, framed: msg.toString().endsWith('\r\n') } as any],
+            [REQUEST, request],
         ]);
 
-        this.handler.handle({ message: msg } as TReq, context)
+        this.handler.handle(request as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
             ).subscribe();

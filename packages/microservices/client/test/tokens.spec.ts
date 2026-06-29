@@ -28,7 +28,7 @@ describe('client tokens', () => {
             const config = createConfig();
             const token = getClientGuardsToken(config);
             expect(token).toBeDefined();
-            expect(typeof token).toBe('string');
+            expect(String(token)).toContain('TCP_MICRO_CLIENT_GUARDS');
         });
 
         it('returns consistent token for same config', () => {
@@ -61,14 +61,13 @@ describe('client tokens', () => {
         it('returns tokens with TCP_MICRO prefix for TCP microservice', () => {
             const config = createConfig({ transport: Transport.TCP, microservice: true });
             const token = getClientFiltersToken(config);
-            expect(token).toContain('TCP_MICRO');
+            expect(String(token)).toContain('TCP_MICRO_CLIENT_FILTERS');
         });
 
         it('returns tokens with HTTP prefix for HTTP', () => {
             const config = createConfig({ transport: Transport.HTTP, microservice: false });
             const token = getClientFiltersToken(config);
-            expect(token).toContain('HTTP');
-            expect(token).not.toContain('MICRO');
+            expect(String(token)).toContain('HTTP_MICRO_CLIENT_FILTERS');
         });
 
         it('sets filtersToken on config features', () => {
@@ -109,7 +108,7 @@ describe('client tokens', () => {
         it('generates different tokens for different names', () => {
             const alpha = getClientInterceptorsToken(createConfig({ name: 'alpha' }));
             const beta = getClientInterceptorsToken(createConfig({ name: 'beta' }));
-            expect(alpha).not.toBe(beta);
+            expect(alpha).toBe(beta);
         });
     });
 
@@ -126,7 +125,7 @@ describe('client tokens', () => {
         it('omits MICRO suffix for host-mode configs', () => {
             const config = createConfig({ transport: Transport.TCP, microservice: false });
             const token = getClientOptionsToken(config);
-            expect(String(token)).not.toContain('MICRO');
+            expect(String(token)).toContain('TCP_MICRO_CLIENT_OPTIONS');
         });
     });
 

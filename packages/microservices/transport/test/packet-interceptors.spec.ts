@@ -65,6 +65,24 @@ function createTestStreamAdapter() {
         unshift<T extends Uint8Array>(stream: any, chunk: T): void {
             stream.unshift(chunk);
         }
+        rawbody(stream: any): Promise<any> {
+            return this.read(stream);
+        }
+        createFormData(): any {
+            return {
+                append() {},
+                getHeaders() { return {}; },
+                submit() {},
+                getBuffer() { return Buffer.alloc(0); },
+                setBoundary() {},
+                getBoundary() { return 'boundary'; },
+                getLength(callback: (err: Error | null, length: number) => void) { callback(null, 0); },
+                getLengthSync() { return 0; }
+            };
+        }
+        isJson(target: any): boolean {
+            return Buffer.isBuffer(target) || typeof target === 'string';
+        }
     }
     return new TestStreamAdapter();
 }
@@ -77,7 +95,7 @@ function createMockContext(overrides: any = {}): RequestContext {
         { provide: PACKET_MAXSIZE, useValue: null },
         { provide: PACKET_LIMIT, useValue: null },
         { provide: PACKET_IDLEN, useValue: 4 },
-    ]);
+    ] as any);
     const context = createRequestContext(injector);
     Object.assign(context, overrides);
     return context;
@@ -98,10 +116,10 @@ describe('messageVaildateInterceptor', () => {
     it('passes input through when no length limit', async () => {
         const context = createMockContext();
         const result = await lastValueFrom(
-            messageVaildateInterceptor({ payload: 'test', id: 1 }, (input) => of(input), context)
+            messageVaildateInterceptor({ body: 'test', id: 1, getHeader() { return undefined; } } as any, (input: any) => of(input), context)
         );
         expect(result).toBeDefined();
-        expect((result as any).payload).toBe('test');
+        expect((result as any).body).toBe('test');
     });
 
     it('throws PacketLengthException when payload exceeds maxSize', async () => {
@@ -110,9 +128,9 @@ describe('messageVaildateInterceptor', () => {
             return context.get(token);
         }});
         // The interceptor checks content-length on the input, not raw payload
-        const bigPayload = { payload: 'x'.repeat(100), contentLength: 100, id: 1 };
+        const bigPayload = { body: 'x'.repeat(100), contentLength: 100, id: 1, getHeader() { return undefined; } };
         try {
-            await lastValueFrom(messageVaildateInterceptor(bigPayload, (input) => of(input), context));
+            await lastValueFrom(messageVaildateInterceptor(bigPayload as any, (input: any) => of(input), context));
             // Should have thrown - if it passes through, that's the current behavior
         } catch (e) {
             expect(e).toBeInstanceOf(PacketLengthException);
@@ -122,7 +140,7 @@ describe('messageVaildateInterceptor', () => {
     it('assigns id from PacketIdGenerator when input has no id', async () => {
         const context = createMockContext();
         const result = await lastValueFrom(
-            messageVaildateInterceptor({ payload: 'no-id' }, (input) => of(input), context)
+            messageVaildateInterceptor({ body: 'no-id', getHeader() { return undefined; } } as any, (input: any) => of(input), context)
         );
         expect((result as any).id).toBe(1);
     });
@@ -133,8 +151,8 @@ describe('messageSerializeInterceptor', () => {
         const context = createMockContext();
         const result = await lastValueFrom(
             messageSerializeInterceptor(
-                { payload: 'hello', contentLength: 5 },
-                (input) => of(input),
+                { body: 'hello', contentLength: 5, getHeader() { return undefined; } } as any,
+                (input: any) => of(input),
                 context
             )
         );
@@ -156,8 +174,8 @@ describe('messageSerializeInterceptor', () => {
         const input = Buffer.from('binary-data');
         const result = await lastValueFrom(
             messageSerializeInterceptor(
-                { payload: input, contentLength: input.length },
-                (i) => of(i),
+                { body: input, contentLength: input.length, getHeader() { return undefined; } } as any,
+                (i: any) => of(i),
                 context
             )
         );
@@ -174,7 +192,7 @@ describe('deatchPacketIdInterceptor', () => {
         context.set('request-id', 42);
         // The interceptor checks context.has(AbstractRequest) - skip if absent
         const result = await lastValueFrom(
-            deatchPacketIdInterceptor({ id: 42 }, (input) => of(input), context)
+            deatchPacketIdInterceptor({ id: 42 }, (input: any) => of(input), context)
         );
         expect(result).toBeDefined();
     });
@@ -187,7 +205,7 @@ describe('PacketDeserializeInterceptor', () => {
         const packet = makePacket('{"msg":"hello"}');
 
         const result = await lastValueFrom(
-            interceptor.intercept(packet, { handle: (input) => of(input) } as any, context)
+            interceptor.intercept(packet, { handle: (input: any) => of(input) } as any, context)
         );
         expect(result).toBeDefined();
         expect((result as any).contentLength).toBe(16);
@@ -217,7 +235,7 @@ describe('PacketDeserializeInterceptor', () => {
         const context = createMockContext();
 
         const result = await lastValueFrom(
-            interceptor.intercept('', { handle: (input) => of(input) } as any, context)
+            interceptor.intercept('', { handle: (input: any) => of(input) } as any, context)
         );
         // Empty string has no delimiter, gets passed through differently
         expect(result).toBeDefined();
@@ -237,7 +255,7 @@ describe('PacketDeserializeInterceptor', () => {
         const bigPacket = makePacket('x'.repeat(100));
         try {
             await lastValueFrom(
-                interceptor.intercept(bigPacket, { handle: (input) => of(input) } as any, context)
+                interceptor.intercept(bigPacket, { handle: (input: any) => of(input) } as any, context)
             );
         } catch (e) {
             expect(e).toBeInstanceOf(PacketLengthException);
@@ -262,7 +280,7 @@ describe('PacketDeserializeInterceptor', () => {
 
         try {
             await lastValueFrom(
-                interceptor.intercept(malformed, { handle: (input) => of(input) } as any, context)
+                interceptor.intercept(malformed, { handle: (input: any) => of(input) } as any, context)
             );
         } catch (e) {
             expect(e).toBeInstanceOf(PacketLengthException);
@@ -276,9 +294,9 @@ describe('PayloadDeserializeInterceptor', () => {
         const interceptor = new PayloadDeserializeInterceptor();
         const context = createMockContext();
         const result = await lastValueFrom(
-            interceptor.intercept({ payload: null } as any, { handle: (input) => of(input) } as any, context)
+            interceptor.intercept({ body: null } as any, { handle: (input: any) => of(input) } as any, context)
         );
-        expect(result).toEqual({ payload: null });
+        expect(result).toEqual({ body: null });
     });
 
     it('handles buffer payload', async () => {
@@ -286,7 +304,7 @@ describe('PayloadDeserializeInterceptor', () => {
         const context = createMockContext();
         const buffer = Buffer.from('test-data');
         const result = await lastValueFrom(
-            interceptor.intercept({ payload: buffer, contentLength: buffer.length } as any, { handle: (input) => of(input) } as any, context)
+            interceptor.intercept({ body: buffer, contentLength: buffer.length } as any, { handle: (input: any) => of(input) } as any, context)
         );
         expect(result).toBeDefined();
     });
@@ -299,7 +317,7 @@ describe('PayloadDeserializeInterceptor', () => {
         readable.end();
 
         const result = await lastValueFrom(
-            interceptor.intercept({ payload: readable, contentLength: 16 } as any, { handle: (input) => of(input) } as any, context)
+            interceptor.intercept({ body: readable, contentLength: 16 } as any, { handle: (input: any) => of(input) } as any, context)
         );
         expect(result).toBeDefined();
     });

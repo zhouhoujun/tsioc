@@ -1,7 +1,7 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
 import { TcpClient } from './client';
 import { TcpMicroPatternFormatter } from '../pattern-formatter';
@@ -31,7 +31,8 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: createSendMessageBackend,
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createSendMessageBackend()),
+            deps: [Injector],
             multi: true
         }),
         {

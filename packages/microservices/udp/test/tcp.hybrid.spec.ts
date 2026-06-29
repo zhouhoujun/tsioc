@@ -28,7 +28,7 @@ class ContentController {
             useUdpTransport({ listenOpts: { port: 21150, host: '127.0.0.1' } })),
         provideClient(
             withTcpTransport({ connectOpts: { port: TCP_PORT, host: '127.0.0.1' }, microservice: false, asDefault: true }),
-            withUdpTransport({ port: 21150, host: '127.0.0.1', asDefault: true }))
+            withUdpTransport({ port: 21150, host: '127.0.0.1' }))
     ]
 })
 class UdpTcpHybridModule { }

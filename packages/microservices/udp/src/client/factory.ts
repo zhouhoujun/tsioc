@@ -1,13 +1,15 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
-import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, Events } from '@tsdi/common';
+import { createRequestHandler, TransferSide, Transport, PatternFormatter, Events } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { UDP_CLIENT_OPTIONS, UdpClientOptions } from './options';
 import { UdpClient } from './client';
+import { TcpMicroPatternFormatter } from '../../tcp/src/pattern-formatter';
 
 function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?: boolean): ClientTransportFeature {
     const config = {
         transport: Transport.UDP, side: TransferSide.client,
+        formatter: option.microservice === false ? (option as any).formatter : ((option as any).formatter ?? TcpMicroPatternFormatter),
         ...option,
         features: { defaultTransfer: useJsonPacket({ eventName: Events.MESSAGE }), ...option.features },
     } as UdpClientOptions;
@@ -21,7 +23,12 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
 
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
-        asProvider({ provide: backendToken, useFactory: createSendMessageBackend, multi: true }),
+        asProvider({
+            provide: backendToken,
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createSendMessageBackend(Events.MESSAGE)),
+            deps: [Injector],
+            multi: true
+        }),
         { provide: hanlderToken, useFactory: (injector: Injector) => createRequestHandler(injector, config), deps: [Injector] },
         {
             provide: clientToken,
@@ -40,10 +47,16 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
         }
     ];
 
-    if (asDefault) providers.push(
-        { provide: UdpClient, useExisting: clientToken },
-        { provide: PatternFormatter, useValue: defaultFormatter }
-    );
+    if (asDefault) {
+        providers.push({ provide: UdpClient, useExisting: clientToken });
+        if (config.formatter) {
+            providers.push({
+                provide: PatternFormatter,
+                useFactory: (injector: Injector) => injector.get(config.formatter!),
+                deps: [Injector]
+            });
+        }
+    }
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;
 }
 
