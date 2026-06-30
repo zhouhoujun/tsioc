@@ -23,6 +23,7 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
 
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
+        ...(config.formatter === UdpMicroPatternFormatter ? [UdpMicroPatternFormatter] : []),
         asProvider({
             provide: backendToken,
             useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createSendMessageBackend(Events.MESSAGE)),
@@ -50,11 +51,18 @@ function udpClientTransportFactory(option: Partial<UdpClientOptions>, asDefault?
     if (asDefault) {
         providers.push({ provide: UdpClient, useExisting: clientToken });
         if (config.formatter) {
-            providers.push({
-                provide: PatternFormatter,
-                useFactory: (injector: Injector) => injector.get(config.formatter!),
-                deps: [Injector]
-            });
+            if (config.formatter === UdpMicroPatternFormatter) {
+                providers.push({
+                    provide: PatternFormatter,
+                    useExisting: UdpMicroPatternFormatter
+                });
+            } else {
+                providers.push({
+                    provide: PatternFormatter,
+                    useFactory: (injector: Injector) => injector.get(config.formatter!),
+                    deps: [Injector]
+                });
+            }
         }
     }
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;

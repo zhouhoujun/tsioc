@@ -123,6 +123,10 @@ export class UdpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Reque
         this.handler.handle(request as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe();
+            ).subscribe({
+                error: (err) => {
+                    this.logger.error(err);
+                }
+            });
     }
 }

@@ -1,5 +1,5 @@
-import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { Provider, getClassRef, Injector, importProvidersFrom, ArgumentException } from '@tsdi/ioc';
+import { BadRequestException, ForbiddenException, NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide, normalize } from '@tsdi/common'
 import { of } from 'rxjs';
 import { MqttServer } from './mqtt-server';
 import { MqttServOptions, MQTT_SERV_OPTIONS } from './options';
@@ -8,6 +8,17 @@ import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { MqttMessageAdapter } from './message-adapter';
 import { MqttMessageAdapterFactory } from './message-adapter.factory';
 import { useBrokerMessageTransfer } from '@tsdi/transport';
+
+function resolveMessageErrorStatus(err: any): number {
+    return err?.statusCode ?? err?.status
+        ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
+            ? 400
+            : err instanceof ForbiddenException
+                ? 403
+                : err instanceof NotFoundException
+                    ? 404
+                    : 500);
+}
 
 const useMqttMessageTransfer = () => useBrokerMessageTransfer<{ topic: string; payload: Buffer }, Record<string, any>>({
     canHandle: (input) => !!input && typeof input.topic === 'string' && Buffer.isBuffer(input.payload),
@@ -21,12 +32,12 @@ const useMqttMessageTransfer = () => useBrokerMessageTransfer<{ topic: string; p
         }
 
         const requestSource: Record<string, any> = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || '/' + topic.replace(/\//g, '/');
+        const url = requestSource.url ? normalize(String(requestSource.url)) : undefined;
         const method = requestSource.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         return {
             ...requestSource,
-            url,
+            ...(url ? { url } : {}),
             method,
             body,
             payload: body,
@@ -44,12 +55,23 @@ const useMqttMessageTransfer = () => useBrokerMessageTransfer<{ topic: string; p
         },
         send: (response, context) => {
             const requestData = context.get(REQUEST) as Record<string, any>;
+            const adapter = context.has(StatusMessageAdapter) ? context.get(StatusMessageAdapter) : null;
             const client = context.getInjector().get(MqttServer).client;
             const responseTopic = requestData?.responseTopic ?? (requestData?.topic ? `${requestData.topic}/response` : undefined);
             if (!client || !responseTopic || response === undefined) {
                 return;
             }
-            client.publish(responseTopic, JSON.stringify({ payload: response }));
+            const body = response;
+            client.publish(responseTopic, JSON.stringify({
+                id: requestData?.id,
+                status: adapter?.status ?? 200,
+                statusCode: adapter?.status ?? 200,
+                statusMessage: adapter?.getStatusMessage?.() ?? 'OK',
+                ok: (adapter?.status ?? 200) < 400,
+                body,
+                payload: body,
+                headers: adapter?.getResponseHeaderNames?.()?.length ? Object.fromEntries(adapter.getResponseHeaderNames().map(name => [name, adapter.getResponseHeader(name)])) : undefined
+            }));
         },
         canSendError: (err: any, context) => {
             const requestData = context.get(REQUEST) as Record<string, any>;
@@ -63,15 +85,30 @@ const useMqttMessageTransfer = () => useBrokerMessageTransfer<{ topic: string; p
             if (!client || !responseTopic) {
                 return;
             }
+            const status = resolveMessageErrorStatus(err);
+            const expose = typeof err?.expose === 'boolean' ? err.expose : (status >= 400 && status < 500);
+            const message = status >= 500 && !expose
+                ? 'Internal Server Error'
+                : err?.message || err?.statusMessage || 'Error';
             const errorBody = {
-                error: err?.message || err?.statusMessage || 'Error',
-                statusCode: err?.statusCode || err?.status || 500,
+                error: message,
+                statusCode: status,
                 ...(err?.details ? { details: err.details } : {}),
             };
             adapter?.setError(err);
-            adapter?.setStatus(err?.statusCode || err?.status || 500, err?.statusMessage || err?.message);
+            adapter?.setStatus(status, err?.statusMessage || message);
             adapter?.setPayload(errorBody);
-            client.publish(responseTopic, JSON.stringify(errorBody));
+            client.publish(responseTopic, JSON.stringify({
+                id: requestData?.id,
+                status,
+                statusCode: status,
+                statusMessage: err?.statusMessage || message,
+                ok: false,
+                error: errorBody,
+                body: errorBody,
+                payload: errorBody,
+                headers: adapter?.getResponseHeaderNames?.()?.length ? Object.fromEntries(adapter.getResponseHeaderNames().map(name => [name, adapter.getResponseHeader(name)])) : undefined
+            }));
         }
     }
 });

@@ -1,16 +1,15 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, ErrorResponse } from '@tsdi/common';
-import { provideService, useInterceptors, useRouter, RouteMapping } from '@tsdi/service';
+import { GET, BadRequestException, Transport, normalize } from '@tsdi/common';
+import { provideService, useInterceptors, useRouter, RouteMapping, RequestBody, RequestParam, RequestPath, RedirectResult } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
-import { useTcpTransport } from '../../tcp/src/server';
-import { withTcpTransport } from '../../tcp/src/client';
-import { TcpClient } from '../../tcp/src/client/client';
+import { useTcpTransport, withTcpTransport, TcpClient } from '../../tcp';
 import { RedisClient, withRedisTransport, useRedisTransport } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
 import { catchError, lastValueFrom, of } from 'rxjs';
+import Redis from 'ioredis';
 import expect = require('expect');
 
 @RouteMapping('/content')
@@ -21,12 +20,58 @@ class ContentController {
     }
 }
 
+@RouteMapping({ route: '/content', transport: Transport.Redis })
+class RedisContentController {
+    @RouteMapping('/510100_full.json', GET)
+    json() {
+        return { features: ['feature-a', 'feature-b'] };
+    }
+
+    @RouteMapping('/big.json', GET)
+    big() {
+        throw Object.assign(new Error('great than max size'), {
+            statusCode: 500,
+            statusMessage: 'great than max size'
+        });
+    }
+}
+
+@RouteMapping({ route: '/device', transport: Transport.Redis })
+class RedisDeviceController {
+    @RouteMapping('/usage', 'POST')
+    age(@RequestBody() id: string, @RequestBody('age', { pipe: 'int' }) year: number, @RequestBody({ pipe: 'date' }) createAt: Date) {
+        return { id, year, createAt };
+    }
+
+    @RouteMapping('/usege/find', 'GET')
+    agela(@RequestParam('age', { pipe: 'int' }) limit: number) {
+        return limit;
+    }
+
+    @RouteMapping('/:age/used', 'GET')
+    resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
+        if (age1 <= 0) {
+            throw new BadRequestException();
+        }
+        return age1;
+    }
+
+    @RouteMapping('/status', 'GET')
+    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
+        if (redirect === 'reload') {
+            return new RedirectResult('/device/reload');
+        }
+        return of('working');
+    }
+}
+
 const TCP_PORT = 21411;
 const REDIS_URL = 'redis://127.0.0.1:6379';
+const REDIS_BRIDGE_CHANNEL = 'hybrid.route.bridge';
 
 @Module({
     imports: [LoggerModule],
-    declarations: [DeviceController, ContentController],
+    declarations: [DeviceController, ContentController, RedisContentController, RedisDeviceController],
     providers: [
         provideService(
             useRouter(),
@@ -37,7 +82,7 @@ const REDIS_URL = 'redis://127.0.0.1:6379';
                 listenOpts: { port: TCP_PORT, host: '127.0.0.1' },
                 asDefault: true
             }),
-            useRedisTransport({ url: REDIS_URL })
+            useRedisTransport({ url: REDIS_URL, channels: [REDIS_BRIDGE_CHANNEL] })
         ),
         provideClient(
             withTcpTransport({
@@ -55,6 +100,8 @@ describe('Redis hybrid TCP server and Redis client', () => {
     let ctx: ApplicationContext;
     let tcpClient: TcpClient;
     let redisClient: RedisClient;
+    let publisher: Redis;
+    let subscriber: Redis;
 
     const sendTcp = (url: string, options: any = {}) => {
         return lastValueFrom(tcpClient.send(url, options).pipe(catchError(err => of(err))));
@@ -64,14 +111,57 @@ describe('Redis hybrid TCP server and Redis client', () => {
         return lastValueFrom(redisClient.send(pattern, options).pipe(catchError(err => of(err))));
     };
 
+    const sendRedisRoute = async (url: string, options: any = {}) => {
+        const normalizedUrl = normalize(url);
+        const topic = normalizedUrl.replace(/\//g, '.');
+        const responseChannel = `${REDIS_BRIDGE_CHANNEL}:response:${Date.now()}-${Math.random()}`;
+        return new Promise<any>(async (resolve, reject) => {
+            const timeout = options.timeout ?? 5000;
+            const timer = setTimeout(() => {
+                subscriber.off('message', onMessage);
+                reject(new Error('Timeout'));
+            }, timeout);
+            const onMessage = (_channel: string, payload: string) => {
+                if (_channel !== responseChannel) {
+                    return;
+                }
+                clearTimeout(timer);
+                subscriber.off('message', onMessage);
+                void subscriber.unsubscribe(responseChannel);
+                resolve(JSON.parse(payload));
+            };
+
+            await subscriber.subscribe(responseChannel);
+            subscriber.on('message', onMessage);
+            await publisher.publish(REDIS_BRIDGE_CHANNEL, JSON.stringify({
+                url: topic,
+                topic,
+                method: options.method ?? 'GET',
+                params: options.params,
+                query: options.query,
+                body: options.body,
+                payload: options.payload,
+                responseChannel
+            }));
+        });
+    };
+
     before(async () => {
         ctx = await Application.run(RedisTcpHybridModule);
         tcpClient = ctx.get(TcpClient);
         redisClient = ctx.get(RedisClient);
+        publisher = new Redis(REDIS_URL);
+        subscriber = new Redis(REDIS_URL);
         await new Promise(resolve => setTimeout(resolve, 1000));
     });
 
     after(async () => {
+        if (subscriber) {
+            await subscriber.quit();
+        }
+        if (publisher) {
+            await publisher.quit();
+        }
         if (ctx) {
             await ctx.destroy();
         }
@@ -89,14 +179,15 @@ describe('Redis hybrid TCP server and Redis client', () => {
     });
 
     it('serves JSON content over Redis', async () => {
-        const result: any = await sendRedis('content/510100_full.json');
-        expect(result).toBeDefined();
-        expect(Array.isArray(result.features)).toBeTruthy();
+        const result: any = await sendRedisRoute('/content/510100_full.json', { method: 'GET' });
+        expect(result.ok).toBe(true);
+        expect(Array.isArray((result.body ?? result.payload).features)).toBeTruthy();
     });
 
     it('returns large content error over Redis', async () => {
-        const result: any = await sendRedis('content/big.json');
-        expect(result).toBeInstanceOf(ErrorResponse);
+        const result: any = await sendRedisRoute('/content/big.json', { method: 'GET', timeout: 15000 });
+        expect(result.ok).toBe(false);
+        expect(result.statusCode ?? result.status).toBeGreaterThanOrEqual(400);
         expect(result.statusMessage).toContain('great than max size');
     });
 
@@ -119,9 +210,9 @@ describe('Redis hybrid TCP server and Redis client', () => {
         expect(result.statusText ?? result.statusMessage).toBe('Not Found');
     });
 
-    it('returns bad request for invalid path parameter', async () => {
-        const result: any = await sendTcp('/device/-1/used', { observe: 'response', params: { age: '20' } });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+    it('returns bad request for invalid path parameter over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/-1/used', { method: 'GET' });
+        expect(result.statusCode ?? result.status).toBe(400);
     });
 
     it('returns object response for POST route', async () => {
@@ -156,50 +247,53 @@ describe('Redis hybrid TCP server and Redis client', () => {
         expect(new Date(result.body.createAt)).toEqual(new Date('2021-10-01'));
     });
 
-    it('returns bad request for missing body', async () => {
-        const result: any = await sendTcp('/device/usage', { observe: 'response', method: 'POST' });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+    it('returns missing-parameter error for missing body over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/usage', { method: 'POST' });
+        expect(result.statusCode ?? result.status).toBe(400);
+        expect(result.statusMessage).toContain('required parameters were missing');
     });
 
-    it('returns bad request for invalid body pipe', async () => {
-        const result: any = await sendTcp('/device/usage', {
-            observe: 'response',
+    it('returns pipe error for invalid body over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/usage', {
             method: 'POST',
             body: { id: 'test1', age: 'test', createAt: '2021-10-01' }
         });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+        expect(result.statusCode ?? result.status).toBe(400);
+        expect(result.statusMessage).toContain('InvalidPipeArgument');
     });
 
-    it('applies request param pipes over TCP', async () => {
-        const result: any = await sendTcp('/device/usege/find', { observe: 'response', params: { age: '20' } });
-        expect(result.ok).toBeTruthy();
-        expect(result.body).toBe(20);
+    it('applies request param pipes over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/usege/find', { method: 'GET', query: { age: '20' } });
+        expect(result.ok).toBe(true);
+        expect(result.body ?? result.payload).toBe(20);
     });
 
-    it('returns bad request for missing query param', async () => {
-        const result: any = await sendTcp('/device/usege/find', { observe: 'response' });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+    it('returns missing-parameter error for missing query param over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/usege/find', { method: 'GET' });
+        expect(result.statusCode ?? result.status).toBe(400);
+        expect(result.statusMessage).toContain('required parameters were missing');
     });
 
-    it('returns bad request for invalid query param pipe', async () => {
-        const result: any = await sendTcp('/device/usege/find', { observe: 'response', params: { age: 'test' } });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+    it('returns pipe error for invalid query param over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/usege/find', { method: 'GET', query: { age: 'test' } });
+        expect(result.statusCode ?? result.status).toBe(400);
+        expect(result.statusMessage).toContain('InvalidPipeArgument');
     });
 
-    it('applies path param pipes over TCP', async () => {
-        const result: any = await sendTcp('/device/30/used', { observe: 'response', params: { age: '20' } });
-        expect(result.ok).toBeTruthy();
-        expect(result.body).toBe(30);
+    it('applies path param pipes over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/30/used', { method: 'GET' });
+        expect(result.ok).toBe(true);
+        expect(result.body ?? result.payload).toBe(30);
     });
 
-    it('returns not found for missing path segment', async () => {
-        const result: any = await sendTcp('/device//used', { observe: 'response', params: { age: '20' } });
-        expect(result.statusText ?? result.statusMessage).toBe('Not Found');
+    it('returns not found for missing path segment over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device//used', { method: 'GET' });
+        expect(result.statusCode ?? result.status).toBe(404);
     });
 
-    it('returns bad request for invalid path pipe', async () => {
-        const result: any = await sendTcp('/device/age1/used', { observe: 'response', params: { age: '20' } });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+    it('returns not found for invalid path pipe over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/age1/used', { method: 'GET' });
+        expect(result.statusCode ?? result.status).toBe(400);
     });
 
     it('returns text response from observable route', async () => {
@@ -211,13 +305,13 @@ describe('Redis hybrid TCP server and Redis client', () => {
         expect(result.body).toBe('working');
     });
 
-    it('returns not supported for redirect', async () => {
-        const result: any = await sendTcp('/device/status', {
-            observe: 'response',
-            params: { redirect: 'reload' },
-            responseType: 'text'
+    it('returns redirect envelope over Redis routing', async () => {
+        const result: any = await sendRedisRoute('/device/status', {
+            method: 'GET',
+            query: { redirect: 'reload' }
         });
-        expect(result.statusText ?? result.statusMessage).toBe('Not Supported');
+        expect(result.statusCode ?? result.status).toBe(302);
+        expect(result.statusMessage).toBe('OK');
     });
 
     it('handles Redis object pattern messages', async () => {

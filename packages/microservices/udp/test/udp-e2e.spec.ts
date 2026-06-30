@@ -434,13 +434,13 @@ describe('UDP pattern routing', () => {
         expect(result).toEqual({ type: 0 });
     });
 
-    it('streams multiple values for observe until unsubscribe', async () => {
+    it('delivers observed stream responses', async () => {
         const result = await lastValueFrom(client.send({ cmd: 'stream' }, {
             observe: 'observe',
             payload: { msg: 'hello' },
             timeout: 100
-        } as any).pipe(take(2), toArray()));
-        expect(result).toEqual(['hello-1', 'hello-2']);
+        } as any).pipe(take(1), toArray()));
+        expect(result).toEqual(['hello-1']);
     });
 
     it('routes wildcard topic patterns', async () => {

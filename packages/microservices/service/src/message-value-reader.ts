@@ -43,7 +43,7 @@ export class ServiceMessageValueReader extends MessageValueReader {
         if (!isNil(value)) {
             return { success: true, value };
         }
-        if (section === 'body') {
+        if (section === 'body' || section === 'payload') {
             return { success: true, value: scopeVal };
         }
         if (isObject(scopeVal)) {

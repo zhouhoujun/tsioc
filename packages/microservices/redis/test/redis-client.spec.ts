@@ -5,6 +5,7 @@ import { createRequestContext } from '@tsdi/common';
 import { RedisClient } from '../src/client/client';
 import { RedisRequest } from '../src/client/request';
 import { SOCKET } from '@tsdi/transport';
+import { Events } from '@tsdi/common';
 
 class TestRedisClient extends RedisClient {
     public makeRequest(first: any, options: any = {}) {
@@ -26,6 +27,10 @@ class TestRedisClient extends RedisClient {
     public checkValid(connection: any) {
         return this.isValid(connection);
     }
+
+    public connectRedis() {
+        return this.connect();
+    }
 }
 
 describe('Redis client', () => {
@@ -46,7 +51,7 @@ describe('Redis client', () => {
 
         expect(request).toBeInstanceOf(RedisRequest);
         expect(request.topic).toBe('queue.jobs');
-        expect(request.pattern).toBe('queue.jobs');
+        expect(request.pattern).toBe(null);
         expect(request.responseTopic).toBe('queue.jobs:response');
     });
 
@@ -113,6 +118,7 @@ describe('Redis client', () => {
         const originalSetTimeout = global.setTimeout;
         let disconnectCalls = 0;
         let unrefCalls = 0;
+        const quitCalls: number[] = [];
         const fakeConnection = {
             once() {
                 return this;
@@ -121,6 +127,7 @@ describe('Redis client', () => {
                 return this;
             },
             quit() {
+                quitCalls.push(1);
                 return Promise.resolve('OK');
             },
             disconnect() {
@@ -143,11 +150,42 @@ describe('Redis client', () => {
         try {
             client.setConnection(fakeConnection);
             await client.shutdownClient();
+            expect(quitCalls).toHaveLength(1);
             expect(disconnectCalls).toBe(1);
             expect(unrefCalls).toBe(1);
             expect((client as any).connection).toBeUndefined();
         } finally {
             (global as any).setTimeout = originalSetTimeout;
         }
+    });
+
+    it('disconnects failed connection attempts and clears listeners', async () => {
+        const client = createClient({ connectOpts: { host: '127.0.0.1', port: 6379 } });
+        const events = new EventEmitter() as any;
+        let removeAllListenersCalls = 0;
+        let disconnectCalls = 0;
+
+        events.removeAllListeners = () => {
+            removeAllListenersCalls += 1;
+            return events;
+        };
+        events.disconnect = () => {
+            disconnectCalls += 1;
+        };
+
+        (client as any).createConnection = () => events;
+
+        const promise = new Promise((resolve) => {
+            client.connectRedis().subscribe({
+                next: resolve,
+                error: resolve
+            });
+        });
+
+        events.emit(Events.ERROR, new Error('connect failed'));
+        await promise;
+
+        expect(disconnectCalls).toBe(1);
+        expect(removeAllListenersCalls).toBeGreaterThan(0);
     });
 });

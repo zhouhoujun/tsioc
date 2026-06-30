@@ -69,6 +69,9 @@ const requestMapping = (req: any, context: RequestContext) => {
         if (request.method) {
             json.method = request.method;
         }
+        if ((request as any).observe) {
+            json.observe = (request as any).observe;
+        }
         if (request.params) {
             const { params } = request;
             json.params = typeof params.toRecord === 'function' ? params.toRecord() : params;

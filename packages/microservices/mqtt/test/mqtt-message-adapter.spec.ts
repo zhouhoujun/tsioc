@@ -43,4 +43,13 @@ describe('MQTT message adapter auth-facing reads', () => {
         expect(adapter.status).toBe(503);
         expect(adapter.error).toEqual({ message: 'Boom', statusCode: 503, details: { retry: true } });
     });
+
+    it('returns scalar payload for named payload reads', () => {
+        const adapter = new MqttMessageAdapter({
+            topic: 'sensor/message/start',
+            payload: 'reload'
+        }, {} as any);
+
+        expect(adapter.read('payload', 'message')).toBe('reload');
+    });
 });

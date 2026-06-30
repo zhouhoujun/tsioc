@@ -66,7 +66,20 @@ export class MqttMessageAdapter extends StatusMessageAdapter<Record<string, any>
             case 'payload':
             case 'body': {
                 const body = this.requestData?.body ?? this.requestData?.payload;
-                return name ? body?.[name] : body;
+                if (!name) {
+                    return body;
+                }
+                const value = body?.[name];
+                if (!isNil(value)) {
+                    return value;
+                }
+                if (name === 'body' || name === 'payload') {
+                    return body;
+                }
+                if (section === 'payload' && (body == null || typeof body !== 'object')) {
+                    return body;
+                }
+                return value;
             }
             case 'params': {
                 const params = this.requestData?.params;

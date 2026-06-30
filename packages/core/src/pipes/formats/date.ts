@@ -30,6 +30,7 @@ export function formatDate(date: Date, fmt = 'yyyy-MM-dd') {
     const o = {
         "M+": date.getMonth() + 1, //月份
         "d+": date.getDate(), //日
+        "H+": date.getHours(), //小时
         "h+": date.getHours(), //小时
         "m+": date.getMinutes(), //分
         "s+": date.getSeconds(), //秒

@@ -4,6 +4,7 @@ import { Transport, TransferSide } from '@tsdi/common';
 import { createInjector } from '@tsdi/ioc';
 import { getServiceRouterToken } from '@tsdi/service';
 import expect = require('expect');
+import { EventEmitter } from 'events';
 
 describe('MQTT Microservice', () => {
 
@@ -171,6 +172,39 @@ describe('MQTT Microservice', () => {
             expect((server as any).resolveSubscribeTopics()).toEqual([
                 { topic: 'sensor/+/start', qos: 0 }
             ]);
+        });
+
+        it('falls back to forced end when mqtt client does not close', async () => {
+            const server = new MqttServer({ injector: createInjector() } as any, {} as any);
+            const client = new EventEmitter() as any;
+            const endCalls: boolean[] = [];
+
+            client.once = client.once.bind(client);
+            client.removeAllListeners = () => client;
+            client.end = (force?: boolean, _opts?: any, done?: () => void) => {
+                endCalls.push(!!force);
+                if (typeof done === 'function') {
+                    done();
+                }
+                return client;
+            };
+
+            (server as any).client = client;
+
+            const originalSetTimeout = global.setTimeout;
+            (global as any).setTimeout = (handler: (...args: any[]) => void) => {
+                handler();
+                return { ref() { return this; }, unref() { return this; } };
+            };
+
+            try {
+                await server.onShutdown();
+            } finally {
+                (global as any).setTimeout = originalSetTimeout;
+            }
+
+            expect(endCalls).toContain(true);
+            expect((server as any).client).toBe(null);
         });
     });
 });

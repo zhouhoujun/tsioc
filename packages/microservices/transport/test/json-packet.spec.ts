@@ -211,6 +211,7 @@ describe('transport json packet', () => {
             query: { name: 'zhou', page: '1' },
             pattern: 'users.create',
             method: 'POST',
+            observe: 'body',
             params: { page: '1' },
             payload: { id: 'u1' },
             headers: { authorization: 'Bearer token' }

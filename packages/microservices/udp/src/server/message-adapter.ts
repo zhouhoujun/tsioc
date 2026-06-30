@@ -76,7 +76,10 @@ export class UdpMessageAdapter extends StatusMessageAdapter<dgram.Socket, dgram.
             case 'payload':
             case 'body': {
                 const body = req?.body ?? req?.payload;
-                return name ? body?.[name] : body;
+                if (!name || name === 'body' || name === 'payload') {
+                    return body;
+                }
+                return body?.[name];
             }
             case 'params': {
                 const params = req?.params;

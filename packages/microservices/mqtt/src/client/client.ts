@@ -32,8 +32,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
             if (valid) return this.connection!;
 
             if (this.connection) {
-                this.connection.removeAllListeners();
-                this.connection.end(true);
+                this.disposeConnection(this.connection);
             }
 
             return await new Promise<mqtt.MqttClient>((resolve, reject) => {
@@ -48,6 +47,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
                 const onError = (err: Error) => {
                     cleanup();
                     this.logger?.error('MQTT connection error:', err);
+                    this.disposeConnection(client);
                     reject(err);
                 };
 
@@ -59,9 +59,8 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
 
                 const onClose = () => {
                     cleanup();
-                    if (!this.connection) {
-                        reject(new Error('Connection closed before connect'));
-                    }
+                    this.disposeConnection(client);
+                    reject(new Error('Connection closed before connect'));
                 };
 
                 client.on(Events.ERROR, onError)
@@ -98,25 +97,39 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
     protected async onShutdown(): Promise<void> {
         if (!this.connection) return;        
 
+        const connection = this.connection;
+        this.connection = undefined;
+
         return new Promise<void>((resolve) => {
             let settled = false;
+            let timeout: NodeJS.Timeout | undefined;
             const cleanup = () => {
                 if (settled) {
                     return;
                 }
                 settled = true;
-                clearTimeout(timeout);
-                this.connection?.removeAllListeners();
-                this.connection = undefined!;
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = undefined;
+                }
+                connection.removeAllListeners();
                 resolve();
             };
 
-            this.connection!.once(Events.CLOSE, cleanup);
+            connection.once(Events.CLOSE, cleanup);
 
-            const timeout = setTimeout(() => {
+            connection.once(Events.CLOSE, () => {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = undefined;
+                }
+            });
+
+            connection.end(false);
+            timeout = setTimeout(() => {
                 this.logger?.warn('MQTT client shutdown timeout, forcing end');
                 try {
-                    this.connection?.end(true);
+                    connection.end(true);
                 } finally {
                     cleanup();
                 }
@@ -124,19 +137,9 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
             if (typeof (timeout as any).unref === 'function') {
                 (timeout as any).unref();
             }
-
-            this.connection!.once(Events.CLOSE, () => {
-                clearTimeout(timeout);
-            });
-
-            this.connection!.end(false);
         }).catch(err => {
             this.logger?.error('MQTT client shutdown error:', err);
-            if (this.connection) {
-                this.connection.removeAllListeners();
-                this.connection.end(true);
-                this.connection = undefined!;
-            }
+            this.disposeConnection(connection);
         });
     }
 
@@ -146,5 +149,17 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
 
     protected createConnection(opts: MqttClientOptions): mqtt.MqttClient {
         return mqtt.connect(opts.url || 'mqtt://localhost:1883', opts.connectOpts);
+    }
+
+    private disposeConnection(connection?: mqtt.MqttClient | null): void {
+        if (!connection) {
+            return;
+        }
+        connection.removeAllListeners();
+        try {
+            connection.end(true);
+        } catch {
+            // ignore close errors during shutdown/failed connect
+        }
     }
 }

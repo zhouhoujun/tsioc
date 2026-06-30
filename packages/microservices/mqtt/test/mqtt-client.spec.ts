@@ -2,11 +2,11 @@ import expect = require('expect');
 import { createInjector } from '@tsdi/ioc';
 import { createRequestContext } from '@tsdi/common';
 import { MqttClient } from '../src/client/client';
-import { ClientHandler } from '@tsdi/client';
-import { MQTT_CLIENT_OPTIONS } from '../src/client/options';
 import { MqttRequest } from '../src/client/request';
 import { SOCKET } from '@tsdi/transport';
 import * as mqtt from 'mqtt';
+import { Events } from '@tsdi/common';
+import { EventEmitter } from 'events';
 
 class TestMqttClient extends MqttClient {
     public makeRequest(first: any, options: any = {}) {
@@ -31,6 +31,10 @@ class TestMqttClient extends MqttClient {
 
     public bindContext(context: any, request: any) {
         this.initContext(context, request);
+    }
+
+    public connectMqtt() {
+        return this.connect();
     }
 }
 
@@ -168,5 +172,38 @@ describe('MQTT client', () => {
         } finally {
             (global as any).setTimeout = originalSetTimeout;
         }
+    });
+
+    it('ends failed connection attempts and clears listeners', async () => {
+        const client = createClient({ url: 'mqtt://127.0.0.1:1883' });
+        const events = new EventEmitter() as any;
+        let removeAllListenersCalls = 0;
+        const endCalls: boolean[] = [];
+
+        events.once = events.once.bind(events);
+        events.on = events.on.bind(events);
+        events.removeAllListeners = () => {
+            removeAllListenersCalls += 1;
+            return events;
+        };
+        events.end = (force?: boolean) => {
+            endCalls.push(!!force);
+            return events;
+        };
+
+        (client as any).createConnection = () => events;
+
+        const promise = new Promise((resolve) => {
+            client.connectMqtt().subscribe({
+                next: resolve,
+                error: resolve
+            });
+        });
+
+        events.emit(Events.ERROR, new Error('connect failed'));
+        await promise;
+
+        expect(endCalls).toEqual([true]);
+        expect(removeAllListenersCalls).toBeGreaterThan(0);
     });
 });

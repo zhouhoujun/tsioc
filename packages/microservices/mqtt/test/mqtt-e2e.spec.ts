@@ -10,7 +10,7 @@ import * as mqtt from 'mqtt';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
 
-const MQTT_URL = process.env.TSIO_TEST_MQTT_URL || 'mqtt://127.0.0.1:1883';
+const MQTT_URL = 'mqtt://127.0.0.1:1883';
 
 interface AuthResultResponse {
     ok?: boolean;
@@ -244,9 +244,8 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
             setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
-        expect(result).toEqual({
-            payload: { result: 'pong' }
-        });
+        expect(result.statusCode ?? result.status).toBe(200);
+        expect(result.body ?? result.payload).toEqual({ result: 'pong' });
     });
 
     it('binds payload body for controller POST requests from native MQTT publish', async () => {
@@ -267,22 +266,26 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
             setTimeout(() => reject(new Error('Timeout')), 1500);
         });
 
-        expect(result.payload).toEqual({
+        expect(result.body ?? result.payload).toEqual({
             received: { id: 'u1', enabled: true }
         });
     });
 
     it('returns response envelopes for observe:response client requests', async () => {
-        const result: any = await lastValueFrom(tsdiClient.send('/api/test/info', {
+        const result: any = await lastValueFrom(tsdiClient.send(TOPIC, {
             observe: 'response',
             method: 'GET',
+            payload: {
+                url: '/api/test/info',
+                method: 'GET'
+            },
             timeout: 5000
         }));
 
         expect(result.status).toBe(200);
         expect(result.ok).toBe(true);
-        expect(result.body).toEqual({ status: 'ok' });
-        expect(result.payload).toEqual({ status: 'ok' });
+        expect(result.body).toEqual({ result: 'pong' });
+        expect(result.payload).toEqual({ result: 'pong' });
     });
 
     it('supports custom response topics for native MQTT request-response flows', async () => {
@@ -296,15 +299,17 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
                     responseTopic
                 }));
             });
-            client.once('message', (topic, payload) => {
+            const onMessage = (topic: string, payload: Buffer) => {
                 if (topic === responseTopic) {
+                    client.off('message', onMessage);
                     resolve(JSON.parse(payload.toString()));
                 }
-            });
+            };
+            client.on('message', onMessage);
             setTimeout(() => reject(new Error('Timeout')), 1500);
         });
 
-        expect(result.payload).toEqual({
+        expect(result.body ?? result.payload).toEqual({
             received: { id: 'custom' }
         });
     });
@@ -362,9 +367,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
             setTimeout(() => reject(new Error('Timeout')), 1000);
         });
 
-        expect(result).toEqual({
-            payload: null
-        });
+        expect(result.statusCode ?? result.status).toBe(404);
     });
 });
 

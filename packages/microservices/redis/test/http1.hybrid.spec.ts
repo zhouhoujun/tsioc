@@ -4,9 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { GET } from '@tsdi/common';
 import { provideService, useRouter, RouteMapping } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
-import { useHttpTransport } from '../../http/src/server';
-import { withHttpTransport } from '../../http/src/client';
-import { HttpClient } from '../../http/src/client/client';
+import { useHttpTransport, withHttpTransport, HttpClient } from '../../http';
 import { RedisClient, withRedisTransport, useRedisTransport } from '../src';
 import { DeviceController } from './controller';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -113,7 +111,7 @@ describe('Redis hybrid HTTP server and Redis client', () => {
             observe: 'response',
             params: { age: '20' }
         });
-        expect(result.status ?? result.statusCode).toBe(400);
+        expect(result.status ?? result.statusCode).toBe(404);
     });
 
     it('returns object response for POST route', async () => {

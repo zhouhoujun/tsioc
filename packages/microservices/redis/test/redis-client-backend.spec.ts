@@ -39,6 +39,7 @@ class FakeRedis extends EventEmitter {
     disconnect() {
         this.disconnectCalled += 1;
     }
+
 }
 
 describe('Redis client backend', () => {
@@ -91,6 +92,7 @@ describe('Redis client backend', () => {
         const result = await resultPromise;
         const dup = socket.duplicates[0];
         expect(result).toBe('done');
+        await new Promise(resolve => setTimeout(resolve, 0));
         expect(dup.quitCalled).toBe(1);
     });
 
@@ -140,8 +142,6 @@ describe('Redis client backend', () => {
         const socket = new FakeRedis();
         const request = new RedisRequest('topic.observe', null, { observe: 'observe' } as any, 'PUBLISH');
         const result$ = backend(request.clone({ payload: { hello: 'world' } }), createContext(request, socket));
-
-        const promise = lastValueFrom(result$.pipe(take(2), toArray()));
         setTimeout(() => {
             const dup = socket.duplicates[0];
             const reqId = JSON.parse(socket.published[0].message).id;
@@ -149,10 +149,25 @@ describe('Redis client backend', () => {
             dup.emit('message', 'topic.observe:response', JSON.stringify({ id: reqId, status: 200, payload: 'one' }));
             dup.emit('message', 'topic.observe:response', JSON.stringify({ id: reqId, status: 200, payload: 'two' }));
         }, 0);
-
-        const result = await promise;
+        const result = await new Promise<any[]>((resolve, reject) => {
+            const values: any[] = [];
+            const subscription = result$.subscribe({
+                next: (value: any) => {
+                    values.push(value);
+                    if (values.length === 2) {
+                        subscription.unsubscribe();
+                        resolve(values);
+                    }
+                },
+                error: (err: any) => {
+                    subscription.unsubscribe();
+                    reject(err);
+                }
+            });
+        });
         const dup = socket.duplicates[0];
         expect(result).toEqual(['one', 'two']);
+        await new Promise(resolve => setTimeout(resolve, 0));
         expect(dup.quitCalled).toBe(1);
     });
 });

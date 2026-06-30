@@ -262,7 +262,17 @@ export interface RouteMapping {
 
 export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name: string, controllerOnly?: boolean) {
     return createDecorator<T>(name, {
+        isMatadata: (args) => {
+            return isMetadataObject(args) && (isString(args.route) || !isDefined(args.route));
+        },
         props: (route: string, arg2?: AbstractType<Router> | AbstractType<CanHandle>[] | string | T) => {
+            if (isMetadataObject(route)) {
+                const metadata = { ...(route as unknown as T) };
+                if (isString(metadata.route)) {
+                    metadata.route = normalize(metadata.route) as any;
+                }
+                return metadata;
+            }
             route = normalize(route);
             if (isArray(arg2)) {
                 return { route, guards: arg2 } as T;
@@ -293,10 +303,11 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
 
                 let router = mapping?.router ? injector.get(mapping.router) : null;
                 if (!router) {
+                    const preferMicroservice = isDefined(mapping?.transport);
                     try {
-                        router = getRouter(injector, mapping?.transport, false);
+                        router = getRouter(injector, mapping?.transport, preferMicroservice);
                     } catch {
-                        router = getRouter(injector, mapping?.transport, true);
+                        router = getRouter(injector, mapping?.transport, !preferMicroservice);
                     }
                 }
                 if (!router) throw new Exception(`${getTypeName(typeRef.type)} has not registered router!`);

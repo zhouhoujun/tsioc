@@ -21,4 +21,11 @@ describe('ServiceMessageValueReader', () => {
 
         expect(result).toEqual({ success: true, value: 'body:id' });
     });
+
+    it('falls back to scalar payload values when named payload parameter is requested', () => {
+        const reader = new ServiceMessageValueReader();
+        const result = reader.read('message', { payload: 'reload' }, 'payload');
+
+        expect(result).toEqual({ success: true, value: 'reload' });
+    });
 });

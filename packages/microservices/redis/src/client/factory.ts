@@ -162,8 +162,10 @@ function createRedisClientBackend(config: RedisClientOptions) {
                 timer = undefined;
             }
             subscriber.removeAllListeners();
-            subscriber.quit().catch(() => {
-                subscriber.disconnect();
+            Promise.resolve((subscriber as any).unsubscribe?.(responseChannel)).catch(() => undefined).finally(() => {
+                subscriber.quit().catch(() => {
+                    subscriber.disconnect();
+                });
             });
         };
 

@@ -1,6 +1,6 @@
 import { Injector, Invocation, toObservable } from '@tsdi/ioc';
 import { ResultValue } from '@tsdi/core';
-import { MessageAdapter, RequestHandler, RequestContext, ReadableLike, Incoming, RestfulRequestAdapter, StatusMessageAdapter } from '@tsdi/common';
+import { MessageAdapter, RequestHandler, RequestContext, ReadableLike, Incoming, RestfulRequestAdapter, StatusMessageAdapter, REQUEST } from '@tsdi/common';
 import { catchError, mergeMap, Observable, throwError, timeout } from 'rxjs';
 import { ApiRateLimiter } from '../interceptors/ratelimiter';
 import { ApiRateLimitOptions, ServiceOptions } from '../options';
@@ -48,6 +48,7 @@ export class RouteHandler implements RequestHandler {
                 resolvers: this.invokeOpts.resolvers,
                 payload: context.getPayload?.() ?? input,
                 values: [
+                    [REQUEST, context.get(REQUEST, null as any)],
                     [RestfulRequestAdapter, context.get(RestfulRequestAdapter)],
                     [MessageAdapter, context.get(MessageAdapter)],
                     [StatusMessageAdapter, context.get(StatusMessageAdapter)],

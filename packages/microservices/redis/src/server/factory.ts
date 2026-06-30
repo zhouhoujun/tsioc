@@ -1,5 +1,5 @@
-import { Provider, getClassRef, Injector, importProvidersFrom } from '@tsdi/ioc';
-import { NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide } from '@tsdi/common'
+import { Provider, getClassRef, Injector, importProvidersFrom, ArgumentException } from '@tsdi/ioc';
+import { BadRequestException, ForbiddenException, NotFoundException, RequestContext, REQUEST, StatusMessageAdapter, createRequestHandler, Transport, TransferSide, normalize } from '@tsdi/common'
 import { of } from 'rxjs';
 import { RedisServer } from './redis-server';
 import { RedisPatternFormatter } from './pattern';
@@ -9,6 +9,17 @@ import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { RedisMessageAdapter } from './message-adapter';
 import { RedisMessageAdapterFactory } from './message-adapter.factory';
 import { useBrokerMessageTransfer } from '@tsdi/transport';
+
+function resolveMessageErrorStatus(err: any): number {
+    return err?.statusCode ?? err?.status
+        ?? (err instanceof BadRequestException || err instanceof ArgumentException || err?.constructor?.name === 'MissingParameterException'
+            ? 400
+            : err instanceof ForbiddenException
+                ? 403
+                : err instanceof NotFoundException
+                    ? 404
+                    : 500);
+}
 
 const useRedisMessageTransfer = () => useBrokerMessageTransfer<{ channel: string; message: string }, Record<string, any>>({
     canHandle: (input) => !!input && typeof input.channel === 'string' && typeof input.message === 'string',
@@ -20,16 +31,17 @@ const useRedisMessageTransfer = () => useBrokerMessageTransfer<{ channel: string
             parsed = message;
         }
         const requestSource: Record<string, any> = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || channel;
+        const url = requestSource.url ? normalize(String(requestSource.url)) : undefined;
         const method = requestSource.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         const requestData: Record<string, any> = {
             ...requestSource,
-            url,
+            ...(url ? { url } : {}),
             method,
             body,
             payload: body,
-            channel
+            channel,
+            topic: requestSource.topic ?? channel
         };
         requestData.responseChannel ??= requestData.responseTopic ?? `${channel}:response`;
         return requestData;
@@ -77,19 +89,24 @@ const useRedisMessageTransfer = () => useBrokerMessageTransfer<{ channel: string
             if (!publisher || !requestData?.channel) {
                 return;
             }
+            const status = resolveMessageErrorStatus(err);
+            const expose = typeof err?.expose === 'boolean' ? err.expose : (status >= 400 && status < 500);
+            const message = status >= 500 && !expose
+                ? 'Internal Server Error'
+                : err?.message || err?.statusMessage || 'Error';
             const errorBody = {
-                error: err?.message || err?.statusMessage || 'Error',
-                statusCode: err?.statusCode || err?.status || 500,
+                error: message,
+                statusCode: status,
                 ...(err?.details ? { details: err.details } : {}),
             };
             adapter?.setError(err);
-            adapter?.setStatus(err?.statusCode || err?.status || 500, err?.statusMessage || err?.message);
+            adapter?.setStatus(status, err?.statusMessage || message);
             adapter?.setPayload(errorBody);
             publisher.publish(requestData.responseChannel ?? `${requestData.channel}:response`, JSON.stringify({
                 id: requestData.id,
-                status: err?.statusCode || err?.status || 500,
-                statusCode: err?.statusCode || err?.status || 500,
-                statusMessage: err?.statusMessage || err?.message || 'Error',
+                status,
+                statusCode: status,
+                statusMessage: err?.statusMessage || message,
                 ok: false,
                 error: errorBody,
                 body: errorBody,

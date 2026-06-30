@@ -15,6 +15,8 @@ function isUdpSocket(socket: unknown): socket is dgram.Socket {
     return !!socket && typeof (socket as dgram.Socket).send === 'function';
 }
 
+const UDP_MESSAGE_SENT = 'udp-message-sent';
+
 const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer, rinfo?: dgram.RemoteInfo, framed?: boolean, id?: any }, Record<string, any>>({
     canHandle: (input) => !!input && Buffer.isBuffer(input.message),
     normalize: ({ message, rinfo, framed, id }) => {
@@ -49,6 +51,13 @@ const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer, 
         response: (_input, _requestData, context) => context.get(SOCKET)
     },
     sender: {
+        isSent: (context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            if (requestData?.observe === 'observe') {
+                return false;
+            }
+            return context.has(UDP_MESSAGE_SENT) ? context.get(UDP_MESSAGE_SENT) : false;
+        },
         canSend: (_response, context) => {
             const requestData = context.get(REQUEST) as Record<string, any>;
             return !!context.get(SOCKET) && !!requestData?.rinfo;
@@ -101,6 +110,18 @@ const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer, 
             const responseText = JSON.stringify(payload);
             const buf = Buffer.from(requestData?.framed ? responseText + '\r\n' : responseText);
             socket.send(buf, rinfo.port, rinfo.address);
+        },
+        afterSuccess: (_response, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            if (requestData?.observe !== 'observe') {
+                context.set(UDP_MESSAGE_SENT, true);
+            }
+        },
+        afterError: (_error, context) => {
+            const requestData = context.get(REQUEST) as Record<string, any>;
+            if (requestData?.observe !== 'observe') {
+                context.set(UDP_MESSAGE_SENT, true);
+            }
         }
     }
 });

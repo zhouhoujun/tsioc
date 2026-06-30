@@ -32,8 +32,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
             if (valid) return this.connection!;
 
             if (this.connection) {
-                this.connection.removeAllListeners();
-                this.connection.disconnect();
+                this.disposeConnection(this.connection);
             }
 
             return await new Promise<Redis>((resolve, reject) => {
@@ -41,12 +40,14 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
 
                 const cleanup = () => {
                     redis.off(Events.CONNECT, onConnect)
-                        .off(Events.ERROR, onError);
+                        .off(Events.ERROR, onError)
+                        .off(Events.CLOSE, onClose);
                 };
 
                 const onError = (err: Error) => {
                     cleanup();
                     this.logger?.error('Redis connection error:', err);
+                    this.disposeConnection(redis);
                     reject(err);
                 };
 
@@ -56,8 +57,15 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
                     resolve(redis);
                 };
 
+                const onClose = () => {
+                    cleanup();
+                    this.disposeConnection(redis);
+                    reject(new Error('Connection closed before connect'));
+                };
+
                 redis.on(Events.ERROR, onError)
-                    .on(Events.CONNECT, onConnect);
+                    .on(Events.CONNECT, onConnect)
+                    .once(Events.CLOSE, onClose);
             });
         });
     }
@@ -72,41 +80,54 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
         if (first instanceof RedisRequest) {
             return first;
         }
-        const formatter = this.handler.injector.get(PatternFormatter);
         if (isString(first)) {
-            return new RedisRequest(formatter.format(first), first, options);
+            const formatter = this.handler.injector.get(PatternFormatter, null);
+            return new RedisRequest(formatter ? formatter.format(first) : first, null, options);
         }
-        return new RedisRequest(formatter.format(first), first, options);
-    }
-
-    protected override request(first: Pattern | RedisRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(
-            switchMap(() => super.request(first, options))
-        );
+        const formatter = this.handler.injector.get(PatternFormatter, null);
+        const topic = formatter ? formatter.format(first) : (typeof (first as any)?.cmd === 'string' ? `cmd:${(first as any).cmd}` : JSON.stringify(first));
+        return new RedisRequest(topic, first, options);
     }
 
     protected async onShutdown(): Promise<void> {
         if (!this.connection) return;
 
+        const connection = this.connection;
+        this.connection = undefined;
+
         return new Promise<void>((resolve) => {
             let settled = false;
+            let timeout: NodeJS.Timeout | undefined;
             const cleanup = () => {
                 if (settled) {
                     return;
                 }
                 settled = true;
-                clearTimeout(timeout);
-                this.connection?.removeAllListeners();
-                this.connection = undefined!;
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = undefined;
+                }
+                connection.removeAllListeners();
                 resolve();
             };
 
-            this.connection!.once(Events.CLOSE, cleanup);
+            connection.once(Events.CLOSE, cleanup);
 
-            const timeout = setTimeout(() => {
+            connection.once(Events.CLOSE, () => {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = undefined;
+                }
+            });
+
+            Promise.resolve(connection.quit()).catch(() => {
+                connection.disconnect();
+                cleanup();
+            });
+            timeout = setTimeout(() => {
                 this.logger?.warn('Redis client shutdown timeout, forcing disconnect');
                 try {
-                    this.connection?.disconnect();
+                    connection.disconnect();
                 } finally {
                     cleanup();
                 }
@@ -114,19 +135,9 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
             if (typeof (timeout as any).unref === 'function') {
                 (timeout as any).unref();
             }
-
-            this.connection!.once(Events.CLOSE, () => {
-                clearTimeout(timeout);
-            });
-
-            this.connection!.quit();
         }).catch(err => {
             this.logger?.error('Redis client shutdown error:', err);
-            if (this.connection) {
-                this.connection.removeAllListeners();
-                this.connection.disconnect();
-                this.connection = undefined!;
-            }
+            this.disposeConnection(connection);
         });
     }
 
@@ -136,5 +147,17 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
 
     protected createConnection(opts: RedisClientOptions): Redis {
         return opts.url ? new Redis(opts.url, (opts.connectOpts || {}) as any) : new Redis((opts.connectOpts || {}) as any);
+    }
+
+    private disposeConnection(connection?: Redis | null): void {
+        if (!connection) {
+            return;
+        }
+        connection.removeAllListeners();
+        try {
+            connection.disconnect();
+        } catch {
+            // ignore disconnect errors during shutdown/failed connect
+        }
     }
 }

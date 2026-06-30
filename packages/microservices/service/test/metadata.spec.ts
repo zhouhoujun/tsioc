@@ -4,6 +4,7 @@ import {
     getSubscribePatterns,
     getServiceRouterToken,
     Controller,
+    RouteMapping,
     Get,
     Handle,
     Post,
@@ -108,5 +109,21 @@ describe('service metadata', () => {
     it('stores method route metadata for HTTP decorators', () => {
         const define = typeRef.getDefines(Get as any).find((item: any) => item.propertyKey === 'detail');
         expect(define?.metadata?.route).toBe(':id');
+    });
+
+    it('stores class route metadata when RouteMapping uses metadata object', () => {
+        @RouteMapping({ route: '/redis/users', transport: Transport.Redis, prefix: '/api' })
+        class RedisRouteController {
+            @Get('/detail')
+            detail() {
+                return 'ok';
+            }
+        }
+
+        const routeRef = getClassRef(RedisRouteController);
+        const annotation = routeRef.getAnnotation<any>();
+        expect(annotation?.route).toBe('/redis/users');
+        expect(annotation?.transport).toBe(Transport.Redis);
+        expect(annotation?.prefix).toBe('/api');
     });
 });

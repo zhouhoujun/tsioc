@@ -4,6 +4,7 @@ import { Transport, TransferSide } from '@tsdi/common';
 import { createInjector } from '@tsdi/ioc';
 import { getServiceRouterToken } from '@tsdi/service';
 import expect = require('expect');
+import { EventEmitter } from 'events';
 
 describe('Redis Microservice', () => {
 
@@ -155,6 +156,44 @@ describe('Redis Microservice', () => {
             const server = new RedisServer({ injector } as any, options);
 
             expect((server as any).resolveChannels()).toEqual(['device.events']);
+        });
+
+        it('falls back to disconnect when quit does not close the client', async () => {
+            const server = new RedisServer({ injector: createInjector() } as any, {} as any);
+            const subscriber = new EventEmitter() as any;
+            const publisher = new EventEmitter() as any;
+            let subscriberDisconnects = 0;
+            let publisherDisconnects = 0;
+
+            const decorate = (client: any, onDisconnect: () => void) => {
+                client.quit = () => Promise.resolve('OK');
+                client.disconnect = onDisconnect;
+                client.removeAllListeners = () => client;
+                client.once = client.once.bind(client);
+            };
+
+            decorate(subscriber, () => { subscriberDisconnects += 1; });
+            decorate(publisher, () => { publisherDisconnects += 1; });
+
+            (server as any).subscriber = subscriber;
+            (server as any).publisher = publisher;
+
+            const originalSetTimeout = global.setTimeout;
+            (global as any).setTimeout = (handler: (...args: any[]) => void) => {
+                handler();
+                return { ref() { return this; }, unref() { return this; } };
+            };
+
+            try {
+                await server.onShutdown();
+            } finally {
+                (global as any).setTimeout = originalSetTimeout;
+            }
+
+            expect(subscriberDisconnects).toBe(1);
+            expect(publisherDisconnects).toBe(1);
+            expect((server as any).subscriber).toBe(null);
+            expect((server as any).publisher).toBe(null);
         });
     });
 });

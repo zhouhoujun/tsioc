@@ -1,4 +1,4 @@
-import { getTypeName, Inject, promisify, Injectable } from '@tsdi/ioc';
+import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
@@ -85,8 +85,42 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
 
-        await promisify(this.client.end, this.client)(true);
-        this.client.removeAllListeners();
+        const client = this.client;
+        await new Promise<void>((resolve) => {
+            let settled = false;
+            let timeout: NodeJS.Timeout | undefined;
+            const finish = () => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = undefined;
+                }
+                client.removeAllListeners();
+                resolve();
+            };
+
+            client.once(Events.CLOSE, finish);
+
+            try {
+                client.end(true, {}, finish);
+            } catch {
+                client.end(true);
+                finish();
+            }
+            timeout = setTimeout(() => {
+                try {
+                    client.end(true);
+                } finally {
+                    finish();
+                }
+            }, 1000);
+            if (typeof (timeout as any).unref === 'function') {
+                (timeout as any).unref();
+            }
+        });
         this.client = null;
 
     }
@@ -114,6 +148,10 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.handler.handle({ topic, payload } as TReq, context)
             .pipe(
                 takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe();
+            ).subscribe({
+                error: (err) => {
+                    this.logger.error('MQTT request handling error:', err);
+                }
+            });
     }
 }

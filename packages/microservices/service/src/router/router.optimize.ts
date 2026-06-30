@@ -618,6 +618,9 @@ function getMicroToPartsBy(protocol: Transport | null): (url: string) => string[
     }
 }
 const redisToParts = (url: string) => {
+    if (url.indexOf('/') >= 0) {
+        return urlToParts(url)
+    }
     if (url.indexOf('.') >= 0) {
         return dotParts(url)
     }
@@ -639,5 +642,5 @@ const kafkaToParts = (url: string) => {
 
 const dotParts = (url: string) => url.split('.').filter(part => part);
 const udpToParts = (url: string) => url.indexOf('/') >= 0 ? urlToParts(url) : dotParts(url);
-const mqttToParts = (url: string) => url.split('/');
+const mqttToParts = (url: string) => url.split('/').filter(part => part);
 const urlToParts = (url: string) => url.split('/').filter(part => part);
