@@ -40,8 +40,11 @@ export function createRouteProviders(config: ServiceConfig, token?: Token<Router
             provide: token,
             useFactory: (injector: Injector) => {
                 const opts = isFunction(optsify) ? optsify(injector)! : optsify;
+                const formatter = opts.formatter
+                    ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter)
+                    : defaultFormatter;
                 return new OptimizedRouter(injector,
-                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
+                    formatter,
                     opts.prefix,
                     config.transport,
                     opts.options,

@@ -9,6 +9,7 @@ import { MqttClient, withMqttTransport, useMqttTransport } from '../src';
 import { DeviceController } from './controller';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+import { MQTT_TEST_URL, startMqttBroker, stopMqttBroker } from './test-broker';
 
 const HTTP_PORT = 21321;
 
@@ -24,10 +25,10 @@ class ContentController {
     providers: [
         provideService(useRouter(), useRouter({ microservice: true }),
             useHttpTransport({ microservice: false as any, listenOpts: { port: HTTP_PORT, host: '127.0.0.1' } }),
-            useMqttTransport({ url: 'mqtt://127.0.0.1:1883' })),
+            useMqttTransport({ url: MQTT_TEST_URL })),
         provideClient(
             withHttpTransport({ url: `http://127.0.0.1:${HTTP_PORT}`, microservice: false, asDefault: true }),
-            withMqttTransport({ url: 'mqtt://127.0.0.1:1883' }))
+            withMqttTransport({ url: MQTT_TEST_URL }))
     ]
 })
 class MqttHttpHybridModule { }
@@ -46,12 +47,16 @@ describe('Mqtt hybrid HTTP server and Mqtt client', () => {
     };
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttHttpHybridModule);
         httpClient = ctx.get(HttpClient);
         mqttClient = ctx.get(MqttClient);
         await new Promise(r => setTimeout(r, 1000));
     });
-    after(async () => { if (ctx) await ctx.destroy(); });
+    after(async () => {
+        if (ctx) await ctx.destroy();
+        await stopMqttBroker();
+    });
 
     it('resolves clients', () => { expect(httpClient).toBeDefined(); expect(mqttClient).toBeDefined(); });
     it('serves JSON over HTTP', async () => {

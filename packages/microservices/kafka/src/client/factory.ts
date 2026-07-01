@@ -1,7 +1,8 @@
 import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { KAFKA_CLIENT_OPTIONS, KafkaClientOptions } from './options';
 import { KafkaClient } from './client';
 import { KafkaPatternFormatter } from '../server';
@@ -59,6 +60,7 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
+    const interceptorsToken = getClientInterceptorsToken(config);
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({ provide: backendToken, useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createKafkaClientBackend(config)), deps: [Injector], multi: true }),
@@ -77,7 +79,8 @@ function kafkaClientTransportFactory(option: Partial<KafkaClientOptions>, asDefa
                 return childInjector.get(KafkaClient);
             },
             deps: [Injector]
-        }
+        },
+        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
     ];
     if (asDefault) {
         providers.push({ provide: KafkaClient, useExisting: clientToken });
@@ -114,7 +117,11 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
             ?? `${topic}${config.responseTopicSuffix ?? '.response'}`;
         const payload = Buffer.isBuffer(input)
             ? input
-            : Buffer.from(JSON.stringify(serializeRequest(request, 'payload', requestId, input)));
+            : input instanceof Uint8Array
+                ? Buffer.from(input)
+                : typeof input === 'string'
+                    ? Buffer.from(input)
+            : Buffer.from(JSON.stringify(withRequestId(input, requestId)));
 
         if (request.observe === 'events') {
             producer.send({ topic, messages: [{ value: payload }] })
@@ -143,7 +150,7 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
         };
 
         const fail = (err: any) => {
-            cleanup().finally(() => observer.error(err));
+            void cleanup().finally(() => observer.error(err));
         };
 
         (async () => {
@@ -172,9 +179,9 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
                             observer.next(parsed);
                             return;
                         }
-                        await cleanup();
                         observer.next(parsed);
                         observer.complete();
+                        void cleanup();
                     } catch (err) {
                         fail(err);
                     }
@@ -194,6 +201,19 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
     });
 }
 
+function withRequestId(input: any, requestId: string | number) {
+    if (!input || typeof input !== 'object' || Buffer.isBuffer(input)) {
+        return input;
+    }
+    if (input.id != null) {
+        return input;
+    }
+    return {
+        ...input,
+        id: requestId
+    };
+}
+
 function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestId?: string | number, payloadValue?: any) {
     const json: Record<string, any> = typeof request?.toJson === 'function'
         ? request.toJson({ payloadKey })
@@ -207,15 +227,6 @@ function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestI
     }
     return json;
 }
-
-function normalizeTopicFromUrl(url?: string) {
-    if (!url) {
-        return undefined;
-    }
-    const [pathname] = String(url).split('?', 2);
-    return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
-}
-
 
 function resolveKafkaBrokers(config: KafkaClientOptions): string[] {
     return config.brokerCompatBrokers?.length ? config.brokerCompatBrokers : (config.brokers || ['localhost:9092']);

@@ -1,7 +1,8 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, PatternFormatter, TransferSide, Transport } from '@tsdi/common';
 import { createSendMessageBackend, useJsonPacket } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { TCP_CLIENT_OPTIONS, TcpClientOptions } from './options';
 import { TcpClient } from './client';
 import { TcpMicroPatternFormatter } from '../pattern-formatter';
@@ -26,6 +27,7 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
+    const interceptorsToken = getClientInterceptorsToken(config);
 
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
@@ -60,7 +62,8 @@ function tcpClientTransportFacotry(option: Partial<TcpClientOptions>, asDefault?
             deps: [
                 Injector
             ]
-        }
+        },
+        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
     ];
 
     if (asDefault) {

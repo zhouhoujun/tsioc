@@ -156,10 +156,15 @@ describe('NATS Microservice', () => {
                 {
                     provide: getServiceRouterToken(options as any),
                     useValue: {
-                        formatter: { format: (pattern: any) => String(pattern) },
+                        formatter: {
+                            format: (pattern: any) => typeof pattern === 'string'
+                                ? pattern
+                                : Object.entries(pattern).map(([key, value]) => `${key}:${value}`).join('.')
+                        },
                         routes: [
-                            { pattern: 'sensor.*.start', subscribe: true },
-                            { pattern: 'sensor.ignore', subscribe: false }
+                            { pattern: 'sensor.*.start', subscribe: true, method: 'SUBSCRIBE' },
+                            { pattern: 'sensor.ignore', subscribe: false, method: 'GET' },
+                            { pattern: { cmd: 'echo' }, path: 'cmd:echo' }
                         ]
                     }
                 } as any
@@ -167,7 +172,7 @@ describe('NATS Microservice', () => {
             const server = new NatsServer({ injector } as any, options);
             const subjects = mergeSubscribePatterns(options.subjects, getSubscribePatterns(options, server.injector), ['>']);
 
-            expect(subjects).toEqual(['sensor.*.start']);
+            expect(subjects).toEqual(['sensor.*.start', 'cmd:echo']);
         });
     });
 });

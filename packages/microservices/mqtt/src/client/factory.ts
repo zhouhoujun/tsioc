@@ -1,7 +1,8 @@
 import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, Events, ResponseEventPacket } from '@tsdi/common'
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
 import { MqttClient } from './client';
 import { MqttRequest } from './request';
@@ -58,6 +59,7 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
+    const interceptorsToken = getClientInterceptorsToken(config);
 
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
@@ -88,7 +90,8 @@ function mqttClientTransportFactory(option: Partial<MqttClientOptions>, asDefaul
                 return childInjector.get(MqttClient);
             },
             deps: [Injector]
-        }
+        },
+        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
     ];
 
     if (asDefault) {
@@ -125,7 +128,7 @@ function createMqttClientBackend(config: MqttClientOptions) {
         const responseTopic = request.responseTopic ?? config.responseTopic ?? `${topic}/response`;
         const payload = Buffer.isBuffer(input) || typeof input === 'string'
             ? input
-            : JSON.stringify(serializeRequest(request, 'payload', requestId, input));
+            : JSON.stringify(withRequestId(input, requestId));
         let timer: NodeJS.Timeout | undefined;
         let closed = false;
 
@@ -187,6 +190,19 @@ function createMqttClientBackend(config: MqttClientOptions) {
 
         return cleanup;
     });
+}
+
+function withRequestId(input: any, requestId: string | number) {
+    if (!input || typeof input !== 'object' || Buffer.isBuffer(input)) {
+        return input;
+    }
+    if (input.id != null) {
+        return input;
+    }
+    return {
+        ...input,
+        id: requestId
+    };
 }
 
 function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestId?: string | number, payloadValue?: any) {

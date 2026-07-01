@@ -6,6 +6,8 @@ import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeS
 import { Subject, race, take, takeUntil } from 'rxjs';
 import { Kafka, Consumer, Producer, EachMessagePayload } from 'kafkajs';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS, KAFKA_BIND_INTERCEPTORS, KAFKA_BIND_FILTERS, KAFKA_BIND_GUARDS } from './options';
+import { Router } from '@tsdi/service';
+import { getServiceRouterToken } from '@tsdi/service';
 
 @Injectable()
 export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
@@ -82,7 +84,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
 
     }
 
-    private resolveTopics(): Array<{ topic: string; fromBeginning?: boolean }> {
+    private resolveTopics(): Array<{ topic: string | RegExp; fromBeginning?: boolean }> {
         const explicit = this.options.topics ?? [];
         const discovered = getSubscribePatterns(this.options, this.injector);
         const merged = mergeSubscribePatterns(
@@ -90,11 +92,37 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             discovered,
             ['microservice']
         );
+        const router = this.injector.get(getServiceRouterToken(this.options), null as Router | null);
+        const wildcardTopics = router ? (router.routes as Array<{ path?: string; method?: string | string[]; subscribe?: boolean }>)
+            .filter(route => {
+                if (route.subscribe === true) {
+                    return true;
+                }
+                if (route.subscribe === false) {
+                    return false;
+                }
+                return !route.method;
+            })
+            .map(route => {
+                if (typeof route.path !== 'string' || !router.formatter.isRegExp?.(route.path)) {
+                    return undefined;
+                }
+                return router.formatter.parseRegExp?.(route.path) ?? undefined;
+            })
+            .filter((topic): topic is RegExp => !!topic) : [];
 
-        return merged.map(topic => {
+        const topics: Array<{ topic: string | RegExp; fromBeginning?: boolean }> = merged.map(topic => {
             const current = explicit.find(item => item.topic === topic);
             return current ?? { topic, fromBeginning: this.options.fromBeginning };
         });
+
+        wildcardTopics.forEach(topic => {
+            if (!topics.some(item => item.topic instanceof RegExp && String(item.topic) === String(topic))) {
+                topics.push({ topic, fromBeginning: this.options.fromBeginning });
+            }
+        });
+
+        return topics;
     }
 
     private handleMessage(payload: EachMessagePayload) {
@@ -104,6 +132,10 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
 
         this.handler.handle(payload as TReq, context)
             .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
-            .subscribe();
+            .subscribe({
+                error: (err) => {
+                    this.logger.error('Kafka request handling error:', err);
+                }
+            });
     }
 }

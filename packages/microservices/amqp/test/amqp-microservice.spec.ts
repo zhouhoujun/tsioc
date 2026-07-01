@@ -159,10 +159,14 @@ describe('AMQP Microservice', () => {
                 {
                     provide: getServiceRouterToken(options as any),
                     useValue: {
-                        formatter: { format: (pattern: any) => String(pattern) },
+                        formatter: {
+                            format: (pattern: any) => typeof pattern === 'string'
+                                ? pattern
+                                : Object.entries(pattern).map(([key, value]) => `${key}:${value}`).join('.')
+                        },
                         routes: [
-                            { pattern: 'sensor.*.start', subscribe: true },
-                            { pattern: 'sensor.ignore', subscribe: false }
+                            { pattern: 'sensor.*.start', subscribe: true, method: 'SUBSCRIBE' },
+                            { pattern: 'sensor.ignore', subscribe: false, method: 'GET' }
                         ]
                     }
                 } as any
@@ -171,6 +175,31 @@ describe('AMQP Microservice', () => {
             const routingKeys = mergeSubscribePatterns(options.routingKey ? [options.routingKey] : undefined, getSubscribePatterns(options, server.injector), ['*.microservice']);
 
             expect(routingKeys).toEqual(['sensor.*.start']);
+        });
+
+        it('includes handle routes in amqp routing keys', () => {
+            const options = amqpTransportFactory({ url: 'amqp://localhost:5672' }).config as AmqpServOptions;
+            const injector = createInjector([
+                {
+                    provide: getServiceRouterToken(options as any),
+                    useValue: {
+                        formatter: {
+                            format: (pattern: any) => typeof pattern === 'string'
+                                ? pattern.replace(/\//g, '.')
+                                : Object.entries(pattern).map(([key, value]) => `${key}:${value}`).join('.')
+                        },
+                        routes: [
+                            { pattern: { cmd: 'echo' }, path: 'cmd:echo' },
+                            { pattern: 'sensor.message.*', path: 'sensor.message.*' },
+                            { pattern: '/device', path: 'device', method: 'GET' }
+                        ]
+                    }
+                } as any
+            ]);
+            const server = new AmqpServer({ injector } as any, options);
+            const routingKeys = mergeSubscribePatterns(options.routingKey ? [options.routingKey] : undefined, getSubscribePatterns(options, server.injector), ['*.microservice']);
+
+            expect(routingKeys).toEqual(['cmd:echo', 'sensor.message.*']);
         });
     });
 });

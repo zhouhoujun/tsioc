@@ -69,10 +69,6 @@ export class HttpClient extends AbstractClient<HttpRequest<any>, ResponseEvent<a
         return new HttpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
     }
 
-    protected override request(first: Pattern | HttpRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(switchMap(() => super.request(first, options)));
-    }
-
     protected async onShutdown(): Promise<void> {
         if (!this.session) return;
         const session = this.session;

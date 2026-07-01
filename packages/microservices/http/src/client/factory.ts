@@ -1,6 +1,7 @@
 import { asProvider, createInjector, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, ContentType } from '@tsdi/common';
 import { CLIENT_CONFIGS, BodySerializeStrategy, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { HTTP_CLIENT_OPTIONS, HttpClientOptions } from './options';
 import { HttpClient } from './client';
 import * as http from 'node:http';
@@ -42,7 +43,7 @@ function httpClientTransportFactory(option: Partial<HttpClientOptions>, asDefaul
             },
             deps: [Injector]
         },
-        { provide: interceptorsToken, useValue: (req: any, next: any, context: any) => next(req, context), multi: true }
+        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
     ];
     if (asDefault) providers.push({ provide: HttpClient, useExisting: clientToken });
     return makeClientFeature(ClientFeatureKind.Transport, providers, config) as ClientTransportFeature;

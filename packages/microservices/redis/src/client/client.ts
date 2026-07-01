@@ -3,7 +3,7 @@ import { Pattern, Events, LOCALHOST, RequestInitOpts, TopicRequestOptions, Respo
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import Redis from 'ioredis';
 import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisRequest } from './request';

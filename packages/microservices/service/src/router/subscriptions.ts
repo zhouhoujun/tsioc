@@ -1,8 +1,9 @@
-import { Injector, isRegExp } from '@tsdi/ioc';
+import { Injector, isDefined, isRegExp } from '@tsdi/ioc';
 import { getServiceRouterToken } from '../tokens';
 import { ServiceConfig } from '../options';
 import { Route } from './route';
 import { Router } from './router';
+import { Pattern } from '@tsdi/common';
 
 type SubscribeRoute = Route & { subscribe?: boolean };
 
@@ -16,7 +17,20 @@ export function getSubscribeRoutes(config: ServiceConfig, injector: Injector): R
         return [];
     }
 
-    return (router.routes as SubscribeRoute[]).filter(route => !!route.subscribe && !isRegExp(route.pattern));
+    return (router.routes as SubscribeRoute[]).filter(route => {
+        const source = getSubscribeSource(route);
+        if (isRegExp(source)) {
+            return false;
+        }
+        if (route.subscribe === true) {
+            return true;
+        }
+        if (route.subscribe === false) {
+            return false;
+        }
+        // Topic-based microservice handlers (@Handle) also need broker subscriptions.
+        return !route.method;
+    });
 }
 
 export function getSubscribePatterns(config: ServiceConfig, injector: Injector): string[] {
@@ -39,11 +53,15 @@ export function getSubscribePatterns(config: ServiceConfig, injector: Injector):
 }
 
 export function formatSubscribePattern(route: Route, router: Router): string | undefined {
-    const pattern = route.pattern;
+    const pattern = getSubscribeSource(route);
     if (pattern == null || isRegExp(pattern)) {
         return undefined;
     }
     return router.formatter.format(pattern);
+}
+
+export function getSubscribeSource(route: Route): Pattern | undefined {
+    return isDefined(route.pattern) ? route.pattern ?? undefined : route.path;
 }
 
 export function mergeSubscribePatterns(explicit: string[] | undefined, discovered: string[], fallback?: string[]): string[] {

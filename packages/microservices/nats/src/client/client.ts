@@ -3,7 +3,7 @@ import { Pattern, RequestInitOpts, TopicRequestOptions, ResponseEvent, Events, P
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import { connect, NatsConnection } from 'nats';
 import { NATS_CLIENT_OPTIONS, NatsClientOptions } from './options';
 import { NatsRequest } from './request';
@@ -55,12 +55,6 @@ export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<a
         } else {
             return new NatsRequest(this.handler.injector.get(PatternFormatter).format(first), first, options);
         }
-    }
-
-    protected override request(first: Pattern | NatsRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(
-            switchMap(() => super.request(first, options))
-        );
     }
 
     protected async onShutdown(): Promise<void> {

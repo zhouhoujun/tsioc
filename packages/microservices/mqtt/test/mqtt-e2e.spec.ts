@@ -9,8 +9,9 @@ import { provideClient, withTimeout } from '@tsdi/client';
 import * as mqtt from 'mqtt';
 import expect = require('expect');
 import { lastValueFrom } from 'rxjs';
+import { MQTT_TEST_URL, startMqttBroker, stopMqttBroker } from './test-broker';
 
-const MQTT_URL = 'mqtt://127.0.0.1:1883';
+const MQTT_URL = MQTT_TEST_URL;
 
 interface AuthResultResponse {
     ok?: boolean;
@@ -58,10 +59,14 @@ describe('MQTT E2E microservice:true', () => {
     let ctx: ApplicationContext;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttMsModule);
 
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => {
+        if (ctx) await ctx.close();
+        await stopMqttBroker();
+    });
 
     it('should get MqttClient via ctx.get()', () => { expect(ctx.get(MqttClient)).toBeDefined(); });
     it('should bootstrap MQTT with microservice:true', () => { expect(ctx).toBeDefined(); });
@@ -83,10 +88,14 @@ describe('MQTT E2E microservice:false', () => {
     let ctx: ApplicationContext;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttHostModule);
 
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => {
+        if (ctx) await ctx.close();
+        await stopMqttBroker();
+    });
 
     it('should bootstrap MQTT with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
@@ -103,10 +112,14 @@ describe('MQTT @Controller', () => {
     let ctx: ApplicationContext;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttCtrlModule);
 
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => {
+        if (ctx) await ctx.close();
+        await stopMqttBroker();
+    });
 
     it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 });
@@ -123,10 +136,14 @@ describe('MQTT @RouteMapping', () => {
     let ctx: ApplicationContext;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttRouteModule);
 
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => {
+        if (ctx) await ctx.close();
+        await stopMqttBroker();
+    });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });
@@ -156,11 +173,15 @@ describe('MQTT pattern routing', () => {
     let client: MqttClient;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttPatternModule);
         client = ctx.get(MqttClient);
 
     });
-    after(async () => { if (ctx) await ctx.destroy(); });
+    after(async () => {
+        if (ctx) await ctx.destroy();
+        await stopMqttBroker();
+    });
 
     it('routes object cmd patterns through the default formatter', async () => {
         const result = await lastValueFrom<string>(client.send({ cmd: 'xxx' }, { payload: { message: 'ble' }, timeout: 5000 }));
@@ -209,6 +230,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
     let tsdiClient: MqttClient;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttE2eModule);
         client = mqtt.connect(MQTT_URL);
         tsdiClient = ctx.get(MqttClient);
@@ -216,6 +238,7 @@ describe('MQTT E2E with provideService + provideClient (microservice:true)', () 
     after(async () => {
         if (client) client.end(true);
         if (ctx) await ctx.destroy();
+        await stopMqttBroker();
     });
 
     it('should bootstrap with provideService and provideClient', () => {
@@ -340,12 +363,14 @@ describe('MQTT E2E with provideService + provideClient (microservice:false)', ()
     let client: mqtt.MqttClient;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttE2eHostModule);
         client = mqtt.connect(MQTT_URL);
     });
     after(async () => {
         if (client) client.end(true);
         if (ctx) await ctx.destroy();
+        await stopMqttBroker();
     });
 
     it('should bootstrap with provideService and provideClient in host mode', () => {
@@ -405,6 +430,7 @@ describe('MQTT auth E2E', () => {
     let client: mqtt.MqttClient;
 
     before(async () => {
+        await startMqttBroker();
         ctx = await Application.run(MqttAuthModule);
         client = mqtt.connect(MQTT_URL);
     });
@@ -412,6 +438,7 @@ describe('MQTT auth E2E', () => {
     after(async () => {
         if (client) client.end(true);
         if (ctx) await ctx.destroy();
+        await stopMqttBroker();
     });
 
     it('accepts requests with bearer token', async () => {

@@ -1,7 +1,8 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { createSendMessageBackend } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsClient } from './client';
 import { useWsPacket } from '../transfer';
@@ -24,6 +25,7 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
+    const interceptorsToken = getClientInterceptorsToken(config);
 
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
@@ -57,7 +59,8 @@ function wsClientTransportFactory(option: Partial<WsClientOptions>, asDefault?: 
                 return childInjector.get(WsClient);
             },
             deps: [Injector]
-        }
+        },
+        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
     ];
 
     if (asDefault) {

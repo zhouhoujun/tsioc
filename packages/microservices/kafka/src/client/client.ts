@@ -40,12 +40,11 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
 
     protected buildRequest(first: KafkaRequest<any> | Pattern, options: RequestInitOpts<any, TopicRequestOptions>): KafkaRequest<any> {
         if (first instanceof KafkaRequest) return first;
-        if (isString(first)) return new KafkaRequest(first, null, options);
-        else return new KafkaRequest(this.handler.injector.get(PatternFormatter).format(first), first, options);
-    }
-
-    protected override request(first: Pattern | KafkaRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(switchMap(() => super.request(first, options)));
+        const formatter = this.handler.injector.get(PatternFormatter);
+        if (isString(first)) {
+            return new KafkaRequest(formatter.format(first), first, options);
+        }
+        return new KafkaRequest(formatter.format(first), first, options);
     }
 
     protected async onShutdown(): Promise<void> {

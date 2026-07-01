@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { createInjector } from '@tsdi/ioc';
 import { RequestInterceptorFn, Transport, TransferSide } from '@tsdi/common';
+import { of } from 'rxjs';
 import {
     CLIENT_CONFIGS,
     MICRO_CLIENT_CIRCUIT_BREAKER_OPTIONS,
@@ -17,6 +18,9 @@ import {
     withRetry,
     withTimeout
 } from '../src/provider';
+import { AbstractClient } from '../src/AbstractClient';
+import { ensureClientConnectedInterceptor } from '../src/interceptors/connect';
+import { getClientToken } from '../src/tokens';
 import { ClientFeatureKind } from '../src/options';
 import { getClientInterceptorsToken } from '../src/tokens';
 import {
@@ -39,6 +43,32 @@ const createConfig = (name = 'alpha') => ({
 } as any);
 
 const customFeatureInterceptor: RequestInterceptorFn = (input: any, next: any, context: any) => next({ ...input, custom: true }, context);
+
+class ConnectableTestClient extends AbstractClient<any, any> {
+    connectCalls = 0;
+    initContextCalls = 0;
+
+    protected get handler(): any {
+        return { injector: createInjector() };
+    }
+
+    protected buildRequest(first: any): any {
+        return first;
+    }
+
+    protected initContext(): void {
+        this.initContextCalls += 1;
+    }
+
+    protected onShutdown(): Promise<void> {
+        return Promise.resolve();
+    }
+
+    connect() {
+        this.connectCalls += 1;
+        return of({ connected: true });
+    }
+}
 
 describe('client provider', () => {
     it('throws when transport feature is missing', () => {
@@ -167,6 +197,28 @@ describe('client provider', () => {
         expect(loadBalance.providers.some((provider: any) => provider.provide === interceptorToken)).toBe(true);
         expect(breaker.providers.some((provider: any) => provider.provide === interceptorToken)).toBe(true);
         expect(retry.providers.some((provider: any) => provider.provide === interceptorToken)).toBe(true);
+    });
+
+    it('connect interceptor connects client before invoking next handler', (done) => {
+        const config = createConfig();
+        const interceptor = ensureClientConnectedInterceptor(config);
+        const client = new ConnectableTestClient() as any;
+        const injector = createInjector([
+            { provide: getClientToken(config), useValue: client }
+        ]);
+        const context = {
+            getInjector: () => injector
+        } as any;
+
+        interceptor({ id: 1 }, (_input: any) => {
+            expect(client.connectCalls).toBe(1);
+            expect(client.initContextCalls).toBe(1);
+            return of('ok');
+        }, context).subscribe({
+            next: (value: any) => expect(value).toBe('ok'),
+            error: done,
+            complete: done
+        });
     });
 
     it('omits discovery and load balance features when disabled explicitly', () => {

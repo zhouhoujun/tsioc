@@ -3,7 +3,7 @@ import { Pattern, RequestInitOpts, TopicRequestOptions, ResponseEvent, Events, P
 import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MQTT_CLIENT_OPTIONS, MqttClientOptions } from './options';
 import { MqttRequest } from './request';
@@ -86,12 +86,6 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
             const formatter = this.handler.injector.get(PatternFormatter, defaultFormatter);
             return new MqttRequest(formatter.format(first), first, options);
         }
-    }
-
-    protected override request(first: Pattern | MqttRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(
-            switchMap(() => super.request(first, options))
-        );
     }
 
     protected async onShutdown(): Promise<void> {

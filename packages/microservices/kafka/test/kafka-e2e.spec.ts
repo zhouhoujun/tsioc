@@ -160,7 +160,8 @@ describe('Kafka auth E2E', () => {
     interface KafkaAuthResponse {
         ok?: boolean;
         statusCode?: number;
-        error?: string;
+        error?: string | { error?: string; statusCode?: number };
+        body?: { ok?: boolean; statusCode?: number; error?: string };
         payload?: { ok?: boolean; statusCode?: number; error?: string };
     }
 
@@ -246,7 +247,7 @@ describe('Kafka auth E2E', () => {
             method: 'GET',
             headers: { authorization: 'Bearer secret-token' }
         });
-        expect(result.ok ?? result.payload?.ok).toBe(true);
+        expect(result.body?.ok ?? result.payload?.ok ?? result.ok).toBe(true);
     });
 
     it('rejects requests without bearer token', async () => {
@@ -255,6 +256,9 @@ describe('Kafka auth E2E', () => {
             method: 'GET'
         });
         expect(result.statusCode ?? result.payload?.statusCode).toBe(401);
-        expect(result.error ?? result.payload?.error).toContain('Unauthorized');
+        const errorMessage = typeof result.error === 'string'
+            ? result.error
+            : (result.body?.error ?? result.payload?.error ?? result.error?.error ?? '');
+        expect(errorMessage).toContain('Unauthorized');
     });
 });

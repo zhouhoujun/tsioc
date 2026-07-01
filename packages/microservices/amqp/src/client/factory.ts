@@ -1,7 +1,8 @@
 import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common'
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { AMQP_CLIENT_OPTIONS, AmqpClientOptions } from './options';
 import { AmqpClient } from './client';
 import { AmqpPatternFormatter } from '../server';
@@ -57,6 +58,7 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
+    const interceptorsToken = getClientInterceptorsToken(config);
 
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
@@ -87,7 +89,8 @@ function amqpClientTransportFactory(option: Partial<AmqpClientOptions>, asDefaul
                 return childInjector.get(AmqpClient);
             },
             deps: [Injector]
-        }
+        },
+        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
     ];
 
     if (asDefault) {
@@ -124,13 +127,13 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
         }
 
         const exchange = config.exchange ?? 'tsdi';
-        const routingKey = config.routingKey ?? '*.microservice';
+        const routingKey = resolveAmqpRoutingKey(request, config);
         const correlationId = String(request.id ?? `${Date.now()}-${Math.random()}`);
         const publishPayload = Buffer.isBuffer(input)
             ? input
             : typeof input === 'string'
                 ? Buffer.from(input)
-                : Buffer.from(JSON.stringify(serializeRequest(request, 'payload', correlationId, input)));
+                : Buffer.from(JSON.stringify(withRequestId(input, correlationId)));
         let consumerTag: string | undefined;
         let settled = false;
         let timer: NodeJS.Timeout | undefined;
@@ -171,6 +174,9 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
                 } catch {
                     // keep raw string payload
                 }
+                if (parsed && typeof parsed === 'object' && parsed.id != null && parsed.id !== correlationId) {
+                    return;
+                }
                 if (request.observe === 'observe') {
                     observer.next(parsed);
                     return;
@@ -197,6 +203,19 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
     });
 }
 
+function withRequestId(input: any, requestId: string) {
+    if (!input || typeof input !== 'object' || Buffer.isBuffer(input)) {
+        return input;
+    }
+    if (input.id != null) {
+        return input;
+    }
+    return {
+        ...input,
+        id: requestId
+    };
+}
+
 function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestId?: string | number, payloadValue?: any) {
     const json: Record<string, any> = typeof request?.toJson === 'function'
         ? request.toJson({ payloadKey })
@@ -211,10 +230,23 @@ function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestI
     return json;
 }
 
-function normalizeTopicFromUrl(url?: string) {
-    if (!url) {
+function resolveAmqpRoutingKey(request: any, config: AmqpClientOptions): string {
+    if (config.routingKey) {
+        return config.routingKey;
+    }
+    if (typeof request?.topic === 'string' && request.topic.includes('/')) {
+        return resolveAmqpRouteKeyFromTopic(request.topic) ?? request.topic;
+    }
+    return request?.topic ?? '*.microservice';
+}
+
+function resolveAmqpRouteKeyFromTopic(topic: string): string | undefined {
+    const parts = String(topic).split('/').filter(Boolean);
+    if (!parts.length) {
         return undefined;
     }
-    const [pathname] = String(url).split('?', 2);
-    return pathname.startsWith('/') ? pathname.slice(1).replace(/\//g, '.') : pathname;
+    if (parts.length === 1) {
+        return parts[0];
+    }
+    return parts.slice(0, -1).join('.');
 }

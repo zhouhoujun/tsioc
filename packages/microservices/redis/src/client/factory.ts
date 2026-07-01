@@ -1,7 +1,8 @@
 import { createInjector, asProvider, Injector, Provider, isNil } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, defaultFormatter, REQUEST, ResponseEventPacket } from '@tsdi/common';
 import { SOCKET, useBrokerClientTransfer } from '@tsdi/transport';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientInterceptorsToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
+import { ensureClientConnectedInterceptor } from '@tsdi/client/src/interceptors/connect';
 import { REDIS_CLIENT_OPTIONS, RedisClientOptions } from './options';
 import { RedisClient } from './client';
 import { RedisPatternFormatter } from '../server';
@@ -62,6 +63,7 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
     const clientToken = getClientToken(config);
     const hanlderToken = getClientHandlerToken(config);
     const backendToken = getClientBackendToken(config);
+    const interceptorsToken = getClientInterceptorsToken(config);
 
     const providers: Provider[] = [
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
@@ -92,7 +94,8 @@ function redisClientTransportFactory(option: Partial<RedisClientOptions>, asDefa
                 return childInjector.get(RedisClient);
             },
             deps: [Injector]
-        }
+        },
+        { provide: interceptorsToken, useValue: ensureClientConnectedInterceptor(config), multi: true, multiOrder: 0 }
     ];
 
     if (asDefault) {

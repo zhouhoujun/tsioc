@@ -132,4 +132,20 @@ describe('AMQP client backend', () => {
         expect(result).toEqual(['one', 'two']);
         expect(socket.cancelled).toContain('consumer-1');
     });
+
+    it('uses configured routingKey for url requests and topic for pattern requests', async () => {
+        const feature = withAmqpTransport({ routingKey: 'fixed.route', asDefault: true })[0];
+        const injector = createInjector(feature.providers as any);
+        const [backend] = injector.get(getClientBackendToken(feature.config as any)) as unknown as Array<(input: any, context: any) => any>;
+        const socket = new FakeChannel();
+
+        const urlRequest = new AmqpRequest('e2e.echo', null, { observe: 'events' } as any, 'POST');
+        await lastValueFrom(backend(urlRequest.clone({ payload: { ok: true } }), createContext(urlRequest, socket)));
+
+        const patternRequest = new AmqpRequest('cmd:echo', { cmd: 'echo' }, { observe: 'events' } as any, 'PUBLISH');
+        await lastValueFrom(backend(patternRequest.clone({ payload: { ok: true } }), createContext(patternRequest, socket)));
+
+        expect(socket.published[0].routingKey).toBe('fixed.route');
+        expect(socket.published[1].routingKey).toBe('fixed.route');
+    });
 });

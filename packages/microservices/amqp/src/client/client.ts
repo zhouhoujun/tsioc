@@ -63,13 +63,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
             return new AmqpRequest(formatter.format(first), first, options);
         }
     }
-
-    protected override request(first: Pattern | AmqpRequest<any>, options: TopicRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(
-            switchMap(() => super.request(first, options))
-        );
-    }
-
+    
     protected async onShutdown(): Promise<void> {
         if (this.channel) {
             await this.channel.close();

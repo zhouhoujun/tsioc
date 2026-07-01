@@ -5,6 +5,8 @@ import * as http from 'node:http';
 import { lastValueFrom } from 'rxjs';
 import { McpClient } from '../src/client/client';
 import { McpRequest } from '../src/client/request';
+import { withMcpTransport } from '../src/client/factory';
+import { getClientBackendToken } from '@tsdi/client';
 
 class TestMcpClient extends McpClient {
     public makeRequest(first: any, options: any = {}) {
@@ -15,6 +17,7 @@ class TestMcpClient extends McpClient {
 class FakeClientRequest extends EventEmitter {
     public body = '';
     public ended = false;
+    public destroyed = false;
 
     write(chunk: string) {
         this.body += chunk;
@@ -24,6 +27,10 @@ class FakeClientRequest extends EventEmitter {
     end() {
         this.ended = true;
         this.emit('finish');
+    }
+
+    destroy() {
+        this.destroyed = true;
     }
 }
 
@@ -47,6 +54,13 @@ describe('McpClient', () => {
         return new TestMcpClient(handler, options);
     }
 
+    function createBackend(options: any = {}) {
+        const [feature] = withMcpTransport({ ...options, asDefault: true });
+        const injector = createInjector(feature.providers as any);
+        const [backend] = injector.get(getClientBackendToken(feature.config as any)) as unknown as Array<(input: any, context: any) => any>;
+        return backend;
+    }
+
     function mockHttpRequest(responder: (request: FakeClientRequest, options: http.RequestOptions, callback: (res: any) => void) => void) {
         (http as any).request = (options: http.RequestOptions, callback: (res: any) => void) => {
             const request = new FakeClientRequest();
@@ -68,6 +82,7 @@ describe('McpClient', () => {
     });
 
     it('returns response envelopes for observe=response', async () => {
+        const backend = createBackend({ url: 'http://127.0.0.1:3100' });
         mockHttpRequest((request, options, callback) => {
             const response = new FakeIncomingMessage([
                 JSON.stringify({ jsonrpc: '2.0', result: { ok: true }, id: 1 })
@@ -87,16 +102,17 @@ describe('McpClient', () => {
         });
 
         const client = createClient({ url: 'http://127.0.0.1:3100' });
-        const result: any = await lastValueFrom(client.send('/api/tools/list', {
+        const result: any = await lastValueFrom(backend(client.makeRequest('/api/tools/list', {
             method: 'GET',
             observe: 'response'
-        } as any));
+        } as any), {}));
 
         expect(result.ok).toBe(true);
         expect(result.body).toEqual({ ok: true });
     });
 
     it('throws rpc errors for body observe requests', async () => {
+        const backend = createBackend({ url: 'http://127.0.0.1:3100' });
         mockHttpRequest((request, _options, callback) => {
             const response = new FakeIncomingMessage([
                 JSON.stringify({
@@ -113,9 +129,9 @@ describe('McpClient', () => {
 
         const client = createClient({ url: 'http://127.0.0.1:3100' });
 
-        await expect(lastValueFrom(client.send('/secure/ping', {
+        await expect(lastValueFrom(backend(client.makeRequest('/secure/ping', {
             method: 'GET'
-        } as any))).rejects.toMatchObject({
+        } as any), {}))).rejects.toMatchObject({
             status: 401,
             statusMessage: 'Unauthorized',
             body: { reason: 'token' }
@@ -123,6 +139,7 @@ describe('McpClient', () => {
     });
 
     it('returns rpc errors as response objects for observe=response', async () => {
+        const backend = createBackend({ url: 'http://127.0.0.1:3100' });
         mockHttpRequest((request, _options, callback) => {
             const response = new FakeIncomingMessage([
                 JSON.stringify({
@@ -138,10 +155,10 @@ describe('McpClient', () => {
         });
 
         const client = createClient({ url: 'http://127.0.0.1:3100' });
-        const result: any = await lastValueFrom(client.send('/secure/ping', {
+        const result: any = await lastValueFrom(backend(client.makeRequest('/secure/ping', {
             method: 'GET',
             observe: 'response'
-        } as any));
+        } as any), {}));
 
         expect(result.ok).toBe(false);
         expect(result.status).toBe(500);
@@ -149,6 +166,7 @@ describe('McpClient', () => {
     });
 
     it('surfaces invalid json-rpc payloads', async () => {
+        const backend = createBackend({ url: 'http://127.0.0.1:3100' });
         mockHttpRequest((_request, _options, callback) => {
             const response = new FakeIncomingMessage(['not-json']);
             process.nextTick(() => {
@@ -159,20 +177,21 @@ describe('McpClient', () => {
 
         const client = createClient({ url: 'http://127.0.0.1:3100' });
 
-        await expect(lastValueFrom(client.send('/broken', {
+        await expect(lastValueFrom(backend(client.makeRequest('/broken', {
             method: 'GET'
-        } as any))).rejects.toThrow('Invalid JSON-RPC response');
+        } as any), {}))).rejects.toThrow('Invalid JSON-RPC response');
     });
 
     it('surfaces request transport errors', async () => {
+        const backend = createBackend({ url: 'http://127.0.0.1:3100' });
         mockHttpRequest((request, _options, _callback) => {
             process.nextTick(() => request.emit('error', new Error('socket hang up')));
         });
 
         const client = createClient({ url: 'http://127.0.0.1:3100' });
 
-        await expect(lastValueFrom(client.send('/broken', {
+        await expect(lastValueFrom(backend(client.makeRequest('/broken', {
             method: 'GET'
-        } as any))).rejects.toThrow('socket hang up');
+        } as any), {}))).rejects.toThrow('socket hang up');
     });
 });

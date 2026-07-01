@@ -1,8 +1,8 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { GET, ErrorResponse } from '@tsdi/common';
-import { provideService, useInterceptors, useRouter, RouteMapping } from '@tsdi/service';
+import { GET, ErrorResponse, BadRequestException, Transport } from '@tsdi/common';
+import { provideService, useInterceptors, useRouter, RouteMapping, RequestBody, RequestParam, RequestPath, RedirectResult } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 import { useTcpTransport } from '../../tcp/src/server';
 import { withTcpTransport } from '../../tcp/src/client';
@@ -26,11 +26,27 @@ class ContentController {
     }
 }
 
+@RouteMapping({ route: '/content', transport: Transport.Kafka })
+class KafkaContentController {
+    @RouteMapping('/510100_full.json', GET)
+    json() {
+        return { features: ['feature-a', 'feature-b'] };
+    }
+
+    @RouteMapping('/big.json', GET)
+    big() {
+        throw Object.assign(new Error('great than max size'), {
+            statusCode: 500,
+            statusMessage: 'great than max size'
+        });
+    }
+}
+
 const TCP_PORT = 21410;
 
 @Module({
     imports: [LoggerModule],
-    declarations: [DeviceController, ContentController],
+    declarations: [DeviceController, ContentController, KafkaContentController],
     providers: [
         provideService(
             useRouter(),
@@ -162,7 +178,7 @@ describe('Kafka hybrid TCP server and Kafka client', () => {
 
     it('returns bad request for missing body', async () => {
         const result: any = await sendTcp('/device/usage', { observe: 'response', method: 'POST' });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+        expect(result.statusText ?? result.statusMessage).toContain('required parameters were missing');
     });
 
     it('returns bad request for invalid body pipe', async () => {
@@ -171,7 +187,7 @@ describe('Kafka hybrid TCP server and Kafka client', () => {
             method: 'POST',
             body: { id: 'test1', age: 'test', createAt: '2021-10-01' }
         });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+        expect(result.statusText ?? result.statusMessage).toContain('InvalidPipeArgument');
     });
 
     it('applies request param pipes over TCP', async () => {
@@ -182,12 +198,12 @@ describe('Kafka hybrid TCP server and Kafka client', () => {
 
     it('returns bad request for missing query param', async () => {
         const result: any = await sendTcp('/device/usege/find', { observe: 'response' });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+        expect(result.statusText ?? result.statusMessage).toContain('required parameters were missing');
     });
 
     it('returns bad request for invalid query param pipe', async () => {
         const result: any = await sendTcp('/device/usege/find', { observe: 'response', params: { age: 'test' } });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+        expect(result.statusText ?? result.statusMessage).toContain('InvalidPipeArgument');
     });
 
     it('applies path param pipes over TCP', async () => {
@@ -203,7 +219,7 @@ describe('Kafka hybrid TCP server and Kafka client', () => {
 
     it('returns bad request for invalid path pipe', async () => {
         const result: any = await sendTcp('/device/age1/used', { observe: 'response', params: { age: '20' } });
-        expect(result.statusText ?? result.statusMessage).toBe('Bad Request');
+        expect(result.statusText ?? result.statusMessage).toContain('InvalidPipeArgument');
     });
 
     it('returns text response from observable route', async () => {
@@ -221,7 +237,8 @@ describe('Kafka hybrid TCP server and Kafka client', () => {
             params: { redirect: 'reload' },
             responseType: 'text'
         });
-        expect(result.statusText ?? result.statusMessage).toBe('Not Supported');
+        expect(result.ok).toBeTruthy();
+        expect(result.body).toBe('reload');
     });
 
     it('handles Kafka object pattern messages', async () => {

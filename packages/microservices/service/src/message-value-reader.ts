@@ -9,7 +9,10 @@ export class ServiceMessageValueReader extends MessageValueReader {
             return { success: false, value: undefined };
         }
         if (payload instanceof MessageAdapter) {
-            const value = payload.read(section as any, name);
+            let value = payload.read(section as any, name);
+            if (isNil(value) && name && (section === 'body' || section === 'payload')) {
+                value = payload.read(section as any);
+            }
             return isNil(value)
                 ? { success: false, value: undefined }
                 : { success: true, value };

@@ -2,7 +2,7 @@ import { Injectable, isString, Context, Inject, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Pattern, Events, LOCALHOST, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import * as dgram from 'node:dgram';
 import { SOCKET } from '@tsdi/transport';
 import { UDP_CLIENT_OPTIONS, UdpClientOptions } from './options';
@@ -56,10 +56,6 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
         } else {
             return new UdpRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
         }
-    }
-
-    protected override request(first: Pattern | UdpRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(switchMap(() => super.request(first, options)));
     }
 
     protected async onShutdown(): Promise<void> {

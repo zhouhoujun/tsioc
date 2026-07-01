@@ -4,7 +4,7 @@ import { AbstractClient, ClientHandler } from '@tsdi/client';
 import { SOCKET as WS_SOCKET } from '../context';
 import { SOCKET as TRANSPORT_SOCKET } from '@tsdi/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { defer, Observable, switchMap } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 import * as WebSocket from 'ws';
 import { WS_CLIENT_OPTIONS, WsClientOptions } from './options';
 import { WsRequest } from './request';
@@ -100,12 +100,6 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
         } else {
             return new WsRequest(this.handler.injector.get(PatternFormatter).format(first), first, options, defaultMethod);
         }
-    }
-
-    protected override request(first: Pattern | WsRequest<any>, options: UrlRequestOptions = {} as any): Observable<any> {
-        return this.connect().pipe(
-            switchMap(() => super.request(first, options))
-        );
     }
 
     protected async onShutdown(): Promise<void> {

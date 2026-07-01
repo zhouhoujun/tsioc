@@ -421,7 +421,10 @@ export function useRouter(options?: any): ServiceFeatureFn<ServiceFeatureKind.Ro
     return (config) => {
         const tk = getServiceInterceptorsToken(config);
         const routerToken = getServiceRouterToken(config);
-        const routerOptions = options ?? (isBoolean(config.features.router) ? undefined : config.features.router);
+        const configuredRouterOptions = isBoolean(config.features.router) ? undefined : config.features.router;
+        const routerOptions = options && configuredRouterOptions && typeof options === 'object' && typeof configuredRouterOptions === 'object'
+            ? { ...configuredRouterOptions, ...options }
+            : (options ?? configuredRouterOptions);
         const providers: Provider[] = [
             ...createRouteProviders(config, routerToken, routerOptions),
             {
