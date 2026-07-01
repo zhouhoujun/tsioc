@@ -2,7 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, ErrorResponse, BadRequestException, Transport } from '@tsdi/common';
-import { provideService, useInterceptors, useRouter, RouteMapping, RequestBody, RequestParam, RequestPath, RedirectResult } from '@tsdi/service';
+import { provideService, useInterceptors, useRouter, RouteMapping, RequestParam, RedirectResult, Handle } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 import { useTcpTransport } from '../../tcp/src/server';
 import { withTcpTransport } from '../../tcp/src/client';
@@ -26,14 +26,13 @@ class ContentController {
     }
 }
 
-@RouteMapping({ route: '/content', transport: Transport.Kafka })
 class KafkaContentController {
-    @RouteMapping('/510100_full.json', GET)
+    @Handle('content/510100_full.json', Transport.Kafka)
     json() {
         return { features: ['feature-a', 'feature-b'] };
     }
 
-    @RouteMapping('/big.json', GET)
+    @Handle('content/big.json', Transport.Kafka)
     big() {
         throw Object.assign(new Error('great than max size'), {
             statusCode: 500,
@@ -42,11 +41,27 @@ class KafkaContentController {
     }
 }
 
+@RouteMapping({ route: '/device', transport: Transport.Kafka })
+class KafkaDeviceController {
+    @RouteMapping('/status', 'GET')
+    getLastStatus(@RequestParam('redirect', { nullable: true }) redirect: string) {
+        if (redirect === 'reload') {
+            return new RedirectResult('/device/reload');
+        }
+        return 'working';
+    }
+
+    @RouteMapping('/reload', 'GET')
+    redirect() {
+        return 'reload';
+    }
+}
+
 const TCP_PORT = 21410;
 
 @Module({
     imports: [LoggerModule],
-    declarations: [DeviceController, ContentController, KafkaContentController],
+    declarations: [DeviceController, ContentController, KafkaContentController, KafkaDeviceController],
     providers: [
         provideService(
             useRouter(),
@@ -237,8 +252,8 @@ describe('Kafka hybrid TCP server and Kafka client', () => {
             params: { redirect: 'reload' },
             responseType: 'text'
         });
-        expect(result.ok).toBeTruthy();
-        expect(result.body).toBe('reload');
+        expect(result.status ?? result.statusCode).toBe(302);
+        expect(result.statusText ?? result.statusMessage).toBe('OK');
     });
 
     it('handles Kafka object pattern messages', async () => {

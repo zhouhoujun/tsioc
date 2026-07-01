@@ -10,6 +10,13 @@ import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { KafkaMessageAdapter } from './message-adapter';
 import { KafkaMessageAdapterFactory } from './message-adapter.factory';
 
+function toKafkaRouteUrl(rawUrl: unknown): string | undefined {
+    if (typeof rawUrl !== 'string' || !rawUrl.length) {
+        return undefined;
+    }
+    return rawUrl.replace(/^\/+/, '').replace(/\//g, '.');
+}
+
 const useKafkaMessageTransfer = () => useBrokerMessageTransfer<any, Record<string, any>>({
     canHandle: (payload) => !!payload && !!payload.message && typeof payload.topic === 'string',
     normalize: (payload) => {
@@ -23,7 +30,11 @@ const useKafkaMessageTransfer = () => useBrokerMessageTransfer<any, Record<strin
         }
 
         const requestSource: Record<string, any> = parsed && typeof parsed === 'object' ? parsed : {};
-        const url = requestSource.url || topic;
+        const url = toKafkaRouteUrl(requestSource.url)
+            ?? (typeof requestSource.topic === 'string' && requestSource.topic.includes('/')
+                ? toKafkaRouteUrl(requestSource.topic)
+                : undefined)
+            ?? topic;
         const method = requestSource.method || 'GET';
         const body = requestSource.body ?? requestSource.payload ?? parsed;
         return {
