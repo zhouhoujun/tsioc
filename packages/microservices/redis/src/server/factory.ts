@@ -21,6 +21,12 @@ function resolveMessageErrorStatus(err: any): number {
                     : 500);
 }
 
+function isRequestEnvelope(value: any): value is Record<string, any> {
+    return !!value && typeof value === 'object' && (
+        'url' in value || 'method' in value || 'body' in value || 'payload' in value || 'params' in value || 'query' in value || 'headers' in value
+    );
+}
+
 const useRedisMessageTransfer = () => useBrokerMessageTransfer<{ channel: string; message: string }, Record<string, any>>({
     canHandle: (input) => !!input && typeof input.channel === 'string' && typeof input.message === 'string',
     normalize: ({ channel, message }) => {
@@ -33,7 +39,7 @@ const useRedisMessageTransfer = () => useBrokerMessageTransfer<{ channel: string
         const requestSource: Record<string, any> = parsed && typeof parsed === 'object' ? parsed : {};
         const url = requestSource.url ? normalize(String(requestSource.url)) : undefined;
         const method = requestSource.method || 'GET';
-        const body = requestSource.body ?? requestSource.payload ?? parsed;
+        const body = requestSource.body ?? requestSource.payload ?? (isRequestEnvelope(parsed) ? undefined : parsed);
         const requestData: Record<string, any> = {
             ...requestSource,
             ...(url ? { url } : {}),

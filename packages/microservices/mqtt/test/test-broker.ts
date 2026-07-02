@@ -61,6 +61,9 @@ async function launchBroker(): Promise<void> {
     const child = spawn('/usr/sbin/mosquitto', ['-p', String(MQTT_TEST_PORT)], {
         stdio: 'ignore'
     });
+    if (typeof child.unref === 'function') {
+        child.unref();
+    }
     brokerProcess = child;
 
     await new Promise<void>((resolve, reject) => {
@@ -84,6 +87,9 @@ async function launchBroker(): Promise<void> {
         const timer = setTimeout(() => {
             finish(new Error('Timed out waiting for mosquitto to accept connections'));
         }, 5000);
+        if (typeof (timer as any).unref === 'function') {
+            (timer as any).unref();
+        }
 
         child.once('exit', onExit);
         child.once('error', onError);
@@ -110,7 +116,10 @@ function waitForPort(): Promise<void> {
                     reject(new Error('Timed out waiting for MQTT broker port'));
                     return;
                 }
-                setTimeout(probe, 100);
+                const retry = setTimeout(probe, 100);
+                if (typeof (retry as any).unref === 'function') {
+                    (retry as any).unref();
+                }
             });
             socket.connect(MQTT_TEST_PORT, MQTT_TEST_HOST);
         };

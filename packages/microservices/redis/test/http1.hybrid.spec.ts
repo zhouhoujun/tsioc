@@ -111,7 +111,7 @@ describe('Redis hybrid HTTP server and Redis client', () => {
             observe: 'response',
             params: { age: '20' }
         });
-        expect(result.status ?? result.statusCode).toBe(404);
+        expect(result.status ?? result.statusCode).toBe(400);
     });
 
     it('returns object response for POST route', async () => {

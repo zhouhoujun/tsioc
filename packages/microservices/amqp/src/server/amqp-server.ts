@@ -18,6 +18,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     connection: amqp.Connection | null = null;
     channel: amqp.Channel | null = null;
+    private starting?: Promise<void>;
 
     @InjectLog() logger!: Logger;
 
@@ -38,7 +39,12 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     })
     async bind(_event: BindServiceEvent<any>) {
         if (this.connection) return;
-        await this.onStart();
+        if (!this.starting) {
+            this.starting = this.onStart().finally(() => {
+                this.starting = undefined;
+            });
+        }
+        await this.starting;
     }
 
     async onStart(): Promise<void> {

@@ -135,6 +135,7 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
                 ? Buffer.from(input)
                 : Buffer.from(JSON.stringify(withRequestId(input, correlationId)));
         let consumerTag: string | undefined;
+        let replyQueue: string | undefined;
         let settled = false;
         let timer: NodeJS.Timeout | undefined;
 
@@ -147,6 +148,10 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
                 channel.cancel(consumerTag).catch(() => undefined);
                 consumerTag = undefined;
             }
+            if (replyQueue && typeof (channel as any).deleteQueue === 'function') {
+                channel.deleteQueue(replyQueue).catch(() => undefined);
+            }
+            replyQueue = undefined;
         };
 
         const finish = (fn: () => void) => {
@@ -165,8 +170,13 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
             return cleanup;
         }
 
-        channel.assertQueue('', { exclusive: true })
+        channel.assertQueue(createReplyQueueName(), {
+            exclusive: true,
+            autoDelete: true,
+            durable: false
+        })
             .then(({ queue }) => channel.consume(queue, (msg) => {
+                replyQueue = queue;
                 if (!msg || msg.properties.correlationId !== correlationId) return;
                 let parsed: any = msg.content.toString();
                 try {
@@ -214,6 +224,10 @@ function withRequestId(input: any, requestId: string) {
         ...input,
         id: requestId
     };
+}
+
+function createReplyQueueName(): string {
+    return `tsdi.reply.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}`;
 }
 
 function serializeRequest(request: any, payloadKey: 'body' | 'payload', requestId?: string | number, payloadValue?: any) {

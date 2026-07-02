@@ -18,6 +18,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     nc: NatsConnection | null = null;
     subscriptions: Subscription[] = [];
+    private starting?: Promise<void>;
 
     @InjectLog() logger!: Logger;
 
@@ -38,7 +39,12 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     })
     async bind(_event: BindServiceEvent<any>) {
         if (this.nc) return;
-        await this.onStart();
+        if (!this.starting) {
+            this.starting = this.onStart().finally(() => {
+                this.starting = undefined;
+            });
+        }
+        await this.starting;
     }
 
     async onStart(): Promise<void> {
@@ -55,7 +61,9 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             const sc = StringCodec();
 
             for (const subject of subjects) {
-                const sub = this.nc.subscribe(subject, { queue: this.options.queue || 'microservices' });
+                const sub = this.options.queue
+                    ? this.nc.subscribe(subject, { queue: this.options.queue })
+                    : this.nc.subscribe(subject);
                 this.subscriptions.push(sub);
 
                 (async () => {
@@ -88,6 +96,13 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
 
+        this.subscriptions.forEach(sub => {
+            try {
+                sub.unsubscribe();
+            } catch {
+                // ignore unsubscribe errors during shutdown
+            }
+        });
         this.subscriptions = [];
 
         if (this.nc) {
