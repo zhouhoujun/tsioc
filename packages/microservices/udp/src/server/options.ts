@@ -1,11 +1,12 @@
 import { token, Provider } from '@tsdi/ioc';
-import { ListenOpts, Transport } from '@tsdi/common';
+import { ListenOpts, PatternFormatter, Transport } from '@tsdi/common';
 import { ServiceOptions } from '@tsdi/service';
 
 export interface UdpServOptions extends ServiceOptions {
     transport: Transport.UDP;
     providers?: Provider[];
     listenOpts?: ListenOpts;
+    formatter?: typeof PatternFormatter | PatternFormatter;
 }
 
 export const UDP_SERV_OPTIONS = token<UdpServOptions>('UDP_SERV_OPTIONS');

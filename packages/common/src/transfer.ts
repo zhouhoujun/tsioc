@@ -131,8 +131,8 @@ export function useSimpleJson(options?: {
             return next(reqdata, context)
                 .pipe(
                     mergeMap(async res => {
-                        const streamAdapter = context.get(StreamAdapter);
-                        if (streamAdapter.isReadable(res)) {
+                        const streamAdapter = context.get(StreamAdapter, null as any);
+                        if (streamAdapter?.isReadable?.(res)) {
                             res = await streamAdapter.read(res);
                         }
                         let incoming = res;
@@ -169,8 +169,8 @@ export function useSimpleJson(options?: {
             :
             (req, next, context) => {
                 return defer(async () => {
-                    const streamAdapter = context.get(StreamAdapter);
-                    if (streamAdapter.isReadable(req)) {
+                    const streamAdapter = context.get(StreamAdapter, null as any);
+                    if (streamAdapter?.isReadable?.(req)) {
                         req = await streamAdapter.read(req);
                     }
                     const raw = Buffer.isBuffer(req) ? req.toString() : String(req);
@@ -193,15 +193,15 @@ export function useSimpleJson(options?: {
                             }
                             return next(rjson, context).pipe(
                                 mergeMap(async res => {
-                                    const streamAdapter = context.get(StreamAdapter);
+                                    const streamAdapter = context.get(StreamAdapter, null as any);
                                     const mapped = options?.mapping ? options.mapping(res, context) : res;
-                                    if (streamAdapter.isReadable(mapped?.payload)) {
+                                    if (streamAdapter?.isReadable?.(mapped?.payload)) {
                                         const rawPayload = await streamAdapter.read(mapped.payload);
                                         const normalizedPayload = Buffer.isBuffer(rawPayload) ? rawPayload.toString('utf8') : rawPayload;
                                         mapped.payload = normalizedPayload;
                                         mapped.body = normalizedPayload;
                                     }
-                                    if (streamAdapter.isReadable(mapped?.body)) {
+                                    if (streamAdapter?.isReadable?.(mapped?.body)) {
                                         const rawBody = await streamAdapter.read(mapped.body);
                                         const normalizedBody = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody;
                                         mapped.body = normalizedBody;

@@ -560,14 +560,24 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     }
 
     private buildMicroservicePayload(request: HttpRequestMessage, route: ResolvedGatewayRoute, traceHeaders: Record<string, string>): any {
-        return {
+        const body = this.resolveRequestBody(route, request);
+        const envelope = {
             url: this.normalizeRequestUrl(request.url ?? '/'),
             method: request.method,
             headers: this.buildHeaders(route, request, traceHeaders),
             query: this.resolveRewrittenQuery(route, request),
-            body: this.resolveRequestBody(route, request),
-            payload: this.resolveRequestBody(route, request)
+            body,
+            payload: body
         };
+
+        if (route.pattern != null && body && typeof body === 'object' && !Array.isArray(body)) {
+            return {
+                ...body,
+                ...envelope
+            };
+        }
+
+        return envelope;
     }
 
     private isHttpRoute(route: ResolvedGatewayRoute): boolean {

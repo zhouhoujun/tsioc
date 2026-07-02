@@ -2,7 +2,7 @@ import { ApplicationContext } from '@tsdi/core';
 import { FileAdapter, MimeAdapter, NotFoundException, RequestContext, RequestHandler, RequestInterceptor, StatusMessageAdapter } from '@tsdi/common'
 import { Injectable } from '@tsdi/ioc';
 import { basename } from 'node:path';
-import { from, mergeMap, Observable } from 'rxjs';
+import { from, mergeMap, Observable, of } from 'rxjs';
 import { CoapMessageAdapter } from '../message-adapter';
 
 @Injectable()
@@ -15,27 +15,30 @@ export class CoapContentInterceptor implements RequestInterceptor<any> {
         }
 
         return from(this.find(url, context)).pipe(
-            mergeMap(async file => {
+            mergeMap(file => {
                 if (!file) {
                     return next.handle(input, context);
                 }
-                const adapter = context.get(StatusMessageAdapter);
-                const fileAdapter = context.get(FileAdapter);
-                const mimeAdapter = context.getInjector().get(MimeAdapter, null);
-                const ext = file.encodingExt ?? fileAdapter.extname(file.filename);
-                if (ext === '.json') {
-                    adapter?.setPayload(await fileAdapter.readJSON(file.filename));
-                    return adapter;
-                }
-                adapter?.setPayload(await fileAdapter.readText(file.filename));
-                if (adapter && !adapter.hasHeader('content-type')) {
-                    const contentType = mimeAdapter?.lookup(basename(file.filename, file.encodingExt ?? ''));
-                    adapter.setHeader('content-type', typeof contentType === 'string' ? contentType : 'text/plain');
-                }
-                return adapter;
-            }),
-            mergeMap(result => result instanceof Promise ? result : Promise.resolve(result))
+                return from(this.resolveStaticResponse(file, context));
+            })
         );
+    }
+
+    private async resolveStaticResponse(file: any, context: RequestContext) {
+        const adapter = context.get(StatusMessageAdapter);
+        const fileAdapter = context.get(FileAdapter);
+        const mimeAdapter = context.getInjector().get(MimeAdapter, null);
+        const ext = file.encodingExt ?? fileAdapter.extname(file.filename);
+        if (ext === '.json') {
+            adapter?.setPayload(await fileAdapter.readJSON(file.filename));
+            return adapter;
+        }
+        adapter?.setPayload(await fileAdapter.readText(file.filename));
+        if (adapter && !adapter.hasHeader('content-type')) {
+            const contentType = mimeAdapter?.lookup(basename(file.filename, file.encodingExt ?? ''));
+            adapter.setHeader('content-type', typeof contentType === 'string' ? contentType : 'text/plain');
+        }
+        return adapter;
     }
 
     private async find(path: string, context: RequestContext) {

@@ -1,6 +1,6 @@
 import { createInjector, asProvider, Injector, Provider } from '@tsdi/ioc';
 import { createRequestHandler, TransferSide, Transport, PatternFormatter, REQUEST, defaultFormatter, useSimpleJson, parseQueryString, ErrorResponse, ResponseEventPacket } from '@tsdi/common';
-import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature } from '@tsdi/client';
+import { CLIENT_CONFIGS, ClientFeatureKind, ClientHandler, ClientTransportFeature, getClientBackendToken, getClientHandlerToken, getClientToken, makeClientFeature, wrapClientBackendWithTransfer } from '@tsdi/client';
 import { COAP_CLIENT_OPTIONS, CoapClientOptions } from './options';
 import { CoapClient } from './client';
 import { CoapCompatiblePatternFormatter, CoapPatternFormatter } from '../server/pattern';
@@ -32,7 +32,8 @@ function coapClientTransportFactory(option: Partial<CoapClientOptions>, asDefaul
         { provide: CLIENT_CONFIGS, useValue: config, multi: true },
         asProvider({
             provide: backendToken,
-            useFactory: () => createCoapClientBackend(config),
+            useFactory: (injector: Injector) => wrapClientBackendWithTransfer(injector, config, createCoapClientBackend(config)),
+            deps: [Injector],
             multi: true
         }),
         {
@@ -236,7 +237,13 @@ function normalizeCoapResponse(parsed: any, res: any) {
         ? (parsed.status ?? parsed.statusCode)
         : undefined;
     const status = parsedStatus ?? res.code ?? normalizeCoapStatus(parsedStatus) ?? '2.05';
-    const statusMessage = parsed?.statusMessage ?? parsed?.statusText ?? parsed?.error?.message ?? (String(status).startsWith('4') || String(status).startsWith('5') ? 'Error' : 'OK');
+    const body = parsed && typeof parsed === 'object' && ('body' in parsed || 'payload' in parsed)
+        ? (parsed.body ?? parsed.payload)
+        : parsed;
+    const bodyMessage = body && typeof body === 'object'
+        ? (body.statusMessage ?? body.statusText ?? body.message)
+        : undefined;
+    const statusMessage = parsed?.statusMessage ?? parsed?.statusText ?? parsed?.error?.message ?? bodyMessage ?? (String(status).startsWith('4') || String(status).startsWith('5') ? 'Error' : 'OK');
     const responseOptions = parsed && typeof parsed === 'object' && parsed.headers
         ? parsed.headers.options
         : (res as any).options;
@@ -245,9 +252,6 @@ function normalizeCoapResponse(parsed: any, res: any) {
         : responseOptions == null
             ? []
             : [responseOptions];
-    const body = parsed && typeof parsed === 'object' && ('body' in parsed || 'payload' in parsed)
-        ? (parsed.body ?? parsed.payload)
-        : parsed;
     return {
         ...(parsed && typeof parsed === 'object' ? parsed : {}),
         status,

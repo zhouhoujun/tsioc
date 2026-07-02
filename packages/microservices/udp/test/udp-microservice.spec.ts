@@ -2,6 +2,7 @@ import { UdpServer, UdpServOptions, udpTransportFactory, useUdpTransport, UDP_SE
 import { withUdpTransport, UDP_CLIENT_OPTIONS } from '../src/client';
 import { Transport, TransferSide } from '@tsdi/common';
 import expect = require('expect');
+import { UdpMicroPatternFormatter } from '../src/pattern-formatter';
 
 describe('UDP Microservice', () => {
 
@@ -49,6 +50,12 @@ describe('UDP Microservice', () => {
         it('should provide a default transfer on server side', () => {
             const feature = udpTransportFactory({ listenOpts: { port: 41234 } });
             expect(feature.config.features?.defaultTransfer).toBeDefined();
+        });
+
+        it('should use udp micro pattern formatter by default', () => {
+            const feature = udpTransportFactory({ listenOpts: { port: 41234 } });
+            expect((feature.config as any).formatter).toBe(UdpMicroPatternFormatter);
+            expect((feature.config as any).features?.router?.formatter).toBe(UdpMicroPatternFormatter);
         });
     });
 

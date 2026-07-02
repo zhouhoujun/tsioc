@@ -10,6 +10,7 @@ import { SOCKET } from '@tsdi/transport';
 import { UdpMessageAdapter } from './message-adapter';
 import { UdpMessageAdapterFactory } from './message-adapter.factory';
 import { useBrokerMessageTransfer } from '@tsdi/transport';
+import { UdpMicroPatternFormatter } from '../pattern-formatter';
 
 function isUdpSocket(socket: unknown): socket is dgram.Socket {
     return !!socket && typeof (socket as dgram.Socket).send === 'function';
@@ -127,14 +128,23 @@ const useUdpMessageTransfer = () => useBrokerMessageTransfer<{ message: Buffer, 
 });
 
 export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?: boolean): ServiceTransportFeature {
+    const formatter = option.formatter ?? UdpMicroPatternFormatter;
+    const routerFormatter = typeof option.features?.router === 'object' && option.features.router.formatter
+        ? option.features.router.formatter
+        : formatter;
     const config = {
         transport: Transport.UDP,
         side: TransferSide.server,
         microservice: true,
+        formatter,
         ...option,
         features: {
             defaultTransfer: useUdpMessageTransfer(),
-            ...option.features
+            ...option.features,
+            router: option.features?.router === false ? false : {
+                ...(typeof option.features?.router === 'object' ? option.features.router : {}),
+                formatter: routerFormatter
+            }
         },
         listenOpts: option.listenOpts ? { ...option.listenOpts } : undefined,
     } as UdpServOptions;
@@ -158,6 +168,7 @@ export function udpTransportFactory(option: Partial<UdpServOptions>, asDefault?:
 
     const providers: Provider[] = [
         importProvidersFrom(ServerCommonModule),
+        UdpMicroPatternFormatter,
         UdpMessageAdapter,
         UdpMessageAdapterFactory,
         { provide: AuthInterceptor, useClass: MessageAuthInterceptor },

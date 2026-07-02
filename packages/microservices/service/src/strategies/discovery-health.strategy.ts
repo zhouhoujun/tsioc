@@ -5,8 +5,8 @@ import { ServiceDiscovery } from '@tsdi/discovery';
 import { HEALTH_INDICATORS } from '../../../health/src/tokens';
 import { HealthOptions } from '../features/HealthOptions';
 import { SERVICE_HEALTH_OPTIONS } from '../provider';
-import { DiscoveryRegistrationStrategy } from './discovery-registration.strategy';
 import { IHealthCheckStrategy } from './IHealthCheckStrategy';
+import { IRegistrationStrategy, REGISTRATION_STRATEGY } from './IRegistrationStrategy';
 
 @Injectable()
 export class DiscoveryHealthCheckStrategy implements IHealthCheckStrategy {
@@ -16,7 +16,7 @@ export class DiscoveryHealthCheckStrategy implements IHealthCheckStrategy {
         @Inject(ServiceDiscovery, { nullable: true }) private discovery: ServiceDiscovery | null,
         @Inject(HEALTH_INDICATORS, { nullable: true }) private indicators: HealthIndicator[] | null,
         @Inject(SERVICE_HEALTH_OPTIONS, { nullable: true }) private options: HealthOptions | null,
-        @Inject(DiscoveryRegistrationStrategy, { nullable: true }) private registration: DiscoveryRegistrationStrategy | null
+        @Inject(REGISTRATION_STRATEGY, { nullable: true }) private registration: IRegistrationStrategy | null
     ) {}
 
     async start(): Promise<void> {
@@ -37,14 +37,14 @@ export class DiscoveryHealthCheckStrategy implements IHealthCheckStrategy {
             clearInterval(this.timer);
             this.timer = undefined;
         }
-        const endpoint = this.registration?.getEndpoint();
+        const endpoint = this.registration?.getEndpoint?.();
         if (this.discovery && endpoint) {
             await this.discovery.update(endpoint.id, { status: 'DOWN' });
         }
     }
 
     private async report(): Promise<void> {
-        const endpoint = this.registration?.getEndpoint();
+        const endpoint = this.registration?.getEndpoint?.();
         if (!this.discovery || !endpoint) {
             return;
         }
@@ -61,7 +61,7 @@ export class DiscoveryHealthCheckStrategy implements IHealthCheckStrategy {
     private async checkIndicators(): Promise<HealthResult> {
         const indicators = this.indicators ?? [];
         const details: Record<string, any> = {};
-        let status: 'UP' | 'DOWN' | 'UNKNOWN' = indicators.length ? 'UP' : 'UNKNOWN';
+        let status: 'UP' | 'DOWN' | 'UNKNOWN' = 'UP';
         for (const indicator of indicators) {
             try {
                 const result = await indicator.check();

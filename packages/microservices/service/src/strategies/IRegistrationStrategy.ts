@@ -12,6 +12,12 @@ export interface IRegistrationStrategy {
     register(): Promise<any>;
 
     /**
+     * Return the current registered endpoint when available.
+     * 返回当前已注册的服务端点（如果有）
+     */
+    getEndpoint?(): any;
+
+    /**
      * Deregister this service instance from discovery.
      * 从服务发现注销此服务实例
      */

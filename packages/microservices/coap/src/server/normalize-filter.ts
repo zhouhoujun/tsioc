@@ -8,22 +8,23 @@ import { SOCKET, COAP_RESPONSE } from '../context';
 @Injectable()
 export class CoapNormalizeAdapterFilter extends RequestFilter<any, Observable<any>, RequestContext> {
     doFilter(input: any, next: any, context: RequestContext): Observable<any> {
+        let request = input;
         if (!context.has(MessageAdapter)) {
             const rawReq = context.get(SOCKET) as coap.IncomingMessage;
             if (rawReq) {
-                const requestData = this.normalizeRequest(rawReq);
-                context.set(REQUEST, requestData);
-                context.setPayload(requestData);
+                request = this.normalizeRequest(rawReq);
+                context.set(REQUEST, request);
+                context.setPayload(request);
 
                 const coapResponse = context.get(COAP_RESPONSE);
                 const factory = context.getInjector()?.get(CoapMessageAdapterFactory);
                 if (factory && coapResponse) {
-                    const adapter = factory.create({ request: requestData, response: coapResponse, context });
+                    const adapter = factory.create({ request, response: coapResponse, context });
                     context.setMessageAdapter(adapter);
                 }
             }
         }
-        return next.handle(input, context);
+        return next.handle(request, context);
     }
 
     private normalizeRequest(req: coap.IncomingMessage): Record<string, any> {
