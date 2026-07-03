@@ -65,13 +65,24 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
     }
     
     protected async onShutdown(): Promise<void> {
-        if (this.channel) {
-            await this.channel.close();
-            this.channel = undefined;
+        const channel = this.channel;
+        const connection = this.connection;
+        this.channel = undefined;
+        this.connection = undefined;
+
+        if (channel) {
+            try {
+                await channel.close();
+            } catch {
+                // ignore channel close failures during shutdown
+            }
         }
-        if (this.connection) {
-            await this.connection.close();
-            this.connection = undefined;
+        if (connection) {
+            try {
+                await connection.close();
+            } catch {
+                // ignore connection close failures during shutdown
+            }
         }
     }
 

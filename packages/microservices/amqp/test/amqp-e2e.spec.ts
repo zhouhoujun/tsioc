@@ -46,7 +46,7 @@ describe('AMQP E2E microservice:true', () => {
         ctx = await Application.run(AmqpMsModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should get AmqpClient via ctx.get()', () => { expect(ctx.get(AmqpClient)).toBeDefined(); });
     it('should bootstrap AMQP with microservice:true', () => { expect(ctx).toBeDefined(); });
@@ -71,7 +71,7 @@ describe('AMQP E2E microservice:false', () => {
         ctx = await Application.run(AmqpHostModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should bootstrap AMQP with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
@@ -91,7 +91,7 @@ describe('AMQP @Controller', () => {
         ctx = await Application.run(AmqpCtrlModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 });
@@ -111,7 +111,7 @@ describe('AMQP @RouteMapping', () => {
         ctx = await Application.run(AmqpRouteModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });

@@ -19,7 +19,6 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     nc: NatsConnection | null = null;
     subscriptions: Subscription[] = [];
     private starting?: Promise<void>;
-
     @InjectLog() logger!: Logger;
 
     private destroy$: Subject<void>;
@@ -37,7 +36,8 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         filtersToken: NATS_BIND_FILTERS,
         guardsToken: NATS_BIND_GUARDS
     })
-    async bind(_event: BindServiceEvent<any>) {
+    async bind(event: BindServiceEvent<any>) {
+        if (event.transport !== Transport.NATS) return;
         if (this.nc) return;
         if (!this.starting) {
             this.starting = this.onStart().finally(() => {
@@ -61,9 +61,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             const sc = StringCodec();
 
             for (const subject of subjects) {
-                const sub = this.options.queue
-                    ? this.nc.subscribe(subject, { queue: this.options.queue })
-                    : this.nc.subscribe(subject);
+                const sub = this.nc.subscribe(subject, { queue: this.options.queue || 'microservices' });
                 this.subscriptions.push(sub);
 
                 (async () => {
@@ -105,10 +103,19 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         });
         this.subscriptions = [];
 
-        if (this.nc) {
-            await this.nc.drain();
-            await this.nc.close();
-            this.nc = null;
+        if (!this.nc) return;
+
+        const connection = this.nc;
+        this.nc = null;
+        try {
+            await connection.drain();
+        } catch {
+            // ignore drain failures during shutdown and force close below
+        }
+        try {
+            await connection.close();
+        } catch {
+            // ignore close failures during shutdown
         }
     }
 

@@ -19,7 +19,6 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     connection: amqp.Connection | null = null;
     channel: amqp.Channel | null = null;
     private starting?: Promise<void>;
-
     @InjectLog() logger!: Logger;
 
     private destroy$: Subject<void>;
@@ -37,7 +36,8 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         filtersToken: AMQP_BIND_FILTERS,
         guardsToken: AMQP_BIND_GUARDS
     })
-    async bind(_event: BindServiceEvent<any>) {
+    async bind(event: BindServiceEvent<any>) {
+        if (event.transport !== Transport.AMQP) return;
         if (this.connection) return;
         if (!this.starting) {
             this.starting = this.onStart().finally(() => {
@@ -104,13 +104,24 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
 
-        if (this.channel) {
-            await this.channel.close();
-            this.channel = null;
+        const channel = this.channel;
+        const connection = this.connection;
+        this.channel = null;
+        this.connection = null;
+
+        if (channel) {
+            try {
+                await channel.close();
+            } catch {
+                // ignore channel close failures during shutdown
+            }
         }
-        if (this.connection) {
-            await this.connection.close();
-            this.connection = null;
+        if (connection) {
+            try {
+                await connection.close();
+            } catch {
+                // ignore connection close failures during shutdown
+            }
         }
     }
 

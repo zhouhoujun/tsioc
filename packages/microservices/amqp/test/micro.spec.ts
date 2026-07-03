@@ -59,7 +59,6 @@ describe('AMQP Micro Service', () => {
 
     before(async () => {
         ctx = await Application.run(MicroTestModule);
-        
     });
 
     it('should create context with AMQP transport', () => {

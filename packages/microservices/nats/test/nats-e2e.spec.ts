@@ -49,7 +49,7 @@ describe('NATS E2E microservice:true', () => {
         ctx = await Application.run(NatsMsModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should get NatsClient via ctx.get()', () => { expect(ctx.get(NatsClient)).toBeDefined(); });
     it('should bootstrap NATS with microservice:true', () => { expect(ctx).toBeDefined(); });
@@ -74,7 +74,7 @@ describe('NATS E2E microservice:false', () => {
         ctx = await Application.run(NatsHostModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should bootstrap NATS with microservice:false', () => { expect(ctx).toBeDefined(); });
 });
@@ -94,7 +94,7 @@ describe('NATS @Controller', () => {
         ctx = await Application.run(NatsCtrlModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should bootstrap @Controller', () => { expect(ctx).toBeDefined(); });
 });
@@ -114,7 +114,7 @@ describe('NATS @RouteMapping', () => {
         ctx = await Application.run(NatsRouteModule);
         
     });
-    after(async () => { if (ctx) await ctx.close(); });
+    after(async () => { if (ctx) await ctx.destroy(); });
 
     it('should bootstrap @RouteMapping', () => { expect(ctx).toBeDefined(); });
 });

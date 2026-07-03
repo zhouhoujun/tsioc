@@ -1,7 +1,62 @@
 import { TcpServer, TcpServOptions, tcpTransportFactory, useTcpTransport, TCP_SERV_OPTIONS } from '../src/server';
 import { Transport, TransferSide } from '@tsdi/common';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { Module, Injectable } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
+import { provideClient, withTimeout } from '@tsdi/client';
+import { withTcpTransport, TcpClient } from '../src/client';
+import { Controller, Get, Post, RequestBody, RequestHeader, RequestParam, RequestPath, Handle, Payload, provideService, useRouter } from '@tsdi/service';
+import { catchError, lastValueFrom, of, take, toArray } from 'rxjs';
 import expect = require('expect');
 import * as net from 'node:net';
+
+@Controller('/api/e2e')
+class TcpE2eController {
+    @Get('/ping')
+    ping() {
+        return { result: 'pong' };
+    }
+
+    @Post('/echo')
+    echo(@RequestBody() body: any) {
+        return { received: body };
+    }
+}
+
+@Controller('/api/matrix')
+class TcpMatrixController {
+    @Get('/query')
+    query(
+        @RequestParam('page', { nullable: true }) page: number = 1,
+        @RequestParam('sort', { nullable: true }) sort: string = 'name',
+        @RequestHeader('accept', { nullable: true }) accept?: string,
+    ) {
+        return { page, sort, accept: accept ?? null };
+    }
+
+    @Get('/path/:id')
+    path(@RequestPath('id') id: string) {
+        return { id };
+    }
+
+    @Post('/body')
+    body(@RequestBody() body: any) {
+        return { received: body };
+    }
+
+    @Get('/falsy')
+    falsy(@RequestParam('zero') zero: number = 0) {
+        return { zero, ok: false, empty: '' };
+    }
+}
+
+@Injectable()
+class TcpStreamHandler {
+    @Handle({ cmd: 'stream' }, Transport.TCP)
+    stream(@Payload('message') message: string) {
+        return of(`${message}-1`, `${message}-2`, `${message}-3`);
+    }
+}
 
 describe('TCP Microservice', () => {
 
@@ -195,6 +250,152 @@ describe('TCP Microservice', () => {
             });
 
             expect(clients.size).toBeGreaterThanOrEqual(0);
+        });
+    });
+
+    describe('TCP default E2E coverage', () => {
+        const TCP_E2E_PORT = 3010;
+        const TCP_STREAM_PORT = 3011;
+
+        @Module({
+            imports: [LoggerModule],
+            declarations: [TcpE2eController, TcpMatrixController, TcpStreamHandler],
+            providers: [
+                provideService(
+                    useRouter(),
+                    useRouter({ microservice: true }),
+                    useTcpTransport({ microservice: false, listenOpts: { port: TCP_E2E_PORT, host: '127.0.0.1' }, asDefault: true })
+                ),
+                provideClient(
+                    withTimeout(),
+                    withTcpTransport({ connectOpts: { port: TCP_E2E_PORT, host: '127.0.0.1' }, microservice: false, asDefault: true })
+                )
+            ]
+        })
+        class TcpDefaultE2eModule { }
+
+        let ctx: ApplicationContext;
+        let client: TcpClient;
+
+        before(async () => {
+            ctx = await Application.run(TcpDefaultE2eModule);
+            client = ctx.get(TcpClient);
+        });
+
+        after(async () => {
+            if (ctx) {
+                await ctx.destroy();
+            }
+        });
+
+        it('serves GET routes over TCP host mode', async () => {
+            const result = await lastValueFrom(client.send('/api/e2e/ping', {
+                observe: 'response'
+            }).pipe(catchError(err => of(err))));
+            expect(result).toMatchObject({
+                status: 200,
+                ok: true,
+                body: { result: 'pong' }
+            });
+        });
+
+        it('serves POST routes over TCP host mode', async () => {
+            const result = await lastValueFrom(client.send('/api/e2e/echo', {
+                method: 'POST',
+                payload: { value: 'hello' },
+                observe: 'response'
+            }).pipe(catchError(err => of(err))));
+            expect(result).toMatchObject({
+                status: 200,
+                ok: true,
+                body: { received: { value: 'hello' } }
+            });
+        });
+
+        it('resolves params, headers and falsy values end to end', async () => {
+            expect(await lastValueFrom(client.send('/api/matrix/query', {
+                params: { page: '2' },
+                headers: { accept: 'application/json' },
+                observe: 'response'
+            }).pipe(catchError(err => of(err))))).toMatchObject({
+                status: 200,
+                ok: true,
+                body: { page: 2, sort: 'name', accept: 'application/json' }
+            });
+            expect(await lastValueFrom(client.send('/api/matrix/path/abc', {
+                observe: 'response'
+            }).pipe(catchError(err => of(err))))).toMatchObject({
+                status: 200,
+                ok: true,
+                body: { id: 'abc' }
+            });
+            expect(await lastValueFrom(client.send('/api/matrix/body', {
+                method: 'POST',
+                payload: { value: 'hello' },
+                observe: 'response'
+            }).pipe(catchError(err => of(err))))).toMatchObject({
+                status: 200,
+                ok: true,
+                body: { received: { value: 'hello' } }
+            });
+            expect(await lastValueFrom(client.send('/api/matrix/falsy', {
+                params: { zero: '0' },
+                observe: 'response'
+            }).pipe(catchError(err => of(err))))).toMatchObject({
+                status: 200,
+                ok: true,
+                body: { zero: 0, ok: false, empty: '' }
+            });
+        });
+
+        it('returns structured not-found responses', async () => {
+            const result = await lastValueFrom(client.send('/missing/route', {
+                observe: 'response'
+            }).pipe(catchError(err => of(err))));
+            expect(result).toMatchObject({
+                status: 404,
+                ok: false
+            });
+        });
+ 
+        @Module({
+            imports: [LoggerModule],
+            declarations: [TcpStreamHandler],
+            providers: [
+                provideService(
+                    useRouter(),
+                    useRouter({ microservice: true }),
+                    useTcpTransport({ listenOpts: { port: TCP_STREAM_PORT, host: '127.0.0.1' }, asDefault: true })
+                ),
+                provideClient(
+                    withTimeout(),
+                    withTcpTransport({ connectOpts: { port: TCP_STREAM_PORT, host: '127.0.0.1' }, asDefault: true })
+                )
+            ]
+        })
+        class TcpStreamModule { }
+
+        let streamCtx: ApplicationContext;
+        let streamClient: TcpClient;
+
+        before(async () => {
+            streamCtx = await Application.run(TcpStreamModule);
+            streamClient = streamCtx.get(TcpClient);
+        });
+
+        after(async () => {
+            if (streamCtx) {
+                await streamCtx.destroy();
+            }
+        });
+
+        it('streams responses until unsubscribe in microservice mode', async () => {
+            const result = await lastValueFrom(streamClient.send({ cmd: 'stream' }, {
+                observe: 'observe',
+                payload: { message: 'hello tcp' },
+                timeout: 100
+            } as any).pipe(take(2), toArray()));
+            expect(result).toEqual(['hello tcp-1', 'hello tcp-2']);
         });
     });
 });

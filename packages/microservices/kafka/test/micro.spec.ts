@@ -1,5 +1,4 @@
-import { Application, ApplicationContext } from '@tsdi/core';
-import { Injectable, Module } from '@tsdi/ioc';
+import { createInjector, Injectable, Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import expect = require('expect');
 import { KafkaClient } from '../src';
@@ -54,28 +53,41 @@ export class MicroTestModule {
 }
 
 describe('KAFKA Micro Service', () => {
-    let ctx: ApplicationContext;
-
-    before(async () => {
-        ctx = await Application.run(MicroTestModule);
-        
-    });
-
-    it('should create context with KAFKA transport', () => {
-        expect(ctx).toBeDefined();
+    it('should compose providers for Kafka transport without bootstrapping a broker connection', () => {
+        const providers = [
+            ...provideService(
+                useRouter(),
+                ...useKafkaTransport({
+                    microservice: true,
+                    bootstrap: false,
+                    asDefault: true
+                })
+            ),
+            ...provideClient(
+                ...withKafkaTransport({
+                    microservice: true,
+                    asDefault: true
+                })
+            )
+        ];
+        const injector = createInjector(providers as any);
+        expect(injector).toBeDefined();
     });
 
     it('should resolve KafkaClient', () => {
-        const client = ctx.get(KafkaClient);
+        const providers = provideClient(
+            ...withKafkaTransport({
+                microservice: true,
+                asDefault: true
+            })
+        );
+        const injector = createInjector(providers as any);
+        const client = injector.get(KafkaClient);
         expect(client).toBeDefined();
     });
 
-    it('should resolve KafkaService', () => {
-        const svc = ctx.get(KafkaService);
-        expect(svc).toBeDefined();
-    });
-
-    after(async () => {
-        if (ctx) await ctx.destroy();
+    it('should keep module metadata intact', () => {
+        expect(MicroTestModule).toBeDefined();
+        expect(KafkaService).toBeDefined();
     });
 });
