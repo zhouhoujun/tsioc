@@ -21,7 +21,7 @@ const defaultOptions: SSEChannelOptions = {
     ssePath: '/sse',
     messagePath: '/sse/message',
     port: 0,
-    host: '0.0.0.0'
+    host: '127.0.0.1'
 };
 
 /**

@@ -1,7 +1,7 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 
@@ -103,9 +103,8 @@ export class GitOperationsTool implements AgentTool {
     }
 
     private assertGitRepo(workdir: string): void {
-        try {
-            execSync('git rev-parse --git-dir', { cwd: workdir, stdio: 'pipe', encoding: 'utf8', timeout: 5000 });
-        } catch {
+        const result = this.runGit(['rev-parse', '--git-dir'], workdir);
+        if (result.exitCode !== 0) {
             throw new Error(`'${workdir}' is not a Git repository.`);
         }
     }
@@ -227,26 +226,41 @@ export class GitOperationsTool implements AgentTool {
 
     private execGit(args: string[], cwd: string, action: string): { stdout: string; stderr: string; exitCode: number } {
         const isReadOnly = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote'].includes(action);
-        const cmd = `git ${args.map(a => /^[a-zA-Z0-9_./-]+$/.test(a) ? a : `'${a.replace(/'/g, "'\\''")}'`).join(' ')}`;
-        try {
-            const stdout = execSync(cmd, {
-                cwd,
-                timeout: DEFAULT_TIMEOUT_MS,
-                maxBuffer: MAX_OUTPUT_CHARS,
-                encoding: 'utf8',
-                stdio: 'pipe'
-            });
+        const result = this.runGit(args, cwd);
+        if (result.exitCode === 0) {
             return {
-                stdout: stdout.slice(0, MAX_OUTPUT_CHARS),
+                stdout: result.stdout,
                 stderr: '',
                 exitCode: 0
             };
-        } catch (error: any) {
-            const stderr = error.stderr?.slice(0, MAX_OUTPUT_CHARS) ?? error.message ?? 'Unknown error';
-            if (isReadOnly) {
-                return { stdout: '', stderr, exitCode: error.status ?? 1 };
-            }
-            throw new Error(`Git ${args[0]} failed: ${stderr}`);
         }
+        if (isReadOnly) {
+            return { stdout: result.stdout, stderr: result.stderr, exitCode: result.exitCode };
+        }
+        throw new Error(`Git ${args[0]} failed: ${result.stderr || 'Unknown error'}`);
+    }
+
+    private runGit(args: string[], cwd: string): { stdout: string; stderr: string; exitCode: number } {
+        const result = spawnSync('git', args, {
+            cwd,
+            timeout: DEFAULT_TIMEOUT_MS,
+            maxBuffer: MAX_OUTPUT_CHARS,
+            encoding: 'utf8',
+            stdio: 'pipe'
+        });
+        const stdout = (result.stdout ?? '').slice(0, MAX_OUTPUT_CHARS);
+        const stderr = (result.stderr ?? '').slice(0, MAX_OUTPUT_CHARS);
+        const errorCode = (result.error as NodeJS.ErrnoException | undefined)?.code;
+        const exitCode = typeof result.status === 'number' ? result.status : 1;
+
+        if (errorCode && errorCode !== 'EPERM') {
+            throw result.error;
+        }
+
+        return {
+            stdout,
+            stderr,
+            exitCode
+        };
     }
 }

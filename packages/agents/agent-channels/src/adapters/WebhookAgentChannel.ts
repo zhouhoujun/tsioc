@@ -22,7 +22,7 @@ export interface WebhookChannelOptions {
 const defaultOptions: WebhookChannelOptions = {
     path: '/webhook',
     port: 0,
-    host: '0.0.0.0',
+    host: '127.0.0.1',
     secret: '',
     signatureHeader: 'x-webhook-signature'
 };

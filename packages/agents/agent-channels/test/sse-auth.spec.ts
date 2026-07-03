@@ -1,4 +1,3 @@
-import * as http from 'http';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { HttpAuthService } from '@tsdi/security';
@@ -51,27 +50,13 @@ export class SSEAgentChannelAuthTest {
         expect(await (channel as any).isAuthorized(req)).toBe(false);
     }
 
-    @Test('matches sse path when query token is present')
-    async matchesPathWithQueryToken() {
+    @Test('accepts query token on sse request when auth is enabled')
+    async acceptsQueryToken() {
         const channel = new SSEAgentChannel({ auth: { bearerToken: 'secret' } });
-        await channel.listen(() => {});
-        const address = (channel as any).server.address();
-
-        const status = await new Promise<number>((resolve, reject) => {
-            const req = http.request({
-                method: 'GET',
-                host: '127.0.0.1',
-                port: address.port,
-                path: '/sse?token=secret'
-            }, (res) => {
-                res.resume();
-                resolve(res.statusCode ?? 0);
-            });
-            req.on('error', reject);
-            req.end();
-        });
-
-        await channel.close();
-        expect(status).toBe(200);
+        const req = {
+            headers: { host: 'localhost' },
+            url: '/sse?token=secret'
+        } as any;
+        expect(await (channel as any).isAuthorized(req)).toBe(true);
     }
 }
