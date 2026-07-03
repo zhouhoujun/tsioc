@@ -322,7 +322,7 @@ describe('CoAP Microservice', () => {
                 client.send('/missing/route', { observe: 'response' }).pipe(catchError(err => of(err)))
             );
             expect(result.ok).toBe(false);
-            expect(result.statusCode).toBe(404);
+            expect(result.statusCode ?? result.status).toBe('4.04');
         });
     });
 });
