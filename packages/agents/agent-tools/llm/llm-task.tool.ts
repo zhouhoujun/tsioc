@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface LlmTaskRequest {
     prompt: string;
@@ -16,11 +16,12 @@ export interface LlmTaskResult {
     finishReason?: string;
 }
 
-export interface LlmTaskAdapter {
-    execute(request: LlmTaskRequest): Promise<LlmTaskResult>;
+@Abstract()
+export abstract class LlmTaskAdapter {
+    abstract execute(request: LlmTaskRequest): Promise<LlmTaskResult>;
 }
 
-export const AGENT_LLM_TASK_ADAPTER = 'AGENT_LLM_TASK_ADAPTER';
+
 
 @Injectable()
 export class LlmTaskTool implements AgentTool {
@@ -57,7 +58,7 @@ export class LlmTaskTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_LLM_TASK_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(LlmTaskAdapter)
         private adapter?: LlmTaskAdapter | null
     ) {
     }

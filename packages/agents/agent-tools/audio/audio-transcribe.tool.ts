@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface TranscriptionResult {
     text: string;
@@ -8,8 +8,9 @@ export interface TranscriptionResult {
     duration?: number;
 }
 
-export interface TranscriptionAdapter {
-    transcribe(audioUrl: string, options?: TranscriptionOptions): Promise<TranscriptionResult>;
+@Abstract()
+export abstract class TranscriptionAdapter {
+    abstract transcribe(audioUrl: string, options?: TranscriptionOptions): Promise<TranscriptionResult>;
 }
 
 export interface TranscriptionOptions {
@@ -17,7 +18,7 @@ export interface TranscriptionOptions {
     segments?: boolean;
 }
 
-export const AGENT_TRANSCRIPTION_ADAPTER = 'AGENT_TRANSCRIPTION_ADAPTER';
+
 
 @Injectable()
 export class AudioTranscribeTool implements AgentTool {
@@ -46,8 +47,7 @@ export class AudioTranscribeTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_TRANSCRIPTION_ADAPTER, { defaultValue: null })
-        private adapter?: TranscriptionAdapter | null
+        @Optional() @Inject(TranscriptionAdapter) private adapter?: TranscriptionAdapter | null
     ) {
     }
 

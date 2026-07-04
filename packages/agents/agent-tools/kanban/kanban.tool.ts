@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface KanbanCard {
     id: string;
@@ -25,16 +25,16 @@ export interface KanbanBoard {
     cards: KanbanCard[];
 }
 
-export interface KanbanAdapter {
-    listBoards(): Promise<Array<{ id: string; name: string; cardCount: number }>>;
-    getBoard(id: string): Promise<KanbanBoard | null>;
-    createCard(boardId: string, card: Omit<KanbanCard, 'id' | 'createdAt' | 'updatedAt'>): Promise<KanbanCard>;
-    updateCard(boardId: string, cardId: string, updates: Partial<KanbanCard>): Promise<KanbanCard>;
-    addComment(boardId: string, cardId: string, text: string, author?: string): Promise<KanbanCard>;
-    linkCards(boardId: string, sourceId: string, targetId: string): Promise<void>;
+@Abstract()
+export abstract class KanbanAdapter {
+    abstract listBoards(): Promise<Array<{ id: string; name: string; cardCount: number }>>;
+    abstract getBoard(id: string): Promise<KanbanBoard | null>;
+    abstract createCard(boardId: string, card: Omit<KanbanCard, 'id' | 'createdAt' | 'updatedAt'>): Promise<KanbanCard>;
+    abstract updateCard(boardId: string, cardId: string, updates: Partial<KanbanCard>): Promise<KanbanCard>;
+    abstract addComment(boardId: string, cardId: string, text: string, author?: string): Promise<KanbanCard>;
+    abstract linkCards(boardId: string, sourceId: string, targetId: string): Promise<void>;
 }
 
-export const AGENT_KANBAN_ADAPTER = 'AGENT_KANBAN_ADAPTER';
 
 @Injectable()
 export class KanbanTool implements AgentTool {
@@ -103,7 +103,7 @@ export class KanbanTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_KANBAN_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(KanbanAdapter)
         private adapter?: KanbanAdapter | null
     ) {
     }

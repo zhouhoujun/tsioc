@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface PipelineStep {
     name: string;
@@ -29,15 +29,15 @@ export interface PipelineExecutionResult {
     completedAt?: number;
 }
 
-export interface PipelineAdapter {
-    define(pipeline: PipelineDefinition): Promise<PipelineDefinition>;
-    execute(pipelineId: string, context?: Record<string, any>): Promise<PipelineExecutionResult>;
-    get(pipelineId: string): Promise<PipelineDefinition | null>;
-    list(): Promise<Array<{ id: string; name: string; stepCount: number }>>;
-    delete(pipelineId: string): Promise<boolean>;
+@Abstract()
+export abstract class PipelineAdapter {
+    abstract define(pipeline: PipelineDefinition): Promise<PipelineDefinition>;
+    abstract execute(pipelineId: string, context?: Record<string, any>): Promise<PipelineExecutionResult>;
+    abstract get(pipelineId: string): Promise<PipelineDefinition | null>;
+    abstract list(): Promise<Array<{ id: string; name: string; stepCount: number }>>;
+    abstract delete(pipelineId: string): Promise<boolean>;
 }
 
-export const AGENT_PIPELINE_ADAPTER = 'AGENT_PIPELINE_ADAPTER';
 
 @Injectable()
 export class PipelineTool implements AgentTool {
@@ -94,7 +94,7 @@ export class PipelineTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_PIPELINE_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(PipelineAdapter)
         private adapter?: PipelineAdapter | null
     ) {
     }

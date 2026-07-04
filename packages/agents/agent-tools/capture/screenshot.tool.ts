@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface ScreenshotResult {
     imageUrl: string;
@@ -8,8 +8,9 @@ export interface ScreenshotResult {
     height: number;
 }
 
-export interface ScreenshotAdapter {
-    capture(target?: ScreenshotTarget): Promise<ScreenshotResult>;
+@Abstract()
+export abstract class ScreenshotAdapter {
+    abstract capture(target?: ScreenshotTarget): Promise<ScreenshotResult>;
 }
 
 export interface ScreenshotTarget {
@@ -20,7 +21,7 @@ export interface ScreenshotTarget {
     quality?: number;
 }
 
-export const AGENT_SCREENSHOT_ADAPTER = 'AGENT_SCREENSHOT_ADAPTER';
+
 
 @Injectable()
 export class ScreenshotTool implements AgentTool {
@@ -57,7 +58,7 @@ export class ScreenshotTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_SCREENSHOT_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(ScreenshotAdapter)
         private adapter?: ScreenshotAdapter | null
     ) {
     }

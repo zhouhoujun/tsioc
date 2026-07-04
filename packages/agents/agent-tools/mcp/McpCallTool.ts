@@ -25,7 +25,7 @@ export class McpCallTool implements AgentTool {
 
     constructor(
         private registry: LocalMcpClientRegistry,
-        @Optional() @Inject(ApplicationContext, { defaultValue: null }) private app?: ApplicationContext | null
+        @Optional() @Inject(ApplicationContext) private app?: ApplicationContext | null
     ) {
     }
 

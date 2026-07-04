@@ -137,7 +137,7 @@ export class TextBrowserTool implements AgentTool {
                 }
                 settled = true;
                 resolve({
-                    body: Buffer.concat(chunks, bytes).toString('utf8'),
+                    body: Buffer.concat(chunks as Uint8Array[], bytes).toString('utf8'),
                     headers,
                     ok: (response.statusCode ?? 0) >= 200 && (response.statusCode ?? 0) < 300,
                     status: response.statusCode ?? 0,

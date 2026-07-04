@@ -10,6 +10,9 @@ import { AcceptsPriorityImpl } from './impl/accepts';
         { provide: MimeDb, useClass: BasicMimeDb },
         { provide: MimeAdapter, useClass: MimeAdapterImpl },
         { provide: AcceptsPriority, useClass: AcceptsPriorityImpl }
+    ],
+    exports: [
+        MimeTypes, MimeDb, MimeAdapter, AcceptsPriority
     ]
 })
 export class MimeModule {

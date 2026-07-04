@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface ModelRoute {
     id: string;
@@ -10,15 +10,15 @@ export interface ModelRoute {
     config?: Record<string, any>;
 }
 
-export interface ModelRoutingAdapter {
-    listRoutes(): Promise<ModelRoute[]>;
-    getRoute(id: string): Promise<ModelRoute | null>;
-    setRoute(route: Omit<ModelRoute, 'id'>): Promise<ModelRoute>;
-    deleteRoute(id: string): Promise<boolean>;
-    resolve(input: string, context?: Record<string, any>): Promise<{ model: string; route?: ModelRoute }>;
+@Abstract()
+export abstract class ModelRoutingAdapter {
+    abstract listRoutes(): Promise<ModelRoute[]>;
+    abstract getRoute(id: string): Promise<ModelRoute | null>;
+    abstract setRoute(route: Omit<ModelRoute, 'id'>): Promise<ModelRoute>;
+    abstract deleteRoute(id: string): Promise<boolean>;
+    abstract resolve(input: string, context?: Record<string, any>): Promise<{ model: string; route?: ModelRoute }>;
 }
 
-export const AGENT_MODEL_ROUTING_ADAPTER = 'AGENT_MODEL_ROUTING_ADAPTER';
 
 @Injectable()
 export class ModelRoutingTool implements AgentTool {
@@ -72,7 +72,7 @@ export class ModelRoutingTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_MODEL_ROUTING_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(ModelRoutingAdapter)
         private adapter?: ModelRoutingAdapter | null
     ) {
     }

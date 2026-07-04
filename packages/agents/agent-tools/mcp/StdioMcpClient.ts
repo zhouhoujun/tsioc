@@ -98,7 +98,7 @@ export class StdioMcpClient implements McpClient {
 
     private onData(chunk: Buffer): void {
         try {
-            this.buffer = Buffer.concat([this.buffer, chunk]);
+            this.buffer = Buffer.concat([this.buffer, chunk] as Uint8Array[]);
             while (true) {
                 const headerEnd = this.buffer.indexOf('\r\n\r\n');
                 if (headerEnd < 0) {
@@ -176,7 +176,7 @@ export class StdioMcpClient implements McpClient {
         }
         const body = Buffer.from(JSON.stringify(message), 'utf8');
         const header = Buffer.from(`Content-Length: ${body.length}\r\n\r\n`, 'utf8');
-        this.process.stdin.write(Buffer.concat([header, body]));
+        this.process.stdin.write(Buffer.concat([header, body] as Uint8Array[]));
     }
 
     private failAll(error: Error): void {

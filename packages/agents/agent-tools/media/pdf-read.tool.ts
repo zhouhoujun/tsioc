@@ -26,9 +26,9 @@ export class PdfReadTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
+        @Optional() @Inject(AGENT_TOOLS_OPTIONS)
         private options?: AgentToolsOptions,
-        @Optional() @Inject('AGENT_TOOLS_PDF_READ_ADAPTER' as any, { defaultValue: null })
+        @Optional() @Inject(PdfReadAdapter)
         private adapter?: PdfReadAdapter | null
     ) {
     }

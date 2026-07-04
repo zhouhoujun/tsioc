@@ -1,3 +1,5 @@
+import { Abstract } from "@tsdi/ioc";
+
 export interface KnowledgeEntry {
     id?: string;
     title: string;
@@ -13,10 +15,12 @@ export interface KnowledgeSearchResult {
     total: number;
 }
 
-export interface KnowledgeAdapter {
-    search(query: string, options?: KnowledgeSearchOptions): Promise<KnowledgeSearchResult>;
-    store(entry: KnowledgeEntry): Promise<KnowledgeEntry>;
-    delete(id: string): Promise<boolean>;
+
+@Abstract()
+export abstract class KnowledgeAdapter {
+    abstract search(query: string, options?: KnowledgeSearchOptions): Promise<KnowledgeSearchResult>;
+    abstract store(entry: KnowledgeEntry): Promise<KnowledgeEntry>;
+    abstract delete(id: string): Promise<boolean>;
 }
 
 export interface KnowledgeSearchOptions {
@@ -25,4 +29,3 @@ export interface KnowledgeSearchOptions {
     offset?: number;
 }
 
-export const AGENT_KNOWLEDGE_ADAPTER = 'AGENT_KNOWLEDGE_ADAPTER';

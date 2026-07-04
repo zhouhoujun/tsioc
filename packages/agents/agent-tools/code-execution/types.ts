@@ -1,5 +1,8 @@
-export interface CodeExecutionAdapter {
-    execute(request: CodeExecutionRequest): Promise<CodeExecutionResult>;
+import { Abstract } from '@tsdi/ioc';
+
+@Abstract()
+export abstract class CodeExecutionAdapter {
+    abstract execute(request: CodeExecutionRequest): Promise<CodeExecutionResult>;
 }
 
 export interface CodeExecutionRequest {
@@ -15,4 +18,3 @@ export interface CodeExecutionResult {
     error?: string;
 }
 
-export const AGENT_CODE_EXECUTION_ADAPTER = 'AGENT_CODE_EXECUTION_ADAPTER';

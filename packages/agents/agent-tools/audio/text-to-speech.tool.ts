@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface TtsResult {
     audioUrl: string;
@@ -7,8 +7,9 @@ export interface TtsResult {
     duration?: number;
 }
 
-export interface TtsAdapter {
-    synthesize(text: string, options?: TtsOptions): Promise<TtsResult>;
+@Abstract()
+export abstract class TtsAdapter {
+    abstract synthesize(text: string, options?: TtsOptions): Promise<TtsResult>;
 }
 
 export interface TtsOptions {
@@ -17,8 +18,6 @@ export interface TtsOptions {
     format?: 'mp3' | 'wav' | 'ogg' | 'flac';
     language?: string;
 }
-
-export const AGENT_TTS_ADAPTER = 'AGENT_TTS_ADAPTER';
 
 @Injectable()
 export class TextToSpeechTool implements AgentTool {
@@ -56,8 +55,7 @@ export class TextToSpeechTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_TTS_ADAPTER, { defaultValue: null })
-        private adapter?: TtsAdapter | null
+        @Optional() @Inject(TtsAdapter) private adapter?: TtsAdapter | null
     ) {
     }
 

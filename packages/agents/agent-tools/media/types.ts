@@ -1,3 +1,5 @@
+import { Abstract } from '@tsdi/ioc';
+
 export interface PdfReadPage {
     pageNumber: number;
     text: string;
@@ -8,7 +10,8 @@ export interface PdfReadResult {
     pages: PdfReadPage[];
 }
 
-export interface PdfReadAdapter {
-    getPageCount(filePath: string): Promise<number>;
-    read(filePath: string, options?: { pages?: number[]; }): Promise<PdfReadResult>;
+@Abstract()
+export abstract class PdfReadAdapter {
+    abstract getPageCount(filePath: string): Promise<number>;
+    abstract read(filePath: string, options?: { pages?: number[]; }): Promise<PdfReadResult>;
 }

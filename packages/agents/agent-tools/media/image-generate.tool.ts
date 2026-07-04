@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface ImageGenerationResult {
     url: string;
@@ -7,8 +7,9 @@ export interface ImageGenerationResult {
     seed?: number;
 }
 
-export interface ImageGenerationAdapter {
-    generate(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult>;
+@Abstract()
+export abstract class ImageGenerationAdapter {
+    abstract generate(prompt: string, options?: ImageGenerationOptions): Promise<ImageGenerationResult>;
 }
 
 export interface ImageGenerationOptions {
@@ -18,7 +19,6 @@ export interface ImageGenerationOptions {
     seed?: number;
 }
 
-export const AGENT_IMAGE_GENERATION_ADAPTER = 'AGENT_IMAGE_GENERATION_ADAPTER';
 
 @Injectable()
 export class ImageGenerateTool implements AgentTool {
@@ -52,7 +52,7 @@ export class ImageGenerateTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_IMAGE_GENERATION_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(ImageGenerationAdapter)
         private adapter?: ImageGenerationAdapter | null
     ) {
     }

@@ -50,7 +50,7 @@ export class CronManageTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(ApplicationContext, { defaultValue: null })
+        @Optional() @Inject(ApplicationContext)
         private app?: ApplicationContext | null
     ) {
     }

@@ -1,6 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_CODE_EXECUTION_ADAPTER, CodeExecutionAdapter } from './types';
+import { CodeExecutionAdapter } from './types';
 
 @Injectable()
 export class ExecuteCodeTool implements AgentTool {
@@ -29,7 +29,7 @@ export class ExecuteCodeTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true, requiresSequential: true };
 
     constructor(
-        @Optional() @Inject(AGENT_CODE_EXECUTION_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(CodeExecutionAdapter)
         private adapter?: CodeExecutionAdapter | null
     ) {
     }

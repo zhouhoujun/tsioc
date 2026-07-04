@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface CanvasEntry {
     id?: string;
@@ -18,15 +18,16 @@ export interface CanvasData {
     updatedAt: number;
 }
 
-export interface CanvasAdapter {
-    create(canvas: { title: string; entries?: CanvasEntry[] }): Promise<CanvasData>;
-    get(id: string): Promise<CanvasData | null>;
-    update(id: string, updates: Partial<CanvasData>): Promise<CanvasData>;
-    delete(id: string): Promise<boolean>;
-    list(): Promise<Array<{ id: string; title: string; entryCount: number; updatedAt: number }>>;
+@Abstract()
+export abstract class CanvasAdapter {
+    abstract create(canvas: { title: string; entries?: CanvasEntry[] }): Promise<CanvasData>;
+    abstract get(id: string): Promise<CanvasData | null>;
+    abstract update(id: string, updates: Partial<CanvasData>): Promise<CanvasData>;
+    abstract delete(id: string): Promise<boolean>;
+    abstract list(): Promise<Array<{ id: string; title: string; entryCount: number; updatedAt: number }>>;
 }
 
-export const AGENT_CANVAS_ADAPTER = 'AGENT_CANVAS_ADAPTER';
+
 
 @Injectable()
 export class CanvasTool implements AgentTool {
@@ -73,7 +74,7 @@ export class CanvasTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_CANVAS_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(CanvasAdapter)
         private adapter?: CanvasAdapter | null
     ) {
     }

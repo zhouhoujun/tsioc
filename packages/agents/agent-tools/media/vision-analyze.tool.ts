@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface VisionAnalysisResult {
     description: string;
@@ -8,11 +8,11 @@ export interface VisionAnalysisResult {
     text?: string;
 }
 
-export interface VisionAdapter {
-    analyze(imageUrl: string, question?: string): Promise<VisionAnalysisResult>;
+@Abstract()
+export abstract class VisionAdapter {
+    abstract analyze(imageUrl: string, question?: string): Promise<VisionAnalysisResult>;
 }
 
-export const AGENT_VISION_ADAPTER = 'AGENT_VISION_ADAPTER';
 
 @Injectable()
 export class VisionAnalyzeTool implements AgentTool {
@@ -37,7 +37,7 @@ export class VisionAnalyzeTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_VISION_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(VisionAdapter)
         private adapter?: VisionAdapter | null
     ) {
     }

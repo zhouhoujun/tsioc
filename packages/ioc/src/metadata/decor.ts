@@ -506,6 +506,7 @@ export interface Self {
 }
 
 export const Self: Self = createParamDecorator('Self', {
+    actionType: ActionType.inject,
     appendProps: (meta) => {
         if (meta.flags) {
             meta.flags = meta.flags | InjectFlags.Self

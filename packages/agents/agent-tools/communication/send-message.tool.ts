@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface MessageChannel {
     type: 'telegram' | 'discord' | 'email' | 'slack' | 'custom';
@@ -20,12 +20,12 @@ export interface SendMessageResult {
     error?: string;
 }
 
-export interface MessagingAdapter {
-    send(request: SendMessageRequest): Promise<SendMessageResult>;
-    validate?(channel: MessageChannel): Promise<boolean>;
+@Abstract()
+export abstract class MessagingAdapter {
+    abstract send(request: SendMessageRequest): Promise<SendMessageResult>;
+    abstract validate?(channel: MessageChannel): Promise<boolean>;
 }
 
-export const AGENT_MESSAGING_ADAPTER = 'AGENT_MESSAGING_ADAPTER';
 
 @Injectable()
 export class SendMessageTool implements AgentTool {
@@ -75,7 +75,7 @@ export class SendMessageTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_MESSAGING_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(MessagingAdapter)
         private adapter?: MessagingAdapter | null
     ) {
     }

@@ -1,6 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_KNOWLEDGE_ADAPTER, KnowledgeAdapter } from './types';
+import { KnowledgeAdapter } from './types';
 
 @Injectable()
 export class KnowledgeStoreTool implements AgentTool {
@@ -29,7 +29,7 @@ export class KnowledgeStoreTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_KNOWLEDGE_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(KnowledgeAdapter)
         private adapter?: KnowledgeAdapter | null
     ) {
     }

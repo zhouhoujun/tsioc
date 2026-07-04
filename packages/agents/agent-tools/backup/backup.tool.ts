@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface BackupEntry {
     id: string;
@@ -17,15 +17,15 @@ export interface BackupManifest {
     size: number;
 }
 
-export interface BackupAdapter {
-    createBackup(label: string, entries: BackupEntry[]): Promise<BackupManifest>;
-    listBackups(): Promise<Array<{ id: string; label: string; createdAt: number; size: number; entryCount: number }>>;
-    getBackup(id: string): Promise<BackupManifest | null>;
-    deleteBackup(id: string): Promise<boolean>;
-    restoreBackup(id: string, types?: string[]): Promise<{ restored: number; errors: string[] }>;
+@Abstract()
+export abstract class BackupAdapter {
+    abstract createBackup(label: string, entries: BackupEntry[]): Promise<BackupManifest>;
+    abstract listBackups(): Promise<Array<{ id: string; label: string; createdAt: number; size: number; entryCount: number }>>;
+    abstract getBackup(id: string): Promise<BackupManifest | null>;
+    abstract deleteBackup(id: string): Promise<boolean>;
+    abstract restoreBackup(id: string, types?: string[]): Promise<{ restored: number; errors: string[] }>;
 }
 
-export const AGENT_BACKUP_ADAPTER = 'AGENT_BACKUP_ADAPTER';
 
 @Injectable()
 export class BackupTool implements AgentTool {
@@ -65,8 +65,7 @@ export class BackupTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_BACKUP_ADAPTER, { defaultValue: null })
-        private adapter?: BackupAdapter | null
+        @Optional() @Inject(BackupAdapter) private adapter?: BackupAdapter | null
     ) {
     }
 
