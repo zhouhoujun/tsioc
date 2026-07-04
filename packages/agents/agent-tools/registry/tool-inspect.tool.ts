@@ -19,7 +19,7 @@ export class ToolInspectTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(ApplicationContext, { defaultValue: null })
+        @Optional() @Inject(ApplicationContext)
         private app?: ApplicationContext | null
     ) {
     }

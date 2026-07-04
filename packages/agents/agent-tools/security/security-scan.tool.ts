@@ -1,12 +1,13 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 import { promises as fs } from 'fs';
 import { resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 
-export interface SecurityScannerAdapter {
-    scan(path: string, options?: ScanOptions): Promise<ScanResult>;
+@Abstract()
+export abstract class SecurityScannerAdapter {
+    abstract scan(path: string, options?: ScanOptions): Promise<ScanResult>;
 }
 
 export interface ScanOptions {
@@ -32,8 +33,6 @@ export interface ScanResult {
         total: number;
     };
 }
-
-export const AGENT_SECURITY_SCANNER_ADAPTER = 'AGENT_SECURITY_SCANNER_ADAPTER';
 
 @Injectable()
 export class SecurityScanTool implements AgentTool {
@@ -74,7 +73,7 @@ export class SecurityScanTool implements AgentTool {
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
         private options?: AgentToolsOptions,
-        @Optional() @Inject(AGENT_SECURITY_SCANNER_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(SecurityScannerAdapter)
         private adapter?: SecurityScannerAdapter | null
     ) {
     }
@@ -108,7 +107,7 @@ export class SecurityScanTool implements AgentTool {
             path,
             vulnerabilities: [],
             summary: { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
-            note: 'No security scanner adapter configured. Install one via AGENT_SECURITY_SCANNER_ADAPTER.'
+            note: 'No security scanner adapter configured.'
         };
     }
 

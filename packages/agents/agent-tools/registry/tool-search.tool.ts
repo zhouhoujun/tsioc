@@ -21,7 +21,7 @@ export class ToolSearchTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(ApplicationContext, { defaultValue: null })
+        @Optional() @Inject(ApplicationContext)
         private app?: ApplicationContext | null
     ) {
     }

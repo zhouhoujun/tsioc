@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface IntentVerificationResult {
     approved: boolean;
@@ -7,11 +7,10 @@ export interface IntentVerificationResult {
     reasoning?: string;
 }
 
-export interface IntentVerifierAdapter {
-    verify(action: string, context: string): Promise<IntentVerificationResult>;
+@Abstract()
+export abstract class IntentVerifierAdapter {
+    abstract verify(action: string, context: string): Promise<IntentVerificationResult>;
 }
-
-export const AGENT_INTENT_VERIFIER_ADAPTER = 'AGENT_INTENT_VERIFIER_ADAPTER';
 
 @Injectable()
 export class VerifiableIntentTool implements AgentTool {
@@ -44,7 +43,7 @@ export class VerifiableIntentTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true, requiresSequential: true };
 
     constructor(
-        @Optional() @Inject(AGENT_INTENT_VERIFIER_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(IntentVerifierAdapter)
         private adapter?: IntentVerifierAdapter | null
     ) {
     }

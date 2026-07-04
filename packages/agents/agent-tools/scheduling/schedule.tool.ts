@@ -33,7 +33,7 @@ export class ScheduleTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true, requiresSequential: true };
 
     constructor(
-        @Optional() @Inject(ApplicationContext, { defaultValue: null })
+        @Optional() @Inject(ApplicationContext)
         private app?: ApplicationContext | null,
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
         private options?: AgentToolsOptions | null

@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface PollOption {
     label: string;
@@ -15,15 +15,14 @@ export interface PollData {
     closedAt?: number;
 }
 
-export interface PollAdapter {
-    createPoll(question: string, options: string[]): Promise<PollData>;
-    vote(pollId: string, optionLabel: string): Promise<PollData>;
-    closePoll(pollId: string): Promise<PollData>;
-    getPoll(pollId: string): Promise<PollData | null>;
-    listPolls(): Promise<Array<{ id: string; question: string; totalVotes: number; closed: boolean }>>;
+@Abstract()
+export abstract class PollAdapter {
+    abstract createPoll(question: string, options: string[]): Promise<PollData>;
+    abstract vote(pollId: string, optionLabel: string): Promise<PollData>;
+    abstract closePoll(pollId: string): Promise<PollData>;
+    abstract getPoll(pollId: string): Promise<PollData | null>;
+    abstract listPolls(): Promise<Array<{ id: string; question: string; totalVotes: number; closed: boolean }>>;
 }
-
-export const AGENT_POLL_ADAPTER = 'AGENT_POLL_ADAPTER';
 
 @Injectable()
 export class PollTool implements AgentTool {
@@ -68,7 +67,7 @@ export class PollTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_POLL_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(PollAdapter)
         private adapter?: PollAdapter | null
     ) {
     }

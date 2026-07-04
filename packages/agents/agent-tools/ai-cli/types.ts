@@ -1,3 +1,5 @@
+import { Abstract } from '@tsdi/ioc';
+
 export type AiCliName = 'claude_code' | 'opencode' | 'gemini_cli' | 'codex_cli';
 
 export interface AiCliRequest {
@@ -24,11 +26,10 @@ export interface AiCliResult {
     timedOut?: boolean;
 }
 
-export interface AiCliAdapter {
-    execute(request: AiCliRequest): Promise<AiCliResult>;
+@Abstract()
+export abstract class AiCliAdapter {
+    abstract execute(request: AiCliRequest): Promise<AiCliResult>;
 }
-
-export const AGENT_AI_CLI_ADAPTER = 'AGENT_AI_CLI_ADAPTER';
 
 export interface AgentAiCliOptions {
     /** Default model to pass to the spawned CLI */

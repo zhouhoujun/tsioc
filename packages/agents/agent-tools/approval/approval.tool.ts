@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
 export interface ApprovalRequest {
     toolName: string;
@@ -15,13 +15,12 @@ export interface ApprovalResult {
     rejectionReason?: string;
 }
 
-export interface ApprovalAdapter {
-    requestApproval(request: ApprovalRequest): Promise<ApprovalResult>;
-    pendingRequests(sessionId?: string): ApprovalRequest[];
-    cancelRequest(toolName: string, sessionId: string): boolean;
+@Abstract()
+export abstract class ApprovalAdapter {
+    abstract requestApproval(request: ApprovalRequest): Promise<ApprovalResult>;
+    abstract pendingRequests(sessionId?: string): ApprovalRequest[];
+    abstract cancelRequest(toolName: string, sessionId: string): boolean;
 }
-
-export const AGENT_APPROVAL_ADAPTER = 'AGENT_APPROVAL_ADAPTER';
 
 @Injectable()
 export class ApprovalTool implements AgentTool {
@@ -60,14 +59,14 @@ export class ApprovalTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_APPROVAL_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(ApprovalAdapter)
         private adapter?: ApprovalAdapter | null
     ) {
     }
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         if (!this.adapter) {
-            throw new Error('approval requires a configured ApprovalAdapter. Provide one via the AGENT_APPROVAL_ADAPTER token.');
+            throw new Error('approval requires a configured ApprovalAdapter.');
         }
         const action = typeof input?.action === 'string' ? input.action : '';
 

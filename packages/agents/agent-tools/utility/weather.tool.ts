@@ -1,9 +1,10 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
-export interface WeatherAdapter {
-    getCurrentWeather(location: string, units?: 'metric' | 'imperial'): Promise<WeatherResult>;
-    getForecast?(location: string, days?: number, units?: 'metric' | 'imperial'): Promise<WeatherForecastResult>;
+@Abstract()
+export abstract class WeatherAdapter {
+    abstract getCurrentWeather(location: string, units?: 'metric' | 'imperial'): Promise<WeatherResult>;
+    abstract getForecast(location: string, days?: number, units?: 'metric' | 'imperial'): Promise<WeatherForecastResult>;
 }
 
 export interface WeatherResult {
@@ -28,8 +29,6 @@ export interface WeatherForecastResult {
     }>;
     units: string;
 }
-
-export const AGENT_WEATHER_ADAPTER = 'AGENT_WEATHER_ADAPTER';
 
 @Injectable()
 export class WeatherTool implements AgentTool {
@@ -63,7 +62,7 @@ export class WeatherTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(AGENT_WEATHER_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(WeatherAdapter)
         private adapter?: WeatherAdapter | null
     ) {
     }
@@ -74,7 +73,7 @@ export class WeatherTool implements AgentTool {
         const includeForecast = input?.forecast === true;
 
         if (!this.adapter) {
-            throw new Error('weather requires a configured WeatherAdapter. Provide one via the AGENT_WEATHER_ADAPTER token.');
+            throw new Error('weather requires a configured WeatherAdapter.');
         }
 
         const current = await this.adapter.getCurrentWeather(location, units);

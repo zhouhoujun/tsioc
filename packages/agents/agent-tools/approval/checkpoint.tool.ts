@@ -1,14 +1,12 @@
 import { AgentTool, AgentToolContext, MemoryStore, SessionStore } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
-export interface CheckpointAdapter {
-    save(sessionId: string, label: string): Promise<{ id: string; label: string; createdAt: number }>;
-    restore(sessionId: string, checkpointId: string): Promise<boolean>;
-    list(sessionId: string): Promise<Array<{ id: string; label: string; createdAt: number }>>;
+@Abstract()
+export abstract class CheckpointAdapter {
+    abstract save(sessionId: string, label: string): Promise<{ id: string; label: string; createdAt: number }>;
+    abstract restore(sessionId: string, checkpointId: string): Promise<boolean>;
+    abstract list(sessionId: string): Promise<Array<{ id: string; label: string; createdAt: number }>>;
 }
-
-export const AGENT_CHECKPOINT_ADAPTER = 'AGENT_CHECKPOINT_ADAPTER';
-export const AGENT_CHECKPOINT_STORE = 'AGENT_CHECKPOINT_STORE';
 
 @Injectable()
 export class CheckpointTool implements AgentTool {
@@ -47,7 +45,7 @@ export class CheckpointTool implements AgentTool {
         private sessions?: SessionStore | null,
         @Optional() @Inject(MemoryStore)
         private memory?: MemoryStore | null,
-        @Optional() @Inject(AGENT_CHECKPOINT_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(CheckpointAdapter)
         private adapter?: CheckpointAdapter | null
     ) {
     }

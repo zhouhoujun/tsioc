@@ -1,8 +1,9 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 
-export interface SpawnAgentAdapter {
-    spawn(input: SpawnAgentInput): Promise<SpawnAgentResult>;
+@Abstract()
+export abstract class SpawnAgentAdapter {
+    abstract spawn(input: SpawnAgentInput): Promise<SpawnAgentResult>;
 }
 
 export interface SpawnAgentInput {
@@ -18,8 +19,6 @@ export interface SpawnAgentResult {
     turnCount?: number;
     toolCalls?: number;
 }
-
-export const AGENT_SPAWN_ADAPTER = 'AGENT_SPAWN_ADAPTER';
 
 @Injectable()
 export class SpawnAgentTool implements AgentTool {
@@ -53,7 +52,7 @@ export class SpawnAgentTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true };
 
     constructor(
-        @Optional() @Inject(AGENT_SPAWN_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(SpawnAgentAdapter)
         private adapter?: SpawnAgentAdapter | null
     ) {
     }
@@ -61,7 +60,7 @@ export class SpawnAgentTool implements AgentTool {
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const goal = this.requireString(input?.goal, 'spawn_agent goal');
         if (!this.adapter) {
-            throw new Error('spawn_agent requires a configured SpawnAgentAdapter. Provide one via the AGENT_SPAWN_ADAPTER token.');
+            throw new Error('spawn_agent requires a configured SpawnAgentAdapter.');
         }
         const result = await this.adapter.spawn({
             goal,

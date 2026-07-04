@@ -5,7 +5,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { spawn } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
-import { AiCliAdapter, AiCliName, AiCliRequest, AiCliResult, AgentAiCliOptions, AGENT_AI_CLI_ADAPTER } from './types';
+import { AiCliAdapter, AiCliName, AiCliRequest, AiCliResult, AgentAiCliOptions } from './types';
 
 const CLI_COMMANDS: Record<AiCliName, { cmd: string; args: string[]; jsonFlag: string; modelFlag: string; toolsFlag: string; sessionFlag: string; systemPromptFlag: string; maxTurnsFlag: string; skipPermsFlag: string }> = {
     claude_code: {
@@ -88,7 +88,7 @@ export class AiCliTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(AGENT_AI_CLI_ADAPTER, { defaultValue: null })
+        @Optional() @Inject(AiCliAdapter)
         private adapter?: AiCliAdapter | null,
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
         private toolsOptions?: AgentToolsOptions | null
