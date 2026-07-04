@@ -23,7 +23,7 @@ import { createAgentGatewayProviders } from './provider';
     imports: [AgentModule],
     bootstrap: [GatewayBootstrap],
     providers: [
-        { provide: GATEWAY_CONFIG, useValue: defaultGatewayConfig },
+        { provide: GATEWAY_CONFIG, useValue: defaultGatewayConfig, asDefault: true },
         AuthMiddleware,
         PairingStore,
         RateLimiter,

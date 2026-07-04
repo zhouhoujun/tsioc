@@ -39,7 +39,7 @@ function createAgentCli(): Command {
         });
 
     program
-        .command('chat')
+        // .command('chat')
         .description('Start an interactive chat session with streaming responses.')
         .option('--session <id>', 'Session ID for conversation continuity.')
         .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
@@ -88,7 +88,7 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const resolved = resolveCliConfig(options);
     const provider = options.provider || process.env.AGENT_PROVIDER || 'deepseek';
-    const model = options.model || process.env.AGENT_MODEL || 'deepseek-chat';
+    const model = options.model || process.env.AGENT_MODEL || 'deepseek-flash';
 
     const agentOptions = mergeAgentOptions({
         model: {
@@ -121,7 +121,7 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const ctx = await Application.run(AgentModule, {
         providers: [
-            ...provideTools(resolved.tools),
+            provideTools(resolved.tools),
             modelAdapterProvider,
             { provide: AGENT_OPTIONS, useValue: agentOptions },
         ]

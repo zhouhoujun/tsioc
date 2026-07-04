@@ -149,7 +149,7 @@ export class GatewayServer {
         return new Promise((resolve) => {
             const chunks: Buffer[] = [];
             req.on('data', (chunk: Buffer) => chunks.push(chunk));
-            req.on('end', () => resolve(Buffer.concat(chunks)));
+            req.on('end', () => resolve(Buffer.concat(chunks as Uint8Array[])));
         });
     }
 }

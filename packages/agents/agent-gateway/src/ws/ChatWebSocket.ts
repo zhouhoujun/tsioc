@@ -1,5 +1,6 @@
 import * as http from 'http';
 import * as crypto from 'crypto';
+import { Buffer } from 'buffer';
 import { Injectable } from '@tsdi/ioc';
 import { AgentRuntime } from '@tsdi/agent';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
@@ -45,7 +46,7 @@ export class ChatWebSocket {
         let buffer = Buffer.alloc(0);
 
         socket.on('data', (data: Buffer) => {
-            buffer = Buffer.concat([buffer, data]);
+            buffer = Buffer.concat([buffer, data] as Uint8Array[]);
             if (buffer.length > MAX_WS_MESSAGE_BYTES) {
                 socket.end();
                 return;

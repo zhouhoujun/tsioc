@@ -47,6 +47,26 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Launch Agent",
+            "args": [
+                "${workspaceRoot}/packages/agents/agent-cli/src/cli.ts" 
+            ],
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "-r",
+                "tsconfig-paths/register",
+            ],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "test ioc",
             "args": [
                 "${workspaceRoot}/packages/ioc/unit.ts" 

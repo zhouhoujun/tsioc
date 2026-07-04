@@ -15,14 +15,7 @@ import { provideResolvedAgentChannels } from './provider';
 @Module({
     imports: [AgentModule],
     providers: [
-        {
-            provider(injector) {
-                if (injector.has(AGENT_CHANNEL_OPTIONS)) {
-                    return;
-                }
-                return [{ provide: AGENT_CHANNEL_OPTIONS, useValue: defaultAgentChannelsOptions }];
-            }
-        },
+        { provide: AGENT_CHANNEL_OPTIONS, useValue: defaultAgentChannelsOptions, asDefault: true },
         LocalLoopbackAgentChannel,
         PubSubConversationChannel,
         ConsoleAgentChannel,
