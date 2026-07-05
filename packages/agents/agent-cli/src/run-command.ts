@@ -1,6 +1,6 @@
 import { Application } from '@tsdi/core';
 import { AgentModule, AgentRuntime, AGENT_OPTIONS, ModelAdapter, OpenAICompatibleModelAdapter, mergeAgentOptions } from '@tsdi/agent';
-import { provideTools } from '@tsdi/agent-tools';
+import { provideTools, SpawnAgentAdapter, WeatherAdapter, LlmTaskAdapter, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentCliOptions, resolveCliConfig } from './config';
 
 function resolveModelAdapter(options: AgentCliOptions): any {
@@ -22,6 +22,49 @@ function resolveModelAdapter(options: AgentCliOptions): any {
             timeoutMs: timeoutMs || 120000
         })
     };
+}
+
+export function withAdapterProviders(): any[] {
+    return [
+        {
+            provide: SpawnAgentAdapter,
+            useValue: {
+                spawn: async (request: { goal: string; context?: string; toolsets?: string[]; maxTurns?: number }) => {
+                    return { output: '', turnCount: 0, toolCalls: 0 };
+                }
+            }
+        },
+        {
+            provide: WeatherAdapter,
+            useValue: {
+                getCurrentWeather: async (location: string, units?: string) => ({
+                    location, temperature: 0, feelsLike: 0, humidity: 0,
+                    description: 'Weather service not configured', windSpeed: 0, units: units || 'metric'
+                }),
+                getForecast: async (location: string, days?: number, units?: string) => ({
+                    location, days: [], units: units || 'metric'
+                })
+            }
+        },
+        {
+            provide: LlmTaskAdapter,
+            useValue: {
+                execute: async (request: { prompt: string; system?: string }) => {
+                    return { content: '', model: 'default', usage: { totalTokens: 0 } };
+                }
+            }
+        },
+        {
+            provide: PipelineAdapter,
+            useValue: {
+                list: async () => [],
+                define: async (p: any) => ({ ...p, id: `p-${Date.now()}` }),
+                execute: async (id: string) => ({ pipelineId: id, status: 'completed', stepResults: [], startedAt: Date.now(), completedAt: Date.now() }),
+                get: async () => null,
+                delete: async () => true
+            }
+        }
+    ];
 }
 
 export async function runAgentPrompt(prompt: string, options: AgentCliOptions = {}): Promise<string> {
@@ -46,6 +89,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
     const ctx = await Application.run(AgentModule, {
         providers: [
             ...provideTools(resolved.tools),
+            ...withAdapterProviders(),
             resolveModelAdapter(options),
             { provide: AGENT_OPTIONS, useValue: agentOptions },
         ]
@@ -74,6 +118,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     const ctx = await Application.run(AgentModule, {
         providers: [
             ...provideTools(resolved.tools),
+            ...withAdapterProviders(),
             resolveModelAdapter(options),
             { provide: AGENT_OPTIONS, useValue: agentOptions },
         ]

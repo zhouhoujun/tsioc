@@ -11,6 +11,10 @@ import { AgentToolsModule, withAgentToolsOptions } from '../../agent-tools/src';
 import { MemoryDeleteTool, MemoryListTool } from '../../agent-tools/memory';
 import { ScheduleTool } from '../../agent-tools/scheduling';
 import { withHttpAgentTools } from '../../agent-tools/src/provider';
+import { SpawnAgentAdapter } from '../../agent-tools/agent/spawn-agent.tool';
+import { WeatherAdapter } from '../../agent-tools/utility/weather.tool';
+import { LlmTaskAdapter } from '../../agent-tools/llm/llm-task.tool';
+import { PipelineAdapter } from '../../agent-tools/pipeline/pipeline.tool';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -457,7 +461,8 @@ export class BuiltinToolsTest {
                             }
                         }
                     }
-                })
+                }),
+                ...withToolTestAdapters()
             ]
         });
         try {
@@ -483,7 +488,8 @@ export class BuiltinToolsTest {
                             }
                         }
                     }
-                })
+                }),
+                ...withToolTestAdapters()
             ]
         });
         try {
@@ -499,7 +505,9 @@ export class BuiltinToolsTest {
 
     @Test('agent tools module keeps http and terminal opt-in while exposing registry tools')
     async agentToolsModuleKeepsHttpAndTerminalOptInWhileExposingRegistryTools() {
-        const ctx = await Application.run(AgentToolsModule);
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [...withToolTestAdapters()]
+        });
         try {
             const registry = ctx.get(ToolRegistry);
             const definitions = registry.getToolDefinitions();
@@ -533,7 +541,8 @@ export class BuiltinToolsTest {
                         }) as any
                     }
                 } as any),
-                ...withHttpAgentTools()
+                ...withHttpAgentTools(),
+                ...withToolTestAdapters()
             ]
         });
         try {
@@ -555,7 +564,9 @@ export class BuiltinToolsTest {
 
     @Test('agent tools module registers memory tools but keeps terminal opt-in')
     async agentToolsModuleRegistersMemoryToolsButKeepsTerminalOptIn() {
-        const ctx = await Application.run(AgentToolsModule);
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [...withToolTestAdapters()]
+        });
         try {
             const registry = ctx.get(ToolRegistry);
             const definitions = registry.getToolDefinitions();
@@ -628,4 +639,17 @@ export class BuiltinToolsTest {
         expect(scheduler.tasks.length).toEqual(1);
         expect(scheduler.tasks[0].sessionId).toEqual('session-reg');
     }
+}
+
+function withToolTestAdapters(): any[] {
+    const mockSpawn = { spawn: async () => ({ output: '', turnCount: 0, toolCalls: 0 }) };
+    const mockWeather = { getCurrentWeather: async () => ({}), getForecast: async () => ({}) };
+    const mockLlm = { execute: async () => ({ content: '' }) };
+    const mockPipeline = { list: async () => [], define: async () => ({}), execute: async () => ({}), get: async () => null, delete: async () => true };
+    return [
+        { provide: SpawnAgentAdapter, useValue: mockSpawn },
+        { provide: WeatherAdapter, useValue: mockWeather },
+        { provide: LlmTaskAdapter, useValue: mockLlm },
+        { provide: PipelineAdapter, useValue: mockPipeline },
+    ];
 }

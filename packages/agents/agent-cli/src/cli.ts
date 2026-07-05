@@ -85,6 +85,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     } = require('@tsdi/agent');
     const { provideTools } = require('@tsdi/agent-tools');
     const { resolveCliConfig } = require('./config');
+    const { withAdapterProviders } = require('./run-command');
 
     const resolved = resolveCliConfig(options);
     const provider = options.provider || process.env.AGENT_PROVIDER || 'deepseek';
@@ -122,6 +123,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     const ctx = await Application.run(AgentModule, {
         providers: [
             provideTools(resolved.tools),
+            ...withAdapterProviders(),
             modelAdapterProvider,
             { provide: AGENT_OPTIONS, useValue: agentOptions },
         ]
