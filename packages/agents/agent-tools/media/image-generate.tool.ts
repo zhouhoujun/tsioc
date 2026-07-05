@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface ImageGenerationResult {
     url: string;
@@ -52,16 +52,12 @@ export class ImageGenerateTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(ImageGenerationAdapter)
-        private adapter?: ImageGenerationAdapter | null
+        private adapter: ImageGenerationAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const prompt = this.requireString(input?.prompt, 'image_generate prompt');
-        if (!this.adapter) {
-            throw new Error('image_generate requires a configured ImageGenerationAdapter. Provide one via the AGENT_IMAGE_GENERATION_ADAPTER token.');
-        }
         const options: ImageGenerationOptions = {};
         if (typeof input?.aspect_ratio === 'string' && ['1:1', '16:9', '9:16', '4:3', '3:4'].includes(input.aspect_ratio)) {
             options.aspectRatio = input.aspect_ratio;

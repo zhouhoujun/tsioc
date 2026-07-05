@@ -153,7 +153,7 @@ import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
-import { InternalServerException } from '@tsdi/endpoints';
+import { InternalServerException } from '@tsdi/common';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -268,9 +268,10 @@ export class RoleController {
 ```ts
 import { Application, Module }  from '@tsdi/core';
 import { LogModule } from '@tsdi/logger';
+import { provideService, useCors, useJson, useLogger, useRouter, useStatics } from '@tsdi/service';
+import { provideSwagger } from '@tsdi/swagger';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
-import { Http, HttpClientOptions, HttpModule, HttpServer } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 
 const key = fs.readFileSync(path.join(__dirname, './cert/localhost-privkey.pem'));
@@ -281,16 +282,10 @@ const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
     imports: [
         ServerModule,
         LoggerModule,
-        HttpModule.withOption({
-            majorVersion: 2,
-            options: {
-                allowHTTP1: true,
-                key,
-                cert
-            }
-        }),
         TransactionModule,
-        TypeOrmModule.withConnection({
+    ],
+    providers:[
+        provideTypeOrm({
             name: 'xx',
             type: 'postgres',
             host: 'localhost',
@@ -302,6 +297,21 @@ const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
             logging: false  // 日志,
             models: ['./models/**/*.ts'],
             repositories: ['./repositories/**/*.ts'],
+        }),
+        provideService(
+            useLogger(),
+            useCors(),
+            useRouter(),
+            useStatics(),
+            useJson(),
+            useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' } }),
+        ),
+        provideSwagger({
+            title: 'api document',
+            description: 'platform basic api',
+            version: 'v1',
+            prefix: 'api-doc',
+            transport: Transport.HTTP
         })
     ],
     declarations: [

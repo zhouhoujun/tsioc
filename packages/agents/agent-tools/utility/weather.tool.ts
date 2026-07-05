@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 @Abstract()
 export abstract class WeatherAdapter {
@@ -62,8 +62,7 @@ export class WeatherTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(WeatherAdapter)
-        private adapter?: WeatherAdapter | null
+        private adapter: WeatherAdapter
     ) {
     }
 
@@ -71,10 +70,6 @@ export class WeatherTool implements AgentTool {
         const location = this.requireString(input?.location, 'weather location');
         const units = input?.units === 'imperial' ? 'imperial' : 'metric';
         const includeForecast = input?.forecast === true;
-
-        if (!this.adapter) {
-            throw new Error('weather requires a configured WeatherAdapter.');
-        }
 
         const current = await this.adapter.getCurrentWeather(location, units);
         let forecast: WeatherForecastResult | undefined;

@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface ScreenshotResult {
     imageUrl: string;
@@ -58,15 +58,11 @@ export class ScreenshotTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(ScreenshotAdapter)
-        private adapter?: ScreenshotAdapter | null
+        private adapter: ScreenshotAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('screenshot requires a configured ScreenshotAdapter. Provide one via the AGENT_SCREENSHOT_ADAPTER token.');
-        }
         const target: ScreenshotTarget = {};
         if (typeof input?.url === 'string') { target.url = input.url; }
         if (typeof input?.selector === 'string') { target.selector = input.selector; }

@@ -23,9 +23,9 @@
         "packages/agents/agent-providers/*"
       ],
       "@tsdi/*": [
-        "packages/*",
         "packages/microservices/*",
-        "packages/agents/*"
+        "packages/agents/*",
+        "packages/*"
       ]
     },
     "lib": [

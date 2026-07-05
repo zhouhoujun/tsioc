@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface VisionAnalysisResult {
     description: string;
@@ -37,16 +37,12 @@ export class VisionAnalyzeTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(VisionAdapter)
-        private adapter?: VisionAdapter | null
+        private adapter: VisionAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const imageUrl = this.requireString(input?.image_url, 'vision_analyze image_url');
-        if (!this.adapter) {
-            throw new Error('vision_analyze requires a configured VisionAdapter. Provide one via the AGENT_VISION_ADAPTER token.');
-        }
         const result = await this.adapter.analyze(
             imageUrl,
             typeof input?.question === 'string' && input.question.trim() ? input.question.trim() : undefined

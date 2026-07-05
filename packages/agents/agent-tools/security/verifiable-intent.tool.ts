@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface IntentVerificationResult {
     approved: boolean;
@@ -43,8 +43,7 @@ export class VerifiableIntentTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true, requiresSequential: true };
 
     constructor(
-        @Optional() @Inject(IntentVerifierAdapter)
-        private adapter?: IntentVerifierAdapter | null
+        private adapter: IntentVerifierAdapter
     ) {
     }
 
@@ -53,28 +52,17 @@ export class VerifiableIntentTool implements AgentTool {
         const target = this.requireString(input?.target, 'verifiable_intent target');
         const reason = this.requireString(input?.reason, 'verifiable_intent reason');
 
-        if (this.adapter) {
-            const result = await this.adapter.verify(
-                `${action}: ${target}`,
-                reason
-            );
-            return {
-                approved: result.approved,
-                verifiedAction: result.verifiedAction,
-                reasoning: result.reasoning,
-                action,
-                target,
-                reason
-            };
-        }
-
+        const result = await this.adapter.verify(
+            `${action}: ${target}`,
+            reason
+        );
         return {
-            approved: true,
-            verifiedAction: action,
+            approved: result.approved,
+            verifiedAction: result.verifiedAction,
+            reasoning: result.reasoning,
             action,
             target,
-            reason,
-            note: 'No verifier adapter configured; intent recorded but not externally verified.'
+            reason
         };
     }
 

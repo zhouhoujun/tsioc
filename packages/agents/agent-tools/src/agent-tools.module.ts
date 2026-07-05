@@ -2,6 +2,17 @@ import { Module, ModuleWithProviders } from '@tsdi/ioc';
 import { AgentModule } from '@tsdi/agent';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } from './options';
+import {
+    DefaultBackupAdapter,
+    DefaultKnowledgeAdapter,
+    DefaultModelRoutingAdapter,
+    DefaultPollAdapter,
+    DefaultCanvasAdapter,
+    DefaultKanbanAdapter,
+    DefaultIntentVerifierAdapter,
+    DefaultDataExportAdapter,
+    DefaultApprovalAdapter
+} from './default-adapters';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
@@ -161,6 +172,15 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
                 return [{ provide: 'AGENT_TOOLS_PDF_READ_ADAPTER', useValue: options?.pdf?.adapter ?? null }];
             }
         },
+        DefaultBackupAdapter,
+        DefaultKnowledgeAdapter,
+        DefaultModelRoutingAdapter,
+        DefaultPollAdapter,
+        DefaultCanvasAdapter,
+        DefaultKanbanAdapter,
+        DefaultIntentVerifierAdapter,
+        DefaultDataExportAdapter,
+        DefaultApprovalAdapter,
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles()
     ],

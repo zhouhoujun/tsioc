@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface TranscriptionResult {
     text: string;
@@ -47,15 +47,12 @@ export class AudioTranscribeTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(TranscriptionAdapter) private adapter?: TranscriptionAdapter | null
+        private adapter: TranscriptionAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const audioUrl = this.requireString(input?.audio_url, 'audio_transcribe audio_url');
-        if (!this.adapter) {
-            throw new Error('audio_transcribe requires a configured TranscriptionAdapter. Provide one via the AGENT_TRANSCRIPTION_ADAPTER token.');
-        }
         const result = await this.adapter.transcribe(audioUrl, {
             language: typeof input?.language === 'string' ? input.language : undefined,
             segments: input?.segments === true

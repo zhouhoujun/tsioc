@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { CodeExecutionAdapter } from './types';
 
 @Injectable()
@@ -29,17 +29,13 @@ export class ExecuteCodeTool implements AgentTool {
     execution = { readOnly: false, sideEffect: true, requiresSequential: true };
 
     constructor(
-        @Optional() @Inject(CodeExecutionAdapter)
-        private adapter?: CodeExecutionAdapter | null
+        private adapter: CodeExecutionAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const language = this.requireString(input?.language, 'execute_code language');
         const code = this.requireString(input?.code, 'execute_code code');
-        if (!this.adapter) {
-            throw new Error('execute_code requires a configured CodeExecutionAdapter. Provide one via the AGENT_CODE_EXECUTION_ADAPTER token.');
-        }
         const result = await this.adapter.execute({
             language: language.toLowerCase(),
             code,

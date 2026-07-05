@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable } from '@tsdi/ioc';
 
 export interface ApprovalRequest {
     toolName: string;
@@ -59,15 +59,11 @@ export class ApprovalTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(ApprovalAdapter)
-        private adapter?: ApprovalAdapter | null
+        private adapter: ApprovalAdapter
     ) {
     }
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('approval requires a configured ApprovalAdapter.');
-        }
         const action = typeof input?.action === 'string' ? input.action : '';
 
         switch (action) {

@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface PipelineStep {
     name: string;
@@ -94,15 +94,11 @@ export class PipelineTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(PipelineAdapter)
-        private adapter?: PipelineAdapter | null
+        private adapter: PipelineAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('pipeline requires a configured PipelineAdapter. Provide one via the AGENT_PIPELINE_ADAPTER token.');
-        }
         const action = typeof input?.action === 'string' ? input.action : '';
 
         switch (action) {

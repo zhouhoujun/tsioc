@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface LlmTaskRequest {
     prompt: string;
@@ -58,16 +58,12 @@ export class LlmTaskTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(LlmTaskAdapter)
-        private adapter?: LlmTaskAdapter | null
+        private adapter: LlmTaskAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const prompt = this.requireString(input?.prompt, 'llm_task prompt');
-        if (!this.adapter) {
-            throw new Error('llm_task requires a configured LlmTaskAdapter. Provide one via the AGENT_LLM_TASK_ADAPTER token.');
-        }
         const result = await this.adapter.execute({
             prompt,
             system: typeof input?.system === 'string' ? input.system : undefined,

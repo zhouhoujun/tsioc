@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface BackupEntry {
     id: string;
@@ -65,14 +65,11 @@ export class BackupTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(BackupAdapter) private adapter?: BackupAdapter | null
+        private adapter: BackupAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('backup requires a configured BackupAdapter. Provide one via the AGENT_BACKUP_ADAPTER token.');
-        }
         const action = typeof input?.action === 'string' ? input.action : '';
 
         switch (action) {

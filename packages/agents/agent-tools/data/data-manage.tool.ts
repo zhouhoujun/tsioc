@@ -75,10 +75,9 @@ export class DataManageTool implements AgentTool {
     };
 
     constructor(
+        private adapter: DataExportAdapter,
         @Optional() @Inject(MemoryStore)
-        private memory?: MemoryStore | null,
-        @Optional() @Inject(DataExportAdapter)
-        private adapter?: DataExportAdapter | null
+        private memory?: MemoryStore | null
     ) {
     }
 

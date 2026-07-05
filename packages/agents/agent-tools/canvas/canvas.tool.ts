@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface CanvasEntry {
     id?: string;
@@ -74,15 +74,11 @@ export class CanvasTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(CanvasAdapter)
-        private adapter?: CanvasAdapter | null
+        private adapter: CanvasAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('canvas requires a configured CanvasAdapter. Provide one via the AGENT_CANVAS_ADAPTER token.');
-        }
         const action = typeof input?.action === 'string' ? input.action : '';
 
         switch (action) {

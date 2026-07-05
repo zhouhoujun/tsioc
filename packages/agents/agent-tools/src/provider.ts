@@ -74,6 +74,17 @@ import { ModelRoutingTool } from '../model-routing/model-routing.tool';
 import { PollTool } from '../poll/poll.tool';
 import { AiCliTool } from '../ai-cli/ai-cli.tool';
 import { provideMcpTools } from '../mcp/provider';
+import {
+    DefaultBackupAdapter,
+    DefaultKnowledgeAdapter,
+    DefaultModelRoutingAdapter,
+    DefaultPollAdapter,
+    DefaultCanvasAdapter,
+    DefaultKanbanAdapter,
+    DefaultIntentVerifierAdapter,
+    DefaultDataExportAdapter,
+    DefaultApprovalAdapter
+} from './default-adapters';
 
 const toolItems = {
     read_file: ReadFileTool,
@@ -524,6 +535,15 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
             useValue: merged.pdf?.adapter ?? null
         },
         ...(merged.mcp?.servers?.length ? provideMcpTools(merged.mcp) : []),
+        DefaultBackupAdapter,
+        DefaultKnowledgeAdapter,
+        DefaultModelRoutingAdapter,
+        DefaultPollAdapter,
+        DefaultCanvasAdapter,
+        DefaultKanbanAdapter,
+        DefaultIntentVerifierAdapter,
+        DefaultDataExportAdapter,
+        DefaultApprovalAdapter,
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles(),
         ...withAgentTools(...extraTools)

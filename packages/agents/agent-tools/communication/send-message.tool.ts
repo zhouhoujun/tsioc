@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface MessageChannel {
     type: 'telegram' | 'discord' | 'email' | 'slack' | 'custom';
@@ -75,15 +75,11 @@ export class SendMessageTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(MessagingAdapter)
-        private adapter?: MessagingAdapter | null
+        private adapter: MessagingAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('send_message requires a configured MessagingAdapter. Provide one via the AGENT_MESSAGING_ADAPTER token.');
-        }
         const channel = this.resolveChannel(input?.channel);
         const content = this.requireString(input?.content, 'send_message content');
         const result = await this.adapter.send({

@@ -10,7 +10,7 @@
 //     RedirectResult, provideService, withInterceptors, useJson, withBodyparser, useRouter,
 //     useLogger, useContent,
 //     withTransfers,
-// } from '@tsdi/endpoints';
+// } from '@tsdi/service';
 // import { catchError, lastValueFrom, of } from 'rxjs';
 // import * as os from 'os';
 // import expect = require('expect');

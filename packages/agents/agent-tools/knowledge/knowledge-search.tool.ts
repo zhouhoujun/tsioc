@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { KnowledgeAdapter } from './types';
 
 @Injectable()
@@ -24,16 +24,12 @@ export class KnowledgeSearchTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(KnowledgeAdapter)
-        private adapter?: KnowledgeAdapter | null
+        private adapter: KnowledgeAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const query = this.requireString(input?.query, 'knowledge_search query');
-        if (!this.adapter) {
-            throw new Error('knowledge_search requires a configured KnowledgeAdapter. Provide one via the AGENT_KNOWLEDGE_ADAPTER token.');
-        }
         const result = await this.adapter.search(query, {
             tags: Array.isArray(input?.tags) ? input.tags.filter((t: any) => typeof t === 'string') : undefined,
             limit: typeof input?.limit === 'number' && input.limit > 0 ? input.limit : 10

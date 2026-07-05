@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { KnowledgeAdapter } from './types';
 
 @Injectable()
@@ -29,17 +29,13 @@ export class KnowledgeStoreTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(KnowledgeAdapter)
-        private adapter?: KnowledgeAdapter | null
+        private adapter: KnowledgeAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const title = this.requireString(input?.title, 'knowledge_store title');
         const content = this.requireString(input?.content, 'knowledge_store content');
-        if (!this.adapter) {
-            throw new Error('knowledge_store requires a configured KnowledgeAdapter. Provide one via the AGENT_KNOWLEDGE_ADAPTER token.');
-        }
         const entry = await this.adapter.store({
             title,
             content,

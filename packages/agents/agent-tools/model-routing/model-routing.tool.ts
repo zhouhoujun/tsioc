@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface ModelRoute {
     id: string;
@@ -72,15 +72,11 @@ export class ModelRoutingTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(ModelRoutingAdapter)
-        private adapter?: ModelRoutingAdapter | null
+        private adapter: ModelRoutingAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('model_routing requires a configured ModelRoutingAdapter.');
-        }
         const action = typeof input?.action === 'string' ? input.action : '';
 
         switch (action) {

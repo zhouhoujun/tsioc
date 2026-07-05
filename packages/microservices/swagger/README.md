@@ -23,60 +23,63 @@ npm install @tsdi/swagger
 ### demo
 
 ```ts
-import { Module } from '@tsdi/ioc';
-import { bootstrapApplication } from '@tsdi/core';
-import { LoggerModule, LogConfigure } from '@tsdi/logger';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { CorsInterceptor, HttpModule } from '@tsdi/http';
+import { Application, Module }  from '@tsdi/core';
+import { LogModule } from '@tsdi/logger';
+import { provideService, useCors, useJson, useLogger, useRouter, useStatics } from '@tsdi/service';
+import { provideSwagger } from '@tsdi/swagger';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
-import { DataSource } from 'typeorm';
-import { TypeOrmModule } from '@tsdi/typeorm-adapter';
+import { TypeOrmModule }  from '@tsdi/typeorm-adapter';
 import { ServerModule } from '@tsdi/platform-server';
-import { ServerLog4Module } from '@tsdi/platform-server/log4js';
-import { ServerCommonModule } from '@tsdi/platform-server/common'
-import { SwaggerModule } from '@tsdi/swagger';
+
+const key = fs.readFileSync(path.join(__dirname, './cert/localhost-privkey.pem'));
+const cert = fs.readFileSync(path.join(__dirname, './cert/localhost-cert.pem'));
 
 @Module({
-    baseURL: __dirname,
+    // baseURL: __dirname,
     imports: [
-        LoggerModule.withOptions(logconfig),
         ServerModule,
-        ServerLog4Module,
-        ServerCommonModule,
+        LoggerModule,
         TransactionModule,
-        TypeOrmModule.withConnection(connections),
-        EndpointModule.register({
-            transport: 'https',
-            config: {
-                majorVersion: 2,
-                serverOpts: {
-                    cert,
-                    key
-                },
-                interceptors: [
-                    CorsInterceptor,
-                    ContentInterceptor,
-                    JsonInterceptor,
-                    BodyparserInterceptor,
-                ]
-            }
+    ],
+    providers:[
+        provideTypeOrm({
+            name: 'xx',
+            type: 'postgres',
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: 'postgres',
+            database: 'testdb',
+            synchronize: true, // 同步数据库
+            logging: false  // 日志,
+            models: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts'],
         }),
-        SwaggerModule.withOptions({
+        provideService(
+            useLogger(),
+            useCors(),
+            useRouter(),
+            useStatics(),
+            useJson(),
+            useHttpTransport({ listenOpts: { port: 3000, host: '127.0.0.1' } }),
+        ),
+        provideSwagger({
             title: 'api document',
             description: 'platform basic api',
             version: 'v1',
-            prefix: 'api-doc'
+            prefix: 'api-doc',
+            transport: Transport.HTTP
         })
     ],
     declarations: [
         UserController,
         RoleController
-    ]
+    ],
+    bootstrap: HttpServer
 })
 export class App {
 
 }
-
 
 bootstrapApplication(App);
 

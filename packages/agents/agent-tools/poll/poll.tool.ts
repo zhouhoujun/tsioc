@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface PollOption {
     label: string;
@@ -67,15 +67,11 @@ export class PollTool implements AgentTool {
     };
 
     constructor(
-        @Optional() @Inject(PollAdapter)
-        private adapter?: PollAdapter | null
+        private adapter: PollAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        if (!this.adapter) {
-            throw new Error('poll requires a configured PollAdapter.');
-        }
         const action = typeof input?.action === 'string' ? input.action : '';
 
         switch (action) {

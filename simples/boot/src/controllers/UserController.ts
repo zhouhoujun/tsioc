@@ -1,7 +1,7 @@
 import { ApplicationContext, Startup } from '@tsdi/core';
-import { Injectable, lang } from '@tsdi/ioc';
+import { InjectUtil, Injectable, getTypeName } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logger';
-import { RequestParam, RouteMapping } from '@tsdi/endpoints';
+import { RequestParam, RouteMapping } from '@tsdi/service';
 import { Repository, Transactional } from '@tsdi/repository';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
@@ -27,7 +27,7 @@ export class UserController {
     @RouteMapping('/', 'POST')
     @RouteMapping('/', 'PUT')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(getTypeName(this.usrRep), user);
         const val = await this.usrRep.save(user);
         if(check) throw new Error('check');
         this.logger.log(val);
@@ -38,7 +38,7 @@ export class UserController {
     @RouteMapping('/save', 'POST')
     @RouteMapping('/save', 'PUT')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(getTypeName(this.usrRep), user);
         const val = await userRepo.save(user);
         if(check) throw new Error('check');
         this.logger.log(val);
@@ -61,7 +61,8 @@ export class RouteStartup {
 
     @Startup()
     async configureService(ctx: ApplicationContext): Promise<void> {
-        ctx.injector.register(UserController);
+        InjectUtil.register(ctx, UserController);
     }
 
 }
+

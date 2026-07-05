@@ -31,5 +31,10 @@ function createAgentOrmProviders(options: TypeormOptions): Provider[] {
 }
 
 export function provideAgentOrm(options: TypeormOptions): Provider[] {
-    return createAgentOrmProviders(options);
+    return createAgentOrmProviders({
+        type: 'sqljs' as any,
+        autoLoadEntities: false as any,
+        synchronize: true,
+        ...options
+    });
 }

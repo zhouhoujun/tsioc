@@ -1,5 +1,5 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 
 export interface TtsResult {
     audioUrl: string;
@@ -55,15 +55,12 @@ export class TextToSpeechTool implements AgentTool {
     execution = { readOnly: true };
 
     constructor(
-        @Optional() @Inject(TtsAdapter) private adapter?: TtsAdapter | null
+        private adapter: TtsAdapter
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const text = this.requireString(input?.text, 'text_to_speech text');
-        if (!this.adapter) {
-            throw new Error('text_to_speech requires a configured TtsAdapter. Provide one via the AGENT_TTS_ADAPTER token.');
-        }
         const options: TtsOptions = {};
         if (typeof input?.voice === 'string') { options.voice = input.voice; }
         if (typeof input?.speed === 'number' && input.speed >= 0.5 && input.speed <= 2) { options.speed = input.speed; }
