@@ -11,6 +11,8 @@ import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
 import { isReactive, reactive } from '../reactive';
 
+export const TEMPLATE_SCOPE_PARENT = Symbol('__template_scope_parent');
+
 
 /**
  * Template ref implement.
@@ -70,7 +72,17 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
         if (context) {
             if (this.options?.context) {
-                context = Object.assign(context, this.options.context);
+                if (typeof context === 'object' && context !== null) {
+                    Object.defineProperty(context, TEMPLATE_SCOPE_PARENT, {
+                        value: this.options.context,
+                        configurable: true,
+                        enumerable: false,
+                        writable: true
+                    });
+                    Object.setPrototypeOf(context, this.options.context);
+                } else {
+                    context = this.options.context;
+                }
             }
         } else {
             context = this.options?.context ?? {};

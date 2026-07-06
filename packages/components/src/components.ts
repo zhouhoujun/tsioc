@@ -51,7 +51,7 @@ export class ComponentsModule {
 
 }
 
-export type RendererType = 'html' | 'xml' | 'json';
+export type RendererType = 'html' | 'xml' | 'json' | 'console';
 
 export interface ComponentBootOptions extends EnvironmentOption {
     /**
@@ -76,6 +76,9 @@ export async function bootstrapComponent<T>(rootComponent: Type<T>, options?: Co
     } else if (rderType === 'json') {
         const { JsonTemplateModule } = await import('@tsdi/components/json');
         deps.unshift(JsonTemplateModule);
+    } else if (rderType === 'console') {
+        const { ConsoleTemplateModule } = await import('@tsdi/components/console');
+        deps.unshift(ConsoleTemplateModule);
     }
 
     if (!deps.includes(ComponentsModule)) {

@@ -89,7 +89,7 @@ export const defaultAgentOptions: AgentOptions = {
     },
     model: {
         provider: 'deepseek',
-        model: 'deepseek-chat',
+        model: 'deepseek-v4-flash',
         baseUrl: 'https://api.deepseek.com',
         apiKeyEnv: 'DEEPSEEK_API_KEY',
         timeoutMs: 120000

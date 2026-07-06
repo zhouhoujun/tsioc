@@ -15,6 +15,9 @@ export abstract class ReactiveEffect<T = any> {
     
     // 运行effect函数
     abstract run(fn: () => T): T;
+
+    // 在不收集新依赖的情况下运行逻辑
+    abstract untrack<R>(fn: () => R): R;
     
     // 停止effect
     abstract stop(): void;

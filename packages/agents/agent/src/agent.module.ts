@@ -1,11 +1,9 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
-import { ComponentsModule } from '@tsdi/components';
-import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ConfigModule } from '@tsdi/microservices/config';
 import { AgentOptions, defaultAgentOptions } from './options';
 import { AGENT_OPTIONS, AGENT_TOOLS } from './tokens';
-import { OpenAICompatibleModelAdapter } from './model/OpenAICompatibleModelAdapter';
 import { ModelAdapter } from './model/ModelAdapter';
+import { RoutedModelAdapter } from './model/RoutedModelAdapter';
 import { ToolRegistry } from './tools/ToolRegistry';
 import { LocalToolRegistry } from './tools/LocalToolRegistry';
 import { InMemoryToolActivationStore } from './tools/InMemoryToolActivationStore';
@@ -35,8 +33,8 @@ import { AgentServer } from './channels/AgentServer';
 import { AgentClient } from './channels/AgentClient';
 import { LocalAgentClient } from './channels/LocalAgentClient';
 import { PubSubAgentChannel } from './channels/PubSubAgentChannel';
-import { AgentConsoleViewModel } from './ui/AgentConsoleViewModel';
 import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
+import { AgentUiModule } from './ui/agent-ui.module';
 import { ToolExecutionCoordinator } from './harness/ToolExecutionCoordinator';
 import { ToolSchemaValidator } from './harness/ToolSchemaValidator';
 import { RateLimitManager } from './harness/RateLimitManager';
@@ -50,22 +48,15 @@ import { createAgentProviders } from './provider';
 @Module({
     imports: [
         ConfigModule,
-        ComponentsModule,
-        HtmlTemplateModule
+        AgentUiModule
     ],
-    declarations: [AgentConsoleComponent],
     bootstrap: [AgentRuntime],
     providers: [
         { provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true },
         {
             provide: ModelAdapter,
-            useFactory: () => new OpenAICompatibleModelAdapter({
-                provider: 'deepseek',
-                model: 'deepseek-flash',
-                baseUrl: 'https://api.deepseek.com',
-                apiKeyEnv: 'DEEPSEEK_API_KEY',
-                timeoutMs: 120000
-            }),
+            useFactory: (options: AgentOptions) => new RoutedModelAdapter(options.model ?? defaultAgentOptions.model!),
+            deps: [AGENT_OPTIONS],
             asDefault: true
         },
         AgentContextManager,
@@ -108,8 +99,6 @@ import { createAgentProviders } from './provider';
         { provide: AgentClient, useClass: LocalAgentClient },
         LocalAgentClient,
         PubSubAgentChannel,
-        AgentConsoleViewModel,
-        AgentConsoleComponent,
         { provide: AGENT_TOOLS, useExisting: EchoTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: TimeTool, multi: true },
         { provide: AGENT_TOOLS, useExisting: MemoryPutTool, multi: true },

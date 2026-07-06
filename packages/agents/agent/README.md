@@ -50,7 +50,7 @@ npm run test:coverage
 - `AgentModule`
 - `AgentRuntime`
 - `ToolRegistry`, `LocalToolRegistry`
-- `ModelAdapter`, `OpenAICompatibleModelAdapter`, `EchoModelAdapter`
+- `ModelAdapter`, `RoutedModelAdapter`, `OpenAICompatibleModelAdapter`, `AnthropicModelAdapter`, `EchoModelAdapter`
 - `InMemorySessionStore`, `InMemoryMemoryStore`
 - `AgentServer`, `AgentClient`, `LocalAgentClient`
 - `provideAgent`, `withAgentTools`, `withAgentTurnGuards`, `withAgentTurnInterceptors`, `withAgentTurnFilters`
@@ -63,6 +63,89 @@ npm run test:coverage
 - Memory retrieval through `MemoryStore`, including session-scoped and global records.
 - Prompt and context assembly that merges recent history, summaries, tools, and retrieved memories before each model call.
 - Built-in tool registry and approval pipeline for integrating local tools into model-driven workflows.
+
+## Model routing configuration
+
+The default `ModelAdapter` is now a `RoutedModelAdapter` built from `AgentOptions.model`.
+You can keep a single model configuration, or define multiple model profiles and route
+between them by prompt complexity or explicit matching rules.
+
+### Supported configuration fields
+
+- `provider`, `model`, `baseUrl`, `apiKey`, `apiKeyEnv`, `timeoutMs`, `temperature`, `maxTokens`, `headers`
+- `profiles`: named reusable model/provider configs
+- `defaultProfile`: fallback profile name
+- `complexityRouting`: map `simple`, `moderate`, `complex` to a profile name or inline config
+- `complexityThresholds`: tune how complexity is classified
+- `routes`: explicit rules evaluated before complexity routing
+
+### Provider notes
+
+- `claude` is normalized to the native Anthropic adapter
+- unknown providers with a `baseUrl` are treated as OpenAI-compatible endpoints
+
+### Example
+
+```ts
+import { AgentModule, provideAgent } from '@tsdi/agent';
+
+const providers = provideAgent({
+  model: {
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash',
+    baseUrl: 'https://api.deepseek.com',
+    apiKeyEnv: 'DEEPSEEK_API_KEY',
+    profiles: {
+      fast: {
+        provider: 'deepseek',
+        model: 'deepseek-v4-flash',
+        baseUrl: 'https://api.deepseek.com',
+        apiKeyEnv: 'DEEPSEEK_API_KEY'
+      },
+      strong: {
+        provider: 'deepseek',
+        model: 'deepseek-v4-pro',
+        baseUrl: 'https://api.deepseek.com',
+        apiKeyEnv: 'DEEPSEEK_API_KEY'
+      },
+      customGateway: {
+        provider: 'openai-compatible',
+        model: 'hermes-70b',
+        baseUrl: 'https://your-openai-compatible-gateway/v1',
+        apiKeyEnv: 'CUSTOM_GATEWAY_API_KEY'
+      }
+    },
+    complexityRouting: {
+      simple: 'fast',
+      moderate: 'fast',
+      complex: 'strong'
+    },
+    routes: [
+      {
+        name: 'architecture-review',
+        when: { containsAny: ['architecture', '架构'] },
+        profile: 'customGateway'
+      }
+    ]
+  }
+});
+
+AgentModule.withOptions({
+  model: {
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash'
+  }
+});
+```
+
+### Routing behavior
+
+- Explicit `routes` are checked first.
+- If no explicit route matches, the adapter estimates prompt complexity as `simple`, `moderate`, or `complex`.
+- If no complexity route matches, the adapter falls back to `defaultProfile`, then to the top-level `model` config.
+
+In the example above, simple or moderate prompts stay on `deepseek-v4-flash`,
+while complex prompts are routed to `deepseek-v4-pro`.
 
 ## Control-plane capability matrix
 
@@ -108,7 +191,7 @@ npm run test:coverage
 - The default module registers builtin tools: `echo`, `time`, `memory.put`, and `memory.search`.
 - Deferred tools remain session-gated: inspecting a tool definition does not activate it.
 - Manifest-backed MCP tools require session activation before invocation, and dynamic `mcp.call_tool` access is limited to tools explicitly declared or allowlisted by `@tsdi/agent-tools`.
-- The default model adapter is configured as an OpenAI-compatible DeepSeek adapter unless overridden.
+- The default model adapter is a routed adapter created from `AgentOptions.model`; with the default settings it falls back to DeepSeek.
 - Cross-package integrations for channels, providers, gateway, and tool bundles live in sibling packages under `packages/agents`.
 
 ## License

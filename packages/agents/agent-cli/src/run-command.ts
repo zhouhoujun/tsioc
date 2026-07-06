@@ -1,25 +1,28 @@
 import { Application } from '@tsdi/core';
-import { AgentModule, AgentRuntime, AGENT_OPTIONS, ModelAdapter, OpenAICompatibleModelAdapter, mergeAgentOptions } from '@tsdi/agent';
+import { AgentModule, AgentRuntime, AGENT_OPTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions } from '@tsdi/agent';
+import { ConsoleTemplateModule } from '@tsdi/components/console';
 import { provideTools, SpawnAgentAdapter, WeatherAdapter, LlmTaskAdapter, PipelineAdapter } from '@tsdi/agent-tools';
-import { AgentCliOptions, resolveCliConfig } from './config';
+import { AgentCliOptions, resolveCliConfig, resolveCliModelConfig } from './config';
 
 function resolveModelAdapter(options: AgentCliOptions): any {
-    const provider = (options as any).provider || process.env.AGENT_PROVIDER || 'deepseek';
-    const model = (options as any).model || process.env.AGENT_MODEL || 'deepseek-chat';
-    const baseUrl = (options as any).baseUrl || process.env.AGENT_BASE_URL || undefined;
-    const apiKey = (options as any).apiKey || process.env.AGENT_API_KEY || undefined;
-    const apiKeyEnv = (options as any).apiKeyEnv || undefined;
-    const timeoutMs = parseInt((options as any).timeout as string) || undefined;
+    const resolved = resolveCliConfig(options);
+    const modelConfig = resolveCliModelConfig(options, resolved.root);
 
     return {
         provide: ModelAdapter,
-        useFactory: () => new OpenAICompatibleModelAdapter({
-            provider,
-            model,
-            baseUrl: baseUrl || `https://api.${provider === 'openai' ? 'openai.com' : 'deepseek.com'}`,
-            apiKey,
-            apiKeyEnv,
-            timeoutMs: timeoutMs || 120000
+        useFactory: () => new RoutedModelAdapter({
+            ...(resolved.settingsModel || {}),
+            provider: modelConfig.provider,
+            model: modelConfig.model,
+            baseUrl: modelConfig.baseUrl,
+            apiKey: modelConfig.apiKey,
+            apiKeyEnv: modelConfig.apiKeyEnv,
+            timeoutMs: modelConfig.timeoutMs || 120000,
+            temperature: modelConfig.temperature,
+            maxTokens: modelConfig.maxTokens,
+            headers: modelConfig.headers,
+            thinkingBudget: modelConfig.thinkingBudget,
+            reasoning: modelConfig.reasoning
         })
     };
 }
@@ -67,16 +70,36 @@ export function withAdapterProviders(): any[] {
     ];
 }
 
+export async function runAgentApplication(options: AgentCliOptions, agentOptions?: any): Promise<any> {
+    const resolved = resolveCliConfig(options);
+    return Application.run(AgentModule, {
+        deps: [ConsoleTemplateModule],
+        providers: [
+            ...provideTools(resolved.tools),
+            ...withAdapterProviders(),
+            resolveModelAdapter(options),
+            ...(agentOptions ? [{ provide: AGENT_OPTIONS, useValue: agentOptions }] : [])
+        ]
+    });
+}
+
 export async function runAgentPrompt(prompt: string, options: AgentCliOptions = {}): Promise<string> {
     const resolved = resolveCliConfig(options);
+    const modelConfig = resolveCliModelConfig(options, resolved.root);
     const agentOptions = mergeAgentOptions({
         model: {
-            provider: (options as any).provider || process.env.AGENT_PROVIDER || 'deepseek',
-            model: (options as any).model || process.env.AGENT_MODEL || 'deepseek-chat',
-            baseUrl: (options as any).baseUrl || process.env.AGENT_BASE_URL || undefined,
-            apiKey: (options as any).apiKey || process.env.AGENT_API_KEY || undefined,
-            apiKeyEnv: (options as any).apiKeyEnv || undefined,
-            timeoutMs: parseInt((options as any).timeout as string) || 120000
+            ...(resolved.settingsModel || {}),
+            provider: modelConfig.provider,
+            model: modelConfig.model,
+            baseUrl: modelConfig.baseUrl,
+            apiKey: modelConfig.apiKey,
+            apiKeyEnv: modelConfig.apiKeyEnv,
+            timeoutMs: modelConfig.timeoutMs,
+            temperature: modelConfig.temperature,
+            maxTokens: modelConfig.maxTokens,
+            headers: modelConfig.headers,
+            thinkingBudget: modelConfig.thinkingBudget,
+            reasoning: modelConfig.reasoning
         },
         bootstrapTurn: {
             enabled: true,
@@ -86,14 +109,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
         }
     });
 
-    const ctx = await Application.run(AgentModule, {
-        providers: [
-            ...provideTools(resolved.tools),
-            ...withAdapterProviders(),
-            resolveModelAdapter(options),
-            { provide: AGENT_OPTIONS, useValue: agentOptions },
-        ]
-    });
+    const ctx = await runAgentApplication(options, agentOptions);
 
     try {
         return agentOptions.bootstrapTurn?.output ?? '';
@@ -104,25 +120,25 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
 
 export async function runAgentStreaming(prompt: string, options: AgentCliOptions = {}): Promise<void> {
     const resolved = resolveCliConfig(options);
+    const modelConfig = resolveCliModelConfig(options, resolved.root);
     const agentOptions = mergeAgentOptions({
         model: {
-            provider: (options as any).provider || process.env.AGENT_PROVIDER || 'deepseek',
-            model: (options as any).model || process.env.AGENT_MODEL || 'deepseek-chat',
-            baseUrl: (options as any).baseUrl || process.env.AGENT_BASE_URL || undefined,
-            apiKey: (options as any).apiKey || process.env.AGENT_API_KEY || undefined,
-            apiKeyEnv: (options as any).apiKeyEnv || undefined,
-            timeoutMs: parseInt((options as any).timeout as string) || 120000
+            ...(resolved.settingsModel || {}),
+            provider: modelConfig.provider,
+            model: modelConfig.model,
+            baseUrl: modelConfig.baseUrl,
+            apiKey: modelConfig.apiKey,
+            apiKeyEnv: modelConfig.apiKeyEnv,
+            timeoutMs: modelConfig.timeoutMs,
+            temperature: modelConfig.temperature,
+            maxTokens: modelConfig.maxTokens,
+            headers: modelConfig.headers,
+            thinkingBudget: modelConfig.thinkingBudget,
+            reasoning: modelConfig.reasoning
         }
     });
 
-    const ctx = await Application.run(AgentModule, {
-        providers: [
-            ...provideTools(resolved.tools),
-            ...withAdapterProviders(),
-            resolveModelAdapter(options),
-            { provide: AGENT_OPTIONS, useValue: agentOptions },
-        ]
-    });
+    const ctx = await runAgentApplication(options, agentOptions);
 
     try {
         const runtime = ctx.get(AgentRuntime);

@@ -12,6 +12,7 @@ export * from './model/ModelProviderOptions';
 export * from './model/OpenAICompatibleModelAdapter';
 export * from './model/AnthropicModelAdapter';
 export * from './model/EchoModelAdapter';
+export * from './model/RoutedModelAdapter';
 
 export * from './runtime/AgentMessage';
 export * from './runtime/AgentState';
@@ -76,7 +77,8 @@ export * from './channels/AgentClient';
 export * from './channels/LocalAgentClient';
 export * from './channels/PubSubAgentChannel';
 
-export * from './ui/AgentConsoleViewModel';
 export * from './ui/AgentConsoleComponent';
-
-
+export * from './ui/AgentConsoleSessionState';
+export * from './ui/AgentConsoleEventBridge';
+export * from './ui/agent-ui.module';
+export * from './ui/AgentConsolePanels';

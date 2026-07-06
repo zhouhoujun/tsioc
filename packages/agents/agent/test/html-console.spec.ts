@@ -4,7 +4,16 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { AgentConsoleComponent, AgentModule } from '../src';
+import {
+    AgentConsoleActivityPanelComponent,
+    AgentConsoleComponent,
+    AgentConsoleInputPanelComponent,
+    AgentConsoleMessagesPanelComponent,
+    AgentConsoleStatusPanelComponent,
+    AgentConsoleToolRunsPanelComponent,
+    AgentConsoleToolsPanelComponent,
+    AgentModule
+} from '../src';
 
 @Suite('Agent HTML console')
 export class HtmlConsoleTest {
@@ -29,8 +38,16 @@ export class HtmlConsoleTest {
     async render() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         const root = ref.hostView.rootNodes[0] as any;
+        const statusPanel = ref.hostView.query(AgentConsoleStatusPanelComponent) as ComponentRef<AgentConsoleStatusPanelComponent>;
+        const statusRoot = statusPanel.hostView.rootNodes[0] as any;
         expect(root.querySelector('h1')?.textContent).toEqual('Hermes Agent Console');
-        expect(root.querySelector('.status')?.textContent).toContain('idle');
+        expect(statusRoot.querySelector('.status')?.textContent).toContain('idle');
+        expect(statusPanel).toBeTruthy();
+        expect(ref.hostView.query(AgentConsoleInputPanelComponent)).toBeTruthy();
+        expect(ref.hostView.query(AgentConsoleToolsPanelComponent)).toBeTruthy();
+        expect(ref.hostView.query(AgentConsoleToolRunsPanelComponent)).toBeTruthy();
+        expect(ref.hostView.query(AgentConsoleMessagesPanelComponent)).toBeTruthy();
+        expect(ref.hostView.query(AgentConsoleActivityPanelComponent)).toBeTruthy();
     }
 
     @After()

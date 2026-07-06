@@ -12,7 +12,7 @@ export interface DeepSeekProviderOptions {
 }
 
 export const defaultDeepSeekProviderOptions: DeepSeekProviderOptions = {
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-flash',
     baseUrl: 'https://api.deepseek.com',
     apiKeyEnv: 'DEEPSEEK_API_KEY',
     reasoning: false

@@ -11,7 +11,7 @@ import { DeepSeekProviderOptions, defaultDeepSeekProviderOptions } from './deeps
  *   - hermes:    plugins/model-providers/deepseek/  (ProviderProfile)
  *
  * Uses the OpenAI-compatible Chat Completions format at api.deepseek.com.
- * Supports deepseek-chat and deepseek-reasoner models.
+ * Supports models such as deepseek-v4-flash, deepseek-v4-pro, and deepseek-reasoner.
  */
 @Injectable()
 export class DeepSeekProvider extends OpenAICompatibleModelAdapter {

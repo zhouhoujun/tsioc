@@ -292,7 +292,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     protected resolveModel(): string {
-        return this.options.model ?? 'deepseek-chat';
+        return this.options.model ?? 'deepseek-v4-flash';
     }
 
     protected resolveBaseUrl(): string {

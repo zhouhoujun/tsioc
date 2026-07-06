@@ -48,7 +48,7 @@ npm run test:coverage
 - `AgentModule`
 - `AgentRuntime`
 - `ToolRegistry`、`LocalToolRegistry`
-- `ModelAdapter`、`OpenAICompatibleModelAdapter`、`EchoModelAdapter`
+- `ModelAdapter`、`RoutedModelAdapter`、`OpenAICompatibleModelAdapter`、`AnthropicModelAdapter`、`EchoModelAdapter`
 - `InMemorySessionStore`、`InMemoryMemoryStore`
 - `AgentServer`、`AgentClient`、`LocalAgentClient`
 - `provideAgent`、`withAgentTools`、`withAgentTurnGuards`、`withAgentTurnInterceptors`、`withAgentTurnFilters`
@@ -61,6 +61,88 @@ npm run test:coverage
 - 通过 `MemoryStore` 提供记忆检索，支持 session 级与 global 级记录。
 - 每次模型调用前，都会合并近期历史、摘要、工具定义与检索命中的记忆来构建上下文。
 - 内置工具注册表与审批链路，便于把本地工具接入模型驱动的工作流。
+
+## 模型路由配置
+
+默认的 `ModelAdapter` 现在是根据 `AgentOptions.model` 构建出来的 `RoutedModelAdapter`。
+你既可以继续只配置一个模型，也可以定义多个模型档位，再按提示词复杂度或显式规则在不同 provider / model 之间切换。
+
+### 支持的配置字段
+
+- `provider`、`model`、`baseUrl`、`apiKey`、`apiKeyEnv`、`timeoutMs`、`temperature`、`maxTokens`、`headers`
+- `profiles`：可复用的命名模型配置
+- `defaultProfile`：默认回退 profile 名称
+- `complexityRouting`：把 `simple`、`moderate`、`complex` 映射到 profile 名称或内联配置
+- `complexityThresholds`：调整复杂度分类阈值
+- `routes`：在复杂度路由前优先执行的显式匹配规则
+
+### Provider 说明
+
+- `claude` 会自动归一化到原生 Anthropic 适配器
+- 未知 provider 但显式提供了 `baseUrl` 时，会按 OpenAI-compatible endpoint 处理
+
+### 示例
+
+```ts
+import { AgentModule, provideAgent } from '@tsdi/agent';
+
+const providers = provideAgent({
+  model: {
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash',
+    baseUrl: 'https://api.deepseek.com',
+    apiKeyEnv: 'DEEPSEEK_API_KEY',
+    profiles: {
+      fast: {
+        provider: 'deepseek',
+        model: 'deepseek-v4-flash',
+        baseUrl: 'https://api.deepseek.com',
+        apiKeyEnv: 'DEEPSEEK_API_KEY'
+      },
+      strong: {
+        provider: 'deepseek',
+        model: 'deepseek-v4-pro',
+        baseUrl: 'https://api.deepseek.com',
+        apiKeyEnv: 'DEEPSEEK_API_KEY'
+      },
+      customGateway: {
+        provider: 'openai-compatible',
+        model: 'hermes-70b',
+        baseUrl: 'https://your-openai-compatible-gateway/v1',
+        apiKeyEnv: 'CUSTOM_GATEWAY_API_KEY'
+      }
+    },
+    complexityRouting: {
+      simple: 'fast',
+      moderate: 'fast',
+      complex: 'strong'
+    },
+    routes: [
+      {
+        name: 'architecture-review',
+        when: { containsAny: ['architecture', '架构'] },
+        profile: 'customGateway'
+      }
+    ]
+  }
+});
+
+AgentModule.withOptions({
+  model: {
+    provider: 'deepseek',
+    model: 'deepseek-v4-flash'
+  }
+});
+```
+
+### 路由行为
+
+- 先检查显式 `routes`
+- 如果没有命中显式规则，再把输入复杂度估算为 `simple`、`moderate` 或 `complex`
+- 如果没有命中复杂度路由，则回退到 `defaultProfile`，再回退到顶层 `model` 配置
+
+上面的示例里，`simple` / `moderate` 会继续走 `deepseek-v4-flash`，
+而 `complex` 会切到 `deepseek-v4-pro`。
 
 ## Control-plane 能力矩阵
 
@@ -106,7 +188,7 @@ npm run test:coverage
 - 默认模块会注册内置工具：`echo`、`time`、`memory.put`、`memory.search`。
 - deferred tool 仍然保持 session 级激活边界；inspect 工具定义不会触发激活。
 - 通过 manifest 注册的 MCP 工具必须先按 session 激活后才能调用，而动态 `mcp.call_tool` 只能访问 `@tsdi/agent-tools` 中显式声明或 allowlist 放行的工具。
-- 默认模型适配器是 OpenAI Compatible 的 DeepSeek 适配器；可自行覆盖。
+- 默认模型适配器是根据 `AgentOptions.model` 创建的路由适配器；默认配置下会回退到 DeepSeek。
 - 通道、模型提供方、网关和工具包的扩展能力位于 `packages/agents` 下的兄弟包中。
 
 ## License

@@ -56,6 +56,16 @@ export class DefaultReactiveEffect implements ReactiveEffect {
         }
     }
 
+    untrack<R>(fn: () => R): R {
+        const active = Array.from(this.activeEffects.values());
+        this.activeEffects.clear();
+        try {
+            return fn();
+        } finally {
+            active.forEach(effectFn => this.activeEffects.add(effectFn));
+        }
+    }
+
     // 清理特定target的依赖
     cleanup(target: any) {
         this.depsMap.delete(target);

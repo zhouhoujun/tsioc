@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext, RunContext, Runner } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { AgentModule, AgentConsoleComponent, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord, AuditSink } from '../src';
+import { AgentModule, AgentConsoleComponent, AgentMemoryRetriever, AgentRuntime, DefaultAgentRuntime, ModelAdapter, AGENT_OPTIONS, AgentTurnInput, AgentTurnResult, AgentMessage, AgentMemoryRecord, AuditSink, AgentUiModule } from '../src';
 
 @Injectable()
 class CustomBootstrapRuntime extends AgentRuntime {
@@ -59,6 +59,7 @@ export class BootstrapTest {
     async bootstrap() {
         expect(this.ctx).toBeTruthy();
         expect(this.ctx.get(AgentConsoleComponent)).toBeTruthy();
+        expect(this.ctx.get(AgentUiModule)).toBeTruthy();
     }
 
     @Test('wires default memory retriever')

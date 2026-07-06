@@ -1,6 +1,52 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
+
+export interface AgentCliModelRoute {
+    name?: string;
+    profile?: string;
+    provider?: string;
+    model?: string;
+    apiKey?: string;
+    apiKeyEnv?: string;
+    baseUrl?: string;
+    timeoutMs?: number;
+    temperature?: number;
+    maxTokens?: number;
+    headers?: Record<string, string>;
+    thinkingBudget?: number;
+    reasoning?: boolean;
+    when?: {
+        complexity?: 'simple' | 'moderate' | 'complex' | Array<'simple' | 'moderate' | 'complex'>;
+        inputPattern?: string;
+        containsAny?: string[];
+        minInputLength?: number;
+        maxInputLength?: number;
+    };
+}
+
+export interface AgentCliProviderProfile {
+    provider: string;
+    model: string;
+    baseUrl?: string;
+    apiKey?: string;
+    apiKeyEnv?: string;
+    timeoutMs?: number;
+    temperature?: number;
+    maxTokens?: number;
+    headers?: Record<string, string>;
+    thinkingBudget?: number;
+    reasoning?: boolean;
+    defaultProfile?: string;
+    profiles?: Record<string, AgentCliProviderProfile>;
+    routes?: AgentCliModelRoute[];
+    complexityRouting?: Partial<Record<'simple' | 'moderate' | 'complex', string | AgentCliProviderProfile>>;
+    complexityThresholds?: {
+        simpleMaxScore?: number;
+        moderateMaxScore?: number;
+    };
+}
 
 export interface AgentCliOptions {
     session?: string;
@@ -27,10 +73,205 @@ export interface AgentCliResolvedConfig {
     skillRoots: string[];
     tools: AgentToolsOptions;
     channels: AgentChannelsOptions;
+    providerProfile?: AgentCliProviderProfile;
+    settingsModel?: Partial<AgentCliProviderProfile>;
+}
+
+function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProviderProfile> {
+    return { ...model } as Partial<AgentCliProviderProfile>;
+}
+
+function readSettingsModel(root?: string): Partial<AgentCliProviderProfile> | undefined {
+    if (!root) {
+        return undefined;
+    }
+    const resolved = resolveAgentToolDiscovery(root);
+    const model = (resolved.settings as any)?.model;
+    if (!model || typeof model !== 'object' || Array.isArray(model)) {
+        return undefined;
+    }
+    return sanitizeModelProfile(model as Record<string, any>);
+}
+
+function resolveInitialModelSelection(model?: Partial<AgentCliProviderProfile>): Partial<AgentCliProviderProfile> {
+    if (!model) {
+        return {};
+    }
+    if (model.provider || model.model) {
+        return model;
+    }
+    if (model.defaultProfile && model.profiles?.[model.defaultProfile]) {
+        return model.profiles[model.defaultProfile];
+    }
+    const simpleRoute = model.complexityRouting?.simple;
+    if (typeof simpleRoute === 'string' && model.profiles?.[simpleRoute]) {
+        return model.profiles[simpleRoute];
+    }
+    if (simpleRoute && typeof simpleRoute === 'object') {
+        return simpleRoute;
+    }
+    const firstProfile = model.profiles ? Object.values(model.profiles)[0] : undefined;
+    return firstProfile || {};
 }
 
 function isKnownGroup(name: string, groups: Record<string, unknown>): boolean {
     return Object.prototype.hasOwnProperty.call(groups, name);
+}
+
+function readJsonObject(filePath: string): Record<string, any> {
+    if (!fs.existsSync(filePath)) {
+        return {};
+    }
+    const raw = fs.readFileSync(filePath, 'utf8').trim();
+    if (!raw) {
+        return {};
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error(`Invalid JSON object at '${filePath}'.`);
+    }
+    return parsed;
+}
+
+export function resolveProviderProfile(root: string): AgentCliProviderProfile | undefined {
+    const providerPath = path.join(root, 'provider.json');
+    const parsed = readJsonObject(providerPath);
+    if (!parsed.provider || !parsed.model) {
+        return undefined;
+    }
+    return {
+        provider: String(parsed.provider),
+        model: String(parsed.model),
+        baseUrl: parsed.baseUrl ? String(parsed.baseUrl) : undefined,
+        apiKey: parsed.apiKey ? String(parsed.apiKey) : undefined,
+        apiKeyEnv: parsed.apiKeyEnv ? String(parsed.apiKeyEnv) : undefined,
+        timeoutMs: typeof parsed.timeoutMs === 'number' ? parsed.timeoutMs : undefined
+    };
+}
+
+export function writeSettingsModelProfile(root: string, profile: Partial<AgentCliProviderProfile>): string {
+    const resolvedRoot = path.resolve(root);
+    const settingsPath = path.join(resolvedRoot, 'settings.json');
+    const current = readJsonObject(settingsPath);
+    const currentModel = current.model && typeof current.model === 'object' && !Array.isArray(current.model)
+        ? { ...(current.model as Record<string, any>) }
+        : undefined;
+    let nextModel: Record<string, any> = profile as Record<string, any>;
+
+    if (currentModel?.profiles || currentModel?.defaultProfile || currentModel?.complexityRouting) {
+        nextModel = {
+            ...currentModel
+        };
+        const defaultProfileName = typeof currentModel.defaultProfile === 'string'
+            ? currentModel.defaultProfile
+            : (currentModel.profiles?.fast ? 'fast' : undefined);
+        if (defaultProfileName && currentModel.profiles?.[defaultProfileName]) {
+            nextModel.profiles = {
+                ...currentModel.profiles,
+                [defaultProfileName]: {
+                    ...currentModel.profiles[defaultProfileName],
+                    ...profile
+                }
+            };
+        } else {
+            nextModel = {
+                ...nextModel,
+                ...profile
+            };
+        }
+    }
+    const next = {
+        ...current,
+        model: nextModel
+    };
+    fs.mkdirSync(resolvedRoot, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
+    return settingsPath;
+}
+
+export function writeProviderProfile(root: string, profile: AgentCliProviderProfile): string {
+    const providerPath = path.join(root, 'provider.json');
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(providerPath, JSON.stringify(profile, null, 2) + '\n', 'utf8');
+    return providerPath;
+}
+
+export function ensureAgentWorkspaceConfig(root: string, workspaceDirName = 'workspace'): string {
+    const resolvedRoot = path.resolve(root);
+    const settingsPath = path.join(resolvedRoot, 'settings.json');
+    const current = readJsonObject(settingsPath);
+    const next = {
+        ...current,
+        workspace: current.workspace || workspaceDirName
+    };
+    fs.mkdirSync(resolvedRoot, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
+    return settingsPath;
+}
+
+export function resolveCliModelConfig(options: AgentCliOptions, root?: string): AgentCliProviderProfile {
+    const settingsModel = readSettingsModel(root);
+    const initialModel = resolveInitialModelSelection(settingsModel);
+    const providerProfile = root ? resolveProviderProfile(root) : undefined;
+    const provider = options.provider || process.env.AGENT_PROVIDER || initialModel.provider || providerProfile?.provider || 'deepseek';
+    const model = options.model || process.env.AGENT_MODEL || initialModel.model || providerProfile?.model || 'deepseek-v4-flash';
+    const apiKeyEnv = options.apiKeyEnv
+        || initialModel.apiKeyEnv
+        || settingsModel?.apiKeyEnv
+        || providerProfile?.apiKeyEnv
+        || resolveProviderApiKeyEnv(provider);
+    const apiKey = options.apiKey
+        || process.env.AGENT_API_KEY
+        || (apiKeyEnv ? process.env[apiKeyEnv] : undefined)
+        || initialModel.apiKey
+        || providerProfile?.apiKey
+        || undefined;
+    const timeoutMs = parseInt(options.timeout as string) || initialModel.timeoutMs || providerProfile?.timeoutMs || 120000;
+    const baseUrl = options.baseUrl || process.env.AGENT_BASE_URL || initialModel.baseUrl || providerProfile?.baseUrl || resolveProviderBaseUrl(provider);
+
+    return {
+        ...(settingsModel || {}),
+        provider,
+        model,
+        baseUrl,
+        apiKey,
+        apiKeyEnv,
+        timeoutMs,
+        temperature: initialModel.temperature ?? settingsModel?.temperature ?? providerProfile?.temperature,
+        maxTokens: initialModel.maxTokens ?? settingsModel?.maxTokens ?? providerProfile?.maxTokens,
+        headers: initialModel.headers ?? settingsModel?.headers ?? providerProfile?.headers,
+        thinkingBudget: initialModel.thinkingBudget ?? settingsModel?.thinkingBudget ?? providerProfile?.thinkingBudget,
+        reasoning: initialModel.reasoning ?? settingsModel?.reasoning ?? providerProfile?.reasoning
+    };
+}
+
+export function resolveProviderApiKeyEnv(provider: string): string | undefined {
+    switch (provider.trim().toLowerCase()) {
+        case 'deepseek':
+            return 'DEEPSEEK_API_KEY';
+        case 'openai':
+        case 'openai-compatible':
+            return 'OPENAI_API_KEY';
+        case 'anthropic':
+        case 'claude':
+            return 'ANTHROPIC_API_KEY';
+        default:
+            return undefined;
+    }
+}
+
+export function resolveProviderBaseUrl(provider: string): string | undefined {
+    switch (provider.trim().toLowerCase()) {
+        case 'deepseek':
+            return 'https://api.deepseek.com';
+        case 'openai':
+            return 'https://api.openai.com';
+        case 'anthropic':
+        case 'claude':
+            return 'https://api.anthropic.com';
+        default:
+            return undefined;
+    }
 }
 
 /**
@@ -39,6 +280,8 @@ function isKnownGroup(name: string, groups: Record<string, unknown>): boolean {
 export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConfig {
     const resolved = resolveAgentToolDiscovery(options.root);
     const settings: AgentRootSettings = resolved.settings;
+    const providerProfile = resolveProviderProfile(resolved.root);
+    const settingsModel = readSettingsModel(resolved.root);
 
     // Load .env files early so subsequent code can read process.env
     const workspace = options.workspace || resolved.workspace;
@@ -93,6 +336,8 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
         workspace,
         skillRoots,
         tools,
-        channels
+        channels,
+        providerProfile,
+        settingsModel
     };
 }

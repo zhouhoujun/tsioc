@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { After, Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AgentModule, ModelAdapter, OpenAICompatibleModelAdapter, provideAgent } from '../src';
+import { AgentModule, ModelAdapter, OpenAICompatibleModelAdapter, RoutedModelAdapter, provideAgent } from '../src';
 
 @Suite('Agent model providers')
 export class ModelProviderTest {
@@ -52,7 +52,7 @@ export class ModelProviderTest {
 
         const adapter = new OpenAICompatibleModelAdapter({
             provider: 'deepseek',
-            model: 'deepseek-chat',
+            model: 'deepseek-v4-flash',
             baseUrl: 'https://example.com',
             apiKey: 'test-key',
             timeoutMs: 1000
@@ -106,5 +106,139 @@ export class ModelProviderTest {
         expect(result.module).toBe(AgentModule);
         expect(Array.isArray(result.providers)).toBe(true);
         expect(result.providers?.length).toBeGreaterThan(0);
+    }
+
+    @Test('routes complex prompts to claude profile')
+    async routesComplexPromptsToClaude() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            if (String(url).includes('/v1/messages')) {
+                return {
+                    ok: true,
+                    async json() {
+                        return {
+                            id: 'msg_1',
+                            type: 'message',
+                            role: 'assistant',
+                            content: [{ type: 'text', text: 'claude answer' }],
+                            model: 'claude-sonnet-4-20250514',
+                            stop_reason: 'end_turn',
+                            stop_sequence: null,
+                            usage: { input_tokens: 10, output_tokens: 20 }
+                        };
+                    }
+                };
+            }
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'default answer' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                claude: {
+                    provider: 'claude',
+                    model: 'claude-sonnet-4-20250514',
+                    baseUrl: 'https://anthropic.example',
+                    apiKey: 'anthropic-key',
+                    thinkingBudget: 2048
+                }
+            },
+            complexityRouting: {
+                complex: 'claude'
+            }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u1',
+                role: 'user',
+                content: '请分析这个多阶段分布式系统的架构权衡、根因排查路径以及迁移方案，并给出详细的推理步骤。',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].url).toEqual('https://anthropic.example/v1/messages');
+        expect(calls[0].body.model).toEqual('claude-sonnet-4-20250514');
+        expect(calls[0].body.thinking.budget_tokens).toEqual(2048);
+        expect(result.metadata?.provider).toEqual('anthropic');
+        expect(result.metadata?.routing?.complexity).toEqual('complex');
+        expect(result.metadata?.routing?.profile).toEqual('claude');
+    }
+
+    @Test('routes keyword matched prompts to hermes openai compatible provider')
+    async routesKeywordMatchedPromptsToHermesProvider() {
+        const calls: Array<{ url: string; body: any; auth: string | undefined }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({
+                url,
+                body: JSON.parse(init.body),
+                auth: init.headers?.authorization
+            });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'hermes answer' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            routes: [{
+                name: 'architecture-review',
+                when: { containsAny: ['架构', 'architecture'] },
+                provider: 'hermes',
+                model: 'hermes-70b',
+                baseUrl: 'https://hermes.example/v1',
+                apiKey: 'hermes-key'
+            }]
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's2',
+            summary: '',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u2',
+                role: 'user',
+                content: '帮我做一个架构 review，重点看 agent 路由设计。',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].url).toEqual('https://hermes.example/v1/chat/completions');
+        expect(calls[0].body.model).toEqual('hermes-70b');
+        expect(calls[0].auth).toEqual('Bearer hermes-key');
+        expect(result.metadata?.provider).toEqual('openai-compatible');
+        expect(result.metadata?.routing?.route).toEqual('architecture-review');
     }
 }

@@ -10,6 +10,7 @@ import { ReactiveEffect } from '../effect';
 import { reactive } from '../reactive';
 import { EventEmitter } from '../EventEmitter';
 import { createTemplateRef } from './template';
+import { TEMPLATE_SCOPE_PARENT } from './template';
 import { BaseIfDirective, VIfDirective, VElseIfDirective, VElseDirective, setupIfChain } from '../directives/if.dir';
 import { SwitchDirective, CaseDirective, DefaultDirective, registerSwitchDirective, findSwitchDirective } from '../directives/switch-case.dir';
 
@@ -581,18 +582,13 @@ export function bindingElement<C>(
     delimiter: RegExp
 ): void {
     const attrs = renderer.getAttributes(element);
+    const dirs = element[DIRECTIVES];
 
-    // 创建属性绑定工厂
+    // 结构指令宿主本身的事件/属性绑定也需要保留在模板节点上，
+    // 否则像 <button v-for ... @click="..."> 这类场景在嵌入视图里不会生效。
     bindingAtrrbutes(element, attrs, renderer, delimiter);
 
-    // 检查是否有结构指令
-    const dirs = element[DIRECTIVES];
-    const hasStructuralDirective = dirs?.some(d => 
-        d.dirType === DirectiveType.Iterable || d.dirType === DirectiveType.Conditional
-    );
-
-    // 递归处理子节点（如果没有结构指令）
-    if (!hasStructuralDirective && element.childNodes.length > 0) {
+    if (element.childNodes.length > 0) {
         walkNodesForBindings(element.childNodes, renderer, delimiter);
     }
 
@@ -970,13 +966,6 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
         }
     }
 
-    attrs.forEach(attr => {
-        renderer.setAttribute(container, attr.name, attr.value)
-    });
-    dirDef.attributes?.forEach(attrDef => {
-        renderer.removeAttribute(container, attrDef.alias ?? attrDef.propertyKey);
-    });
-
     selectors.forEach(selector => {
         renderer.removeAttribute(el, selector);
     });
@@ -1007,13 +996,6 @@ export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selector
         renderer.insertBefore(parent, container, el);
         renderer.removeChild(parent, el);
     }
-
-    attrs.forEach(attr => {
-        renderer.setAttribute(container, attr.name, attr.value)
-    });
-    dirDef.attributes?.forEach(attrDef => {
-        renderer.removeAttribute(container, attrDef.alias ?? attrDef.propertyKey);
-    });
 
     selectors.forEach(selector => {
         renderer.removeAttribute(container, selector);
@@ -1172,16 +1154,19 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
     if (!match) {
         const propPath = expr.trim().split('.');
         return effect.run(() => {
-            const handler = propPath.reduce((obj, prop) => obj && obj[prop], context);
-            return handler.bind(context);
+            const resolved = resolvePath(context, propPath);
+            const handler = resolved.value;
+            return handler.bind(resolved.owner ?? context);
         });
     }
 
     const [, funcPath, argsStr] = match;
+    const funcParts = funcPath.split('.');
     const args = parseArguments(argsStr, context, injector, delimiter);
 
     return effect.run(() => {
-        const func = funcPath.split('.').reduce((obj, prop) => obj && obj[prop], context);
+        const resolved = resolvePath(context, funcParts);
+        const func = resolved.value;
         if (typeof func !== 'function') {
             throw new Error(`Event handler ${funcPath} is not a function`);
         }
@@ -1194,9 +1179,55 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
                 }
                 return arg;
             });
-            return func.apply(context, resolvedArgs);
+            return func.apply(resolved.owner ?? context, resolvedArgs);
         };
     });
+}
+
+function resolvePath(context: any, path: string[]): { owner: any; value: any } {
+    let owner = context;
+    let value = context;
+
+    for (let index = 0; index < path.length; index++) {
+        const prop = path[index];
+        if (value == null) {
+            return { owner: value, value: undefined };
+        }
+
+        if (index === path.length - 1) {
+            const resolvedOwner = Object.prototype.hasOwnProperty.call(value, prop)
+                ? value
+                : resolveScopeContext(value, prop) ?? (prop in Object(value) ? value : resolvePropertyOwner(value, prop) ?? value);
+            return { owner: resolvedOwner, value: resolvedOwner?.[prop] };
+        }
+
+        value = value[prop];
+        owner = value;
+    }
+
+    return { owner, value };
+}
+
+function resolvePropertyOwner(target: any, prop: string): any {
+    let current = target;
+    while (current != null) {
+        if (Object.prototype.hasOwnProperty.call(current, prop)) {
+            return current;
+        }
+        current = Object.getPrototypeOf(current);
+    }
+    return null;
+}
+
+function resolveScopeContext(target: any, prop: string): any {
+    let current = target?.[TEMPLATE_SCOPE_PARENT];
+    while (current != null) {
+        if (prop in Object(current)) {
+            return current;
+        }
+        current = current?.[TEMPLATE_SCOPE_PARENT];
+    }
+    return null;
 }
 
 /**
@@ -1263,11 +1294,15 @@ function evaluateIterableExpression(directiveInstance: any, propertyKey: string,
  */
 function bindIterableExpression(directiveInstance: any, propertyKey: string, itemNames: string[], collectionExpr: string, context: any, effect: ReactiveEffect, injector: NodeInjector, delimiter: RegExp) {
     // 设置v-for指令期望的属性（而不是collection）
-    directiveInstance.itemNames = itemNames; // 主循环变量（如item）
+    effect.untrack(() => {
+        directiveInstance.itemNames = itemNames; // 主循环变量（如item）
+    });
     // 设置v-for指令期望的属性
     effect.run(() => {
         const collection = evaluateExpression(collectionExpr, context, injector, delimiter);
-        directiveInstance[propertyKey] = collection;     // 集合数据
+        effect.untrack(() => {
+            directiveInstance[propertyKey] = collection;     // 集合数据
+        });
     });
 }
 
@@ -1284,8 +1319,9 @@ function processVueStyleExpression(itemPart: string): string[] {
         const innerMatch = itemPart.trim().match(vueInerMatch);
         if (innerMatch) {
             names = [innerMatch[1].trim(), innerMatch[2]?.trim() || ''].filter(Boolean);
+        } else {
+            throw new Exception('iterable expression invaild.');
         }
-        throw new Exception('iterable expression invaild.')
     } else {
         // 处理格式如 item 的情况
         names = [itemPart.trim()];
