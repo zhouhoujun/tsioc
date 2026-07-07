@@ -73,13 +73,16 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         if (context) {
             if (this.options?.context) {
                 if (typeof context === 'object' && context !== null) {
-                    Object.defineProperty(context, TEMPLATE_SCOPE_PARENT, {
-                        value: this.options.context,
-                        configurable: true,
-                        enumerable: false,
-                        writable: true
-                    });
-                    Object.setPrototypeOf(context, this.options.context);
+                    const parentContext = this.options.context;
+                    if (parentContext && context !== parentContext) {
+                        Object.defineProperty(context, TEMPLATE_SCOPE_PARENT, {
+                            value: parentContext,
+                            configurable: true,
+                            enumerable: false,
+                            writable: true
+                        });
+                        Object.setPrototypeOf(context, parentContext);
+                    }
                 } else {
                     context = this.options.context;
                 }

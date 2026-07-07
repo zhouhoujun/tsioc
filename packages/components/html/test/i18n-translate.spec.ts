@@ -80,6 +80,10 @@ export class HtmlI18nTest {
         const rootNodes = appRef.hostView.rootNodes;
         expect(rootNodes).toBeDefined();
         expect(rootNodes.length).toBeGreaterThan(0);
+        const root = rootNodes[0] as HTMLElement;
+        expect(root.querySelector('h1')?.textContent).toBe('Welcome to our application');
+        expect(root.querySelector('p')?.textContent).toBe('Hello User!');
+        expect(root.querySelector('footer')?.textContent).toBe('Goodbye');
     }
 
     @Test('should use translate pipe with simple key')

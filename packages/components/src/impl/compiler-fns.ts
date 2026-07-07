@@ -1121,7 +1121,7 @@ export function evaluateDelimiterExpression(text: string, context: any, effect: 
  */
 export function evaluateExpression(expr: string, context: any, injector: NodeInjector, delimiter: RegExp): any {
     try {
-        const parts = expr.split('|').map(part => part.trim());
+        const parts = splitTopLevel(expr, '|').map(part => part.trim()).filter(Boolean);
         if (parts.length <= 1) {
             return new Function('ctx', `with(ctx){return ${expr}}`)(context);
         } else {
@@ -1339,7 +1339,7 @@ function parsePipes(parts: string[]): string[] {
     const results: string[] = [];
     for (let i = 1; i < parts.length; i++) {
         const pipePart = parts[i];
-        const [pipeName, ...params] = pipePart.split(':').map(p => p.trim());
+        const [pipeName, ...params] = splitTopLevel(pipePart, ':').map(p => p.trim()).filter(Boolean);
         if (!pipeName) continue;
         results.push(pipeName)
         result = `pipes['${pipeName}'].transform(${result}${params.length ? ', ' + params.join(', ') : ''})`;
@@ -1426,6 +1426,93 @@ function evaluateArg(arg: string, context: any, injector: NodeInjector, delimite
 
     // 复杂表达式，委托给evaluateExpression处理
     return evaluateExpression(arg, context, injector, delimiter);
+}
+
+function splitTopLevel(input: string, separator: '|' | ':'): string[] {
+    const parts: string[] = [];
+    let current = '';
+    let quoteChar: string | null = null;
+    let escapeNext = false;
+    let parenDepth = 0;
+    let braceDepth = 0;
+    let bracketDepth = 0;
+
+    for (let index = 0; index < input.length; index++) {
+        const char = input[index];
+        const prev = input[index - 1];
+        const next = input[index + 1];
+
+        if (escapeNext) {
+            current += char;
+            escapeNext = false;
+            continue;
+        }
+
+        if (quoteChar) {
+            current += char;
+            if (char === '\\') {
+                escapeNext = true;
+            } else if (char === quoteChar) {
+                quoteChar = null;
+            }
+            continue;
+        }
+
+        if (char === '"' || char === '\'') {
+            quoteChar = char;
+            current += char;
+            continue;
+        }
+
+        if (char === '(') {
+            parenDepth++;
+            current += char;
+            continue;
+        }
+        if (char === ')') {
+            parenDepth--;
+            current += char;
+            continue;
+        }
+        if (char === '{') {
+            braceDepth++;
+            current += char;
+            continue;
+        }
+        if (char === '}') {
+            braceDepth--;
+            current += char;
+            continue;
+        }
+        if (char === '[') {
+            bracketDepth++;
+            current += char;
+            continue;
+        }
+        if (char === ']') {
+            bracketDepth--;
+            current += char;
+            continue;
+        }
+
+        const isTopLevel = parenDepth === 0 && braceDepth === 0 && bracketDepth === 0;
+        const isPipeSeparator = separator === '|'
+            && char === '|'
+            && prev !== '|'
+            && next !== '|';
+        const isColonSeparator = separator === ':' && char === ':';
+
+        if (isTopLevel && (isPipeSeparator || isColonSeparator)) {
+            parts.push(current);
+            current = '';
+            continue;
+        }
+
+        current += char;
+    }
+
+    parts.push(current);
+    return parts;
 }
 
 // 保留文件末尾的辅助函数
