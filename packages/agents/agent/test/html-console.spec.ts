@@ -100,6 +100,10 @@ export class HtmlConsoleTest {
         } else {
             expect(inputIndex).toBeGreaterThan(workingIndex);
         }
+
+        ref.instance.sessionState.setInput('hello|');
+        await Promise.resolve();
+        expect(inputRoot.querySelector('.agent-input')?.getAttribute('value')).toBe('hello|');
     }
 
     @After()

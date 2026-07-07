@@ -389,8 +389,8 @@ export class TerminalUiController {
 }
 
 export function formatDisplayDraft(value: string, cursor: number): string {
-    const safeCursor = Math.max(0, Math.min(cursor, value.length));
-    return `${value.slice(0, safeCursor)}|${value.slice(safeCursor)}`;
+    void cursor;
+    return value;
 }
 
 export function isSuggestionMenu(menu?: TerminalMenuStateLike | null): boolean {

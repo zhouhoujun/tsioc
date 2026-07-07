@@ -17,6 +17,7 @@ import {
     ConsoleTemplateParser,
     ConsoleText
 } from './console';
+import { fitByDisplayWidth, getDisplayWidth, sliceByDisplayWidth } from './display-width';
 
 const ANSI_RESET = '\x1b[0m';
 const ANSI_BOLD = '\x1b[1m';
@@ -313,21 +314,18 @@ export class TuiRenderer extends ConsoleRenderer {
 
     protected padVisible(value: string, width: number): string {
         const visible = this.stripAnsi(value);
-        if (visible.length >= width) {
-            return visible.slice(0, width);
+        if (getDisplayWidth(visible) >= width) {
+            return sliceByDisplayWidth(visible, width);
         }
-        return `${value}${' '.repeat(width - visible.length)}`;
+        return `${value}${' '.repeat(width - getDisplayWidth(visible))}`;
     }
 
     protected fitVisible(value: string, width: number): string {
         const visible = this.stripAnsi(value);
-        if (visible.length <= width) {
+        if (getDisplayWidth(visible) <= width) {
             return value;
         }
-        if (width <= 3) {
-            return visible.slice(0, width);
-        }
-        return `${visible.slice(0, width - 3)}...`;
+        return fitByDisplayWidth(visible, width);
     }
 }
 

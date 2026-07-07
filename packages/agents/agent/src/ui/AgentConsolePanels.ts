@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, OnDestroy, AfterViewInit } from '@tsdi/components';
 import {
     AgentConsoleActivity,
     AgentConsoleSelectMenu,
@@ -130,8 +130,12 @@ export class AgentConsoleStatusPanelComponent {
     </section>
     `
 })
-export class AgentConsoleInputPanelComponent {
+export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy {
+    protected unsubscribeState?: () => void;
+    protected currentInput = '';
+
     constructor(private state?: AgentConsoleSessionState) {
+        this.currentInput = this.state?.input || '';
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -141,11 +145,24 @@ export class AgentConsoleInputPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    onAfterViewInit(): void {
+        this.currentInput = this.state?.input || '';
+        this.unsubscribeState = this.state?.subscribe(() => {
+            this.currentInput = this.state?.input || '';
+        });
+    }
+
+    onDestroy(): void {
+        this.unsubscribeState?.();
+        this.unsubscribeState = undefined;
+    }
+
     get input(): string {
-        return this.state?.input || '';
+        return this.currentInput;
     }
 
     set input(value: string) {
+        this.currentInput = value;
         this.state?.setInput(value);
     }
 

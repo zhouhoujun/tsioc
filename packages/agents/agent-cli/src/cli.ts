@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fitByDisplayWidth, getDisplayWidth } from '@tsdi/components/console';
 import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
 import { AgentCliProviderProfile, ensureAgentWorkspaceConfig, resolveCliConfig, resolveCliModelConfig, resolveProviderApiKeyEnv, resolveProviderBaseUrl, writeSettingsModelProfile } from './config';
 import {
@@ -52,19 +53,39 @@ const ANSI = {
     red: '\x1b[31m'
 } as const;
 
+export function findInputPromptRow(lines: string[]): number {
+    for (let index = lines.length - 1; index >= 0; index--) {
+        const line = lines[index];
+        const promptColumn = line.indexOf('> ');
+        if (promptColumn < 0) {
+            continue;
+        }
+        const beforePrompt = line.slice(0, promptColumn).trim();
+        if (beforePrompt === '│' || beforePrompt === '') {
+            return index;
+        }
+    }
+    return -1;
+}
+
+export function getTerminalDisplayWidth(value: string): number {
+    return getDisplayWidth(value);
+}
+
+export function fitTerminalAnsiLine(line: string, width: number): string {
+    return fitAnsiLine(line, width);
+}
+
 function stripAnsi(value: string): string {
     return value.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
 function fitAnsiLine(line: string, width: number): string {
     const plain = stripAnsi(line);
-    if (plain.length <= width) {
+    if (getDisplayWidth(plain) <= width) {
         return line;
     }
-    if (width <= 3) {
-        return plain.slice(0, width);
-    }
-    return `${plain.slice(0, width - 3)}...`;
+    return fitByDisplayWidth(plain, width);
 }
 
 class ChatExitRequest extends Error {
@@ -721,7 +742,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             renderTimer = null;
         }
         if (process.stdin.isTTY) {
-            process.stdout.write('\x1b[?1000l\x1b[?1006l');
+            process.stdout.write('\x1b[?1000l\x1b[?1006l\x1b[2J\x1b[H\x1b[?1049l');
             process.stdin.setRawMode?.(false);
         }
         persistHistory();
@@ -770,7 +791,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         const rendered = typeof consoleRenderer.renderToTuiLines === 'function'
             ? consoleRenderer.renderToTuiLines(rootNodes, { width: Math.max(24, width) })
             : consoleRenderer.renderToLines(rootNodes);
-        const nextRender = ['\x1b[2J\x1b[H', ...rendered.map((line: string) => fitAnsiLine(line, width))].join('\n');
+        const nextRender = `\x1b[2J\x1b[H${rendered.map((line: string) => fitAnsiLine(line, width)).join('\n')}`;
 
         if (nextRender === lastRenderKey) {
             return;
@@ -785,7 +806,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         const plainLines = rendered.map((line: string) => stripAnsi(line));
-        const promptRow = plainLines.findIndex((line: string) => line.includes('> '));
+        const promptRow = findInputPromptRow(plainLines);
         if (promptRow < 0) {
             return;
         }
@@ -793,7 +814,8 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (promptColumn < 0) {
             return;
         }
-        const cursorColumn = Math.min(width, promptColumn + 2 + draftCursor) + 1;
+        const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
+        const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
         const cursorRow = promptRow + 1;
         process.stdout.write(`\x1b[${cursorRow};${cursorColumn}H`);
     };
@@ -1003,6 +1025,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     readline.emitKeypressEvents(process.stdin);
     process.stdin.resume();
     if (process.stdin.isTTY) {
+        process.stdout.write('\x1b[?1049h');
         process.stdin.setRawMode?.(true);
         process.stdout.write('\x1b[?1000h\x1b[?1006h');
     }

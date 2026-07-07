@@ -62,6 +62,17 @@ class ConsoleStyleTestComponent {
 class ConsolePanelTestComponent {
 }
 
+@Component({
+    selector: 'console-cjk-test',
+    template: `
+    <section style="background: #102218; color: #d8ffea; padding: 1; border: 1px solid #29543d;">
+        <p>你好世界你好世界</p>
+    </section>
+    `
+})
+class ConsoleCjkTestComponent {
+}
+
 @Suite('Console Renderer')
 export class ConsoleRendererTest {
     @Test('renders console nodes to indented lines')
@@ -182,5 +193,22 @@ export class ConsoleRendererTest {
         const renderer = new TuiRenderer();
         expect((renderer as any).extractHexColor('background: #0d1117;')).toBe('#0d1117');
         expect((renderer as any).extractHexColor('color: #abc;')).toBe('#abc');
+    }
+
+    @Test('fits cjk content by terminal display width in tui renderer')
+    async fitsCjkContentByDisplayWidth() {
+        const ctx = await Application.run(ConsoleCjkTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleCjkTestComponent) as ComponentRef<ConsoleCjkTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 16 });
+            expect(lines.some(line => line.includes('你好世界'))).toBe(true);
+            expect(lines.every(line => !line.includes('�'))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
     }
 }

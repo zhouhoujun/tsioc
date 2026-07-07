@@ -73,15 +73,37 @@ export class AgentConsoleRendererTest {
             await consoleRef.render();
             const renderer = tuiCtx.get(TuiRenderer);
             const inputPanel = consoleRef.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
-            inputPanel.instance.input = 'hello|';
+            inputPanel.instance.input = 'hello';
             await Promise.resolve();
             const inputLines = renderer.renderToTuiLines(inputPanel.hostView.rootNodes[0], { width: 36 });
 
-            expect(inputLines.some((line: string) => line.includes('hello|'))).toBe(true);
+            expect(inputLines.some((line: string) => line.includes('hello'))).toBe(true);
             expect(inputLines.some((line: string) => line.includes('>'))).toBe(true);
             expect(inputLines.some((line: string) => line.includes('┌') || line.includes('└') || line.includes('│'))).toBe(true);
             expect(consoleRef.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
             expect(consoleRef.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('renders live input content in root tui tree')
+    async renderLiveInputInRootTree() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+
+            consoleRef.instance.sessionState.setInput('hello');
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 60 });
+            expect(rootLines.some((line: string) => line.includes('hello'))).toBe(true);
         } finally {
             await tuiCtx.close();
         }

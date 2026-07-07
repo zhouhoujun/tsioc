@@ -34,6 +34,9 @@ import {
     resolveProviderProfile,
     runAgentPrompt,
     sortToolRuns,
+    findInputPromptRow,
+    getTerminalDisplayWidth,
+    fitTerminalAnsiLine,
     writeProviderProfile,
     writeSettingsModelProfile
 } from '../src';
@@ -502,6 +505,32 @@ export class AgentCliTest {
         expect(inputIndex).toBeGreaterThan(-1);
         expect(selectIndex).toBeGreaterThan(inputIndex);
         expect(layout.selectMenuScreenRow).toBe(selectIndex + 1);
+    }
+
+    @Test('finds bottom input prompt row instead of message prompt row')
+    findsBottomInputPromptRow() {
+        const row = findInputPromptRow([
+            'tsdi-agent',
+            'you> previous message',
+            '│ Ask for code, files, commands, or reviews │',
+            '│ > hello|                                 │',
+            '│ enter submit tab complete /quit exit     │'
+        ]);
+
+        expect(row).toBe(3);
+    }
+
+    @Test('measures terminal display width for chinese text')
+    measuresTerminalDisplayWidthForChineseText() {
+        expect(getTerminalDisplayWidth('abc')).toBe(3);
+        expect(getTerminalDisplayWidth('你好')).toBe(4);
+        expect(getTerminalDisplayWidth('a你b好')).toBe(6);
+    }
+
+    @Test('fits terminal lines by display width for chinese text')
+    fitsTerminalLinesByDisplayWidthForChineseText() {
+        expect(fitTerminalAnsiLine('你好世界', 6)).toBe('你...');
+        expect(fitTerminalAnsiLine('abc你好', 6)).toBe('abc...');
     }
 
     @Test('keeps suggestion rows separate from select panel rows')
