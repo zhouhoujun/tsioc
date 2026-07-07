@@ -152,7 +152,12 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected renderInlineLine(element: ConsoleElement, inherited: Record<string, string>, width?: number): string {
-        return this.renderInlineText(element, inherited);
+        const content = this.renderInlineText(element, inherited);
+        const hasBackground = !!(inherited.background || inherited['background-color']);
+        if (!width || !hasBackground) {
+            return content;
+        }
+        return this.applyAnsi(this.padVisible(content, width), inherited, undefined, true);
     }
 
     protected renderInlineText(current: ConsoleNode, inherited: Record<string, string>): string {
@@ -243,7 +248,9 @@ export class TuiRenderer extends ConsoleRenderer {
         if (!codes.length) {
             return text;
         }
-        return `${codes.join('')}${text}${ANSI_RESET}`;
+        const prefix = codes.join('');
+        const continuedText = text.replaceAll(ANSI_RESET, `${ANSI_RESET}${prefix}`);
+        return `${prefix}${continuedText}${ANSI_RESET}`;
     }
 
     protected normalizeInlineWhitespace(value: string): string {

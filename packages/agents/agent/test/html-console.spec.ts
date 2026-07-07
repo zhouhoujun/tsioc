@@ -60,6 +60,8 @@ export class HtmlConsoleTest {
         expect(statusRoot.querySelector('.status-line')?.textContent).toContain('idle');
         expect(inputRoot.querySelector('.input-shell')).toBeTruthy();
         expect(inputRoot.querySelector('.input-shell')?.getAttribute('style')).toContain('background');
+        expect(inputRoot.querySelector('.input-entry')?.getAttribute('style')).toContain('background');
+        expect(inputRoot.querySelector('.input-placeholder')?.textContent).toContain('Ask for code');
         expect(inputRoot.querySelector('.input-prompt')?.getAttribute('style')).toBeTruthy();
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('style')).toContain('color');
         expect(messagesRoot.textContent).toContain('you> hello');

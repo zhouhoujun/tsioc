@@ -11,6 +11,7 @@ export interface AgentConsoleTheme {
     statusNoticeValue: string;
     inputTitle: string;
     inputShell: string;
+    inputEntry: string;
     inputPrompt: string;
     inputCaption: string;
     inputField: string;
@@ -52,10 +53,11 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     statusNoticeLabel: 'color: #d29922;',
     statusNoticeValue: 'color: #e3b341;',
     inputTitle: 'color: #8b949e;',
-    inputShell: 'background: #0d1117; color: #c9d1d9; padding: 0 1; border: 1px solid #30363d;',
+    inputShell: 'background: #1b2128; color: #c9d1d9; padding: 0 1;',
+    inputEntry: 'color: #c9d1d9;',
     inputPrompt: 'color: #7ee787; font-weight: bold;',
     inputCaption: 'color: #8b949e;',
-    inputField: 'background: #0f1419; color: #7ee787;',
+    inputField: 'color: #7ee787;',
     inputButton: 'background: #161b22; color: #c9d1d9; border: 1px solid #30363d;',
     inputHint: 'color: #6e7681;',
     workingTitle: 'color: #8b949e;',
@@ -73,11 +75,11 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     activityTitle: 'color: #8b949e;',
     activityShell: 'color: #c9d1d9;',
     selectTitle: 'color: #8b949e;',
-    selectShell: 'background: #0d1117; color: #c9d1d9; padding: 0 1; border: 1px solid #30363d;',
+    selectShell: 'background: #161b22; color: #c9d1d9; padding: 0 1;',
     selectHeader: 'color: #c9d1d9;',
     selectHint: 'color: #8b949e;',
-    selectOption: 'background: #0d1117; color: #c9d1d9; border: 1px solid #30363d;',
-    selectOptionActive: 'background: #161b22; color: #79c0ff; border: 1px solid #58a6ff;'
+    selectOption: 'background: #161b22; color: #c9d1d9;',
+    selectOptionActive: 'background: #161b22; color: #79c0ff;'
 };
 
 export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): AgentConsoleTheme {

@@ -79,7 +79,7 @@ export class AgentConsoleRendererTest {
 
             expect(inputLines.some((line: string) => line.includes('hello'))).toBe(true);
             expect(inputLines.some((line: string) => line.includes('>'))).toBe(true);
-            expect(inputLines.some((line: string) => line.includes('┌') || line.includes('└') || line.includes('│'))).toBe(true);
+            expect(inputLines.some((line: string) => line.includes('\x1b['))).toBe(true);
             expect(consoleRef.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
             expect(consoleRef.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         } finally {
@@ -104,6 +104,32 @@ export class AgentConsoleRendererTest {
 
             const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 60 });
             expect(rootLines.some((line: string) => line.includes('hello'))).toBe(true);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('renders select menu in root tui tree when session state opens suggestions')
+    async renderSelectMenuInRootTree() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+
+            consoleRef.instance.sessionState.openSelectMenu('Suggestions', [
+                { label: '/help', value: '/help', description: 'Commands' },
+                { label: '/tools', value: '/tools', description: 'Commands' }
+            ], 0, 'tab/enter accept');
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 80 });
+            expect(rootLines.some((line: string) => line.includes('Suggestions'))).toBe(true);
+            expect(rootLines.some((line: string) => line.includes('/help'))).toBe(true);
         } finally {
             await tuiCtx.close();
         }

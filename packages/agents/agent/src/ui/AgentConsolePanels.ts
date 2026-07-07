@@ -120,9 +120,9 @@ export class AgentConsoleStatusPanelComponent {
     template: `
     <section class="console-panel console-input-panel">
         <div class="input-shell" v-style="shellStyle">
-            <p class="input-caption" v-style="captionStyle">{{captionLabel}}</p>
-            <p class="input-entry" v-style="entryStyle">
+            <p class="input-entry" v-style="entryShellStyle">
                 <span class="input-prompt" v-style="promptStyle">&gt; </span>
+                <span class="input-placeholder" v-style="captionStyle">{{placeholderLabel}}</span>
                 <input class="agent-input" v-style="fieldStyle" v-model="input" @keyup="onKeyup($event)" />
             </p>
             <p class="input-hint" v-style="hintStyle">{{hintLabel}}</p>
@@ -178,12 +178,16 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
         return styleTextToObject(this.activeTheme.inputCaption);
     }
 
-    get captionLabel(): string {
-        return 'Ask for code, files, commands, or reviews';
+    get placeholderLabel(): string {
+        return this.input ? '' : 'Ask for code, files, commands, or reviews';
     }
 
     get entryStyle() {
         return styleTextToObject(this.activeTheme.inputField);
+    }
+
+    get entryShellStyle() {
+        return styleTextToObject(this.activeTheme.inputEntry);
     }
 
     get promptStyle() {
@@ -631,8 +635,12 @@ export class AgentConsoleActivityPanelComponent {
     </section>
     `
 })
-export class AgentConsoleSelectPanelComponent {
+export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestroy {
+    protected unsubscribeState?: () => void;
+    protected currentMenu?: AgentConsoleSelectMenu;
+
     constructor(private state: AgentConsoleSessionState) {
+        this.currentMenu = this.state.selectMenu;
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -642,8 +650,20 @@ export class AgentConsoleSelectPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    onAfterViewInit(): void {
+        this.currentMenu = this.state.selectMenu;
+        this.unsubscribeState = this.state.subscribe(() => {
+            this.currentMenu = this.state.selectMenu;
+        });
+    }
+
+    onDestroy(): void {
+        this.unsubscribeState?.();
+        this.unsubscribeState = undefined;
+    }
+
     get menu(): AgentConsoleSelectMenu | undefined {
-        return this.state.selectMenu;
+        return this.currentMenu;
     }
 
     get shellStyle() {
