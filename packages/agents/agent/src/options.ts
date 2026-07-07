@@ -1,4 +1,5 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
+import { AgentConsoleThemeInput, defaultAgentConsoleTheme } from './ui/AgentConsoleTheme';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -37,6 +38,7 @@ export interface AgentSchedulerOptions {
 
 export interface AgentUIOptions {
     title?: string;
+    theme?: AgentConsoleThemeInput;
 }
 
 export interface AgentBootstrapTurnOptions {
@@ -85,7 +87,8 @@ export const defaultAgentOptions: AgentOptions = {
         defaultRetryBackoffMultiplier: 2
     },
     ui: {
-        title: 'Hermes Agent Console'
+        title: 'Hermes Agent Console',
+        theme: defaultAgentConsoleTheme
     },
     model: {
         provider: 'deepseek',

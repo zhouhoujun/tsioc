@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Writable } from 'stream';
 import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
 import { AgentCliProviderProfile, ensureAgentWorkspaceConfig, resolveCliConfig, resolveCliModelConfig, resolveProviderApiKeyEnv, resolveProviderBaseUrl, writeSettingsModelProfile } from './config';
 import {
@@ -17,8 +18,6 @@ import {
     parseTerminalMouseEvent,
     renderConversationMessage,
     renderActivityLine,
-    renderDraftLine,
-    renderSelectMenu,
     resolveSelectMenuOptionIndexFromRow,
     renderToolDetail,
     renderToolRunLine,
@@ -52,9 +51,94 @@ const PROVIDER_DEFAULT_MODELS: Record<string, string> = {
     anthropic: 'claude-sonnet-4-20250514'
 };
 
+const ANSI = {
+    reset: '\x1b[0m',
+    dim: '\x1b[2m',
+    green: '\x1b[32m',
+    greenBold: '\x1b[1;32m',
+    greenBg: '\x1b[42;30m',
+    amber: '\x1b[33m',
+    amberBold: '\x1b[1;33m',
+    blue: '\x1b[36m',
+    blueBold: '\x1b[1;36m',
+    violet: '\x1b[35m',
+    red: '\x1b[31m'
+} as const;
+
+function colorize(value: string, ansi: string): string {
+    return `${ansi}${value}${ANSI.reset}`;
+}
+
+function colorizeLabel(label: string, value: string, ansi: string): string {
+    return `${colorize(label, ansi)} ${value}`;
+}
+
+function stripAnsi(value: string): string {
+    return value.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+function fitAnsiLine(line: string, width: number): string {
+    const plain = stripAnsi(line);
+    if (plain.length <= width) {
+        return line;
+    }
+    if (width <= 3) {
+        return plain.slice(0, width);
+    }
+    return `${plain.slice(0, width - 3)}...`;
+}
+
+function padVisible(value: string, width: number): string {
+    const visible = stripAnsi(value);
+    if (visible.length >= width) {
+        return value;
+    }
+    return `${value}${' '.repeat(width - visible.length)}`;
+}
+
+function sliceInputViewport(value: string, cursor: number, width: number): { text: string; cursorOffset: number } {
+    if (width <= 0) {
+        return { text: '', cursorOffset: 0 };
+    }
+    if (value.length <= width) {
+        return { text: value, cursorOffset: Math.max(0, Math.min(cursor, value.length)) };
+    }
+    const safeCursor = Math.max(0, Math.min(cursor, value.length));
+    const start = Math.max(0, Math.min(value.length - width, safeCursor - Math.floor(width * 0.6)));
+    const end = Math.min(value.length, start + width);
+    return {
+        text: value.slice(start, end),
+        cursorOffset: safeCursor - start
+    };
+}
+
 class ChatExitRequest extends Error {
     constructor() {
         super('CHAT_EXIT_REQUEST');
+    }
+}
+
+class MutedWritable extends Writable {
+    muted = false;
+
+    constructor(private target: NodeJS.WriteStream) {
+        super();
+        Object.defineProperty(this, 'isTTY', {
+            get: () => target.isTTY
+        });
+        Object.defineProperty(this, 'columns', {
+            get: () => (target as any).columns
+        });
+        Object.defineProperty(this, 'rows', {
+            get: () => (target as any).rows
+        });
+    }
+
+    _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+        if (!this.muted) {
+            this.target.write(chunk, encoding);
+        }
+        callback();
     }
 }
 
@@ -148,6 +232,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     const {
         AgentRuntime, mergeAgentOptions, ToolRegistry,
         AgentConsoleComponent, AgentConsoleSessionState, AgentUiModule,
+        AgentConsoleWorkingPanelComponent, AgentConsoleInputPanelComponent,
         AgentConsoleStatusPanelComponent, AgentConsoleSelectPanelComponent,
         AgentConsoleActivityPanelComponent, AgentConsoleToolsPanelComponent,
         AgentConsoleToolRunsPanelComponent, AgentConsoleMessagesPanelComponent
@@ -157,9 +242,11 @@ async function runInteractiveChat(options: any): Promise<void> {
     const resolved = resolveCliConfig(options);
     ensureAgentWorkspaceConfig(resolved.root, path.basename(resolved.workspace));
     const historyPath = path.join(resolved.root, HISTORY_FILE);
+    const mutedOutput = new MutedWritable(process.stdout);
+    mutedOutput.muted = true;
     const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout,
+        output: mutedOutput as any,
         completer: (line: string) => {
             const mentions = buildMentionCandidates((viewModel?.tools || []).map((tool: any) => tool.name));
             const token = getActiveInputToken(line) || line;
@@ -169,7 +256,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             const hits = pool.filter(item => item.value.startsWith(token));
             return [(hits.length ? hits : pool).map(item => item.value), token];
         },
-        prompt: '\n> '
+        prompt: '',
+        terminal: true
     });
 
     const sessionId = resolved.sessionId;
@@ -180,6 +268,8 @@ async function runInteractiveChat(options: any): Promise<void> {
     let viewModel: any = null;
     let consoleState: any = null;
     let consoleRenderer: any = null;
+    let workingPanelRef: any = null;
+    let inputPanelRef: any = null;
     let statusPanelRef: any = null;
     let selectPanelRef: any = null;
     let activityPanelRef: any = null;
@@ -199,11 +289,17 @@ async function runInteractiveChat(options: any): Promise<void> {
     let selectMenu: SelectMenuState | null = null;
     let suggestionState: SuggestionState = { items: [], selectedIndex: -1 };
     let isSelecting = false;
+    let selectMenuScreenRow = -1;
     let stdinDataHandler: ((chunk: Buffer | string) => void) | null = null;
     let keypressHandler: ((str: string, key: readline.Key) => void) | null = null;
     let resizeHandler: (() => void) | null = null;
     let sigintHandler: (() => void) | null = null;
     const historyInterface = rl as readline.Interface & { history?: string[] };
+
+    const formatDisplayDraft = (value: string, cursor: number): string => {
+        const safeCursor = Math.max(0, Math.min(cursor, value.length));
+        return `${value.slice(0, safeCursor)}|${value.slice(safeCursor)}`;
+    };
 
     const getActiveSelectMenu = (): { title: string; hint?: string; options: SelectMenuOption[]; selectedIndex: number } | undefined => {
         if (consoleState?.selectMenu) {
@@ -212,24 +308,13 @@ async function runInteractiveChat(options: any): Promise<void> {
         return selectMenu || undefined;
     };
 
-    const safePrompt = (preserveCursor = false) => {
-        if (isClosed || (rl as any).closed || isSelecting) {
-            return;
-        }
-        rl.prompt(preserveCursor);
+    const setReadlineMuted = (muted: boolean) => {
+        mutedOutput.muted = muted;
     };
 
-    const refreshInputLine = () => {
-        if (isClosed || (rl as any).closed || isSelecting) {
-            return;
-        }
-        const refresh = (rl as any)._refreshLine;
-        if (typeof refresh === 'function') {
-            refresh.call(rl);
-            return;
-        }
-        safePrompt(true);
-    };
+    const safePrompt = (_preserveCursor = false) => undefined;
+
+    const refreshInputLine = () => undefined;
 
     const loadHistory = (): string[] => {
         if (!fs.existsSync(historyPath)) {
@@ -263,7 +348,9 @@ async function runInteractiveChat(options: any): Promise<void> {
         (rl as any).cursor = 0;
         readline.clearLine(process.stdout, 0);
         readline.cursorTo(process.stdout, 0);
+        setReadlineMuted(false);
         rl.question(question, answer => {
+            setReadlineMuted(true);
             inputLocked = previousLocked;
             modalPromptActive = false;
             currentDraft = '';
@@ -346,39 +433,60 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const syncCurrentDraft = () => {
         currentDraft = (rl as any).line || '';
+        const cursor = typeof (rl as any).cursor === 'number' ? (rl as any).cursor : currentDraft.length;
+        consoleState?.setInput?.(formatDisplayDraft(currentDraft, cursor));
         const nextItems = resolveInputSuggestions(
             currentDraft,
             viewModel?.commandHints || getChatCommands(),
             buildMentionCandidates((viewModel?.tools || []).map((tool: any) => tool.name))
         );
         suggestionState = normalizeSuggestionState(nextItems, suggestionState.selectedIndex >= 0 ? suggestionState.selectedIndex : 0);
+        if (!consoleState?.selectMenu && hasInteractiveSuggestions()) {
+            const activeOptions = suggestionState.items.map(item => ({
+                label: item.label,
+                value: item.value,
+                description: item.group.toLowerCase()
+            }));
+            consoleState?.openSelectMenu?.('Suggestions', activeOptions, Math.max(0, suggestionState.selectedIndex), 'tab apply   up/down move   enter confirm');
+        } else if (consoleState?.selectMenu?.title === 'Suggestions') {
+            const activeOptions = suggestionState.items.map(item => ({
+                label: item.label,
+                value: item.value,
+                description: item.group.toLowerCase()
+            }));
+            if (activeOptions.length) {
+                consoleState?.openSelectMenu?.('Suggestions', activeOptions, Math.max(0, suggestionState.selectedIndex), 'tab apply   up/down move   enter confirm');
+            }
+        } else if (!getActiveInputToken(currentDraft) && consoleState?.selectMenu?.title === 'Suggestions') {
+            consoleState?.closeSelectMenu?.();
+        }
     };
 
     const renderSelectionNotice = () => {
         if (isClosed || (rl as any).closed) {
             return;
         }
-        process.stdout.write('\x1b[2J\x1b[H');
-        process.stdout.write('tsdi-agent\n\n');
-        const rendererLines = renderPanelLines(selectPanelRef, {
-            maxLines: 24
-        });
-        if (rendererLines.length) {
-            process.stdout.write(`${rendererLines.join('\n')}\n\n`);
-            return;
-        }
-        const menu = getActiveSelectMenu();
-        if (menu) {
-            const lines = renderSelectMenu(menu.title, menu.options, menu.selectedIndex, menu.hint);
-            process.stdout.write(`${lines.join('\n')}\n\n`);
-            return;
-        }
-        process.stdout.write(`${screenNotice}\n\n`);
+        renderScreen();
     };
 
     const hasInteractiveSuggestions = (): boolean => {
         const token = getActiveInputToken(currentDraft);
         return !!token && (token.startsWith('/') || token.startsWith('@')) && suggestionState.items.length > 0;
+    };
+
+    const applySuggestionValue = (value?: string): void => {
+        if (!value) {
+            return;
+        }
+        const nextInput = applySuggestionToInput((rl as any).line || '', value);
+        (rl as any).line = nextInput;
+        currentDraft = nextInput;
+        suggestionState = { items: [], selectedIndex: -1 };
+        if (consoleState?.selectMenu?.title === 'Suggestions') {
+            consoleState.closeSelectMenu();
+        }
+        syncCurrentDraft();
+        renderScreen();
     };
 
     const isCancelInput = (value?: string): boolean => CANCEL_INPUTS.has(String(value || '').trim().toLowerCase());
@@ -552,6 +660,8 @@ async function runInteractiveChat(options: any): Promise<void> {
         });
         await viewModel.onInit();
         const runnerRef = currentCtx.runners?.getRef?.(AgentConsoleComponent);
+        workingPanelRef = runnerRef?.hostView?.query?.(AgentConsoleWorkingPanelComponent) || null;
+        inputPanelRef = runnerRef?.hostView?.query?.(AgentConsoleInputPanelComponent) || null;
         statusPanelRef = runnerRef?.hostView?.query?.(AgentConsoleStatusPanelComponent) || null;
         selectPanelRef = runnerRef?.hostView?.query?.(AgentConsoleSelectPanelComponent) || null;
         activityPanelRef = runnerRef?.hostView?.query?.(AgentConsoleActivityPanelComponent) || null;
@@ -580,13 +690,11 @@ async function runInteractiveChat(options: any): Promise<void> {
             viewModel?.showNotice?.(screenNotice);
             inputLocked = false;
             renderScreen();
-            safePrompt();
         });
         viewModel.setCommandAction('/clear', async () => {
             screenNotice = '';
             viewModel?.clearNotice?.();
             renderScreen();
-            safePrompt();
         });
         viewModel.setCommandAction('/tools', async () => {
             inputLocked = true;
@@ -600,7 +708,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             viewModel?.showNotice?.(screenNotice);
             inputLocked = false;
             renderScreen();
-            safePrompt();
         });
         viewModel.setCommandAction('/model', async () => {
             inputLocked = true;
@@ -661,7 +768,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             } finally {
                 inputLocked = false;
                 renderScreen();
-                safePrompt();
             }
         });
         unsubscribeVm = viewModel.subscribe(() => {
@@ -692,18 +798,24 @@ async function runInteractiveChat(options: any): Promise<void> {
         const heading = options.heading || '';
         const skipPrefixes = options.skipLinesStartingWith || [];
         const widthLimit = options.widthLimit || (process.stdout.columns || 100);
-        const lines = consoleRenderer.renderToLines(panelRef.hostView.rootNodes)
+        const rendered = typeof consoleRenderer.renderToTuiLines === 'function'
+            ? consoleRenderer.renderToTuiLines(panelRef.hostView.rootNodes, { width: Math.max(24, widthLimit) })
+            : consoleRenderer.renderToLines(panelRef.hostView.rootNodes);
+        const lines = rendered
             .filter((line: string) => {
                 if (!line) {
                     return false;
                 }
-                if (heading && line === heading) {
+                const plain = stripAnsi(line);
+                if (heading && plain === heading) {
                     return false;
                 }
-                return !skipPrefixes.some(prefix => line.startsWith(prefix));
+                return !skipPrefixes.some(prefix => plain.startsWith(prefix));
             })
             .map((line: string) => {
-                const fitted = fitLine(line, Math.max(24, widthLimit));
+                const fitted = typeof consoleRenderer.renderToTuiLines === 'function'
+                    ? fitAnsiLine(line, Math.max(24, widthLimit))
+                    : fitLine(line, Math.max(24, widthLimit));
                 return options.prefix ? `${options.prefix}${fitted}` : fitted;
             });
         return typeof options.maxLines === 'number'
@@ -738,8 +850,20 @@ async function runInteractiveChat(options: any): Promise<void> {
         const runningTools = viewModel.runningTools?.length
             ? `${spinner} ${viewModel.runningTools.join(', ')}`
             : 'idle';
-        const rendererLines = renderPanelLines(statusPanelRef, {
+        const workingLines = renderPanelLines(workingPanelRef, {
+            maxLines: 6,
+            widthLimit: width
+        });
+        const inputLines = renderPanelLines(inputPanelRef, {
+            maxLines: 6,
+            widthLimit: width
+        });
+        const selectLines = renderPanelLines(selectPanelRef, {
             maxLines: 12,
+            widthLimit: width
+        });
+        const statusLines = renderPanelLines(statusPanelRef, {
+            maxLines: 8,
             widthLimit: width
         });
         const activityPanelLines = renderPanelLines(activityPanelRef, {
@@ -778,27 +902,13 @@ async function runInteractiveChat(options: any): Promise<void> {
             : (viewModel.messages || [])
                 .slice(-8)
                 .flatMap((message: any) => renderConversationMessage(message.role, message.content, width - 4));
-        const draft = multilineMode
-            ? [
-                `draft  multiline | ${draftLines.length} buffered`,
-                ...draftLines.map((line, index) => `${index + 1}. ${renderDraftLine(line)}`),
-                `current  ${renderDraftLine(currentDraft) || '(empty)'}`
-            ]
-            : [
-                `draft  ${renderDraftLine(currentDraft) || '(empty)'}`
-            ];
-        const suggestions = suggestionState.items.map((item, index) =>
-            index === suggestionState.selectedIndex
-                ? `> ${item.label}   ${item.group.toLowerCase()}`
-                : `  ${item.label}   ${item.group.toLowerCase()}`
-        );
-        const composer = [
-            ...draft,
-            ...(hasInteractiveSuggestions() ? [' ', 'suggestions', ...suggestions] : []),
-            ' ',
-            `enter send   tab complete   up/down select   /help`
+        const composerLines = [
+            ...workingLines,
+            ...(inputLines.length ? ['', ...inputLines] : []),
+            ...(selectLines.length ? ['', ...selectLines] : []),
+            ...(statusLines.length ? ['', ...statusLines] : [])
         ];
-        const composerHeight = Math.max(5, multilineMode ? 7 : 5);
+        const composerHeight = Math.max(8, composerLines.length || 0);
         const contextHeight = Math.max(3, Math.min(5, Math.floor(rows * 0.12)));
         const messagesHeight = Math.max(10, rows - 4 - contextHeight - composerHeight);
         const contextLines = [
@@ -819,12 +929,15 @@ async function runInteractiveChat(options: any): Promise<void> {
         ];
         const conversation = messages.slice(-messagesHeight);
         const context = contextLines.slice(-contextHeight);
-        const bottom = composer.slice(-composerHeight);
+        const bottom = composerLines.slice(-composerHeight);
+        selectMenuScreenRow = selectLines.length
+            ? 1 + 1 + 1 + 2 + 1 + conversation.length + (context.length ? context.length + 1 : 0) + 1 + workingLines.length + (inputLines.length ? inputLines.length + 1 : 0) + 1
+            : -1;
         const nextRender = [
             '\x1b[2J\x1b[H',
             'tsdi-agent',
             '',
-            ...(rendererLines.length ? rendererLines : [headerLine, subHeaderLine]),
+            ...(workingLines.length ? [headerLine, subHeaderLine] : [headerLine, subHeaderLine]),
             '',
             ...conversation,
             ...(context.length ? ['', ...context] : []),
@@ -889,7 +1002,6 @@ async function runInteractiveChat(options: any): Promise<void> {
                 ? 'Multiline mode enabled. Type /send to submit, /cancel to discard.'
                 : 'Multiline mode disabled.';
             viewModel?.showNotice?.(screenNotice);
-            rl.setPrompt(multilineMode ? '\n... ' : '\n> ');
             renderScreen();
             safePrompt();
             return;
@@ -898,7 +1010,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (trimmed === '/cancel') {
             draftLines = [];
             multilineMode = false;
-            rl.setPrompt('\n> ');
             screenNotice = 'Multiline draft cleared.';
             viewModel?.showNotice?.(screenNotice);
             renderScreen();
@@ -922,7 +1033,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             const draft = draftLines.join('\n');
             draftLines = [];
             multilineMode = false;
-            rl.setPrompt('\n> ');
             try {
                 screenNotice = '';
                 viewModel?.clearNotice?.();
@@ -998,8 +1108,12 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (!activeMenu) {
                 return;
             }
-            const selectedIndex = resolveSelectMenuOptionIndexFromRow(mouse.y, activeMenu.title, activeMenu.options.length);
+            const selectedIndex = resolveSelectMenuOptionIndexFromRow(mouse.y, activeMenu.title, activeMenu.options.length, selectMenuScreenRow);
             if (selectedIndex < 0) {
+                return;
+            }
+            if (activeMenu.title === 'Suggestions') {
+                applySuggestionValue(activeMenu.options[selectedIndex]?.value);
                 return;
             }
             if (consoleState?.selectMenu) {
@@ -1029,6 +1143,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         if (getActiveSelectMenu()) {
+            const activeMenu = getActiveSelectMenu();
             if (key?.name === 'down') {
                 if (consoleState?.selectMenu) {
                     consoleState.moveSelectMenu(1);
@@ -1048,6 +1163,11 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
             if (key?.name === 'return') {
+                if (activeMenu?.title === 'Suggestions') {
+                    const value = activeMenu.options[activeMenu.selectedIndex]?.value;
+                    applySuggestionValue(value);
+                    return;
+                }
                 if (consoleState?.selectMenu) {
                     void consoleState.confirmSelectMenu();
                 } else if (selectMenu) {
@@ -1065,8 +1185,11 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             if (_str && /^[1-9]$/.test(_str)) {
                 const index = parseInt(_str, 10) - 1;
-                const activeMenu = getActiveSelectMenu();
                 if (activeMenu && index >= 0 && index < activeMenu.options.length) {
+                    if (activeMenu.title === 'Suggestions') {
+                        applySuggestionValue(activeMenu.options[index]?.value);
+                        return;
+                    }
                     if (consoleState?.selectMenu) {
                         void consoleState.chooseSelectMenuIndex(index);
                     } else if (selectMenu) {
@@ -1082,9 +1205,15 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (key?.name === 'down') {
             suggestionState = moveSuggestionSelection(suggestionState, 1);
+            if (consoleState?.selectMenu?.title === 'Suggestions') {
+                consoleState.setSelectMenuIndex(suggestionState.selectedIndex);
+            }
             renderScreen();
         } else if (key?.name === 'up') {
             suggestionState = moveSuggestionSelection(suggestionState, -1);
+            if (consoleState?.selectMenu?.title === 'Suggestions') {
+                consoleState.setSelectMenuIndex(suggestionState.selectedIndex);
+            }
             renderScreen();
         } else if (key?.name === 'return' && shouldAcceptSuggestionOnEnter((rl as any).line || '', suggestionState)) {
             const selected = suggestionState.items[suggestionState.selectedIndex];
@@ -1092,6 +1221,10 @@ async function runInteractiveChat(options: any): Promise<void> {
             (rl as any).line = nextInput;
             currentDraft = nextInput;
             suggestionState = { items: [], selectedIndex: -1 };
+            if (consoleState?.selectMenu?.title === 'Suggestions') {
+                consoleState.closeSelectMenu();
+            }
+            syncCurrentDraft();
             renderScreen();
             return;
         } else if (key?.name === 'tab' && suggestionState.selectedIndex >= 0) {
@@ -1100,6 +1233,10 @@ async function runInteractiveChat(options: any): Promise<void> {
             (rl as any).line = nextInput;
             currentDraft = nextInput;
             suggestionState = { items: [], selectedIndex: -1 };
+            if (consoleState?.selectMenu?.title === 'Suggestions') {
+                consoleState.closeSelectMenu();
+            }
+            syncCurrentDraft();
             renderScreen();
         }
     };

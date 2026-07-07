@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, ConsoleText } from '../src';
+import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, ConsoleText, TuiRenderer, TuiTemplateModule } from '../src';
 import { Application } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 
@@ -37,6 +37,17 @@ class ConsoleLoopTestComponent {
     choose(value: string): void {
         this.selected = value;
     }
+}
+
+@Component({
+    selector: 'console-style-test',
+    template: `
+    <section>
+        <p style="color: #2f6f57; background: #dff3e8;">Styled</p>
+    </section>
+    `
+})
+class ConsoleStyleTestComponent {
 }
 
 @Suite('Console Renderer')
@@ -110,6 +121,24 @@ export class ConsoleRendererTest {
 
             renderer.click(items[1]);
             expect(ref.instance.selected).toBe('2');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('renders ansi styles through tui renderer')
+    async rendersAnsiStylesThroughTuiRenderer() {
+        const ctx = await Application.run(ConsoleStyleTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleStyleTestComponent) as ComponentRef<ConsoleStyleTestComponent>;
+            const renderer = ctx.get(ConsoleRenderer) as TuiRenderer;
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 20 });
+            expect(lines.length).toBeGreaterThan(0);
+            expect(lines[0]).toContain('\x1b[');
+            expect(lines[0]).toContain('Styled');
         } finally {
             await ctx.close();
         }

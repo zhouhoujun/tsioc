@@ -8,6 +8,7 @@ import { AgentScheduler } from '../scheduler/AgentScheduler';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleInputPanelComponent,
@@ -15,15 +16,17 @@ import {
     AgentConsoleSelectPanelComponent,
     AgentConsoleStatusPanelComponent,
     AgentConsoleToolRunsPanelComponent,
-    AgentConsoleToolsPanelComponent
+    AgentConsoleToolsPanelComponent,
+    AgentConsoleWorkingPanelComponent
 } from './AgentConsolePanels';
 
 @Component({
     selector: 'agent-console',
     imports: [
-        AgentConsoleStatusPanelComponent,
+        AgentConsoleWorkingPanelComponent,
         AgentConsoleSelectPanelComponent,
         AgentConsoleInputPanelComponent,
+        AgentConsoleStatusPanelComponent,
         AgentConsoleToolsPanelComponent,
         AgentConsoleToolRunsPanelComponent,
         AgentConsoleMessagesPanelComponent,
@@ -32,9 +35,10 @@ import {
     template: `
     <div class="agent-console">
         <h1>{{title}}</h1>
-        <agent-console-status-panel></agent-console-status-panel>
-        <agent-console-select-panel></agent-console-select-panel>
+        <agent-console-working-panel></agent-console-working-panel>
         <agent-console-input-panel></agent-console-input-panel>
+        <agent-console-select-panel></agent-console-select-panel>
+        <agent-console-status-panel></agent-console-status-panel>
         <agent-console-tools-panel></agent-console-tools-panel>
         <agent-console-tool-runs-panel></agent-console-tool-runs-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
@@ -56,6 +60,7 @@ export class AgentConsoleComponent {
         this.state.title = this.options.ui?.title ?? defaultAgentOptions.ui!.title!;
         this.state.provider = this.options.model?.provider ?? '';
         this.state.model = this.options.model?.model ?? '';
+        this.state.setTheme(mergeAgentConsoleTheme(this.options.ui?.theme));
         this.state.submitAction = () => this.submit();
     }
 
@@ -197,53 +202,63 @@ export class AgentConsoleComponent {
             return;
         }
         this.state.setStatus('running');
+        this.state.setLastError('');
         this.state.pushActivity('turn', `User: ${this.state.summarize(value)}`);
         this.state.notify();
 
-        if (typeof (this.runtime as any).runStreamingTurn === 'function') {
-            const userMessage: AgentMessage = {
-                id: `user-${Date.now()}`,
-                role: 'user',
-                content: value,
-                createdAt: Date.now()
-            };
-            const assistantMessage: AgentMessage = {
-                id: `assistant-${Date.now()}`,
-                role: 'assistant',
-                content: '',
-                createdAt: Date.now()
-            };
-            this.state.setMessages([...this.state.messages, userMessage, assistantMessage]);
-            this.state.notify();
+        try {
+            if (typeof (this.runtime as any).runStreamingTurn === 'function') {
+                const userMessage: AgentMessage = {
+                    id: `user-${Date.now()}`,
+                    role: 'user',
+                    content: value,
+                    createdAt: Date.now()
+                };
+                const assistantMessage: AgentMessage = {
+                    id: `assistant-${Date.now()}`,
+                    role: 'assistant',
+                    content: '',
+                    createdAt: Date.now()
+                };
+                this.state.setMessages([...this.state.messages, userMessage, assistantMessage]);
+                this.state.notify();
 
-            try {
-                const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, value);
-                for await (const chunk of stream) {
-                    if (chunk.type === 'text' && chunk.content) {
-                        assistantMessage.content += chunk.content;
-                        this.state.notify();
-                    } else if (chunk.type === 'reasoning' && chunk.content) {
-                        this.state.setStatus('reasoning');
-                        this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
-                        this.state.notify();
-                    } else if (chunk.type === 'tool_call') {
-                        this.state.pushActivity('tool', `Tool call: ${chunk.content || '...'}`);
-                        this.state.notify();
+                try {
+                    const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, value);
+                    for await (const chunk of stream) {
+                        if (chunk.type === 'text' && chunk.content) {
+                            assistantMessage.content += chunk.content;
+                            this.state.notify();
+                        } else if (chunk.type === 'reasoning' && chunk.content) {
+                            this.state.setStatus('reasoning');
+                            this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
+                            this.state.notify();
+                        } else if (chunk.type === 'tool_call') {
+                            this.state.pushActivity('tool', `Tool call: ${chunk.content || '...'}`);
+                            this.state.notify();
+                        }
                     }
+                } finally {
+                    this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
                 }
-            } finally {
+            } else {
+                await this.runtime.runTurn(this.state.sessionId, value);
                 this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
             }
-        } else {
-            await this.runtime.runTurn(this.state.sessionId, value);
-            this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
+        } catch (error: any) {
+            const message = error?.message || String(error || 'Unknown error');
+            this.state.setStatus('error');
+            this.state.setLastError(message);
+            this.state.pushActivity('error', message);
+        } finally {
+            await this.refreshTools();
+            this.state.setInput('');
+            if (this.state.status === 'running' || this.state.status === 'reasoning') {
+                this.state.setStatus('idle');
+            }
+            this.state.setTasksCount(this.scheduler.getTasks().length);
+            this.state.notify();
         }
-
-        await this.refreshTools();
-        this.state.setInput('');
-        this.state.setStatus('idle');
-        this.state.setTasksCount(this.scheduler.getTasks().length);
-        this.state.notify();
     }
 
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {

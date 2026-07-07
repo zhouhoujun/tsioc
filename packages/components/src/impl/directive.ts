@@ -76,17 +76,13 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
     }
 
     protected override createInjector<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): NodeInjector {
-        // console.log('[DirectiveFactoryImpl] createInjector options:', options, 'elementRef:', options?.elementRef);
         const context = new NodeInjector(injector, options);
+        // Force the directive type to resolve from this node-scoped injector so
+        // constructor injections like ElementRef are bound to the current host.
+        InjectUtil.register(context, [typeRef.type as any]);
         if (options.elementRef) {
             context.setPayload(options.elementRef);
-            // console.log('[DirectiveFactoryImpl] Payload set');
-        } else {
-            // console.log('[DirectiveFactoryImpl] No elementRef in options');
         }
-        // if (!context.has(ReactiveEffect, InjectFlags.Self)) {
-        //     context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
-        // }
         return context;
     }
 

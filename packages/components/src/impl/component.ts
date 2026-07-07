@@ -144,6 +144,8 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
 
     protected override createInjector<T>(typeRef: ClassRef<T>, injector: NodeInjector, options: ComponentOptions): NodeInjector {
         const context = new NodeInjector(injector, options);
+        // Keep component instance resolution local to this node-scoped injector.
+        InjectUtil.register(context, [typeRef.type as any]);
         if (!context.has(ReactiveEffect, InjectFlags.Self)) {
             context.setValue(ReactiveEffect, new DefaultReactiveEffect(options))
         }

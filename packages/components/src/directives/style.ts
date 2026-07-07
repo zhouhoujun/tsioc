@@ -3,6 +3,7 @@ import { Host } from '@tsdi/ioc';
 import { ElementRef } from '../refs/element';
 import { isObject } from '@tsdi/ioc';
 import { Renderer } from '../renderer/Renderer';
+import { Attribute } from '../decorators/atteribute';
 
 /**
  * Style directive metadata.
@@ -35,6 +36,7 @@ export class StyleDirective {
         private renderer: Renderer
     ) { }
 
+    @Attribute()
     set style(value: any) {
         if (value !== undefined) {
             this.updateStyle(value);

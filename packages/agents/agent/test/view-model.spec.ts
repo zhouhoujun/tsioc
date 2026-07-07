@@ -2,8 +2,11 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent } from '../src/ui/AgentConsoleComponent';
 import { AgentConsoleEventBridge } from '../src/ui/AgentConsoleEventBridge';
+import { AgentConsoleInputPanelComponent } from '../src/ui/AgentConsolePanels';
 import { AgentConsoleSessionState } from '../src/ui/AgentConsoleSessionState';
 import {
+    AgentModelCompletedEvent,
+    AgentStreamChunkEvent,
     AgentToolCompletedEvent,
     AgentToolFailedEvent,
     AgentToolInvokedEvent
@@ -29,11 +32,21 @@ class RuntimeStub {
     async *runStreamingTurn(sessionId: string, input: string): AsyncGenerator<any> {
         this.calls.push(`${sessionId}:${input}`);
         yield { type: 'text', content: `Echo: ${input}` };
+        yield { type: 'done', usage: { promptTokens: 5, completionTokens: 7, totalTokens: 12 } };
         this.messages = [
             { id: '1', role: 'user', content: input, createdAt: 1 },
             { id: '2', role: 'assistant', content: `Echo: ${input}`, createdAt: 2 }
         ] as any;
-        yield { type: 'done' };
+    }
+}
+
+class FailingRuntimeStub extends RuntimeStub {
+    override async runTurn(_sessionId: string, _input: string): Promise<any> {
+        throw new Error('submit failed');
+    }
+
+    override async *runStreamingTurn(_sessionId: string, _input: string): AsyncGenerator<any> {
+        throw new Error('submit failed');
     }
 }
 
@@ -359,5 +372,73 @@ export class AgentConsoleComponentTest {
 
         await expect(component.runCommand('/tools')).resolves.toEqual(true);
         expect(calls).toEqual(['second']);
+    }
+
+    @Test('input panel submits on enter key')
+    async inputPanelSubmitsOnEnterKey() {
+        const state = new AgentConsoleSessionState();
+        let submitCount = 0;
+        state.submitAction = async () => {
+            submitCount++;
+        };
+        const panel = new AgentConsoleInputPanelComponent(state);
+
+        await panel.onKeyup({ key: 'Escape' } as KeyboardEvent);
+        await panel.onKeyup({ key: 'Enter' } as KeyboardEvent);
+
+        expect(submitCount).toEqual(1);
+    }
+
+    @Test('submit failure resets ui state and records error')
+    async submitFailureResetsUiStateAndRecordsError() {
+        const runtime = new FailingRuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        component.input = 'hello';
+        await component.submit();
+
+        expect(component.input).toEqual('');
+        expect(component.status).toEqual('error');
+        expect(component.lastError).toEqual('submit failed');
+        expect(component.activities.some(item => item.kind === 'error' && item.message.includes('submit failed'))).toBe(true);
+    }
+
+    @Test('working usage tracks current tokens from stream and model completion')
+    async workingUsageTracksCurrentTokens() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({ sessionId: 'chat-usage' });
+        await component.onInit();
+
+        await app.eventMulticaster.emit(new AgentStreamChunkEvent(this, 'chat-usage', 'done', undefined, undefined, {
+            promptTokens: 11,
+            completionTokens: 13,
+            totalTokens: 24
+        }));
+
+        expect(state.tokenUsage.totalTokens).toEqual(24);
+        expect(state.tokenUsage.promptTokens).toEqual(11);
+        expect(state.tokenUsage.completionTokens).toEqual(13);
+
+        await app.eventMulticaster.emit(new AgentModelCompletedEvent(this, 'chat-usage', {
+            metadata: {
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                usage: {
+                    prompt_tokens: 20,
+                    completion_tokens: 22,
+                    total_tokens: 42
+                }
+            }
+        } as any));
+
+        expect(component.provider).toEqual('deepseek');
+        expect(component.model).toEqual('deepseek-v4-flash');
+        expect(state.tokenUsage.totalTokens).toEqual(42);
+        expect(state.tokenUsage.promptTokens).toEqual(20);
+        expect(state.tokenUsage.completionTokens).toEqual(22);
     }
 }

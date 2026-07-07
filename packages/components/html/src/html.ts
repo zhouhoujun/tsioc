@@ -67,6 +67,9 @@ export class HtmlRenderer implements Renderer {
         const nodes = isArray(node) ? node : [node];
         for (const n of nodes) {
             const el = n as unknown as Element;
+            if (this.matchesSelector(n, selector)) {
+                return n;
+            }
             if (el.querySelector) {
                 try {
                     const found = el.querySelector(selector);
@@ -90,6 +93,9 @@ export class HtmlRenderer implements Renderer {
 
         for (const n of nodes) {
             const el = n as unknown as Element;
+            if (this.matchesSelector(n, selector)) {
+                results.push(n);
+            }
             if (el.querySelectorAll) {
                 try {
                     const found = el.querySelectorAll(selector);
@@ -207,7 +213,20 @@ export class HtmlRenderer implements Renderer {
     matchesSelector(node: RNode, selector: string): boolean {
         const el = node as unknown as Element;
         if (el.matches) {
-            return el.matches(selector);
+            try {
+                return el.matches(selector);
+            } catch {
+                if (selector.includes(',')) {
+                    return selector
+                        .split(',')
+                        .map(item => item.trim())
+                        .filter(Boolean)
+                        .some(item => this.matchesSelector(node, item));
+                }
+                if (selector.startsWith('[') && selector.endsWith(']')) {
+                    return el.hasAttribute(selector.slice(1, -1));
+                }
+            }
         }
         return false;
     }

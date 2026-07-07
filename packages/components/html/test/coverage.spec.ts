@@ -104,6 +104,19 @@ export class HtmlRendererCoverageTest {
         expect(found?.length).toBe(3);
     }
 
+    @Test('should include root node when query selector matches it')
+    testQuerySelectorIncludesRootNode() {
+        const root = this.renderer.createElement('p');
+        (root as any).setAttribute('class', 'root-match');
+
+        const found = this.renderer.querySelector(root, 'p.root-match');
+        const foundAll = this.renderer.querySelectorAll(root, 'p.root-match');
+
+        expect(found).toBe(root);
+        expect(foundAll?.length).toBe(1);
+        expect(foundAll?.[0]).toBe(root);
+    }
+
     @Test('should handle queryByAttribute')
     testQueryByAttribute() {
         const root = this.renderer.createElement('div');

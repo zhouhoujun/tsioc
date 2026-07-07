@@ -5,7 +5,7 @@ import { ElementRef } from '../refs/element';
 import { NodeInjector } from '../refs/injector';
 import { DirectiveDef } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
-import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS } from '../renderer/Node';
+import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS, DIRECTIVES, COMPONENTDEF, CUSTOM_ELEMENTS } from '../renderer/Node';
 import { noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
@@ -131,6 +131,9 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     private clone(node: RNode, renderer: Renderer) {
         const cloned = this.cloneNode(node, renderer);
         cloned[BINDINGS] = node[BINDINGS]?.slice(0);
+        cloned[DIRECTIVES] = node[DIRECTIVES]?.slice(0);
+        cloned[CUSTOM_ELEMENTS] = node[CUSTOM_ELEMENTS]?.slice(0);
+        cloned[COMPONENTDEF] = node[COMPONENTDEF];
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
                 cloned.appendChild(this.clone(n, renderer));

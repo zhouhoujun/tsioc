@@ -486,9 +486,25 @@ export function binding(node: RNode, factory: Bindings) {
  * @returns 匹配结果数组
  */
 export function matchDelimiter(expr: string, delimiter: RegExp): RegExpExecArray[] | null {
-    const matches = expr.matchAll(delimiter);
+    const matches = expr.matchAll(createStableDelimiter(delimiter));
     if (!matches) return null;
     return Array.from(matches);
+}
+
+export function hasDelimiter(expr: string, delimiter: RegExp): boolean {
+    if (!expr) {
+        return false;
+    }
+    const tester = createStableDelimiter(delimiter);
+    tester.lastIndex = 0;
+    return tester.test(expr);
+}
+
+function createStableDelimiter(delimiter: RegExp): RegExp {
+    const flags = delimiter.flags.includes('g')
+        ? delimiter.flags
+        : `${delimiter.flags}g`;
+    return new RegExp(delimiter.source, flags);
 }
 
 /**
@@ -630,7 +646,7 @@ export function bindingAtrrbutes(element: RNode, attrs: RAttr[], renderer: Rende
             bindingProperty(element, name, value, renderer, delimiter);
         } else if (name === 'v-model') {
             createModelBindingFactory(element, value, renderer, delimiter);
-        } else if (delimiter.test(value)) {
+        } else if (hasDelimiter(value, delimiter)) {
             // 插值表达式绑定工厂
             bindingInterpolationFactory(element, name, value, renderer, delimiter);
         }

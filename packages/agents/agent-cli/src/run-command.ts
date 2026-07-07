@@ -1,6 +1,6 @@
 import { Application } from '@tsdi/core';
 import { AgentModule, AgentRuntime, AGENT_OPTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions } from '@tsdi/agent';
-import { ConsoleTemplateModule } from '@tsdi/components/console';
+import { TuiTemplateModule } from '@tsdi/components/console';
 import { provideTools, SpawnAgentAdapter, WeatherAdapter, LlmTaskAdapter, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentCliOptions, resolveCliConfig, resolveCliModelConfig } from './config';
 
@@ -73,7 +73,7 @@ export function withAdapterProviders(): any[] {
 export async function runAgentApplication(options: AgentCliOptions, agentOptions?: any): Promise<any> {
     const resolved = resolveCliConfig(options);
     return Application.run(AgentModule, {
-        deps: [ConsoleTemplateModule],
+        deps: [TuiTemplateModule],
         providers: [
             ...provideTools(resolved.tools),
             ...withAdapterProviders(),

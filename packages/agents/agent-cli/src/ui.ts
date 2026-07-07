@@ -65,9 +65,9 @@ export function renderSelectMenu(title: string, options: SelectMenuOption[], sel
     ];
 }
 
-export function resolveSelectMenuOptionIndexFromRow(row: number, title: string, optionCount: number): number {
+export function resolveSelectMenuOptionIndexFromRow(row: number, title: string, optionCount: number, startRow = 1): number {
     const titleLines = Math.max(1, String(title || '').split('\n').length);
-    const firstOptionRow = 3 + titleLines;
+    const firstOptionRow = startRow + titleLines + 2;
     const index = row - firstOptionRow;
     if (index < 0 || index >= optionCount) {
         return -1;

@@ -35,6 +35,28 @@ export class ConsoleCssStyleDeclaration implements RCssStyleDeclaration {
         }
         this.styles[propertyName] = value;
     }
+
+    getProperties(): Record<string, string> {
+        return { ...this.styles };
+    }
+
+    applyCssText(value: string): void {
+        value.split(';')
+            .map(item => item.trim())
+            .filter(Boolean)
+            .forEach(entry => {
+                const index = entry.indexOf(':');
+                if (index === -1) {
+                    return;
+                }
+                const name = entry.slice(0, index).trim();
+                const cssValue = entry.slice(index + 1).trim();
+                if (!name) {
+                    return;
+                }
+                this.setProperty(name, cssValue);
+            });
+    }
 }
 
 export class ConsoleDomTokenList implements RDomTokenList {
@@ -241,6 +263,12 @@ export class ConsoleElement extends ConsoleNode implements RElement {
         this.attributes.set(name, { name, value });
         if (name === 'class') {
             this.classList.reset(value.split(/\s+/).filter(Boolean));
+            return;
+        }
+        if (name === 'style') {
+            const styles = new ConsoleCssStyleDeclaration();
+            styles.applyCssText(value);
+            this.style = styles;
         }
     }
 
@@ -248,6 +276,10 @@ export class ConsoleElement extends ConsoleNode implements RElement {
         this.attributes.delete(name);
         if (name === 'class') {
             this.classList.reset([]);
+            return;
+        }
+        if (name === 'style') {
+            this.style = new ConsoleCssStyleDeclaration();
         }
     }
 

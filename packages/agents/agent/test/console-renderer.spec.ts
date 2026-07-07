@@ -11,6 +11,7 @@ import {
     AgentConsoleStatusPanelComponent,
     AgentConsoleToolRunsPanelComponent,
     AgentConsoleToolsPanelComponent,
+    AgentConsoleWorkingPanelComponent,
     AgentModule
 } from '../src';
 
@@ -31,11 +32,13 @@ export class AgentConsoleRendererTest {
         const renderer = this.ctx.get(ConsoleRenderer);
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
         const statusPanel = ref.hostView.query(AgentConsoleStatusPanelComponent) as ComponentRef<AgentConsoleStatusPanelComponent>;
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
         const toolsPanel = ref.hostView.query(AgentConsoleToolsPanelComponent) as ComponentRef<AgentConsoleToolsPanelComponent>;
         const activityPanel = ref.hostView.query(AgentConsoleActivityPanelComponent) as ComponentRef<AgentConsoleActivityPanelComponent>;
         const toolRunsPanel = ref.hostView.query(AgentConsoleToolRunsPanelComponent) as ComponentRef<AgentConsoleToolRunsPanelComponent>;
         const lines = renderer.renderToLines(root);
         const statusLines = renderer.renderToLines(statusPanel.hostView.rootNodes[0]);
+        const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
         const toolLines = renderer.renderToLines(toolsPanel.hostView.rootNodes[0]);
         const activityLines = renderer.renderToLines(activityPanel.hostView.rootNodes[0]);
         const toolRunLines = renderer.renderToLines(toolRunsPanel.hostView.rootNodes[0]);
@@ -45,10 +48,13 @@ export class AgentConsoleRendererTest {
         expect(statusPanel).toBeTruthy();
         expect(statusLines.some(line => line.includes('Status'))).toBe(true);
         expect(statusLines.some(line => line.includes('Model:'))).toBe(true);
+        expect(workingLines.some(line => line.includes('Working'))).toBe(true);
+        expect(workingLines.some(line => line.includes('Tokens'))).toBe(true);
         expect(toolLines.some(line => line.includes('Tools'))).toBe(true);
         expect(activityLines.some(line => line.includes('Activity'))).toBe(true);
         expect(toolRunLines.some(line => line.includes('Tool Runs'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleInputPanelComponent)).toBeTruthy();
+        expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleToolsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleToolRunsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleMessagesPanelComponent)).toBeTruthy();

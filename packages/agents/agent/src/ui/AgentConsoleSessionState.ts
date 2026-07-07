@@ -1,6 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
+import { AgentConsoleTheme, AgentConsoleThemeInput, defaultAgentConsoleTheme, mergeAgentConsoleTheme } from './AgentConsoleTheme';
 
 export interface AgentConsoleToolItem {
     name: string;
@@ -29,6 +30,12 @@ export interface AgentConsoleToolRun {
     receiptId?: string;
     toolCallId?: string;
     updatedAt: number;
+}
+
+export interface AgentConsoleTokenUsage {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
 }
 
 export interface AgentConsoleSessionMeta {
@@ -66,12 +73,18 @@ export class AgentConsoleSessionState {
     activities: AgentConsoleActivity[] = [];
     runningTools: string[] = [];
     toolRuns: AgentConsoleToolRun[] = [];
+    tokenUsage: AgentConsoleTokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0
+    };
     lastError = '';
     notice = '';
+    theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     selectMenu?: AgentConsoleSelectMenu;
     submitAction?: () => Promise<void>;
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/model', '/clear', '/quit'];
+    commandHints = ['/help', '/tools', '/model', '/clear', '/quit', '/exit'];
 
     protected listeners = new Set<() => void>();
     protected activeToolSet = new Set<string>();
@@ -124,6 +137,21 @@ export class AgentConsoleSessionState {
         this.tools = tools;
     }
 
+    setTokenUsage(usage?: Partial<AgentConsoleTokenUsage> | Record<string, any> | null): void {
+        const promptTokens = this.resolveUsageNumber(usage, ['promptTokens', 'prompt_tokens', 'input_tokens']);
+        const completionTokens = this.resolveUsageNumber(usage, ['completionTokens', 'completion_tokens', 'output_tokens']);
+        const totalTokens = this.resolveUsageNumber(usage, ['totalTokens', 'total_tokens'])
+            ?? (promptTokens != null || completionTokens != null
+                ? (promptTokens || 0) + (completionTokens || 0)
+                : undefined);
+
+        this.tokenUsage = {
+            promptTokens: promptTokens || 0,
+            completionTokens: completionTokens || 0,
+            totalTokens: totalTokens || 0
+        };
+    }
+
     setInput(value: string): void {
         this.input = value;
     }
@@ -138,6 +166,10 @@ export class AgentConsoleSessionState {
 
     setNotice(message: string): void {
         this.notice = message;
+    }
+
+    setTheme(theme?: AgentConsoleThemeInput | null): void {
+        this.theme = mergeAgentConsoleTheme(theme);
     }
 
     openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): void {
@@ -242,5 +274,18 @@ export class AgentConsoleSessionState {
             active,
             activationKind: definition.activation?.kind
         };
+    }
+
+    protected resolveUsageNumber(usage: any, keys: string[]): number | undefined {
+        if (!usage || typeof usage !== 'object') {
+            return undefined;
+        }
+        for (const key of keys) {
+            const value = usage[key];
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return value;
+            }
+        }
+        return undefined;
     }
 }

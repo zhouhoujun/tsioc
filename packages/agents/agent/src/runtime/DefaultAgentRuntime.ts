@@ -151,7 +151,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    async *runStreamingTurn(sessionId: string, input: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string }> {
+    async *runStreamingTurn(sessionId: string, input: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string; usage?: Record<string, any> }> {
         await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
         const userMessage = this.createMessage('user', input);
         await this.sessions.append(sessionId, userMessage);
@@ -292,7 +292,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private async *collectStreamingResponse(
         sessionId: string,
         request: ModelRequest
-    ): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string }, ModelResponse, void> {
+    ): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string; usage?: Record<string, any> }, ModelResponse, void> {
         let message = '';
         let reasoningContent = '';
         let toolCalls: AgentToolCall[] = [];
@@ -300,7 +300,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         let metadata: Record<string, any> = {};
 
         for await (const chunk of this.modelAdapter.stream(request)) {
-            if (chunk.type !== 'done') {
+            if (chunk.type !== 'done' || chunk.usage) {
                 await this.app.publishEvent(new AgentStreamChunkEvent(
                     this,
                     sessionId,
@@ -327,8 +327,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 metadata = { ...metadata, ...chunk.metadata };
             }
 
-            if (chunk.type !== 'done') {
-                yield { type: chunk.type, content: chunk.content };
+            if (chunk.type !== 'done' || chunk.usage) {
+                yield { type: chunk.type, content: chunk.content, usage: chunk.usage as Record<string, any> | undefined };
             }
         }
 

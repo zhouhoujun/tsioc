@@ -5,6 +5,7 @@ import { ToolRegistry } from '../tools/ToolRegistry';
 import {
     AgentErrorEvent,
     AgentModelCompletedEvent,
+    AgentStreamChunkEvent,
     AgentToolCompletedEvent,
     AgentToolFailedEvent,
     AgentToolInvokedEvent,
@@ -41,6 +42,14 @@ export class AgentConsoleEventBridge {
             this.state.setStatus('running');
             this.state.pushActivity('turn', 'Turn started');
             this.state.notify();
+        });
+
+        bind(AgentStreamChunkEvent, (event: AgentStreamChunkEvent) => {
+            if (event.sessionId !== this.state.sessionId) return;
+            if (event.usage) {
+                this.state.setTokenUsage(event.usage);
+                this.state.notify();
+            }
         });
 
         bind(AgentTurnCompletedEvent, async (event: AgentTurnCompletedEvent) => {
@@ -120,6 +129,7 @@ export class AgentConsoleEventBridge {
             if (event.response.metadata?.model) {
                 this.state.model = String(event.response.metadata.model);
             }
+            this.state.setTokenUsage(event.response.metadata?.usage);
             this.state.pushActivity('model', `Model: ${this.state.provider || 'unknown'} / ${this.state.model || 'unknown'}`);
             this.state.notify();
         });
