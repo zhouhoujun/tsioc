@@ -94,9 +94,13 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'br':
                 lines.push('');
                 return;
-            case 'section': {
+            case 'section':
+            case 'div': {
                 const start = lines.length;
-                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, lines, styleMap, width));
+                const childLines: string[] = [];
+                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, childLines, styleMap, width));
+                const framed = this.renderBlockLines(childLines, styleMap, width);
+                lines.push(...framed);
                 if (lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {
                     lines.push('');
                 }
@@ -108,17 +112,46 @@ export class TuiRenderer extends ConsoleRenderer {
         }
     }
 
+    protected renderBlockLines(lines: string[], styleMap: Record<string, string>, width?: number): string[] {
+        const hasFrame = !!(styleMap.background || styleMap['background-color'] || styleMap.border || styleMap.padding);
+        if (!hasFrame || !width) {
+            return lines;
+        }
+        const padding = this.resolveBoxPadding(styleMap.padding);
+        const hasBorder = !!styleMap.border;
+        const innerWidth = Math.max(4, width - (hasBorder ? 2 : 0) - padding.left - padding.right);
+        const contentLines = lines.length ? lines : [''];
+        const framed: string[] = [];
+        const horizontal = hasBorder ? this.applyAnsi('─'.repeat(Math.max(1, width - 2)), styleMap, undefined, true) : '';
+        const topPad = ' '.repeat(Math.max(0, padding.top));
+        const bottomPad = ' '.repeat(Math.max(0, padding.bottom));
+        const renderRow = (raw: string) => {
+            const leftPad = this.applyAnsi(' '.repeat(Math.max(0, padding.left)), styleMap, undefined, true);
+            const rightPad = this.applyAnsi(' '.repeat(Math.max(0, padding.right)), styleMap, undefined, true);
+            const body = this.applyAnsi(this.padVisible(raw, innerWidth), styleMap, undefined, true);
+            if (!hasBorder) {
+                return `${leftPad}${body}${rightPad}`;
+            }
+            return `${this.applyAnsi('│', styleMap, undefined, true)}${leftPad}${body}${rightPad}${this.applyAnsi('│', styleMap, undefined, true)}`;
+        };
+        if (hasBorder) {
+            framed.push(`${this.applyAnsi('┌', styleMap, undefined, true)}${horizontal}${this.applyAnsi('┐', styleMap, undefined, true)}`);
+        }
+        for (let index = 0; index < padding.top; index++) {
+            framed.push(renderRow(topPad));
+        }
+        contentLines.forEach(line => framed.push(renderRow(this.fitVisible(line, innerWidth))));
+        for (let index = 0; index < padding.bottom; index++) {
+            framed.push(renderRow(bottomPad));
+        }
+        if (hasBorder) {
+            framed.push(`${this.applyAnsi('└', styleMap, undefined, true)}${horizontal}${this.applyAnsi('┘', styleMap, undefined, true)}`);
+        }
+        return framed;
+    }
+
     protected renderInlineLine(element: ConsoleElement, inherited: Record<string, string>, width?: number): string {
-        const line = this.renderInlineText(element, inherited);
-        const background = inherited['background-color'] || inherited.background;
-        if (!background || !width) {
-            return line;
-        }
-        const visibleLength = this.stripAnsi(line).length;
-        if (visibleLength >= width) {
-            return line;
-        }
-        return `${line}${this.applyAnsi(' '.repeat(width - visibleLength), inherited, undefined, true)}`;
+        return this.renderInlineText(element, inherited);
     }
 
     protected renderInlineText(current: ConsoleNode, inherited: Record<string, string>): string {
@@ -231,8 +264,31 @@ export class TuiRenderer extends ConsoleRenderer {
         return `\x1b[${background ? '48' : '38'};2;${rgb.r};${rgb.g};${rgb.b}m`;
     }
 
+    protected resolveBoxPadding(value?: string): { top: number; right: number; bottom: number; left: number } {
+        if (!value) {
+            return { top: 0, right: 0, bottom: 0, left: 0 };
+        }
+        const parts = value
+            .split(/\s+/)
+            .map(part => parseInt(part.replace(/px$/, ''), 10))
+            .filter(num => Number.isFinite(num));
+        if (!parts.length) {
+            return { top: 0, right: 0, bottom: 0, left: 0 };
+        }
+        if (parts.length === 1) {
+            return { top: parts[0], right: parts[0], bottom: parts[0], left: parts[0] };
+        }
+        if (parts.length === 2) {
+            return { top: parts[0], right: parts[1], bottom: parts[0], left: parts[1] };
+        }
+        if (parts.length === 3) {
+            return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[1] };
+        }
+        return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[3] };
+    }
+
     protected extractHexColor(value: string): string | undefined {
-        const match = value.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})/);
+        const match = value.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/);
         return match ? `#${match[1]}` : undefined;
     }
 
@@ -261,6 +317,17 @@ export class TuiRenderer extends ConsoleRenderer {
             return visible.slice(0, width);
         }
         return `${value}${' '.repeat(width - visible.length)}`;
+    }
+
+    protected fitVisible(value: string, width: number): string {
+        const visible = this.stripAnsi(value);
+        if (visible.length <= width) {
+            return value;
+        }
+        if (width <= 3) {
+            return visible.slice(0, width);
+        }
+        return `${visible.slice(0, width - 3)}...`;
     }
 }
 

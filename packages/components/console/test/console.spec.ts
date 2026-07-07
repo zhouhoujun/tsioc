@@ -50,6 +50,18 @@ class ConsoleLoopTestComponent {
 class ConsoleStyleTestComponent {
 }
 
+@Component({
+    selector: 'console-panel-test',
+    template: `
+    <section style="background: #102218; color: #d8ffea; padding: 1; border: 1px solid #29543d;">
+        <p style="color: #7dd9a8;">Panel</p>
+        <p style="background: #173323; color: #7ef0a6;">Body</p>
+    </section>
+    `
+})
+class ConsolePanelTestComponent {
+}
+
 @Suite('Console Renderer')
 export class ConsoleRendererTest {
     @Test('renders console nodes to indented lines')
@@ -133,7 +145,7 @@ export class ConsoleRendererTest {
         });
         try {
             const ref = ctx.runners.getRef(ConsoleStyleTestComponent) as ComponentRef<ConsoleStyleTestComponent>;
-            const renderer = ctx.get(ConsoleRenderer) as TuiRenderer;
+            const renderer = ctx.get(TuiRenderer);
             const root = ref.hostView.rootNodes[0] as ConsoleElement;
             const lines = renderer.renderToTuiLines(root, { width: 20 });
             expect(lines.length).toBeGreaterThan(0);
@@ -142,5 +154,33 @@ export class ConsoleRendererTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('renders framed panel blocks through tui renderer')
+    async rendersFramedPanelBlocksThroughTuiRenderer() {
+        const ctx = await Application.run(ConsolePanelTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsolePanelTestComponent) as ComponentRef<ConsolePanelTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 24 });
+            expect(lines.some(line => line.includes('┌'))).toBe(true);
+            expect(lines.some(line => line.includes('┐'))).toBe(true);
+            expect(lines.some(line => line.includes('│'))).toBe(true);
+            expect(lines.some(line => line.includes('Panel'))).toBe(true);
+            expect(lines.some(line => line.includes('Body'))).toBe(true);
+            expect(lines.some(line => line.includes('\x1b['))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('prefers six digit hex colors in tui renderer')
+    prefersSixDigitHexColors() {
+        const renderer = new TuiRenderer();
+        expect((renderer as any).extractHexColor('background: #0d1117;')).toBe('#0d1117');
+        expect((renderer as any).extractHexColor('color: #abc;')).toBe('#abc');
     }
 }
