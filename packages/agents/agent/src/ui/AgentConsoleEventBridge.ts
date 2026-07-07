@@ -18,13 +18,24 @@ import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 export class AgentConsoleEventBridge {
     protected eventBindings: Array<{ event: any; handler: (event: any) => void | Promise<void> }> = [];
     protected subscribed = false;
+    protected stateRef: AgentConsoleSessionState;
 
     constructor(
-        private state: AgentConsoleSessionState,
+        state: AgentConsoleSessionState,
         private runtime: AgentRuntime,
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() private app?: ApplicationContext | null
     ) {
+        this.stateRef = state;
+    }
+
+    get state(): AgentConsoleSessionState {
+        return this.stateRef;
+    }
+
+    bindState(state: AgentConsoleSessionState): this {
+        this.stateRef = state;
+        return this;
     }
 
     subscribe(): void {
@@ -41,14 +52,12 @@ export class AgentConsoleEventBridge {
             if (event.sessionId !== this.state.sessionId) return;
             this.state.setStatus('running');
             this.state.pushActivity('turn', 'Turn started');
-            this.state.notify();
         });
 
         bind(AgentStreamChunkEvent, (event: AgentStreamChunkEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
             if (event.usage) {
                 this.state.setTokenUsage(event.usage);
-                this.state.notify();
             }
         });
 
@@ -56,7 +65,6 @@ export class AgentConsoleEventBridge {
             if (event.sessionId !== this.state.sessionId) return;
             this.state.setStatus('idle');
             this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
-            this.state.notify();
         });
 
         bind(AgentToolInvokedEvent, (event: AgentToolInvokedEvent) => {
@@ -74,7 +82,6 @@ export class AgentConsoleEventBridge {
                 updatedAt: Date.now()
             });
             this.state.pushActivity('tool', `Running ${event.toolName}`);
-            this.state.notify();
         });
 
         bind(AgentToolCompletedEvent, async (event: AgentToolCompletedEvent) => {
@@ -118,20 +125,18 @@ export class AgentConsoleEventBridge {
                 updatedAt: Date.now()
             });
             this.state.pushActivity('error', `${event.toolName}: ${event.error.message}`);
-            this.state.notify();
         });
 
         bind(AgentModelCompletedEvent, (event: AgentModelCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
             if (event.response.metadata?.provider) {
-                this.state.provider = String(event.response.metadata.provider);
+                this.state.setProvider(String(event.response.metadata.provider));
             }
             if (event.response.metadata?.model) {
-                this.state.model = String(event.response.metadata.model);
+                this.state.setModel(String(event.response.metadata.model));
             }
             this.state.setTokenUsage(event.response.metadata?.usage);
             this.state.pushActivity('model', `Model: ${this.state.provider || 'unknown'} / ${this.state.model || 'unknown'}`);
-            this.state.notify();
         });
 
         bind(AgentErrorEvent, (event: AgentErrorEvent) => {
@@ -139,7 +144,6 @@ export class AgentConsoleEventBridge {
             this.state.setStatus('error');
             this.state.setLastError(event.error.message);
             this.state.pushActivity('error', event.error.message);
-            this.state.notify();
         });
 
         this.subscribed = true;
@@ -169,6 +173,5 @@ export class AgentConsoleEventBridge {
         }));
         tools.sort((a, b) => a.name.localeCompare(b.name));
         this.state.setTools(tools);
-        this.state.notify();
     }
 }

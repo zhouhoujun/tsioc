@@ -46,8 +46,363 @@ export interface SuggestionState {
     selectedIndex: number;
 }
 
+export interface TerminalDraftState {
+    value: string;
+    cursor: number;
+}
+
+export interface TerminalChatScreenOptions {
+    appTitle?: string;
+    headerLine: string;
+    subHeaderLine: string;
+    conversationLines: string[];
+    promptQuestion?: string;
+    notice?: string;
+    latestActivity?: string;
+    latestToolRun?: string;
+    focusedTool?: string;
+    toolsSummary?: string;
+    workingTitle?: string;
+    workingLines: string[];
+    inputLines: string[];
+    selectLines: string[];
+    statusTitle?: string;
+    statusLines: string[];
+}
+
+export interface TerminalChatScreenLayout {
+    lines: string[];
+    contextLines: string[];
+    selectMenuScreenRow: number;
+}
+
+export interface TerminalMenuStateLike {
+    title?: string | null;
+}
+
+export interface TerminalHeaderOptions {
+    provider: string;
+    model: string;
+    status: string;
+    tasksCount: number;
+    runningToolsLabel: string;
+    width: number;
+}
+
+export interface TerminalSubHeaderOptions {
+    sessionId: string;
+    workspace: string;
+    width: number;
+}
+
+export interface TerminalConversationOptions {
+    renderedLines?: string[];
+    messages?: Array<{ role?: string; content: string }>;
+    width: number;
+    maxLines: number;
+}
+
+export interface TerminalKeyPress {
+    name?: string;
+    ctrl?: boolean;
+    meta?: boolean;
+}
+
+export interface TerminalMenuController {
+    getMenu(): { title?: string; options: SelectMenuOption[]; selectedIndex: number } | undefined;
+    move(delta: number): void;
+    confirm(): void;
+    confirmIndex(index: number): void;
+    cancel(): void;
+}
+
+export interface TerminalUiControllerOptions {
+    getCommands: () => string[];
+    getMentionCandidates: () => string[];
+    render: () => void;
+    setDraftDisplay: (displayDraft: string) => void;
+    submit: (value: string) => Promise<void> | void;
+    isClosed: () => boolean;
+    isInputLocked: () => boolean;
+    isModalPromptActive: () => boolean;
+    isSelecting: () => boolean;
+    menu?: TerminalMenuController;
+}
+
 export function getChatCommands(): string[] {
     return CHAT_COMMANDS.slice();
+}
+
+export class TerminalUiController {
+    protected currentDraft = '';
+    protected draftCursor = 0;
+    protected suggestionState: SuggestionState = { items: [], selectedIndex: -1 };
+    protected historyEntries: string[] = [];
+    protected historyIndex = -1;
+    protected historyDraft = '';
+    protected activeTextPrompt: { question: string; resolve: (value: string) => void } | null = null;
+
+    constructor(protected options: TerminalUiControllerOptions) {
+    }
+
+    get draft(): string {
+        return this.currentDraft;
+    }
+
+    get cursor(): number {
+        return this.draftCursor;
+    }
+
+    get suggestions(): SuggestionState {
+        return this.suggestionState;
+    }
+
+    get promptQuestion(): string {
+        return this.activeTextPrompt?.question || '';
+    }
+
+    setHistoryEntries(entries: string[]): void {
+        this.historyEntries = entries.slice();
+        this.historyIndex = -1;
+        this.historyDraft = '';
+    }
+
+    getHistoryEntries(): string[] {
+        return this.historyEntries.slice();
+    }
+
+    beginTextPrompt(question: string, resolve: (value: string) => void): void {
+        this.activeTextPrompt = { question, resolve };
+        this.historyIndex = -1;
+        this.historyDraft = '';
+        this.suggestionState = { items: [], selectedIndex: -1 };
+        this.updateDraft('', 0);
+    }
+
+    clearTextPrompt(): void {
+        this.activeTextPrompt = null;
+        this.updateDraft('', 0);
+    }
+
+    updateDraft(nextDraft: string, cursor = nextDraft.length): void {
+        this.currentDraft = nextDraft;
+        this.draftCursor = Math.max(0, Math.min(cursor, this.currentDraft.length));
+        this.options.setDraftDisplay(formatDisplayDraft(this.currentDraft, this.draftCursor));
+        const nextItems = resolveInputSuggestions(
+            this.currentDraft,
+            this.options.getCommands(),
+            this.options.getMentionCandidates()
+        );
+        this.suggestionState = normalizeSuggestionState(nextItems, this.suggestionState.selectedIndex >= 0 ? this.suggestionState.selectedIndex : 0);
+    }
+
+    applyChunk(chunk: Buffer | string): void {
+        const next = applyTerminalInputChunk(this.currentDraft, this.draftCursor, chunk);
+        this.updateDraft(next.value, next.cursor);
+    }
+
+    hasInteractiveSuggestions(): boolean {
+        const token = getActiveInputToken(this.currentDraft);
+        return !!token && (token.startsWith('/') || token.startsWith('@')) && this.suggestionState.items.length > 0;
+    }
+
+    applySuggestionValue(value?: string): void {
+        if (!value) {
+            return;
+        }
+        const nextInput = applySuggestionToInput(this.currentDraft, value);
+        this.suggestionState = { items: [], selectedIndex: -1 };
+        this.updateDraft(nextInput, nextInput.length);
+        this.options.render();
+    }
+
+    pushHistoryEntry(value: string): void {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return;
+        }
+        this.historyEntries = [trimmed, ...this.historyEntries.filter(item => item !== trimmed)].slice(0, 200);
+        this.historyIndex = -1;
+        this.historyDraft = '';
+    }
+
+    navigateHistory(delta: number): void {
+        if (!this.historyEntries.length) {
+            return;
+        }
+        if (delta < 0) {
+            if (this.historyIndex === -1) {
+                this.historyDraft = this.currentDraft;
+                this.historyIndex = 0;
+            } else if (this.historyIndex < this.historyEntries.length - 1) {
+                this.historyIndex += 1;
+            }
+        } else {
+            if (this.historyIndex === -1) {
+                return;
+            }
+            if (this.historyIndex === 0) {
+                this.historyIndex = -1;
+                this.updateDraft(this.historyDraft, this.historyDraft.length);
+                this.options.render();
+                return;
+            }
+            this.historyIndex -= 1;
+        }
+        const next = this.historyEntries[this.historyIndex] || '';
+        this.updateDraft(next, next.length);
+        this.options.render();
+    }
+
+    resolveTextPrompt(): boolean {
+        const prompt = this.activeTextPrompt;
+        if (!prompt) {
+            return false;
+        }
+        this.activeTextPrompt = null;
+        prompt.resolve(this.currentDraft);
+        this.options.render();
+        return true;
+    }
+
+    async submitCurrentDraft(): Promise<void> {
+        const line = this.currentDraft;
+        this.historyIndex = -1;
+        this.historyDraft = '';
+        this.suggestionState = { items: [], selectedIndex: -1 };
+        this.updateDraft('', 0);
+        await this.options.submit(line);
+    }
+
+    scheduleRender(): void {
+        if (this.options.isClosed() || this.options.isSelecting() || this.options.isInputLocked()) {
+            return;
+        }
+        Promise.resolve().then(() => {
+            if (this.options.isClosed() || this.options.isSelecting() || this.options.isInputLocked()) {
+                return;
+            }
+            this.options.render();
+        });
+    }
+
+    async handleKeypress(str: string, key: TerminalKeyPress): Promise<boolean> {
+        if (this.options.isClosed()) {
+            return true;
+        }
+        const menu = this.options.menu?.getMenu();
+        if (menu && !isSuggestionMenu(menu)) {
+            if (key?.name === 'down') {
+                this.options.menu?.move(1);
+                this.options.render();
+                return true;
+            }
+            if (key?.name === 'up') {
+                this.options.menu?.move(-1);
+                this.options.render();
+                return true;
+            }
+            if (key?.name === 'return') {
+                this.options.menu?.confirm();
+                return true;
+            }
+            if (key?.name === 'escape' || key?.name === 'q') {
+                this.options.menu?.cancel();
+                return true;
+            }
+            if (str && /^[1-9]$/.test(str)) {
+                const index = parseInt(str, 10) - 1;
+                if (index >= 0 && index < menu.options.length) {
+                    this.options.menu?.confirmIndex(index);
+                }
+                return true;
+            }
+            return true;
+        }
+        if (this.activeTextPrompt && key?.name === 'return') {
+            this.resolveTextPrompt();
+            return true;
+        }
+        if (!this.options.isModalPromptActive() && !this.options.isInputLocked() && !this.hasInteractiveSuggestions() && key?.name === 'up') {
+            this.navigateHistory(-1);
+            return true;
+        }
+        if (!this.options.isModalPromptActive() && !this.options.isInputLocked() && !this.hasInteractiveSuggestions() && key?.name === 'down') {
+            this.navigateHistory(1);
+            return true;
+        }
+        if (this.options.isModalPromptActive() || this.options.isInputLocked() || !this.hasInteractiveSuggestions()) {
+            if (!this.options.isModalPromptActive() && !this.options.isInputLocked() && key?.name === 'return') {
+                await this.submitCurrentDraft();
+                return true;
+            }
+            const isEditableKey = key?.name === 'backspace'
+                || key?.name === 'delete'
+                || key?.name === 'left'
+                || key?.name === 'right'
+                || key?.name === 'home'
+                || key?.name === 'end'
+                || (!!str && !key?.ctrl && !key?.meta && key?.name !== 'return' && key?.name !== 'tab');
+            if (isEditableKey) {
+                this.scheduleRender();
+                return true;
+            }
+            return false;
+        }
+        if (key?.name === 'down') {
+            this.suggestionState = moveSuggestionSelection(this.suggestionState, 1);
+            this.options.render();
+            return true;
+        }
+        if (key?.name === 'up') {
+            this.suggestionState = moveSuggestionSelection(this.suggestionState, -1);
+            this.options.render();
+            return true;
+        }
+        if (key?.name === 'return' && shouldAcceptSuggestionOnEnter(this.currentDraft, this.suggestionState)) {
+            const selected = this.suggestionState.items[this.suggestionState.selectedIndex];
+            this.applySuggestionValue(selected?.value);
+            return true;
+        }
+        if (key?.name === 'return') {
+            await this.submitCurrentDraft();
+            return true;
+        }
+        if (key?.name === 'tab' && this.suggestionState.selectedIndex >= 0) {
+            const selected = this.suggestionState.items[this.suggestionState.selectedIndex];
+            this.applySuggestionValue(selected?.value);
+            return true;
+        }
+        const isEditableKey = key?.name === 'backspace'
+            || key?.name === 'delete'
+            || key?.name === 'left'
+            || key?.name === 'right'
+            || key?.name === 'home'
+            || key?.name === 'end'
+            || (!!str && !key?.ctrl && !key?.meta && key?.name !== 'return' && key?.name !== 'tab');
+        if (isEditableKey) {
+            this.scheduleRender();
+            return true;
+        }
+        return false;
+    }
+}
+
+export function formatDisplayDraft(value: string, cursor: number): string {
+    const safeCursor = Math.max(0, Math.min(cursor, value.length));
+    return `${value.slice(0, safeCursor)}|${value.slice(safeCursor)}`;
+}
+
+export function isSuggestionMenu(menu?: TerminalMenuStateLike | null): boolean {
+    return menu?.title === 'Suggestions';
+}
+
+export function buildSuggestionMenuOptions(state: SuggestionState): SelectMenuOption[] {
+    return state.items.map(item => ({
+        label: item.label,
+        value: item.value,
+        description: item.group.toLowerCase()
+    }));
 }
 
 export function renderSelectMenu(title: string, options: SelectMenuOption[], selectedIndex: number, hint = '1-9 select   up/down move   enter confirm   q cancel'): string[] {
@@ -273,6 +628,113 @@ export function renderDraftLine(line: string): string {
     return line.replace(/(^|\s)(@[\w.-]+)/g, (_match, prefix, mention) => `${prefix}[${mention}]`);
 }
 
+export function applyTerminalInputChunk(value: string, cursor: number, chunk: Buffer | string): TerminalDraftState {
+    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
+    if (!text || parseTerminalMouseEvent(text)) {
+        return { value, cursor };
+    }
+    let nextValue = value;
+    let nextCursor = Math.max(0, Math.min(cursor, value.length));
+    for (let index = 0; index < text.length; index++) {
+        const char = text[index];
+        if (char === '\r' || char === '\n' || char === '\t') {
+            continue;
+        }
+        if (char === '\u007f') {
+            if (nextCursor > 0) {
+                nextValue = `${nextValue.slice(0, nextCursor - 1)}${nextValue.slice(nextCursor)}`;
+                nextCursor -= 1;
+            }
+            continue;
+        }
+        if (char === '\u001b') {
+            const seq3 = text.slice(index, index + 3);
+            const seq4 = text.slice(index, index + 4);
+            if (seq3 === '\u001b[D') {
+                nextCursor = Math.max(0, nextCursor - 1);
+                index += 2;
+                continue;
+            }
+            if (seq3 === '\u001b[C') {
+                nextCursor = Math.min(nextValue.length, nextCursor + 1);
+                index += 2;
+                continue;
+            }
+            if (seq3 === '\u001b[H') {
+                nextCursor = 0;
+                index += 2;
+                continue;
+            }
+            if (seq3 === '\u001b[F') {
+                nextCursor = nextValue.length;
+                index += 2;
+                continue;
+            }
+            if (seq4 === '\u001b[3~') {
+                if (nextCursor < nextValue.length) {
+                    nextValue = `${nextValue.slice(0, nextCursor)}${nextValue.slice(nextCursor + 1)}`;
+                }
+                index += 3;
+                continue;
+            }
+            if (text[index + 1] === '[') {
+                let seqEnd = index + 2;
+                while (seqEnd < text.length) {
+                    const code = text.charCodeAt(seqEnd);
+                    if (code >= 0x40 && code <= 0x7e) {
+                        break;
+                    }
+                    seqEnd += 1;
+                }
+                index = seqEnd < text.length ? seqEnd : text.length;
+                continue;
+            }
+            if (text[index + 1] === 'O') {
+                index = Math.min(text.length - 1, index + 2);
+                continue;
+            }
+            continue;
+        }
+        if (char < ' ') {
+            continue;
+        }
+        nextValue = `${nextValue.slice(0, nextCursor)}${char}${nextValue.slice(nextCursor)}`;
+        nextCursor += char.length;
+    }
+    return {
+        value: nextValue,
+        cursor: nextCursor
+    };
+}
+
+export function buildTerminalHeaderLine(options: TerminalHeaderOptions): string {
+    return fitLine(
+        `${options.provider} / ${options.model}  |  ${options.status}  |  ${options.tasksCount} tasks  |  ${options.runningToolsLabel}`,
+        options.width
+    );
+}
+
+export function buildTerminalSubHeaderLine(options: TerminalSubHeaderOptions): string {
+    return fitLine(
+        `session ${options.sessionId}  |  ${options.workspace}`,
+        options.width
+    );
+}
+
+export function buildConversationLines(options: TerminalConversationOptions): string[] {
+    const renderedLines = options.renderedLines || [];
+    if (renderedLines.length) {
+        return renderedLines
+            .flatMap((line: string) => [line, ''])
+            .slice(-options.maxLines);
+    }
+    const messages = options.messages || [];
+    return messages
+        .slice(-8)
+        .flatMap((message: any) => renderConversationMessage(message.role, message.content, options.width))
+        .slice(-options.maxLines);
+}
+
 export function renderMessagePreview(role: string, content: string, width = 160): string[] {
     const normalized = String(content || '')
         .replace(/\r/g, '')
@@ -400,4 +862,64 @@ export function renderPanel(title: string, lines: string[], width: number, heigh
         body.push('');
     }
     return [header, ...body];
+}
+
+function trimEdgeBlanks(lines: string[]): string[] {
+    const next = lines.slice();
+    while (next.length && !String(next[0] || '').trim()) {
+        next.shift();
+    }
+    while (next.length && !String(next[next.length - 1] || '').trim()) {
+        next.pop();
+    }
+    return next;
+}
+
+export function composeTerminalChatScreen(options: TerminalChatScreenOptions): TerminalChatScreenLayout {
+    const lines: string[] = [
+        options.appTitle || 'tsdi-agent',
+        options.headerLine,
+        options.subHeaderLine
+    ];
+    const conversationLines = trimEdgeBlanks(options.conversationLines || []);
+    const contextLines = trimEdgeBlanks([
+        ...(options.promptQuestion ? [
+            `prompt  ${options.promptQuestion}`,
+            'prompt  Enter confirm   /quit exit'
+        ] : []),
+        ...(options.notice ? [`notice  ${options.notice}`] : []),
+        ...(options.latestActivity ? [`activity  ${options.latestActivity}`] : []),
+        ...(options.latestToolRun ? [`tool  ${options.latestToolRun}`] : []),
+        ...(options.focusedTool ? [`focus  ${options.focusedTool}`] : []),
+        ...(options.toolsSummary ? [`tools  ${options.toolsSummary}`] : [])
+    ]);
+
+    if (conversationLines.length) {
+        lines.push('', ...conversationLines);
+    }
+    if (contextLines.length) {
+        lines.push('', ...contextLines);
+    }
+    if ((options.workingLines || []).length) {
+        lines.push('', ...trimEdgeBlanks(options.workingLines || []));
+    }
+    if ((options.inputLines || []).length) {
+        lines.push('', ...trimEdgeBlanks(options.inputLines || []));
+    }
+
+    let selectMenuScreenRow = -1;
+    if ((options.selectLines || []).length) {
+        selectMenuScreenRow = lines.length + 2;
+        lines.push('', ...trimEdgeBlanks(options.selectLines || []));
+    }
+
+    if ((options.statusLines || []).length) {
+        lines.push('', ...trimEdgeBlanks(options.statusLines || []));
+    }
+
+    return {
+        lines,
+        contextLines,
+        selectMenuScreenRow
+    };
 }

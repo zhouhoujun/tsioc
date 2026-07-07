@@ -86,8 +86,8 @@ export class AgentConsoleSessionState {
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
     commandHints = ['/help', '/tools', '/model', '/clear', '/quit', '/exit'];
 
-    protected listeners = new Set<() => void>();
     protected activeToolSet = new Set<string>();
+    protected listeners = new Set<() => void>();
 
     configure(meta: AgentConsoleSessionMeta): this {
         if (meta.sessionId) {
@@ -106,13 +106,35 @@ export class AgentConsoleSessionState {
         return this;
     }
 
+    setTitle(title: string): void {
+        this.title = title;
+        this.notify();
+    }
+
+    setProvider(provider: string): void {
+        this.provider = provider;
+        this.notify();
+    }
+
+    setModel(model: string): void {
+        this.model = model;
+        this.notify();
+    }
+
+    setWorkspace(workspace: string): void {
+        this.workspace = workspace;
+        this.notify();
+    }
+
     subscribe(listener: () => void): () => void {
         this.listeners.add(listener);
-        return () => this.listeners.delete(listener);
+        return () => {
+            this.listeners.delete(listener);
+        };
     }
 
     notify(): void {
-        this.listeners.forEach(listener => listener());
+        Array.from(this.listeners.values()).forEach(listener => listener());
     }
 
     get highlightedToolRun(): AgentConsoleToolRun | undefined {
@@ -127,14 +149,17 @@ export class AgentConsoleSessionState {
 
     setMessages(messages: AgentMessage[]): void {
         this.messages = messages;
+        this.notify();
     }
 
     setStatus(status: string): void {
         this.status = status;
+        this.notify();
     }
 
     setTools(tools: AgentConsoleToolItem[]): void {
         this.tools = tools;
+        this.notify();
     }
 
     setTokenUsage(usage?: Partial<AgentConsoleTokenUsage> | Record<string, any> | null): void {
@@ -150,26 +175,32 @@ export class AgentConsoleSessionState {
             completionTokens: completionTokens || 0,
             totalTokens: totalTokens || 0
         };
+        this.notify();
     }
 
     setInput(value: string): void {
         this.input = value;
+        this.notify();
     }
 
     setLastError(message: string): void {
         this.lastError = message;
+        this.notify();
     }
 
     setTasksCount(value: number): void {
         this.tasksCount = value;
+        this.notify();
     }
 
     setNotice(message: string): void {
         this.notice = message;
+        this.notify();
     }
 
     setTheme(theme?: AgentConsoleThemeInput | null): void {
         this.theme = mergeAgentConsoleTheme(theme);
+        this.notify();
     }
 
     openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): void {
@@ -237,11 +268,13 @@ export class AgentConsoleSessionState {
     setRunningTool(toolName: string): void {
         this.activeToolSet.add(toolName);
         this.runningTools = Array.from(this.activeToolSet.values()).sort();
+        this.notify();
     }
 
     clearRunningTool(toolName: string): void {
         this.activeToolSet.delete(toolName);
         this.runningTools = Array.from(this.activeToolSet.values()).sort();
+        this.notify();
     }
 
     pushActivity(kind: AgentConsoleActivity['kind'], message: string): void {
@@ -254,12 +287,14 @@ export class AgentConsoleSessionState {
                 createdAt: Date.now()
             }
         ];
+        this.notify();
     }
 
     upsertToolRun(run: AgentConsoleToolRun): void {
         const next = this.toolRuns.filter(item => item.name !== run.name);
         next.unshift(run);
         this.toolRuns = next.slice(0, 8);
+        this.notify();
     }
 
     summarize(value: string): string {

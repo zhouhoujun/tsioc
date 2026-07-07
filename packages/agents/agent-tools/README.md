@@ -130,6 +130,6 @@ In this setup:
 
 ## License
 
-This package is published under the Apache License 2.0. The repository root license may differ; for `packages/agents/*`, use this package-level license declaration for distribution and consumption.
+This package is published under the Apache License 2.0.
 
 Apache License 2.0 © [Houjun](https://github.com/zhouhoujun/)

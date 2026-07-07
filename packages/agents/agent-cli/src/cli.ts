@@ -3,28 +3,24 @@ import { Command } from 'commander';
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Writable } from 'stream';
 import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
 import { AgentCliProviderProfile, ensureAgentWorkspaceConfig, resolveCliConfig, resolveCliModelConfig, resolveProviderApiKeyEnv, resolveProviderBaseUrl, writeSettingsModelProfile } from './config';
 import {
     applySuggestionToInput,
+    applyTerminalInputChunk,
     buildMentionCandidates,
     enrichPromptWithMentions,
     fitLine,
+    formatDisplayDraft,
     getActiveInputToken,
     getChatCommands,
+    isSuggestionMenu,
     moveSuggestionSelection,
     normalizeSuggestionState,
     parseTerminalMouseEvent,
-    renderConversationMessage,
-    renderActivityLine,
-    resolveSelectMenuOptionIndexFromRow,
-    renderToolDetail,
-    renderToolRunLine,
     resolveUniqueCommandPrefix,
     resolveInputSuggestions,
     shouldAcceptSuggestionOnEnter,
-    sortToolRuns,
     SuggestionState
 } from './ui';
 
@@ -53,25 +49,8 @@ const PROVIDER_DEFAULT_MODELS: Record<string, string> = {
 
 const ANSI = {
     reset: '\x1b[0m',
-    dim: '\x1b[2m',
-    green: '\x1b[32m',
-    greenBold: '\x1b[1;32m',
-    greenBg: '\x1b[42;30m',
-    amber: '\x1b[33m',
-    amberBold: '\x1b[1;33m',
-    blue: '\x1b[36m',
-    blueBold: '\x1b[1;36m',
-    violet: '\x1b[35m',
     red: '\x1b[31m'
 } as const;
-
-function colorize(value: string, ansi: string): string {
-    return `${ansi}${value}${ANSI.reset}`;
-}
-
-function colorizeLabel(label: string, value: string, ansi: string): string {
-    return `${colorize(label, ansi)} ${value}`;
-}
 
 function stripAnsi(value: string): string {
     return value.replace(/\x1b\[[0-9;]*m/g, '');
@@ -88,57 +67,9 @@ function fitAnsiLine(line: string, width: number): string {
     return `${plain.slice(0, width - 3)}...`;
 }
 
-function padVisible(value: string, width: number): string {
-    const visible = stripAnsi(value);
-    if (visible.length >= width) {
-        return value;
-    }
-    return `${value}${' '.repeat(width - visible.length)}`;
-}
-
-function sliceInputViewport(value: string, cursor: number, width: number): { text: string; cursorOffset: number } {
-    if (width <= 0) {
-        return { text: '', cursorOffset: 0 };
-    }
-    if (value.length <= width) {
-        return { text: value, cursorOffset: Math.max(0, Math.min(cursor, value.length)) };
-    }
-    const safeCursor = Math.max(0, Math.min(cursor, value.length));
-    const start = Math.max(0, Math.min(value.length - width, safeCursor - Math.floor(width * 0.6)));
-    const end = Math.min(value.length, start + width);
-    return {
-        text: value.slice(start, end),
-        cursorOffset: safeCursor - start
-    };
-}
-
 class ChatExitRequest extends Error {
     constructor() {
         super('CHAT_EXIT_REQUEST');
-    }
-}
-
-class MutedWritable extends Writable {
-    muted = false;
-
-    constructor(private target: NodeJS.WriteStream) {
-        super();
-        Object.defineProperty(this, 'isTTY', {
-            get: () => target.isTTY
-        });
-        Object.defineProperty(this, 'columns', {
-            get: () => (target as any).columns
-        });
-        Object.defineProperty(this, 'rows', {
-            get: () => (target as any).rows
-        });
-    }
-
-    _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
-        if (!this.muted) {
-            this.target.write(chunk, encoding);
-        }
-        callback();
     }
 }
 
@@ -231,34 +162,14 @@ function createAgentCli(): Command {
 async function runInteractiveChat(options: any): Promise<void> {
     const {
         AgentRuntime, mergeAgentOptions, ToolRegistry,
-        AgentConsoleComponent, AgentConsoleSessionState, AgentUiModule,
-        AgentConsoleWorkingPanelComponent, AgentConsoleInputPanelComponent,
-        AgentConsoleStatusPanelComponent, AgentConsoleSelectPanelComponent,
-        AgentConsoleActivityPanelComponent, AgentConsoleToolsPanelComponent,
-        AgentConsoleToolRunsPanelComponent, AgentConsoleMessagesPanelComponent
+        AgentConsoleComponent, AgentConsoleSessionState, AgentUiModule
     } = require('@tsdi/agent');
-    const { ConsoleRenderer } = require('@tsdi/components/console');
+    const { ComponentFactory } = require('@tsdi/components');
+    const { ConsoleRenderer, TuiRenderer } = require('@tsdi/components/console');
 
     const resolved = resolveCliConfig(options);
     ensureAgentWorkspaceConfig(resolved.root, path.basename(resolved.workspace));
     const historyPath = path.join(resolved.root, HISTORY_FILE);
-    const mutedOutput = new MutedWritable(process.stdout);
-    mutedOutput.muted = true;
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: mutedOutput as any,
-        completer: (line: string) => {
-            const mentions = buildMentionCandidates((viewModel?.tools || []).map((tool: any) => tool.name));
-            const token = getActiveInputToken(line) || line;
-            const pool = token.startsWith('@')
-                ? mentions.map(item => ({ group: 'Mentions' as const, label: item, value: item }))
-                : getChatCommands().map(item => ({ group: 'Commands' as const, label: item, value: item }));
-            const hits = pool.filter(item => item.value.startsWith(token));
-            return [(hits.length ? hits : pool).map(item => item.value), token];
-        },
-        prompt: '',
-        terminal: true
-    });
 
     const sessionId = resolved.sessionId;
     let currentProfile = resolveCliModelConfig(options, resolved.root);
@@ -268,15 +179,9 @@ async function runInteractiveChat(options: any): Promise<void> {
     let viewModel: any = null;
     let consoleState: any = null;
     let consoleRenderer: any = null;
-    let workingPanelRef: any = null;
-    let inputPanelRef: any = null;
-    let statusPanelRef: any = null;
+    let consoleComponentRef: any = null;
     let selectPanelRef: any = null;
-    let activityPanelRef: any = null;
-    let toolsPanelRef: any = null;
-    let toolRunsPanelRef: any = null;
-    let messagesPanelRef: any = null;
-    let unsubscribeVm: (() => void) | null = null;
+    let renderTimer: NodeJS.Timeout | null = null;
     let inputLocked = false;
     let lastRenderKey = '';
     let screenNotice = '';
@@ -284,21 +189,51 @@ async function runInteractiveChat(options: any): Promise<void> {
     let multilineMode = false;
     let draftLines: string[] = [];
     let currentDraft = '';
+    let draftCursor = 0;
     let isClosed = false;
     let modalPromptActive = false;
     let selectMenu: SelectMenuState | null = null;
     let suggestionState: SuggestionState = { items: [], selectedIndex: -1 };
+    let activeTextPrompt: { question: string; resolve: (value: string) => void; previousLocked: boolean } | null = null;
     let isSelecting = false;
-    let selectMenuScreenRow = -1;
     let stdinDataHandler: ((chunk: Buffer | string) => void) | null = null;
     let keypressHandler: ((str: string, key: readline.Key) => void) | null = null;
     let resizeHandler: (() => void) | null = null;
     let sigintHandler: (() => void) | null = null;
-    const historyInterface = rl as readline.Interface & { history?: string[] };
+    let historyEntries: string[] = [];
+    let historyIndex = -1;
+    let historyDraft = '';
+    let isCleaningUp = false;
+    const syncSuggestionMenu = () => {
+        const activeMenu = consoleState?.selectMenu;
+        if (activeMenu && !isSuggestionMenu(activeMenu)) {
+            return;
+        }
+        const activeToken = getActiveInputToken(currentDraft);
+        const items = resolveInputSuggestions(
+            currentDraft,
+            viewModel?.commandHints || getChatCommands(),
+            buildMentionCandidates((viewModel?.tools || []).map((tool: any) => tool.name))
+        );
+        suggestionState = normalizeSuggestionState(items, suggestionState.selectedIndex >= 0 ? suggestionState.selectedIndex : 0);
+        const shouldShow = !!activeToken && (activeToken.startsWith('/') || activeToken.startsWith('@')) && suggestionState.items.length > 0;
+        if (!shouldShow) {
+            if (isSuggestionMenu(consoleState?.selectMenu)) {
+                consoleState.closeSelectMenu();
+            }
+            return;
+        }
+        const options = suggestionState.items.map(item => ({
+            label: item.label,
+            value: item.value,
+            description: item.group
+        }));
+        consoleState?.openSelectMenu?.('Suggestions', options, Math.max(0, suggestionState.selectedIndex), 'tab/enter accept   up/down move');
+    };
 
-    const formatDisplayDraft = (value: string, cursor: number): string => {
-        const safeCursor = Math.max(0, Math.min(cursor, value.length));
-        return `${value.slice(0, safeCursor)}|${value.slice(safeCursor)}`;
+    const setDraftDisplay = () => {
+        consoleState?.setInput?.(formatDisplayDraft(currentDraft, draftCursor));
+        syncSuggestionMenu();
     };
 
     const getActiveSelectMenu = (): { title: string; hint?: string; options: SelectMenuOption[]; selectedIndex: number } | undefined => {
@@ -308,13 +243,19 @@ async function runInteractiveChat(options: any): Promise<void> {
         return selectMenu || undefined;
     };
 
-    const setReadlineMuted = (muted: boolean) => {
-        mutedOutput.muted = muted;
+    const safePrompt = (_preserveCursor = false) => {
+        if (isClosed) {
+            return;
+        }
+        renderScreen();
     };
 
-    const safePrompt = (_preserveCursor = false) => undefined;
-
-    const refreshInputLine = () => undefined;
+    const refreshInputLine = () => {
+        if (isClosed) {
+            return;
+        }
+        setDraftDisplay();
+    };
 
     const loadHistory = (): string[] => {
         if (!fs.existsSync(historyPath)) {
@@ -329,11 +270,11 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const persistHistory = () => {
-        const unique = Array.from(new Set((historyInterface.history || []).slice().reverse().filter(Boolean)));
+        const unique = Array.from(new Set(historyEntries.filter(Boolean)));
         fs.writeFileSync(historyPath, JSON.stringify(unique.slice(-200), null, 2) + '\n', 'utf8');
     };
 
-    historyInterface.history = loadHistory().slice().reverse();
+    historyEntries = loadHistory();
 
     const promptLine = (question: string): Promise<string> => new Promise(resolve => {
         const previousLocked = inputLocked;
@@ -342,38 +283,37 @@ async function runInteractiveChat(options: any): Promise<void> {
         isSelecting = false;
         selectMenu = null;
         consoleState?.closeSelectMenu?.();
-        currentDraft = '';
+        historyIndex = -1;
+        historyDraft = '';
         suggestionState = { items: [], selectedIndex: -1 };
-        (rl as any).line = '';
-        (rl as any).cursor = 0;
-        readline.clearLine(process.stdout, 0);
-        readline.cursorTo(process.stdout, 0);
-        setReadlineMuted(false);
-        rl.question(question, answer => {
-            setReadlineMuted(true);
-            inputLocked = previousLocked;
-            modalPromptActive = false;
-            currentDraft = '';
-            resolve(answer.trim());
-        });
+        activeTextPrompt = {
+            question,
+            previousLocked,
+            resolve: (answer: string) => {
+                inputLocked = previousLocked;
+                modalPromptActive = false;
+                activeTextPrompt = null;
+                currentDraft = '';
+                draftCursor = 0;
+                resolve(answer.trim());
+            }
+        };
+        updateDraftState('', 0);
+        renderScreen();
     });
 
     const pauseReadlineForSelection = () => {
-        if (isClosed || (rl as any).closed) {
+        if (isClosed) {
             return;
         }
         isSelecting = true;
-        rl.pause();
-        readline.clearLine(process.stdout, 0);
-        readline.cursorTo(process.stdout, 0);
     };
 
     const resumeReadlineAfterSelection = () => {
-        if (isClosed || (rl as any).closed) {
+        if (isClosed) {
             return;
         }
         isSelecting = false;
-        rl.resume();
         renderScreen();
         safePrompt();
     };
@@ -382,26 +322,27 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (viewModel?.select) {
             inputLocked = true;
             modalPromptActive = true;
-            currentDraft = '';
+            historyIndex = -1;
+            historyDraft = '';
             suggestionState = { items: [], selectedIndex: -1 };
-            (rl as any).line = '';
-            (rl as any).cursor = 0;
+            updateDraftState('', 0);
             pauseReadlineForSelection();
             renderSelectionNotice();
             return viewModel.select(title, options, initialIndex, hint).finally(() => {
                 inputLocked = false;
                 modalPromptActive = false;
                 currentDraft = '';
+                draftCursor = 0;
                 resumeReadlineAfterSelection();
             });
         }
         const previousLocked = inputLocked;
         inputLocked = true;
         modalPromptActive = true;
-        currentDraft = '';
+        historyIndex = -1;
+        historyDraft = '';
         suggestionState = { items: [], selectedIndex: -1 };
-        (rl as any).line = '';
-        (rl as any).cursor = 0;
+        updateDraftState('', 0);
         return new Promise(resolve => {
             pauseReadlineForSelection();
             selectMenu = {
@@ -414,6 +355,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                     modalPromptActive = false;
                     inputLocked = previousLocked;
                     currentDraft = '';
+                    draftCursor = 0;
                     if (consoleState?.selectMenuAction === resolveSelection) {
                         consoleState.selectMenuAction = undefined;
                     }
@@ -431,39 +373,21 @@ async function runInteractiveChat(options: any): Promise<void> {
         });
     };
 
-    const syncCurrentDraft = () => {
-        currentDraft = (rl as any).line || '';
-        const cursor = typeof (rl as any).cursor === 'number' ? (rl as any).cursor : currentDraft.length;
-        consoleState?.setInput?.(formatDisplayDraft(currentDraft, cursor));
-        const nextItems = resolveInputSuggestions(
-            currentDraft,
-            viewModel?.commandHints || getChatCommands(),
-            buildMentionCandidates((viewModel?.tools || []).map((tool: any) => tool.name))
-        );
-        suggestionState = normalizeSuggestionState(nextItems, suggestionState.selectedIndex >= 0 ? suggestionState.selectedIndex : 0);
-        if (!consoleState?.selectMenu && hasInteractiveSuggestions()) {
-            const activeOptions = suggestionState.items.map(item => ({
-                label: item.label,
-                value: item.value,
-                description: item.group.toLowerCase()
-            }));
-            consoleState?.openSelectMenu?.('Suggestions', activeOptions, Math.max(0, suggestionState.selectedIndex), 'tab apply   up/down move   enter confirm');
-        } else if (consoleState?.selectMenu?.title === 'Suggestions') {
-            const activeOptions = suggestionState.items.map(item => ({
-                label: item.label,
-                value: item.value,
-                description: item.group.toLowerCase()
-            }));
-            if (activeOptions.length) {
-                consoleState?.openSelectMenu?.('Suggestions', activeOptions, Math.max(0, suggestionState.selectedIndex), 'tab apply   up/down move   enter confirm');
-            }
-        } else if (!getActiveInputToken(currentDraft) && consoleState?.selectMenu?.title === 'Suggestions') {
-            consoleState?.closeSelectMenu?.();
-        }
+    const updateDraftState = (nextDraft: string, cursor = nextDraft.length) => {
+        currentDraft = nextDraft;
+        draftCursor = Math.max(0, Math.min(cursor, currentDraft.length));
+        setDraftDisplay();
+    };
+
+    const applyChunkToDraft = (chunk: Buffer | string) => {
+        const next = applyTerminalInputChunk(currentDraft, draftCursor, chunk);
+        currentDraft = next.value;
+        draftCursor = next.cursor;
+        setDraftDisplay();
     };
 
     const renderSelectionNotice = () => {
-        if (isClosed || (rl as any).closed) {
+        if (isClosed) {
             return;
         }
         renderScreen();
@@ -474,19 +398,25 @@ async function runInteractiveChat(options: any): Promise<void> {
         return !!token && (token.startsWith('/') || token.startsWith('@')) && suggestionState.items.length > 0;
     };
 
+    const scheduleDraftRefresh = () => {
+        if (isClosed || isSelecting || inputLocked) {
+            return;
+        }
+        Promise.resolve().then(() => {
+            if (isClosed || isSelecting || inputLocked) {
+                return;
+            }
+            renderScreen();
+        });
+    };
+
     const applySuggestionValue = (value?: string): void => {
         if (!value) {
             return;
         }
-        const nextInput = applySuggestionToInput((rl as any).line || '', value);
-        (rl as any).line = nextInput;
-        currentDraft = nextInput;
+        const nextInput = applySuggestionToInput(currentDraft, value);
         suggestionState = { items: [], selectedIndex: -1 };
-        if (consoleState?.selectMenu?.title === 'Suggestions') {
-            consoleState.closeSelectMenu();
-        }
-        syncCurrentDraft();
-        renderScreen();
+        updateDraftState(nextInput, nextInput.length);
     };
 
     const isCancelInput = (value?: string): boolean => CANCEL_INPUTS.has(String(value || '').trim().toLowerCase());
@@ -617,10 +547,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             viewModel.dispose?.();
             viewModel = null;
         }
-        if (unsubscribeVm) {
-            unsubscribeVm();
-            unsubscribeVm = null;
-        }
         if (currentCtx) {
             await currentCtx.close();
         }
@@ -649,25 +575,20 @@ async function runInteractiveChat(options: any): Promise<void> {
         currentCtx.get(AgentUiModule);
         runtime = currentCtx.get(AgentRuntime);
         toolRegistry = currentCtx.get(ToolRegistry);
-        viewModel = currentCtx.get(AgentConsoleComponent);
-        consoleState = currentCtx.get(AgentConsoleSessionState);
-        consoleRenderer = currentCtx.get(ConsoleRenderer);
+        const componentFactory = currentCtx.get(ComponentFactory);
+        consoleComponentRef = componentFactory.create(AgentConsoleComponent, { injector: currentCtx });
+        viewModel = consoleComponentRef.instance;
         viewModel.configure({
             sessionId,
             provider: profile.provider,
             model: profile.model,
             workspace: resolved.workspace
         });
-        await viewModel.onInit();
-        const runnerRef = currentCtx.runners?.getRef?.(AgentConsoleComponent);
-        workingPanelRef = runnerRef?.hostView?.query?.(AgentConsoleWorkingPanelComponent) || null;
-        inputPanelRef = runnerRef?.hostView?.query?.(AgentConsoleInputPanelComponent) || null;
-        statusPanelRef = runnerRef?.hostView?.query?.(AgentConsoleStatusPanelComponent) || null;
-        selectPanelRef = runnerRef?.hostView?.query?.(AgentConsoleSelectPanelComponent) || null;
-        activityPanelRef = runnerRef?.hostView?.query?.(AgentConsoleActivityPanelComponent) || null;
-        toolsPanelRef = runnerRef?.hostView?.query?.(AgentConsoleToolsPanelComponent) || null;
-        toolRunsPanelRef = runnerRef?.hostView?.query?.(AgentConsoleToolRunsPanelComponent) || null;
-        messagesPanelRef = runnerRef?.hostView?.query?.(AgentConsoleMessagesPanelComponent) || null;
+        await consoleComponentRef.render();
+        consoleState = viewModel.sessionState || consoleComponentRef.injector.get(AgentConsoleSessionState);
+        consoleRenderer = currentCtx.get(TuiRenderer) || currentCtx.get(ConsoleRenderer);
+        const runnerRef = consoleComponentRef;
+        selectPanelRef = runnerRef?.hostView?.query?.('agent-console-select-panel') || null;
         viewModel.setCommandAction('/help', async () => {
             inputLocked = true;
             screenNotice = [
@@ -712,6 +633,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         viewModel.setCommandAction('/model', async () => {
             inputLocked = true;
             currentDraft = '';
+            draftCursor = 0;
             suggestionState = { items: [], selectedIndex: -1 };
             screenNotice = `Current provider: ${currentProfile.provider}\nCurrent model: ${currentProfile.model}`;
             viewModel?.showNotice?.(screenNotice);
@@ -760,7 +682,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             } catch (error: any) {
                 if (error instanceof ChatExitRequest) {
                     isClosed = true;
-                    rl.close();
+                    await cleanupAndExit();
                     return;
                 }
                 screenNotice = `Error: ${error.message}`;
@@ -770,57 +692,48 @@ async function runInteractiveChat(options: any): Promise<void> {
                 renderScreen();
             }
         });
-        unsubscribeVm = viewModel.subscribe(() => {
-            if (isSelecting) {
-                renderSelectionNotice();
-                return;
-            }
-            if (!inputLocked) {
-                renderScreen();
-            }
-        });
         currentProfile = profile;
     };
 
-    const renderPanelLines = (
-        panelRef: any,
-        options: {
-            heading?: string;
-            maxLines?: number;
-            skipLinesStartingWith?: string[];
-            prefix?: string;
-            widthLimit?: number;
-        } = {}
-    ): string[] => {
-        if (!consoleRenderer || !panelRef?.hostView?.rootNodes?.length) {
-            return [];
+    const cleanupAndExit = async () => {
+        if (isCleaningUp) {
+            return;
         }
-        const heading = options.heading || '';
-        const skipPrefixes = options.skipLinesStartingWith || [];
-        const widthLimit = options.widthLimit || (process.stdout.columns || 100);
-        const rendered = typeof consoleRenderer.renderToTuiLines === 'function'
-            ? consoleRenderer.renderToTuiLines(panelRef.hostView.rootNodes, { width: Math.max(24, widthLimit) })
-            : consoleRenderer.renderToLines(panelRef.hostView.rootNodes);
-        const lines = rendered
-            .filter((line: string) => {
-                if (!line) {
-                    return false;
-                }
-                const plain = stripAnsi(line);
-                if (heading && plain === heading) {
-                    return false;
-                }
-                return !skipPrefixes.some(prefix => plain.startsWith(prefix));
-            })
-            .map((line: string) => {
-                const fitted = typeof consoleRenderer.renderToTuiLines === 'function'
-                    ? fitAnsiLine(line, Math.max(24, widthLimit))
-                    : fitLine(line, Math.max(24, widthLimit));
-                return options.prefix ? `${options.prefix}${fitted}` : fitted;
-            });
-        return typeof options.maxLines === 'number'
-            ? lines.slice(0, options.maxLines)
-            : lines;
+        isCleaningUp = true;
+        if (stdinDataHandler) {
+            process.stdin.off('data', stdinDataHandler as any);
+            stdinDataHandler = null;
+        }
+        if (keypressHandler) {
+            process.stdin.off('keypress', keypressHandler as any);
+            keypressHandler = null;
+        }
+        if (resizeHandler) {
+            process.stdout.off('resize', resizeHandler);
+            resizeHandler = null;
+        }
+        if (sigintHandler) {
+            process.off('SIGINT', sigintHandler);
+            sigintHandler = null;
+        }
+        if (renderTimer) {
+            clearInterval(renderTimer);
+            renderTimer = null;
+        }
+        if (process.stdin.isTTY) {
+            process.stdout.write('\x1b[?1000l\x1b[?1006l');
+            process.stdin.setRawMode?.(false);
+        }
+        persistHistory();
+        viewModel?.dispose?.();
+        viewModel = null;
+        consoleComponentRef = null;
+        if (currentCtx) {
+            await currentCtx.close();
+            currentCtx = null;
+        }
+        process.stdout.write('\nClosing session...\n');
+        process.exit(0);
     };
 
     try {
@@ -829,128 +742,60 @@ async function runInteractiveChat(options: any): Promise<void> {
     } catch (error: any) {
         if (error instanceof ChatExitRequest) {
             isClosed = true;
-            rl.close();
+            await cleanupAndExit();
             return;
         }
         process.stdout.write(`${error.message}\n`);
-        rl.close();
+        isClosed = true;
+        await cleanupAndExit();
         return;
     }
 
     const renderScreen = () => {
-        if (isClosed || (rl as any).closed || !viewModel) {
-            return;
-        }
-        if (modalPromptActive && !isSelecting) {
+        if (isClosed || !viewModel || !consoleRenderer || !consoleComponentRef?.hostView?.rootNodes?.length) {
             return;
         }
         const width = Math.max(72, (process.stdout.columns || 100) - 2);
-        const rows = Math.max(24, process.stdout.rows || 36);
         const spinner = SPINNER_FRAMES[spinnerIndex % SPINNER_FRAMES.length];
         const runningTools = viewModel.runningTools?.length
             ? `${spinner} ${viewModel.runningTools.join(', ')}`
             : 'idle';
-        const workingLines = renderPanelLines(workingPanelRef, {
-            maxLines: 6,
-            widthLimit: width
-        });
-        const inputLines = renderPanelLines(inputPanelRef, {
-            maxLines: 6,
-            widthLimit: width
-        });
-        const selectLines = renderPanelLines(selectPanelRef, {
-            maxLines: 12,
-            widthLimit: width
-        });
-        const statusLines = renderPanelLines(statusPanelRef, {
-            maxLines: 8,
-            widthLimit: width
-        });
-        const activityPanelLines = renderPanelLines(activityPanelRef, {
-            heading: 'Activity',
-            maxLines: 3,
-            prefix: 'activity  ',
-            widthLimit: width - 10
-        });
-        const toolsPanelLines = renderPanelLines(toolsPanelRef, {
-            heading: 'Tools',
-            maxLines: 3,
-            skipLinesStartingWith: ['Tools: '],
-            prefix: 'tools  ',
-            widthLimit: width - 7
-        });
-        const toolRunsPanelLines = renderPanelLines(toolRunsPanelRef, {
-            heading: 'Tool Runs',
-            maxLines: 4,
-            widthLimit: width - 7
-        }).map((line: string, index: number) => `${index === 0 ? 'tool' : 'focus'}  ${line}`);
-        const messagesPanelLines = renderPanelLines(messagesPanelRef, {
-            heading: 'Messages',
-            maxLines: Math.max(6, rows - 12),
-            widthLimit: width - 4
-        });
-        const headerLine = fitLine(
-            `${viewModel.provider || currentProfile.provider} / ${viewModel.model || currentProfile.model}  |  ${viewModel.status}  |  ${viewModel.tasksCount} tasks  |  ${runningTools}`,
-            width
-        );
-        const subHeaderLine = fitLine(
-            `session ${viewModel.sessionId}  |  ${viewModel.workspace || resolved.workspace}`,
-            width
-        );
-        const messages = messagesPanelLines.length
-            ? messagesPanelLines.flatMap((line: string) => [line, ''])
-            : (viewModel.messages || [])
-                .slice(-8)
-                .flatMap((message: any) => renderConversationMessage(message.role, message.content, width - 4));
-        const composerLines = [
-            ...workingLines,
-            ...(inputLines.length ? ['', ...inputLines] : []),
-            ...(selectLines.length ? ['', ...selectLines] : []),
-            ...(statusLines.length ? ['', ...statusLines] : [])
-        ];
-        const composerHeight = Math.max(8, composerLines.length || 0);
-        const contextHeight = Math.max(3, Math.min(5, Math.floor(rows * 0.12)));
-        const messagesHeight = Math.max(10, rows - 4 - contextHeight - composerHeight);
-        const contextLines = [
-            ...(screenNotice ? [`notice  ${screenNotice.split('\n')[0]}`] : []),
-            ...(activityPanelLines.length ? activityPanelLines.slice(-1) : viewModel.activities.length ? [`activity  ${fitLine(renderActivityLine(viewModel.activities[viewModel.activities.length - 1]), Math.max(24, width - 10))}`] : []),
-            ...(toolRunsPanelLines.length ? toolRunsPanelLines.slice(0, 2) : (() => {
-                const sortedToolRuns = sortToolRuns(viewModel.toolRuns || []);
-                const toolRuns = sortedToolRuns
-                    .slice(0, 1)
-                    .map((run: any) => `tool  ${fitLine(renderToolRunLine(run), Math.max(24, width - 7))}`);
-                const toolDetail = viewModel.highlightedToolRun ? renderToolDetail(viewModel.highlightedToolRun) : [];
-                return [
-                    ...toolRuns,
-                    ...(toolDetail.length ? [`focus  ${fitLine(toolDetail[0], Math.max(24, width - 8))}`] : [])
-                ];
-            })()),
-            ...(toolsPanelLines.length ? toolsPanelLines.slice(0, 1) : (viewModel.tools || []).length ? [`tools  ${(viewModel.tools || []).slice(0, 4).map((tool: any) => `${tool.name}${tool.active ? '' : ' [inactive]'}`).join(', ')}`] : [])
-        ];
-        const conversation = messages.slice(-messagesHeight);
-        const context = contextLines.slice(-contextHeight);
-        const bottom = composerLines.slice(-composerHeight);
-        selectMenuScreenRow = selectLines.length
-            ? 1 + 1 + 1 + 2 + 1 + conversation.length + (context.length ? context.length + 1 : 0) + 1 + workingLines.length + (inputLines.length ? inputLines.length + 1 : 0) + 1
-            : -1;
-        const nextRender = [
-            '\x1b[2J\x1b[H',
-            'tsdi-agent',
-            '',
-            ...(workingLines.length ? [headerLine, subHeaderLine] : [headerLine, subHeaderLine]),
-            '',
-            ...conversation,
-            ...(context.length ? ['', ...context] : []),
-            '',
-            ...bottom
-        ].join('\n');
+        if (consoleState?.setStatus) {
+            consoleState.setStatus(viewModel.status);
+        }
+        if (screenNotice) {
+            viewModel?.showNotice?.(screenNotice);
+        }
+        const rootNodes = consoleComponentRef.hostView.rootNodes;
+        const rendered = typeof consoleRenderer.renderToTuiLines === 'function'
+            ? consoleRenderer.renderToTuiLines(rootNodes, { width: Math.max(24, width) })
+            : consoleRenderer.renderToLines(rootNodes);
+        const nextRender = ['\x1b[2J\x1b[H', ...rendered.map((line: string) => fitAnsiLine(line, width))].join('\n');
 
         if (nextRender === lastRenderKey) {
             return;
         }
         lastRenderKey = nextRender;
         process.stdout.write(nextRender);
-        refreshInputLine();
+        placeTerminalCursor(rendered, width);
+    };
+
+    const placeTerminalCursor = (rendered: string[], width: number) => {
+        if (!process.stdout.isTTY || isSelecting || inputLocked || modalPromptActive) {
+            return;
+        }
+        const plainLines = rendered.map((line: string) => stripAnsi(line));
+        const promptRow = plainLines.findIndex((line: string) => line.includes('> '));
+        if (promptRow < 0) {
+            return;
+        }
+        const promptColumn = plainLines[promptRow].indexOf('> ');
+        if (promptColumn < 0) {
+            return;
+        }
+        const cursorColumn = Math.min(width, promptColumn + 2 + draftCursor) + 1;
+        const cursorRow = promptRow + 1;
+        process.stdout.write(`\x1b[${cursorRow};${cursorColumn}H`);
     };
 
     const processInput = async (input: string) => {
@@ -979,7 +824,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (trimmed === '/quit' || trimmed === '/exit') {
             isClosed = true;
             process.stdout.write('\nGoodbye.\n');
-            rl.close();
+            await cleanupAndExit();
             return;
         }
 
@@ -1067,6 +912,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             viewModel?.clearNotice?.();
             viewModel.input = buildPrompt(trimmed);
             await viewModel.submit();
+            pushHistoryEntry(trimmed);
             persistHistory();
             renderScreen();
         } catch (error: any) {
@@ -1077,24 +923,62 @@ async function runInteractiveChat(options: any): Promise<void> {
         safePrompt();
     };
 
-    rl.on('line', (line: string) => {
-        currentDraft = '';
-        suggestionState = { items: [], selectedIndex: -1 };
-        void processInput(line);
-    });
+    const pushHistoryEntry = (value: string) => {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return;
+        }
+        historyEntries = [trimmed, ...historyEntries.filter(item => item !== trimmed)].slice(0, 200);
+        historyIndex = -1;
+        historyDraft = '';
+    };
 
-    rl.on('history', () => {
-        if (isClosed) {
+    const navigateHistory = (delta: number) => {
+        if (!historyEntries.length) {
             return;
         }
-        if (modalPromptActive || isSelecting) {
-            return;
+        if (delta < 0) {
+            if (historyIndex === -1) {
+                historyDraft = currentDraft;
+                historyIndex = 0;
+            } else if (historyIndex < historyEntries.length - 1) {
+                historyIndex += 1;
+            }
+        } else {
+            if (historyIndex === -1) {
+                return;
+            }
+            if (historyIndex === 0) {
+                historyIndex = -1;
+                updateDraftState(historyDraft, historyDraft.length);
+                renderScreen();
+                return;
+            }
+            historyIndex -= 1;
         }
-        syncCurrentDraft();
+        const next = historyEntries[historyIndex] || '';
+        updateDraftState(next, next.length);
         renderScreen();
-    });
+    };
 
-    const rlInput = (rl as readline.Interface & { input?: NodeJS.ReadableStream }).input;
+    const resolveTextPrompt = (value: string) => {
+        const prompt = activeTextPrompt;
+        if (!prompt) {
+            return;
+        }
+        prompt.resolve(value);
+        renderScreen();
+    };
+
+    const submitCurrentDraft = async () => {
+        const line = currentDraft;
+        historyIndex = -1;
+        historyDraft = '';
+        suggestionState = { items: [], selectedIndex: -1 };
+        updateDraftState('', 0);
+        await processInput(line);
+    };
+
     stdinDataHandler = (chunk: Buffer | string) => {
         if (isClosed) {
             return;
@@ -1108,32 +992,16 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (!activeMenu) {
                 return;
             }
-            const selectedIndex = resolveSelectMenuOptionIndexFromRow(mouse.y, activeMenu.title, activeMenu.options.length, selectMenuScreenRow);
-            if (selectedIndex < 0) {
-                return;
-            }
-            if (activeMenu.title === 'Suggestions') {
-                applySuggestionValue(activeMenu.options[selectedIndex]?.value);
-                return;
-            }
-            if (consoleState?.selectMenu) {
-                void consoleState.chooseSelectMenuIndex(selectedIndex);
-            } else if (selectMenu) {
-                selectMenu.resolve(selectMenu.options[selectedIndex]?.value);
-            }
             return;
         }
-        if (modalPromptActive) {
-            return;
-        }
-        syncCurrentDraft();
-        const token = getActiveInputToken(currentDraft);
-        if (!inputLocked && (multilineMode || token.startsWith('/') || token.startsWith('@'))) {
-            renderScreen();
+        applyChunkToDraft(chunk);
+        if (!inputLocked) {
+            scheduleDraftRefresh();
         }
     };
-    rlInput?.on('data', stdinDataHandler);
-    readline.emitKeypressEvents(process.stdin, rl);
+    process.stdin.on('data', stdinDataHandler);
+    readline.emitKeypressEvents(process.stdin);
+    process.stdin.resume();
     if (process.stdin.isTTY) {
         process.stdin.setRawMode?.(true);
         process.stdout.write('\x1b[?1000h\x1b[?1006h');
@@ -1142,8 +1010,13 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (isClosed) {
             return;
         }
-        if (getActiveSelectMenu()) {
-            const activeMenu = getActiveSelectMenu();
+        if (key?.ctrl && key.name === 'c') {
+            isClosed = true;
+            void cleanupAndExit();
+            return;
+        }
+        const activeMenu = getActiveSelectMenu();
+        if (activeMenu && !isSuggestionMenu(activeMenu)) {
             if (key?.name === 'down') {
                 if (consoleState?.selectMenu) {
                     consoleState.moveSelectMenu(1);
@@ -1163,11 +1036,6 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
             if (key?.name === 'return') {
-                if (activeMenu?.title === 'Suggestions') {
-                    const value = activeMenu.options[activeMenu.selectedIndex]?.value;
-                    applySuggestionValue(value);
-                    return;
-                }
                 if (consoleState?.selectMenu) {
                     void consoleState.confirmSelectMenu();
                 } else if (selectMenu) {
@@ -1186,10 +1054,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (_str && /^[1-9]$/.test(_str)) {
                 const index = parseInt(_str, 10) - 1;
                 if (activeMenu && index >= 0 && index < activeMenu.options.length) {
-                    if (activeMenu.title === 'Suggestions') {
-                        applySuggestionValue(activeMenu.options[index]?.value);
-                        return;
-                    }
                     if (consoleState?.selectMenu) {
                         void consoleState.chooseSelectMenuIndex(index);
                     } else if (selectMenu) {
@@ -1200,7 +1064,33 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
+        if (activeTextPrompt && key?.name === 'return') {
+            resolveTextPrompt(currentDraft);
+            return;
+        }
+        if (!modalPromptActive && !inputLocked && !hasInteractiveSuggestions() && key?.name === 'up') {
+            navigateHistory(-1);
+            return;
+        }
+        if (!modalPromptActive && !inputLocked && !hasInteractiveSuggestions() && key?.name === 'down') {
+            navigateHistory(1);
+            return;
+        }
         if (modalPromptActive || inputLocked || !hasInteractiveSuggestions()) {
+            if (!modalPromptActive && !inputLocked && key?.name === 'return') {
+                void submitCurrentDraft();
+                return;
+            }
+            const isEditableKey = key?.name === 'backspace'
+                || key?.name === 'delete'
+                || key?.name === 'left'
+                || key?.name === 'right'
+                || key?.name === 'home'
+                || key?.name === 'end'
+                || (!!_str && !key?.ctrl && !key?.meta && key?.name !== 'return' && key?.name !== 'tab');
+            if (isEditableKey) {
+                scheduleDraftRefresh();
+            }
             return;
         }
         if (key?.name === 'down') {
@@ -1215,29 +1105,38 @@ async function runInteractiveChat(options: any): Promise<void> {
                 consoleState.setSelectMenuIndex(suggestionState.selectedIndex);
             }
             renderScreen();
-        } else if (key?.name === 'return' && shouldAcceptSuggestionOnEnter((rl as any).line || '', suggestionState)) {
+        } else if (key?.name === 'return' && shouldAcceptSuggestionOnEnter(currentDraft, suggestionState)) {
             const selected = suggestionState.items[suggestionState.selectedIndex];
-            const nextInput = applySuggestionToInput((rl as any).line || '', selected.value);
-            (rl as any).line = nextInput;
-            currentDraft = nextInput;
+            const nextInput = applySuggestionToInput(currentDraft, selected.value);
             suggestionState = { items: [], selectedIndex: -1 };
             if (consoleState?.selectMenu?.title === 'Suggestions') {
                 consoleState.closeSelectMenu();
             }
-            syncCurrentDraft();
+            updateDraftState(nextInput, nextInput.length);
             renderScreen();
+            return;
+        } else if (key?.name === 'return') {
+            void submitCurrentDraft();
             return;
         } else if (key?.name === 'tab' && suggestionState.selectedIndex >= 0) {
             const selected = suggestionState.items[suggestionState.selectedIndex];
-            const nextInput = applySuggestionToInput((rl as any).line || '', selected.value);
-            (rl as any).line = nextInput;
-            currentDraft = nextInput;
+            const nextInput = applySuggestionToInput(currentDraft, selected.value);
             suggestionState = { items: [], selectedIndex: -1 };
             if (consoleState?.selectMenu?.title === 'Suggestions') {
                 consoleState.closeSelectMenu();
             }
-            syncCurrentDraft();
+            updateDraftState(nextInput, nextInput.length);
             renderScreen();
+        }
+        const isEditableKey = key?.name === 'backspace'
+            || key?.name === 'delete'
+            || key?.name === 'left'
+            || key?.name === 'right'
+            || key?.name === 'home'
+            || key?.name === 'end'
+            || (!!_str && !key?.ctrl && !key?.meta && key?.name !== 'return' && key?.name !== 'tab');
+        if (isEditableKey) {
+            scheduleDraftRefresh();
         }
     };
     process.stdin.on('keypress', keypressHandler);
@@ -1259,62 +1158,29 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         isClosed = true;
-        rl.close();
+        void cleanupAndExit();
     };
     process.on('SIGINT', sigintHandler);
 
-    rl.on('close', async () => {
-        if (stdinDataHandler && rlInput) {
-            rlInput.off('data', stdinDataHandler);
-            stdinDataHandler = null;
-        }
-        if (keypressHandler) {
-            process.stdin.off('keypress', keypressHandler as any);
-            keypressHandler = null;
-        }
-        if (resizeHandler) {
-            process.stdout.off('resize', resizeHandler);
-            resizeHandler = null;
-        }
-        if (sigintHandler) {
-            process.off('SIGINT', sigintHandler);
-            sigintHandler = null;
-        }
-        if (process.stdin.isTTY) {
-            process.stdout.write('\x1b[?1000l\x1b[?1006l');
-            process.stdin.setRawMode?.(false);
-        }
-        if (isClosed && !currentCtx && !viewModel && !unsubscribeVm) {
-            process.exit(0);
+    renderTimer = setInterval(() => {
+        if (isClosed || !viewModel) {
             return;
         }
-        isClosed = true;
-        process.stdout.write('\nClosing session...\n');
-        persistHistory();
-        if (unsubscribeVm) {
-            unsubscribeVm();
-            unsubscribeVm = null;
-        }
-        viewModel?.dispose?.();
-        viewModel = null;
-        if (currentCtx) {
-            await currentCtx.close();
-            currentCtx = null;
-        }
-        process.exit(0);
-    });
-
-    const spinnerTimer = setInterval(() => {
-        if (isClosed || modalPromptActive || !viewModel || inputLocked) {
-            return;
-        }
-        if (viewModel.runningTools?.length || viewModel.status === 'running' || viewModel.status === 'reasoning') {
+        if (!modalPromptActive && !inputLocked
+            && (viewModel.runningTools?.length || viewModel.status === 'running' || viewModel.status === 'reasoning')) {
             spinnerIndex = (spinnerIndex + 1) % SPINNER_FRAMES.length;
+        }
+        if (!isSelecting) {
             renderScreen();
         }
-    }, 120);
+    }, 80);
 
-    currentCtx?.onDestroy?.(() => clearInterval(spinnerTimer));
+    currentCtx?.onDestroy?.(() => {
+        if (renderTimer) {
+            clearInterval(renderTimer);
+            renderTimer = null;
+        }
+    });
     renderScreen();
     safePrompt();
 }

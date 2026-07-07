@@ -30,6 +30,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         options?: ComponentOptions) {
         super(_classRef, context, options);
         this._elementRef = options?.elementRef;
+        context.setValue(ComponentRef, this);
         context.onDestroy(this);
     }
 
@@ -85,7 +86,32 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const templateRef =  def.ƿtempFac!(host, this.injector);
         this.injector.setValue(TemplateRef, templateRef);
         this._hostView = templateRef.createEmbeddedView(this.instance, this.injector);
+        this.attachHostViewToElement();
         await (this.instance as AfterViewInit).onAfterViewInit?.();
+    }
+
+    protected attachHostViewToElement(): void {
+        const hostElement = this._elementRef?.nativeElement as any;
+        const rootNodes = this._hostView?.rootNodes || [];
+        if (!hostElement || !rootNodes.length || typeof hostElement.appendChild !== 'function') {
+            return;
+        }
+
+        const existingChildren = Array.isArray(hostElement.childNodes) ? hostElement.childNodes.slice() : [];
+        existingChildren.forEach((child: any) => {
+            if (rootNodes.includes(child)) {
+                return;
+            }
+            if (typeof hostElement.removeChild === 'function') {
+                hostElement.removeChild(child);
+            }
+        });
+
+        rootNodes.forEach(node => {
+            if (node && node.parentNode !== hostElement) {
+                hostElement.appendChild(node);
+            }
+        });
     }
 
     protected override clean(): void {

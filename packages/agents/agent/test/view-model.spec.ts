@@ -376,12 +376,11 @@ export class AgentConsoleComponentTest {
 
     @Test('input panel submits on enter key')
     async inputPanelSubmitsOnEnterKey() {
-        const state = new AgentConsoleSessionState();
         let submitCount = 0;
-        state.submitAction = async () => {
+        const panel = new AgentConsoleInputPanelComponent();
+        panel.submitAction = async () => {
             submitCount++;
         };
-        const panel = new AgentConsoleInputPanelComponent(state);
 
         await panel.onKeyup({ key: 'Escape' } as KeyboardEvent);
         await panel.onKeyup({ key: 'Enter' } as KeyboardEvent);

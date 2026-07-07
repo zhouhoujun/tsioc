@@ -567,4 +567,4 @@ runTest('./test/core-activities.spec.ts', { baseURL: __dirname }, ConsoleReporte
 
 ## License
 
-MIT © [Houjun](https://github.com/houjun)
+Apache License 2.0 © [Houjun](https://github.com/houjun)

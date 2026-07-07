@@ -595,4 +595,4 @@ Documentation is available on the
 
 ## License
 
-MIT © [Houjun](https://github.com/zhouhoujun/)
+Apache License 2.0 © [Houjun](https://github.com/zhouhoujun/)

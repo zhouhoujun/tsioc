@@ -159,6 +159,19 @@ class ViewContainerRefImpl implements ViewContainerRef {
             }
 
             if (parentNode) {
+                const prefersLocalChildren = nativeElement?.constructor?.name === 'ConsoleElement';
+                if (prefersLocalChildren) {
+                    if (nextSibling && nextSibling.parentNode === nativeElement) {
+                        viewNodes.forEach(node => {
+                            nativeElement.insertBefore(node, nextSibling);
+                        });
+                    } else {
+                        viewNodes.forEach(node => {
+                            nativeElement.appendChild(node);
+                        });
+                    }
+                    return viewRef;
+                }
                 if (nextSibling) {
                     viewNodes.forEach(node => {
                         parentNode.insertBefore(node, nextSibling);

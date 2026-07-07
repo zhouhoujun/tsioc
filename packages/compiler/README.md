@@ -256,4 +256,4 @@ npm test
 
 ## License
 
-MIT © [Houjun](https://github.com/houjun)
+Apache License 2.0 © [Houjun](https://github.com/houjun)

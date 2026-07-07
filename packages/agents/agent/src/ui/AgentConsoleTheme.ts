@@ -1,5 +1,6 @@
 export interface AgentConsoleTheme {
     statusTitle: string;
+    statusShell: string;
     statusLabel: string;
     statusValue: string;
     statusIdleValue: string;
@@ -10,19 +11,25 @@ export interface AgentConsoleTheme {
     statusNoticeValue: string;
     inputTitle: string;
     inputShell: string;
+    inputPrompt: string;
     inputCaption: string;
     inputField: string;
     inputButton: string;
     inputHint: string;
     workingTitle: string;
+    workingShell: string;
     workingLabel: string;
     workingValue: string;
     toolsTitle: string;
+    toolsShell: string;
     toolsAccent: string;
     toolRunsTitle: string;
+    toolRunsShell: string;
     toolRunsAccent: string;
     messagesTitle: string;
+    messagesShell: string;
     activityTitle: string;
+    activityShell: string;
     selectTitle: string;
     selectShell: string;
     selectHeader: string;
@@ -34,36 +41,43 @@ export interface AgentConsoleTheme {
 export type AgentConsoleThemeInput = Partial<AgentConsoleTheme>;
 
 export const defaultAgentConsoleTheme: AgentConsoleTheme = {
-    statusTitle: 'color: #7d8ca6;',
-    statusLabel: 'color: #7d8ca6;',
-    statusValue: 'color: #d8e5ff;',
-    statusIdleValue: 'color: #8ed3a5;',
-    statusBusyValue: 'color: #f4c76f;',
-    statusErrorLabel: 'color: #c76b6b;',
-    statusErrorValue: 'color: #f3b0b0;',
-    statusNoticeLabel: 'color: #c9a25b;',
-    statusNoticeValue: 'color: #f1e4b8;',
-    inputTitle: 'color: #3aa675;',
-    inputShell: 'background: #102218; color: #d8ffea; padding: 1; border: 1px solid #29543d;',
-    inputCaption: 'color: #7dd9a8;',
-    inputField: 'background: #173323; color: #7ef0a6; border: 1px solid #34845e;',
-    inputButton: 'background: #1f6a46; color: #e9fff1; border: 1px solid #3aa675;',
-    inputHint: 'color: #75b894;',
-    workingTitle: 'color: #c99a58;',
-    workingLabel: 'color: #c99a58;',
-    workingValue: 'color: #f8f0da;',
-    toolsTitle: 'color: #7b5ea7;',
-    toolsAccent: 'color: #7b5ea7;',
-    toolRunsTitle: 'color: #7b5ea7;',
-    toolRunsAccent: 'color: #7b5ea7;',
-    messagesTitle: 'color: #3f5f8f;',
-    activityTitle: 'color: #a36a2a;',
-    selectTitle: 'color: #7d8ca6;',
-    selectShell: 'background: #111923; color: #dbe7fb; padding: 1; border: 1px solid #30445f;',
-    selectHeader: 'color: #90a8cc;',
-    selectHint: 'color: #73859f;',
-    selectOption: 'background: #111923; color: #dbe7fb; border: 1px solid #223042;',
-    selectOptionActive: 'background: #1f3045; color: #9ed0ff; border: 1px solid #5c86b6;'
+    statusTitle: 'color: #8b949e;',
+    statusShell: 'color: #c9d1d9;',
+    statusLabel: 'color: #6e7681;',
+    statusValue: 'color: #c9d1d9;',
+    statusIdleValue: 'color: #7ee787;',
+    statusBusyValue: 'color: #d29922;',
+    statusErrorLabel: 'color: #f85149;',
+    statusErrorValue: 'color: #ffa198;',
+    statusNoticeLabel: 'color: #d29922;',
+    statusNoticeValue: 'color: #e3b341;',
+    inputTitle: 'color: #8b949e;',
+    inputShell: 'background: #0d1117; color: #c9d1d9; padding: 0 1; border: 1px solid #30363d;',
+    inputPrompt: 'color: #7ee787; font-weight: bold;',
+    inputCaption: 'color: #8b949e;',
+    inputField: 'background: #0f1419; color: #7ee787;',
+    inputButton: 'background: #161b22; color: #c9d1d9; border: 1px solid #30363d;',
+    inputHint: 'color: #6e7681;',
+    workingTitle: 'color: #8b949e;',
+    workingShell: 'color: #c9d1d9;',
+    workingLabel: 'color: #6e7681;',
+    workingValue: 'color: #c9d1d9;',
+    toolsTitle: 'color: #8b949e;',
+    toolsShell: 'color: #c9d1d9;',
+    toolsAccent: 'color: #79c0ff;',
+    toolRunsTitle: 'color: #8b949e;',
+    toolRunsShell: 'color: #c9d1d9;',
+    toolRunsAccent: 'color: #79c0ff;',
+    messagesTitle: 'color: #8b949e;',
+    messagesShell: 'background: #0d1117; color: #c9d1d9; padding: 0 1; border: 1px solid #30363d;',
+    activityTitle: 'color: #8b949e;',
+    activityShell: 'color: #c9d1d9;',
+    selectTitle: 'color: #8b949e;',
+    selectShell: 'background: #0d1117; color: #c9d1d9; padding: 0 1; border: 1px solid #30363d;',
+    selectHeader: 'color: #c9d1d9;',
+    selectHint: 'color: #8b949e;',
+    selectOption: 'background: #0d1117; color: #c9d1d9; border: 1px solid #30363d;',
+    selectOptionActive: 'background: #161b22; color: #79c0ff; border: 1px solid #58a6ff;'
 };
 
 export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): AgentConsoleTheme {

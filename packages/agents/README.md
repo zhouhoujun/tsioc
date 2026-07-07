@@ -4,8 +4,7 @@ This directory groups the `@tsdi/agent*` subprojects published from this monorep
 
 ## License note
 
-The repository root license may differ from the packages in this directory.
-For all packages under `packages/agents/*`, distribution and consumption should follow the **package-level Apache-2.0 license declarations** in each subproject's `package.json` and README.
+All packages in this repository, including `packages/agents/*`, are published under the **Apache-2.0** license.
 
 This currently applies to:
 

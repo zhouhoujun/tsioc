@@ -87,7 +87,7 @@ export const defaultAgentOptions: AgentOptions = {
         defaultRetryBackoffMultiplier: 2
     },
     ui: {
-        title: 'Hermes Agent Console',
+        title: 'tsdi-agent',
         theme: defaultAgentConsoleTheme
     },
     model: {

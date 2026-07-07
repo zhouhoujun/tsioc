@@ -3,8 +3,11 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
+import { TuiRenderer } from '@tsdi/components/console';
+import { runAgentApplication } from '../src/run-command';
 import {
     createAgentCli,
+    applyTerminalInputChunk,
     buildMentionCandidates,
     ensureAgentWorkspaceConfig,
     enrichPromptWithMentions,
@@ -15,6 +18,7 @@ import {
     moveSuggestionSelection,
     normalizeSuggestionState,
     renderActivityLine,
+    composeTerminalChatScreen,
     renderDraftLine,
     buildMentionContextLines,
     renderMessagePreview,
@@ -129,6 +133,25 @@ export class AgentCliTest {
             expect(false).toBe(true);
         } catch (error: any) {
             expect(error.message).toContain('API key');
+        }
+    }
+
+    @Test('resolves tui renderer for interactive chat application context')
+    async resolvesTuiRendererForInteractiveChat() {
+        const root = await this.createRoot();
+        writeSettingsModelProfile(root, {
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            apiKey: 'test-key',
+            baseUrl: 'https://api.deepseek.com',
+            timeoutMs: 120000
+        });
+        const ctx = await runAgentApplication({ root }, {});
+        try {
+            expect(ctx.get(TuiRenderer)).toBeTruthy();
+            expect(ctx.get(TuiRenderer).constructor.name).toBe('TuiRenderer');
+        } finally {
+            await ctx.close();
         }
     }
 
@@ -412,5 +435,87 @@ export class AgentCliTest {
         expect(applySuggestionToInput('check @wo', '@workspace')).toBe('check @workspace ');
         expect(shouldAcceptSuggestionOnEnter('/mo', moved)).toBe(true);
         expect(renderDraftLine('run @workspace with @read_file')).toBe('run [@workspace] with [@read_file]');
+    }
+
+    @Test('applies terminal draft chunks without leaking control characters')
+    appliesTerminalDraftChunks() {
+        expect(applyTerminalInputChunk('', 0, 'hello')).toEqual({
+            value: 'hello',
+            cursor: 5
+        });
+        expect(applyTerminalInputChunk('hello', 5, '\u001b[D')).toEqual({
+            value: 'hello',
+            cursor: 4
+        });
+        expect(applyTerminalInputChunk('hello', 4, '!')).toEqual({
+            value: 'hell!o',
+            cursor: 5
+        });
+        expect(applyTerminalInputChunk('hell!o', 5, '\u007f')).toEqual({
+            value: 'hello',
+            cursor: 4
+        });
+        expect(applyTerminalInputChunk('hello', 5, '\u0001\u0015')).toEqual({
+            value: 'hello',
+            cursor: 5
+        });
+        expect(applyTerminalInputChunk('hello', 5, '\u001b[<64;46;20M')).toEqual({
+            value: 'hello',
+            cursor: 5
+        });
+    }
+
+    @Test('composes terminal chat screen without empty focus rows')
+    composesTerminalChatScreenWithoutEmptyFocusRows() {
+        const layout = composeTerminalChatScreen({
+            headerLine: 'provider / model  |  idle  |  0 tasks  |  idle',
+            subHeaderLine: 'session default  |  /tmp/workspace',
+            conversationLines: [],
+            latestActivity: '',
+            latestToolRun: '',
+            focusedTool: '',
+            toolsSummary: '',
+            workingLines: ['Tokens: 0 | Prompt: 0 | Completion: 0'],
+            inputLines: ['Input', 'you> hello|'],
+            selectLines: [],
+            statusLines: ['State: idle']
+        });
+
+        expect(layout.lines.some(line => /^focus\s+/.test(line))).toBe(false);
+        expect(layout.lines.some(line => /^tool\s+Focused:/.test(line))).toBe(false);
+    }
+
+    @Test('composes terminal chat screen with select panel below input')
+    composesTerminalChatScreenWithSelectPanelBelowInput() {
+        const layout = composeTerminalChatScreen({
+            headerLine: 'provider / model  |  idle  |  0 tasks  |  idle',
+            subHeaderLine: 'session default  |  /tmp/workspace',
+            conversationLines: ['agent> hi'],
+            workingLines: ['Tokens: 0 | Prompt: 0 | Completion: 0'],
+            inputLines: ['Input', 'you> /mo|'],
+            selectLines: ['Select', '› 1. /model'],
+            statusLines: ['State: idle']
+        });
+
+        const inputIndex = layout.lines.findIndex(line => line === 'you> /mo|');
+        const selectIndex = layout.lines.findIndex(line => line === 'Select');
+        expect(inputIndex).toBeGreaterThan(-1);
+        expect(selectIndex).toBeGreaterThan(inputIndex);
+        expect(layout.selectMenuScreenRow).toBe(selectIndex + 1);
+    }
+
+    @Test('keeps suggestion rows separate from select panel rows')
+    keepsSuggestionRowsSeparateFromSelectPanelRows() {
+        const layout = composeTerminalChatScreen({
+            headerLine: 'provider / model  |  idle  |  0 tasks  |  idle',
+            subHeaderLine: 'session default  |  /tmp/workspace',
+            conversationLines: ['agent> hi'],
+            workingLines: [],
+            inputLines: ['Input', 'you> /mo|'],
+            selectLines: [],
+            statusLines: ['State: idle']
+        });
+
+        expect(layout.selectMenuScreenRow).toBe(-1);
     }
 }

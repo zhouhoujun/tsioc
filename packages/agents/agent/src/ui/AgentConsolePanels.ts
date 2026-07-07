@@ -1,18 +1,21 @@
-import { Component } from '@tsdi/components';
-import { AgentConsoleSessionState } from './AgentConsoleSessionState';
-import { styleTextToObject } from './AgentConsoleTheme';
+import { Attribute, Component } from '@tsdi/components';
+import {
+    AgentConsoleActivity,
+    AgentConsoleSelectMenu,
+    AgentConsoleSessionState,
+    AgentConsoleTokenUsage,
+    AgentConsoleToolItem,
+    AgentConsoleToolRun
+} from './AgentConsoleSessionState';
+import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 
 @Component({
     selector: 'agent-console-status-panel',
     template: `
-    <section class="console-panel console-status-panel">
-        <h2 v-style="titleStyle">Status</h2>
-        <p class="status-line" v-style="statusStyle">State: {{status}}</p>
-        <p class="model-line" v-style="valueStyle">Model: {{provider}} / {{model}}</p>
-        <p class="workspace-line" v-style="valueStyle">Workspace: {{workspace}}</p>
-        <p class="running-tools-line" v-style="runningStyle">Running: {{runningToolsLabel}}</p>
-        <p class="last-error-line" v-style="errorStyle">Error: {{lastErrorLabel}}</p>
-        <p class="notice" v-if="notice" v-style="noticeStyle">Notice: {{notice}}</p>
+    <section class="console-panel console-status-panel" v-style="shellStyle">
+        <p class="status-line" v-style="statusStyle">{{statusSummary}}</p>
+        <p class="model-line" v-style="valueStyle">{{workspaceSummary}}</p>
+        <p class="notice" v-style="noticeStyle">{{noticeLine}}</p>
     </section>
     `
 })
@@ -20,12 +23,10 @@ export class AgentConsoleStatusPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
-    get theme() {
-        return this.state.theme;
-    }
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
 
-    get titleStyle() {
-        return styleTextToObject(this.theme.statusTitle);
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
     get status(): string {
@@ -44,8 +45,37 @@ export class AgentConsoleStatusPanelComponent {
         return this.state.workspace;
     }
 
+    get notice(): string {
+        return this.state.notice;
+    }
+
+    get noticeLine(): string {
+        return this.notice ? `Notice: ${this.notice}` : '';
+    }
+
+    get statusSummary(): string {
+        return [
+            `status ${this.status}`,
+            `${this.provider || 'provider'} / ${this.model || 'model'}`,
+            `running ${this.runningToolsLabel}`,
+            `error ${this.lastErrorLabel}`
+        ].join('  |  ');
+    }
+
+    get workspaceSummary(): string {
+        return this.workspace ? `workspace ${this.workspace}` : 'workspace -';
+    }
+
+    get shellStyle() {
+        return styleTextToObject(this.activeTheme.statusShell);
+    }
+
+    get titleStyle() {
+        return styleTextToObject(this.activeTheme.statusTitle);
+    }
+
     get valueStyle() {
-        return styleTextToObject(this.theme.statusValue);
+        return styleTextToObject(this.activeTheme.statusValue);
     }
 
     get runningToolsLabel(): string {
@@ -56,35 +86,31 @@ export class AgentConsoleStatusPanelComponent {
         return this.state.lastError || 'none';
     }
 
-    get notice(): string {
-        return this.state.notice;
-    }
-
     get statusStyle() {
-        return styleTextToObject(this.resolveToneStyle(this.status));
+        return styleTextToObject(this.resolveToneStyle(this.state.status));
     }
 
     get runningStyle() {
-        return styleTextToObject(this.state.runningTools.length ? this.theme.statusBusyValue : this.theme.statusIdleValue);
+        return styleTextToObject(this.state.runningTools.length ? this.activeTheme.statusBusyValue : this.activeTheme.statusIdleValue);
     }
 
     get errorStyle() {
-        return styleTextToObject(this.state.lastError ? this.theme.statusErrorValue : this.theme.statusLabel);
+        return styleTextToObject(this.state.lastError ? this.activeTheme.statusErrorValue : this.activeTheme.statusLabel);
     }
 
     get noticeStyle() {
-        return styleTextToObject(this.theme.statusNoticeValue);
+        return styleTextToObject(this.activeTheme.statusNoticeValue);
     }
 
     protected resolveToneStyle(status: string): string {
         switch (status) {
             case 'error':
-                return this.theme.statusErrorValue;
+                return this.activeTheme.statusErrorValue;
             case 'running':
             case 'reasoning':
-                return this.theme.statusBusyValue;
+                return this.activeTheme.statusBusyValue;
             default:
-                return this.theme.statusIdleValue;
+                return this.activeTheme.statusIdleValue;
         }
     }
 }
@@ -93,58 +119,74 @@ export class AgentConsoleStatusPanelComponent {
     selector: 'agent-console-input-panel',
     template: `
     <section class="console-panel console-input-panel">
-        <h2 v-style="titleStyle">Input</h2>
         <div class="input-shell" v-style="shellStyle">
-            <p class="input-caption" v-style="captionStyle">Ask the agent</p>
-            <input class="agent-input" v-style="fieldStyle" v-model="input" @keyup="onKeyup($event)" />
-            <button class="send-btn" v-style="buttonStyle" @click="submit">Send</button>
-            <p class="input-hint" v-style="hintStyle">Enter send</p>
+            <p class="input-caption" v-style="captionStyle">{{captionLabel}}</p>
+            <p class="input-entry" v-style="entryStyle">
+                <span class="input-prompt" v-style="promptStyle">&gt; </span>
+                <input class="agent-input" v-style="fieldStyle" v-model="input" @keyup="onKeyup($event)" />
+            </p>
+            <p class="input-hint" v-style="hintStyle">{{hintLabel}}</p>
         </div>
     </section>
     `
 })
 export class AgentConsoleInputPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(private state?: AgentConsoleSessionState) {
     }
 
-    get theme() {
-        return this.state.theme;
-    }
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+    @Attribute() submitAction?: () => Promise<void>;
 
-    get titleStyle() {
-        return styleTextToObject(this.theme.inputTitle);
-    }
-
-    get shellStyle() {
-        return styleTextToObject(this.theme.inputShell);
-    }
-
-    get captionStyle() {
-        return styleTextToObject(this.theme.inputCaption);
-    }
-
-    get fieldStyle() {
-        return styleTextToObject(this.theme.inputField);
-    }
-
-    get buttonStyle() {
-        return styleTextToObject(this.theme.inputButton);
-    }
-
-    get hintStyle() {
-        return styleTextToObject(this.theme.inputHint);
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
     get input(): string {
-        return this.state.input;
+        return this.state?.input || '';
     }
 
     set input(value: string) {
-        this.state.setInput(value);
+        this.state?.setInput(value);
+    }
+
+    get titleStyle() {
+        return styleTextToObject(this.activeTheme.inputTitle);
+    }
+
+    get shellStyle() {
+        return styleTextToObject(this.activeTheme.inputShell);
+    }
+
+    get captionStyle() {
+        return styleTextToObject(this.activeTheme.inputCaption);
+    }
+
+    get captionLabel(): string {
+        return 'Ask for code, files, commands, or reviews';
+    }
+
+    get entryStyle() {
+        return styleTextToObject(this.activeTheme.inputField);
+    }
+
+    get promptStyle() {
+        return styleTextToObject(this.activeTheme.inputPrompt);
+    }
+
+    get fieldStyle() {
+        return styleTextToObject(this.activeTheme.inputField);
+    }
+
+    get hintStyle() {
+        return styleTextToObject(this.activeTheme.inputHint);
+    }
+
+    get hintLabel(): string {
+        return 'enter submit   tab complete   /quit exit';
     }
 
     async submit(): Promise<void> {
-        await this.state.submitAction?.();
+        await (this.submitAction || this.state?.submitAction)?.();
     }
 
     async onKeyup(event: KeyboardEvent): Promise<void> {
@@ -158,11 +200,8 @@ export class AgentConsoleInputPanelComponent {
 @Component({
     selector: 'agent-console-working-panel',
     template: `
-    <section class="console-panel console-working-panel">
-        <h2 v-style="titleStyle">Working</h2>
-        <p class="working-line" v-style="lineStyle">Tokens: {{totalTokens}} | Prompt: {{promptTokens}} | Completion: {{completionTokens}}</p>
-        <p class="working-line" v-style="lineStyle">Messages: {{messagesCount}} | Tools: {{toolsCount}} | Runs: {{toolRunsCount}}</p>
-        <p class="working-line" v-style="lineStyle">Activity: {{activitiesCount}} | Tasks: {{tasksCount}}</p>
+    <section class="console-panel console-working-panel" v-style="shellStyle">
+        <p class="working-line" v-style="lineStyle">{{workingSummary}}</p>
     </section>
     `
 })
@@ -170,16 +209,27 @@ export class AgentConsoleWorkingPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
-    get theme() {
-        return this.state.theme;
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+    @Attribute() tokenUsage: AgentConsoleTokenUsage = {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0
+    };
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get shellStyle() {
+        return this.shouldShow ? styleTextToObject(this.activeTheme.workingShell) : {};
     }
 
     get titleStyle() {
-        return styleTextToObject(this.theme.workingTitle);
+        return styleTextToObject(this.activeTheme.workingTitle);
     }
 
     get lineStyle() {
-        return styleTextToObject(this.theme.workingValue);
+        return styleTextToObject(this.activeTheme.workingValue);
     }
 
     get promptTokens(): number {
@@ -213,15 +263,30 @@ export class AgentConsoleWorkingPanelComponent {
     get tasksCount(): number {
         return this.state.tasksCount;
     }
+
+    get shouldShow(): boolean {
+        return this.totalTokens > 0 || this.messagesCount > 0 || this.tasksCount > 0;
+    }
+
+    get workingSummary(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return [
+            `tokens ${this.totalTokens}`,
+            `prompt ${this.promptTokens}`,
+            `completion ${this.completionTokens}`,
+            `messages ${this.messagesCount}`,
+            `tasks ${this.tasksCount}`
+        ].join('  |  ');
+    }
 }
 
 @Component({
     selector: 'agent-console-tools-panel',
     template: `
-    <section class="console-panel console-tools-panel">
-        <h2 v-style="titleStyle">Tools</h2>
-        <p v-style="accentStyle">Tools: {{tools.length}}</p>
-        <p class="tool-item" v-for="item in toolLabels">{{item}}</p>
+    <section class="console-panel console-tools-panel" v-style="shellStyle">
+        <p v-style="accentStyle">{{toolsSummaryLabel}}</p>
     </section>
     `
 })
@@ -229,16 +294,26 @@ export class AgentConsoleToolsPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
-    get tools() {
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get tools(): AgentConsoleToolItem[] {
         return this.state.tools;
     }
 
+    get shellStyle() {
+        return this.tools.length ? styleTextToObject(this.activeTheme.toolsShell) : {};
+    }
+
     get titleStyle() {
-        return styleTextToObject(this.state.theme.toolsTitle);
+        return styleTextToObject(this.activeTheme.toolsTitle);
     }
 
     get accentStyle() {
-        return styleTextToObject(this.state.theme.toolsAccent);
+        return styleTextToObject(this.activeTheme.toolsAccent);
     }
 
     get toolLabels(): string[] {
@@ -248,20 +323,19 @@ export class AgentConsoleToolsPanelComponent {
     get toolsSummary(): string {
         return this.toolLabels.join(' | ');
     }
+
+    get toolsSummaryLabel(): string {
+        return this.tools.length
+            ? `tools ${this.tools.length}  |  ${this.toolsSummary}`
+            : '';
+    }
 }
 
 @Component({
     selector: 'agent-console-tool-runs-panel',
     template: `
-    <section class="console-panel console-tool-runs-panel">
-        <h2 v-style="titleStyle">Tool Runs</h2>
-        <p class="tool-run-item" v-for="item in toolRunLabels">{{item}}</p>
-        <div class="tool-run-detail" v-if="highlightedToolRun">
-            <p class="tool-run-detail-name" v-style="accentStyle">Focused: {{highlightedToolRunName}}</p>
-            <p class="tool-run-detail-status" v-style="accentStyle">State: {{highlightedToolRunStatus}}</p>
-            <p class="tool-run-detail-input" v-style="accentStyle">Input: {{highlightedToolRunInput}}</p>
-            <p class="tool-run-detail-output" v-style="accentStyle">Output: {{highlightedToolRunOutput}}</p>
-        </div>
+    <section class="console-panel console-tool-runs-panel" v-style="shellStyle">
+        <p class="tool-run-item" v-style="accentStyle">{{toolRunsSummaryLabel}}</p>
     </section>
     `
 })
@@ -269,20 +343,30 @@ export class AgentConsoleToolRunsPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
-    get toolRuns() {
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get toolRuns(): AgentConsoleToolRun[] {
         return this.state.toolRuns;
     }
 
+    get highlightedToolRun(): AgentConsoleToolRun | undefined {
+        return this.state.highlightedToolRun;
+    }
+
+    get shellStyle() {
+        return this.toolRunsSummaryLabel ? styleTextToObject(this.activeTheme.toolRunsShell) : {};
+    }
+
     get titleStyle() {
-        return styleTextToObject(this.state.theme.toolRunsTitle);
+        return styleTextToObject(this.activeTheme.toolRunsTitle);
     }
 
     get accentStyle() {
-        return styleTextToObject(this.state.theme.toolRunsAccent);
-    }
-
-    get highlightedToolRun() {
-        return this.state.highlightedToolRun;
+        return styleTextToObject(this.activeTheme.toolRunsAccent);
     }
 
     get toolRunLabels(): string[] {
@@ -317,14 +401,31 @@ export class AgentConsoleToolRunsPanelComponent {
         }
         return this.highlightedToolRun.outputSummary || this.highlightedToolRun.error || '-';
     }
+
+    get toolRunsSummaryLabel(): string {
+        if (!this.highlightedToolRun) {
+            return '';
+        }
+        const detail = this.highlightedToolRun.inputSummary || this.highlightedToolRun.outputSummary || this.highlightedToolRun.error || this.highlightedToolRun.message;
+        return `tool ${this.highlightedToolRun.name}  |  ${this.highlightedToolRun.status}  |  ${this.summarize(detail || '-')}`;
+    }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > 96 ? `${text.slice(0, 96)}...` : text;
+    }
 }
 
 @Component({
     selector: 'agent-console-messages-panel',
     template: `
-    <section class="console-panel console-messages-panel">
-        <h2 v-style="titleStyle">Messages</h2>
-        <p class="message-item" v-for="item in messageLabels">{{item}}</p>
+    <section class="console-panel console-messages-panel" v-style="shellStyle">
+        <p class="message-item"><span v-style="messageRoleStyleAt(0)">{{messageRoleAt(0)}}</span><span v-style="messageContentStyleAt(0)">{{messageContentAt(0)}}</span></p>
+        <p class="message-item"><span v-style="messageRoleStyleAt(1)">{{messageRoleAt(1)}}</span><span v-style="messageContentStyleAt(1)">{{messageContentAt(1)}}</span></p>
+        <p class="message-item"><span v-style="messageRoleStyleAt(2)">{{messageRoleAt(2)}}</span><span v-style="messageContentStyleAt(2)">{{messageContentAt(2)}}</span></p>
+        <p class="message-item"><span v-style="messageRoleStyleAt(3)">{{messageRoleAt(3)}}</span><span v-style="messageContentStyleAt(3)">{{messageContentAt(3)}}</span></p>
+        <p class="message-item"><span v-style="messageRoleStyleAt(4)">{{messageRoleAt(4)}}</span><span v-style="messageContentStyleAt(4)">{{messageContentAt(4)}}</span></p>
+        <p class="message-item"><span v-style="messageRoleStyleAt(5)">{{messageRoleAt(5)}}</span><span v-style="messageContentStyleAt(5)">{{messageContentAt(5)}}</span></p>
     </section>
     `
 })
@@ -332,20 +433,62 @@ export class AgentConsoleMessagesPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
-    get titleStyle() {
-        return styleTextToObject(this.state.theme.messagesTitle);
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
-    get messages() {
+    get messages(): Array<{ role?: string; content: string }> {
         return this.state.messages;
     }
 
+    get shellStyle() {
+        return this.messageItems.length ? styleTextToObject(this.activeTheme.messagesShell) : {};
+    }
+
+    get titleStyle() {
+        return styleTextToObject(this.activeTheme.messagesTitle);
+    }
+
+    get messageItems(): Array<{ role: string; content: string; roleStyle: Record<string, string>; contentStyle: Record<string, string> }> {
+        return this.messages.slice(-6).map(message => {
+            const role = this.getMessageRoleLabel(message.role);
+            return {
+                role: `${role}> `,
+                content: this.summarize(message.content),
+                roleStyle: styleTextToObject(this.resolveMessageRoleStyle(role)),
+                contentStyle: styleTextToObject(this.activeTheme.statusValue)
+            };
+        });
+    }
+
     get messageLabels(): string[] {
-        return this.messages.slice(-6).map(message => `${this.getMessageRoleLabel(message.role)}> ${this.state.summarize(message.content)}`);
+        return this.messageItems.map(item => `${item.role}${item.content}`);
     }
 
     get messagesSummary(): string {
         return this.messageLabels.join(' | ');
+    }
+
+    messageAt(index: number): { role: string; content: string; roleStyle: Record<string, string>; contentStyle: Record<string, string> } | undefined {
+        return this.messageItems[index];
+    }
+
+    messageRoleAt(index: number): string {
+        return this.messageAt(index)?.role || '';
+    }
+
+    messageContentAt(index: number): string {
+        return this.messageAt(index)?.content || '';
+    }
+
+    messageRoleStyleAt(index: number): Record<string, string> {
+        return this.messageAt(index)?.roleStyle || {};
+    }
+
+    messageContentStyleAt(index: number): Record<string, string> {
+        return this.messageAt(index)?.contentStyle || {};
     }
 
     protected getMessageRoleLabel(role?: string): string {
@@ -358,14 +501,31 @@ export class AgentConsoleMessagesPanelComponent {
                 return String(role || 'system').toLowerCase();
         }
     }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > 80 ? `${text.slice(0, 80)}...` : text;
+    }
+
+    protected resolveMessageRoleStyle(role: string): string {
+        switch (role) {
+            case 'you':
+                return this.activeTheme.inputPrompt;
+            case 'agent':
+                return this.activeTheme.toolsAccent;
+            default:
+                return this.activeTheme.statusLabel;
+        }
+    }
 }
 
 @Component({
     selector: 'agent-console-activity-panel',
     template: `
-    <section class="console-panel console-activity-panel">
-        <h2 v-style="titleStyle">Activity</h2>
-        <p class="activity-item" v-for="item in activityLabels">{{item}}</p>
+    <section class="console-panel console-activity-panel" v-style="shellStyle">
+        <p class="activity-item"><span v-style="activityKindStyleAt(0)">{{activityKindAt(0)}}</span><span v-style="activityMessageStyleAt(0)">{{activityMessageAt(0)}}</span></p>
+        <p class="activity-item"><span v-style="activityKindStyleAt(1)">{{activityKindAt(1)}}</span><span v-style="activityMessageStyleAt(1)">{{activityMessageAt(1)}}</span></p>
+        <p class="activity-item"><span v-style="activityKindStyleAt(2)">{{activityKindAt(2)}}</span><span v-style="activityMessageStyleAt(2)">{{activityMessageAt(2)}}</span></p>
     </section>
     `
 })
@@ -373,31 +533,82 @@ export class AgentConsoleActivityPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
-    get titleStyle() {
-        return styleTextToObject(this.state.theme.activityTitle);
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
-    get activities() {
+    get activities(): AgentConsoleActivity[] {
         return this.state.activities;
     }
 
+    get shellStyle() {
+        return this.activityItems.length ? styleTextToObject(this.activeTheme.activityShell) : {};
+    }
+
+    get titleStyle() {
+        return styleTextToObject(this.activeTheme.activityTitle);
+    }
+
+    get activityItems(): Array<{ kind: string; message: string; kindStyle: Record<string, string>; messageStyle: Record<string, string> }> {
+        return this.activities.slice(-3).map(activity => ({
+            kind: `${activity.kind}: `,
+            message: this.summarize(activity.message),
+            kindStyle: styleTextToObject(this.activeTheme.toolsAccent),
+            messageStyle: styleTextToObject(this.activeTheme.statusValue)
+        }));
+    }
+
     get activityLabels(): string[] {
-        return this.activities.slice(-3).map(activity => `${activity.kind}: ${this.state.summarize(activity.message)}`);
+        return this.activityItems.map(item => `${item.kind}${item.message}`);
     }
 
     get activitiesSummary(): string {
         return this.activityLabels.join(' | ');
+    }
+
+    activityAt(index: number): { kind: string; message: string; kindStyle: Record<string, string>; messageStyle: Record<string, string> } | undefined {
+        return this.activityItems[index];
+    }
+
+    activityKindAt(index: number): string {
+        return this.activityAt(index)?.kind || '';
+    }
+
+    activityMessageAt(index: number): string {
+        return this.activityAt(index)?.message || '';
+    }
+
+    activityKindStyleAt(index: number): Record<string, string> {
+        return this.activityAt(index)?.kindStyle || {};
+    }
+
+    activityMessageStyleAt(index: number): Record<string, string> {
+        return this.activityAt(index)?.messageStyle || {};
+    }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > 80 ? `${text.slice(0, 80)}...` : text;
     }
 }
 
 @Component({
     selector: 'agent-console-select-panel',
     template: `
-    <section class="console-panel console-select-panel" v-if="menu">
-        <h2 v-style="titleStyle">Select</h2>
+    <section class="console-panel console-select-panel">
         <div class="select-shell" v-style="shellStyle">
             <p class="select-title" v-style="headerStyle">{{menuTitle}}</p>
-            <button class="select-option" v-style="item.style" v-for="item in menuOptionItems" @click="selectOption(item.value)">{{item.label}}</button>
+            <p class="select-option" v-style="optionStyleAt(0)" @click="selectOptionAt(0)">{{optionLabelAt(0)}}</p>
+            <p class="select-option" v-style="optionStyleAt(1)" @click="selectOptionAt(1)">{{optionLabelAt(1)}}</p>
+            <p class="select-option" v-style="optionStyleAt(2)" @click="selectOptionAt(2)">{{optionLabelAt(2)}}</p>
+            <p class="select-option" v-style="optionStyleAt(3)" @click="selectOptionAt(3)">{{optionLabelAt(3)}}</p>
+            <p class="select-option" v-style="optionStyleAt(4)" @click="selectOptionAt(4)">{{optionLabelAt(4)}}</p>
+            <p class="select-option" v-style="optionStyleAt(5)" @click="selectOptionAt(5)">{{optionLabelAt(5)}}</p>
+            <p class="select-option" v-style="optionStyleAt(6)" @click="selectOptionAt(6)">{{optionLabelAt(6)}}</p>
+            <p class="select-option" v-style="optionStyleAt(7)" @click="selectOptionAt(7)">{{optionLabelAt(7)}}</p>
+            <p class="select-option" v-style="optionStyleAt(8)" @click="selectOptionAt(8)">{{optionLabelAt(8)}}</p>
             <p class="select-hint" v-style="hintStyle">{{menuHint}}</p>
         </div>
     </section>
@@ -407,24 +618,31 @@ export class AgentConsoleSelectPanelComponent {
     constructor(private state: AgentConsoleSessionState) {
     }
 
-    get menu() {
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+    @Attribute() selectAction?: (value: string) => Promise<void>;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get menu(): AgentConsoleSelectMenu | undefined {
         return this.state.selectMenu;
     }
 
-    get titleStyle() {
-        return styleTextToObject(this.state.theme.selectTitle);
+    get shellStyle() {
+        return this.menu ? styleTextToObject(this.activeTheme.selectShell) : {};
     }
 
-    get shellStyle() {
-        return styleTextToObject(this.state.theme.selectShell);
+    get titleStyle() {
+        return styleTextToObject(this.activeTheme.selectTitle);
     }
 
     get headerStyle() {
-        return styleTextToObject(this.state.theme.selectHeader);
+        return styleTextToObject(this.activeTheme.selectHeader);
     }
 
     get hintStyle() {
-        return styleTextToObject(this.state.theme.selectHint);
+        return styleTextToObject(this.activeTheme.selectHint);
     }
 
     get menuTitle(): string {
@@ -432,7 +650,9 @@ export class AgentConsoleSelectPanelComponent {
     }
 
     get menuHint(): string {
-        return this.menu && this.menu.hint ? this.menu.hint : '1-9 select   up/down move   enter confirm   q cancel';
+        return this.menu
+            ? (this.menu.hint ? this.menu.hint : '1-9 select   up/down move   enter confirm   q cancel')
+            : '';
     }
 
     get menuOptionLabels(): string[] {
@@ -453,11 +673,31 @@ export class AgentConsoleSelectPanelComponent {
         return this.menu.options.map((option, index) => ({
             label: this.menuOptionLabels[index] || '',
             value: option.value,
-            style: styleTextToObject(this.menu && this.menu.selectedIndex === index ? this.state.theme.selectOptionActive : this.state.theme.selectOption)
+            style: styleTextToObject(this.menu && this.menu.selectedIndex === index ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
         }));
     }
 
+    optionAt(index: number): { label: string; value: string; style: Record<string, string> } | undefined {
+        return this.menuOptionItems[index];
+    }
+
+    optionLabelAt(index: number): string {
+        return this.optionAt(index)?.label || '';
+    }
+
+    optionStyleAt(index: number): Record<string, string> {
+        return this.optionAt(index)?.style || {};
+    }
+
+    async selectOptionAt(index: number): Promise<void> {
+        const option = this.optionAt(index);
+        if (!option) {
+            return;
+        }
+        await this.selectOption(option.value);
+    }
+
     async selectOption(value: string): Promise<void> {
-        await this.state.confirmSelectMenu(value);
+        await (this.selectAction || this.state.confirmSelectMenu.bind(this.state))(value);
     }
 }
