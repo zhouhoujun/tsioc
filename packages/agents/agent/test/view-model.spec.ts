@@ -255,11 +255,12 @@ export class AgentConsoleComponentTest {
 
         state.setNotice('Switch model');
         state.openSelectMenu('Model providers', [
-            { label: 'DeepSeek', value: 'deepseek' },
-            { label: 'OpenAI', value: 'openai' }
+            { label: 'DeepSeek', value: 'deepseek', description: 'default fast profile', detail: 'DeepSeek provider\nModel: deepseek-v4-flash' },
+            { label: 'OpenAI', value: 'openai', description: 'gpt family', detail: 'OpenAI provider\nModel: gpt-4o-mini' }
         ], 1);
         expect(component.notice).toEqual('Switch model');
         expect(component.selectMenu?.selectedIndex).toEqual(1);
+        expect(component.selectMenu?.options[1].detail).toContain('OpenAI provider');
         state.moveSelectMenu(1);
         expect(component.selectMenu?.selectedIndex).toEqual(0);
         expect(state.selectedSelectMenuOption?.value).toEqual('deepseek');

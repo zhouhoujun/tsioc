@@ -44,7 +44,7 @@ export class HtmlConsoleTest {
             { id: 'a1', role: 'assistant', content: 'world', createdAt: 2 } as any
         ]);
         ref.instance.sessionState.setTasksCount(1);
-        await Promise.resolve();
+        await ref.render();
         const root = ref.hostView.rootNodes[0] as any;
         const statusPanel = ref.hostView.query(AgentConsoleStatusPanelComponent) as ComponentRef<AgentConsoleStatusPanelComponent>;
         const statusRoot = statusPanel.hostView.rootNodes[0] as any;
@@ -60,7 +60,7 @@ export class HtmlConsoleTest {
         expect(statusRoot.querySelector('.status-line')?.textContent).toContain('idle');
         expect(inputRoot.querySelector('.input-shell')).toBeTruthy();
         expect(inputRoot.querySelector('.input-shell')?.getAttribute('style')).toContain('background');
-        expect(inputRoot.querySelector('.input-entry')?.getAttribute('style')).toContain('background');
+        expect(inputRoot.querySelector('.input-entry')?.getAttribute('style')).toContain('color');
         expect(inputRoot.querySelector('.input-placeholder')?.textContent).toContain('Ask for code');
         expect(inputRoot.querySelector('.input-prompt')?.getAttribute('style')).toBeTruthy();
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('style')).toContain('color');

@@ -4,6 +4,7 @@ export interface SelectMenuOption {
     label: string;
     value: string;
     description?: string;
+    detail?: string;
 }
 
 export interface SelectMenuMouseEvent {
@@ -400,8 +401,7 @@ export function isSuggestionMenu(menu?: TerminalMenuStateLike | null): boolean {
 export function buildSuggestionMenuOptions(state: SuggestionState): SelectMenuOption[] {
     return state.items.map(item => ({
         label: item.label,
-        value: item.value,
-        description: item.group.toLowerCase()
+        value: item.value
     }));
 }
 
@@ -424,6 +424,39 @@ export function resolveSelectMenuOptionIndexFromRow(row: number, title: string, 
     const titleLines = Math.max(1, String(title || '').split('\n').length);
     const firstOptionRow = startRow + titleLines + 2;
     const index = row - firstOptionRow;
+    if (index < 0 || index >= optionCount) {
+        return -1;
+    }
+    return index;
+}
+
+export function findSelectMenuOptionIndexFromRenderedLines(
+    renderedLines: string[],
+    title: string,
+    optionCount: number,
+    row: number
+): number {
+    if (!renderedLines.length || optionCount <= 0 || row < 1 || row > renderedLines.length) {
+        return -1;
+    }
+    const normalized = renderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+    const titleLines = String(title || '').split('\n').filter(line => line.length > 0);
+    const firstTitle = titleLines[0] || '';
+    const titleStart = firstTitle ? normalized.findIndex(line => line.includes(firstTitle)) : -1;
+    if (titleStart < 0) {
+        return -1;
+    }
+    const optionPattern = /(?:^|\s|\u2502)[›>]?\s*\d+\.\s/;
+    const optionRows: number[] = [];
+    for (let index = titleStart + Math.max(1, titleLines.length); index < normalized.length; index++) {
+        if (optionPattern.test(normalized[index])) {
+            optionRows.push(index + 1);
+        }
+    }
+    if (!optionRows.length) {
+        return -1;
+    }
+    const index = optionRows.indexOf(row);
     if (index < 0 || index >= optionCount) {
         return -1;
     }

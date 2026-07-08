@@ -134,8 +134,10 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     protected unsubscribeState?: () => void;
     protected currentInput = '';
 
-    constructor(private state?: AgentConsoleSessionState) {
-        this.currentInput = this.state?.input || '';
+    constructor(
+        private state?: AgentConsoleSessionState
+    ) {
+        this.currentInput = state?.input || '';
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -286,13 +288,10 @@ export class AgentConsoleWorkingPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return this.totalTokens > 0 || this.messagesCount > 0 || this.tasksCount > 0;
+        return true;
     }
 
     get workingSummary(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
         return [
             `tokens ${this.totalTokens}`,
             `prompt ${this.promptTokens}`,
@@ -621,6 +620,7 @@ export class AgentConsoleActivityPanelComponent {
     <section class="console-panel console-select-panel">
         <div class="select-shell" v-style="shellStyle">
             <p class="select-title" v-style="headerStyle">{{menuTitle}}</p>
+            <p class="select-caption" v-style="detailLabelStyle">{{menuMeta}}</p>
             <p class="select-option" v-style="optionStyleAt(0)" @click="selectOptionAt(0)">{{optionLabelAt(0)}}</p>
             <p class="select-option" v-style="optionStyleAt(1)" @click="selectOptionAt(1)">{{optionLabelAt(1)}}</p>
             <p class="select-option" v-style="optionStyleAt(2)" @click="selectOptionAt(2)">{{optionLabelAt(2)}}</p>
@@ -630,6 +630,13 @@ export class AgentConsoleActivityPanelComponent {
             <p class="select-option" v-style="optionStyleAt(6)" @click="selectOptionAt(6)">{{optionLabelAt(6)}}</p>
             <p class="select-option" v-style="optionStyleAt(7)" @click="selectOptionAt(7)">{{optionLabelAt(7)}}</p>
             <p class="select-option" v-style="optionStyleAt(8)" @click="selectOptionAt(8)">{{optionLabelAt(8)}}</p>
+            <p class="select-detail-label" v-style="detailLabelStyle">{{detailTitle}}</p>
+            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(0)}}</p>
+            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(1)}}</p>
+            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(2)}}</p>
+            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(3)}}</p>
+            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(4)}}</p>
+            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(5)}}</p>
             <p class="select-hint" v-style="hintStyle">{{menuHint}}</p>
         </div>
     </section>
@@ -639,7 +646,9 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
     protected unsubscribeState?: () => void;
     protected currentMenu?: AgentConsoleSelectMenu;
 
-    constructor(private state: AgentConsoleSessionState) {
+    constructor(
+        private state: AgentConsoleSessionState
+    ) {
         this.currentMenu = this.state.selectMenu;
     }
 
@@ -682,14 +691,29 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         return styleTextToObject(this.activeTheme.selectHint);
     }
 
+    get detailLabelStyle() {
+        return styleTextToObject(this.activeTheme.selectDetailLabel);
+    }
+
+    get detailValueStyle() {
+        return styleTextToObject(this.activeTheme.selectDetailValue);
+    }
+
     get menuTitle(): string {
         return this.menu ? this.menu.title : '';
     }
 
     get menuHint(): string {
         return this.menu
-            ? (this.menu.hint ? this.menu.hint : '1-9 select   up/down move   enter confirm   q cancel')
+            ? (this.menu.hint ? this.menu.hint : '1-9 choose   up/down move   enter confirm   esc close')
             : '';
+    }
+
+    get menuMeta(): string {
+        if (!this.menu || !this.menu.options.length) {
+            return '';
+        }
+        return `Choose ${this.menu.selectedIndex + 1} of ${this.menu.options.length}`;
     }
 
     get menuOptionLabels(): string[] {
@@ -697,9 +721,8 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
             return [];
         }
         return this.menu.options.map((option, index) => {
-            const description = option.description ? ` ${option.description}` : '';
-            const marker = this.menu && this.menu.selectedIndex === index ? '>' : ' ';
-            return `${marker} ${index + 1}. ${option.label}${description}`;
+            const marker = this.menu && this.menu.selectedIndex === index ? '›' : ' ';
+            return `${marker} ${index + 1}. ${option.label}`;
         });
     }
 
@@ -712,6 +735,39 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
             value: option.value,
             style: styleTextToObject(this.menu && this.menu.selectedIndex === index ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
         }));
+    }
+
+    get selectedOption() {
+        if (!this.menu) {
+            return undefined;
+        }
+        return this.menu.options[this.menu.selectedIndex];
+    }
+
+    get detailTitle(): string {
+        return this.selectedOption ? 'Preview' : '';
+    }
+
+    get detailLines(): string[] {
+        const option = this.selectedOption;
+        if (!option) {
+            return [];
+        }
+        const detail = option.detail ?? option.description ?? option.label;
+        if (typeof detail === 'string') {
+            return detail
+                .split('\n')
+                .map(line => line.trim())
+                .filter(Boolean)
+                .slice(0, 3);
+        }
+        return JSON.stringify(detail, null, 2)
+            .split('\n')
+            .slice(0, 6);
+    }
+
+    detailLineAt(index: number): string {
+        return this.detailLines[index] || '';
     }
 
     optionAt(index: number): { label: string; value: string; style: Record<string, string> } | undefined {

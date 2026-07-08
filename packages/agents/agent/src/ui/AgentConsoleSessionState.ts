@@ -49,6 +49,7 @@ export interface AgentConsoleSelectOption {
     label: string;
     value: string;
     description?: string;
+    detail?: string | Record<string, any> | any[];
 }
 
 export interface AgentConsoleSelectMenu {

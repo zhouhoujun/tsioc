@@ -550,6 +550,11 @@ export class AgentToolsPackageTest {
         const replacedAll = await tool.invoke({ path: 'src/repeated.txt', oldString: 'same', newString: 'done', replaceAll: true }, createSessionContext());
         expect(replacedAll.replacements).toEqual(3);
         expect(await fs.readFile(path.join(workspace, 'src', 'repeated.txt'), 'utf8')).toEqual('done done done');
+
+        await fs.writeFile(path.join(workspace, 'src', 'special.txt'), 'a.$ a.$', 'utf8');
+        const special = await tool.invoke({ path: 'src/special.txt', oldString: 'a.$', newString: '$1?', replaceAll: true }, createSessionContext());
+        expect(special.replacements).toEqual(2);
+        expect(await fs.readFile(path.join(workspace, 'src', 'special.txt'), 'utf8')).toEqual('$1? $1?');
     }
 
     @Test('list dir returns visible entries honors limits and validates paths')

@@ -37,6 +37,8 @@ export interface AgentConsoleTheme {
     selectHint: string;
     selectOption: string;
     selectOptionActive: string;
+    selectDetailLabel: string;
+    selectDetailValue: string;
 }
 
 export type AgentConsoleThemeInput = Partial<AgentConsoleTheme>;
@@ -75,11 +77,13 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     activityTitle: 'color: #8b949e;',
     activityShell: 'color: #c9d1d9;',
     selectTitle: 'color: #8b949e;',
-    selectShell: 'background: #161b22; color: #c9d1d9; padding: 0 1;',
-    selectHeader: 'color: #c9d1d9;',
-    selectHint: 'color: #8b949e;',
-    selectOption: 'background: #161b22; color: #c9d1d9;',
-    selectOptionActive: 'background: #161b22; color: #79c0ff;'
+    selectShell: 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;',
+    selectHeader: 'color: #f3f6fb; font-weight: bold;',
+    selectHint: 'color: #6f7c8a;',
+    selectOption: 'background: #10161d; color: #93a4b8; padding: 0 1;',
+    selectOptionActive: 'background: #18222d; color: #8fd0ff; padding: 0 1; font-weight: bold;',
+    selectDetailLabel: 'color: #6f7c8a;',
+    selectDetailValue: 'background: #0b1117; color: #dce6f2; padding: 0 1;'
 };
 
 export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): AgentConsoleTheme {

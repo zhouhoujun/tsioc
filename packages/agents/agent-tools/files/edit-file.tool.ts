@@ -52,7 +52,9 @@ export class EditFileTool implements AgentTool {
             throw new Error(`Invalid edit_file input: oldString matched ${matches} times in '${requestedPath}'. Set replaceAll to true to replace every match.`);
         }
 
-        const updated = replaceAll ? content.split(oldString).join(newString) : content.replace(oldString, newString);
+        const updated = replaceAll
+            ? this.replaceAllCompat(content, oldString, newString)
+            : content.replace(oldString, newString);
         await fs.writeFile(absolutePath, updated, 'utf8');
 
         return {
@@ -91,5 +93,10 @@ export class EditFileTool implements AgentTool {
             index += search.length;
         }
         return count;
+    }
+
+    private replaceAllCompat(content: string, search: string, replacement: string): string {
+        // Avoid String.prototype.replaceAll so older runtimes keep working.
+        return content.split(search).join(replacement);
     }
 }

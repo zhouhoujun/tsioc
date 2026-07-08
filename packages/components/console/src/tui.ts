@@ -249,7 +249,7 @@ export class TuiRenderer extends ConsoleRenderer {
             return text;
         }
         const prefix = codes.join('');
-        const continuedText = text.replaceAll(ANSI_RESET, `${ANSI_RESET}${prefix}`);
+        const continuedText = text.split(ANSI_RESET).join(`${ANSI_RESET}${prefix}`);
         return `${prefix}${continuedText}${ANSI_RESET}`;
     }
 

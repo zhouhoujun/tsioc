@@ -11,6 +11,7 @@ import {
     applyTerminalInputChunk,
     buildMentionCandidates,
     enrichPromptWithMentions,
+    findSelectMenuOptionIndexFromRenderedLines,
     fitLine,
     formatDisplayDraft,
     getActiveInputToken,
@@ -98,6 +99,7 @@ interface SelectMenuOption {
     label: string;
     value: string;
     description?: string;
+    detail?: string;
 }
 
 interface SelectMenuState {
@@ -205,6 +207,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let renderTimer: NodeJS.Timeout | null = null;
     let inputLocked = false;
     let lastRenderKey = '';
+    let lastRenderedLines: string[] = [];
     let screenNotice = '';
     let spinnerIndex = 0;
     let multilineMode = false;
@@ -246,8 +249,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         const options = suggestionState.items.map(item => ({
             label: item.label,
-            value: item.value,
-            description: item.group
+            value: item.value
         }));
         consoleState?.openSelectMenu?.('Suggestions', options, Math.max(0, suggestionState.selectedIndex), 'tab/enter accept   up/down move');
     };
@@ -339,24 +341,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         safePrompt();
     };
 
-    const promptSelect = (title: string, options: SelectMenuOption[], initialIndex = 0, hint = '1-9 select   up/down move   enter confirm   q cancel'): Promise<string | undefined> => {
-        if (viewModel?.select) {
-            inputLocked = true;
-            modalPromptActive = true;
-            historyIndex = -1;
-            historyDraft = '';
-            suggestionState = { items: [], selectedIndex: -1 };
-            updateDraftState('', 0);
-            pauseReadlineForSelection();
-            renderSelectionNotice();
-            return viewModel.select(title, options, initialIndex, hint).finally(() => {
-                inputLocked = false;
-                modalPromptActive = false;
-                currentDraft = '';
-                draftCursor = 0;
-                resumeReadlineAfterSelection();
-            });
-        }
+    const beginSelectInteraction = () => {
         const previousLocked = inputLocked;
         inputLocked = true;
         modalPromptActive = true;
@@ -364,8 +349,25 @@ async function runInteractiveChat(options: any): Promise<void> {
         historyDraft = '';
         suggestionState = { items: [], selectedIndex: -1 };
         updateDraftState('', 0);
+        pauseReadlineForSelection();
+        let finished = false;
+        return () => {
+            if (finished) {
+                return;
+            }
+            finished = true;
+            selectMenu = null;
+            modalPromptActive = false;
+            inputLocked = previousLocked;
+            currentDraft = '';
+            draftCursor = 0;
+            consoleState?.closeSelectMenu?.();
+            resumeReadlineAfterSelection();
+        };
+    };
+
+    const showSelectMenu = (title: string, options: SelectMenuOption[], initialIndex = 0, hint = '1-9 select   up/down move   enter confirm   q cancel'): Promise<string | undefined> => {
         return new Promise(resolve => {
-            pauseReadlineForSelection();
             selectMenu = {
                 title,
                 hint,
@@ -373,15 +375,10 @@ async function runInteractiveChat(options: any): Promise<void> {
                 selectedIndex: Math.max(0, Math.min(options.length - 1, initialIndex)),
                 resolve: (value: string | undefined) => {
                     selectMenu = null;
-                    modalPromptActive = false;
-                    inputLocked = previousLocked;
-                    currentDraft = '';
-                    draftCursor = 0;
                     if (consoleState?.selectMenuAction === resolveSelection) {
                         consoleState.selectMenuAction = undefined;
                     }
                     consoleState?.closeSelectMenu?.();
-                    resumeReadlineAfterSelection();
                     resolve(value);
                 }
             };
@@ -392,6 +389,15 @@ async function runInteractiveChat(options: any): Promise<void> {
             consoleState.selectMenuAction = resolveSelection;
             renderSelectionNotice();
         });
+    };
+
+    const promptSelect = async (title: string, options: SelectMenuOption[], initialIndex = 0, hint = '1-9 select   up/down move   enter confirm   q cancel'): Promise<string | undefined> => {
+        const finishSelectInteraction = beginSelectInteraction();
+        try {
+            return await showSelectMenu(title, options, initialIndex, hint);
+        } finally {
+            finishSelectInteraction();
+        }
     };
 
     const updateDraftState = (nextDraft: string, cursor = nextDraft.length) => {
@@ -481,51 +487,79 @@ async function runInteractiveChat(options: any): Promise<void> {
 
         const providerOptions = MODEL_PROVIDER_CHOICES.map(item => ({
             label: item.label,
-            value: item.provider
+            value: item.provider,
+            detail: [
+                `Provider: ${item.provider}`,
+                `Default model: ${PROVIDER_DEFAULT_MODELS[item.provider] || 'custom-model'}`,
+                `Base URL: ${resolveProviderBaseUrl(item.provider) || '(custom)'}`
+            ].join('\n')
         }));
         const currentProviderIndex = Math.max(0, MODEL_PROVIDER_CHOICES.findIndex(item => item.provider === current?.provider));
-        const provider = await promptSelect('Model providers', providerOptions, currentProviderIndex);
-        if (!provider) {
-            return undefined;
-        }
-        const providerSelection = MODEL_PROVIDER_CHOICES.find(item => item.provider === provider) || MODEL_PROVIDER_CHOICES[0];
-        const models = PROVIDER_MODELS[provider] || [];
-
-        let model = getProviderScopedValue(provider, 'model') || PROVIDER_DEFAULT_MODELS[provider];
-        if (models.length) {
-            const modelOptions = models.map(item => ({ label: item, value: item }));
-            const currentModelIndex = Math.max(0, models.indexOf(model));
-            const selectedModel = await promptSelect(`Models for ${providerSelection.label}`, modelOptions, currentModelIndex);
-            if (!selectedModel) {
-                return undefined;
+        const finishSelectInteraction = beginSelectInteraction();
+        let selectInteractionClosed = false;
+        const closeSelectInteraction = () => {
+            if (selectInteractionClosed) {
+                return;
             }
-            model = selectedModel;
-        } else {
-            const modelAnswer = await promptLine(`Model name [${model}]: `);
-            assertNoExitInput(modelAnswer);
-            if (isCancelInput(modelAnswer)) {
-                return undefined;
-            }
-            model = modelAnswer || model;
-        }
-
-        const defaultBaseUrl = getProviderScopedValue(provider, 'baseUrl') || '';
-        let baseUrl = defaultBaseUrl;
-        if (provider === 'openai-compatible' || provider === 'anthropic') {
-            const baseUrlAnswer = await promptLine(`Base URL [${defaultBaseUrl}]: `);
-            assertNoExitInput(baseUrlAnswer);
-            if (isCancelInput(baseUrlAnswer)) {
-                return undefined;
-            }
-            baseUrl = baseUrlAnswer || defaultBaseUrl;
-        }
-
-        return {
-            provider,
-            model,
-            baseUrl,
-            apiKeyEnv: getProviderScopedValue(provider, 'apiKeyEnv')
+            selectInteractionClosed = true;
+            finishSelectInteraction();
         };
+        try {
+            const provider = await showSelectMenu('Model providers', providerOptions, currentProviderIndex);
+            if (!provider) {
+                return undefined;
+            }
+            const providerSelection = MODEL_PROVIDER_CHOICES.find(item => item.provider === provider) || MODEL_PROVIDER_CHOICES[0];
+            const models = PROVIDER_MODELS[provider] || [];
+
+            let model = getProviderScopedValue(provider, 'model') || PROVIDER_DEFAULT_MODELS[provider];
+            if (models.length) {
+                const modelOptions = models.map(item => ({
+                    label: item,
+                    value: item,
+                    detail: [
+                        `Provider: ${providerSelection.label}`,
+                        `Model: ${item}`,
+                        `API key env: ${getProviderScopedValue(provider, 'apiKeyEnv') || '-'}`
+                    ].join('\n')
+                }));
+                const currentModelIndex = Math.max(0, models.indexOf(model));
+                const selectedModel = await showSelectMenu(`Models for ${providerSelection.label}`, modelOptions, currentModelIndex);
+                if (!selectedModel) {
+                    return undefined;
+                }
+                model = selectedModel;
+            } else {
+                closeSelectInteraction();
+                const modelAnswer = await promptLine(`Model name [${model}]: `);
+                assertNoExitInput(modelAnswer);
+                if (isCancelInput(modelAnswer)) {
+                    return undefined;
+                }
+                model = modelAnswer || model;
+            }
+
+            const defaultBaseUrl = getProviderScopedValue(provider, 'baseUrl') || '';
+            let baseUrl = defaultBaseUrl;
+            if (provider === 'openai-compatible' || provider === 'anthropic') {
+                closeSelectInteraction();
+                const baseUrlAnswer = await promptLine(`Base URL [${defaultBaseUrl}]: `);
+                assertNoExitInput(baseUrlAnswer);
+                if (isCancelInput(baseUrlAnswer)) {
+                    return undefined;
+                }
+                baseUrl = baseUrlAnswer || defaultBaseUrl;
+            }
+
+            return {
+                provider,
+                model,
+                baseUrl,
+                apiKeyEnv: getProviderScopedValue(provider, 'apiKeyEnv')
+            };
+        } finally {
+            closeSelectInteraction();
+        }
     };
 
     const ensureInteractiveProfile = async (): Promise<AgentCliProviderProfile> => {
@@ -791,6 +825,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         const rendered = typeof consoleRenderer.renderToTuiLines === 'function'
             ? consoleRenderer.renderToTuiLines(rootNodes, { width: Math.max(24, width) })
             : consoleRenderer.renderToLines(rootNodes);
+        lastRenderedLines = rendered.slice();
         const nextRender = `\x1b[2J\x1b[H${rendered.map((line: string) => fitAnsiLine(line, width)).join('\n')}`;
 
         if (nextRender === lastRenderKey) {
@@ -1001,18 +1036,114 @@ async function runInteractiveChat(options: any): Promise<void> {
         await processInput(line);
     };
 
+    const setActiveMenuIndex = (index: number) => {
+        const activeMenu = getActiveSelectMenu();
+        if (!activeMenu) {
+            return;
+        }
+        const nextIndex = Math.max(0, Math.min(activeMenu.options.length - 1, index));
+        if (consoleState?.selectMenu) {
+            consoleState.setSelectMenuIndex(nextIndex);
+        }
+        if (selectMenu) {
+            selectMenu.selectedIndex = nextIndex;
+        }
+        renderSelectionNotice();
+    };
+
+    const moveActiveMenu = (delta: number) => {
+        const activeMenu = getActiveSelectMenu();
+        if (!activeMenu || !activeMenu.options.length) {
+            return;
+        }
+        const nextIndex = (activeMenu.selectedIndex + delta + activeMenu.options.length) % activeMenu.options.length;
+        setActiveMenuIndex(nextIndex);
+    };
+
+    const confirmActiveMenuSelection = () => {
+        const activeMenu = getActiveSelectMenu();
+        if (!activeMenu) {
+            return;
+        }
+        if (consoleState?.selectMenu) {
+            void consoleState.confirmSelectMenu();
+            return;
+        }
+        if (selectMenu) {
+            selectMenu.resolve(selectMenu.options[selectMenu.selectedIndex]?.value);
+        }
+    };
+
+    const cancelActiveMenuSelection = () => {
+        if (consoleState?.selectMenu) {
+            void consoleState.cancelSelectMenu();
+            return;
+        }
+        if (selectMenu) {
+            selectMenu.resolve(undefined);
+        }
+    };
+
+    const confirmActiveMenuIndex = (index: number) => {
+        const activeMenu = getActiveSelectMenu();
+        if (!activeMenu || index < 0 || index >= activeMenu.options.length) {
+            return;
+        }
+        if (consoleState?.selectMenu && selectMenu) {
+            selectMenu.selectedIndex = index;
+        }
+        if (consoleState?.selectMenu) {
+            void consoleState.chooseSelectMenuIndex(index);
+            return;
+        }
+        if (selectMenu) {
+            selectMenu.selectedIndex = index;
+            selectMenu.resolve(selectMenu.options[index]?.value);
+        }
+    };
+
     stdinDataHandler = (chunk: Buffer | string) => {
         if (isClosed) {
             return;
         }
         if (isSelecting) {
+            const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
             const mouse = parseTerminalMouseEvent(chunk);
-            if (!mouse || mouse.release) {
+            if (mouse && !mouse.release) {
+                const activeMenu = getActiveSelectMenu();
+                if (!activeMenu) {
+                    return;
+                }
+                const index = findSelectMenuOptionIndexFromRenderedLines(
+                    lastRenderedLines,
+                    activeMenu.title,
+                    activeMenu.options.length,
+                    mouse.y
+                );
+                if (index >= 0) {
+                    confirmActiveMenuIndex(index);
+                }
                 return;
             }
-            const activeMenu = getActiveSelectMenu();
-            if (!activeMenu) {
+            if (text === '\u001b[A') {
+                moveActiveMenu(-1);
                 return;
+            }
+            if (text === '\u001b[B') {
+                moveActiveMenu(1);
+                return;
+            }
+            if (text === '\r' || text === '\n') {
+                confirmActiveMenuSelection();
+                return;
+            }
+            if (text === '\u001b' || text.toLowerCase() === 'q') {
+                cancelActiveMenuSelection();
+                return;
+            }
+            if (/^[1-9]$/.test(text)) {
+                const index = parseInt(text, 10) - 1;
+                confirmActiveMenuIndex(index);
             }
             return;
         }
@@ -1040,51 +1171,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         const activeMenu = getActiveSelectMenu();
         if (activeMenu && !isSuggestionMenu(activeMenu)) {
-            if (key?.name === 'down') {
-                if (consoleState?.selectMenu) {
-                    consoleState.moveSelectMenu(1);
-                } else if (selectMenu) {
-                    selectMenu.selectedIndex = (selectMenu.selectedIndex + 1) % selectMenu.options.length;
-                }
-                renderSelectionNotice();
-                return;
-            }
-            if (key?.name === 'up') {
-                if (consoleState?.selectMenu) {
-                    consoleState.moveSelectMenu(-1);
-                } else if (selectMenu) {
-                    selectMenu.selectedIndex = (selectMenu.selectedIndex - 1 + selectMenu.options.length) % selectMenu.options.length;
-                }
-                renderSelectionNotice();
-                return;
-            }
-            if (key?.name === 'return') {
-                if (consoleState?.selectMenu) {
-                    void consoleState.confirmSelectMenu();
-                } else if (selectMenu) {
-                    selectMenu.resolve(selectMenu.options[selectMenu.selectedIndex]?.value);
-                }
-                return;
-            }
-            if (key?.name === 'escape' || key?.name === 'q') {
-                if (consoleState?.selectMenu) {
-                    void consoleState.cancelSelectMenu();
-                } else if (selectMenu) {
-                    selectMenu.resolve(undefined);
-                }
-                return;
-            }
-            if (_str && /^[1-9]$/.test(_str)) {
-                const index = parseInt(_str, 10) - 1;
-                if (activeMenu && index >= 0 && index < activeMenu.options.length) {
-                    if (consoleState?.selectMenu) {
-                        void consoleState.chooseSelectMenuIndex(index);
-                    } else if (selectMenu) {
-                        selectMenu.resolve(selectMenu.options[index]?.value);
-                    }
-                }
-                return;
-            }
+            // Selection menus are handled directly from raw stdin chunks.
             return;
         }
         if (activeTextPrompt && key?.name === 'return') {

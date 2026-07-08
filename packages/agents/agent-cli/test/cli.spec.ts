@@ -15,6 +15,7 @@ import {
     formatClockTime,
     getActiveInputToken,
     applySuggestionToInput,
+    findSelectMenuOptionIndexFromRenderedLines,
     moveSuggestionSelection,
     normalizeSuggestionState,
     renderActivityLine,
@@ -331,16 +332,38 @@ export class AgentCliTest {
     @Test('renders select menu with numbered options')
     rendersSelectMenuWithNumberedOptions() {
         expect(renderSelectMenu('Model providers', [
-            { label: 'DeepSeek', value: 'deepseek' },
-            { label: 'OpenAI', value: 'openai', description: 'default' }
+            { label: 'DeepSeek', value: 'deepseek', detail: 'DeepSeek provider' },
+            { label: 'OpenAI', value: 'openai', detail: 'OpenAI provider' }
         ], 1)).toEqual([
             'Model providers',
             '',
             '  1. DeepSeek',
-            '› 2. OpenAI  default',
+            '› 2. OpenAI',
             '',
             '1-9 select   up/down move   enter confirm   q cancel'
         ]);
+    }
+
+    @Test('resolves rendered select menu row to option index')
+    resolvesRenderedSelectMenuRowToOptionIndex() {
+        const rendered = [
+            'tsdi-agent',
+            'status idle',
+            'workspace /tmp/demo',
+            '',
+            '┌──────────────────────────┐',
+            '│ Model providers         │',
+            '│ Choose 2 of 2           │',
+            '│  1. DeepSeek            │',
+            '│ › 2. OpenAI             │',
+            '│ Preview                 │',
+            '│ openai                  │',
+            '└──────────────────────────┘'
+        ];
+
+        expect(findSelectMenuOptionIndexFromRenderedLines(rendered, 'Model providers', 2, 8)).toBe(0);
+        expect(findSelectMenuOptionIndexFromRenderedLines(rendered, 'Model providers', 2, 9)).toBe(1);
+        expect(findSelectMenuOptionIndexFromRenderedLines(rendered, 'Model providers', 2, 10)).toBe(-1);
     }
 
     @Test('sorts tool runs by status and recency')
