@@ -254,6 +254,14 @@ export class HtmlRendererCoverageTest {
         expect((element as any)['*ngFor']).toBe('item of items');
     }
 
+    @Test('should ignore invalid attribute names while cloning conditional templates')
+    testIgnoreInvalidAttributeName() {
+        const element = this.renderer.createElement('div');
+
+        expect(() => this.renderer.setAttribute(element, undefined as any, 'ignored')).not.toThrow();
+        expect(this.renderer.getAttributes(element).length).toBe(0);
+    }
+
     @Test('should handle getAttributes')
     testGetAttributes() {
         const element = this.renderer.createElement('div');

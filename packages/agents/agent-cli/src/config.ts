@@ -133,6 +133,20 @@ function readJsonObject(filePath: string): Record<string, any> {
     return parsed;
 }
 
+function resolveLaunchWorkspace(): string {
+    let current = process.cwd();
+    while (true) {
+        if (fs.existsSync(path.join(current, '.git'))) {
+            return current;
+        }
+        const parent = path.dirname(current);
+        if (parent === current) {
+            return process.cwd();
+        }
+        current = parent;
+    }
+}
+
 export function resolveProviderProfile(root: string): AgentCliProviderProfile | undefined {
     const providerPath = path.join(root, 'provider.json');
     const parsed = readJsonObject(providerPath);
@@ -164,7 +178,7 @@ export function writeSettingsModelProfile(root: string, profile: Partial<AgentCl
         };
         const defaultProfileName = typeof currentModel.defaultProfile === 'string'
             ? currentModel.defaultProfile
-            : (currentModel.profiles?.fast ? 'fast' : undefined);
+            : (currentModel.profiles?.flash ? 'flash' : (currentModel.profiles?.fast ? 'fast' : undefined));
         if (defaultProfileName && currentModel.profiles?.[defaultProfileName]) {
             nextModel.profiles = {
                 ...currentModel.profiles,
@@ -282,9 +296,14 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     const settings: AgentRootSettings = resolved.settings;
     const providerProfile = resolveProviderProfile(resolved.root);
     const settingsModel = readSettingsModel(resolved.root);
+    const usesDefaultWorkspacePlaceholder = !options.root
+        && !options.workspace
+        && (!settings.workspace || settings.workspace === 'workspace');
 
     // Load .env files early so subsequent code can read process.env
-    const workspace = options.workspace || resolved.workspace;
+    const workspace = options.workspace
+        ? path.resolve(options.workspace)
+        : (usesDefaultWorkspacePlaceholder ? resolveLaunchWorkspace() : resolved.workspace);
     loadEnvFiles(workspace, resolved.root, { verbose: true });
     const toolSettings = resolved.tools;
     const toolNames = parseAgentSettingsList(options.tools ?? settings.tools?.values);
@@ -292,7 +311,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     const skillRoots = resolved.skillRoots;
     const fileRootDir = options.workspace
         ? path.resolve(options.workspace)
-        : toolSettings.file?.rootDir ?? resolved.workspace;
+        : (usesDefaultWorkspacePlaceholder ? workspace : (toolSettings.file?.rootDir ?? workspace));
     const tools: AgentToolsOptions = {
         ...toolSettings,
         file: { ...(toolSettings.file ?? {}), rootDir: fileRootDir },

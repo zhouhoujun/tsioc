@@ -88,7 +88,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 }
                 return;
             case 'input': {
-                const value = element.getAttribute('value') || text || ' ';
+                const value = element.getAttribute('value') || text || '';
                 lines.push(this.applyAnsi(value, styleMap, width));
                 return;
             }
@@ -178,7 +178,7 @@ export class TuiRenderer extends ConsoleRenderer {
             return '';
         }
         if (tag === 'input') {
-            const value = element.getAttribute('value') || this.collectText(element) || ' ';
+            const value = element.getAttribute('value') || this.collectText(element) || '';
             return this.applyAnsi(value, styleMap);
         }
         return element.childNodes

@@ -34,6 +34,14 @@ import {
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
     runAgentPrompt,
+    parseSlashCommandLine,
+    parseTerminalControlKey,
+    buildChatSessionId,
+    buildOsc52ClipboardSequence,
+    pickRestoredSessionId,
+    shouldPlaceTerminalCursor,
+    shouldSuppressDuplicatedKeypress,
+    compactRenderedLines,
     sortToolRuns,
     findInputPromptRow,
     getTerminalDisplayWidth,
@@ -108,14 +116,21 @@ export class AgentCliTest {
         expect(resolved.channels.defaultChannel).toBe('local');
     }
 
-    @Test('defaults workspace to root workspace directory')
-    async defaultsWorkspaceToRootWorkspaceDirectory() {
-        const root = await this.createRoot();
-        const resolved = resolveCliConfig({ root });
-        expect(resolved.root).toBe(path.resolve(root));
-        expect(resolved.settingsPath).toBe(path.resolve(root, 'settings.json'));
-        expect(resolved.workspace).toBe(path.resolve(root, 'workspace'));
-        expect(resolved.tools.file?.rootDir).toBe(path.resolve(root, 'workspace'));
+    @Test('defaults workspace to current repository root')
+    async defaultsWorkspaceToCurrentRepositoryRoot() {
+        const home = await this.createRoot();
+        const originalHome = process.env.HOME;
+        process.env.HOME = home;
+        try {
+            const resolved = resolveCliConfig({});
+            const repoRoot = path.resolve(process.cwd(), '../../..');
+            expect(resolved.root).toBe(path.resolve(home, '.tsdi-agent'));
+            expect(resolved.settingsPath).toBe(path.resolve(home, '.tsdi-agent', 'settings.json'));
+            expect(resolved.workspace).toBe(repoRoot);
+            expect(resolved.tools.file?.rootDir).toBe(repoRoot);
+        } finally {
+            process.env.HOME = originalHome;
+        }
     }
 
     @Test('creates cli commands with run and chat subcommands')
@@ -281,9 +296,9 @@ export class AgentCliTest {
     async resolvesAdaptiveModelConfigFromSettingsProfiles() {
         const root = await this.createRoot();
         writeSettingsModelProfile(root, {
-            defaultProfile: 'fast',
+            defaultProfile: 'flash',
             profiles: {
-                fast: {
+                flash: {
                     provider: 'deepseek',
                     model: 'deepseek-v4-flash',
                     baseUrl: 'https://api.deepseek.com',
@@ -297,8 +312,8 @@ export class AgentCliTest {
                 }
             },
             complexityRouting: {
-                simple: 'fast',
-                moderate: 'fast',
+                simple: 'flash',
+                moderate: 'flash',
                 complex: 'strong'
             }
         } as any);
@@ -306,7 +321,7 @@ export class AgentCliTest {
         const modelConfig = resolveCliModelConfig({}, root);
         expect(modelConfig.provider).toBe('deepseek');
         expect(modelConfig.model).toBe('deepseek-v4-flash');
-        expect(modelConfig.defaultProfile).toBe('fast');
+        expect(modelConfig.defaultProfile).toBe('flash');
         expect((modelConfig.profiles as any).strong.model).toBe('deepseek-v4-pro');
         expect((modelConfig.complexityRouting as any).complex).toBe('strong');
     }
@@ -414,6 +429,9 @@ export class AgentCliTest {
         expect(resolveInputSuggestions('/mo', ['/model', '/tools'], mentions)).toEqual([
             { group: 'Commands', label: '/model', value: '/model' }
         ]);
+        expect(resolveInputSuggestions('/mes', ['/messages', '/model'], mentions)).toEqual([
+            { group: 'Commands', label: '/messages', value: '/messages' }
+        ]);
         expect(getActiveInputToken('check @wr')).toBe('@wr');
         expect(resolveInputSuggestions('check @wr', ['/model'], mentions)).toEqual([
             { group: 'Mentions', label: '@write_file', value: '@write_file' }
@@ -461,6 +479,56 @@ export class AgentCliTest {
         expect(applySuggestionToInput('check @wo', '@workspace')).toBe('check @workspace ');
         expect(shouldAcceptSuggestionOnEnter('/mo', moved)).toBe(true);
         expect(renderDraftLine('run @workspace with @read_file')).toBe('run [@workspace] with [@read_file]');
+    }
+
+    @Test('parses slash commands with arguments and builds safe session ids')
+    parsesSlashCommandsWithArgumentsAndBuildsSafeSessionIds() {
+        expect(parseSlashCommandLine('/session bugfix-thread')).toEqual({
+            raw: '/session bugfix-thread',
+            command: '/session',
+            args: 'bugfix-thread'
+        });
+        expect(parseSlashCommandLine('plain text')).toEqual({
+            raw: 'plain text',
+            command: 'plain text',
+            args: ''
+        });
+        expect(buildChatSessionId('feature branch #1')).toBe('feature-branch-1');
+        expect(buildChatSessionId('')).toMatch(/^chat-\d{8}-\d{6}$/);
+        expect(buildOsc52ClipboardSequence('hello')).toBe('\u001b]52;c;aGVsbG8=\u0007');
+    }
+
+    @Test('parses terminal control keys from raw stdin chunks')
+    parsesTerminalControlKeys() {
+        expect(parseTerminalControlKey('\u001b[A')).toBe('up');
+        expect(parseTerminalControlKey('\u001bOA')).toBe('up');
+        expect(parseTerminalControlKey('\u001b[1;2B')).toBe('down');
+        expect(parseTerminalControlKey('\u001b[5~')).toBe('pageup');
+        expect(parseTerminalControlKey('\u001b[6~')).toBe('pagedown');
+        expect(parseTerminalControlKey('\u001b[H')).toBe('home');
+        expect(parseTerminalControlKey('\u001b[F')).toBe('end');
+        expect(parseTerminalControlKey('\r')).toBe('return');
+        expect(parseTerminalControlKey('\u001b')).toBe('escape');
+        expect(parseTerminalControlKey('x')).toBe(undefined);
+    }
+
+    @Test('restores the most recent non-empty session when preferred session is empty')
+    restoresMostRecentNonEmptySession() {
+        expect(pickRestoredSessionId('default', [
+            { id: 'default', updatedAt: 10, messageCount: 0 },
+            { id: 'chat-old', updatedAt: 20, messageCount: 2 },
+            { id: 'chat-new', updatedAt: 30, messageCount: 4 }
+        ])).toBe('chat-new');
+
+        expect(pickRestoredSessionId('default', [
+            { id: 'default', updatedAt: 10, messageCount: 0 },
+            { id: 'chat-old', updatedAt: 20, messageCount: 2 }
+        ], true)).toBe('default');
+
+        expect(pickRestoredSessionId('default', [
+            { id: 'default', updatedAt: 10, messageCount: 3 },
+            { id: 'chat-new', updatedAt: 30, messageCount: 4 }
+        ])).toBe('default');
     }
 
     @Test('applies terminal draft chunks without leaking control characters')
@@ -535,9 +603,9 @@ export class AgentCliTest {
         const row = findInputPromptRow([
             'tsdi-agent',
             'you> previous message',
-            '│ Ask for code, files, commands, or reviews │',
+            '│ Ask code or files                         │',
             '│ > hello|                                 │',
-            '│ enter submit tab complete /quit exit     │'
+            '│ enter send tab complete /quit exit       │'
         ]);
 
         expect(row).toBe(3);
@@ -552,8 +620,98 @@ export class AgentCliTest {
 
     @Test('fits terminal lines by display width for chinese text')
     fitsTerminalLinesByDisplayWidthForChineseText() {
-        expect(fitTerminalAnsiLine('你好世界', 6)).toBe('你...');
-        expect(fitTerminalAnsiLine('abc你好', 6)).toBe('abc...');
+        expect(fitTerminalAnsiLine('你好世界', 6)).toBe('你好世');
+        expect(fitTerminalAnsiLine('abc你好', 6)).toBe('abc你');
+    }
+
+    @Test('places terminal cursor for active text prompts after menu selection')
+    placesTerminalCursorForActiveTextPrompt() {
+        expect(shouldPlaceTerminalCursor({
+            isTTY: true,
+            isSelecting: false,
+            hasBlockingSelectMenu: false,
+            inputLocked: true,
+            modalPromptActive: true,
+            hasActiveTextPrompt: true,
+            hasSessionFocus: false,
+            hasMessageFocus: false,
+            hasMessageDetailFocus: false
+        })).toBe(true);
+
+        expect(shouldPlaceTerminalCursor({
+            isTTY: true,
+            isSelecting: false,
+            hasBlockingSelectMenu: false,
+            inputLocked: true,
+            modalPromptActive: true,
+            hasActiveTextPrompt: false,
+            hasSessionFocus: false,
+            hasMessageFocus: false,
+            hasMessageDetailFocus: false
+        })).toBe(false);
+    }
+
+    @Test('suppresses duplicated keypress events after raw control handling')
+    suppressesDuplicatedKeypressEvents() {
+        const now = Date.now();
+        expect(shouldSuppressDuplicatedKeypress({
+            lastRawKey: 'down',
+            lastRawAt: now,
+            now: now + 10,
+            keyName: 'down'
+        })).toBe(true);
+
+        expect(shouldSuppressDuplicatedKeypress({
+            lastRawKey: 'digit',
+            lastRawAt: now,
+            now: now + 10,
+            text: '2'
+        })).toBe(true);
+
+        expect(shouldSuppressDuplicatedKeypress({
+            lastRawKey: 'down',
+            lastRawAt: now,
+            now: now + 60,
+            keyName: 'down'
+        })).toBe(false);
+    }
+
+    @Test('compacts rendered lines from the top and keeps recent content near input')
+    compactsRenderedLinesFromTop() {
+        expect(compactRenderedLines([
+            '',
+            'old-1',
+            '',
+            '',
+            'old-2',
+            'recent-1',
+            '',
+            'recent-2',
+            ''
+        ], 4)).toEqual([
+            'old-2',
+            'recent-1',
+            '',
+            'recent-2'
+        ]);
+    }
+
+    @Test('keeps ansi-painted shell spacer lines during compaction')
+    keepsAnsiPaintedShellSpacerLinesDuringCompaction() {
+        const ansiBlank = '\u001b[48;2;27;33;40m    \u001b[0m';
+        expect(compactRenderedLines([
+            '',
+            ansiBlank,
+            '\u001b[48;2;27;33;40m   › hi   \u001b[0m',
+            ansiBlank,
+            '',
+            'footer'
+        ], 6)).toEqual([
+            ansiBlank,
+            '\u001b[48;2;27;33;40m   › hi   \u001b[0m',
+            ansiBlank,
+            'footer'
+        ]);
     }
 
     @Test('keeps suggestion rows separate from select panel rows')

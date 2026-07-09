@@ -3,6 +3,9 @@ import { ApplicationContext, ApplicationEventMulticaster } from '@tsdi/core';
 import { AgentRuntime } from '../runtime/AgentRuntime';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import {
+    AgentApprovalCompletedEvent,
+    AgentApprovalFailedEvent,
+    AgentApprovalRequestedEvent,
     AgentErrorEvent,
     AgentModelCompletedEvent,
     AgentStreamChunkEvent,
@@ -137,6 +140,38 @@ export class AgentConsoleEventBridge {
             }
             this.state.setTokenUsage(event.response.metadata?.usage);
             this.state.pushActivity('model', `Model: ${this.state.provider || 'unknown'} / ${this.state.model || 'unknown'}`);
+        });
+
+        bind(AgentApprovalRequestedEvent, (event: AgentApprovalRequestedEvent) => {
+            if (event.request.sessionId !== this.state.sessionId) return;
+            this.state.upsertPendingApproval({
+                id: event.request.id,
+                toolName: event.request.toolName,
+                sessionId: event.request.sessionId,
+                reason: event.request.reason,
+                summary: event.request.summary,
+                hasInput: event.request.hasInput,
+                inputSummary: event.request.inputSummary,
+                createdAt: Date.now(),
+                timeoutMs: event.request.timeoutMs
+            });
+            this.state.pushActivity('tool', `Approval required for ${event.request.toolName}`);
+        });
+
+        bind(AgentApprovalCompletedEvent, (event: AgentApprovalCompletedEvent) => {
+            if (event.request.sessionId !== this.state.sessionId) return;
+            this.state.removePendingApproval(event.request.id);
+            this.state.pushActivity(
+                'tool',
+                `${event.approved ? 'Approved' : 'Denied'} ${event.request.toolName}`
+            );
+        });
+
+        bind(AgentApprovalFailedEvent, (event: AgentApprovalFailedEvent) => {
+            if (event.request.sessionId !== this.state.sessionId) return;
+            this.state.removePendingApproval(event.request.id);
+            this.state.setLastError(event.error.message);
+            this.state.pushActivity('error', `${event.request.toolName}: ${event.error.message}`);
         });
 
         bind(AgentErrorEvent, (event: AgentErrorEvent) => {

@@ -242,6 +242,14 @@ Behavior of this example:
 - `/multiline`: toggle multiline input
 - `/send`: send the buffered draft
 - `/cancel`: clear the buffered draft
+- `/sessions`: focus the on-screen session list, then use `up/down`, `pgup/pgdn`, `home/end`, `enter`, `y`, and `esc`
+- `/messages`: focus the on-screen message list, then use `up/down`, `pgup/pgdn`, `home/end`, `enter`, `y`, and `esc`; in detail view, use `left/right` to pan long lines
+- `/session [id]`: switch to an existing session, or choose one interactively when `id` is omitted
+- `/new [id]`: create and switch to a new session, with an optional custom id
+- `/approvals`: list pending approval requests
+- `/approve [id]`: approve a pending request, or choose one interactively when `id` is omitted
+- `/deny [id]`: deny a pending request, or choose one interactively when `id` is omitted
+- `/copy [last|screen|input|selected]`: copy text through OSC52 clipboard, defaulting to the latest assistant message
 - `/quit`, `/exit`: leave the session
 
 ## Notes
@@ -249,6 +257,9 @@ Behavior of this example:
 - custom OpenAI-compatible uses `provider: "openai-compatible"` with a custom `baseUrl`
 - custom Anthropic-compatible uses `provider: "anthropic"` with a custom `baseUrl`
 - the model chosen during first-run setup or `/model` is persisted into the `model` section of `settings.json`
+- API key prompts in chat are masked
+- sensitive local actions such as `terminal`, `write_file`, and `delete_file` now require explicit approval in chat
+- the chat loop stays keyboard-first and does not keep terminal mouse capture enabled during normal editing
 
 ## Adaptive model configuration guidance
 

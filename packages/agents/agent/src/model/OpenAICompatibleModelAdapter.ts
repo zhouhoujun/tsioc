@@ -73,7 +73,9 @@ interface OpenAIChatCompletionResponse {
 }
 
 interface SSEDelta {
-    content?: string | null;
+    content?: string | Array<{ type?: string; text?: string; content?: string; reasoning_content?: string }> | { text?: string; content?: string } | null;
+    text?: string | null;
+    reasoning?: string | null;
     reasoning_content?: string;
     tool_calls?: Array<{
         index: number;
@@ -236,14 +238,14 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     }
 
                     // Text content delta
-                    const delta = choice.delta?.content;
+                    const delta = this.extractStreamText(choice.delta);
                     if (delta) {
                         accumulatedText += delta;
                         yield { type: 'text', content: delta };
                     }
 
                     // Reasoning content delta
-                    const reasoningDelta = choice.delta?.reasoning_content;
+                    const reasoningDelta = this.extractStreamReasoning(choice.delta);
                     if (reasoningDelta) {
                         accumulatedReasoning += reasoningDelta;
                         yield { type: 'reasoning', content: reasoningDelta };
@@ -479,6 +481,45 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         }
         if (Array.isArray(content)) {
             return content.map(part => part.text ?? '').join('');
+        }
+        return '';
+    }
+
+    protected extractStreamText(delta?: SSEDelta | null): string {
+        if (!delta) {
+            return '';
+        }
+        if (typeof delta.text === 'string') {
+            return delta.text;
+        }
+        if (typeof delta.content === 'string') {
+            return delta.content;
+        }
+        if (Array.isArray(delta.content)) {
+            return delta.content
+                .map(part => part.text ?? part.content ?? '')
+                .join('');
+        }
+        if (delta.content && typeof delta.content === 'object') {
+            return String(delta.content.text ?? delta.content.content ?? '');
+        }
+        return '';
+    }
+
+    protected extractStreamReasoning(delta?: SSEDelta | null): string {
+        if (!delta) {
+            return '';
+        }
+        if (typeof delta.reasoning_content === 'string') {
+            return delta.reasoning_content;
+        }
+        if (typeof delta.reasoning === 'string') {
+            return delta.reasoning;
+        }
+        if (Array.isArray(delta.content)) {
+            return delta.content
+                .map(part => part.reasoning_content ?? '')
+                .join('');
         }
         return '';
     }

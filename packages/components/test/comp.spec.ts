@@ -89,6 +89,26 @@ export class CTest {
 
     }
 
+    @Test('keeps v-model input listener count stable across reactive refreshes')
+    async keepsVModelInputListenerCountStable() {
+        const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
+        const inputNode: any = appcomRef.hostView.rootNodes[0].childNodes[2];
+
+        expect(inputNode.events.listenerCount('input')).toEqual(1);
+
+        appcomRef.instance.value = 'one';
+        await Promise.resolve();
+        expect(inputNode.events.listenerCount('input')).toEqual(1);
+
+        appcomRef.instance.value = 'two';
+        await Promise.resolve();
+        expect(inputNode.events.listenerCount('input')).toEqual(1);
+
+        appcomRef.instance.value = 'three';
+        await Promise.resolve();
+        expect(inputNode.events.listenerCount('input')).toEqual(1);
+    }
+
     @After()
     async afterClean() {
         await this.ctx.close();

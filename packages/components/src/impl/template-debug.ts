@@ -134,6 +134,9 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         const attributes = renderer.getAttributes(element);
         if (attributes?.length) {
             attributes.forEach((attr: RAttr) => {
+                if (!attr?.name) {
+                    return;
+                }
                 renderer.setAttribute(clonedElement, attr.name, attr.value, attr.namespace);
             });
         }

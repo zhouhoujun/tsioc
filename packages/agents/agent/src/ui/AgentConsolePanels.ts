@@ -1,6 +1,8 @@
 import { Attribute, Component, OnDestroy, AfterViewInit } from '@tsdi/components';
 import {
     AgentConsoleActivity,
+    AgentConsoleSelectOption,
+    AgentConsoleSessionItem,
     AgentConsoleSelectMenu,
     AgentConsoleSessionState,
     AgentConsoleTokenUsage,
@@ -13,9 +15,12 @@ import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from '
     selector: 'agent-console-status-panel',
     template: `
     <section class="console-panel console-status-panel" v-style="shellStyle">
-        <p class="status-line" v-style="statusStyle">{{statusSummary}}</p>
-        <p class="model-line" v-style="valueStyle">{{workspaceSummary}}</p>
-        <p class="notice" v-style="noticeStyle">{{noticeLine}}</p>
+        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(0)">{{statusLineAt(0)}}</p>
+        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(1)">{{statusLineAt(1)}}</p>
+        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(2)">{{statusLineAt(2)}}</p>
+        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(3)">{{statusLineAt(3)}}</p>
+        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(4)">{{statusLineAt(4)}}</p>
+        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(5)">{{statusLineAt(5)}}</p>
     </section>
     `
 })
@@ -50,24 +55,25 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get noticeLine(): string {
-        return this.notice ? `Notice: ${this.notice}` : '';
+        return this.notice ? `note ${this.notice}` : '';
     }
 
     get statusSummary(): string {
-        return [
-            `status ${this.status}`,
-            `${this.provider || 'provider'} / ${this.model || 'model'}`,
-            `running ${this.runningToolsLabel}`,
-            `error ${this.lastErrorLabel}`
-        ].join('  |  ');
+        if (this.notice) {
+            return this.notice;
+        }
+        if (this.state.lastError) {
+            return `Error: ${this.lastErrorLabel}`;
+        }
+        return '';
     }
 
     get workspaceSummary(): string {
-        return this.workspace ? `workspace ${this.workspace}` : 'workspace -';
+        return this.workspace || '-';
     }
 
     get shellStyle() {
-        return styleTextToObject(this.activeTheme.statusShell);
+        return this.shouldShow ? styleTextToObject(this.activeTheme.statusShell) : {};
     }
 
     get titleStyle() {
@@ -90,6 +96,25 @@ export class AgentConsoleStatusPanelComponent {
         return styleTextToObject(this.resolveToneStyle(this.state.status));
     }
 
+    get statusLines(): string[] {
+        if (!this.shouldShow) {
+            return [];
+        }
+        return String(this.statusSummary || '')
+            .split('\n')
+            .map(line => line.trimEnd())
+            .filter(Boolean)
+            .slice(0, 6);
+    }
+
+    get shouldShow(): boolean {
+        return !!this.notice;
+    }
+
+    statusLineAt(index: number): string {
+        return this.statusLines[index] || '';
+    }
+
     get runningStyle() {
         return styleTextToObject(this.state.runningTools.length ? this.activeTheme.statusBusyValue : this.activeTheme.statusIdleValue);
     }
@@ -103,9 +128,13 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     protected resolveToneStyle(status: string): string {
+        if (this.state.lastError) {
+            return this.activeTheme.statusErrorValue;
+        }
+        if (this.notice) {
+            return this.activeTheme.statusNoticeValue;
+        }
         switch (status) {
-            case 'error':
-                return this.activeTheme.statusErrorValue;
             case 'running':
             case 'reasoning':
                 return this.activeTheme.statusBusyValue;
@@ -125,8 +154,8 @@ export class AgentConsoleStatusPanelComponent {
                 <span class="input-placeholder" v-style="captionStyle">{{placeholderLabel}}</span>
                 <input class="agent-input" v-style="fieldStyle" v-model="input" @keyup="onKeyup($event)" />
             </p>
-            <p class="input-hint" v-style="hintStyle">{{hintLabel}}</p>
         </div>
+        <p class="input-hint" v-style="hintStyle">{{hintLabel}}</p>
     </section>
     `
 })
@@ -181,7 +210,7 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     }
 
     get placeholderLabel(): string {
-        return this.input ? '' : 'Ask for code, files, commands, or reviews';
+        return this.input ? '' : 'Ask code or files';
     }
 
     get entryStyle() {
@@ -205,7 +234,29 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     }
 
     get hintLabel(): string {
-        return 'enter submit   tab complete   /quit exit';
+        const parts = [
+            this.modelLabel,
+            this.shortWorkspaceLabel
+        ].filter(Boolean);
+        return parts.join(' · ');
+    }
+
+    get modelLabel(): string {
+        const model = this.state?.model || 'model';
+        const profile = String(this.state?.modelProfile || '').trim();
+        return profile ? `${model} ${profile}` : model;
+    }
+
+    get shortWorkspaceLabel(): string {
+        const workspace = String(this.state?.workspace || '').trim();
+        if (!workspace) {
+            return '';
+        }
+        const home = typeof process !== 'undefined' ? (process.env.HOME || '') : '';
+        if (home && workspace.startsWith(home)) {
+            return `~${workspace.slice(home.length)}`;
+        }
+        return workspace;
     }
 
     async submit(): Promise<void> {
@@ -224,7 +275,10 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     selector: 'agent-console-working-panel',
     template: `
     <section class="console-panel console-working-panel" v-style="shellStyle">
-        <p class="working-line" v-style="lineStyle">{{workingSummary}}</p>
+        <p class="working-line">
+            <span v-style="accentStyle">{{workingLabel}}</span>
+            <span v-style="lineStyle">{{workingDetail}}</span>
+        </p>
     </section>
     `
 })
@@ -253,6 +307,10 @@ export class AgentConsoleWorkingPanelComponent {
 
     get lineStyle() {
         return styleTextToObject(this.activeTheme.workingValue);
+    }
+
+    get accentStyle() {
+        return styleTextToObject(this.activeTheme.toolsAccent);
     }
 
     get promptTokens(): number {
@@ -288,17 +346,204 @@ export class AgentConsoleWorkingPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return true;
+        return this.state.status === 'running' || this.state.status === 'reasoning';
     }
 
     get workingSummary(): string {
-        return [
-            `tokens ${this.totalTokens}`,
-            `prompt ${this.promptTokens}`,
-            `completion ${this.completionTokens}`,
-            `messages ${this.messagesCount}`,
-            `tasks ${this.tasksCount}`
-        ].join('  |  ');
+        if (!this.shouldShow) {
+            return '';
+        }
+        return `${this.workingLabel}${this.workingDetail}`;
+    }
+
+    get workingLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        return `${this.state.workingFrame} ${this.workingStateLabel}${this.workingPulseLabel}`;
+    }
+
+    get workingDetail(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const parts = [`(${this.elapsedLabel} • esc to interrupt)`];
+        if (this.state.runningTools.length) {
+            parts.push(this.runningLabel);
+        }
+        parts.push(`${this.totalTokens} tokens`);
+        return ` ${parts.join(' · ')}`;
+    }
+
+    get workingStateLabel(): string {
+        const running = this.state.runningTools;
+        if (!running.length) {
+            return 'Working';
+        }
+        if (running.length === 1) {
+            return `Waiting for ${this.describeTool(running[0])}`;
+        }
+        return 'Waiting for tools';
+    }
+
+    get workingPulseLabel(): string {
+        switch (this.state.workingFrame) {
+            case '◌':
+                return '.';
+            case '◎':
+                return '..';
+            case '◉':
+                return '...';
+            default:
+                return '';
+        }
+    }
+
+    get elapsedLabel(): string {
+        const startedAt = this.state.turnStartedAt;
+        if (!startedAt) {
+            return '0s';
+        }
+        const totalSeconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+        if (totalSeconds < 60) {
+            return `${totalSeconds}s`;
+        }
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}m ${seconds}s`;
+    }
+
+    get runningLabel(): string {
+        const count = this.state.runningTools.length;
+        if (!count) {
+            return 'running';
+        }
+        if (count === 1 && this.isTerminalTool(this.state.runningTools[0])) {
+            return '1 background terminal running';
+        }
+        if (count === 1) {
+            return `1 tool running`;
+        }
+        return `${count} tools running`;
+    }
+
+    protected describeTool(toolName: string): string {
+        return this.isTerminalTool(toolName) ? 'background terminal' : toolName;
+    }
+
+    protected isTerminalTool(toolName: string): boolean {
+        return /terminal|process|shell|exec|command/i.test(String(toolName || ''));
+    }
+}
+
+@Component({
+    selector: 'agent-console-sessions-panel',
+    template: `
+    <section class="console-panel console-sessions-panel" v-style="shellStyle">
+        <p v-style="accentStyle">{{sessionsSummaryLabel}}</p>
+        <p v-style="metaStyle" v-show="sessionsHintLabel">{{sessionsHintLabel}}</p>
+        <p v-style="sessionStyleAt(0)" v-show="sessionLabelAt(0)">{{sessionLabelAt(0)}}</p>
+        <p v-style="sessionStyleAt(1)" v-show="sessionLabelAt(1)">{{sessionLabelAt(1)}}</p>
+        <p v-style="sessionStyleAt(2)" v-show="sessionLabelAt(2)">{{sessionLabelAt(2)}}</p>
+        <p v-style="sessionStyleAt(3)" v-show="sessionLabelAt(3)">{{sessionLabelAt(3)}}</p>
+        <p v-style="sessionStyleAt(4)" v-show="sessionLabelAt(4)">{{sessionLabelAt(4)}}</p>
+        <p v-style="sessionStyleAt(5)" v-show="sessionLabelAt(5)">{{sessionLabelAt(5)}}</p>
+    </section>
+    `
+})
+export class AgentConsoleSessionsPanelComponent {
+    protected static readonly VISIBLE_SESSIONS = 6;
+
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get sessions(): AgentConsoleSessionItem[] {
+        return this.state.sessions;
+    }
+
+    get shellStyle() {
+        return this.shouldShow ? styleTextToObject(this.activeTheme.sessionsShell) : {};
+    }
+
+    get accentStyle() {
+        return styleTextToObject(this.activeTheme.sessionsAccent);
+    }
+
+    get metaStyle() {
+        return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get sessionItems(): Array<{ id: string; label: string; style: Record<string, string> }> {
+        if (!this.shouldShow) {
+            return [];
+        }
+        return this.visibleSessions.map(session => {
+            const current = session.current ? ' [current]' : '';
+            const selected = this.state.selectedSessionId === session.id;
+            const marker = selected ? '›' : ' ';
+            const count = session.messageCount != null ? ` (${session.messageCount})` : '';
+            return {
+                id: session.id,
+                label: `${marker} ${session.id}${current}${count}`,
+                style: selected
+                    ? styleTextToObject(this.activeTheme.sessionsSelected)
+                    : styleTextToObject(this.activeTheme.statusValue)
+            };
+        });
+    }
+
+    get visibleSessionStart(): number {
+        if (this.sessions.length <= AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS) {
+            return 0;
+        }
+        const selectedIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.state.selectedSessionId));
+        const windowSize = AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS;
+        const centeredStart = selectedIndex - Math.floor(windowSize / 2);
+        return Math.max(0, Math.min(this.sessions.length - windowSize, centeredStart));
+    }
+
+    get visibleSessions(): AgentConsoleSessionItem[] {
+        return this.sessions.slice(
+            this.visibleSessionStart,
+            this.visibleSessionStart + AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS
+        );
+    }
+
+    get sessionsSummaryLabel(): string {
+        if (!this.shouldShow || !this.sessions.length) {
+            return '';
+        }
+        const selectedIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.state.selectedSessionId));
+        return `sessions ${this.sessions.length} · ${selectedIndex + 1}/${this.sessions.length}`;
+    }
+
+    get sessionsHintLabel(): string {
+        if (!this.shouldShow || !this.sessions.length || !this.state.sessionsFocused) {
+            return '';
+        }
+        return 'up/down move   pg jump   enter switch   y copy   esc';
+    }
+
+    get shouldShow(): boolean {
+        return this.state.sessionsFocused;
+    }
+
+    sessionAt(index: number): { id: string; label: string; style: Record<string, string> } | undefined {
+        return this.sessionItems[index];
+    }
+
+    sessionLabelAt(index: number): string {
+        return this.sessionAt(index)?.label || '';
+    }
+
+    sessionStyleAt(index: number): Record<string, string> {
+        return this.sessionAt(index)?.style || {};
     }
 }
 
@@ -325,7 +570,7 @@ export class AgentConsoleToolsPanelComponent {
     }
 
     get shellStyle() {
-        return this.tools.length ? styleTextToObject(this.activeTheme.toolsShell) : {};
+        return this.shouldShow ? styleTextToObject(this.activeTheme.toolsShell) : {};
     }
 
     get titleStyle() {
@@ -337,6 +582,9 @@ export class AgentConsoleToolsPanelComponent {
     }
 
     get toolLabels(): string[] {
+        if (!this.shouldShow) {
+            return [];
+        }
         return this.tools.slice(0, 4).map(tool => `${tool.name}${tool.active ? '' : ' [inactive]'}${tool.toolset ? ` (${tool.toolset})` : ''}`);
     }
 
@@ -345,9 +593,13 @@ export class AgentConsoleToolsPanelComponent {
     }
 
     get toolsSummaryLabel(): string {
-        return this.tools.length
+        return this.shouldShow
             ? `tools ${this.tools.length}  |  ${this.toolsSummary}`
             : '';
+    }
+
+    get shouldShow(): boolean {
+        return false;
     }
 }
 
@@ -423,11 +675,11 @@ export class AgentConsoleToolRunsPanelComponent {
     }
 
     get toolRunsSummaryLabel(): string {
-        if (!this.highlightedToolRun) {
+        if (!this.highlightedToolRun || this.highlightedToolRun.status !== 'running') {
             return '';
         }
-        const detail = this.highlightedToolRun.inputSummary || this.highlightedToolRun.outputSummary || this.highlightedToolRun.error || this.highlightedToolRun.message;
-        return `tool ${this.highlightedToolRun.name}  |  ${this.highlightedToolRun.status}  |  ${this.summarize(detail || '-')}`;
+        const detail = this.highlightedToolRun.inputSummary || this.highlightedToolRun.message || this.highlightedToolRun.name;
+        return `└ ${this.summarize(detail || this.highlightedToolRun.name)}`;
     }
 
     protected summarize(value: string): string {
@@ -440,12 +692,15 @@ export class AgentConsoleToolRunsPanelComponent {
     selector: 'agent-console-messages-panel',
     template: `
     <section class="console-panel console-messages-panel" v-style="shellStyle">
-        <p class="message-item"><span v-style="messageRoleStyleAt(0)">{{messageRoleAt(0)}}</span><span v-style="messageContentStyleAt(0)">{{messageContentAt(0)}}</span></p>
-        <p class="message-item"><span v-style="messageRoleStyleAt(1)">{{messageRoleAt(1)}}</span><span v-style="messageContentStyleAt(1)">{{messageContentAt(1)}}</span></p>
-        <p class="message-item"><span v-style="messageRoleStyleAt(2)">{{messageRoleAt(2)}}</span><span v-style="messageContentStyleAt(2)">{{messageContentAt(2)}}</span></p>
-        <p class="message-item"><span v-style="messageRoleStyleAt(3)">{{messageRoleAt(3)}}</span><span v-style="messageContentStyleAt(3)">{{messageContentAt(3)}}</span></p>
-        <p class="message-item"><span v-style="messageRoleStyleAt(4)">{{messageRoleAt(4)}}</span><span v-style="messageContentStyleAt(4)">{{messageContentAt(4)}}</span></p>
-        <p class="message-item"><span v-style="messageRoleStyleAt(5)">{{messageRoleAt(5)}}</span><span v-style="messageContentStyleAt(5)">{{messageContentAt(5)}}</span></p>
+        <p class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</p>
+        <p class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</p>
+        <p class="message-item" v-style="messageItemStyleAt(0)" v-show="hasMessageAt(0)"><span v-style="messageRoleStyleAt(0)">{{messageRoleAt(0)}}</span><span v-style="messageContentStyleAt(0)">{{messageContentAt(0)}}</span></p>
+        <p class="message-item" v-style="messageItemStyleAt(1)" v-show="hasMessageAt(1)"><span v-style="messageRoleStyleAt(1)">{{messageRoleAt(1)}}</span><span v-style="messageContentStyleAt(1)">{{messageContentAt(1)}}</span></p>
+        <p class="message-item" v-style="messageItemStyleAt(2)" v-show="hasMessageAt(2)"><span v-style="messageRoleStyleAt(2)">{{messageRoleAt(2)}}</span><span v-style="messageContentStyleAt(2)">{{messageContentAt(2)}}</span></p>
+        <p class="message-item" v-style="messageItemStyleAt(3)" v-show="hasMessageAt(3)"><span v-style="messageRoleStyleAt(3)">{{messageRoleAt(3)}}</span><span v-style="messageContentStyleAt(3)">{{messageContentAt(3)}}</span></p>
+        <p class="message-item" v-style="messageItemStyleAt(4)" v-show="hasMessageAt(4)"><span v-style="messageRoleStyleAt(4)">{{messageRoleAt(4)}}</span><span v-style="messageContentStyleAt(4)">{{messageContentAt(4)}}</span></p>
+        <p class="message-item" v-style="messageItemStyleAt(5)" v-show="hasMessageAt(5)"><span v-style="messageRoleStyleAt(5)">{{messageRoleAt(5)}}</span><span v-style="messageContentStyleAt(5)">{{messageContentAt(5)}}</span></p>
+        <p class="message-item" v-style="messageItemStyleAt(6)" v-show="hasMessageAt(6)"><span v-style="messageRoleStyleAt(6)">{{messageRoleAt(6)}}</span><span v-style="messageContentStyleAt(6)">{{messageContentAt(6)}}</span></p>
     </section>
     `
 })
@@ -459,28 +714,78 @@ export class AgentConsoleMessagesPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
-    get messages(): Array<{ role?: string; content: string }> {
+    get messages(): Array<{ id?: string; role?: string; content: string }> {
         return this.state.messages;
     }
 
     get shellStyle() {
-        return this.messageItems.length ? styleTextToObject(this.activeTheme.messagesShell) : {};
+        return (this.messageItems.length || this.emptyLabel) ? styleTextToObject(this.activeTheme.messagesShell) : {};
     }
 
     get titleStyle() {
         return styleTextToObject(this.activeTheme.messagesTitle);
     }
 
-    get messageItems(): Array<{ role: string; content: string; roleStyle: Record<string, string>; contentStyle: Record<string, string> }> {
-        return this.messages.slice(-6).map(message => {
+    get emptyStyle() {
+        return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get emptyLabel(): string {
+        return this.messages.length ? '' : 'No messages yet';
+    }
+
+    get visibleMessages(): Array<{ id?: string; role?: string; content: string }> {
+        const messages = this.messages;
+        if (messages.length <= 7) {
+            return messages;
+        }
+        const selectedIndex = Math.max(0, messages.findIndex(message => message.id === this.state.selectedMessageId));
+        const start = Math.max(0, Math.min(messages.length - 7, selectedIndex - 3));
+        return messages.slice(start, start + 7);
+    }
+
+    get messageItems(): Array<{ kind: string; role: string; content: string; selected: boolean; itemStyle: Record<string, string>; roleStyle: Record<string, string>; contentStyle: Record<string, string> }> {
+        return this.visibleMessages.map(message => {
             const role = this.getMessageRoleLabel(message.role);
+            const selected = message.id === this.state.selectedMessageId;
+            const summary = this.summarizeMessage(message.content, role);
+            const rowSelected = selected && this.state.messagesFocused;
+            const rowStyleText = selected && this.state.messagesFocused
+                ? this.activeTheme.messagesSelected
+                : role === 'you'
+                    ? this.activeTheme.messagesUser
+                    : '';
+            const itemStyle = rowStyleText ? styleTextToObject(rowStyleText) : {};
+            if (role === 'you') {
+                return {
+                    kind: role,
+                    role: '› ',
+                    content: summary,
+                    selected,
+                    itemStyle,
+                    roleStyle: rowSelected ? {} : styleTextToObject(this.activeTheme.statusValue),
+                    contentStyle: rowSelected ? {} : styleTextToObject(this.activeTheme.statusValue)
+                };
+            }
             return {
-                role: `${role}> `,
-                content: this.summarize(message.content),
-                roleStyle: styleTextToObject(this.resolveMessageRoleStyle(role)),
-                contentStyle: styleTextToObject(this.activeTheme.statusValue)
+                kind: role,
+                role: rowSelected ? '› ' : '',
+                content: summary,
+                selected,
+                itemStyle,
+                roleStyle: rowSelected ? {} : styleTextToObject(this.resolveMessageRoleStyle(role)),
+                contentStyle: rowSelected ? {} : styleTextToObject(this.activeTheme.statusValue)
             };
         });
+    }
+
+    get messagesHintLabel(): string {
+        if (!this.messages.length) {
+            return '';
+        }
+        return this.state.messagesFocused
+            ? 'up/down move   pg jump   enter open   y copy   esc'
+            : '';
     }
 
     get messageLabels(): string[] {
@@ -491,8 +796,16 @@ export class AgentConsoleMessagesPanelComponent {
         return this.messageLabels.join(' | ');
     }
 
-    messageAt(index: number): { role: string; content: string; roleStyle: Record<string, string>; contentStyle: Record<string, string> } | undefined {
+    messageAt(index: number): { kind: string; role: string; content: string; selected: boolean; itemStyle: Record<string, string>; roleStyle: Record<string, string>; contentStyle: Record<string, string> } | undefined {
         return this.messageItems[index];
+    }
+
+    hasMessageAt(index: number): boolean {
+        return !!this.messageAt(index);
+    }
+
+    messageKindAt(index: number): string {
+        return this.messageAt(index)?.kind || '';
     }
 
     messageRoleAt(index: number): string {
@@ -501,6 +814,14 @@ export class AgentConsoleMessagesPanelComponent {
 
     messageContentAt(index: number): string {
         return this.messageAt(index)?.content || '';
+    }
+
+    messageSelectedAt(index: number): boolean {
+        return !!this.messageAt(index)?.selected;
+    }
+
+    messageItemStyleAt(index: number): Record<string, string> {
+        return this.messageAt(index)?.itemStyle || {};
     }
 
     messageRoleStyleAt(index: number): Record<string, string> {
@@ -527,15 +848,134 @@ export class AgentConsoleMessagesPanelComponent {
         return text.length > 80 ? `${text.slice(0, 80)}...` : text;
     }
 
+    protected summarizeMessage(value: string, role: string): string {
+        const summary = this.summarize(value);
+        if (summary) {
+            return summary;
+        }
+        return role === 'agent' ? '…' : '';
+    }
+
     protected resolveMessageRoleStyle(role: string): string {
         switch (role) {
             case 'you':
-                return this.activeTheme.inputPrompt;
+                return this.activeTheme.messagesUser;
             case 'agent':
                 return this.activeTheme.toolsAccent;
             default:
                 return this.activeTheme.statusLabel;
         }
+    }
+}
+
+@Component({
+    selector: 'agent-console-message-detail-panel',
+    template: `
+    <section class="console-panel console-message-detail-panel" v-style="shellStyle">
+        <p v-style="accentStyle">{{detailSummaryLabel}}</p>
+        <p v-style="hintStyle">{{detailHintLabel}}</p>
+        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(0)}}</span><span v-style="lineStyle">{{detailLineContentAt(0)}}</span></p>
+        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(1)}}</span><span v-style="lineStyle">{{detailLineContentAt(1)}}</span></p>
+        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(2)}}</span><span v-style="lineStyle">{{detailLineContentAt(2)}}</span></p>
+        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(3)}}</span><span v-style="lineStyle">{{detailLineContentAt(3)}}</span></p>
+        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(4)}}</span><span v-style="lineStyle">{{detailLineContentAt(4)}}</span></p>
+        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(5)}}</span><span v-style="lineStyle">{{detailLineContentAt(5)}}</span></p>
+    </section>
+    `
+})
+export class AgentConsoleMessageDetailPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    get selectedMessage() {
+        return this.state.selectedMessage;
+    }
+
+    get shellStyle() {
+        return this.shouldShow ? styleTextToObject(this.activeTheme.messagesShell) : {};
+    }
+
+    get accentStyle() {
+        return styleTextToObject(this.activeTheme.toolsAccent);
+    }
+
+    get hintStyle() {
+        return styleTextToObject(this.activeTheme.statusLabel);
+    }
+
+    get lineStyle() {
+        return styleTextToObject(this.activeTheme.statusValue);
+    }
+
+    get lineNumberStyle() {
+        return styleTextToObject(this.activeTheme.messageDetailLineNumber);
+    }
+
+    get shouldShow(): boolean {
+        return !!this.selectedMessage && this.state.messageDetailOpen;
+    }
+
+    get contentLines(): string[] {
+        return this.state.messageDetailLines;
+    }
+
+    get visibleLines(): string[] {
+        const lines = this.contentLines;
+        const start = Math.max(0, Math.min(lines.length, this.state.messageDetailScroll));
+        return lines.slice(start, start + 6);
+    }
+
+    get detailSummaryLabel(): string {
+        if (!this.shouldShow || !this.selectedMessage) {
+            return '';
+        }
+        const role = String(this.selectedMessage.role || 'system').toLowerCase();
+        const selectedIndex = Math.max(0, this.state.messages.findIndex(item => item.id === this.selectedMessage?.id));
+        const total = this.contentLines.length;
+        const start = Math.min(total, this.state.messageDetailScroll + 1);
+        const end = Math.min(total, this.state.messageDetailScroll + this.visibleLines.length);
+        const column = this.state.messageDetailColumnScroll + 1;
+        const totalColumns = Math.max(1, this.state.messageDetailMaxColumn);
+        return `message ${selectedIndex + 1}/${this.state.messages.length} ${role}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+    }
+
+    get detailHintLabel(): string {
+        if (!this.shouldShow || !this.selectedMessage) {
+            return '';
+        }
+        return this.state.messageDetailOpen
+            ? 'up/down scroll   left/right pan   pg jump   y copy   esc'
+            : 'enter to open';
+    }
+
+    detailLineNumberAt(index: number): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const line = this.visibleLines[index];
+        if (line == null) {
+            return '';
+        }
+        const lineNumber = this.state.messageDetailScroll + index + 1;
+        return `${String(lineNumber).padStart(3, ' ')}| `;
+    }
+
+    detailLineContentAt(index: number): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const line = this.visibleLines[index];
+        if (line == null) {
+            return '';
+        }
+        const start = Math.max(0, this.state.messageDetailColumnScroll);
+        return line.slice(start);
     }
 }
 
@@ -564,7 +1004,7 @@ export class AgentConsoleActivityPanelComponent {
     }
 
     get shellStyle() {
-        return this.activityItems.length ? styleTextToObject(this.activeTheme.activityShell) : {};
+        return this.shouldShow ? styleTextToObject(this.activeTheme.activityShell) : {};
     }
 
     get titleStyle() {
@@ -572,12 +1012,19 @@ export class AgentConsoleActivityPanelComponent {
     }
 
     get activityItems(): Array<{ kind: string; message: string; kindStyle: Record<string, string>; messageStyle: Record<string, string> }> {
+        if (!this.shouldShow) {
+            return [];
+        }
         return this.activities.slice(-3).map(activity => ({
             kind: `${activity.kind}: `,
             message: this.summarize(activity.message),
             kindStyle: styleTextToObject(this.activeTheme.toolsAccent),
             messageStyle: styleTextToObject(this.activeTheme.statusValue)
         }));
+    }
+
+    get shouldShow(): boolean {
+        return !this.state.messages.length && this.activities.length > 0;
     }
 
     get activityLabels(): string[] {
@@ -630,6 +1077,9 @@ export class AgentConsoleActivityPanelComponent {
             <p class="select-option" v-style="optionStyleAt(6)" @click="selectOptionAt(6)">{{optionLabelAt(6)}}</p>
             <p class="select-option" v-style="optionStyleAt(7)" @click="selectOptionAt(7)">{{optionLabelAt(7)}}</p>
             <p class="select-option" v-style="optionStyleAt(8)" @click="selectOptionAt(8)">{{optionLabelAt(8)}}</p>
+            <p class="select-option" v-style="optionStyleAt(9)" @click="selectOptionAt(9)">{{optionLabelAt(9)}}</p>
+            <p class="select-option" v-style="optionStyleAt(10)" @click="selectOptionAt(10)">{{optionLabelAt(10)}}</p>
+            <p class="select-option" v-style="optionStyleAt(11)" @click="selectOptionAt(11)">{{optionLabelAt(11)}}</p>
             <p class="select-detail-label" v-style="detailLabelStyle">{{detailTitle}}</p>
             <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(0)}}</p>
             <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(1)}}</p>
@@ -643,6 +1093,7 @@ export class AgentConsoleActivityPanelComponent {
     `
 })
 export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestroy {
+    protected static readonly VISIBLE_OPTIONS = 12;
     protected unsubscribeState?: () => void;
     protected currentMenu?: AgentConsoleSelectMenu;
 
@@ -705,7 +1156,7 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
 
     get menuHint(): string {
         return this.menu
-            ? (this.menu.hint ? this.menu.hint : '1-9 choose   up/down move   enter confirm   esc close')
+            ? (this.menu.hint ? this.menu.hint : 'up/down move   enter confirm   esc close')
             : '';
     }
 
@@ -713,28 +1164,38 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         if (!this.menu || !this.menu.options.length) {
             return '';
         }
-        return `Choose ${this.menu.selectedIndex + 1} of ${this.menu.options.length}`;
+        return `${this.menu.selectedIndex + 1}/${this.menu.options.length}`;
     }
 
-    get menuOptionLabels(): string[] {
+    get visibleOptionStart(): number {
+        if (!this.menu || this.menu.options.length <= AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS) {
+            return 0;
+        }
+        const windowSize = AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS;
+        const centeredStart = this.menu.selectedIndex - Math.floor(windowSize / 2);
+        return Math.max(0, Math.min(this.menu.options.length - windowSize, centeredStart));
+    }
+
+    get visibleMenuOptions(): AgentConsoleSelectOption[] {
         if (!this.menu) {
             return [];
         }
-        return this.menu.options.map((option, index) => {
-            const marker = this.menu && this.menu.selectedIndex === index ? '›' : ' ';
-            return `${marker} ${index + 1}. ${option.label}`;
-        });
+        return this.menu.options.slice(this.visibleOptionStart, this.visibleOptionStart + AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS);
     }
 
     get menuOptionItems(): Array<{ label: string; value: string; style: Record<string, string> }> {
         if (!this.menu) {
             return [];
         }
-        return this.menu.options.map((option, index) => ({
-            label: this.menuOptionLabels[index] || '',
+        return this.visibleMenuOptions.map((option, index) => {
+            const absoluteIndex = this.visibleOptionStart + index;
+            const marker = this.menu && this.menu.selectedIndex === absoluteIndex ? '›' : ' ';
+            return {
+            label: `${marker} ${absoluteIndex + 1}. ${option.label}`,
             value: option.value,
-            style: styleTextToObject(this.menu && this.menu.selectedIndex === index ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
-        }));
+            style: styleTextToObject(this.menu && this.menu.selectedIndex === absoluteIndex ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
+        };
+        });
     }
 
     get selectedOption() {

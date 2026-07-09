@@ -12,7 +12,9 @@ import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleInputPanelComponent,
+    AgentConsoleMessageDetailPanelComponent,
     AgentConsoleMessagesPanelComponent,
+    AgentConsoleSessionsPanelComponent,
     AgentConsoleSelectPanelComponent,
     AgentConsoleStatusPanelComponent,
     AgentConsoleToolRunsPanelComponent,
@@ -24,8 +26,10 @@ import {
     selector: 'agent-console',
     imports: [
         AgentConsoleWorkingPanelComponent,
+        AgentConsoleSessionsPanelComponent,
         AgentConsoleSelectPanelComponent,
         AgentConsoleInputPanelComponent,
+        AgentConsoleMessageDetailPanelComponent,
         AgentConsoleStatusPanelComponent,
         AgentConsoleToolsPanelComponent,
         AgentConsoleToolRunsPanelComponent,
@@ -34,15 +38,16 @@ import {
     ],
     template: `
     <div class="agent-console">
-        <h1>{{title}}</h1>
-        <agent-console-status-panel></agent-console-status-panel>
+        <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
+        <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
-        <agent-console-tool-runs-panel></agent-console-tool-runs-panel>
-        <agent-console-activity-panel></agent-console-activity-panel>
-        <agent-console-tools-panel></agent-console-tools-panel>
-        <agent-console-working-panel></agent-console-working-panel>
+        <agent-console-message-detail-panel v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
+        <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
+        <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
+        <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
+        <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
         <agent-console-input-panel></agent-console-input-panel>
-        <agent-console-select-panel></agent-console-select-panel>
+        <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
     </div>
     `
 })
@@ -63,11 +68,58 @@ export class AgentConsoleComponent {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
         this.state.setModel(this.options.model?.model ?? '');
+        this.state.setModelProfile(this.resolveInitialModelProfile());
         this.state.setTheme(mergeAgentConsoleTheme(this.options.ui?.theme));
+    }
+
+    protected resolveInitialModelProfile(): string {
+        const model = this.options.model;
+        if (model?.defaultProfile === 'strong') {
+            return 'strong';
+        }
+        if (model?.defaultProfile === 'flash' || model?.defaultProfile === 'fast') {
+            return 'flash';
+        }
+        if (model?.thinkingBudget || model?.reasoning) {
+            return 'strong';
+        }
+        return '';
     }
 
     get title(): string {
         return this.state.title;
+    }
+
+    get showStatusPanel(): boolean {
+        return !!this.state.notice;
+    }
+
+    get showSessionsPanel(): boolean {
+        return this.state.sessionsFocused;
+    }
+
+    get showMessageDetailPanel(): boolean {
+        return !!this.state.messageDetailOpen;
+    }
+
+    get showActivityPanel(): boolean {
+        return !this.state.messages.length && !!this.state.activities.length;
+    }
+
+    get showToolsPanel(): boolean {
+        return false;
+    }
+
+    get showWorkingPanel(): boolean {
+        return this.state.status === 'running' || this.state.status === 'reasoning';
+    }
+
+    get showToolRunsPanel(): boolean {
+        return this.showWorkingPanel && !!this.state.highlightedToolRun && this.state.highlightedToolRun.status === 'running';
+    }
+
+    get showSelectPanel(): boolean {
+        return !!this.state.selectMenu;
     }
 
     get theme() {
@@ -212,7 +264,9 @@ export class AgentConsoleComponent {
         this.state.submitAction = this.submitActionHandler;
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
-        this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
+        if (!this.state.messages.length) {
+            this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
+        }
         await this.refreshTools();
         this.state.setTasksCount(this.scheduler.getTasks().length);
     }
@@ -283,6 +337,18 @@ export class AgentConsoleComponent {
             this.state.setStatus('error');
             this.state.setLastError(message);
             this.state.pushActivity('error', message);
+            const currentMessages = this.state.messages.slice();
+            const lastMessage = currentMessages[currentMessages.length - 1];
+            if (lastMessage?.role === 'assistant' && !String(lastMessage.content || '').trim()) {
+                currentMessages.pop();
+            }
+            currentMessages.push({
+                id: `assistant-error-${Date.now()}`,
+                role: 'assistant',
+                content: `Error: ${message}`,
+                createdAt: Date.now()
+            } as AgentMessage);
+            this.state.setMessages(currentMessages);
         }
 
         await this.refreshTools();
@@ -343,7 +409,9 @@ export class AgentConsoleComponent {
         }
         const refs = [
             hostView.query(AgentConsoleStatusPanelComponent),
+            hostView.query(AgentConsoleSessionsPanelComponent),
             hostView.query(AgentConsoleMessagesPanelComponent),
+            hostView.query(AgentConsoleMessageDetailPanelComponent),
             hostView.query(AgentConsoleToolRunsPanelComponent),
             hostView.query(AgentConsoleActivityPanelComponent),
             hostView.query(AgentConsoleToolsPanelComponent),

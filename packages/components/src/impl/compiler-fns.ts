@@ -9,6 +9,7 @@ import { Bindings, NodeFactory } from '../refs/template';
 import { ReactiveEffect } from '../effect';
 import { reactive } from '../reactive';
 import { EventEmitter } from '../EventEmitter';
+import { Subscription } from 'rxjs';
 import { createTemplateRef } from './template';
 import { TEMPLATE_SCOPE_PARENT } from './template';
 import { BaseIfDirective, VIfDirective, VElseIfDirective, VElseDirective, setupIfChain } from '../directives/if.dir';
@@ -26,6 +27,31 @@ export interface RendererOptions {
     componentFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[]) => Rendering<RElement>,
     templateFactory: (node: RElement, renderer: Renderer, attrs: RAttr[], bindings: any[], options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>,
     bindDirective: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, injector: NodeInjector, context: any, delimiter: RegExp) => void,
+}
+
+const outputSubscriptions = new WeakMap<object, Map<string, Subscription>>();
+const outputSubscriptionCleanup = new WeakSet<object>();
+
+function replaceOutputSubscription(target: object, key: string, emitter: EventEmitter<any>, handler: any, injector: NodeInjector): void {
+    let subscriptions = outputSubscriptions.get(target);
+    if (!subscriptions) {
+        subscriptions = new Map<string, Subscription>();
+        outputSubscriptions.set(target, subscriptions);
+    }
+    subscriptions.get(key)?.unsubscribe();
+    subscriptions.set(key, emitter.subscribe(handler));
+
+    if (outputSubscriptionCleanup.has(target)) {
+        return;
+    }
+    outputSubscriptionCleanup.add(target);
+    injector.onDestroy(() => {
+        const current = outputSubscriptions.get(target);
+        current?.forEach(subscription => subscription.unsubscribe());
+        current?.clear();
+        outputSubscriptions.delete(target);
+        outputSubscriptionCleanup.delete(target);
+    });
 }
 
 /**
@@ -670,11 +696,7 @@ export function bindingEvent(element: RNode, attrName: string, expr: string, ren
         el.addEventListener(eventName, handler);
 
         return () => {
-            try {
-                el.setAttribute(attrName, expr);
-            } catch {
-                // Skip invalid attribute names for real DOM
-            }
+            el.removeEventListener?.(eventName, handler);
         }
     });
 }
@@ -736,17 +758,18 @@ export function bindingInterpolationFactory(element: RNode, attrName: string, ex
 export function createModelBindingFactory(element: RNode, prop: string, renderer: Renderer, delimiter: RegExp): void {
     binding(element, (target: RNode, context: any, effect: ReactiveEffect<any>, injector: NodeInjector) => {
         const el = target as RElement;
+        const inputHandler = () => {
+            context[prop] = el.getAttribute('value');
+        };
+        el.addEventListener('input', inputHandler);
         effect.run(() => {
             el.setAttribute('value', context[prop]);
-            el.addEventListener('input', () => {
-                context[prop] = el.getAttribute('value');
-            });
         });
 
         return () => {
             const el = target as RElement;
             el.removeAttribute('value');
-            // 移除事件监听器
+            el.removeEventListener?.('input', inputHandler);
         }
     });
 }
@@ -836,7 +859,13 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
             effect.run(() => {
                 const handler = evaluateExpression(expr, context, injector, delimiter);
                 if (componentRef.instance[inputDef.propertyKey] instanceof EventEmitter) {
-                    componentRef.instance[inputDef.propertyKey].subscribe(handler);
+                    replaceOutputSubscription(
+                        componentRef.instance,
+                        `component:${inputDef.propertyKey}:${eventName}`,
+                        componentRef.instance[inputDef.propertyKey],
+                        handler,
+                        injector
+                    );
                 } else if (!componentRef.instance[inputDef.propertyKey]) {
                     componentRef.instance[inputDef.propertyKey] = handler;
                 }
@@ -1060,7 +1089,13 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
             effect.run(() => {
                 const handler = evaluateExpression(attr.value, context, injector, delimiter);
                 if (directiveInstance[propertyKey] instanceof EventEmitter) {
-                    directiveInstance[propertyKey].subscribe(handler);
+                    replaceOutputSubscription(
+                        directiveInstance,
+                        `directive:${propertyKey}:${attr.name}`,
+                        directiveInstance[propertyKey],
+                        handler,
+                        injector
+                    );
                 } else if (!directiveInstance[propertyKey]) {
                     directiveInstance[propertyKey] = handler;
                 }

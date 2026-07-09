@@ -46,7 +46,8 @@ export interface ResolvedAgentToolDiscovery {
 }
 
 export function resolveAgentRoot(root?: string): string {
-    return path.resolve(root || path.join(os.homedir(), DEFAULT_AGENT_ROOT_DIRNAME));
+    const home = process.env.HOME || os.homedir();
+    return path.resolve(root || path.join(home, DEFAULT_AGENT_ROOT_DIRNAME));
 }
 
 export function resolveAgentSettingsPath(root: string): string {

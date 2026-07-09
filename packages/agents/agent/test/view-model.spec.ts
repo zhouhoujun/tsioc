@@ -5,6 +5,9 @@ import { AgentConsoleEventBridge } from '../src/ui/AgentConsoleEventBridge';
 import { AgentConsoleInputPanelComponent } from '../src/ui/AgentConsolePanels';
 import { AgentConsoleSessionState } from '../src/ui/AgentConsoleSessionState';
 import {
+    AgentApprovalCompletedEvent,
+    AgentApprovalFailedEvent,
+    AgentApprovalRequestedEvent,
     AgentModelCompletedEvent,
     AgentStreamChunkEvent,
     AgentToolCompletedEvent,
@@ -243,10 +246,13 @@ export class AgentConsoleComponentTest {
         const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub());
         component.configure({ provider: 'deepseek', model: 'deepseek-v4-flash', workspace: '/tmp/workspace' });
         await component.onInit();
+        state.setSessions([{ id: 'chat-1', current: true, messageCount: 1, updatedAt: 1 }]);
 
         expect(component.provider).toEqual('deepseek');
         expect(component.model).toEqual('deepseek-v4-flash');
         expect(component.workspace).toEqual('/tmp/workspace');
+        expect(state.sessions.length).toEqual(1);
+        expect(state.selectedSessionId).toEqual('chat-1');
         expect(component.tools.length).toEqual(1);
         expect(component.messages.length).toBeGreaterThan(0);
         expect(component.activities.length).toEqual(0);
@@ -402,6 +408,8 @@ export class AgentConsoleComponentTest {
         expect(component.status).toEqual('error');
         expect(component.lastError).toEqual('submit failed');
         expect(component.activities.some(item => item.kind === 'error' && item.message.includes('submit failed'))).toBe(true);
+        expect(component.messages[component.messages.length - 1]?.role).toEqual('assistant');
+        expect(component.messages[component.messages.length - 1]?.content).toContain('Error: submit failed');
     }
 
     @Test('working usage tracks current tokens from stream and model completion')
@@ -440,5 +448,215 @@ export class AgentConsoleComponentTest {
         expect(state.tokenUsage.totalTokens).toEqual(42);
         expect(state.tokenUsage.promptTokens).toEqual(20);
         expect(state.tokenUsage.completionTokens).toEqual(22);
+    }
+
+    @Test('tracks pending approvals through event bridge')
+    async tracksPendingApprovalsThroughEventBridge() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        const { state, component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({ sessionId: 'chat-approval' });
+        await component.onInit();
+
+        await app.eventMulticaster.emit(new AgentApprovalRequestedEvent(this, {
+            id: 'approval-1',
+            toolName: 'write_file',
+            sessionId: 'chat-approval',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval. Summary: {"path":"notes.txt"}',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            timeoutMs: 30000
+        }));
+
+        expect(state.pendingApprovals.length).toEqual(1);
+        expect(state.pendingApprovals[0].toolName).toEqual('write_file');
+
+        await app.eventMulticaster.emit(new AgentApprovalCompletedEvent(this, {
+            id: 'approval-1',
+            toolName: 'write_file',
+            sessionId: 'chat-approval'
+        }, true));
+
+        expect(state.pendingApprovals).toEqual([]);
+
+        await app.eventMulticaster.emit(new AgentApprovalRequestedEvent(this, {
+            id: 'approval-2',
+            toolName: 'terminal',
+            sessionId: 'chat-approval',
+            reason: 'Shell execution requires approval.',
+            summary: 'Shell execution requires approval.',
+            hasInput: false,
+            timeoutMs: 30000
+        }));
+
+        await app.eventMulticaster.emit(new AgentApprovalFailedEvent(this, {
+            id: 'approval-2',
+            toolName: 'terminal',
+            sessionId: 'chat-approval'
+        }, new Error('Approval timeout')));
+
+        expect(state.pendingApprovals).toEqual([]);
+        expect(state.lastError).toEqual('Approval timeout');
+    }
+
+    @Test('session state supports focused session list navigation')
+    sessionStateSupportsFocusedSessionListNavigation() {
+        const state = new AgentConsoleSessionState();
+        state.setSessions([
+            { id: 'chat-1', current: true, messageCount: 4, updatedAt: 4 },
+            { id: 'chat-2', current: false, messageCount: 2, updatedAt: 2 }
+        ]);
+
+        expect(state.selectedSessionId).toEqual('chat-1');
+
+        state.setSessionsFocused(true);
+        expect(state.sessionsFocused).toEqual(true);
+        expect(state.selectedSession?.id).toEqual('chat-1');
+
+        state.moveSessionSelection(1);
+        expect(state.selectedSession?.id).toEqual('chat-2');
+
+        state.setSelectedSessionId('chat-1');
+        expect(state.selectedSession?.id).toEqual('chat-1');
+
+        state.setSessionsFocused(false);
+        expect(state.sessionsFocused).toEqual(false);
+    }
+
+    @Test('session state supports paged session navigation and edges')
+    sessionStateSupportsPagedSessionNavigationAndEdges() {
+        const state = new AgentConsoleSessionState();
+        state.setSessions([
+            { id: 'chat-1', current: true } as any,
+            { id: 'chat-2', current: false } as any,
+            { id: 'chat-3', current: false } as any,
+            { id: 'chat-4', current: false } as any,
+            { id: 'chat-5', current: false } as any,
+            { id: 'chat-6', current: false } as any,
+            { id: 'chat-7', current: false } as any
+        ]);
+
+        state.moveSessionSelectionPage(1);
+        expect(state.selectedSession?.id).toEqual('chat-6');
+
+        state.selectLastSession();
+        expect(state.selectedSession?.id).toEqual('chat-7');
+
+        state.moveSessionSelectionPage(-1);
+        expect(state.selectedSession?.id).toEqual('chat-2');
+
+        state.selectFirstSession();
+        expect(state.selectedSession?.id).toEqual('chat-1');
+    }
+
+    @Test('session state supports focused message list navigation')
+    sessionStateSupportsFocusedMessageListNavigation() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any,
+            { id: 'm2', role: 'assistant', content: 'world', createdAt: 2 } as any
+        ]);
+
+        expect(state.selectedMessageId).toEqual('m2');
+
+        state.setMessagesFocused(true);
+        expect(state.messagesFocused).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m2');
+
+        state.moveMessageSelection(-1);
+        expect(state.selectedMessage?.id).toEqual('m1');
+
+        state.setSelectedMessageId('m2');
+        expect(state.selectedMessage?.id).toEqual('m2');
+
+        state.setMessagesFocused(false);
+        expect(state.messagesFocused).toEqual(false);
+    }
+
+    @Test('session state supports message detail open and scroll')
+    sessionStateSupportsMessageDetailOpenAndScroll() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            {
+                id: 'm1',
+                role: 'assistant',
+                content: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8',
+                createdAt: 1
+            } as any
+        ]);
+
+        state.setMessagesFocused(true);
+        state.openMessageDetail();
+        expect(state.messageDetailOpen).toEqual(true);
+        expect(state.messageDetailScroll).toEqual(0);
+
+        state.scrollMessageDetail(3);
+        expect(state.messageDetailScroll).toEqual(2);
+
+        state.closeMessageDetail();
+        expect(state.messageDetailOpen).toEqual(false);
+        expect(state.messageDetailScroll).toEqual(0);
+    }
+
+    @Test('session state supports paged message navigation and detail edges')
+    sessionStateSupportsPagedMessageNavigationAndDetailEdges() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'm1', role: 'user', content: '1', createdAt: 1 } as any,
+            { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any,
+            { id: 'm3', role: 'user', content: '3', createdAt: 3 } as any,
+            { id: 'm4', role: 'assistant', content: '4', createdAt: 4 } as any,
+            { id: 'm5', role: 'user', content: '5', createdAt: 5 } as any,
+            { id: 'm6', role: 'assistant', content: '6', createdAt: 6 } as any,
+            { id: 'm7', role: 'user', content: '7', createdAt: 7 } as any,
+            { id: 'm8', role: 'assistant', content: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8', createdAt: 8 } as any
+        ]);
+
+        state.selectFirstMessage();
+        expect(state.selectedMessage?.id).toEqual('m1');
+
+        state.moveMessageSelectionPage(1);
+        expect(state.selectedMessage?.id).toEqual('m7');
+
+        state.selectLastMessage();
+        expect(state.selectedMessage?.id).toEqual('m8');
+
+        state.openMessageDetail();
+        state.scrollMessageDetailToEdge('end');
+        expect(state.messageDetailScroll).toEqual(2);
+
+        state.scrollMessageDetailPage(-1);
+        expect(state.messageDetailScroll).toEqual(0);
+    }
+
+    @Test('session state supports message detail horizontal scrolling with tab expansion')
+    sessionStateSupportsMessageDetailHorizontalScrollingWithTabExpansion() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            {
+                id: 'm1',
+                role: 'assistant',
+                content: '\tconst value = 42;\n\t\treturn value;',
+                createdAt: 1
+            } as any
+        ]);
+
+        state.setMessagesFocused(true);
+        state.openMessageDetail();
+
+        expect(state.messageDetailLines[0]).toEqual('    const value = 42;');
+        expect(state.messageDetailLines[1]).toEqual('        return value;');
+        expect(state.messageDetailMaxColumn).toEqual('        return value;'.length);
+
+        state.scrollMessageDetailColumns(4);
+        expect(state.messageDetailColumnScroll).toEqual(4);
+
+        state.scrollMessageDetailColumnsToEdge('end');
+        expect(state.messageDetailColumnScroll).toEqual(state.messageDetailMaxColumn - 1);
+
+        state.closeMessageDetail();
+        expect(state.messageDetailColumnScroll).toEqual(0);
     }
 }

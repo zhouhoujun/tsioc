@@ -10,6 +10,13 @@ export interface AgentConsoleToolItem {
     activationKind?: string;
 }
 
+export interface AgentConsoleSessionItem {
+    id: string;
+    current: boolean;
+    updatedAt?: number;
+    messageCount?: number;
+}
+
 export interface AgentConsoleActivity {
     id: string;
     kind: 'turn' | 'tool' | 'model' | 'error';
@@ -38,10 +45,23 @@ export interface AgentConsoleTokenUsage {
     totalTokens: number;
 }
 
+export interface AgentConsoleApprovalRequest {
+    id: string;
+    toolName: string;
+    sessionId: string;
+    reason: string;
+    summary: string;
+    hasInput: boolean;
+    inputSummary?: string;
+    createdAt: number;
+    timeoutMs: number;
+}
+
 export interface AgentConsoleSessionMeta {
     sessionId?: string;
     provider?: string;
     model?: string;
+    modelProfile?: string;
     workspace?: string;
 }
 
@@ -65,11 +85,22 @@ export class AgentConsoleSessionState {
     input = '';
     title = '';
     messages: AgentMessage[] = [];
+    messagesFocused = false;
+    selectedMessageId = '';
+    messageDetailOpen = false;
+    messageDetailScroll = 0;
+    messageDetailColumnScroll = 0;
+    turnStartedAt = 0;
+    workingFrame = '◦';
     status = 'idle';
     provider = '';
     model = '';
+    modelProfile = '';
     workspace = '';
     tasksCount = 0;
+    sessions: AgentConsoleSessionItem[] = [];
+    sessionsFocused = false;
+    selectedSessionId = '';
     tools: AgentConsoleToolItem[] = [];
     activities: AgentConsoleActivity[] = [];
     runningTools: string[] = [];
@@ -83,9 +114,10 @@ export class AgentConsoleSessionState {
     notice = '';
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     selectMenu?: AgentConsoleSelectMenu;
+    pendingApprovals: AgentConsoleApprovalRequest[] = [];
     submitAction?: () => Promise<void>;
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/model', '/clear', '/quit', '/exit'];
+    commandHints = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -99,6 +131,9 @@ export class AgentConsoleSessionState {
         }
         if (meta.model !== undefined) {
             this.model = meta.model;
+        }
+        if (meta.modelProfile !== undefined) {
+            this.modelProfile = meta.modelProfile;
         }
         if (meta.workspace !== undefined) {
             this.workspace = meta.workspace;
@@ -127,6 +162,11 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    setModelProfile(modelProfile: string): void {
+        this.modelProfile = modelProfile;
+        this.notify();
+    }
+
     subscribe(listener: () => void): () => void {
         this.listeners.add(listener);
         return () => {
@@ -150,11 +190,195 @@ export class AgentConsoleSessionState {
 
     setMessages(messages: AgentMessage[]): void {
         this.messages = messages;
+        if (!this.messages.length) {
+            this.selectedMessageId = '';
+            this.messageDetailOpen = false;
+            this.messageDetailScroll = 0;
+            this.messageDetailColumnScroll = 0;
+        } else if (this.selectedMessageId && this.messages.some(item => item.id === this.selectedMessageId)) {
+            // Preserve explicit message selection when possible.
+        } else {
+            this.selectedMessageId = this.messages[this.messages.length - 1].id;
+            this.messageDetailScroll = 0;
+            this.messageDetailColumnScroll = 0;
+        }
+        this.notify();
+    }
+
+    setMessagesFocused(focused: boolean): void {
+        this.messagesFocused = focused;
+        if (focused && !this.selectedMessageId && this.messages.length) {
+            this.selectedMessageId = this.messages[this.messages.length - 1].id;
+        }
+        if (!focused) {
+            this.messageDetailOpen = false;
+            this.messageDetailScroll = 0;
+            this.messageDetailColumnScroll = 0;
+        }
+        this.notify();
+    }
+
+    setSelectedMessageId(messageId: string): void {
+        if (!messageId || !this.messages.some(item => item.id === messageId)) {
+            return;
+        }
+        this.selectedMessageId = messageId;
+        this.messageDetailScroll = 0;
+        this.messageDetailColumnScroll = 0;
+        this.notify();
+    }
+
+    moveMessageSelection(delta: number): void {
+        if (!this.messages.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.messages.findIndex(item => item.id === this.selectedMessageId));
+        const nextIndex = (currentIndex + delta + this.messages.length) % this.messages.length;
+        this.selectedMessageId = this.messages[nextIndex].id;
+        this.messageDetailScroll = 0;
+        this.messageDetailColumnScroll = 0;
+        this.notify();
+    }
+
+    moveMessageSelectionPage(delta: number, pageSize = 6): void {
+        if (!this.messages.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.messages.findIndex(item => item.id === this.selectedMessageId));
+        const nextIndex = Math.max(0, Math.min(this.messages.length - 1, currentIndex + (delta * Math.max(1, pageSize))));
+        this.selectedMessageId = this.messages[nextIndex].id;
+        this.messageDetailScroll = 0;
+        this.messageDetailColumnScroll = 0;
+        this.notify();
+    }
+
+    selectFirstMessage(): void {
+        if (!this.messages.length) {
+            return;
+        }
+        this.selectedMessageId = this.messages[0].id;
+        this.messageDetailScroll = 0;
+        this.messageDetailColumnScroll = 0;
+        this.notify();
+    }
+
+    selectLastMessage(): void {
+        if (!this.messages.length) {
+            return;
+        }
+        this.selectedMessageId = this.messages[this.messages.length - 1].id;
+        this.messageDetailScroll = 0;
+        this.messageDetailColumnScroll = 0;
+        this.notify();
+    }
+
+    get selectedMessage(): AgentMessage | undefined {
+        return this.messages.find(item => item.id === this.selectedMessageId);
+    }
+
+    openMessageDetail(): void {
+        if (!this.selectedMessage) {
+            return;
+        }
+        this.messageDetailOpen = true;
+        this.messageDetailScroll = 0;
+        this.messageDetailColumnScroll = 0;
+        this.notify();
+    }
+
+    closeMessageDetail(): void {
+        if (!this.messageDetailOpen && this.messageDetailScroll === 0) {
+            return;
+        }
+        this.messageDetailOpen = false;
+        this.messageDetailScroll = 0;
+        this.messageDetailColumnScroll = 0;
+        this.notify();
+    }
+
+    scrollMessageDetail(delta: number): void {
+        if (!this.messageDetailOpen || !this.selectedMessage) {
+            return;
+        }
+        const lines = this.messageDetailLines;
+        const maxScroll = Math.max(0, lines.length - 6);
+        this.messageDetailScroll = Math.max(0, Math.min(maxScroll, this.messageDetailScroll + delta));
+        this.notify();
+    }
+
+    scrollMessageDetailPage(delta: number, pageSize = 5): void {
+        if (!this.messageDetailOpen || !this.selectedMessage) {
+            return;
+        }
+        this.scrollMessageDetail(delta * Math.max(1, pageSize));
+    }
+
+    scrollMessageDetailToEdge(position: 'start' | 'end'): void {
+        if (!this.messageDetailOpen || !this.selectedMessage) {
+            return;
+        }
+        const lines = this.messageDetailLines;
+        this.messageDetailScroll = position === 'start'
+            ? 0
+            : Math.max(0, lines.length - 6);
+        this.notify();
+    }
+
+    get messageDetailLines(): string[] {
+        if (!this.selectedMessage) {
+            return [];
+        }
+        return String(this.selectedMessage?.content || '')
+            .replace(/\r/g, '')
+            .split('\n')
+            .map(line => this.expandTabs(line));
+    }
+
+    get messageDetailMaxColumn(): number {
+        return this.messageDetailLines.reduce((max, line) => Math.max(max, line.length), 0);
+    }
+
+    scrollMessageDetailColumns(delta: number): void {
+        if (!this.messageDetailOpen || !this.selectedMessage) {
+            return;
+        }
+        const maxScroll = Math.max(0, this.messageDetailMaxColumn - 1);
+        this.messageDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.messageDetailColumnScroll + delta));
+        this.notify();
+    }
+
+    scrollMessageDetailColumnsToEdge(position: 'start' | 'end'): void {
+        if (!this.messageDetailOpen || !this.selectedMessage) {
+            return;
+        }
+        this.messageDetailColumnScroll = position === 'start'
+            ? 0
+            : Math.max(0, this.messageDetailMaxColumn - 1);
         this.notify();
     }
 
     setStatus(status: string): void {
-        this.status = status;
+        const nextStatus = status || 'idle';
+        if (this.status === nextStatus) {
+            return;
+        }
+        if ((nextStatus === 'running' || nextStatus === 'reasoning') && !this.turnStartedAt) {
+            this.turnStartedAt = Date.now();
+        }
+        if (nextStatus === 'idle' || nextStatus === 'error') {
+            this.turnStartedAt = 0;
+            this.workingFrame = '◦';
+        }
+        this.status = nextStatus;
+        this.notify();
+    }
+
+    setWorkingFrame(frame: string): void {
+        const next = frame || '◦';
+        if (this.workingFrame === next) {
+            return;
+        }
+        this.workingFrame = next;
         this.notify();
     }
 
@@ -194,13 +418,109 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    setSessions(sessions: AgentConsoleSessionItem[]): void {
+        this.sessions = sessions.slice();
+        if (!this.sessions.length) {
+            this.selectedSessionId = '';
+        } else if (this.selectedSessionId && this.sessions.some(item => item.id === this.selectedSessionId)) {
+            // Preserve explicit selection when the session list refreshes.
+        } else {
+            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
+        }
+        this.notify();
+    }
+
+    setSessionsFocused(focused: boolean): void {
+        this.sessionsFocused = focused;
+        if (focused && !this.selectedSessionId && this.sessions.length) {
+            this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
+        }
+        this.notify();
+    }
+
+    setSelectedSessionId(sessionId: string): void {
+        if (!sessionId || !this.sessions.some(item => item.id === sessionId)) {
+            return;
+        }
+        this.selectedSessionId = sessionId;
+        this.notify();
+    }
+
+    moveSessionSelection(delta: number): void {
+        if (!this.sessions.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.selectedSessionId));
+        const nextIndex = (currentIndex + delta + this.sessions.length) % this.sessions.length;
+        this.selectedSessionId = this.sessions[nextIndex].id;
+        this.notify();
+    }
+
+    moveSessionSelectionPage(delta: number, pageSize = 5): void {
+        if (!this.sessions.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.selectedSessionId));
+        const nextIndex = Math.max(0, Math.min(this.sessions.length - 1, currentIndex + (delta * Math.max(1, pageSize))));
+        this.selectedSessionId = this.sessions[nextIndex].id;
+        this.notify();
+    }
+
+    selectFirstSession(): void {
+        if (!this.sessions.length) {
+            return;
+        }
+        this.selectedSessionId = this.sessions[0].id;
+        this.notify();
+    }
+
+    selectLastSession(): void {
+        if (!this.sessions.length) {
+            return;
+        }
+        this.selectedSessionId = this.sessions[this.sessions.length - 1].id;
+        this.notify();
+    }
+
+    get selectedSession(): AgentConsoleSessionItem | undefined {
+        return this.sessions.find(item => item.id === this.selectedSessionId);
+    }
+
     setNotice(message: string): void {
         this.notice = message;
         this.notify();
     }
 
+    setCommandHints(commands: string[]): void {
+        this.commandHints = Array.from(new Set(commands.filter(Boolean)));
+        this.notify();
+    }
+
     setTheme(theme?: AgentConsoleThemeInput | null): void {
         this.theme = mergeAgentConsoleTheme(theme);
+        this.notify();
+    }
+
+    setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void {
+        this.pendingApprovals = requests
+            .slice()
+            .sort((left, right) => left.createdAt - right.createdAt);
+        this.notify();
+    }
+
+    upsertPendingApproval(request: AgentConsoleApprovalRequest): void {
+        const next = this.pendingApprovals.filter(item => item.id !== request.id);
+        next.push(request);
+        this.pendingApprovals = next.sort((left, right) => left.createdAt - right.createdAt);
+        this.notify();
+    }
+
+    removePendingApproval(requestId: string): void {
+        const next = this.pendingApprovals.filter(item => item.id !== requestId);
+        if (next.length === this.pendingApprovals.length) {
+            return;
+        }
+        this.pendingApprovals = next;
         this.notify();
     }
 
@@ -323,5 +643,9 @@ export class AgentConsoleSessionState {
             }
         }
         return undefined;
+    }
+
+    protected expandTabs(value: string): string {
+        return String(value || '').replace(/\t/g, '    ');
     }
 }

@@ -241,6 +241,9 @@ export class HtmlRenderer implements Renderer {
 
     setAttribute(el: RNode, name: string, value: string, namespace?: string | null): void {
         const element = el as unknown as Element;
+        if (typeof name !== 'string' || !name) {
+            return;
+        }
         if (name.startsWith('@') || name.startsWith(':') || name.startsWith('v-') || name.startsWith('*')) {
             (element as any)[name] = value;
             return;

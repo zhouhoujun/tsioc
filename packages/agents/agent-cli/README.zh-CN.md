@@ -242,6 +242,14 @@ tsdi-agent chat
 - `/multiline`：切换多行输入
 - `/send`：发送多行草稿
 - `/cancel`：取消多行草稿
+- `/sessions`：聚焦界面上的会话列表，可直接用上下键、`PgUp/PgDn`、`Home/End`、回车、`y`、`Esc`
+- `/messages`：聚焦界面上的消息列表，可直接用上下键、`PgUp/PgDn`、`Home/End`、回车、`y`、`Esc`；进入详情后可用左右键横向查看长行
+- `/session [id]`：切换到指定会话；不传 `id` 时进入交互选择
+- `/new [id]`：创建并切换到一个新会话；可选自定义 `id`
+- `/approvals`：查看待处理审批
+- `/approve [id]`：批准待处理审批；不传 `id` 时进入交互选择
+- `/deny [id]`：拒绝待处理审批；不传 `id` 时进入交互选择
+- `/copy [last|screen|input|selected]`：通过 OSC52 复制文本，默认复制最近一条 assistant 回复
 - `/quit`、`/exit`：退出会话
 
 ## 备注
@@ -249,6 +257,9 @@ tsdi-agent chat
 - 自定义兼容 OpenAI 使用 `provider: "openai-compatible"` 和自定义 `baseUrl`
 - 自定义兼容 Anthropic 使用 `provider: "anthropic"` 和自定义 `baseUrl`
 - 用户在首次配置或 `/model` 中选择的当前模型会直接写入 `settings.json` 的 `model` 节点
+- Chat 中输入 API key 时会自动掩码显示
+- `terminal`、`write_file`、`delete_file` 等敏感本地操作现在会在 Chat 内显式请求审批
+- 普通编辑态不会持续开启终端 mouse capture，保持纯键盘 TUI 交互并避免影响终端复制
 
 ## 自适应模型配置建议
 
