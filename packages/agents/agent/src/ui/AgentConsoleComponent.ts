@@ -287,6 +287,7 @@ export class AgentConsoleComponent {
         if (!value) {
             return;
         }
+        this.state.setInput('');
         this.state.setStatus('running');
         this.state.setLastError('');
         this.state.pushActivity('turn', `User: ${this.state.summarize(value)}`);
@@ -352,7 +353,6 @@ export class AgentConsoleComponent {
         }
 
         await this.refreshTools();
-        this.state.setInput('');
         if (this.state.status === 'running' || this.state.status === 'reasoning') {
             this.state.setStatus('idle');
         }

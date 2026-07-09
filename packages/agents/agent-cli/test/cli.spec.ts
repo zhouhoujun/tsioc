@@ -214,6 +214,30 @@ export class AgentCliTest {
         expect(profile.model.model).toBe('deepseek-v4-flash');
     }
 
+    @Test('ignores recoverable workspace settings write errors')
+    async ignoresRecoverableWorkspaceSettingsWriteErrors() {
+        const root = await this.createRoot();
+        const originalWriteFileSync = fs.writeFileSync;
+        (fs as any).writeFileSync = () => {
+            const error: NodeJS.ErrnoException = new Error('read-only');
+            error.code = 'EROFS';
+            throw error;
+        };
+        try {
+            expect(() => ensureAgentWorkspaceConfig(root)).not.toThrow();
+            expect(() => writeSettingsModelProfile(root, {
+                provider: 'openai-compatible',
+                model: 'gpt-5.4'
+            })).not.toThrow();
+            expect(() => writeProviderProfile(root, {
+                provider: 'openai-compatible',
+                model: 'gpt-5.4'
+            })).not.toThrow();
+        } finally {
+            (fs as any).writeFileSync = originalWriteFileSync;
+        }
+    }
+
     @Test('resolves cli model config from persisted provider profile')
     async resolvesCliModelConfigFromPersistedProfile() {
         const root = await this.createRoot();

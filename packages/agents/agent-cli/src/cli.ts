@@ -615,7 +615,15 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const persistHistory = () => {
         const unique = Array.from(new Set(historyEntries.filter(Boolean)));
-        fs.writeFileSync(historyPath, JSON.stringify(unique.slice(-200), null, 2) + '\n', 'utf8');
+        try {
+            fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+            fs.writeFileSync(historyPath, JSON.stringify(unique.slice(-200), null, 2) + '\n', 'utf8');
+        } catch (error: any) {
+            const code = String(error?.code || '');
+            if (code !== 'EACCES' && code !== 'EPERM' && code !== 'EROFS') {
+                throw error;
+            }
+        }
     };
 
     historyEntries = loadHistory();
@@ -1706,11 +1714,12 @@ async function runInteractiveChat(options: any): Promise<void> {
             pushLine(preInputLines, messagesPanel.emptyLabel, ANSI.dim);
         }
         pushLine(preInputLines, messagesPanel?.messagesHintLabel, ANSI.dim);
+        const messagesFocused = !!consoleState?.messagesFocused;
         for (let index = 0; index < 7; index++) {
             const role = messagesPanel?.messageRoleAt?.(index) || '';
             const content = messagesPanel?.messageContentAt?.(index) || '';
             const kind = messagesPanel?.messageKindAt?.(index) || '';
-            const selected = !!messagesPanel?.messageSelectedAt?.(index);
+            const selected = !!messagesPanel?.messageSelectedAt?.(index) && messagesFocused;
             const line = `${role}${content}`;
             if (!line) {
                 continue;

@@ -133,6 +133,23 @@ function readJsonObject(filePath: string): Record<string, any> {
     return parsed;
 }
 
+function isRecoverableWriteError(error: any): boolean {
+    const code = String(error?.code || '');
+    return code === 'EACCES' || code === 'EPERM' || code === 'EROFS';
+}
+
+function writeJsonObject(filePath: string, value: Record<string, any>): string {
+    try {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
+    } catch (error: any) {
+        if (!isRecoverableWriteError(error)) {
+            throw error;
+        }
+    }
+    return filePath;
+}
+
 function resolveLaunchWorkspace(): string {
     let current = process.cwd();
     while (true) {
@@ -198,16 +215,12 @@ export function writeSettingsModelProfile(root: string, profile: Partial<AgentCl
         ...current,
         model: nextModel
     };
-    fs.mkdirSync(resolvedRoot, { recursive: true });
-    fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
-    return settingsPath;
+    return writeJsonObject(settingsPath, next);
 }
 
 export function writeProviderProfile(root: string, profile: AgentCliProviderProfile): string {
     const providerPath = path.join(root, 'provider.json');
-    fs.mkdirSync(root, { recursive: true });
-    fs.writeFileSync(providerPath, JSON.stringify(profile, null, 2) + '\n', 'utf8');
-    return providerPath;
+    return writeJsonObject(providerPath, profile as Record<string, any>);
 }
 
 export function ensureAgentWorkspaceConfig(root: string, workspaceDirName = 'workspace'): string {
@@ -218,9 +231,7 @@ export function ensureAgentWorkspaceConfig(root: string, workspaceDirName = 'wor
         ...current,
         workspace: current.workspace || workspaceDirName
     };
-    fs.mkdirSync(resolvedRoot, { recursive: true });
-    fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
-    return settingsPath;
+    return writeJsonObject(settingsPath, next);
 }
 
 export function resolveCliModelConfig(options: AgentCliOptions, root?: string): AgentCliProviderProfile {
