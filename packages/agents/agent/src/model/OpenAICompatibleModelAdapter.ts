@@ -114,6 +114,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         if (!apiKey) {
             throw new Error(`Missing API key for ${this.options.provider ?? 'model provider'}.`);
         }
+        const toolNames = this.createToolNameMaps(request.tools);
+        const requestBody = this.createRequest(request, toolNames.forward);
 
         const { signal, cleanup } = this.createTimeoutContext();
         try {
@@ -127,7 +129,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                         authorization: `Bearer ${apiKey}`,
                         ...(this.options.headers ?? {})
                     },
-                    body: JSON.stringify(this.createRequest(request)),
+                    body: JSON.stringify(requestBody),
                     signal
                 });
             } catch (error: any) {
@@ -145,7 +147,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             const body = await response.json() as OpenAIChatCompletionResponse;
             const choice = body.choices?.[0];
             const message = choice?.message;
-            const toolCalls = this.parseToolCalls(message?.tool_calls);
+            const toolCalls = this.parseToolCalls(message?.tool_calls, toolNames.reverse);
             const text = this.extractText(message?.content);
             const reasoningContent = message?.reasoning_content;
             const finishReason = choice?.finish_reason;
@@ -172,10 +174,11 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         if (!apiKey) {
             throw new Error(`Missing API key for ${this.options.provider ?? 'model provider'}.`);
         }
+        const toolNames = this.createToolNameMaps(request.tools);
 
         const { signal, cleanup } = this.createTimeoutContext();
         const url = this.resolveUrl('/chat/completions');
-        const reqBody = this.createStreamRequest(request);
+        const reqBody = this.createStreamRequest(request, toolNames.forward);
 
         try {
             let response: Response;
@@ -266,9 +269,9 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     const toolCallDeltas = choice.delta?.tool_calls;
                     if (toolCallDeltas) {
                         for (const tc of toolCallDeltas) {
-                            const existing = accumulatedToolCalls.get(tc.index) ?? { args: '' };
+                        const existing = accumulatedToolCalls.get(tc.index) ?? { args: '' };
                             if (tc.id) { existing.id = tc.id; }
-                            if (tc.function?.name) { existing.name = tc.function.name; }
+                            if (tc.function?.name) { existing.name = toolNames.reverse.get(tc.function.name) || tc.function.name; }
                             if (tc.function?.arguments) { existing.args += tc.function.arguments; }
                             accumulatedToolCalls.set(tc.index, existing);
                         }
@@ -347,28 +350,37 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return this.complete(request, attempt + 1);
     }
 
-    protected createRequest(request: ModelRequest): OpenAIChatCompletionRequest {
+    protected createRequest(
+        request: ModelRequest,
+        toolNameMap: Map<string, string> = new Map()
+    ): OpenAIChatCompletionRequest {
         return {
             model: this.resolveModel(),
-            messages: this.mapRequestMessages(request),
-            tools: request.tools.length ? request.tools.map(tool => this.mapTool(tool)) : undefined,
+            messages: this.mapRequestMessages(request, toolNameMap),
+            tools: request.tools.length ? request.tools.map(tool => this.mapTool(tool, toolNameMap)) : undefined,
             tool_choice: request.tools.length ? 'auto' : undefined,
             temperature: this.options.temperature,
             max_tokens: this.options.maxTokens
         };
     }
 
-    protected createStreamRequest(request: ModelRequest): OpenAIChatCompletionRequest {
+    protected createStreamRequest(
+        request: ModelRequest,
+        toolNameMap: Map<string, string> = new Map()
+    ): OpenAIChatCompletionRequest {
         return {
-            ...this.createRequest(request),
+            ...this.createRequest(request, toolNameMap),
             stream: true,
             stream_options: { include_usage: true }
         };
     }
 
-    protected mapRequestMessages(request: ModelRequest): OpenAIMessage[] {
+    protected mapRequestMessages(
+        request: ModelRequest,
+        toolNameMap: Map<string, string> = new Map()
+    ): OpenAIMessage[] {
         const contextMessages = this.mapContextMessages(request.summary, request.memory);
-        return contextMessages.concat(this.mapMessages(request.messages));
+        return contextMessages.concat(this.mapMessages(request.messages, toolNameMap));
     }
 
     protected mapContextMessages(summary?: string, memory: AgentMemoryRecord[] = []): OpenAIMessage[] {
@@ -388,7 +400,10 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return messages;
     }
 
-    protected mapMessages(messages: AgentMessage[]): OpenAIMessage[] {
+    protected mapMessages(
+        messages: AgentMessage[],
+        toolNameMap: Map<string, string> = new Map()
+    ): OpenAIMessage[] {
         const result: OpenAIMessage[] = [];
         let activeToolCallIds: Set<string> | undefined;
 
@@ -399,7 +414,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     result.push({
                         role: 'assistant',
                         content: this.extractText(message.content),
-                        tool_calls: toolCalls.map(call => this.mapToolCall(call))
+                        tool_calls: toolCalls.map(call => this.mapToolCall(call, toolNameMap))
                     });
                     activeToolCallIds = new Set(toolCalls.map(call => call.id));
                 } else {
@@ -414,7 +429,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     result.push({
                         role: 'assistant',
                         content: null,
-                        tool_calls: [this.mapSyntheticToolCall(message, toolCallId)]
+                        tool_calls: [this.mapSyntheticToolCall(message, toolCallId, toolNameMap)]
                     });
                     activeToolCallIds = new Set([toolCallId]);
                 }
@@ -423,7 +438,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     role: 'tool',
                     content: message.content,
                     tool_call_id: toolCallId,
-                    name: message.name
+                    name: message.name ? (toolNameMap.get(message.name) || message.name) : undefined
                 });
                 continue;
             }
@@ -438,34 +453,41 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return result;
     }
 
-    protected mapTool(tool: AgentToolDefinition): OpenAIToolDefinition {
+    protected mapTool(tool: AgentToolDefinition, toolNameMap: Map<string, string> = new Map()): OpenAIToolDefinition {
         return {
             type: 'function',
             function: {
-                name: tool.name,
+                name: toolNameMap.get(tool.name) || tool.name,
                 description: tool.description,
                 parameters: tool.inputSchema ?? { type: 'object', properties: {} }
             }
         };
     }
 
-    protected mapToolCall(toolCall: AgentToolCall): NonNullable<OpenAIMessage['tool_calls']>[number] {
+    protected mapToolCall(
+        toolCall: AgentToolCall,
+        toolNameMap: Map<string, string> = new Map()
+    ): NonNullable<OpenAIMessage['tool_calls']>[number] {
         return {
             id: toolCall.id,
             type: 'function',
             function: {
-                name: toolCall.name,
+                name: toolNameMap.get(toolCall.name) || toolCall.name,
                 arguments: JSON.stringify(toolCall.input ?? {})
             }
         };
     }
 
-    protected mapSyntheticToolCall(message: AgentMessage, toolCallId: string): NonNullable<OpenAIMessage['tool_calls']>[number] {
+    protected mapSyntheticToolCall(
+        message: AgentMessage,
+        toolCallId: string,
+        toolNameMap: Map<string, string> = new Map()
+    ): NonNullable<OpenAIMessage['tool_calls']>[number] {
         return {
             id: toolCallId,
             type: 'function',
             function: {
-                name: message.name ?? 'tool',
+                name: message.name ? (toolNameMap.get(message.name) || message.name) : 'tool',
                 arguments: JSON.stringify(message.metadata?.toolCallInput ?? message.metadata?.input ?? {})
             }
         };
@@ -479,12 +501,38 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return Array.isArray(message.metadata?.toolCalls) && message.metadata.toolCalls.length > 0;
     }
 
-    protected parseToolCalls(toolCalls?: NonNullable<NonNullable<NonNullable<OpenAIChatCompletionResponse['choices']>[number]['message']>['tool_calls']>): AgentToolCall[] {
+    protected parseToolCalls(
+        toolCalls?: NonNullable<NonNullable<NonNullable<OpenAIChatCompletionResponse['choices']>[number]['message']>['tool_calls']>,
+        reverseToolNameMap: Map<string, string> = new Map()
+    ): AgentToolCall[] {
         return (toolCalls ?? []).map(toolCall => ({
             id: toolCall.id ?? `tool-${Date.now()}`,
-            name: toolCall.function?.name ?? 'tool',
+            name: reverseToolNameMap.get(toolCall.function?.name ?? '') || toolCall.function?.name || 'tool',
             input: this.parseToolInput(toolCall.function?.arguments)
         }));
+    }
+
+    protected createToolNameMaps(tools: AgentToolDefinition[]): { forward: Map<string, string>; reverse: Map<string, string> } {
+        const forward = new Map<string, string>();
+        const reverse = new Map<string, string>();
+        const used = new Set<string>();
+        for (const tool of tools) {
+            const original = String(tool.name || 'tool');
+            let normalized = original.replace(/[^a-zA-Z0-9_-]/g, '_');
+            if (!normalized) {
+                normalized = 'tool';
+            }
+            let unique = normalized;
+            let suffix = 2;
+            while (used.has(unique) && reverse.get(unique) !== original) {
+                unique = `${normalized}_${suffix}`;
+                suffix += 1;
+            }
+            used.add(unique);
+            forward.set(original, unique);
+            reverse.set(unique, original);
+        }
+        return { forward, reverse };
     }
 
     protected parseToolInput(input?: string): any {

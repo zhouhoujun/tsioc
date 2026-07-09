@@ -23,6 +23,7 @@ import {
     renderDraftLine,
     buildMentionContextLines,
     renderMessagePreview,
+    renderAssistantMessageLines,
     renderSelectMenu,
     renderToolDetail,
     renderToolRunLine,
@@ -42,10 +43,13 @@ import {
     shouldPlaceTerminalCursor,
     shouldSuppressDuplicatedKeypress,
     compactRenderedLines,
+    compactRenderedBlocks,
     sortToolRuns,
     findInputPromptRow,
     getTerminalDisplayWidth,
+    highlightCodeLine,
     fitTerminalAnsiLine,
+    wrapPrefixedText,
     writeProviderProfile,
     writeSettingsModelProfile
 } from '../src';
@@ -467,6 +471,31 @@ export class AgentCliTest {
         ]);
     }
 
+    @Test('wraps multiline messages and highlights fenced code blocks')
+    wrapsMessagesAndHighlightsCodeBlocks() {
+        expect(wrapPrefixedText('hello world wide', 10, '› ', '  ')).toEqual([
+            '› hello wo',
+            '  rld wide'
+        ]);
+
+        const rendered = renderAssistantMessageLines('当然，可以。\n```javascript\nconst a = 1\n```', 24);
+        expect(rendered[0]).toBe('当然，可以。');
+        expect(rendered[1]).toContain('```javascript');
+        expect(rendered[2]).toContain('const');
+        expect(rendered[2]).toContain('\u001b[');
+        expect(rendered[3]).toContain('```');
+
+        const highlighted = highlightCodeLine('const total = 42', 'javascript');
+        expect(highlighted).toContain('\u001b[');
+        expect(highlighted).toContain('const');
+        expect(highlighted).toContain('42');
+
+        const wrappedCode = renderAssistantMessageLines('```javascript\nconst extremelyLongVariableName = 42\n```', 18);
+        expect(wrappedCode.length).toBeGreaterThan(3);
+        expect(wrappedCode[1]).toContain('extremelyLon');
+        expect(wrappedCode[2]).toContain('42');
+    }
+
     @Test('resolves slash and mention suggestions')
     resolvesSlashAndMentionSuggestions() {
         const mentions = buildMentionCandidates(['read_file', 'write_file']);
@@ -760,6 +789,36 @@ export class AgentCliTest {
             '\u001b[48;2;27;33;40m   › hi   \u001b[0m',
             ansiBlank,
             'footer'
+        ]);
+    }
+
+    @Test('compacts rendered blocks around the newest transcript blocks')
+    compactsRenderedBlocksAroundNewestTranscriptBlocks() {
+        expect(compactRenderedBlocks([
+            ['notice'],
+            ['msg-1-a', 'msg-1-b'],
+            ['shell-1', 'shell-2'],
+            ['working']
+        ], 4)).toEqual([
+            '…',
+            'shell-1',
+            'shell-2',
+            'working'
+        ]);
+    }
+
+    @Test('anchors rendered block compaction around selected message blocks')
+    anchorsRenderedBlockCompactionAroundSelectedMessageBlocks() {
+        expect(compactRenderedBlocks([
+            ['old-1'],
+            ['selected-1', 'selected-2'],
+            ['new-1'],
+            ['new-2']
+        ], 4, 1)).toEqual([
+            'old-1',
+            'selected-1',
+            'selected-2',
+            'new-1'
         ]);
     }
 

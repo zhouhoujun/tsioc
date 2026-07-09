@@ -242,6 +242,124 @@ export class ModelProviderTest {
         expect(result.metadata?.routing?.route).toEqual('architecture-review');
     }
 
+    @Test('inherits top-level api key when complexity routing selects a profile')
+    async inheritsTopLevelApiKeyForComplexityProfile() {
+        const calls: Array<{ auth: string | undefined; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            calls.push({
+                auth: init.headers?.authorization,
+                body: JSON.parse(init.body)
+            });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: { content: 'ok' },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'top-level-key',
+            defaultProfile: 'flash',
+            profiles: {
+                flash: {
+                    provider: 'openai-compatible',
+                    model: 'gpt-5.4',
+                    baseUrl: 'https://rehdasu.cn'
+                },
+                strong: {
+                    provider: 'openai-compatible',
+                    model: 'gpt-5.5',
+                    baseUrl: 'https://rehdasu.cn',
+                    reasoning: true
+                }
+            },
+            complexityRouting: {
+                simple: 'flash',
+                moderate: 'flash',
+                complex: 'strong'
+            }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-top-level-key',
+            summary: '',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u1',
+                role: 'user',
+                content: 'hi',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].auth).toEqual('Bearer top-level-key');
+        expect(calls[0].body.model).toEqual('gpt-5.4');
+        expect(result.message).toEqual('ok');
+    }
+
+    @Test('sanitizes dotted tool names for openai-compatible requests and restores them on parse')
+    async sanitizesDottedToolNamesAndRestoresOriginalNames() {
+        let call: any;
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (_url: string, init: any) => {
+            call = JSON.parse(init.body);
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: {
+                                content: '',
+                                tool_calls: [{
+                                    id: 'tool-1',
+                                    function: {
+                                        name: 'memory_list',
+                                        arguments: '{"query":"router"}'
+                                    }
+                                }]
+                            },
+                            finish_reason: 'tool_calls'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'test-key'
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's4',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: 'hi', createdAt: 1 }],
+            tools: [{
+                name: 'memory.list',
+                description: 'search memory',
+                inputSchema: { type: 'object', properties: { query: { type: 'string' } } }
+            }]
+        });
+
+        expect(call.tools[0].function.name).toEqual('memory_list');
+        expect(result.toolCalls?.[0].name).toEqual('memory.list');
+        expect(result.toolCalls?.[0].input.query).toEqual('router');
+    }
+
     @Test('uses v1 chat completions for openai-compatible providers without versioned base url')
     async usesVersionedChatCompletionPathForOpenAiCompatibleProvider() {
         this.originalFetch = (globalThis as any).fetch;

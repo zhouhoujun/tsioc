@@ -70,6 +70,18 @@ const ANSI = {
     bgUser: '\x1b[48;2;26;37;31m'
 } as const;
 
+const JS_LIKE_KEYWORDS = new Set([
+    'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default',
+    'delete', 'else', 'export', 'extends', 'false', 'finally', 'for', 'from', 'function',
+    'if', 'import', 'in', 'interface', 'let', 'new', 'null', 'return', 'static', 'switch',
+    'throw', 'true', 'try', 'type', 'typeof', 'undefined', 'var', 'while', 'yield'
+]);
+
+const SHELL_KEYWORDS = new Set([
+    'case', 'cd', 'do', 'done', 'echo', 'elif', 'else', 'esac', 'export', 'fi', 'for',
+    'function', 'git', 'if', 'local', 'node', 'npm', 'pnpm', 'return', 'then', 'while', 'yarn'
+]);
+
 export function findInputPromptRow(lines: string[]): number {
     for (let index = lines.length - 1; index >= 0; index--) {
         const line = lines[index];
@@ -112,6 +124,166 @@ export function formatChatFooter(model: string, profile: string, workspace: stri
     const left = [modelLabel, profileLabel].filter(Boolean).join(' ');
     const parts = [left, workspaceLabel].filter(Boolean);
     return parts.join(' · ');
+}
+
+export function wrapTerminalText(value: string, width: number): string[] {
+    const chunkWidth = Math.max(1, width);
+    const normalized = String(value || '').replace(/\r/g, '').split('\n');
+    const lines: string[] = [];
+    normalized.forEach(line => {
+        if (!line) {
+            lines.push('');
+            return;
+        }
+        let rest = line;
+        while (rest) {
+            const chunk = sliceByDisplayWidth(rest, chunkWidth) || rest.slice(0, chunkWidth);
+            lines.push(chunk);
+            rest = rest.slice(chunk.length);
+        }
+    });
+    return lines.length ? lines : [''];
+}
+
+export function wrapPrefixedText(value: string, width: number, firstPrefix = '', continuationPrefix = ''): string[] {
+    const normalized = String(value || '').replace(/\r/g, '').split('\n');
+    const lines: string[] = [];
+    let renderedAny = false;
+    normalized.forEach(line => {
+        const prefix = renderedAny ? continuationPrefix : firstPrefix;
+        const availableWidth = Math.max(1, width - getDisplayWidth(prefix));
+        if (!line) {
+            lines.push(prefix);
+            renderedAny = true;
+            return;
+        }
+        const wrapped = wrapTerminalText(line, availableWidth);
+        wrapped.forEach((chunk, index) => {
+            const currentPrefix = renderedAny || index > 0 ? continuationPrefix : firstPrefix;
+            lines.push(`${currentPrefix}${chunk}`);
+            renderedAny = true;
+        });
+    });
+    return lines.length ? lines : [firstPrefix];
+}
+
+function paintToken(value: string, color?: string): string {
+    return color ? paint(value, color) : value;
+}
+
+function isJsonLanguage(lang: string): boolean {
+    return lang === 'json' || lang === 'jsonc';
+}
+
+function isShellLanguage(lang: string): boolean {
+    return lang === 'bash' || lang === 'sh' || lang === 'shell' || lang === 'zsh';
+}
+
+function isJsLikeLanguage(lang: string): boolean {
+    return !lang || lang === 'js' || lang === 'jsx' || lang === 'ts' || lang === 'tsx' || lang === 'javascript' || lang === 'typescript';
+}
+
+export function highlightCodeLine(line: string, language = ''): string {
+    const lang = String(language || '').trim().toLowerCase();
+    const source = String(line || '');
+    const jsLike = isJsLikeLanguage(lang);
+    const keywordSet = isShellLanguage(lang) ? SHELL_KEYWORDS : JS_LIKE_KEYWORDS;
+    let index = 0;
+    let result = '';
+    while (index < source.length) {
+        const rest = source.slice(index);
+        if (rest.startsWith('//') && jsLike) {
+            result += paintToken(rest, ANSI.dim);
+            break;
+        }
+        if (rest.startsWith('#') && isShellLanguage(lang)) {
+            result += paintToken(rest, ANSI.dim);
+            break;
+        }
+        const char = source[index];
+        if (char === '"' || char === '\'' || char === '`') {
+            let end = index + 1;
+            while (end < source.length) {
+                if (source[end] === '\\') {
+                    end += 2;
+                    continue;
+                }
+                if (source[end] === char) {
+                    end += 1;
+                    break;
+                }
+                end += 1;
+            }
+            const token = source.slice(index, end);
+            if (isJsonLanguage(lang)) {
+                const remaining = source.slice(end);
+                const isKey = /^(\s*):/.test(remaining);
+                result += paintToken(token, isKey ? ANSI.blueStrong : ANSI.green);
+            } else {
+                result += paintToken(token, ANSI.green);
+            }
+            index = end;
+            continue;
+        }
+        const numberMatch = /^\d+(?:\.\d+)?/.exec(rest);
+        if (numberMatch) {
+            result += paintToken(numberMatch[0], ANSI.amber);
+            index += numberMatch[0].length;
+            continue;
+        }
+        const variableMatch = isShellLanguage(lang) ? /^\$[A-Za-z_][A-Za-z0-9_]*/.exec(rest) : null;
+        if (variableMatch) {
+            result += paintToken(variableMatch[0], ANSI.blue);
+            index += variableMatch[0].length;
+            continue;
+        }
+        const identifierMatch = /^[A-Za-z_$][A-Za-z0-9_$-]*/.exec(rest);
+        if (identifierMatch) {
+            const token = identifierMatch[0];
+            if (keywordSet.has(token)) {
+                result += paintToken(token, ANSI.blueStrong);
+            } else if (token === 'true' || token === 'false' || token === 'null') {
+                result += paintToken(token, ANSI.amber);
+            } else {
+                result += token;
+            }
+            index += token.length;
+            continue;
+        }
+        result += char;
+        index += 1;
+    }
+    return result;
+}
+
+export function renderAssistantMessageLines(content: string, width: number): string[] {
+    const chunkWidth = Math.max(12, width);
+    const sourceLines = String(content || '').replace(/\r/g, '').split('\n');
+    const rendered: string[] = [];
+    let inFence = false;
+    let fenceLanguage = '';
+    for (const sourceLine of sourceLines) {
+        const trimmed = sourceLine.trim();
+        if (trimmed.startsWith('```')) {
+            if (inFence) {
+                inFence = false;
+                fenceLanguage = '';
+                rendered.push(paint('```', ANSI.dim));
+                continue;
+            }
+            inFence = true;
+            fenceLanguage = trimmed.slice(3).trim().toLowerCase();
+            rendered.push(paint(`\`\`\`${fenceLanguage || ''}`.trimEnd(), ANSI.dim));
+            continue;
+        }
+        if (inFence) {
+            const wrappedCodeLines = wrapTerminalText(sourceLine, chunkWidth);
+            wrappedCodeLines.forEach(line => rendered.push(highlightCodeLine(line, fenceLanguage)));
+            continue;
+        }
+        rendered.push(...wrapTerminalText(sourceLine, chunkWidth));
+    }
+    return rendered.length ? rendered : ['…'];
 }
 
 function stripAnsi(value: string): string {
@@ -282,19 +454,197 @@ export function compactRenderedLines(lines: string[], maxRows: number): string[]
     return trimmed;
 }
 
+interface CompactRenderedBlocksWindow {
+    lines: string[];
+    startRow: number;
+    totalRows: number;
+}
+
+function trimRenderedBlockEdge(lines: string[], maxRows: number, fromEnd: boolean): string[] {
+    if (maxRows <= 0) {
+        return [];
+    }
+    if (lines.length <= maxRows) {
+        return lines.slice();
+    }
+    if (maxRows === 1) {
+        return ['…'];
+    }
+    if (fromEnd) {
+        return ['…', ...lines.slice(lines.length - (maxRows - 1))];
+    }
+    return [...lines.slice(0, maxRows - 1), '…'];
+}
+
+export function compactRenderedBlocksWindow(blocks: string[][], maxRows: number, anchorIndex = -1): CompactRenderedBlocksWindow {
+    if (maxRows <= 0) {
+        return {
+            lines: [],
+            startRow: 0,
+            totalRows: 0
+        };
+    }
+    const normalizedBlocks = blocks
+        .map(block => compactRenderedLines(block, block.length || 0))
+        .filter(block => block.length > 0);
+    if (!normalizedBlocks.length) {
+        return {
+            lines: [],
+            startRow: 0,
+            totalRows: 0
+        };
+    }
+    const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
+    const rowOffsets: number[] = [];
+    let nextOffset = 0;
+    normalizedBlocks.forEach(block => {
+        rowOffsets.push(nextOffset);
+        nextOffset += block.length;
+    });
+    if (totalRows <= maxRows) {
+        return {
+            lines: normalizedBlocks.flat(),
+            startRow: 0,
+            totalRows
+        };
+    }
+
+    const resolvedAnchor = Math.max(0, Math.min(
+        normalizedBlocks.length - 1,
+        anchorIndex >= 0 ? anchorIndex : normalizedBlocks.length - 1
+    ));
+    const anchorBlock = normalizedBlocks[resolvedAnchor];
+    if (anchorBlock.length >= maxRows) {
+        const fromEnd = resolvedAnchor > 0;
+        return {
+            lines: trimRenderedBlockEdge(anchorBlock, maxRows, fromEnd),
+            startRow: fromEnd
+                ? rowOffsets[resolvedAnchor] + Math.max(0, anchorBlock.length - Math.max(1, maxRows - 1))
+                : rowOffsets[resolvedAnchor],
+            totalRows
+        };
+    }
+
+    let start = resolvedAnchor;
+    let end = resolvedAnchor;
+    let usedRows = anchorBlock.length;
+    const centered = resolvedAnchor < normalizedBlocks.length - 1;
+    let preferNext = centered;
+
+    const tryExtend = (direction: 'prev' | 'next'): boolean => {
+        if (direction === 'prev') {
+            const nextIndex = start - 1;
+            if (nextIndex < 0) {
+                return false;
+            }
+            const nextBlock = normalizedBlocks[nextIndex];
+            if (usedRows + nextBlock.length > maxRows) {
+                return false;
+            }
+            start = nextIndex;
+            usedRows += nextBlock.length;
+            return true;
+        }
+        const nextIndex = end + 1;
+        if (nextIndex >= normalizedBlocks.length) {
+            return false;
+        }
+        const nextBlock = normalizedBlocks[nextIndex];
+        if (usedRows + nextBlock.length > maxRows) {
+            return false;
+        }
+        end = nextIndex;
+        usedRows += nextBlock.length;
+        return true;
+    };
+
+    while (usedRows < maxRows) {
+        const primary = preferNext ? 'next' : 'prev';
+        const secondary = preferNext ? 'prev' : 'next';
+        const extended = tryExtend(primary) || tryExtend(secondary);
+        if (!extended) {
+            break;
+        }
+        if (centered) {
+            preferNext = !preferNext;
+        }
+    }
+
+    const rendered: string[] = [];
+    const remainingRows = maxRows - usedRows;
+    let startRow = rowOffsets[start];
+    if (remainingRows > 0 && start > 0) {
+        const previousBlock = normalizedBlocks[start - 1];
+        rendered.push(...trimRenderedBlockEdge(previousBlock, remainingRows, true));
+        startRow = previousBlock.length > remainingRows
+            ? rowOffsets[start - 1] + Math.max(0, previousBlock.length - Math.max(1, remainingRows - 1))
+            : rowOffsets[start - 1];
+    }
+    for (let index = start; index <= end; index++) {
+        rendered.push(...normalizedBlocks[index]);
+    }
+    if (remainingRows > 0 && rendered.length < maxRows && end < normalizedBlocks.length - 1) {
+        rendered.push(...trimRenderedBlockEdge(
+            normalizedBlocks[end + 1],
+            Math.max(0, maxRows - rendered.length),
+            false
+        ));
+    }
+    return {
+        lines: rendered.slice(0, maxRows),
+        startRow,
+        totalRows
+    };
+}
+
+export function compactRenderedBlocks(blocks: string[][], maxRows: number, anchorIndex = -1): string[] {
+    return compactRenderedBlocksWindow(blocks, maxRows, anchorIndex).lines;
+}
+
 export function buildOsc52ClipboardSequence(text: string): string {
     const payload = Buffer.from(text, 'utf8').toString('base64');
     return `\x1b]52;c;${payload}\x07`;
 }
 
-function renderShellBlock(content: string, width: number, ...codes: string[]): string[] {
+function renderShellBlockLines(contentLines: string[], width: number, ...codes: string[]): string[] {
     const shellWidth = Math.max(24, width);
     const shellInnerWidth = Math.max(8, shellWidth - 6);
     return [
         paint(' '.repeat(shellWidth), ...codes),
-        paint(`   ${padDisplayText(content, shellInnerWidth)}   `, ...codes),
+        ...contentLines.map(line => paint(`   ${padDisplayText(line, shellInnerWidth)}   `, ...codes)),
         paint(' '.repeat(shellWidth), ...codes)
     ];
+}
+
+function renderShellMessageLines(contentLines: string[], width: number, ...codes: string[]): string[] {
+    const shellWidth = Math.max(24, width);
+    const shellInnerWidth = Math.max(8, shellWidth - 6);
+    return contentLines.map(line => paint(`   ${padDisplayText(line, shellInnerWidth)}   `, ...codes));
+}
+
+function renderShellBlock(content: string, width: number, ...codes: string[]): string[] {
+    return renderShellBlockLines([content], width, ...codes);
+}
+
+function renderScrollbar(lines: string[], width: number, startRow: number, totalRows: number): string[] {
+    if (!lines.length || width < 8 || totalRows <= lines.length) {
+        return lines;
+    }
+    const visibleRows = lines.length;
+    const trackSize = visibleRows;
+    const thumbSize = Math.max(1, Math.round((visibleRows / totalRows) * trackSize));
+    const maxThumbOffset = Math.max(0, trackSize - thumbSize);
+    const maxScrollOffset = Math.max(1, totalRows - visibleRows);
+    const thumbOffset = Math.min(
+        maxThumbOffset,
+        Math.round((Math.max(0, startRow) / maxScrollOffset) * maxThumbOffset)
+    );
+    return lines.map((line, index) => {
+        const gutter = index >= thumbOffset && index < thumbOffset + thumbSize
+            ? paint('█', ANSI.blueStrong)
+            : paint('│', ANSI.dim);
+        return `${fitAnsiLine(line, Math.max(1, width - 1))}${gutter}`;
+    });
 }
 
 class ChatExitRequest extends Error {
@@ -1619,26 +1969,42 @@ async function runInteractiveChat(options: any): Promise<void> {
         const messagesPanel = panelRefs.messages?.instance;
         const detailPanel = panelRefs.detail?.instance;
         const activityPanel = panelRefs.activity?.instance;
-        const toolsPanel = panelRefs.tools?.instance;
         const workingPanel = panelRefs.working?.instance;
         const toolRunsPanel = panelRefs.toolRuns?.instance;
         const inputPanel = panelRefs.input?.instance;
         const selectPanel = panelRefs.select?.instance;
-        const preInputLines: string[] = [];
+        const preInputBlocks: string[][] = [];
         const selectLines: string[] = [];
         let inputLines: string[] = [];
-        const pushLine = (target: string[], line?: string, ...codes: string[]) => {
+        let selectedMessageBlockIndex = -1;
+        const toPaintedLine = (line?: string, ...codes: string[]): string | undefined => {
             if (!line) {
-                return;
+                return undefined;
             }
-            target.push(paint(line, ...codes));
+            return paint(line, ...codes);
+        };
+        const pushLine = (target: string[], line?: string, ...codes: string[]) => {
+            const renderedLine = toPaintedLine(line, ...codes);
+            if (renderedLine) {
+                target.push(renderedLine);
+            }
         };
         const pushBlank = (target: string[]) => {
             if (target.length && target[target.length - 1] !== '') {
                 target.push('');
             }
         };
+        const pushBlock = (lines: Array<string | undefined>) => {
+            const normalized = compactRenderedLines(
+                lines.filter((line): line is string => !!line),
+                Number.MAX_SAFE_INTEGER
+            );
+            if (normalized.length) {
+                preInputBlocks.push(normalized);
+            }
+        };
         if (!consoleState || !viewModel) {
+            const preInputLines: string[] = [];
             if (screenNotice) {
                 pushLine(preInputLines, screenNotice, ANSI.dim);
             }
@@ -1706,102 +2072,111 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         } else {
             if (statusPanel?.shouldShow) {
-                for (let index = 0; index < 6; index++) {
-                    const line = statusPanel?.statusLineAt?.(index);
-                    if (line) {
-                        pushLine(preInputLines, line, ANSI.dim);
-                    }
-                }
+                pushBlock(Array.from({ length: 6 }, (_, index) => toPaintedLine(
+                    statusPanel?.statusLineAt?.(index),
+                    ANSI.dim
+                )));
             }
         if (sessionsPanel?.shouldShow) {
-            pushBlank(preInputLines);
-            pushLine(preInputLines, sessionsPanel.sessionsSummaryLabel, ANSI.amber);
-            pushLine(preInputLines, sessionsPanel.sessionsHintLabel, ANSI.dim);
-            for (let index = 0; index < 6; index++) {
-                const line = sessionsPanel.sessionLabelAt?.(index);
-                if (!line) {
-                    continue;
-                }
-                if (line.trimStart().startsWith('›')) {
-                    preInputLines.push(paintActive(line, ANSI.bgSelected, ANSI.amber));
-                    continue;
-                }
-                pushLine(preInputLines, line, line.includes(' [current]') ? ANSI.amber : ANSI.text);
-            }
+            pushBlock([
+                toPaintedLine(sessionsPanel.sessionsSummaryLabel, ANSI.amber),
+                toPaintedLine(sessionsPanel.sessionsHintLabel, ANSI.dim),
+                ...Array.from({ length: 6 }, (_, index) => {
+                    const line = sessionsPanel.sessionLabelAt?.(index);
+                    if (!line) {
+                        return undefined;
+                    }
+                    if (line.trimStart().startsWith('›')) {
+                        return paintActive(line, ANSI.bgSelected, ANSI.amber);
+                    }
+                    return paint(line, line.includes(' [current]') ? ANSI.amber : ANSI.text);
+                })
+            ]);
         }
-        pushBlank(preInputLines);
-        if (messagesPanel?.emptyLabel) {
-            pushLine(preInputLines, messagesPanel.emptyLabel, ANSI.dim);
-        }
-        pushLine(preInputLines, messagesPanel?.messagesHintLabel, ANSI.dim);
+        pushBlock([
+            toPaintedLine(messagesPanel?.emptyLabel, ANSI.dim),
+            toPaintedLine(messagesPanel?.messagesHintLabel, ANSI.dim)
+        ]);
         const messagesFocused = !!consoleState?.messagesFocused;
-        for (let index = 0; index < 7; index++) {
-            const role = messagesPanel?.messageRoleAt?.(index) || '';
-            const content = messagesPanel?.messageContentAt?.(index) || '';
-            const kind = messagesPanel?.messageKindAt?.(index) || '';
-            const selected = !!messagesPanel?.messageSelectedAt?.(index) && messagesFocused;
-            const line = `${role}${content}`;
-            if (!line) {
-                continue;
+        const visibleMessages = Array.isArray(consoleState?.messages) ? consoleState.messages : [];
+        const resolveKind = (role?: string): 'you' | 'agent' | 'other' => {
+            const normalized = String(role || '').toLowerCase();
+            if (normalized === 'user') {
+                return 'you';
             }
+            if (normalized === 'assistant') {
+                return 'agent';
+            }
+            return 'other';
+        };
+        const messageBlockStartIndex = preInputBlocks.length;
+        visibleMessages.forEach((message: any, messageIndex: number) => {
+            const kind = resolveKind(message?.role);
+            const selected = !!message?.id && message.id === consoleState?.selectedMessageId && messagesFocused;
+            const content = String(message?.content || '');
             if (kind === 'you') {
-                preInputLines.push(
-                    ...renderShellBlock(
-                        line,
-                        width,
-                        ANSI.bg,
-                        selected ? ANSI.blueStrong : ANSI.text
-                    )
-                );
-            } else if (kind === 'agent') {
+                const wrapped = wrapPrefixedText(content, Math.max(8, width - 6), '› ', '  ');
+                preInputBlocks.push(renderShellMessageLines(
+                    wrapped,
+                    width,
+                    ANSI.bg,
+                    selected ? ANSI.blueStrong : ANSI.text
+                ));
                 if (selected) {
-                    preInputLines.push(paintActive(line, ANSI.bgSelected, ANSI.blueStrong));
-                    continue;
+                    selectedMessageBlockIndex = messageBlockStartIndex + messageIndex;
                 }
-                pushLine(preInputLines, line, ANSI.blue);
-            } else {
-                pushLine(preInputLines, line, ANSI.text);
+                return;
             }
-        }
+            const renderedLines = renderAssistantMessageLines(content, width);
+            preInputBlocks.push(renderedLines.map(renderedLine => {
+                if (selected) {
+                    return paintActive(renderedLine || ' ', ANSI.bgSelected, ANSI.blueStrong);
+                }
+                if (!renderedLine) {
+                    return '';
+                }
+                if (/\x1b\[[0-9;]*m/.test(renderedLine)) {
+                    return renderedLine;
+                }
+                return paint(renderedLine, kind === 'agent' ? ANSI.blue : ANSI.text);
+            }));
+            if (selected) {
+                selectedMessageBlockIndex = messageBlockStartIndex + messageIndex;
+            }
+        });
         if (detailPanel?.shouldShow) {
-            pushBlank(preInputLines);
-            pushLine(preInputLines, detailPanel.detailSummaryLabel, ANSI.blue);
-            pushLine(preInputLines, detailPanel.detailHintLabel, ANSI.dim);
-            for (let index = 0; index < 6; index++) {
-                const number = detailPanel.detailLineNumberAt?.(index);
-                const content = detailPanel.detailLineContentAt?.(index);
-                if (!number && !content) {
-                    continue;
-                }
-                pushLine(preInputLines, `${number || ''}${content || ''}`, ANSI.text);
-            }
+            pushBlock([
+                toPaintedLine(detailPanel.detailSummaryLabel, ANSI.blue),
+                toPaintedLine(detailPanel.detailHintLabel, ANSI.dim),
+                ...Array.from({ length: 6 }, (_, index) => {
+                    const number = detailPanel.detailLineNumberAt?.(index);
+                    const content = detailPanel.detailLineContentAt?.(index);
+                    return number || content
+                        ? paint(`${number || ''}${content || ''}`, ANSI.text)
+                        : undefined;
+                })
+            ]);
         }
         if (activityPanel?.shouldShow) {
-            pushBlank(preInputLines);
-            for (let index = 0; index < 3; index++) {
+            pushBlock(Array.from({ length: 3 }, (_, index) => {
                 const kind = activityPanel.activityKindAt?.(index);
                 const message = activityPanel.activityMessageAt?.(index);
-                if (!kind && !message) {
-                    continue;
-                }
-                pushLine(preInputLines, `${kind || ''}${message || ''}`, ANSI.text);
-            }
+                return kind || message
+                    ? paint(`${kind || ''}${message || ''}`, ANSI.text)
+                    : undefined;
+            }));
         }
         if (workingPanel?.shouldShow) {
-            pushBlank(preInputLines);
             const label = workingPanel.workingLabel || '';
             const detail = workingPanel.workingDetail || '';
-            preInputLines.push(`${paint(label, ANSI.blueStrong)}${paint(detail, ANSI.text)}`);
+            pushBlock([`${paint(label, ANSI.blueStrong)}${paint(detail, ANSI.text)}`]);
         }
         if (toolRunsPanel?.toolRunsSummaryLabel) {
-            pushBlank(preInputLines);
-            pushLine(preInputLines, toolRunsPanel.toolRunsSummaryLabel, ANSI.blue);
+            pushBlock([toPaintedLine(toolRunsPanel.toolRunsSummaryLabel, ANSI.blue)]);
         }
         if (activeTextPrompt?.question) {
-            pushBlank(preInputLines);
-            pushLine(preInputLines, activeTextPrompt.question, ANSI.dim);
+            pushBlock([toPaintedLine(activeTextPrompt.question, ANSI.dim)]);
         }
-        pushBlank(preInputLines);
         const promptValue = consoleState?.input || '';
         const placeholder = inputPanel?.placeholderLabel || '';
         const promptText = `> ${promptValue || placeholder}`;
@@ -1834,8 +2209,16 @@ async function runInteractiveChat(options: any): Promise<void> {
             pushLine(selectLines, selectPanel.menuHint, ANSI.dim);
         }
         }
+        const selectedAnchorIndex = consoleState?.messagesFocused && selectedMessageBlockIndex >= 0
+            ? selectedMessageBlockIndex
+            : preInputBlocks.length - 1;
+        const preInputLines = compactRenderedBlocks(
+            preInputBlocks,
+            Math.max(0, height - inputLines.length - selectLines.length),
+            selectedAnchorIndex
+        );
         const rendered = [
-            ...compactRenderedLines(preInputLines, Math.max(0, height - inputLines.length - selectLines.length)),
+            ...preInputLines,
             ...inputLines,
             ...compactRenderedLines(selectLines, Math.max(0, height))
         ];

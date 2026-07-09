@@ -171,12 +171,16 @@ export class RoutedModelAdapter extends ModelAdapter {
     }
 
     private resolveRouteConfig(route: AgentModelRoute): AgentModelConfig | null {
+        const topLevel = this.pickConfig(this.options);
         const profileConfig = route.profile ? this.options.profiles?.[route.profile] : undefined;
         if (route.profile && !profileConfig) {
             throw new Error(`Unknown model profile '${route.profile}'.`);
         }
 
-        const routeConfig = this.mergeConfigs(profileConfig, this.pickConfig(route));
+        const routeConfig = this.mergeConfigs(
+            this.mergeConfigs(topLevel, profileConfig),
+            this.pickConfig(route)
+        );
         if (!routeConfig.provider && !routeConfig.model) {
             return null;
         }
@@ -184,6 +188,7 @@ export class RoutedModelAdapter extends ModelAdapter {
     }
 
     private resolveComplexityConfig(complexity: AgentModelComplexity): { config: AgentModelConfig; profileName?: string } | null {
+        const topLevel = this.pickConfig(this.options);
         const entry = this.options.complexityRouting?.[complexity];
         if (!entry) {
             return null;
@@ -193,9 +198,9 @@ export class RoutedModelAdapter extends ModelAdapter {
             if (!profile) {
                 throw new Error(`Unknown model profile '${entry}' for complexity '${complexity}'.`);
             }
-            return { config: this.mergeConfigs(undefined, profile), profileName: entry };
+            return { config: this.mergeConfigs(topLevel, profile), profileName: entry };
         }
-        return { config: this.mergeConfigs(undefined, entry) };
+        return { config: this.mergeConfigs(topLevel, entry) };
     }
 
     private resolveFallbackConfig(): { config: AgentModelConfig; profileName?: string } {
