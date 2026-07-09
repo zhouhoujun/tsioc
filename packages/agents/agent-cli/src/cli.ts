@@ -67,7 +67,9 @@ const ANSI = {
     amber: '\x1b[38;2;255;184;107m',
     bg: '\x1b[48;2;27;33;40m',
     bgSelected: '\x1b[48;2;19;32;43m',
-    bgUser: '\x1b[48;2;26;37;31m'
+    bgUser: '\x1b[48;2;26;37;31m',
+    bgScrollTrack: '\x1b[48;2;21;25;31m',
+    bgScrollThumb: '\x1b[48;2;38;92;148m'
 } as const;
 
 const JS_LIKE_KEYWORDS = new Set([
@@ -858,14 +860,9 @@ function renderScrollbar(lines: string[], width: number, startRow: number, total
         Math.round((Math.max(0, startRow) / maxScrollOffset) * maxThumbOffset)
     );
     return lines.map((line, index) => {
-        let gutter = index >= thumbOffset && index < thumbOffset + thumbSize
-            ? paint('█', ANSI.blueStrong)
-            : paint('│', ANSI.dim);
-        if (index === 0 && startRow > 0) {
-            gutter = paint('▲', ANSI.blueStrong);
-        } else if (index === visibleRows - 1 && startRow + visibleRows < totalRows) {
-            gutter = paint('▼', ANSI.blueStrong);
-        }
+        const gutter = index >= thumbOffset && index < thumbOffset + thumbSize
+            ? paint(' ', ANSI.bgScrollThumb)
+            : paint(' ', ANSI.bgScrollTrack);
         return `${fitAnsiLine(line, Math.max(1, width - 1))}${gutter}`;
     });
 }
@@ -2455,10 +2452,11 @@ async function runInteractiveChat(options: any): Promise<void> {
         const selectedAnchorIndex = consoleState?.messagesFocused && selectedMessageBlockIndex >= 0
             ? selectedMessageBlockIndex
             : preInputBlocks.length - 1;
+        const flatPreInputLines = preInputBlocks.flatMap(block => block);
         const availablePreInputRows = Math.max(0, height - inputLines.length - selectLines.length);
         const preInputWindow = transcriptScrollOffset > 0
             ? windowRenderedLinesFromBottom(
-                preInputBlocks.flatMap(block => block),
+                flatPreInputLines,
                 availablePreInputRows,
                 transcriptScrollOffset
             )
