@@ -69,7 +69,7 @@ const ANSI = {
     bgSelected: '\x1b[48;2;19;32;43m',
     bgUser: '\x1b[48;2;26;37;31m',
     bgScrollTrack: '\x1b[48;2;21;25;31m',
-    bgScrollThumb: '\x1b[48;2;38;92;148m'
+    bgScrollThumb: '\x1b[48;2;72;79;88m'
 } as const;
 
 const JS_LIKE_KEYWORDS = new Set([
@@ -846,11 +846,10 @@ function renderShellBlock(content: string, width: number, ...codes: string[]): s
     return renderShellBlockLines([content], width, ...codes);
 }
 
-function renderScrollbar(lines: string[], width: number, startRow: number, totalRows: number): string[] {
-    if (!lines.length || width < 8 || totalRows <= lines.length) {
-        return lines;
+function buildScrollbarOverlay(visibleRows: number, startRow: number, totalRows: number, terminalColumn: number, screenRowOffset = 1): string {
+    if (!visibleRows || terminalColumn < 1 || totalRows <= visibleRows) {
+        return '';
     }
-    const visibleRows = lines.length;
     const trackSize = visibleRows;
     const thumbSize = Math.max(1, Math.round((visibleRows / totalRows) * trackSize));
     const maxThumbOffset = Math.max(0, trackSize - thumbSize);
@@ -859,12 +858,14 @@ function renderScrollbar(lines: string[], width: number, startRow: number, total
         maxThumbOffset,
         Math.round((Math.max(0, startRow) / maxScrollOffset) * maxThumbOffset)
     );
-    return lines.map((line, index) => {
-        const gutter = index >= thumbOffset && index < thumbOffset + thumbSize
+    const commands: string[] = [];
+    for (let index = 0; index < visibleRows; index++) {
+        const cell = index >= thumbOffset && index < thumbOffset + thumbSize
             ? paint(' ', ANSI.bgScrollThumb)
             : paint(' ', ANSI.bgScrollTrack);
-        return `${fitAnsiLine(line, Math.max(1, width - 1))}${gutter}`;
-    });
+        commands.push(`\x1b[${screenRowOffset + index};${terminalColumn}H${cell}`);
+    }
+    return commands.join('');
 }
 
 class ChatExitRequest extends Error {
@@ -1106,6 +1107,11 @@ async function runInteractiveChat(options: any): Promise<void> {
     let transcriptScrollOffset = 0;
     let transcriptMaxScrollOffset = 0;
     let transcriptVisibleRows = 0;
+    let transcriptScrollbarColumn = 0;
+    let transcriptScrollbarTopRow = 1;
+    let transcriptScrollbarVisibleRows = 0;
+    let transcriptScrollbarTotalRows = 0;
+    let transcriptScrollbarDragging = false;
     const applyScreenNotice = (message = '', transientMs?: number) => {
         screenNotice = message;
         if (noticeTimer) {
@@ -1256,7 +1262,9 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         mouseTrackingEnabled = enabled;
-        process.stdout.write(enabled ? '\x1b[?1000h\x1b[?1006h' : '\x1b[?1000l\x1b[?1006l');
+        process.stdout.write(enabled
+            ? '\x1b[?1000h\x1b[?1002h\x1b[?1006h'
+            : '\x1b[?1000l\x1b[?1002l\x1b[?1006l');
     };
 
     const pauseReadlineForSelection = () => {
@@ -1843,6 +1851,40 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const canScrollTranscript = (): boolean => transcriptMaxScrollOffset > 0;
 
+    const isScrollbarMouseEvent = (mouse?: { x: number; y: number }): boolean => {
+        if (!mouse || !canScrollTranscript()) {
+            return false;
+        }
+        return mouse.x === transcriptScrollbarColumn
+            && mouse.y >= transcriptScrollbarTopRow
+            && mouse.y < transcriptScrollbarTopRow + transcriptScrollbarVisibleRows;
+    };
+
+    const scrollTranscriptToMouseRow = (screenRow: number) => {
+        if (!canScrollTranscript() || transcriptScrollbarVisibleRows <= 0) {
+            return;
+        }
+        const maxStartRow = Math.max(0, transcriptScrollbarTotalRows - transcriptScrollbarVisibleRows);
+        if (maxStartRow <= 0) {
+            transcriptScrollOffset = 0;
+            renderScreen();
+            return;
+        }
+        const relativeRow = Math.max(0, Math.min(
+            transcriptScrollbarVisibleRows - 1,
+            screenRow - transcriptScrollbarTopRow
+        ));
+        const ratio = transcriptScrollbarVisibleRows <= 1
+            ? 0
+            : relativeRow / (transcriptScrollbarVisibleRows - 1);
+        const targetStartRow = Math.round(ratio * maxStartRow);
+        transcriptScrollOffset = Math.max(0, Math.min(
+            transcriptMaxScrollOffset,
+            maxStartRow - targetStartRow
+        ));
+        renderScreen();
+    };
+
     const resolveApprovalRequest = async (requestId?: string): Promise<any | undefined> => {
         const pending = syncPendingApprovals();
         if (!pending.length) {
@@ -2196,7 +2238,8 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (isClosed) {
             return;
         }
-        const width = Math.max(72, (process.stdout.columns || 100) - 2);
+        const terminalColumns = process.stdout.columns || 100;
+        const width = Math.max(72, terminalColumns);
         const height = Math.max(16, process.stdout.rows || 24);
         if (consoleState?.setStatus && viewModel) {
             consoleState.setStatus(viewModel.status);
@@ -2350,12 +2393,13 @@ async function runInteractiveChat(options: any): Promise<void> {
             return 'other';
         };
         const messageBlockStartIndex = preInputBlocks.length;
+        const transcriptContentWidth = Math.max(12, width - 1);
         visibleMessages.forEach((message: any, messageIndex: number) => {
             const kind = resolveKind(message?.role);
             const selected = !!message?.id && message.id === consoleState?.selectedMessageId && messagesFocused;
             const content = String(message?.content || '');
             if (kind === 'you') {
-                const wrapped = wrapPrefixedText(content, Math.max(8, width - 6), '› ', '  ');
+                const wrapped = wrapPrefixedText(content, Math.max(8, transcriptContentWidth - 6), '› ', '  ');
                 preInputBlocks.push(renderShellMessageLines(
                     wrapped,
                     width,
@@ -2367,7 +2411,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 }
                 return;
             }
-            const renderedLines = renderAssistantMessageLines(content, width);
+            const renderedLines = renderAssistantMessageLines(content, transcriptContentWidth);
             preInputBlocks.push(renderedLines.map(renderedLine => {
                 if (selected) {
                     return paintActive(renderedLine || ' ', ANSI.bgSelected, ANSI.blueStrong);
@@ -2468,14 +2512,20 @@ async function runInteractiveChat(options: any): Promise<void> {
         const maxTranscriptScrollOffset = Math.max(0, preInputWindow.totalRows - preInputWindow.lines.length);
         transcriptVisibleRows = preInputWindow.lines.length;
         transcriptMaxScrollOffset = maxTranscriptScrollOffset;
+        transcriptScrollbarColumn = terminalColumns;
+        transcriptScrollbarTopRow = 1;
+        transcriptScrollbarVisibleRows = preInputWindow.lines.length;
+        transcriptScrollbarTotalRows = preInputWindow.totalRows;
         if (transcriptScrollOffset > maxTranscriptScrollOffset) {
             transcriptScrollOffset = maxTranscriptScrollOffset;
         }
-        const preInputLines = renderScrollbar(
-            preInputWindow.lines,
-            width,
+        const preInputLines = preInputWindow.lines.slice();
+        const scrollbarOverlay = buildScrollbarOverlay(
+            preInputWindow.lines.length,
             preInputWindow.startRow,
-            preInputWindow.totalRows
+            preInputWindow.totalRows,
+            terminalColumns,
+            1
         );
         const rendered = [
             ...preInputLines,
@@ -2483,7 +2533,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             ...compactRenderedLines(selectLines, Math.max(0, height))
         ];
         lastRenderedLines = rendered.slice();
-        const nextRender = `\x1b[2J\x1b[H${rendered.map((line: string) => fitAnsiLine(line, width)).join('\n')}`;
+        const nextRender = `\x1b[2J\x1b[H${rendered.map((line: string) => fitAnsiLine(line, width)).join('\n')}${scrollbarOverlay}`;
 
         if (nextRender === lastRenderKey) {
             placeTerminalCursor(rendered, width);
@@ -3109,6 +3159,31 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
+        const mouse = parseTerminalMouseEvent(chunk);
+        if (mouse) {
+            if (mouse.button === 64) {
+                adjustTranscriptScroll(3);
+                return;
+            }
+            if (mouse.button === 65) {
+                adjustTranscriptScroll(-3);
+                return;
+            }
+            if (mouse.release) {
+                transcriptScrollbarDragging = false;
+                return;
+            }
+            const dragButton = mouse.button >= 32 ? mouse.button - 32 : mouse.button;
+            if (isScrollbarMouseEvent(mouse) && dragButton === 0) {
+                transcriptScrollbarDragging = true;
+                scrollTranscriptToMouseRow(mouse.y);
+                return;
+            }
+            if (transcriptScrollbarDragging && dragButton === 0) {
+                scrollTranscriptToMouseRow(mouse.y);
+                return;
+            }
+        }
         if (activeTextPrompt && controlKey === 'escape') {
             lastRawControlKey = 'escape';
             lastRawControlAt = Date.now();
@@ -3172,7 +3247,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     if (process.stdin.isTTY) {
         process.stdout.write('\x1b[?1049h');
         process.stdin.setRawMode?.(true);
-        setMouseTracking(false);
+        setMouseTracking(true);
     }
     keypressHandler = (_str, key) => {
         if (isClosed) {
