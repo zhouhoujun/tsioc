@@ -460,6 +460,31 @@ interface CompactRenderedBlocksWindow {
     totalRows: number;
 }
 
+export function windowRenderedLinesFromBottom(lines: string[], maxRows: number, scrollOffset = 0): CompactRenderedBlocksWindow {
+    if (maxRows <= 0) {
+        return {
+            lines: [],
+            startRow: 0,
+            totalRows: lines.length
+        };
+    }
+    const totalRows = lines.length;
+    if (totalRows <= maxRows) {
+        return {
+            lines: lines.slice(),
+            startRow: 0,
+            totalRows
+        };
+    }
+    const boundedOffset = Math.max(0, Math.min(scrollOffset, totalRows - maxRows));
+    const startRow = Math.max(0, totalRows - maxRows - boundedOffset);
+    return {
+        lines: lines.slice(startRow, startRow + maxRows),
+        startRow,
+        totalRows
+    };
+}
+
 function trimRenderedBlockEdge(lines: string[], maxRows: number, fromEnd: boolean): string[] {
     if (maxRows <= 0) {
         return [];
@@ -640,9 +665,14 @@ function renderScrollbar(lines: string[], width: number, startRow: number, total
         Math.round((Math.max(0, startRow) / maxScrollOffset) * maxThumbOffset)
     );
     return lines.map((line, index) => {
-        const gutter = index >= thumbOffset && index < thumbOffset + thumbSize
+        let gutter = index >= thumbOffset && index < thumbOffset + thumbSize
             ? paint('█', ANSI.blueStrong)
             : paint('│', ANSI.dim);
+        if (index === 0 && startRow > 0) {
+            gutter = paint('▲', ANSI.blueStrong);
+        } else if (index === visibleRows - 1 && startRow + visibleRows < totalRows) {
+            gutter = paint('▼', ANSI.blueStrong);
+        }
         return `${fitAnsiLine(line, Math.max(1, width - 1))}${gutter}`;
     });
 }
@@ -883,6 +913,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let isCleaningUp = false;
     let approvalPromptActive = false;
     let mouseTrackingEnabled = false;
+    let transcriptScrollOffset = 0;
     const applyScreenNotice = (message = '', transientMs?: number) => {
         screenNotice = message;
         if (noticeTimer) {
@@ -1560,6 +1591,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     const switchSession = async (nextSessionId: string) => {
         const targetSessionId = buildChatSessionId(nextSessionId);
         currentSessionId = targetSessionId;
+        transcriptScrollOffset = 0;
         await refreshSessionState(targetSessionId);
         consoleState?.setSessionsFocused(false);
         consoleState?.setMessagesFocused(false);
@@ -1600,6 +1632,16 @@ async function runInteractiveChat(options: any): Promise<void> {
         applyScreenNotice(copied
             ? `Copied ${label} to clipboard.`
             : `Nothing to copy for ${label}.`, 1500);
+        renderScreen();
+    };
+
+    const adjustTranscriptScroll = (delta: number) => {
+        transcriptScrollOffset = Math.max(0, transcriptScrollOffset + delta);
+        renderScreen();
+    };
+
+    const jumpTranscriptScroll = (mode: 'start' | 'end') => {
+        transcriptScrollOffset = mode === 'end' ? 0 : Number.MAX_SAFE_INTEGER;
         renderScreen();
     };
 
@@ -2212,10 +2254,27 @@ async function runInteractiveChat(options: any): Promise<void> {
         const selectedAnchorIndex = consoleState?.messagesFocused && selectedMessageBlockIndex >= 0
             ? selectedMessageBlockIndex
             : preInputBlocks.length - 1;
-        const preInputLines = compactRenderedBlocks(
-            preInputBlocks,
-            Math.max(0, height - inputLines.length - selectLines.length),
-            selectedAnchorIndex
+        const availablePreInputRows = Math.max(0, height - inputLines.length - selectLines.length);
+        const preInputWindow = transcriptScrollOffset > 0
+            ? windowRenderedLinesFromBottom(
+                preInputBlocks.flatMap(block => block),
+                availablePreInputRows,
+                transcriptScrollOffset
+            )
+            : compactRenderedBlocksWindow(
+                preInputBlocks,
+                availablePreInputRows,
+                selectedAnchorIndex
+            );
+        const maxTranscriptScrollOffset = Math.max(0, preInputWindow.totalRows - preInputWindow.lines.length);
+        if (transcriptScrollOffset > maxTranscriptScrollOffset) {
+            transcriptScrollOffset = maxTranscriptScrollOffset;
+        }
+        const preInputLines = renderScrollbar(
+            preInputWindow.lines,
+            width,
+            preInputWindow.startRow,
+            preInputWindow.totalRows
         );
         const rendered = [
             ...preInputLines,
@@ -2534,6 +2593,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         historyIndex = -1;
         historyDraft = '';
         suggestionState = { items: [], selectedIndex: -1 };
+        transcriptScrollOffset = 0;
         updateDraftState('', 0);
         await processInput(line);
     };
@@ -2857,13 +2917,35 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
             lastRawControlKey = controlKey;
             lastRawControlAt = Date.now();
-            applyChunkToDraft(chunk);
-            if (!inputLocked) {
-                renderScreen();
+            if (controlKey === 'home' || controlKey === 'end') {
+                jumpTranscriptScroll(controlKey === 'home' ? 'start' : 'end');
+            } else {
+                applyChunkToDraft(chunk);
+                if (!inputLocked) {
+                    renderScreen();
+                }
             }
             return;
         }
-        if (controlKey === 'up' || controlKey === 'down' || controlKey === 'pageup' || controlKey === 'pagedown' || controlKey === 'return' || controlKey === 'tab' || controlKey === 'escape') {
+        if (controlKey === 'pageup') {
+            lastRawControlKey = 'pageup';
+            lastRawControlAt = Date.now();
+            adjustTranscriptScroll(8);
+            return;
+        }
+        if (controlKey === 'pagedown') {
+            lastRawControlKey = 'pagedown';
+            lastRawControlAt = Date.now();
+            adjustTranscriptScroll(-8);
+            return;
+        }
+        if (controlKey === 'escape' && transcriptScrollOffset > 0) {
+            lastRawControlKey = 'escape';
+            lastRawControlAt = Date.now();
+            jumpTranscriptScroll('end');
+            return;
+        }
+        if (controlKey === 'up' || controlKey === 'down' || controlKey === 'return' || controlKey === 'tab' || controlKey === 'escape') {
             return;
         }
         applyChunkToDraft(chunk);
@@ -3069,9 +3151,29 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
+        if (key?.name === 'pageup') {
+            adjustTranscriptScroll(8);
+            return;
+        }
+        if (key?.name === 'pagedown') {
+            adjustTranscriptScroll(-8);
+            return;
+        }
+        if (key?.name === 'home') {
+            jumpTranscriptScroll('start');
+            return;
+        }
+        if (key?.name === 'end') {
+            jumpTranscriptScroll('end');
+            return;
+        }
         const activeMenu = getActiveSelectMenu();
         if (activeMenu && !isSuggestionMenu(activeMenu)) {
             // Non-suggestion menus always take precedence over draft input.
+            return;
+        }
+        if ((key?.name === 'escape' || key?.name === 'q') && transcriptScrollOffset > 0) {
+            jumpTranscriptScroll('end');
             return;
         }
         if (activeTextPrompt && key?.name === 'escape') {

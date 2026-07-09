@@ -44,6 +44,7 @@ import {
     shouldSuppressDuplicatedKeypress,
     compactRenderedLines,
     compactRenderedBlocks,
+    windowRenderedLinesFromBottom,
     sortToolRuns,
     findInputPromptRow,
     getTerminalDisplayWidth,
@@ -820,6 +821,25 @@ export class AgentCliTest {
             'selected-2',
             'new-1'
         ]);
+    }
+
+    @Test('windows transcript lines from the bottom for history scrolling')
+    windowsTranscriptLinesFromTheBottom() {
+        expect(windowRenderedLinesFromBottom([
+            'l1', 'l2', 'l3', 'l4', 'l5'
+        ], 3, 0)).toEqual({
+            lines: ['l3', 'l4', 'l5'],
+            startRow: 2,
+            totalRows: 5
+        });
+
+        expect(windowRenderedLinesFromBottom([
+            'l1', 'l2', 'l3', 'l4', 'l5'
+        ], 3, 1)).toEqual({
+            lines: ['l2', 'l3', 'l4'],
+            startRow: 1,
+            totalRows: 5
+        });
     }
 
     @Test('keeps suggestion rows separate from select panel rows')
