@@ -481,10 +481,9 @@ export class AgentCliTest {
 
         const rendered = renderAssistantMessageLines('当然，可以。\n```javascript\nconst a = 1\n```', 24);
         expect(rendered[0]).toBe('当然，可以。');
-        expect(rendered[1]).toContain('```javascript');
-        expect(rendered[2]).toContain('const');
-        expect(rendered[2]).toContain('\u001b[');
-        expect(rendered[3]).toContain('```');
+        expect(rendered[1]).toContain('const');
+        expect(rendered[1]).toContain('\u001b[');
+        expect(rendered.some(line => line.includes('```'))).toBe(false);
 
         const highlighted = highlightCodeLine('const total = 42', 'javascript');
         expect(highlighted).toContain('\u001b[');
@@ -492,9 +491,19 @@ export class AgentCliTest {
         expect(highlighted).toContain('42');
 
         const wrappedCode = renderAssistantMessageLines('```javascript\nconst extremelyLongVariableName = 42\n```', 18);
-        expect(wrappedCode.length).toBeGreaterThan(3);
-        expect(wrappedCode[1]).toContain('extremelyLon');
-        expect(wrappedCode[2]).toContain('42');
+        expect(wrappedCode.length).toBeGreaterThan(1);
+        expect(wrappedCode[0]).toContain('extremelyLon');
+        expect(wrappedCode[1]).toContain('42');
+
+        const markdown = renderAssistantMessageLines('# Title\n- **Bold** item with `code`\n> quote [link](https://a.test)', 36);
+        expect(markdown[0]).toContain('Title');
+        expect(markdown[0]).not.toContain('#');
+        expect(markdown[1]).toContain('- ');
+        expect(markdown[1]).toContain('Bold');
+        expect(markdown.some(line => line.includes('code'))).toBe(true);
+        expect(markdown.some(line => line.includes('https://a.test'))).toBe(true);
+        expect(markdown.some(line => line.includes('| '))).toBe(true);
+        expect(markdown.some(line => line.includes('quote'))).toBe(true);
     }
 
     @Test('resolves slash and mention suggestions')

@@ -171,6 +171,11 @@ function paintToken(value: string, color?: string): string {
     return color ? paint(value, color) : value;
 }
 
+interface StyledTextSegment {
+    text: string;
+    codes?: string[];
+}
+
 function isJsonLanguage(lang: string): boolean {
     return lang === 'json' || lang === 'jsonc';
 }
@@ -181,6 +186,196 @@ function isShellLanguage(lang: string): boolean {
 
 function isJsLikeLanguage(lang: string): boolean {
     return !lang || lang === 'js' || lang === 'jsx' || lang === 'ts' || lang === 'tsx' || lang === 'javascript' || lang === 'typescript';
+}
+
+function mergeAnsiCodes(...groups: Array<string[] | undefined>): string[] | undefined {
+    const merged = groups.flatMap(group => group || []).filter(Boolean);
+    return merged.length ? merged : undefined;
+}
+
+function paintStyledSegment(segment: StyledTextSegment): string {
+    return segment.codes?.length ? paint(segment.text, ...segment.codes) : segment.text;
+}
+
+function unescapeMarkdownText(value: string): string {
+    return String(value || '').replace(/\\([\\`*_{}\[\]()#+\-.!>])/g, '$1');
+}
+
+function tokenizeMarkdownInline(value: string, baseCodes?: string[]): StyledTextSegment[] {
+    const input = String(value || '');
+    const tokenPattern = /(`[^`\n]+`|!\[[^\]]*\]\(([^)]+)\)|\[[^\]]+\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~|\*([^*\n]+)\*|_([^_\n]+)_)/g;
+    const segments: StyledTextSegment[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = tokenPattern.exec(input))) {
+        if (match.index > lastIndex) {
+            segments.push({
+                text: unescapeMarkdownText(input.slice(lastIndex, match.index)),
+                codes: baseCodes
+            });
+        }
+        const token = match[0];
+        if (token.startsWith('`')) {
+            segments.push({
+                text: token.slice(1, -1),
+                codes: mergeAnsiCodes(baseCodes, [ANSI.bgSelected, ANSI.amber])
+            });
+        } else if (token.startsWith('![')) {
+            const imageMatch = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
+            const alt = unescapeMarkdownText(imageMatch?.[1] || 'image');
+            const url = unescapeMarkdownText(imageMatch?.[2] || '');
+            segments.push({
+                text: alt,
+                codes: mergeAnsiCodes(baseCodes, [ANSI.blueStrong])
+            });
+            if (url) {
+                segments.push({
+                    text: ` (${url})`,
+                    codes: mergeAnsiCodes(baseCodes, [ANSI.dim])
+                });
+            }
+        } else if (token.startsWith('[')) {
+            const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
+            const label = unescapeMarkdownText(linkMatch?.[1] || '');
+            const url = unescapeMarkdownText(linkMatch?.[2] || '');
+            segments.push({
+                text: label || url,
+                codes: mergeAnsiCodes(baseCodes, [ANSI.blueStrong])
+            });
+            if (url && url !== label) {
+                segments.push({
+                    text: ` (${url})`,
+                    codes: mergeAnsiCodes(baseCodes, [ANSI.dim])
+                });
+            }
+        } else if (token.startsWith('**') || token.startsWith('__')) {
+            segments.push({
+                text: unescapeMarkdownText(token.slice(2, -2)),
+                codes: mergeAnsiCodes(baseCodes, [ANSI.blueStrong])
+            });
+        } else if (token.startsWith('~~')) {
+            segments.push({
+                text: unescapeMarkdownText(token.slice(2, -2)),
+                codes: mergeAnsiCodes(baseCodes, [ANSI.dim])
+            });
+        } else {
+            segments.push({
+                text: unescapeMarkdownText(token.slice(1, -1)),
+                codes: mergeAnsiCodes(baseCodes, [ANSI.blue])
+            });
+        }
+        lastIndex = match.index + token.length;
+    }
+    if (lastIndex < input.length) {
+        segments.push({
+            text: unescapeMarkdownText(input.slice(lastIndex)),
+            codes: baseCodes
+        });
+    }
+    return segments.length ? segments : [{
+        text: unescapeMarkdownText(input),
+        codes: baseCodes
+    }];
+}
+
+function wrapStyledSegments(segments: StyledTextSegment[], width: number): string[] {
+    const chunkWidth = Math.max(1, width);
+    const lines: string[] = [];
+    let currentLine = '';
+    let currentWidth = 0;
+    const flushLine = () => {
+        lines.push(currentLine);
+        currentLine = '';
+        currentWidth = 0;
+    };
+    for (const segment of segments) {
+        let rest = segment.text;
+        if (!rest) {
+            continue;
+        }
+        while (rest) {
+            if (currentWidth >= chunkWidth) {
+                flushLine();
+            }
+            const availableWidth = Math.max(1, chunkWidth - currentWidth);
+            let chunk = sliceByDisplayWidth(rest, availableWidth);
+            if (!chunk) {
+                chunk = rest.slice(0, 1);
+            }
+            currentLine += paintStyledSegment({
+                text: chunk,
+                codes: segment.codes
+            });
+            currentWidth += getDisplayWidth(chunk);
+            rest = rest.slice(chunk.length);
+            if (rest && currentWidth >= chunkWidth) {
+                flushLine();
+            }
+        }
+    }
+    if (!lines.length || currentLine || !segments.length) {
+        lines.push(currentLine);
+    }
+    return lines;
+}
+
+function renderMarkdownTextLine(sourceLine: string, width: number): string[] {
+    const chunkWidth = Math.max(12, width);
+    const original = String(sourceLine || '');
+    let line = original;
+    let firstPrefix = '';
+    let continuationPrefix = '';
+    let baseCodes: string[] | undefined;
+
+    const headingMatch = /^(\s*)(#{1,6})\s+(.*)$/.exec(line);
+    if (headingMatch) {
+        firstPrefix = headingMatch[1];
+        continuationPrefix = headingMatch[1];
+        line = headingMatch[3];
+        baseCodes = [ANSI.blueStrong];
+    } else {
+        const quoteMatch = /^(\s*)>\s?(.*)$/.exec(line);
+        if (quoteMatch) {
+            firstPrefix = `${quoteMatch[1]}| `;
+            continuationPrefix = `${quoteMatch[1]}  `;
+            line = quoteMatch[2];
+            baseCodes = [ANSI.dim];
+        } else {
+            const taskMatch = /^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
+            if (taskMatch) {
+                firstPrefix = `${taskMatch[1]}[${taskMatch[2].toLowerCase() === 'x' ? 'x' : ' '}] `;
+                continuationPrefix = `${taskMatch[1]}    `;
+                line = taskMatch[3];
+            } else {
+                const orderedMatch = /^(\s*\d+\.)\s+(.*)$/.exec(line);
+                if (orderedMatch) {
+                    firstPrefix = `${orderedMatch[1]} `;
+                    continuationPrefix = `${' '.repeat(getDisplayWidth(firstPrefix))}`;
+                    line = orderedMatch[2];
+                } else {
+                    const bulletMatch = /^(\s*)[-*+]\s+(.*)$/.exec(line);
+                    if (bulletMatch) {
+                        firstPrefix = `${bulletMatch[1]}- `;
+                        continuationPrefix = `${bulletMatch[1]}  `;
+                        line = bulletMatch[2];
+                    }
+                }
+            }
+        }
+    }
+
+    if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(original)) {
+        return [paint('-'.repeat(chunkWidth), ANSI.dim)];
+    }
+
+    const wrapped = wrapStyledSegments(
+        tokenizeMarkdownInline(line, baseCodes),
+        Math.max(1, chunkWidth - getDisplayWidth(firstPrefix || continuationPrefix))
+    );
+    return wrapped.map((chunk, index) => {
+        const prefix = index === 0 ? firstPrefix : continuationPrefix;
+        return `${prefix}${chunk}`;
+    });
 }
 
 export function highlightCodeLine(line: string, language = ''): string {
@@ -268,12 +463,10 @@ export function renderAssistantMessageLines(content: string, width: number): str
             if (inFence) {
                 inFence = false;
                 fenceLanguage = '';
-                rendered.push(paint('```', ANSI.dim));
                 continue;
             }
             inFence = true;
             fenceLanguage = trimmed.slice(3).trim().toLowerCase();
-            rendered.push(paint(`\`\`\`${fenceLanguage || ''}`.trimEnd(), ANSI.dim));
             continue;
         }
         if (inFence) {
@@ -281,7 +474,7 @@ export function renderAssistantMessageLines(content: string, width: number): str
             wrappedCodeLines.forEach(line => rendered.push(highlightCodeLine(line, fenceLanguage)));
             continue;
         }
-        rendered.push(...wrapTerminalText(sourceLine, chunkWidth));
+        rendered.push(...renderMarkdownTextLine(sourceLine, chunkWidth));
     }
     return rendered.length ? rendered : ['…'];
 }
@@ -914,6 +1107,8 @@ async function runInteractiveChat(options: any): Promise<void> {
     let approvalPromptActive = false;
     let mouseTrackingEnabled = false;
     let transcriptScrollOffset = 0;
+    let transcriptMaxScrollOffset = 0;
+    let transcriptVisibleRows = 0;
     const applyScreenNotice = (message = '', transientMs?: number) => {
         screenNotice = message;
         if (noticeTimer) {
@@ -1636,14 +1831,20 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const adjustTranscriptScroll = (delta: number) => {
-        transcriptScrollOffset = Math.max(0, transcriptScrollOffset + delta);
+        transcriptScrollOffset = Math.max(0, Math.min(transcriptMaxScrollOffset, transcriptScrollOffset + delta));
         renderScreen();
     };
 
     const jumpTranscriptScroll = (mode: 'start' | 'end') => {
-        transcriptScrollOffset = mode === 'end' ? 0 : Number.MAX_SAFE_INTEGER;
+        transcriptScrollOffset = mode === 'end' ? 0 : transcriptMaxScrollOffset;
         renderScreen();
     };
+
+    const getTranscriptPageStep = (): number => {
+        return Math.max(4, transcriptVisibleRows - 2);
+    };
+
+    const canScrollTranscript = (): boolean => transcriptMaxScrollOffset > 0;
 
     const resolveApprovalRequest = async (requestId?: string): Promise<any | undefined> => {
         const pending = syncPendingApprovals();
@@ -2267,6 +2468,8 @@ async function runInteractiveChat(options: any): Promise<void> {
                 selectedAnchorIndex
             );
         const maxTranscriptScrollOffset = Math.max(0, preInputWindow.totalRows - preInputWindow.lines.length);
+        transcriptVisibleRows = preInputWindow.lines.length;
+        transcriptMaxScrollOffset = maxTranscriptScrollOffset;
         if (transcriptScrollOffset > maxTranscriptScrollOffset) {
             transcriptScrollOffset = maxTranscriptScrollOffset;
         }
@@ -2927,16 +3130,28 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
+        if (controlKey === 'up' && canScrollTranscript()) {
+            lastRawControlKey = 'up';
+            lastRawControlAt = Date.now();
+            adjustTranscriptScroll(1);
+            return;
+        }
+        if (controlKey === 'down' && transcriptScrollOffset > 0) {
+            lastRawControlKey = 'down';
+            lastRawControlAt = Date.now();
+            adjustTranscriptScroll(-1);
+            return;
+        }
         if (controlKey === 'pageup') {
             lastRawControlKey = 'pageup';
             lastRawControlAt = Date.now();
-            adjustTranscriptScroll(8);
+            adjustTranscriptScroll(getTranscriptPageStep());
             return;
         }
         if (controlKey === 'pagedown') {
             lastRawControlKey = 'pagedown';
             lastRawControlAt = Date.now();
-            adjustTranscriptScroll(-8);
+            adjustTranscriptScroll(-getTranscriptPageStep());
             return;
         }
         if (controlKey === 'escape' && transcriptScrollOffset > 0) {
