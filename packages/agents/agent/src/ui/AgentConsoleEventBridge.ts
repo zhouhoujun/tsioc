@@ -132,10 +132,10 @@ export class AgentConsoleEventBridge {
 
         bind(AgentModelCompletedEvent, (event: AgentModelCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            if (event.response.metadata?.provider) {
+            if (event.response.metadata?.provider && !this.state.provider) {
                 this.state.setProvider(String(event.response.metadata.provider));
             }
-            if (event.response.metadata?.model) {
+            if (event.response.metadata?.model && !this.state.model) {
                 this.state.setModel(String(event.response.metadata.model));
             }
             this.state.setTokenUsage(event.response.metadata?.usage);

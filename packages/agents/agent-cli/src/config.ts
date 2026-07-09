@@ -138,10 +138,27 @@ function isRecoverableWriteError(error: any): boolean {
     return code === 'EACCES' || code === 'EPERM' || code === 'EROFS';
 }
 
+function stripLegacyApiKeyEnv<T>(value: T): T {
+    if (Array.isArray(value)) {
+        return value.map(item => stripLegacyApiKeyEnv(item)) as T;
+    }
+    if (!value || typeof value !== 'object') {
+        return value;
+    }
+    const next: Record<string, any> = {};
+    Object.entries(value as Record<string, any>).forEach(([key, entry]) => {
+        if (key === 'apiKeyEnv') {
+            return;
+        }
+        next[key] = stripLegacyApiKeyEnv(entry);
+    });
+    return next as T;
+}
+
 function writeJsonObject(filePath: string, value: Record<string, any>): string {
     try {
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
-        fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
+        fs.writeFileSync(filePath, JSON.stringify(stripLegacyApiKeyEnv(value), null, 2) + '\n', 'utf8');
     } catch (error: any) {
         if (!isRecoverableWriteError(error)) {
             throw error;
@@ -249,6 +266,7 @@ export function resolveCliModelConfig(options: AgentCliOptions, root?: string): 
         || process.env.AGENT_API_KEY
         || (apiKeyEnv ? process.env[apiKeyEnv] : undefined)
         || initialModel.apiKey
+        || settingsModel?.apiKey
         || providerProfile?.apiKey
         || undefined;
     const timeoutMs = parseInt(options.timeout as string) || initialModel.timeoutMs || providerProfile?.timeoutMs || 120000;

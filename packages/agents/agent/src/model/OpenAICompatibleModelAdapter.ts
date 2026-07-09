@@ -117,16 +117,22 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
         const { signal, cleanup } = this.createTimeoutContext();
         try {
-            const response = await fetch(this.resolveUrl('/chat/completions'), {
-                method: 'POST',
-                headers: {
-                    'content-type': 'application/json',
-                    authorization: `Bearer ${apiKey}`,
-                    ...(this.options.headers ?? {})
-                },
-                body: JSON.stringify(this.createRequest(request)),
-                signal
-            });
+            const requestUrl = this.resolveUrl('/chat/completions');
+            let response: Response;
+            try {
+                response = await fetch(requestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json',
+                        authorization: `Bearer ${apiKey}`,
+                        ...(this.options.headers ?? {})
+                    },
+                    body: JSON.stringify(this.createRequest(request)),
+                    signal
+                });
+            } catch (error: any) {
+                throw new Error(`Model request failed: ${error?.message || String(error)} (${requestUrl})`);
+            }
 
             if (!response.ok) {
                 if (this.isRetryable(response.status) && attempt <= MAX_RETRIES) {
@@ -172,17 +178,22 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         const reqBody = this.createStreamRequest(request);
 
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'content-type': 'application/json',
-                    authorization: `Bearer ${apiKey}`,
-                    accept: 'text/event-stream',
-                    ...(this.options.headers ?? {})
-                },
-                body: JSON.stringify(reqBody),
-                signal
-            });
+            let response: Response;
+            try {
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json',
+                        authorization: `Bearer ${apiKey}`,
+                        accept: 'text/event-stream',
+                        ...(this.options.headers ?? {})
+                    },
+                    body: JSON.stringify(reqBody),
+                    signal
+                });
+            } catch (error: any) {
+                throw new Error(`Model streaming request failed: ${error?.message || String(error)} (${url})`);
+            }
 
             if (!response.ok) {
                 throw new Error(`Model streaming request failed with ${response.status}`);
@@ -301,6 +312,18 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         return (this.options.baseUrl ?? 'https://api.deepseek.com').replace(/\/+$/, '');
     }
 
+    protected resolveApiBaseUrl(): string {
+        const baseUrl = this.resolveBaseUrl();
+        const provider = String(this.options.provider || '').trim().toLowerCase();
+        if (provider !== 'openai' && provider !== 'openai-compatible') {
+            return baseUrl;
+        }
+        if (/\/v\d+(?:\/|$)/.test(baseUrl)) {
+            return baseUrl;
+        }
+        return `${baseUrl}/v1`;
+    }
+
     protected resolveApiKey(): string | undefined {
         if (this.options.apiKey) {
             return this.options.apiKey;
@@ -311,7 +334,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
     }
 
     protected resolveUrl(path: string): string {
-        return `${this.resolveBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
+        return `${this.resolveApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
     }
 
     private isRetryable(status: number): boolean {

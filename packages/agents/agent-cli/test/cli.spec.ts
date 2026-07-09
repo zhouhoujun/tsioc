@@ -214,6 +214,29 @@ export class AgentCliTest {
         expect(profile.model.model).toBe('deepseek-v4-flash');
     }
 
+    @Test('strips legacy apiKeyEnv fields when writing settings profiles')
+    async stripsLegacyApiKeyEnvFieldsWhenWritingSettingsProfiles() {
+        const root = await this.createRoot();
+        const settingsPath = writeSettingsModelProfile(root, {
+            provider: 'openai-compatible',
+            model: 'redhus',
+            apiKey: 'test-key',
+            apiKeyEnv: 'OPENAI_API_KEY',
+            profiles: {
+                flash: {
+                    provider: 'openai-compatible',
+                    model: 'redhus',
+                    apiKeyEnv: 'OPENAI_API_KEY'
+                } as any
+            }
+        });
+
+        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        expect(settings.model.apiKey).toBe('test-key');
+        expect(settings.model.apiKeyEnv).toBe(undefined);
+        expect(settings.model.profiles.flash.apiKeyEnv).toBe(undefined);
+    }
+
     @Test('ignores recoverable workspace settings write errors')
     async ignoresRecoverableWorkspaceSettingsWriteErrors() {
         const root = await this.createRoot();
@@ -321,6 +344,7 @@ export class AgentCliTest {
         const root = await this.createRoot();
         writeSettingsModelProfile(root, {
             defaultProfile: 'flash',
+            apiKey: 'adaptive-key',
             profiles: {
                 flash: {
                     provider: 'deepseek',
@@ -345,6 +369,7 @@ export class AgentCliTest {
         const modelConfig = resolveCliModelConfig({}, root);
         expect(modelConfig.provider).toBe('deepseek');
         expect(modelConfig.model).toBe('deepseek-v4-flash');
+        expect(modelConfig.apiKey).toBe('adaptive-key');
         expect(modelConfig.defaultProfile).toBe('flash');
         expect((modelConfig.profiles as any).strong.model).toBe('deepseek-v4-pro');
         expect((modelConfig.complexityRouting as any).complex).toBe('strong');

@@ -450,6 +450,36 @@ export class AgentConsoleComponentTest {
         expect(state.tokenUsage.completionTokens).toEqual(22);
     }
 
+    @Test('configured model label is preserved after model completion events')
+    async preservesConfiguredModelLabel() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const app = new ApplicationContextStub();
+        const { component } = createConsoleParts(runtime, scheduler, new ToolRegistryStub(), app);
+        component.configure({
+            sessionId: 'chat-model',
+            provider: 'openai-compatible',
+            model: 'redhus',
+            modelProfile: 'flash'
+        });
+        await component.onInit();
+
+        await app.eventMulticaster.emit(new AgentModelCompletedEvent(this, 'chat-model', {
+            metadata: {
+                provider: 'openai-compatible',
+                model: 'rehdasu',
+                usage: {
+                    prompt_tokens: 10,
+                    completion_tokens: 12,
+                    total_tokens: 22
+                }
+            }
+        } as any));
+
+        expect(component.provider).toEqual('openai-compatible');
+        expect(component.model).toEqual('redhus');
+    }
+
     @Test('tracks pending approvals through event bridge')
     async tracksPendingApprovalsThroughEventBridge() {
         const runtime = new RuntimeStub();

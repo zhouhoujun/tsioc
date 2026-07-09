@@ -242,6 +242,47 @@ export class ModelProviderTest {
         expect(result.metadata?.routing?.route).toEqual('architecture-review');
     }
 
+    @Test('uses v1 chat completions for openai-compatible providers without versioned base url')
+    async usesVersionedChatCompletionPathForOpenAiCompatibleProvider() {
+        this.originalFetch = (globalThis as any).fetch;
+        const calls: string[] = [];
+        (globalThis as any).fetch = async (url: string) => {
+            calls.push(url);
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                content: 'ok'
+                            },
+                            finish_reason: 'stop'
+                        }]
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'redhus',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'test-key'
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's3',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: 'hi', createdAt: 1 }],
+            tools: []
+        });
+
+        expect(calls[0]).toEqual('https://rehdasu.cn/v1/chat/completions');
+        expect(result.message).toEqual('ok');
+    }
+
     @Test('parses openai-compatible streaming text from array and alternate fields')
     async parsesOpenAiCompatibleStreamingVariants() {
         this.originalFetch = (globalThis as any).fetch;

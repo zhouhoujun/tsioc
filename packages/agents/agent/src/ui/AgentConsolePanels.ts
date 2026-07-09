@@ -731,7 +731,7 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get emptyLabel(): string {
-        return this.messages.length ? '' : 'No messages yet';
+        return '';
     }
 
     get visibleMessages(): Array<{ id?: string; role?: string; content: string }> {

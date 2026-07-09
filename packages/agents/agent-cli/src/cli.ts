@@ -93,6 +93,27 @@ export function fitTerminalAnsiLine(line: string, width: number): string {
     return fitAnsiLine(line, width);
 }
 
+export function shortenWorkspacePath(workspace: string): string {
+    const value = String(workspace || '').trim();
+    if (!value) {
+        return '';
+    }
+    const home = typeof process !== 'undefined' ? (process.env.HOME || '') : '';
+    if (home && value.startsWith(home)) {
+        return `~${value.slice(home.length)}`;
+    }
+    return value;
+}
+
+export function formatChatFooter(model: string, profile: string, workspace: string): string {
+    const modelLabel = String(model || '').trim();
+    const profileLabel = String(profile || '').trim();
+    const workspaceLabel = shortenWorkspacePath(workspace);
+    const left = [modelLabel, profileLabel].filter(Boolean).join(' ');
+    const parts = [left, workspaceLabel].filter(Boolean);
+    return parts.join(' · ');
+}
+
 function stripAnsi(value: string): string {
     return value.replace(/\x1b\[[0-9;]*m/g, '');
 }
@@ -856,8 +877,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 detail: [
                     `Provider: ${providerSelection.label}`,
                     `Mode: ${mode}`,
-                    `Model: ${item}`,
-                    `API key env: ${resolveProviderApiKeyEnv(provider) || '-'}`
+                    `Model: ${item}`
                 ].join('\n')
             }));
             const currentModelIndex = Math.max(0, models.indexOf(currentModel));
@@ -873,7 +893,7 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const resolveProviderModeSelection = async (
         current?: Partial<AgentCliProviderProfile>
-    ): Promise<{ provider: string; flashModel: string; strongModel: string; baseUrl?: string; apiKeyEnv?: string } | undefined> => {
+    ): Promise<{ provider: string; flashModel: string; strongModel: string; baseUrl?: string } | undefined> => {
         const finishSelectInteraction = beginSelectInteraction();
         let selectInteractionClosed = false;
         const closeSelectInteraction = () => {
@@ -930,8 +950,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 provider,
                 flashModel,
                 strongModel,
-                baseUrl,
-                apiKeyEnv: flashCurrent?.apiKeyEnv || strongCurrent?.apiKeyEnv || resolveProviderApiKeyEnv(provider)
+                baseUrl
             };
         } finally {
             closeSelectInteraction();
@@ -939,7 +958,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const buildAdaptiveModelProfile = (
-        selected: { provider: string; flashModel: string; strongModel: string; baseUrl?: string; apiKeyEnv?: string },
+        selected: { provider: string; flashModel: string; strongModel: string; baseUrl?: string },
         apiKey: string,
         timeoutMs: number
     ): AgentCliProviderProfile => {
@@ -948,21 +967,18 @@ async function runInteractiveChat(options: any): Promise<void> {
             model: selected.flashModel,
             apiKey,
             baseUrl: selected.baseUrl,
-            apiKeyEnv: selected.apiKeyEnv,
             timeoutMs,
             defaultProfile: 'flash',
             profiles: {
                 flash: {
                     provider: selected.provider,
                     model: selected.flashModel,
-                    baseUrl: selected.baseUrl,
-                    apiKeyEnv: selected.apiKeyEnv
+                    baseUrl: selected.baseUrl
                 },
                 strong: {
                     provider: selected.provider,
                     model: selected.strongModel,
                     baseUrl: selected.baseUrl,
-                    apiKeyEnv: selected.apiKeyEnv,
                     reasoning: true
                 }
             },
@@ -975,7 +991,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const ensureInteractiveProfile = async (): Promise<AgentCliProviderProfile> => {
-        const hasExplicitConfig = !!options.provider || !!options.model || !!options.apiKey || !!options.apiKeyEnv || !!options.baseUrl;
+        const hasExplicitConfig = !!options.provider || !!options.model || !!options.apiKey || !!options.baseUrl;
         const resolvedProfile = resolveCliModelConfig(options, resolved.root);
         const hasPersistedProvider = !!resolved.settingsModel?.provider && !!resolved.settingsModel?.model;
         const hasAdaptiveModelConfig = !!resolved.settingsModel?.defaultProfile || !!resolved.settingsModel?.profiles || !!resolved.settingsModel?.complexityRouting;
@@ -1502,7 +1518,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                     return;
                 }
                 const provider = selected.provider;
-                const apiKeyEnv = selected.apiKeyEnv || currentProfile.apiKeyEnv || resolveProviderApiKeyEnv(provider);
+                const apiKeyEnv = resolveProviderApiKeyEnv(provider);
                 const apiKeyLabel = currentProfile.provider === provider && currentProfile.apiKey ? '******' : 'empty';
                 const apiKeyInput = await promptLine(`API key [${apiKeyLabel}]: `, { secret: true });
                 assertNoExitInput(apiKeyInput);
@@ -1634,7 +1650,11 @@ async function runInteractiveChat(options: any): Promise<void> {
             const promptText = `> ${currentDraft}`;
             inputLines = [
                 ...renderShellBlock(promptText, width, ANSI.bg, ANSI.text),
-                paint(`setup · ${resolved.workspace}`, ANSI.dim)
+                paint(formatChatFooter(
+                    currentProfile?.model || '',
+                    resolveModelProfileLabel(currentProfile || {} as AgentCliProviderProfile),
+                    resolved.workspace
+                ), ANSI.dim)
             ];
             const activeMenu = getActiveSelectMenu();
             if (activeMenu) {
