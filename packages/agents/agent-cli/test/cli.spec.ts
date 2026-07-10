@@ -970,6 +970,18 @@ export class AgentCliTest {
         });
     }
 
+    @Test('preserves tail context even when the previous transcript block is also taller than the viewport budget')
+    preservesTailContextWhenPreviousTranscriptBlockIsAlsoTall() {
+        expect(windowRenderedBlocksFromBottomWithContext([
+            ['old-1', 'old-2', 'old-3', 'old-4', 'old-5'],
+            ['new-1', 'new-2', 'new-3', 'new-4', 'new-5', 'new-6']
+        ], 5, 2)).toEqual({
+            lines: ['…', 'old-4', 'old-5', '…', 'new-6'],
+            startRow: 3,
+            totalRows: 11
+        });
+    }
+
     @Test('keeps suggestion rows separate from select panel rows')
     keepsSuggestionRowsSeparateFromSelectPanelRows() {
         const layout = composeTerminalChatScreen({
