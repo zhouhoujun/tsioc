@@ -747,7 +747,7 @@ export function windowRenderedLinesFromBottom(lines: string[], maxRows: number, 
     };
 }
 
-export function windowRenderedBlocksFromBottomWithContext(blocks: string[][], maxRows: number, contextRows = 0): CompactRenderedBlocksWindow {
+export function windowRenderedBlocksFromBottomWithContext(blocks: string[][], maxRows: number, minLatestRows = 0): CompactRenderedBlocksWindow {
     if (maxRows <= 0) {
         return {
             lines: [],
@@ -766,29 +766,54 @@ export function windowRenderedBlocksFromBottomWithContext(blocks: string[][], ma
         };
     }
     const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
-    const flatLines = normalizedBlocks.flat();
-    if (totalRows <= maxRows || normalizedBlocks.length === 1) {
-        return windowRenderedLinesFromBottom(flatLines, maxRows, 0);
+    const rowOffsets: number[] = [];
+    let nextOffset = 0;
+    normalizedBlocks.forEach(block => {
+        rowOffsets.push(nextOffset);
+        nextOffset += block.length;
+    });
+    if (totalRows <= maxRows) {
+        return {
+            lines: normalizedBlocks.flat(),
+            startRow: 0,
+            totalRows
+        };
     }
-
-    const latestBlock = normalizedBlocks[normalizedBlocks.length - 1];
-    if (latestBlock.length < maxRows) {
-        return windowRenderedLinesFromBottom(flatLines, maxRows, 0);
+    const latestIndex = normalizedBlocks.length - 1;
+    const latestBlock = normalizedBlocks[latestIndex];
+    if (normalizedBlocks.length === 1) {
+        return {
+            lines: trimRenderedBlockEdge(latestBlock, maxRows, true),
+            startRow: rowOffsets[latestIndex] + Math.max(0, latestBlock.length - Math.max(1, maxRows - 1)),
+            totalRows
+        };
     }
-
-    const reservedContextRows = Math.max(0, Math.min(contextRows, maxRows - 1));
-    if (reservedContextRows <= 0) {
-        return windowRenderedLinesFromBottom(flatLines, maxRows, 0);
+    const latestFloor = Math.max(1, Math.min(maxRows, minLatestRows || 0));
+    let startIndex = latestIndex;
+    let preservedHistoryRows = 0;
+    while (startIndex > 0) {
+        const candidate = normalizedBlocks[startIndex - 1];
+        if (preservedHistoryRows + candidate.length > Math.max(0, maxRows - latestFloor)) {
+            break;
+        }
+        startIndex -= 1;
+        preservedHistoryRows += candidate.length;
     }
-
-    const previousLines = normalizedBlocks.slice(0, -1).flat();
-    const contextWindow = windowRenderedLinesFromBottom(previousLines, reservedContextRows, 0);
-    const actualContextRows = contextWindow.lines.length;
-    const latestRows = Math.max(1, maxRows - actualContextRows);
-    const latestWindow = trimRenderedBlockEdge(latestBlock, latestRows, true);
+    const latestRows = Math.max(1, maxRows - preservedHistoryRows);
+    const latestWindow = latestBlock.length > latestRows
+        ? trimRenderedBlockEdge(latestBlock, latestRows, true)
+        : latestBlock.slice();
+    const rendered: string[] = [];
+    for (let index = startIndex; index < latestIndex; index++) {
+        rendered.push(...normalizedBlocks[index]);
+    }
+    rendered.push(...latestWindow);
+    const latestStartRow = latestBlock.length > latestRows
+        ? rowOffsets[latestIndex] + Math.max(0, latestBlock.length - Math.max(1, latestRows - 1))
+        : rowOffsets[latestIndex];
     return {
-        lines: [...contextWindow.lines, ...latestWindow].slice(-maxRows),
-        startRow: Math.max(0, totalRows - maxRows),
+        lines: rendered.slice(-maxRows),
+        startRow: startIndex < latestIndex ? rowOffsets[startIndex] : latestStartRow,
         totalRows
     };
 }
@@ -2452,6 +2477,8 @@ async function runInteractiveChat(options: any): Promise<void> {
         const brandModel = consoleState?.model || currentProfile?.model || '';
         const brandWorkspace = consoleState?.workspace || resolved.workspace;
         const brandLines = buildBrandHeaderBlock(width, 'TSDI Agent', brandModel, brandWorkspace);
+        let fixedBrandLines = brandLines;
+        let wantsDynamicTranscriptFlow = false;
         if (consoleState?.setStatus && viewModel) {
             consoleState.setStatus(viewModel.status);
         }
@@ -2585,6 +2612,22 @@ async function runInteractiveChat(options: any): Promise<void> {
         const visibleMessages = showingExitFrame
             ? []
             : (Array.isArray(consoleState?.messages) ? consoleState.messages : []);
+        const shouldScrollBrandWithTranscript = !showingExitFrame
+            && visibleMessages.length > 0
+            && !sessionsFocused
+            && !messageDetailFocused;
+        if (shouldScrollBrandWithTranscript) {
+            fixedBrandLines = [];
+            pushBlock(transcriptBlocks, brandLines);
+        }
+        wantsDynamicTranscriptFlow = !showingExitFrame
+            && visibleMessages.length > 0
+            && !sessionsFocused
+            && !messagesFocused
+            && !messageDetailFocused
+            && !workingPanel?.shouldShow
+            && !selectPanel?.menu
+            && !activeTextPrompt;
         const showStatusPanel = !showingExitFrame
             && !browsingTranscriptHistory
             && !sessionsFocused
@@ -2735,7 +2778,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             pushLine(selectLines, selectPanel.menuHint, ANSI.dim);
         }
         }
-        const topReservedRows = brandLines.length + inputLines.length + selectLines.length;
+        const topReservedRows = fixedBrandLines.length + inputLines.length + selectLines.length;
         const topFixedAnchorIndex = topFixedBlocks.length - 1;
         const compactTopFixedLines = compactRenderedBlocksWindow(
             topFixedBlocks,
@@ -2746,28 +2789,73 @@ async function runInteractiveChat(options: any): Promise<void> {
             bottomFixedBlocks.flatMap(block => block),
             Math.max(0, height - topReservedRows - compactTopFixedLines.lines.length)
         );
-        const reservedRows = brandLines.length + compactTopFixedLines.lines.length + provisionalBottomFixedLines.length + inputLines.length + selectLines.length;
+        const reservedRows = fixedBrandLines.length + compactTopFixedLines.lines.length + provisionalBottomFixedLines.length + inputLines.length + selectLines.length;
         const availableTranscriptRows = Math.max(0, height - reservedRows);
+        const flatTranscriptLines = transcriptBlocks.flatMap(block => block);
+        const useDynamicTranscriptFlow = wantsDynamicTranscriptFlow
+            && flatTranscriptLines.length > availableTranscriptRows;
+        if (useDynamicTranscriptFlow) {
+            const rendered = [
+                ...fixedBrandLines,
+                ...topFixedBlocks.flatMap(block => block),
+                ...transcriptBlocks.flatMap(block => block),
+                ...bottomFixedBlocks.flatMap(block => block),
+                ...inputLines,
+                ...selectLines
+            ];
+            lastRenderedLines = rendered.slice();
+            const fittedLines = rendered.map((line: string) => fitAnsiLine(line, width));
+            const visibleLines = fittedLines.map((line: string) => stripAnsi(line));
+            const nextRenderKey = `flow:${width}:${fittedLines.join('\n')}`;
+            syncMouseTracking();
+            if (nextRenderKey === lastRenderKey) {
+                placeTerminalCursor(fittedLines, width, true);
+                return;
+            }
+            const previousVisibleLines = lastPaintedLines.map((line: string) => stripAnsi(line));
+            const currentPromptRow = findInputPromptRow(visibleLines);
+            const previousPromptRow = findInputPromptRow(previousVisibleLines);
+            const canPatchPromptOnly = lastRenderKey.startsWith('flow:')
+                && currentPromptRow >= 0
+                && currentPromptRow === previousPromptRow
+                && fittedLines.length === lastPaintedLines.length
+                && fittedLines.every((line, index) => index === currentPromptRow || line === lastPaintedLines[index]);
+            if (canPatchPromptOnly) {
+                const promptColumn = visibleLines[currentPromptRow].indexOf('> ');
+                const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
+                const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
+                process.stdout.write(`\r${fittedLines[currentPromptRow]}\x1b[K\r`);
+                if (cursorColumn > 1) {
+                    process.stdout.write(`\x1b[${cursorColumn - 1}C`);
+                }
+                lastRenderKey = nextRenderKey;
+                lastRenderedLines = rendered.slice();
+                lastPaintedLines = fittedLines.slice();
+                lastPaintedWidth = width;
+                return;
+            }
+            lastRenderKey = nextRenderKey;
+            if (process.stdout.isTTY) {
+                process.stdout.write(buildClearScreenSequence(false));
+            }
+            if (fittedLines.length) {
+                process.stdout.write(fittedLines.join('\n'));
+            }
+            lastPaintedLines = fittedLines.slice();
+            lastPaintedWidth = width;
+            placeTerminalCursor(fittedLines, width, true);
+            return;
+        }
         const selectedAnchorIndex = consoleState?.messagesFocused && selectedMessageBlockIndex >= 0
             ? selectedMessageBlockIndex
             : transcriptBlocks.length - 1;
-        const flatTranscriptLines = transcriptBlocks.flatMap(block => block);
         const shouldUseTranscriptLineWindow = transcriptScrollOffset > 0 || !messagesFocused;
-        const transcriptContextRows = transcriptScrollOffset > 0
-            ? 0
-            : Math.min(8, Math.max(3, Math.floor(availableTranscriptRows / 4)));
         const transcriptWindow = shouldUseTranscriptLineWindow
-            ? (transcriptScrollOffset > 0
-                ? windowRenderedLinesFromBottom(
-                    flatTranscriptLines,
-                    availableTranscriptRows,
-                    transcriptScrollOffset
-                )
-                : windowRenderedBlocksFromBottomWithContext(
-                    transcriptBlocks,
-                    availableTranscriptRows,
-                    transcriptContextRows
-                ))
+            ? windowRenderedLinesFromBottom(
+                flatTranscriptLines,
+                availableTranscriptRows,
+                transcriptScrollOffset
+            )
             : compactRenderedBlocksWindow(
                 transcriptBlocks,
                 availableTranscriptRows,
@@ -2777,7 +2865,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         transcriptVisibleRows = transcriptWindow.lines.length;
         transcriptMaxScrollOffset = maxTranscriptScrollOffset;
         transcriptScrollbarColumn = terminalColumns;
-        transcriptScrollbarTopRow = brandLines.length + compactTopFixedLines.lines.length + 1;
+        transcriptScrollbarTopRow = fixedBrandLines.length + compactTopFixedLines.lines.length + 1;
         transcriptScrollbarVisibleRows = transcriptWindow.lines.length;
         transcriptScrollbarTotalRows = transcriptWindow.totalRows;
         if (transcriptScrollOffset > maxTranscriptScrollOffset) {
@@ -2785,10 +2873,10 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         const compactBottomFixedLines = compactRenderedLines(
             bottomFixedBlocks.flatMap(block => block),
-            Math.max(0, height - brandLines.length - compactTopFixedLines.lines.length - transcriptWindow.lines.length - inputLines.length - selectLines.length)
+            Math.max(0, height - fixedBrandLines.length - compactTopFixedLines.lines.length - transcriptWindow.lines.length - inputLines.length - selectLines.length)
         );
         const preInputLines = [
-            ...brandLines,
+            ...fixedBrandLines,
             ...compactTopFixedLines.lines,
             ...transcriptWindow.lines,
             ...compactBottomFixedLines
@@ -2827,7 +2915,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         placeTerminalCursor(rendered, width);
     }
 
-    function placeTerminalCursor(rendered: string[], width: number) {
+    function placeTerminalCursor(rendered: string[], width: number, flowMode = false) {
         if (!shouldPlaceTerminalCursor({
             isTTY: !!process.stdout.isTTY,
             isSelecting,
@@ -2839,9 +2927,9 @@ async function runInteractiveChat(options: any): Promise<void> {
             hasMessageFocus: hasMessageFocus(),
             hasMessageDetailFocus: hasMessageDetailFocus()
         })) {
-            return;
+                return;
         }
-        const plainLines = rendered.map((line: string) => stripAnsi(line));
+        const plainLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
         const promptRow = findInputPromptRow(plainLines);
         if (promptRow < 0) {
             return;
@@ -2853,6 +2941,19 @@ async function runInteractiveChat(options: any): Promise<void> {
         const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
         const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
         const cursorRow = promptRow + 1;
+        if (flowMode) {
+            const linesAfterPrompt = Math.max(0, plainLines.length - promptRow - 1);
+            const commands: string[] = [];
+            if (linesAfterPrompt > 0) {
+                commands.push(`\x1b[${linesAfterPrompt}A`);
+            }
+            commands.push('\r');
+            if (cursorColumn > 1) {
+                commands.push(`\x1b[${cursorColumn - 1}C`);
+            }
+            process.stdout.write(commands.join(''));
+            return;
+        }
         process.stdout.write(`\x1b[${cursorRow};${cursorColumn}H`);
     }
 
@@ -2891,6 +2992,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             draftCursor = 0;
             consoleState?.setInput?.('');
             applyScreenNotice('');
+            lastRenderKey = '';
+            clearTerminalScreen(true);
             renderScreen();
             isClosed = true;
             await cleanupAndExit('Goodbye.', true);

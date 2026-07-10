@@ -962,7 +962,7 @@ export class AgentCliTest {
             ['new-1', 'new-2', 'new-3', 'new-4', 'new-5', 'new-6']
         ], 5, 2)).toEqual({
             lines: ['old-1', 'old-2', '…', 'new-5', 'new-6'],
-            startRow: 3,
+            startRow: 0,
             totalRows: 8
         });
     }
