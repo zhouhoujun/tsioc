@@ -28,6 +28,7 @@ import {
 } from './ui';
 
 const HISTORY_FILE = 'chat-history.json';
+const SKIP_RESTORE_FILE = '.skip-session-restore';
 const CLI_VERSION = '6.0.31';
 const SPINNER_FRAMES = Array.from({ length: 14 }, (_value, index) => String(Math.floor(index / 2)));
 const CANCEL_INPUTS = new Set(['q', 'cancel', '/cancel']);
@@ -1185,6 +1186,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     const resolved = resolveCliConfig(options);
     ensureAgentWorkspaceConfig(resolved.root, path.basename(resolved.workspace));
     const historyPath = path.join(resolved.root, HISTORY_FILE);
+    const skipRestorePath = path.join(resolved.root, SKIP_RESTORE_FILE);
 
     let currentSessionId = resolved.sessionId;
     let currentProfile = resolveCliModelConfig(options, resolved.root);
@@ -1366,6 +1368,30 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (code !== 'EACCES' && code !== 'EPERM' && code !== 'EROFS') {
                 throw error;
             }
+        }
+    };
+
+    const markSkipSessionRestore = () => {
+        try {
+            fs.mkdirSync(path.dirname(skipRestorePath), { recursive: true });
+            fs.writeFileSync(skipRestorePath, '1\n', 'utf8');
+        } catch {
+            // Ignore restore marker persistence failures.
+        }
+    };
+
+    const consumeSkipSessionRestore = (): boolean => {
+        if (options.session) {
+            return false;
+        }
+        try {
+            if (!fs.existsSync(skipRestorePath)) {
+                return false;
+            }
+            fs.unlinkSync(skipRestorePath);
+            return true;
+        } catch {
+            return false;
         }
     };
 
@@ -2313,7 +2339,8 @@ async function runInteractiveChat(options: any): Promise<void> {
         toolRegistry = currentCtx.get(ToolRegistry);
         sessionStore = currentCtx.get(SessionStore);
         approvalManager = currentCtx.get(ToolApprovalManager);
-        if (allowSessionRestore) {
+        const skipSessionRestore = allowSessionRestore && consumeSkipSessionRestore();
+        if (allowSessionRestore && !skipSessionRestore) {
             const restoredSessionId = await resolveStartupSessionId(currentSessionId);
             if (restoredSessionId !== currentSessionId) {
                 currentSessionId = restoredSessionId;
@@ -3199,6 +3226,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             consoleState?.setInput?.('');
             applyScreenNotice('');
             await sessionStore?.delete?.(currentSessionId);
+            markSkipSessionRestore();
             consoleState?.setMessages?.([]);
             consoleState?.setSessionsFocused?.(false);
             consoleState?.setMessagesFocused?.(false);
