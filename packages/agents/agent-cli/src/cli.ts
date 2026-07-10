@@ -68,9 +68,7 @@ const ANSI = {
     amber: '\x1b[38;2;255;184;107m',
     bg: '\x1b[48;2;27;33;40m',
     bgSelected: '\x1b[48;2;19;32;43m',
-    bgUser: '\x1b[48;2;26;37;31m',
-    bgScrollTrack: '\x1b[48;2;21;25;31m',
-    bgScrollThumb: '\x1b[48;2;72;79;88m'
+    bgUser: '\x1b[48;2;26;37;31m'
 } as const;
 
 const JS_LIKE_KEYWORDS = new Set([
@@ -127,6 +125,14 @@ export function formatChatFooter(model: string, profile: string, workspace: stri
     const left = [modelLabel, profileLabel].filter(Boolean).join(' ');
     const parts = [left, workspaceLabel].filter(Boolean);
     return parts.join(' · ');
+}
+
+export function shouldUseAlternateScreen(): boolean {
+    const configured = String(process.env.TSDI_AGENT_ALT_SCREEN || '').trim().toLowerCase();
+    if (!configured) {
+        return false;
+    }
+    return configured !== '0' && configured !== 'false' && configured !== 'no';
 }
 
 export function wrapTerminalText(value: string, width: number): string[] {
@@ -320,6 +326,10 @@ function wrapStyledSegments(segments: StyledTextSegment[], width: number): strin
         lines.push(currentLine);
     }
     return lines;
+}
+
+function buildClearScreenSequence(clearScrollback = false): string {
+    return `\x1b[2J${clearScrollback ? '\x1b[3J' : ''}\x1b[H`;
 }
 
 function renderMarkdownTextLine(sourceLine: string, width: number): string[] {
@@ -859,28 +869,6 @@ function renderShellBlock(content: string, width: number, ...codes: string[]): s
     return renderShellBlockLines([content], width, ...codes);
 }
 
-function buildScrollbarOverlay(visibleRows: number, startRow: number, totalRows: number, terminalColumn: number, screenRowOffset = 1): string {
-    if (!visibleRows || terminalColumn < 1 || totalRows <= visibleRows) {
-        return '';
-    }
-    const trackSize = visibleRows;
-    const thumbSize = Math.max(1, Math.round((visibleRows / totalRows) * trackSize));
-    const maxThumbOffset = Math.max(0, trackSize - thumbSize);
-    const maxScrollOffset = Math.max(1, totalRows - visibleRows);
-    const thumbOffset = Math.min(
-        maxThumbOffset,
-        Math.round((Math.max(0, startRow) / maxScrollOffset) * maxThumbOffset)
-    );
-    const commands: string[] = [];
-    for (let index = 0; index < visibleRows; index++) {
-        const cell = index >= thumbOffset && index < thumbOffset + thumbSize
-            ? paint(' ', ANSI.bgScrollThumb)
-            : paint(' ', ANSI.bgScrollTrack);
-        commands.push(`\x1b[${screenRowOffset + index};${terminalColumn}H${cell}`);
-    }
-    return commands.join('');
-}
-
 class ChatExitRequest extends Error {
     constructor() {
         super('CHAT_EXIT_REQUEST');
@@ -1093,6 +1081,8 @@ async function runInteractiveChat(options: any): Promise<void> {
     let inputLocked = false;
     let lastRenderKey = '';
     let lastRenderedLines: string[] = [];
+    let lastPaintedLines: string[] = [];
+    let lastPaintedWidth = 0;
     let screenNotice = '';
     let spinnerIndex = 0;
     let multilineMode = false;
@@ -1116,6 +1106,9 @@ async function runInteractiveChat(options: any): Promise<void> {
     let historyDraft = '';
     let isCleaningUp = false;
     let approvalPromptActive = false;
+    let renderQueued = false;
+    let renderVersion = 0;
+    let unsubscribeConsoleState: (() => void) | null = null;
     let mouseTrackingEnabled = false;
     let transcriptScrollOffset = 0;
     let transcriptMaxScrollOffset = 0;
@@ -1125,6 +1118,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let transcriptScrollbarVisibleRows = 0;
     let transcriptScrollbarTotalRows = 0;
     let transcriptScrollbarDragging = false;
+    const useAlternateScreen = shouldUseAlternateScreen();
     const applyScreenNotice = (message = '', transientMs?: number) => {
         screenNotice = message;
         if (noticeTimer) {
@@ -1280,6 +1274,35 @@ async function runInteractiveChat(options: any): Promise<void> {
             : '\x1b[?1000l\x1b[?1002l\x1b[?1006l');
     };
 
+    const syncMouseTracking = () => {
+        const enableMouseTracking = hasBlockingSelectMenu();
+        setMouseTracking(enableMouseTracking);
+    };
+
+    const clearTerminalScreen = (clearScrollback = false) => {
+        if (!process.stdout.isTTY) {
+            return;
+        }
+        process.stdout.write(buildClearScreenSequence(clearScrollback));
+        lastPaintedLines = [];
+        lastPaintedWidth = 0;
+    };
+
+    const queueRenderScreen = () => {
+        if (isClosed || renderQueued) {
+            return;
+        }
+        const scheduledVersion = renderVersion;
+        renderQueued = true;
+        Promise.resolve().then(() => {
+            renderQueued = false;
+            if (isClosed || renderVersion !== scheduledVersion) {
+                return;
+            }
+            renderScreen();
+        });
+    };
+
     const pauseReadlineForSelection = () => {
         if (isClosed) {
             return;
@@ -1358,6 +1381,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const updateDraftState = (nextDraft: string, cursor = nextDraft.length) => {
+        transcriptScrollOffset = 0;
         currentDraft = nextDraft;
         draftCursor = Math.max(0, Math.min(cursor, currentDraft.length));
         setDraftDisplay();
@@ -1365,6 +1389,7 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const applyChunkToDraft = (chunk: Buffer | string) => {
         const next = applyTerminalInputChunk(currentDraft, draftCursor, chunk);
+        transcriptScrollOffset = 0;
         currentDraft = next.value;
         draftCursor = next.cursor;
         setDraftDisplay();
@@ -1390,7 +1415,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (isClosed || isSelecting || inputLocked) {
                 return;
             }
-            renderScreen();
+            queueRenderScreen();
         });
     };
 
@@ -1895,16 +1920,11 @@ async function runInteractiveChat(options: any): Promise<void> {
     const canScrollTranscript = (): boolean => transcriptMaxScrollOffset > 0;
 
     const isScrollbarMouseEvent = (mouse?: { x: number; y: number }): boolean => {
-        if (!mouse || !canScrollTranscript()) {
-            return false;
-        }
-        return mouse.x === transcriptScrollbarColumn
-            && mouse.y >= transcriptScrollbarTopRow
-            && mouse.y < transcriptScrollbarTopRow + transcriptScrollbarVisibleRows;
+        return false;
     };
 
     const scrollTranscriptToMouseRow = (screenRow: number) => {
-        if (!canScrollTranscript() || transcriptScrollbarVisibleRows <= 0) {
+        if (!useAlternateScreen || !canScrollTranscript() || transcriptScrollbarVisibleRows <= 0) {
             return;
         }
         const maxStartRow = Math.max(0, transcriptScrollbarTotalRows - transcriptScrollbarVisibleRows);
@@ -2023,6 +2043,8 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const createChatContext = async (profile: AgentCliProviderProfile, allowSessionRestore = true): Promise<void> => {
         if (viewModel) {
+            unsubscribeConsoleState?.();
+            unsubscribeConsoleState = null;
             viewModel.dispose?.();
             viewModel = null;
         }
@@ -2098,6 +2120,11 @@ async function runInteractiveChat(options: any): Promise<void> {
         viewModel = consoleComponentRef.instance;
         await consoleComponentRef.render();
         consoleState = viewModel.sessionState || consoleComponentRef.injector.get(AgentConsoleSessionState);
+        unsubscribeConsoleState = typeof consoleState?.subscribe === 'function'
+            ? consoleState.subscribe(() => {
+                queueRenderScreen();
+            })
+            : null;
         consoleState.setCommandHints(getChatCommands());
         consoleRenderer = currentCtx.get(TuiRenderer) || currentCtx.get(ConsoleRenderer);
         const runnerRef = consoleComponentRef;
@@ -2160,6 +2187,14 @@ async function runInteractiveChat(options: any): Promise<void> {
         });
         viewModel.setCommandAction('/clear', async () => {
             applyScreenNotice('');
+            transcriptScrollOffset = 0;
+            await sessionStore?.delete?.(currentSessionId);
+            await refreshSessionState(currentSessionId);
+            consoleState?.setSessionsFocused(false);
+            consoleState?.setMessagesFocused(false);
+            consoleState?.closeMessageDetail?.();
+            lastRenderKey = '';
+            clearTerminalScreen(false);
             renderScreen();
         });
         viewModel.setCommandAction('/tools', async () => {
@@ -2260,10 +2295,20 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (process.stdin.isTTY) {
             setMouseTracking(false);
-            process.stdout.write('\x1b[2J\x1b[H\x1b[?1049l');
+            if (useAlternateScreen) {
+                process.stdout.write(`${buildClearScreenSequence()}\x1b[?1049l`);
+            } else {
+                const exitRow = Math.max(1, Math.min(
+                    process.stdout.rows || Math.max(lastPaintedLines.length, 1),
+                    Math.max(lastPaintedLines.length, 1)
+                ));
+                process.stdout.write(`${ANSI.reset}\x1b[${exitRow};1H\x1b[K\n`);
+            }
             process.stdin.setRawMode?.(false);
         }
         persistHistory();
+        unsubscribeConsoleState?.();
+        unsubscribeConsoleState = null;
         viewModel?.dispose?.();
         viewModel = null;
         await consoleComponentRef?.destroy?.();
@@ -2281,14 +2326,12 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (isClosed) {
             return;
         }
+        renderVersion += 1;
         const terminalColumns = process.stdout.columns || 100;
         const width = Math.max(72, terminalColumns);
         const height = Math.max(16, process.stdout.rows || 24);
         if (consoleState?.setStatus && viewModel) {
             consoleState.setStatus(viewModel.status);
-        }
-        if (screenNotice && viewModel) {
-            viewModel?.showNotice?.(screenNotice);
         }
         const statusPanel = panelRefs.status?.instance;
         const sessionsPanel = panelRefs.sessions?.instance;
@@ -2381,19 +2424,37 @@ async function runInteractiveChat(options: any): Promise<void> {
                     detailLines.forEach(line => pushLine(selectLines, line, ANSI.text));
                 }
             }
+            const contentLines = [
+                ...preInputLines,
+                ...inputLines
+            ];
             const rendered = [
-                ...compactRenderedLines(preInputLines, Math.max(0, height - inputLines.length - selectLines.length)),
-                ...inputLines,
+                ...compactRenderedLines(contentLines, Math.max(0, height - selectLines.length)),
                 ...compactRenderedLines(selectLines, Math.max(0, height))
             ];
             lastRenderedLines = rendered.slice();
-            const nextRender = `\x1b[2J\x1b[H${rendered.map((line: string) => fitAnsiLine(line, width)).join('\n')}`;
-            if (nextRender === lastRenderKey) {
+            const fittedLines = rendered.map((line: string) => fitAnsiLine(line, width));
+            const nextRenderKey = `${width}:${fittedLines.join('\n')}`;
+            if (nextRenderKey === lastRenderKey) {
                 placeTerminalCursor(rendered, width);
                 return;
             }
-            lastRenderKey = nextRender;
-            process.stdout.write(nextRender);
+            lastRenderKey = nextRenderKey;
+            const updateCommands: string[] = [];
+            const maxLines = Math.max(fittedLines.length, lastPaintedLines.length);
+            for (let index = 0; index < maxLines; index++) {
+                const nextLine = index < fittedLines.length ? fittedLines[index] : '';
+                const previousLine = index < lastPaintedLines.length ? lastPaintedLines[index] : undefined;
+                if (previousLine === nextLine && width === lastPaintedWidth) {
+                    continue;
+                }
+                updateCommands.push(`\x1b[${index + 1};1H${nextLine}\x1b[K`);
+            }
+            if (updateCommands.length) {
+                process.stdout.write(updateCommands.join(''));
+            }
+            lastPaintedLines = fittedLines.slice();
+            lastPaintedWidth = width;
             placeTerminalCursor(rendered, width);
             return;
         } else {
@@ -2532,6 +2593,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             ...renderShellBlock(promptText, width, ANSI.bg, ANSI.text),
             paint(inputPanel?.hintLabel || '', ANSI.dim)
         ];
+        pushBlock(inputLines);
         if (selectPanel?.menu) {
             pushBlank(selectLines);
             pushLine(selectLines, selectPanel.menuTitle, ANSI.text);
@@ -2561,7 +2623,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             ? selectedMessageBlockIndex
             : preInputBlocks.length - 1;
         const flatPreInputLines = preInputBlocks.flatMap(block => block);
-        const availablePreInputRows = Math.max(0, height - inputLines.length - selectLines.length);
+        const availablePreInputRows = Math.max(0, height - selectLines.length);
         const preInputWindow = transcriptScrollOffset > 0
             ? windowRenderedLinesFromBottom(
                 flatPreInputLines,
@@ -2584,27 +2646,36 @@ async function runInteractiveChat(options: any): Promise<void> {
             transcriptScrollOffset = maxTranscriptScrollOffset;
         }
         const preInputLines = preInputWindow.lines.slice();
-        const scrollbarOverlay = buildScrollbarOverlay(
-            preInputWindow.lines.length,
-            preInputWindow.startRow,
-            preInputWindow.totalRows,
-            terminalColumns,
-            1
-        );
+        const scrollbarOverlay = '';
         const rendered = [
             ...preInputLines,
-            ...inputLines,
             ...compactRenderedLines(selectLines, Math.max(0, height))
         ];
         lastRenderedLines = rendered.slice();
-        const nextRender = `\x1b[2J\x1b[H${rendered.map((line: string) => fitAnsiLine(line, width)).join('\n')}${scrollbarOverlay}`;
+        const fittedLines = rendered.map((line: string) => fitAnsiLine(line, width));
+        const nextRenderKey = `${width}:${fittedLines.join('\n')}${scrollbarOverlay}`;
+        syncMouseTracking();
 
-        if (nextRender === lastRenderKey) {
+        if (nextRenderKey === lastRenderKey) {
             placeTerminalCursor(rendered, width);
             return;
         }
-        lastRenderKey = nextRender;
-        process.stdout.write(nextRender);
+        lastRenderKey = nextRenderKey;
+        const updateCommands: string[] = [];
+        const maxLines = Math.max(fittedLines.length, lastPaintedLines.length);
+        for (let index = 0; index < maxLines; index++) {
+            const nextLine = index < fittedLines.length ? fittedLines[index] : '';
+            const previousLine = index < lastPaintedLines.length ? lastPaintedLines[index] : undefined;
+            if (previousLine === nextLine && width === lastPaintedWidth) {
+                continue;
+            }
+            updateCommands.push(`\x1b[${index + 1};1H${nextLine}\x1b[K`);
+        }
+        if (updateCommands.length) {
+            process.stdout.write(updateCommands.join('') + scrollbarOverlay);
+        }
+        lastPaintedLines = fittedLines.slice();
+        lastPaintedWidth = width;
         placeTerminalCursor(rendered, width);
     }
 
@@ -3309,9 +3380,11 @@ async function runInteractiveChat(options: any): Promise<void> {
     readline.emitKeypressEvents(process.stdin);
     process.stdin.resume();
     if (process.stdin.isTTY) {
-        process.stdout.write('\x1b[?1049h');
+        if (useAlternateScreen) {
+            process.stdout.write('\x1b[?1049h');
+        }
+        clearTerminalScreen(false);
         process.stdin.setRawMode?.(true);
-        setMouseTracking(true);
     }
     keypressHandler = (_str, key) => {
         if (isClosed) {
@@ -3661,9 +3734,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (consoleState?.setWorkingFrame) {
             consoleState.setWorkingFrame(SPINNER_FRAMES[spinnerIndex % SPINNER_FRAMES.length]);
-        }
-        if (!isSelecting) {
-            renderScreen();
         }
     }, 80);
 

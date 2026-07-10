@@ -259,7 +259,8 @@ tsdi-agent chat
 - 用户在首次配置或 `/model` 中选择的当前模型会直接写入 `settings.json` 的 `model` 节点
 - Chat 中输入 API key 时会自动掩码显示
 - `terminal`、`write_file`、`delete_file` 等敏感本地操作现在会在 Chat 内显式请求审批
-- 普通编辑态不会持续开启终端 mouse capture，保持纯键盘 TUI 交互并避免影响终端复制
+- Chat 现在默认运行在终端主屏幕，保留原生 scrollback 和终端滚动条；如需切回全屏 buffer，可设置 `TSDI_AGENT_ALT_SCREEN=1`
+- 自定义 transcript 滚动条保持关闭；mouse capture 只会在交互式选择菜单打开时临时启用
 
 ## 自适应模型配置建议
 

@@ -41,6 +41,7 @@ import {
     buildOsc52ClipboardSequence,
     pickRestoredSessionId,
     shouldPlaceTerminalCursor,
+    shouldUseAlternateScreen,
     shouldSuppressDuplicatedKeypress,
     compactRenderedLines,
     compactRenderedBlocks,
@@ -598,6 +599,27 @@ export class AgentCliTest {
         expect(parseTerminalControlKey('\r')).toBe('return');
         expect(parseTerminalControlKey('\u001b')).toBe('escape');
         expect(parseTerminalControlKey('x')).toBe(undefined);
+    }
+
+    @Test('uses primary screen by default and allows explicit alternate-screen opt-in')
+    usesAlternateScreenByDefault() {
+        const previous = process.env.TSDI_AGENT_ALT_SCREEN;
+        delete process.env.TSDI_AGENT_ALT_SCREEN;
+        try {
+            expect(shouldUseAlternateScreen()).toBe(false);
+            process.env.TSDI_AGENT_ALT_SCREEN = '0';
+            expect(shouldUseAlternateScreen()).toBe(false);
+            process.env.TSDI_AGENT_ALT_SCREEN = 'false';
+            expect(shouldUseAlternateScreen()).toBe(false);
+            process.env.TSDI_AGENT_ALT_SCREEN = '1';
+            expect(shouldUseAlternateScreen()).toBe(true);
+        } finally {
+            if (previous === undefined) {
+                delete process.env.TSDI_AGENT_ALT_SCREEN;
+            } else {
+                process.env.TSDI_AGENT_ALT_SCREEN = previous;
+            }
+        }
     }
 
     @Test('restores the most recent non-empty session when preferred session is empty')

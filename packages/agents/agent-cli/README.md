@@ -259,7 +259,8 @@ Behavior of this example:
 - the model chosen during first-run setup or `/model` is persisted into the `model` section of `settings.json`
 - API key prompts in chat are masked
 - sensitive local actions such as `terminal`, `write_file`, and `delete_file` now require explicit approval in chat
-- the chat loop stays keyboard-first and does not keep terminal mouse capture enabled during normal editing
+- the chat loop now stays on the terminal's primary screen by default so native scrollback and the terminal scrollbar remain available; set `TSDI_AGENT_ALT_SCREEN=1` to opt into the alternate-screen buffer
+- the custom transcript scrollbar stays disabled, and mouse capture is only enabled for interactive selection menus
 
 ## Adaptive model configuration guidance
 
