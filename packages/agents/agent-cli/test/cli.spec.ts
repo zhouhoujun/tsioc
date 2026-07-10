@@ -42,16 +42,21 @@ import {
     pickRestoredSessionId,
     shouldPlaceTerminalCursor,
     shouldUseAlternateScreen,
+    shouldRouteDraftNavigationKeys,
     shouldSuppressDuplicatedKeypress,
     compactRenderedLines,
     compactRenderedBlocks,
+    compactRenderedBlocksWindow,
     windowRenderedLinesFromBottom,
+    windowRenderedBlocksFromBottomWithContext,
     sortToolRuns,
     findInputPromptRow,
     getTerminalDisplayWidth,
     highlightCodeLine,
     fitTerminalAnsiLine,
     wrapPrefixedText,
+    buildBrandHeaderBlock,
+    buildEmptyStateLogoBlock,
     writeProviderProfile,
     writeSettingsModelProfile
 } from '../src';
@@ -622,6 +627,49 @@ export class AgentCliTest {
         }
     }
 
+    @Test('routes draft navigation keys to input editing only in editable prompt states')
+    routesDraftNavigationKeys() {
+        expect(shouldRouteDraftNavigationKeys({
+            hasBlockingSelectMenu: false,
+            hasSessionFocus: false,
+            hasMessageFocus: false,
+            hasMessageDetailFocus: false,
+            inputLocked: false,
+            modalPromptActive: false,
+            hasActiveTextPrompt: false
+        })).toBe(true);
+
+        expect(shouldRouteDraftNavigationKeys({
+            hasBlockingSelectMenu: false,
+            hasSessionFocus: false,
+            hasMessageFocus: false,
+            hasMessageDetailFocus: false,
+            inputLocked: true,
+            modalPromptActive: true,
+            hasActiveTextPrompt: true
+        })).toBe(true);
+
+        expect(shouldRouteDraftNavigationKeys({
+            hasBlockingSelectMenu: true,
+            hasSessionFocus: false,
+            hasMessageFocus: false,
+            hasMessageDetailFocus: false,
+            inputLocked: false,
+            modalPromptActive: false,
+            hasActiveTextPrompt: false
+        })).toBe(false);
+
+        expect(shouldRouteDraftNavigationKeys({
+            hasBlockingSelectMenu: false,
+            hasSessionFocus: true,
+            hasMessageFocus: false,
+            hasMessageDetailFocus: false,
+            inputLocked: false,
+            modalPromptActive: false,
+            hasActiveTextPrompt: false
+        })).toBe(false);
+    }
+
     @Test('restores the most recent non-empty session when preferred session is empty')
     restoresMostRecentNonEmptySession() {
         expect(pickRestoredSessionId('default', [
@@ -719,6 +767,40 @@ export class AgentCliTest {
         ]);
 
         expect(row).toBe(3);
+    }
+
+    @Test('builds left-aligned empty-state logo block')
+    buildsLeftAlignedEmptyStateLogoBlock() {
+        const lines = buildEmptyStateLogoBlock(60, 'TSDI Agent', 'gpt-5.4-flash', '/tmp/workspace', '6.0.31');
+        expect(lines).toHaveLength(4);
+        expect(lines[0]).toContain('╭');
+        expect(lines[1]).toContain('TSDI AGENT v6.0.31');
+        expect(lines[1]).toContain('│');
+        expect(lines[2]).toContain('gpt-5.4-flash');
+        expect(lines[2]).toContain('/tmp/workspace');
+        expect(lines[3]).toContain('╰');
+    }
+
+    @Test('builds content-adaptive brand header width')
+    buildsContentAdaptiveBrandHeaderWidth() {
+        const lines = buildBrandHeaderBlock(80, 'A', '', '', '1');
+        expect(lines[0]).toContain('╭');
+        expect(lines[0]).toContain('─');
+        expect(lines[1]).toContain('A v1');
+        expect(lines[2]).toContain('│');
+        expect(lines[3]).toContain('╰');
+    }
+
+    @Test('preserves empty-state logo block when fixed blocks are compacted')
+    preservesEmptyStateLogoBlockWhenFixedBlocksAreCompacted() {
+        const logo = buildEmptyStateLogoBlock(36, 'TSDI Agent', 'gpt-5.4-flash', '/tmp/workspace', '6.0.31');
+        const window = compactRenderedBlocksWindow([
+            ['note previous status'],
+            logo
+        ], 4, 1);
+
+        expect(window.lines.join('\n')).toContain('TSDI AGENT v6.0.31');
+        expect(window.lines.join('\n')).toContain('gpt-5.4-flash');
     }
 
     @Test('measures terminal display width for chinese text')
@@ -870,6 +952,18 @@ export class AgentCliTest {
             lines: ['l2', 'l3', 'l4'],
             startRow: 1,
             totalRows: 5
+        });
+    }
+
+    @Test('preserves previous transcript context when latest message is taller than the viewport')
+    preservesPreviousTranscriptContextWhenLatestMessageIsTallerThanTheViewport() {
+        expect(windowRenderedBlocksFromBottomWithContext([
+            ['old-1', 'old-2'],
+            ['new-1', 'new-2', 'new-3', 'new-4', 'new-5', 'new-6']
+        ], 5, 2)).toEqual({
+            lines: ['old-1', 'old-2', '…', 'new-5', 'new-6'],
+            startRow: 3,
+            totalRows: 8
         });
     }
 

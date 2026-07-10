@@ -28,6 +28,7 @@ import {
 } from './ui';
 
 const HISTORY_FILE = 'chat-history.json';
+const CLI_VERSION = '6.0.31';
 const SPINNER_FRAMES = Array.from({ length: 14 }, (_value, index) => String(Math.floor(index / 2)));
 const CANCEL_INPUTS = new Set(['q', 'cancel', '/cancel']);
 const EXIT_INPUTS = new Set(['/exit', '/quit']);
@@ -125,6 +126,40 @@ export function formatChatFooter(model: string, profile: string, workspace: stri
     const left = [modelLabel, profileLabel].filter(Boolean).join(' ');
     const parts = [left, workspaceLabel].filter(Boolean);
     return parts.join(' · ');
+}
+
+export function buildEmptyStateLogoBlock(width: number, appTitle = 'TSDI Agent', model = '', workspace = '', version = CLI_VERSION): string[] {
+    return buildBrandHeaderBlock(width, appTitle, model, workspace, version);
+}
+
+export function buildBrandHeaderBlock(width: number, appTitle = 'TSDI Agent', model = '', workspace = '', version = CLI_VERSION): string[] {
+    const titleLine = `${appTitle.toUpperCase()} v${version}`;
+    const metaLine = formatChatFooter(model, '', workspace);
+    const borderLeft = '│';
+    const borderRight = '│';
+    const borderTop = '╭';
+    const borderBottom = '╰';
+    const borderTopRight = '╮';
+    const borderBottomRight = '╯';
+    const borderHorizontal = '─';
+    const maxInnerWidth = Math.max(1, width - 2);
+    const innerWidth = Math.max(1, Math.min(
+        maxInnerWidth,
+        Math.max(8, getDisplayWidth(titleLine), getDisplayWidth(metaLine))
+    ));
+    const fitContent = (value: string, ...codes: string[]): string => {
+        const clipped = getDisplayWidth(value) > innerWidth
+            ? sliceByDisplayWidth(value, innerWidth)
+            : value;
+        const padding = ' '.repeat(Math.max(0, innerWidth - getDisplayWidth(clipped)));
+        return `${paint(borderLeft, ANSI.dim)}${paint(clipped, ...codes)}${padding}${paint(borderRight, ANSI.dim)}`;
+    };
+    return [
+        paint(`${borderTop}${borderHorizontal.repeat(innerWidth)}${borderTopRight}`, ANSI.dim),
+        fitContent(titleLine, ANSI.blueStrong),
+        fitContent(metaLine, ANSI.dim),
+        paint(`${borderBottom}${borderHorizontal.repeat(innerWidth)}${borderBottomRight}`, ANSI.dim)
+    ];
 }
 
 export function shouldUseAlternateScreen(): boolean {
@@ -611,6 +646,24 @@ export function shouldPlaceTerminalCursor(state: {
     return true;
 }
 
+export function shouldRouteDraftNavigationKeys(state: {
+    hasBlockingSelectMenu: boolean;
+    hasSessionFocus: boolean;
+    hasMessageFocus: boolean;
+    hasMessageDetailFocus: boolean;
+    inputLocked: boolean;
+    modalPromptActive: boolean;
+    hasActiveTextPrompt: boolean;
+}): boolean {
+    if (state.hasBlockingSelectMenu || state.hasSessionFocus || state.hasMessageFocus || state.hasMessageDetailFocus) {
+        return false;
+    }
+    if (state.hasActiveTextPrompt) {
+        return true;
+    }
+    return !state.inputLocked && !state.modalPromptActive;
+}
+
 export function shouldSuppressDuplicatedKeypress(state: {
     lastRawKey?: string;
     lastRawAt?: number;
@@ -690,6 +743,52 @@ export function windowRenderedLinesFromBottom(lines: string[], maxRows: number, 
     return {
         lines: lines.slice(startRow, startRow + maxRows),
         startRow,
+        totalRows
+    };
+}
+
+export function windowRenderedBlocksFromBottomWithContext(blocks: string[][], maxRows: number, contextRows = 0): CompactRenderedBlocksWindow {
+    if (maxRows <= 0) {
+        return {
+            lines: [],
+            startRow: 0,
+            totalRows: 0
+        };
+    }
+    const normalizedBlocks = blocks
+        .map(block => compactRenderedLines(block, block.length || 0))
+        .filter(block => block.length > 0);
+    if (!normalizedBlocks.length) {
+        return {
+            lines: [],
+            startRow: 0,
+            totalRows: 0
+        };
+    }
+    const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
+    const flatLines = normalizedBlocks.flat();
+    if (totalRows <= maxRows || normalizedBlocks.length === 1) {
+        return windowRenderedLinesFromBottom(flatLines, maxRows, 0);
+    }
+
+    const latestBlock = normalizedBlocks[normalizedBlocks.length - 1];
+    if (latestBlock.length < maxRows) {
+        return windowRenderedLinesFromBottom(flatLines, maxRows, 0);
+    }
+
+    const reservedContextRows = Math.max(0, Math.min(contextRows, maxRows - 1));
+    if (reservedContextRows <= 0) {
+        return windowRenderedLinesFromBottom(flatLines, maxRows, 0);
+    }
+
+    const previousLines = normalizedBlocks.slice(0, -1).flat();
+    const contextWindow = windowRenderedLinesFromBottom(previousLines, reservedContextRows, 0);
+    const actualContextRows = contextWindow.lines.length;
+    const latestRows = Math.max(1, maxRows - actualContextRows);
+    const latestWindow = trimRenderedBlockEdge(latestBlock, latestRows, true);
+    return {
+        lines: [...contextWindow.lines, ...latestWindow].slice(-maxRows),
+        startRow: Math.max(0, totalRows - maxRows),
         totalRows
     };
 }
@@ -971,7 +1070,7 @@ export function parseSlashCommandLine(input: string): ParsedSlashCommandLine {
 function createAgentCli(): Command {
     const program = new Command();
     program.name('tsdi-agent');
-    program.version('6.0.31');
+    program.version(CLI_VERSION);
 
     program
         .command('run [prompt]')
@@ -1090,6 +1189,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let currentDraft = '';
     let draftCursor = 0;
     let isClosed = false;
+    let exitFrameMode = false;
     let modalPromptActive = false;
     let selectMenu: SelectMenuState | null = null;
     let suggestionState: SuggestionState = { items: [], selectedIndex: -1 };
@@ -1193,6 +1293,16 @@ async function runInteractiveChat(options: any): Promise<void> {
         const activeMenu = getActiveSelectMenu();
         return !!activeMenu && !isSuggestionMenu(activeMenu);
     };
+
+    const shouldRouteDraftNavigation = (): boolean => shouldRouteDraftNavigationKeys({
+        hasBlockingSelectMenu: hasBlockingSelectMenu(),
+        hasSessionFocus: hasSessionFocus(),
+        hasMessageFocus: hasMessageFocus(),
+        hasMessageDetailFocus: hasMessageDetailFocus(),
+        inputLocked,
+        modalPromptActive,
+        hasActiveTextPrompt: !!activeTextPrompt
+    });
 
     const safePrompt = (_preserveCursor = false) => {
         if (isClosed) {
@@ -2264,7 +2374,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         currentProfile = profile;
     };
 
-    const cleanupAndExit = async () => {
+    const cleanupAndExit = async (farewell = '', preserveScreen = false) => {
         if (isCleaningUp) {
             return;
         }
@@ -2298,14 +2408,22 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (useAlternateScreen) {
                 process.stdout.write(`${buildClearScreenSequence()}\x1b[?1049l`);
             } else {
-                const exitRow = Math.max(1, Math.min(
-                    process.stdout.rows || Math.max(lastPaintedLines.length, 1),
-                    Math.max(lastPaintedLines.length, 1)
-                ));
-                process.stdout.write(`${ANSI.reset}\x1b[${exitRow};1H\x1b[K\n`);
+                if (preserveScreen) {
+                    const exitRow = Math.max(1, lastPaintedLines.length + 1);
+                    process.stdout.write(`${ANSI.reset}\x1b[${exitRow};1H`);
+                } else {
+                    const clearCommands: string[] = [];
+                    const clearRows = Math.max(1, lastPaintedLines.length);
+                    for (let index = 0; index < clearRows; index++) {
+                        clearCommands.push(`\x1b[${index + 1};1H\x1b[2K`);
+                    }
+                    process.stdout.write(`${ANSI.reset}${clearCommands.join('')}\x1b[1;1H`);
+                }
             }
             process.stdin.setRawMode?.(false);
         }
+        lastPaintedLines = [];
+        lastPaintedWidth = 0;
         persistHistory();
         unsubscribeConsoleState?.();
         unsubscribeConsoleState = null;
@@ -2318,7 +2436,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             await currentCtx.close();
             currentCtx = null;
         }
-        process.stdout.write('\nClosing session...\n');
+        process.stdout.write(`${farewell || 'Closing session...'}\n`);
         process.exit(0);
     };
 
@@ -2328,24 +2446,29 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         renderVersion += 1;
         const terminalColumns = process.stdout.columns || 100;
-        const width = Math.max(72, terminalColumns);
+        const width = Math.max(24, terminalColumns);
         const height = Math.max(16, process.stdout.rows || 24);
+        const showingExitFrame = exitFrameMode;
+        const brandModel = consoleState?.model || currentProfile?.model || '';
+        const brandWorkspace = consoleState?.workspace || resolved.workspace;
+        const brandLines = buildBrandHeaderBlock(width, 'TSDI Agent', brandModel, brandWorkspace);
         if (consoleState?.setStatus && viewModel) {
             consoleState.setStatus(viewModel.status);
         }
         const statusPanel = panelRefs.status?.instance;
         const sessionsPanel = panelRefs.sessions?.instance;
-        const messagesPanel = panelRefs.messages?.instance;
         const detailPanel = panelRefs.detail?.instance;
-        const activityPanel = panelRefs.activity?.instance;
         const workingPanel = panelRefs.working?.instance;
-        const toolRunsPanel = panelRefs.toolRuns?.instance;
         const inputPanel = panelRefs.input?.instance;
         const selectPanel = panelRefs.select?.instance;
-        const preInputBlocks: string[][] = [];
+        const topFixedBlocks: string[][] = [];
+        const bottomFixedBlocks: string[][] = [];
+        const transcriptBlocks: string[][] = [];
         const selectLines: string[] = [];
         let inputLines: string[] = [];
         let selectedMessageBlockIndex = -1;
+        let messagesFocused = false;
+        const browsingTranscriptHistory = transcriptScrollOffset > 0;
         const toPaintedLine = (line?: string, ...codes: string[]): string | undefined => {
             if (!line) {
                 return undefined;
@@ -2363,13 +2486,13 @@ async function runInteractiveChat(options: any): Promise<void> {
                 target.push('');
             }
         };
-        const pushBlock = (lines: Array<string | undefined>) => {
+        const pushBlock = (target: string[][], lines: Array<string | undefined>) => {
             const normalized = compactRenderedLines(
                 lines.filter((line): line is string => !!line),
                 Number.MAX_SAFE_INTEGER
             );
             if (normalized.length) {
-                preInputBlocks.push(normalized);
+                target.push(normalized);
             }
         };
         if (!consoleState || !viewModel) {
@@ -2424,12 +2547,10 @@ async function runInteractiveChat(options: any): Promise<void> {
                     detailLines.forEach(line => pushLine(selectLines, line, ANSI.text));
                 }
             }
-            const contentLines = [
-                ...preInputLines,
-                ...inputLines
-            ];
             const rendered = [
-                ...compactRenderedLines(contentLines, Math.max(0, height - selectLines.length)),
+                ...brandLines,
+                ...compactRenderedLines(preInputLines, Math.max(0, height - inputLines.length - selectLines.length)),
+                ...inputLines,
                 ...compactRenderedLines(selectLines, Math.max(0, height))
             ];
             lastRenderedLines = rendered.slice();
@@ -2458,14 +2579,27 @@ async function runInteractiveChat(options: any): Promise<void> {
             placeTerminalCursor(rendered, width);
             return;
         } else {
-            if (statusPanel?.shouldShow) {
-                pushBlock(Array.from({ length: 6 }, (_, index) => toPaintedLine(
-                    statusPanel?.statusLineAt?.(index),
-                    ANSI.dim
-                )));
-            }
-        if (sessionsPanel?.shouldShow) {
-            pushBlock([
+        const sessionsFocused = !!consoleState?.sessionsFocused;
+        messagesFocused = !!consoleState?.messagesFocused;
+        const messageDetailFocused = !!consoleState?.messageDetailOpen;
+        const visibleMessages = showingExitFrame
+            ? []
+            : (Array.isArray(consoleState?.messages) ? consoleState.messages : []);
+        const showStatusPanel = !showingExitFrame
+            && !browsingTranscriptHistory
+            && !sessionsFocused
+            && !messagesFocused
+            && !messageDetailFocused
+            && visibleMessages.length === 0
+            && !!statusPanel?.shouldShow;
+        if (showStatusPanel) {
+            pushBlock(topFixedBlocks, Array.from({ length: 6 }, (_, index) => toPaintedLine(
+                statusPanel?.statusLineAt?.(index),
+                ANSI.dim
+            )));
+        }
+        if (!showingExitFrame && sessionsFocused && sessionsPanel?.shouldShow) {
+            pushBlock(topFixedBlocks, [
                 toPaintedLine(sessionsPanel.sessionsSummaryLabel, ANSI.amber),
                 toPaintedLine(sessionsPanel.sessionsHintLabel, ANSI.dim),
                 ...Array.from({ length: 6 }, (_, index) => {
@@ -2480,12 +2614,6 @@ async function runInteractiveChat(options: any): Promise<void> {
                 })
             ]);
         }
-        pushBlock([
-            toPaintedLine(messagesPanel?.emptyLabel, ANSI.dim),
-            toPaintedLine(messagesPanel?.messagesHintLabel, ANSI.dim)
-        ]);
-        const messagesFocused = !!consoleState?.messagesFocused;
-        const visibleMessages = Array.isArray(consoleState?.messages) ? consoleState.messages : [];
         const resolveKind = (role?: string): 'you' | 'agent' | 'other' => {
             const normalized = String(role || '').toLowerCase();
             if (normalized === 'user') {
@@ -2496,7 +2624,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return 'other';
         };
-        const messageBlockStartIndex = preInputBlocks.length;
         const transcriptContentWidth = Math.max(12, width - 6);
         visibleMessages.forEach((message: any, messageIndex: number) => {
             const kind = resolveKind(message?.role);
@@ -2504,7 +2631,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             const content = String(message?.content || '');
             if (kind === 'you') {
                 const wrapped = wrapPrefixedText(content, Math.max(8, transcriptContentWidth), '› ', '  ');
-                preInputBlocks.push(renderPaddedMessageBlock(
+                transcriptBlocks.push(renderPaddedMessageBlock(
                     wrapped,
                     width,
                     [ANSI.bg],
@@ -2512,12 +2639,12 @@ async function runInteractiveChat(options: any): Promise<void> {
                     selected ? ANSI.blueStrong : ANSI.text
                 ));
                 if (selected) {
-                    selectedMessageBlockIndex = messageBlockStartIndex + messageIndex;
+                    selectedMessageBlockIndex = messageIndex;
                 }
                 return;
             }
             const renderedLines = renderAssistantMessageLines(content, transcriptContentWidth);
-            preInputBlocks.push(renderPaddedMessageBlock(renderedLines.map(renderedLine => {
+            transcriptBlocks.push(renderPaddedMessageBlock(renderedLines.map(renderedLine => {
                 if (!renderedLine) {
                     return '';
                 }
@@ -2530,11 +2657,11 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return paint(renderedLine, kind === 'agent' ? ANSI.blue : ANSI.text);
             }), width, selected ? [ANSI.bgSelected] : [ANSI.text]));
             if (selected) {
-                selectedMessageBlockIndex = messageBlockStartIndex + messageIndex;
+                selectedMessageBlockIndex = messageIndex;
             }
         });
-        if (detailPanel?.shouldShow) {
-            pushBlock([
+        if (!showingExitFrame && messageDetailFocused && detailPanel?.shouldShow) {
+            pushBlock(topFixedBlocks, [
                 toPaintedLine(detailPanel.detailSummaryLabel, ANSI.blue),
                 toPaintedLine(detailPanel.detailHintLabel, ANSI.dim),
                 ...Array.from({ length: 6 }, (_, index) => {
@@ -2546,16 +2673,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 })
             ]);
         }
-        if (activityPanel?.shouldShow) {
-            pushBlock(Array.from({ length: 3 }, (_, index) => {
-                const kind = activityPanel.activityKindAt?.(index);
-                const message = activityPanel.activityMessageAt?.(index);
-                return kind || message
-                    ? paint(`${kind || ''}${message || ''}`, ANSI.text)
-                    : undefined;
-            }));
-        }
-        if (workingPanel?.shouldShow) {
+        if (!showingExitFrame && !browsingTranscriptHistory && workingPanel?.shouldShow) {
             const animatedLabel = workingPanel.animatedLabel || '';
             const activeIndex = Number.isFinite(workingPanel.activeAnimatedCharIndex)
                 ? workingPanel.activeAnimatedCharIndex
@@ -2578,23 +2696,21 @@ async function runInteractiveChat(options: any): Promise<void> {
                 .join('');
             const suffix = workingPanel.workingSuffixLabel || '';
             const detail = workingPanel.workingDetail || '';
-            pushBlock([`${paintedAnimatedLabel}${paint(suffix, ANSI.dim)}${paint(detail, ANSI.text)}`]);
+            pushBlock(bottomFixedBlocks, [`${paintedAnimatedLabel}${paint(suffix, ANSI.dim)}${paint(detail, ANSI.text)}`]);
         }
-        if (toolRunsPanel?.toolRunsSummaryLabel) {
-            pushBlock([toPaintedLine(toolRunsPanel.toolRunsSummaryLabel, ANSI.blue)]);
+        if (!showingExitFrame && activeTextPrompt?.question) {
+            pushBlock(bottomFixedBlocks, [toPaintedLine(activeTextPrompt.question, ANSI.dim)]);
         }
-        if (activeTextPrompt?.question) {
-            pushBlock([toPaintedLine(activeTextPrompt.question, ANSI.dim)]);
+        if (!showingExitFrame) {
+            const promptValue = consoleState?.input || '';
+            const placeholder = inputPanel?.placeholderLabel || '';
+            const promptText = `> ${promptValue || placeholder}`;
+            inputLines = [
+                ...renderShellBlock(promptText, width, ANSI.bg, ANSI.text),
+                paint(inputPanel?.hintLabel || '', ANSI.dim)
+            ];
         }
-        const promptValue = consoleState?.input || '';
-        const placeholder = inputPanel?.placeholderLabel || '';
-        const promptText = `> ${promptValue || placeholder}`;
-        inputLines = [
-            ...renderShellBlock(promptText, width, ANSI.bg, ANSI.text),
-            paint(inputPanel?.hintLabel || '', ANSI.dim)
-        ];
-        pushBlock(inputLines);
-        if (selectPanel?.menu) {
+        if (!showingExitFrame && selectPanel?.menu) {
             pushBlank(selectLines);
             pushLine(selectLines, selectPanel.menuTitle, ANSI.text);
             pushLine(selectLines, selectPanel.menuMeta, ANSI.dim);
@@ -2619,36 +2735,68 @@ async function runInteractiveChat(options: any): Promise<void> {
             pushLine(selectLines, selectPanel.menuHint, ANSI.dim);
         }
         }
+        const topReservedRows = brandLines.length + inputLines.length + selectLines.length;
+        const topFixedAnchorIndex = topFixedBlocks.length - 1;
+        const compactTopFixedLines = compactRenderedBlocksWindow(
+            topFixedBlocks,
+            Math.max(0, height - topReservedRows),
+            topFixedAnchorIndex
+        );
+        const provisionalBottomFixedLines = compactRenderedLines(
+            bottomFixedBlocks.flatMap(block => block),
+            Math.max(0, height - topReservedRows - compactTopFixedLines.lines.length)
+        );
+        const reservedRows = brandLines.length + compactTopFixedLines.lines.length + provisionalBottomFixedLines.length + inputLines.length + selectLines.length;
+        const availableTranscriptRows = Math.max(0, height - reservedRows);
         const selectedAnchorIndex = consoleState?.messagesFocused && selectedMessageBlockIndex >= 0
             ? selectedMessageBlockIndex
-            : preInputBlocks.length - 1;
-        const flatPreInputLines = preInputBlocks.flatMap(block => block);
-        const availablePreInputRows = Math.max(0, height - selectLines.length);
-        const preInputWindow = transcriptScrollOffset > 0
-            ? windowRenderedLinesFromBottom(
-                flatPreInputLines,
-                availablePreInputRows,
-                transcriptScrollOffset
-            )
+            : transcriptBlocks.length - 1;
+        const flatTranscriptLines = transcriptBlocks.flatMap(block => block);
+        const shouldUseTranscriptLineWindow = transcriptScrollOffset > 0 || !messagesFocused;
+        const transcriptContextRows = transcriptScrollOffset > 0
+            ? 0
+            : Math.min(8, Math.max(3, Math.floor(availableTranscriptRows / 4)));
+        const transcriptWindow = shouldUseTranscriptLineWindow
+            ? (transcriptScrollOffset > 0
+                ? windowRenderedLinesFromBottom(
+                    flatTranscriptLines,
+                    availableTranscriptRows,
+                    transcriptScrollOffset
+                )
+                : windowRenderedBlocksFromBottomWithContext(
+                    transcriptBlocks,
+                    availableTranscriptRows,
+                    transcriptContextRows
+                ))
             : compactRenderedBlocksWindow(
-                preInputBlocks,
-                availablePreInputRows,
+                transcriptBlocks,
+                availableTranscriptRows,
                 selectedAnchorIndex
             );
-        const maxTranscriptScrollOffset = Math.max(0, preInputWindow.totalRows - preInputWindow.lines.length);
-        transcriptVisibleRows = preInputWindow.lines.length;
+        const maxTranscriptScrollOffset = Math.max(0, transcriptWindow.totalRows - transcriptWindow.lines.length);
+        transcriptVisibleRows = transcriptWindow.lines.length;
         transcriptMaxScrollOffset = maxTranscriptScrollOffset;
         transcriptScrollbarColumn = terminalColumns;
-        transcriptScrollbarTopRow = 1;
-        transcriptScrollbarVisibleRows = preInputWindow.lines.length;
-        transcriptScrollbarTotalRows = preInputWindow.totalRows;
+        transcriptScrollbarTopRow = brandLines.length + compactTopFixedLines.lines.length + 1;
+        transcriptScrollbarVisibleRows = transcriptWindow.lines.length;
+        transcriptScrollbarTotalRows = transcriptWindow.totalRows;
         if (transcriptScrollOffset > maxTranscriptScrollOffset) {
             transcriptScrollOffset = maxTranscriptScrollOffset;
         }
-        const preInputLines = preInputWindow.lines.slice();
+        const compactBottomFixedLines = compactRenderedLines(
+            bottomFixedBlocks.flatMap(block => block),
+            Math.max(0, height - brandLines.length - compactTopFixedLines.lines.length - transcriptWindow.lines.length - inputLines.length - selectLines.length)
+        );
+        const preInputLines = [
+            ...brandLines,
+            ...compactTopFixedLines.lines,
+            ...transcriptWindow.lines,
+            ...compactBottomFixedLines
+        ];
         const scrollbarOverlay = '';
         const rendered = [
             ...preInputLines,
+            ...inputLines,
             ...compactRenderedLines(selectLines, Math.max(0, height))
         ];
         lastRenderedLines = rendered.slice();
@@ -2734,9 +2882,18 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
 
         if (command === '/quit' || command === '/exit') {
+            suggestionState = { items: [], selectedIndex: -1 };
+            selectMenu = null;
+            consoleState?.closeSelectMenu?.();
+            exitFrameMode = true;
+            transcriptScrollOffset = 0;
+            currentDraft = '';
+            draftCursor = 0;
+            consoleState?.setInput?.('');
+            applyScreenNotice('');
+            renderScreen();
             isClosed = true;
-            process.stdout.write('\nGoodbye.\n');
-            await cleanupAndExit();
+            await cleanupAndExit('Goodbye.', true);
             return;
         }
 
@@ -3328,26 +3485,12 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
             lastRawControlKey = controlKey;
             lastRawControlAt = Date.now();
-            if (controlKey === 'home' || controlKey === 'end') {
-                jumpTranscriptScroll(controlKey === 'home' ? 'start' : 'end');
-            } else {
+            if (shouldRouteDraftNavigation()) {
                 applyChunkToDraft(chunk);
-                if (!inputLocked) {
-                    renderScreen();
-                }
             }
             return;
         }
-        if (controlKey === 'up' && canScrollTranscript()) {
-            lastRawControlKey = 'up';
-            lastRawControlAt = Date.now();
-            adjustTranscriptScroll(1);
-            return;
-        }
-        if (controlKey === 'down' && transcriptScrollOffset > 0) {
-            lastRawControlKey = 'down';
-            lastRawControlAt = Date.now();
-            adjustTranscriptScroll(-1);
+        if ((controlKey === 'up' || controlKey === 'down') && shouldRouteDraftNavigation()) {
             return;
         }
         if (controlKey === 'pageup') {
@@ -3582,14 +3725,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (key?.name === 'pagedown') {
             adjustTranscriptScroll(-8);
-            return;
-        }
-        if (key?.name === 'home') {
-            jumpTranscriptScroll('start');
-            return;
-        }
-        if (key?.name === 'end') {
-            jumpTranscriptScroll('end');
             return;
         }
         const activeMenu = getActiveSelectMenu();
