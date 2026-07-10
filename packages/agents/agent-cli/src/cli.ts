@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawnSync } from 'child_process';
 import { getDisplayWidth, sliceByDisplayWidth } from '@tsdi/components/console';
 import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
 import { AgentCliProviderProfile, ensureAgentWorkspaceConfig, resolveCliConfig, resolveCliModelConfig, resolveProviderApiKeyEnv, resolveProviderBaseUrl, writeSettingsModelProfile } from './config';
@@ -27,7 +28,7 @@ import {
 } from './ui';
 
 const HISTORY_FILE = 'chat-history.json';
-const SPINNER_FRAMES = ['◦', '◌', '◎', '◉'];
+const SPINNER_FRAMES = Array.from({ length: 14 }, (_value, index) => String(Math.floor(index / 2)));
 const CANCEL_INPUTS = new Set(['q', 'cancel', '/cancel']);
 const EXIT_INPUTS = new Set(['/exit', '/quit']);
 const MODEL_PROVIDER_CHOICES = [
@@ -508,12 +509,15 @@ function paintBlock(value: string, width: number, ...codes: string[]): string {
 }
 
 function padDisplayText(value: string, width: number): string {
-    const plain = String(value || '');
+    const rendered = String(value || '');
+    const plain = stripAnsi(rendered);
     const plainWidth = getDisplayWidth(plain);
     if (plainWidth >= width) {
-        return sliceByDisplayWidth(plain, width);
+        return /\x1b\[[0-9;]*m/.test(rendered)
+            ? fitAnsiLine(rendered, width)
+            : sliceByDisplayWidth(rendered, width);
     }
-    return `${plain}${' '.repeat(width - plainWidth)}`;
+    return `${rendered}${' '.repeat(width - plainWidth)}`;
 }
 
 type TerminalControlKey =
@@ -840,6 +844,15 @@ function renderShellMessageLines(contentLines: string[], width: number, ...codes
     const shellWidth = Math.max(24, width);
     const shellInnerWidth = Math.max(8, shellWidth - 6);
     return contentLines.map(line => paint(`   ${padDisplayText(line, shellInnerWidth)}   `, ...codes));
+}
+
+function renderPaddedMessageBlock(contentLines: string[], width: number, shellCodes: string[], ...lineCodes: string[]): string[] {
+    const shellWidth = Math.max(24, width);
+    return [
+        paint(' '.repeat(shellWidth), ...shellCodes),
+        ...renderShellMessageLines(contentLines, width, ...lineCodes),
+        paint(' '.repeat(shellWidth), ...shellCodes)
+    ];
 }
 
 function renderShellBlock(content: string, width: number, ...codes: string[]): string[] {
@@ -1820,10 +1833,40 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const copyTextToClipboard = (text: string): boolean => {
-        if (!process.stdout.isTTY || !text) {
+        const value = String(text || '');
+        if (!value) {
             return false;
         }
-        process.stdout.write(buildOsc52ClipboardSequence(text));
+        const clipboardCommands: Array<{ command: string; args?: string[] }> = process.platform === 'darwin'
+            ? [{ command: 'pbcopy' }]
+            : process.platform === 'win32'
+                ? [
+                    { command: 'clip.exe' },
+                    { command: 'powershell.exe', args: ['-NoProfile', '-Command', 'Set-Clipboard'] }
+                ]
+                : process.env.WAYLAND_DISPLAY
+                    ? [{ command: 'wl-copy' }, { command: 'xclip', args: ['-selection', 'clipboard'] }, { command: 'xsel', args: ['--clipboard', '--input'] }]
+                    : [{ command: 'xclip', args: ['-selection', 'clipboard'] }, { command: 'xsel', args: ['--clipboard', '--input'] }, { command: 'wl-copy' }];
+
+        for (const item of clipboardCommands) {
+            try {
+                const result = spawnSync(item.command, item.args || [], {
+                    input: value,
+                    stdio: ['pipe', 'ignore', 'ignore'],
+                    timeout: 1500
+                });
+                if (!result.error && result.status === 0) {
+                    return true;
+                }
+            } catch {
+                // Try the next clipboard backend.
+            }
+        }
+
+        if (!process.stdout.isTTY) {
+            return false;
+        }
+        process.stdout.write(buildOsc52ClipboardSequence(value));
         return true;
     };
 
@@ -2393,16 +2436,17 @@ async function runInteractiveChat(options: any): Promise<void> {
             return 'other';
         };
         const messageBlockStartIndex = preInputBlocks.length;
-        const transcriptContentWidth = Math.max(12, width - 1);
+        const transcriptContentWidth = Math.max(12, width - 6);
         visibleMessages.forEach((message: any, messageIndex: number) => {
             const kind = resolveKind(message?.role);
             const selected = !!message?.id && message.id === consoleState?.selectedMessageId && messagesFocused;
             const content = String(message?.content || '');
             if (kind === 'you') {
-                const wrapped = wrapPrefixedText(content, Math.max(8, transcriptContentWidth - 6), '› ', '  ');
-                preInputBlocks.push(renderShellMessageLines(
+                const wrapped = wrapPrefixedText(content, Math.max(8, transcriptContentWidth), '› ', '  ');
+                preInputBlocks.push(renderPaddedMessageBlock(
                     wrapped,
                     width,
+                    [ANSI.bg],
                     ANSI.bg,
                     selected ? ANSI.blueStrong : ANSI.text
                 ));
@@ -2412,18 +2456,18 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
             const renderedLines = renderAssistantMessageLines(content, transcriptContentWidth);
-            preInputBlocks.push(renderedLines.map(renderedLine => {
-                if (selected) {
-                    return paintActive(renderedLine || ' ', ANSI.bgSelected, ANSI.blueStrong);
-                }
+            preInputBlocks.push(renderPaddedMessageBlock(renderedLines.map(renderedLine => {
                 if (!renderedLine) {
                     return '';
+                }
+                if (selected) {
+                    return paint(stripAnsi(renderedLine), ANSI.blueStrong);
                 }
                 if (/\x1b\[[0-9;]*m/.test(renderedLine)) {
                     return renderedLine;
                 }
                 return paint(renderedLine, kind === 'agent' ? ANSI.blue : ANSI.text);
-            }));
+            }), width, selected ? [ANSI.bgSelected] : [ANSI.text]));
             if (selected) {
                 selectedMessageBlockIndex = messageBlockStartIndex + messageIndex;
             }
@@ -2451,9 +2495,29 @@ async function runInteractiveChat(options: any): Promise<void> {
             }));
         }
         if (workingPanel?.shouldShow) {
-            const label = workingPanel.workingLabel || '';
+            const animatedLabel = workingPanel.animatedLabel || '';
+            const activeIndex = Number.isFinite(workingPanel.activeAnimatedCharIndex)
+                ? workingPanel.activeAnimatedCharIndex
+                : -1;
+            const glowRadius = Number.isFinite(workingPanel.animatedGlowRadius)
+                ? workingPanel.animatedGlowRadius
+                : 0;
+            const paintedAnimatedLabel = animatedLabel
+                .split('')
+                .map((char: string, index: number) => {
+                    const distance = Math.abs(index - activeIndex);
+                    if (distance === 0) {
+                        return paint(char, ANSI.blueStrong);
+                    }
+                    if (distance <= glowRadius) {
+                        return paint(char, ANSI.blue);
+                    }
+                    return paint(char, ANSI.dim);
+                })
+                .join('');
+            const suffix = workingPanel.workingSuffixLabel || '';
             const detail = workingPanel.workingDetail || '';
-            pushBlock([`${paint(label, ANSI.blueStrong)}${paint(detail, ANSI.text)}`]);
+            pushBlock([`${paintedAnimatedLabel}${paint(suffix, ANSI.dim)}${paint(detail, ANSI.text)}`]);
         }
         if (toolRunsPanel?.toolRunsSummaryLabel) {
             pushBlock([toPaintedLine(toolRunsPanel.toolRunsSummaryLabel, ANSI.blue)]);

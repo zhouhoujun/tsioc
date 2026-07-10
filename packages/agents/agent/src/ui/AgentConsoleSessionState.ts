@@ -91,7 +91,7 @@ export class AgentConsoleSessionState {
     messageDetailScroll = 0;
     messageDetailColumnScroll = 0;
     turnStartedAt = 0;
-    workingFrame = '◦';
+    workingFrame = '0';
     status = 'idle';
     provider = '';
     model = '';
@@ -367,14 +367,14 @@ export class AgentConsoleSessionState {
         }
         if (nextStatus === 'idle' || nextStatus === 'error') {
             this.turnStartedAt = 0;
-            this.workingFrame = '◦';
+            this.workingFrame = '0';
         }
         this.status = nextStatus;
         this.notify();
     }
 
     setWorkingFrame(frame: string): void {
-        const next = frame || '◦';
+        const next = frame || '0';
         if (this.workingFrame === next) {
             return;
         }

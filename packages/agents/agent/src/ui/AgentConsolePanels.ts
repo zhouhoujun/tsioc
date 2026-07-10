@@ -276,7 +276,14 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     template: `
     <section class="console-panel console-working-panel" v-style="shellStyle">
         <p class="working-line">
-            <span v-style="accentStyle">{{workingLabel}}</span>
+            <span v-style="animatedCharStyleAt(0)">{{animatedCharAt(0)}}</span>
+            <span v-style="animatedCharStyleAt(1)">{{animatedCharAt(1)}}</span>
+            <span v-style="animatedCharStyleAt(2)">{{animatedCharAt(2)}}</span>
+            <span v-style="animatedCharStyleAt(3)">{{animatedCharAt(3)}}</span>
+            <span v-style="animatedCharStyleAt(4)">{{animatedCharAt(4)}}</span>
+            <span v-style="animatedCharStyleAt(5)">{{animatedCharAt(5)}}</span>
+            <span v-style="animatedCharStyleAt(6)">{{animatedCharAt(6)}}</span>
+            <span v-style="labelStyle">{{workingSuffixLabel}}</span>
             <span v-style="lineStyle">{{workingDetail}}</span>
         </p>
     </section>
@@ -307,6 +314,10 @@ export class AgentConsoleWorkingPanelComponent {
 
     get lineStyle() {
         return styleTextToObject(this.activeTheme.workingValue);
+    }
+
+    get labelStyle() {
+        return styleTextToObject(this.activeTheme.workingLabel);
     }
 
     get accentStyle() {
@@ -349,20 +360,6 @@ export class AgentConsoleWorkingPanelComponent {
         return this.state.status === 'running' || this.state.status === 'reasoning';
     }
 
-    get workingSummary(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return `${this.workingLabel}${this.workingDetail}`;
-    }
-
-    get workingLabel(): string {
-        if (!this.shouldShow) {
-            return '';
-        }
-        return `${this.state.workingFrame} ${this.workingStateLabel}${this.workingPulseLabel}`;
-    }
-
     get workingDetail(): string {
         if (!this.shouldShow) {
             return '';
@@ -375,28 +372,47 @@ export class AgentConsoleWorkingPanelComponent {
         return ` ${parts.join(' · ')}`;
     }
 
-    get workingStateLabel(): string {
+    get workingLabel(): string {
+        return `${this.animatedLabel}${this.workingSuffixLabel}`;
+    }
+
+    get animatedLabel(): string {
         const running = this.state.runningTools;
         if (!running.length) {
             return 'Working';
         }
-        if (running.length === 1) {
-            return `Waiting for ${this.describeTool(running[0])}`;
-        }
-        return 'Waiting for tools';
+        return 'Waiting';
     }
 
-    get workingPulseLabel(): string {
-        switch (this.state.workingFrame) {
-            case '◌':
-                return '.';
-            case '◎':
-                return '..';
-            case '◉':
-                return '...';
-            default:
-                return '';
+    get workingSuffixLabel(): string {
+        const running = this.state.runningTools;
+        if (!running.length) {
+            return '';
         }
+        if (running.length === 1) {
+            return ` for ${this.describeTool(running[0])}`;
+        }
+        return ' for tools';
+    }
+
+    get activeAnimatedCharIndex(): number {
+        const frame = Number.parseInt(String(this.state.workingFrame || '0'), 10);
+        const safeFrame = Number.isFinite(frame) ? Math.max(0, frame) : 0;
+        return safeFrame % Math.max(this.animatedLabel.length, 1);
+    }
+
+    get animatedGlowRadius(): number {
+        return 1;
+    }
+
+    animatedCharAt(index: number): string {
+        return this.animatedLabel[index] || '';
+    }
+
+    animatedCharStyleAt(index: number): Record<string, string> {
+        return Math.abs(index - this.activeAnimatedCharIndex) <= this.animatedGlowRadius
+            ? this.accentStyle
+            : this.labelStyle;
     }
 
     get elapsedLabel(): string {
@@ -694,13 +710,13 @@ export class AgentConsoleToolRunsPanelComponent {
     <section class="console-panel console-messages-panel" v-style="shellStyle">
         <p class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</p>
         <p class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</p>
-        <p class="message-item" v-style="messageItemStyleAt(0)" v-show="hasMessageAt(0)"><span v-style="messageRoleStyleAt(0)">{{messageRoleAt(0)}}</span><span v-style="messageContentStyleAt(0)">{{messageContentAt(0)}}</span></p>
-        <p class="message-item" v-style="messageItemStyleAt(1)" v-show="hasMessageAt(1)"><span v-style="messageRoleStyleAt(1)">{{messageRoleAt(1)}}</span><span v-style="messageContentStyleAt(1)">{{messageContentAt(1)}}</span></p>
-        <p class="message-item" v-style="messageItemStyleAt(2)" v-show="hasMessageAt(2)"><span v-style="messageRoleStyleAt(2)">{{messageRoleAt(2)}}</span><span v-style="messageContentStyleAt(2)">{{messageContentAt(2)}}</span></p>
-        <p class="message-item" v-style="messageItemStyleAt(3)" v-show="hasMessageAt(3)"><span v-style="messageRoleStyleAt(3)">{{messageRoleAt(3)}}</span><span v-style="messageContentStyleAt(3)">{{messageContentAt(3)}}</span></p>
-        <p class="message-item" v-style="messageItemStyleAt(4)" v-show="hasMessageAt(4)"><span v-style="messageRoleStyleAt(4)">{{messageRoleAt(4)}}</span><span v-style="messageContentStyleAt(4)">{{messageContentAt(4)}}</span></p>
-        <p class="message-item" v-style="messageItemStyleAt(5)" v-show="hasMessageAt(5)"><span v-style="messageRoleStyleAt(5)">{{messageRoleAt(5)}}</span><span v-style="messageContentStyleAt(5)">{{messageContentAt(5)}}</span></p>
-        <p class="message-item" v-style="messageItemStyleAt(6)" v-show="hasMessageAt(6)"><span v-style="messageRoleStyleAt(6)">{{messageRoleAt(6)}}</span><span v-style="messageContentStyleAt(6)">{{messageContentAt(6)}}</span></p>
+        <p class="message-item" v-style="messageItemStyleAt(0)" v-show="hasMessageAt(0)"> <span v-style="messageRoleStyleAt(0)">{{messageRoleAt(0)}}</span><span v-style="messageContentStyleAt(0)">{{messageContentAt(0)}}</span> </p>
+        <p class="message-item" v-style="messageItemStyleAt(1)" v-show="hasMessageAt(1)"> <span v-style="messageRoleStyleAt(1)">{{messageRoleAt(1)}}</span><span v-style="messageContentStyleAt(1)">{{messageContentAt(1)}}</span> </p>
+        <p class="message-item" v-style="messageItemStyleAt(2)" v-show="hasMessageAt(2)"> <span v-style="messageRoleStyleAt(2)">{{messageRoleAt(2)}}</span><span v-style="messageContentStyleAt(2)">{{messageContentAt(2)}}</span> </p>
+        <p class="message-item" v-style="messageItemStyleAt(3)" v-show="hasMessageAt(3)"> <span v-style="messageRoleStyleAt(3)">{{messageRoleAt(3)}}</span><span v-style="messageContentStyleAt(3)">{{messageContentAt(3)}}</span> </p>
+        <p class="message-item" v-style="messageItemStyleAt(4)" v-show="hasMessageAt(4)"> <span v-style="messageRoleStyleAt(4)">{{messageRoleAt(4)}}</span><span v-style="messageContentStyleAt(4)">{{messageContentAt(4)}}</span> </p>
+        <p class="message-item" v-style="messageItemStyleAt(5)" v-show="hasMessageAt(5)"> <span v-style="messageRoleStyleAt(5)">{{messageRoleAt(5)}}</span><span v-style="messageContentStyleAt(5)">{{messageContentAt(5)}}</span> </p>
+        <p class="message-item" v-style="messageItemStyleAt(6)" v-show="hasMessageAt(6)"> <span v-style="messageRoleStyleAt(6)">{{messageRoleAt(6)}}</span><span v-style="messageContentStyleAt(6)">{{messageContentAt(6)}}</span> </p>
     </section>
     `
 })
@@ -755,7 +771,10 @@ export class AgentConsoleMessagesPanelComponent {
                 : role === 'you'
                     ? this.activeTheme.messagesUser
                     : '';
-            const itemStyle = rowStyleText ? styleTextToObject(rowStyleText) : {};
+            const itemStyle = {
+                padding: '0 1',
+                ...(rowStyleText ? styleTextToObject(rowStyleText) : {})
+            };
             if (role === 'you') {
                 return {
                     kind: role,

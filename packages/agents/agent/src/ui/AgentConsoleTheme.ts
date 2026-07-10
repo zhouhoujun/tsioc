@@ -85,7 +85,7 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     toolRunsAccent: 'color: #79c0ff;',
     messagesTitle: 'color: #8b949e;',
     messagesShell: 'color: #c9d1d9;',
-    messagesUser: 'background: #1a2520; color: #c9d1d9; padding: 0 1;',
+    messagesUser: 'background: #1b2128; color: #c9d1d9; padding: 0 1;',
     messagesSelected: 'background: #13202b; color: #8fd0ff; padding: 0 1; font-weight: bold;',
     messageDetailLineNumber: 'color: #6e7681;',
     activityTitle: 'color: #8b949e;',

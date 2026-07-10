@@ -66,7 +66,11 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).toContain('› hello');
         expect(messagesRoot.textContent).toContain('world');
         expect(messagesRoot.textContent).not.toContain('agent>');
-        expect(messagesRoot.querySelector('.message-item')?.getAttribute('style')).toContain('background');
+        const visibleMessageItems = Array.from(messagesRoot.querySelectorAll('.message-item'))
+            .filter((item: any) => String(item.textContent || '').trim()) as any[];
+        expect(visibleMessageItems[0]?.getAttribute('style')).toContain('background');
+        expect(visibleMessageItems[0]?.textContent).toContain('› hello');
+        expect(visibleMessageItems[1]?.textContent).toContain('world');
         expect(root.querySelector('h1')).toBeFalsy();
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
