@@ -1243,6 +1243,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let transcriptScrollbarDragging = false;
     let frozenTranscriptWindow: CompactRenderedBlocksWindow | null = null;
     let frozenTranscriptWindowKey = '';
+    let lastInlineStablePrefixRows = 0;
     const useAlternateScreen = shouldUseAlternateScreen();
     const applyScreenNotice = (message = '', transientMs?: number) => {
         screenNotice = message;
@@ -1430,38 +1431,43 @@ async function runInteractiveChat(options: any): Promise<void> {
         const nextRenderKey = `inline:${width}:${fittedLines.join('\n')}`;
         syncMouseTracking();
         if (nextRenderKey === lastRenderKey) {
-            placeTerminalCursor(fittedLines, width, true);
             return;
         }
         const previousVisibleLines = lastPaintedLines.map((line: string) => stripAnsi(line));
         const previousPromptRow = findInputPromptRow(previousVisibleLines);
-        const currentPromptRow = findInputPromptRow(visibleLines);
         const stablePrefixCount = Math.max(0, Math.min(
             stablePrefixRows,
             fittedLines.length,
+            Number.MAX_SAFE_INTEGER
+        ));
+        const previousStablePrefixCount = Math.max(0, Math.min(
+            lastInlineStablePrefixRows,
             lastPaintedLines.length
         ));
-        const canPatchInlineTail = lastRenderKey.startsWith('inline:')
+        const stablePrefixExtendsPrevious = lastRenderKey.startsWith('inline:')
             && width === lastPaintedWidth
-            && stablePrefixCount > 0
-            && previousPromptRow >= stablePrefixCount
-            && currentPromptRow >= stablePrefixCount
-            && fittedLines.slice(0, stablePrefixCount).every((line, index) => line === lastPaintedLines[index]);
-        if (canPatchInlineTail) {
+            && previousPromptRow >= previousStablePrefixCount
+            && stablePrefixCount >= previousStablePrefixCount
+            && lastPaintedLines.slice(0, previousStablePrefixCount).every((line, index) => line === fittedLines[index]);
+        if (stablePrefixExtendsPrevious) {
             const commands: string[] = ['\r'];
-            const linesUp = previousPromptRow - stablePrefixCount;
+            const linesUp = previousPromptRow - previousStablePrefixCount;
             if (linesUp > 0) {
                 commands.push(`\x1b[${linesUp}A`);
             }
             commands.push('\x1b[J');
             process.stdout.write(commands.join(''));
-            const tailLines = fittedLines.slice(stablePrefixCount);
-            if (tailLines.length) {
-                process.stdout.write(tailLines.join('\n'));
+            const appendedLines = [
+                ...fittedLines.slice(previousStablePrefixCount, stablePrefixCount),
+                ...fittedLines.slice(stablePrefixCount)
+            ];
+            if (appendedLines.length) {
+                process.stdout.write(appendedLines.join('\n'));
             }
             lastRenderKey = nextRenderKey;
             lastPaintedLines = fittedLines.slice();
             lastPaintedWidth = width;
+            lastInlineStablePrefixRows = stablePrefixCount;
             placeTerminalCursor(fittedLines, width, true);
             return;
         }
@@ -1482,6 +1488,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         lastPaintedLines = fittedLines.slice();
         lastPaintedWidth = width;
+        lastInlineStablePrefixRows = stablePrefixCount;
         placeTerminalCursor(fittedLines, width, true);
     };
 
