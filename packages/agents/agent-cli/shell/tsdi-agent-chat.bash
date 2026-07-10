@@ -8,10 +8,5 @@ tsdi_agent_chat() {
     )
     local status=$?
 
-    if builtin history -c 2>/dev/null; then
-        builtin history -w 2>/dev/null || true
-    fi
-
     return "$status"
 }
-
