@@ -1896,7 +1896,9 @@ async function runInteractiveChat(options: any): Promise<void> {
             return preferredId;
         }
         const ids = await sessionStore.listSessionIds();
-        const uniqueIds = Array.from(new Set([preferredId, ...ids]));
+        const preferredExists = ids.includes(preferredId)
+            || (typeof sessionStore.has === 'function' && await sessionStore.has(preferredId));
+        const uniqueIds = Array.from(new Set<string>(preferredExists ? [preferredId, ...ids] : ids));
         const sessions = await Promise.all(uniqueIds.map(async (id: string) => {
             const state = await sessionStore.get(id);
             return {
@@ -2503,8 +2505,17 @@ async function runInteractiveChat(options: any): Promise<void> {
                 process.stdout.write(`${buildClearScreenSequence()}\x1b[?1049l`);
             } else {
                 if (preserveScreen) {
-                    const exitRow = Math.max(1, lastPaintedLines.length + 1);
-                    process.stdout.write(`${ANSI.reset}\x1b[${exitRow};1H`);
+                    const plainLines = lastPaintedLines.map((line: string) => stripAnsi(line));
+                    const promptRow = findInputPromptRow(plainLines);
+                    const linesAfterPrompt = promptRow >= 0
+                        ? Math.max(0, plainLines.length - promptRow - 1)
+                        : 0;
+                    const commands: string[] = [ANSI.reset];
+                    if (linesAfterPrompt > 0) {
+                        commands.push(`\x1b[${linesAfterPrompt}B`);
+                    }
+                    commands.push('\r\n');
+                    process.stdout.write(commands.join(''));
                 } else {
                     const clearCommands: string[] = [];
                     const clearRows = Math.max(
@@ -3188,6 +3199,10 @@ async function runInteractiveChat(options: any): Promise<void> {
             consoleState?.setInput?.('');
             applyScreenNotice('');
             await sessionStore?.delete?.(currentSessionId);
+            consoleState?.setMessages?.([]);
+            consoleState?.setSessionsFocused?.(false);
+            consoleState?.setMessagesFocused?.(false);
+            consoleState?.closeMessageDetail?.();
             exitFrameMode = true;
             lastRenderKey = '';
             renderScreen();
