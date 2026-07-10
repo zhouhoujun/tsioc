@@ -1371,6 +1371,22 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
     };
 
+    const clearPersistedHistory = () => {
+        historyEntries = [];
+        historyIndex = -1;
+        historyDraft = '';
+        try {
+            if (fs.existsSync(historyPath)) {
+                fs.unlinkSync(historyPath);
+            }
+        } catch (error: any) {
+            const code = String(error?.code || '');
+            if (code !== 'ENOENT' && code !== 'EACCES' && code !== 'EPERM' && code !== 'EROFS') {
+                throw error;
+            }
+        }
+    };
+
     const markSkipSessionRestore = () => {
         try {
             fs.mkdirSync(path.dirname(skipRestorePath), { recursive: true });
@@ -2497,7 +2513,12 @@ async function runInteractiveChat(options: any): Promise<void> {
         currentProfile = profile;
     };
 
-    const cleanupAndExit = async (farewell = '', preserveScreen = false) => {
+    const cleanupAndExit = async (
+        farewell = '',
+        preserveScreen = false,
+        clearScrollback = false,
+        retainedLines: string[] = []
+    ) => {
         if (isCleaningUp) {
             return;
         }
@@ -2531,6 +2552,12 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (useAlternateScreen) {
                 process.stdout.write(`${buildClearScreenSequence()}\x1b[?1049l`);
             } else {
+                if (clearScrollback) {
+                    process.stdout.write(`${ANSI.reset}${buildClearScreenSequence(true)}`);
+                    if (retainedLines.length) {
+                        process.stdout.write(`${retainedLines.join('\n')}\n`);
+                    }
+                } else
                 if (preserveScreen) {
                     const plainLines = lastPaintedLines.map((line: string) => stripAnsi(line));
                     const promptRow = findInputPromptRow(plainLines);
@@ -3226,16 +3253,31 @@ async function runInteractiveChat(options: any): Promise<void> {
             consoleState?.setInput?.('');
             applyScreenNotice('');
             await sessionStore?.delete?.(currentSessionId);
+            clearPersistedHistory();
             markSkipSessionRestore();
             consoleState?.setMessages?.([]);
             consoleState?.setSessionsFocused?.(false);
             consoleState?.setMessagesFocused?.(false);
             consoleState?.closeMessageDetail?.();
-            exitFrameMode = true;
-            lastRenderKey = '';
-            renderScreen();
             isClosed = true;
-            await cleanupAndExit('Goodbye.', true);
+            if (useAlternateScreen) {
+                exitFrameMode = true;
+                lastRenderKey = '';
+                renderScreen();
+                await cleanupAndExit('Goodbye.', true);
+                return;
+            }
+            await cleanupAndExit(
+                'Goodbye.',
+                false,
+                true,
+                buildBrandHeaderBlock(
+                    Math.max(24, process.stdout.columns || 100),
+                    'TSDI Agent',
+                    consoleState?.model || currentProfile?.model || '',
+                    consoleState?.workspace || resolved.workspace
+                )
+            );
             return;
         }
 
