@@ -3231,27 +3231,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             selectMenu = null;
             consoleState?.closeSelectMenu?.();
             transcriptScrollOffset = 0;
-            currentDraft = '';
-            draftCursor = 0;
-            consoleState?.setInput?.('');
             applyScreenNotice('');
-            await sessionStore?.delete?.(currentSessionId);
-            clearPersistedHistory();
-            consoleState?.setMessages?.([]);
-            consoleState?.setSessionsFocused?.(false);
-            consoleState?.setMessagesFocused?.(false);
-            consoleState?.closeMessageDetail?.();
-            await cleanupAndExit(
-                'Goodbye.',
-                true,
-                false,
-                buildBrandHeaderBlock(
-                    Math.max(24, process.stdout.columns || 100),
-                    'TSDI Agent',
-                    consoleState?.model || currentProfile?.model || '',
-                    consoleState?.workspace || resolved.workspace
-                )
-            );
+            await cleanupAndExit('Goodbye.');
             return;
         }
 
