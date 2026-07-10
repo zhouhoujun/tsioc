@@ -571,7 +571,10 @@ export class AgentCliTest {
         expect(moveSuggestionSelection(state, -1).selectedIndex).toBe(2);
         expect(applySuggestionToInput('/mo', '/model')).toBe('/model ');
         expect(applySuggestionToInput('check @wo', '@workspace')).toBe('check @workspace ');
-        expect(shouldAcceptSuggestionOnEnter('/mo', moved)).toBe(true);
+        expect(shouldAcceptSuggestionOnEnter('/mo', moved)).toBe(false);
+        expect(shouldAcceptSuggestionOnEnter('check @wo', normalizeSuggestionState([
+            { group: 'Mentions', label: '@workspace', value: '@workspace' }
+        ], 0))).toBe(true);
         expect(renderDraftLine('run @workspace with @read_file')).toBe('run [@workspace] with [@read_file]');
     }
 

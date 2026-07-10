@@ -62,6 +62,7 @@ const ANSI = {
     reset: '\x1b[0m',
     red: '\x1b[38;2;248;81;73m',
     dim: '\x1b[38;2;110;118;129m',
+    muted: '\x1b[38;2;88;95;104m',
     text: '\x1b[38;2;201;209;217m',
     blue: '\x1b[38;2;121;192;255m',
     blueStrong: '\x1b[1m\x1b[38;2;143;208;255m',
@@ -2438,7 +2439,11 @@ async function runInteractiveChat(options: any): Promise<void> {
                     process.stdout.write(`${ANSI.reset}\x1b[${exitRow};1H`);
                 } else {
                     const clearCommands: string[] = [];
-                    const clearRows = Math.max(1, lastPaintedLines.length);
+                    const clearRows = Math.max(
+                        1,
+                        process.stdout.rows || 0,
+                        lastPaintedLines.length
+                    );
                     for (let index = 0; index < clearRows; index++) {
                         clearCommands.push(`\x1b[${index + 1};1H\x1b[2K`);
                     }
@@ -2477,7 +2482,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         const brandModel = consoleState?.model || currentProfile?.model || '';
         const brandWorkspace = consoleState?.workspace || resolved.workspace;
         const brandLines = buildBrandHeaderBlock(width, 'TSDI Agent', brandModel, brandWorkspace);
-        let fixedBrandLines = brandLines;
         let wantsDynamicTranscriptFlow = false;
         if (consoleState?.setStatus && viewModel) {
             consoleState.setStatus(viewModel.status);
@@ -2612,14 +2616,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         const visibleMessages = showingExitFrame
             ? []
             : (Array.isArray(consoleState?.messages) ? consoleState.messages : []);
-        const shouldScrollBrandWithTranscript = !showingExitFrame
-            && visibleMessages.length > 0
-            && !sessionsFocused
-            && !messageDetailFocused;
-        if (shouldScrollBrandWithTranscript) {
-            fixedBrandLines = [];
-            pushBlock(transcriptBlocks, brandLines);
-        }
         wantsDynamicTranscriptFlow = !showingExitFrame
             && visibleMessages.length > 0
             && !sessionsFocused
@@ -2697,7 +2693,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 if (/\x1b\[[0-9;]*m/.test(renderedLine)) {
                     return renderedLine;
                 }
-                return paint(renderedLine, kind === 'agent' ? ANSI.blue : ANSI.text);
+                return paint(renderedLine, ANSI.text);
             }), width, selected ? [ANSI.bgSelected] : [ANSI.text]));
             if (selected) {
                 selectedMessageBlockIndex = messageIndex;
@@ -2749,8 +2745,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             const placeholder = inputPanel?.placeholderLabel || '';
             const promptText = `> ${promptValue || placeholder}`;
             inputLines = [
-                ...renderShellBlock(promptText, width, ANSI.bg, ANSI.text),
-                paint(inputPanel?.hintLabel || '', ANSI.dim)
+                ...renderShellBlock(promptText, width, ANSI.bg, promptValue ? ANSI.text : ANSI.muted),
+                paint(inputPanel?.hintLabel || '', ANSI.muted)
             ];
         }
         if (!showingExitFrame && selectPanel?.menu) {
@@ -2778,7 +2774,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             pushLine(selectLines, selectPanel.menuHint, ANSI.dim);
         }
         }
-        const topReservedRows = fixedBrandLines.length + inputLines.length + selectLines.length;
+        const topReservedRows = brandLines.length + inputLines.length + selectLines.length;
         const topFixedAnchorIndex = topFixedBlocks.length - 1;
         const compactTopFixedLines = compactRenderedBlocksWindow(
             topFixedBlocks,
@@ -2789,14 +2785,14 @@ async function runInteractiveChat(options: any): Promise<void> {
             bottomFixedBlocks.flatMap(block => block),
             Math.max(0, height - topReservedRows - compactTopFixedLines.lines.length)
         );
-        const reservedRows = fixedBrandLines.length + compactTopFixedLines.lines.length + provisionalBottomFixedLines.length + inputLines.length + selectLines.length;
+        const reservedRows = brandLines.length + compactTopFixedLines.lines.length + provisionalBottomFixedLines.length + inputLines.length + selectLines.length;
         const availableTranscriptRows = Math.max(0, height - reservedRows);
         const flatTranscriptLines = transcriptBlocks.flatMap(block => block);
         const useDynamicTranscriptFlow = wantsDynamicTranscriptFlow
             && flatTranscriptLines.length > availableTranscriptRows;
         if (useDynamicTranscriptFlow) {
             const rendered = [
-                ...fixedBrandLines,
+                ...brandLines,
                 ...topFixedBlocks.flatMap(block => block),
                 ...transcriptBlocks.flatMap(block => block),
                 ...bottomFixedBlocks.flatMap(block => block),
@@ -2865,7 +2861,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         transcriptVisibleRows = transcriptWindow.lines.length;
         transcriptMaxScrollOffset = maxTranscriptScrollOffset;
         transcriptScrollbarColumn = terminalColumns;
-        transcriptScrollbarTopRow = fixedBrandLines.length + compactTopFixedLines.lines.length + 1;
+        transcriptScrollbarTopRow = brandLines.length + compactTopFixedLines.lines.length + 1;
         transcriptScrollbarVisibleRows = transcriptWindow.lines.length;
         transcriptScrollbarTotalRows = transcriptWindow.totalRows;
         if (transcriptScrollOffset > maxTranscriptScrollOffset) {
@@ -2873,10 +2869,10 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         const compactBottomFixedLines = compactRenderedLines(
             bottomFixedBlocks.flatMap(block => block),
-            Math.max(0, height - fixedBrandLines.length - compactTopFixedLines.lines.length - transcriptWindow.lines.length - inputLines.length - selectLines.length)
+            Math.max(0, height - brandLines.length - compactTopFixedLines.lines.length - transcriptWindow.lines.length - inputLines.length - selectLines.length)
         );
         const preInputLines = [
-            ...fixedBrandLines,
+            ...brandLines,
             ...compactTopFixedLines.lines,
             ...transcriptWindow.lines,
             ...compactBottomFixedLines
@@ -2986,14 +2982,14 @@ async function runInteractiveChat(options: any): Promise<void> {
             suggestionState = { items: [], selectedIndex: -1 };
             selectMenu = null;
             consoleState?.closeSelectMenu?.();
-            exitFrameMode = true;
             transcriptScrollOffset = 0;
             currentDraft = '';
             draftCursor = 0;
             consoleState?.setInput?.('');
             applyScreenNotice('');
+            await sessionStore?.delete?.(currentSessionId);
+            exitFrameMode = true;
             lastRenderKey = '';
-            clearTerminalScreen(true);
             renderScreen();
             isClosed = true;
             await cleanupAndExit('Goodbye.', true);
@@ -3314,9 +3310,9 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (isClosed) {
             return;
         }
+        const rawText = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
         const controlKey = parseTerminalControlKey(chunk);
         if (hasBlockingSelectMenu()) {
-            const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
             const mouse = parseTerminalMouseEvent(chunk);
             if (mouse && !mouse.release) {
                 const activeMenu = getActiveSelectMenu();
@@ -3352,16 +3348,16 @@ async function runInteractiveChat(options: any): Promise<void> {
                 confirmActiveMenuSelection();
                 return;
             }
-            if (controlKey === 'escape' || text.toLowerCase() === 'q') {
+            if (controlKey === 'escape' || rawText.toLowerCase() === 'q') {
                 lastRawControlKey = controlKey === 'escape' ? 'escape' : 'q';
                 lastRawControlAt = Date.now();
                 cancelActiveMenuSelection();
                 return;
             }
-            if (/^[1-9]$/.test(text)) {
+            if (/^[1-9]$/.test(rawText)) {
                 lastRawControlKey = 'digit';
                 lastRawControlAt = Date.now();
-                const index = parseInt(text, 10) - 1;
+                const index = parseInt(rawText, 10) - 1;
                 confirmActiveMenuIndex(index);
             }
             return;
@@ -3579,10 +3575,68 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
         }
+        if ((rawText.includes('\r') || rawText.includes('\n')) && !controlKey) {
+            const inlineText = rawText.replace(/[\r\n]+/g, '');
+            if (inlineText) {
+                applyChunkToDraft(inlineText);
+            }
+            lastRawControlKey = 'return';
+            lastRawControlAt = Date.now();
+            if (activeTextPrompt) {
+                resolveTextPrompt(currentDraft);
+                return;
+            }
+            if (modalPromptActive || inputLocked || !hasInteractiveSuggestions()) {
+                if (!modalPromptActive && !inputLocked) {
+                    void submitCurrentDraft();
+                }
+                return;
+            }
+            if (shouldAcceptSuggestionOnEnter(currentDraft, suggestionState)) {
+                const selected = suggestionState.items[suggestionState.selectedIndex];
+                const nextInput = applySuggestionToInput(currentDraft, selected.value);
+                suggestionState = { items: [], selectedIndex: -1 };
+                if (consoleState?.selectMenu?.title === 'Suggestions') {
+                    consoleState.closeSelectMenu();
+                }
+                updateDraftState(nextInput, nextInput.length);
+                renderScreen();
+                return;
+            }
+            void submitCurrentDraft();
+            return;
+        }
         if (activeTextPrompt && controlKey === 'escape') {
             lastRawControlKey = 'escape';
             lastRawControlAt = Date.now();
             cancelTextPrompt();
+            return;
+        }
+        if (controlKey === 'return') {
+            lastRawControlKey = 'return';
+            lastRawControlAt = Date.now();
+            if (activeTextPrompt) {
+                resolveTextPrompt(currentDraft);
+                return;
+            }
+            if (modalPromptActive || inputLocked || !hasInteractiveSuggestions()) {
+                if (!modalPromptActive && !inputLocked) {
+                    void submitCurrentDraft();
+                }
+                return;
+            }
+            if (shouldAcceptSuggestionOnEnter(currentDraft, suggestionState)) {
+                const selected = suggestionState.items[suggestionState.selectedIndex];
+                const nextInput = applySuggestionToInput(currentDraft, selected.value);
+                suggestionState = { items: [], selectedIndex: -1 };
+                if (consoleState?.selectMenu?.title === 'Suggestions') {
+                    consoleState.closeSelectMenu();
+                }
+                updateDraftState(nextInput, nextInput.length);
+                renderScreen();
+                return;
+            }
+            void submitCurrentDraft();
             return;
         }
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
@@ -3614,7 +3668,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             jumpTranscriptScroll('end');
             return;
         }
-        if (controlKey === 'up' || controlKey === 'down' || controlKey === 'return' || controlKey === 'tab' || controlKey === 'escape') {
+        if (controlKey === 'up' || controlKey === 'down' || controlKey === 'tab' || controlKey === 'escape') {
             return;
         }
         applyChunkToDraft(chunk);

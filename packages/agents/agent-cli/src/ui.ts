@@ -644,6 +644,9 @@ export function shouldAcceptSuggestionOnEnter(input: string, state: SuggestionSt
     if (!token) {
         return false;
     }
+    if (token.startsWith('/')) {
+        return false;
+    }
     const suggestion = state.items[state.selectedIndex]?.value;
     return !!suggestion && suggestion !== token && suggestion.startsWith(token);
 }
