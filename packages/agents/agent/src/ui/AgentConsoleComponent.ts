@@ -24,6 +24,7 @@ import {
     AgentConsoleToolsPanelComponent,
     AgentConsoleWorkingPanelComponent
 } from './AgentConsolePanels';
+import { TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockComponent, TuiLabelComponent, TuiSpacerComponent } from '@tsdi/components/console';
 
 @Component({
     selector: 'agent-console',
@@ -37,10 +38,11 @@ import {
         AgentConsoleToolsPanelComponent,
         AgentConsoleToolRunsPanelComponent,
         AgentConsoleMessagesPanelComponent,
-        AgentConsoleActivityPanelComponent
+        AgentConsoleActivityPanelComponent,
+        TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockComponent, TuiLabelComponent, TuiSpacerComponent
     ],
     template: `
-    <div class="agent-console">
+    <tui-block class="agent-console">
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
@@ -49,9 +51,9 @@ import {
         <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
         <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
-        <agent-console-input-panel></agent-console-input-panel>
-        <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
-    </div>
+        <tui-input shellStyle="{{inputShellStyle}}" prompt="> " value="{{inputValue}}" cursor=" " cursorPos="{{inputCursor}}"></tui-input>
+        <tui-select v-show="showSelectPanel" title="{{selectTitle}}" hint="{{selectHint}}" options="{{selectOptions}}" selectedIndex="{{selectIndex}}"></tui-select>
+    </tui-block>
     `
 })
 export class AgentConsoleComponent {
@@ -127,6 +129,40 @@ export class AgentConsoleComponent {
 
     get showSelectPanel(): boolean {
         return !!this.state.selectMenu;
+    }
+
+    // ---- generic component bindings ----
+
+    get inputShellStyle(): string {
+        return this.state.theme?.inputShell || 'background: #1b2128; color: #c9d1d9; padding: 1 3;';
+    }
+
+    get inputValue(): string {
+        return this.state.input || '';
+    }
+
+    get inputCursor(): number {
+        return this.state.input?.length || 0;
+    }
+
+    get selectTitle(): string {
+        return this.state.selectMenu?.title || '';
+    }
+
+    get selectHint(): string {
+        return this.state.selectMenu?.hint || '1-9 select   up/down move   enter confirm   q cancel';
+    }
+
+    get selectOptions(): Array<{ label: string; value: string; description?: string }> {
+        return this.state.selectMenu?.options?.map((o: any) => ({
+            label: o.label,
+            value: o.value,
+            description: typeof o.detail === 'string' ? o.detail : undefined
+        })) || [];
+    }
+
+    get selectIndex(): number {
+        return this.state.selectMenu?.selectedIndex ?? 0;
     }
 
     get theme() {

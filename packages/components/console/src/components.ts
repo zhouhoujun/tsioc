@@ -1,4 +1,4 @@
-import { Component, Input } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 
 @Component({
     selector: 'tui-input',
@@ -11,14 +11,14 @@ import { Component, Input } from '@tsdi/components';
     `
 })
 export class TuiInputComponent {
-    @Input() prompt = '> ';
-    @Input() value = '';
-    @Input() cursor = ' ';
-    @Input() cursorPos = 0;
-    @Input() shellStyle = 'background: #1b2128; color: #c9d1d9; padding: 1 3;';
-    @Input() promptStyle = 'color: #7ee787; font-weight: bold;';
-    @Input() valueStyle = 'color: #c9d1d9;';
-    @Input() cursorStyle = 'color: #7ee787; background: #2ea043;';
+    @Attribute() prompt = '> ';
+    @Attribute() value = '';
+    @Attribute() cursor = ' ';
+    @Attribute() cursorPos = 0;
+    @Attribute() shellStyle = 'background: #1b2128; color: #c9d1d9; padding: 1 3;';
+    @Attribute() promptStyle = 'color: #7ee787; font-weight: bold;';
+    @Attribute() valueStyle = 'color: #c9d1d9;';
+    @Attribute() cursorStyle = 'color: #7ee787; background: #2ea043;';
 
     get displayPrompt(): string {
         return this.prompt;
@@ -54,16 +54,16 @@ export class TuiInputComponent {
     `
 })
 export class TuiSelectComponent {
-    @Input() title = '';
-    @Input() hint = '';
-    @Input() options: Array<{ label: string; value: string; description?: string }> = [];
-    @Input() selectedIndex = 0;
-    @Input() shellStyle = 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;';
-    @Input() titleStyle = 'color: #f3f6fb; font-weight: bold;';
-    @Input() metaStyle = 'color: #6f7c8a;';
-    @Input() hintStyle = 'color: #6f7c8a;';
-    @Input() optionActiveStyle = 'background: #18222d; color: #8fd0ff; padding: 0 1; font-weight: bold;';
-    @Input() optionStyle = 'background: #10161d; color: #93a4b8; padding: 0 1;';
+    @Attribute() title = '';
+    @Attribute() hint = '';
+    @Attribute() options: Array<{ label: string; value: string; description?: string }> = [];
+    @Attribute() selectedIndex = 0;
+    @Attribute() shellStyle = 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;';
+    @Attribute() titleStyle = 'color: #f3f6fb; font-weight: bold;';
+    @Attribute() metaStyle = 'color: #6f7c8a;';
+    @Attribute() hintStyle = 'color: #6f7c8a;';
+    @Attribute() optionActiveStyle = 'background: #18222d; color: #8fd0ff; padding: 0 1; font-weight: bold;';
+    @Attribute() optionStyle = 'background: #10161d; color: #93a4b8; padding: 0 1;';
 
     protected readonly VISIBLE = 6;
 
@@ -106,6 +106,7 @@ export class TuiSelectComponent {
             style[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
         });
         return style;
+}
     }
 
 @Component({
@@ -113,8 +114,8 @@ export class TuiSelectComponent {
     template: `<span class="tui-text" v-style="textStyle">{{content}}</span>`
 })
 export class TuiTextComponent {
-    @Input() content = '';
-    @Input() textStyle = 'color: #c9d1d9;';
+    @Attribute() content = '';
+    @Attribute() textStyle = 'color: #c9d1d9;';
 }
 
 @Component({
@@ -126,7 +127,7 @@ export class TuiTextComponent {
     `
 })
 export class TuiBlockComponent {
-    @Input() blockStyle = 'color: #c9d1d9;';
+    @Attribute() blockStyle = 'color: #c9d1d9;';
 }
 
 @Component({
@@ -134,8 +135,8 @@ export class TuiBlockComponent {
     template: `<span class="tui-label" v-style="labelStyle">{{text}}</span>`
 })
 export class TuiLabelComponent {
-    @Input() text = '';
-    @Input() labelStyle = 'color: #6e7681;';
+    @Attribute() text = '';
+    @Attribute() labelStyle = 'color: #6e7681;';
 }
 
 @Component({
@@ -145,4 +146,3 @@ export class TuiLabelComponent {
 export class TuiSpacerComponent {
 }
 
-}
