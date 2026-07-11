@@ -107,4 +107,42 @@ export class TuiSelectComponent {
         });
         return style;
     }
+
+@Component({
+    selector: 'tui-text',
+    template: `<span class="tui-text" v-style="textStyle">{{content}}</span>`
+})
+export class TuiTextComponent {
+    @Input() content = '';
+    @Input() textStyle = 'color: #c9d1d9;';
+}
+
+@Component({
+    selector: 'tui-block',
+    template: `
+    <section class="tui-block" v-style="blockStyle">
+        <ng-content></ng-content>
+    </section>
+    `
+})
+export class TuiBlockComponent {
+    @Input() blockStyle = 'color: #c9d1d9;';
+}
+
+@Component({
+    selector: 'tui-label',
+    template: `<span class="tui-label" v-style="labelStyle">{{text}}</span>`
+})
+export class TuiLabelComponent {
+    @Input() text = '';
+    @Input() labelStyle = 'color: #6e7681;';
+}
+
+@Component({
+    selector: 'tui-spacer',
+    template: `<br/>`
+})
+export class TuiSpacerComponent {
+}
+
 }

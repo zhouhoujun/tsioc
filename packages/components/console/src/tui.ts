@@ -18,7 +18,7 @@ import {
     ConsoleText
 } from './console';
 import { fitByDisplayWidth, getDisplayWidth, sliceByDisplayWidth } from './display-width';
-import { TuiInputComponent, TuiSelectComponent } from './components';
+import { TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockComponent, TuiLabelComponent, TuiSpacerComponent } from './components';
 
 const ANSI_RESET = '\x1b[0m';
 const ANSI_BOLD = '\x1b[1m';
@@ -349,7 +349,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
 }
 
 @Module({
-    declarations: [TuiInputComponent, TuiSelectComponent],
+    declarations: [TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockComponent, TuiLabelComponent, TuiSpacerComponent],
     providers: [
         TuiRenderer,
         ConsoleTemplateParser,
@@ -360,7 +360,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
         { provide: TemplateParser, useExisting: ConsoleTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: TuiTemplateCompiler, deps: [ConsoleTemplateParser, ConsoleRenderer, CONSOLE_TEMPLATE], asDefault: true }
     ],
-    exports: [TuiRenderer, ConsoleRenderer, ConsoleTemplateParser, TuiTemplateCompiler, TuiInputComponent, TuiSelectComponent]
+    exports: [TuiRenderer, ConsoleRenderer, ConsoleTemplateParser, TuiTemplateCompiler, TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockComponent, TuiLabelComponent, TuiSpacerComponent]
 })
 export class TuiTemplateModule {
     static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<TuiTemplateModule> {
