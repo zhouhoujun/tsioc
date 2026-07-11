@@ -349,7 +349,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
 }
 
 @Module({
-    declarations: [TuiInputComponent, TuiSelectComponent, LabelComponent],
+    declarations: [],
     providers: [
         TuiRenderer,
         ConsoleTemplateParser,

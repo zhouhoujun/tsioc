@@ -1,14 +1,7 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Directive } from '@tsdi/components';
 
-@Component({
-    selector: 'input',
-    template: `
-    <section class="tui-input-shell" v-style="shellStyle">
-        <span class="tui-input-prompt" v-style="promptStyle">{{displayPrompt}}</span>
-        <span class="tui-input-value" v-style="valueStyle">{{displayValue}}</span>
-        <span class="tui-input-cursor" v-style="cursorStyle">{{cursorChar}}</span>
-    </section>
-    `
+@Directive({
+    selector: 'input'
 })
 export class TuiInputComponent {
     @Attribute() prompt = '> ';
@@ -37,21 +30,8 @@ export class TuiInputComponent {
     }
 }
 
-@Component({
-    selector: 'select',
-    template: `
-    <section class="tui-select-shell" v-style="shellStyle">
-        <p class="tui-select-title" v-style="titleStyle">{{title}}</p>
-        <p class="tui-select-meta" v-style="metaStyle" v-show="metaLabel">{{metaLabel}}</p>
-        <p class="tui-select-option" v-style="optionStyleAt(0)" v-show="optionLabelAt(0)">{{optionLabelAt(0)}}</p>
-        <p class="tui-select-option" v-style="optionStyleAt(1)" v-show="optionLabelAt(1)">{{optionLabelAt(1)}}</p>
-        <p class="tui-select-option" v-style="optionStyleAt(2)" v-show="optionLabelAt(2)">{{optionLabelAt(2)}}</p>
-        <p class="tui-select-option" v-style="optionStyleAt(3)" v-show="optionLabelAt(3)">{{optionLabelAt(3)}}</p>
-        <p class="tui-select-option" v-style="optionStyleAt(4)" v-show="optionLabelAt(4)">{{optionLabelAt(4)}}</p>
-        <p class="tui-select-option" v-style="optionStyleAt(5)" v-show="optionLabelAt(5)">{{optionLabelAt(5)}}</p>
-        <p class="tui-select-hint" v-style="hintStyle" v-show="hint">{{hint}}</p>
-    </section>
-    `
+@Directive({
+    selector: 'select'
 })
 export class TuiSelectComponent {
     @Attribute() title = '';
@@ -106,13 +86,11 @@ export class TuiSelectComponent {
             style[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
         });
         return style;
-}
     }
+}
 
-
-@Component({
-    selector: 'label',
-    template: `<label class="tui-label" v-style="labelStyle"><ng-content></ng-content></label>`
+@Directive({
+    selector: 'label'
 })
 export class LabelComponent {
     @Attribute() labelStyle = 'color: #6e7681;';
