@@ -1,7 +1,7 @@
 import { Attribute, Component } from '@tsdi/components';
 
 @Component({
-    selector: 'tui-input',
+    selector: 'input',
     template: `
     <section class="tui-input-shell" v-style="shellStyle">
         <span class="tui-input-prompt" v-style="promptStyle">{{displayPrompt}}</span>
@@ -38,7 +38,7 @@ export class TuiInputComponent {
 }
 
 @Component({
-    selector: 'tui-select',
+    selector: 'select',
     template: `
     <section class="tui-select-shell" v-style="shellStyle">
         <p class="tui-select-title" v-style="titleStyle">{{title}}</p>
@@ -109,40 +109,11 @@ export class TuiSelectComponent {
 }
     }
 
-@Component({
-    selector: 'tui-text',
-    template: `<span class="tui-text" v-style="textStyle">{{content}}</span>`
-})
-export class TuiTextComponent {
-    @Attribute() content = '';
-    @Attribute() textStyle = 'color: #c9d1d9;';
-}
 
 @Component({
-    selector: 'tui-block',
-    template: `
-    <section class="tui-block" v-style="blockStyle">
-        <ng-content></ng-content>
-    </section>
-    `
+    selector: 'label',
+    template: `<label class="tui-label" v-style="labelStyle"><ng-content></ng-content></label>`
 })
-export class TuiBlockComponent {
-    @Attribute() blockStyle = 'color: #c9d1d9;';
-}
-
-@Component({
-    selector: 'tui-label',
-    template: `<span class="tui-label" v-style="labelStyle">{{text}}</span>`
-})
-export class TuiLabelComponent {
-    @Attribute() text = '';
+export class LabelComponent {
     @Attribute() labelStyle = 'color: #6e7681;';
 }
-
-@Component({
-    selector: 'tui-spacer',
-    template: `<br/>`
-})
-export class TuiSpacerComponent {
-}
-

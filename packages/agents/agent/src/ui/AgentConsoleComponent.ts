@@ -24,7 +24,7 @@ import {
     AgentConsoleToolsPanelComponent,
     AgentConsoleWorkingPanelComponent
 } from './AgentConsolePanels';
-import { TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockComponent, TuiLabelComponent, TuiSpacerComponent } from '@tsdi/components/console';
+import { TuiInputComponent, TuiSelectComponent } from '@tsdi/components/console';
 
 @Component({
     selector: 'agent-console',
@@ -39,10 +39,10 @@ import { TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockCompon
         AgentConsoleToolRunsPanelComponent,
         AgentConsoleMessagesPanelComponent,
         AgentConsoleActivityPanelComponent,
-        TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockComponent, TuiLabelComponent, TuiSpacerComponent
+        TuiInputComponent, TuiSelectComponent
     ],
     template: `
-    <tui-block class="agent-console">
+    <div class="agent-console">
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
@@ -51,9 +51,9 @@ import { TuiInputComponent, TuiSelectComponent, TuiTextComponent, TuiBlockCompon
         <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
         <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
-        <tui-input shellStyle="{{inputShellStyle}}" prompt="> " value="{{inputValue}}" cursor=" " cursorPos="{{inputCursor}}"></tui-input>
-        <tui-select v-show="showSelectPanel" title="{{selectTitle}}" hint="{{selectHint}}" options="{{selectOptions}}" selectedIndex="{{selectIndex}}"></tui-select>
-    </tui-block>
+        <input shellStyle="{{inputShellStyle}}" prompt="> " value="{{inputValue}}" cursor=" " cursorPos="{{inputCursor}}"></input>
+        <select v-show="showSelectPanel" title="{{selectTitle}}" hint="{{selectHint}}" options="{{selectOptions}}" selectedIndex="{{selectIndex}}"></select>
+    </div>
     `
 })
 export class AgentConsoleComponent {
