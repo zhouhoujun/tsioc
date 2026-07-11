@@ -673,7 +673,7 @@ export function applyTerminalInputChunk(value: string, cursor: number, chunk: Bu
     let nextCursor = Math.max(0, Math.min(cursor, value.length));
     for (let index = 0; index < text.length; index++) {
         const char = text[index];
-        if (char === '\r' || char === '\n' || char === '\t') {
+        if (char === '\t') {
             continue;
         }
         if (char === '\u007f') {

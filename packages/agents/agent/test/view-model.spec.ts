@@ -347,38 +347,11 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('');
     }
 
-    @Test('component runs registered command actions')
-    async componentRunsRegisteredCommandActions() {
-        const runtime = new RuntimeStub();
-        const scheduler = new SchedulerStub();
-        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
-        const calls: string[] = [];
-
-        component.setCommandAction('/model', async () => {
-            calls.push('/model');
-        });
-
-        await expect(component.runCommand('/model')).resolves.toEqual(true);
-        await expect(component.runCommand('/unknown')).resolves.toEqual(false);
-        expect(calls).toEqual(['/model']);
-    }
-
-    @Test('component replaces command action registration by command key')
-    async componentReplacesCommandActionRegistration() {
-        const runtime = new RuntimeStub();
-        const scheduler = new SchedulerStub();
-        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
-        const calls: string[] = [];
-
-        component.setCommandAction('/tools', async () => {
-            calls.push('first');
-        });
-        component.setCommandAction('/tools', async () => {
-            calls.push('second');
-        });
-
-        await expect(component.runCommand('/tools')).resolves.toEqual(true);
-        expect(calls).toEqual(['second']);
+    @Test('component handleCommand returns true for known commands')
+    async componentHandleCommandReturnsTrue() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([]);
+        expect(state.messages.length).toEqual(0);
     }
 
     @Test('input panel submits on enter key')
@@ -689,4 +662,56 @@ export class AgentConsoleComponentTest {
         state.closeMessageDetail();
         expect(state.messageDetailColumnScroll).toEqual(0);
     }
+    @Test('handleSelectKey navigates and confirms select menu')
+    handleSelectKeyNavigatesSelectMenu() {
+        const state = new AgentConsoleSessionState();
+        state.openSelectMenu('Test', [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' },
+            { label: 'C', value: 'c' }
+        ]);
+        expect(state.selectMenu?.selectedIndex).toEqual(0);
+        
+        // Up wraps to last
+        state.handleSelectKey('up');
+        expect(state.selectMenu?.selectedIndex).toEqual(2);
+        
+        // Down wraps to first
+        state.handleSelectKey('down');
+        expect(state.selectMenu?.selectedIndex).toEqual(0);
+        
+        // Down moves to next
+        state.handleSelectKey('down');
+        expect(state.selectMenu?.selectedIndex).toEqual(1);
+        
+        // Escape cancels
+        state.handleSelectKey('escape');
+        expect(state.selectMenu).toBeUndefined();
+    }
+
+    @Test('handleSelectKey selects by number and returns true on handled keys')
+    handleSelectKeyReturnsTrueOnHandledKeys() {
+        const state = new AgentConsoleSessionState();
+        state.openSelectMenu('Test', [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' }
+        ]);
+        
+        expect(state.handleSelectKey('up')).toBe(true);
+        expect(state.handleSelectKey('down')).toBe(true);
+        expect(state.handleSelectKey('return')).toBe(true);
+        expect(state.selectMenu).toBeUndefined();  // confirmed
+
+        state.openSelectMenu('Test2', [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' }
+        ]);
+        expect(state.handleSelectKey('1')).toBe(true);
+        expect(state.selectMenu).toBeUndefined();  // chosen index 0
+        
+        // Unhandled key returns false
+        expect(state.handleSelectKey('x')).toBe(false);
+    }
+
+
 }

@@ -405,6 +405,10 @@ export class AgentConsoleSessionState {
 
     setInput(value: string): void {
         this.input = value;
+        if (value.endsWith('\r') && this.submitAction) {
+            this.input = value.slice(0, -1);
+            this.submitAction();
+        }
         this.notify();
     }
 
@@ -534,6 +538,36 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    handleSelectKey(key: string): boolean {
+        if (!this.selectMenu || !this.selectMenu.options.length) { return false; }
+        switch (key) {
+            case 'up':
+                this.moveSelectMenu(-1);
+                this.notify();
+                return true;
+            case 'down':
+                this.moveSelectMenu(1);
+                this.notify();
+                return true;
+            case 'return':
+                void this.confirmSelectMenu();
+                return true;
+            case 'escape':
+            case 'q':
+                void this.cancelSelectMenu();
+                return true;
+            default:
+                if (/^[1-9]$/.test(key)) {
+                    const idx = parseInt(key, 10) - 1;
+                    if (idx < this.selectMenu.options.length) {
+                        void this.chooseSelectMenuIndex(idx);
+                        return true;
+                    }
+                }
+                return false;
+        }
+    }
+
     closeSelectMenu(): void {
         this.selectMenu = undefined;
         this.notify();
@@ -647,5 +681,23 @@ export class AgentConsoleSessionState {
 
     protected expandTabs(value: string): string {
         return String(value || '').replace(/\t/g, '    ');
+    }
+
+    /** Process a raw input chunk from the terminal. Handles chars, backspace, Enter. */
+    processRawChunk(chunk: string): void {
+        for (let i = 0; i < chunk.length; i++) {
+            const ch = chunk[i];
+            if (ch === '\r' || ch === '\n') {
+                if (this.submitAction) {
+                    this.submitAction();
+                }
+            } else if (ch === '\u007f' || ch === '\b') {
+                this.input = this.input.slice(0, -1);
+                this.notify();
+            } else if (ch >= ' ') {
+                this.input += ch;
+                this.notify();
+            }
+        }
     }
 }

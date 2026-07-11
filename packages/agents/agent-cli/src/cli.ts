@@ -3404,7 +3404,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         try {
             applyScreenNotice('');
             viewModel.input = buildPrompt(trimmed);
-            await viewModel.submit();
+            await consoleState?.submitAction?.();
             await refreshSessionsList(currentSessionId);
             pushHistoryEntry(trimmed);
             persistHistory();
@@ -3556,49 +3556,21 @@ async function runInteractiveChat(options: any): Promise<void> {
             const mouse = parseTerminalMouseEvent(chunk);
             if (mouse && !mouse.release) {
                 const activeMenu = getActiveSelectMenu();
-                if (!activeMenu) {
-                    return;
-                }
-                const index = findSelectMenuOptionIndexFromRenderedLines(
-                    lastRenderedLines,
-                    activeMenu.title,
-                    activeMenu.options.length,
-                    mouse.y
-                );
-                if (index >= 0) {
-                    confirmActiveMenuIndex(index);
+                if (!activeMenu) { return; }
+                const index = findSelectMenuOptionIndexFromRenderedLines(lastRenderedLines, activeMenu.title, activeMenu.options.length, mouse.y);
+                if (index >= 0 && index < activeMenu.options.length) {
+                    consoleState?.chooseSelectMenuIndex?.(index);
                 }
                 return;
             }
-            if (controlKey === 'up') {
-                lastRawControlKey = 'up';
-                lastRawControlAt = Date.now();
-                moveActiveMenu(-1);
-                return;
-            }
-            if (controlKey === 'down') {
-                lastRawControlKey = 'down';
-                lastRawControlAt = Date.now();
-                moveActiveMenu(1);
-                return;
-            }
-            if (controlKey === 'return') {
-                lastRawControlKey = 'return';
-                lastRawControlAt = Date.now();
-                confirmActiveMenuSelection();
-                return;
-            }
-            if (controlKey === 'escape' || rawText.toLowerCase() === 'q') {
-                lastRawControlKey = controlKey === 'escape' ? 'escape' : 'q';
-                lastRawControlAt = Date.now();
-                cancelActiveMenuSelection();
-                return;
-            }
-            if (/^[1-9]$/.test(rawText)) {
-                lastRawControlKey = 'digit';
-                lastRawControlAt = Date.now();
-                const index = parseInt(rawText, 10) - 1;
-                confirmActiveMenuIndex(index);
+            const keyMap: Record<string, string> = { 'up': 'up', 'down': 'down', 'return': 'return', 'escape': 'escape' };
+            const control = controlKey ? (keyMap[controlKey] || '') : '';
+            const menuKey = control || (/^[1-9q]$/.test(rawText) ? rawText : '');
+            if (menuKey) {
+                if (consoleState?.handleSelectKey?.(menuKey)) {
+                    renderScreen();
+                    if (control) { lastRawControlKey = control; lastRawControlAt = Date.now(); }
+                }
             }
             return;
         }
@@ -3816,34 +3788,10 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
         }
         if ((rawText.includes('\r') || rawText.includes('\n')) && !controlKey) {
-            const inlineText = rawText.replace(/[\r\n]+/g, '');
-            if (inlineText) {
-                applyChunkToDraft(inlineText);
-            }
-            lastRawControlKey = 'return';
-            lastRawControlAt = Date.now();
-            if (activeTextPrompt) {
-                resolveTextPrompt(currentDraft);
-                return;
-            }
-            if (modalPromptActive || inputLocked || !hasInteractiveSuggestions()) {
-                if (!modalPromptActive && !inputLocked) {
-                    void submitCurrentDraft();
-                }
-                return;
-            }
-            if (shouldAcceptSuggestionOnEnter(currentDraft, suggestionState)) {
-                const selected = suggestionState.items[suggestionState.selectedIndex];
-                const nextInput = applySuggestionToInput(currentDraft, selected.value);
-                suggestionState = { items: [], selectedIndex: -1 };
-                if (consoleState?.selectMenu?.title === 'Suggestions') {
-                    consoleState.closeSelectMenu();
-                }
-                updateDraftState(nextInput, nextInput.length);
-                renderScreen();
-                return;
-            }
-            void submitCurrentDraft();
+            consoleState?.processRawChunk?.(rawText);
+            currentDraft = consoleState?.input || '';
+            draftCursor = currentDraft.length;
+            updateDraftState('', 0);
             return;
         }
         if (activeTextPrompt && controlKey === 'escape') {
@@ -3859,24 +3807,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 resolveTextPrompt(currentDraft);
                 return;
             }
-            if (modalPromptActive || inputLocked || !hasInteractiveSuggestions()) {
-                if (!modalPromptActive && !inputLocked) {
-                    void submitCurrentDraft();
-                }
-                return;
-            }
-            if (shouldAcceptSuggestionOnEnter(currentDraft, suggestionState)) {
-                const selected = suggestionState.items[suggestionState.selectedIndex];
-                const nextInput = applySuggestionToInput(currentDraft, selected.value);
-                suggestionState = { items: [], selectedIndex: -1 };
-                if (consoleState?.selectMenu?.title === 'Suggestions') {
-                    consoleState.closeSelectMenu();
-                }
-                updateDraftState(nextInput, nextInput.length);
-                renderScreen();
-                return;
-            }
-            void submitCurrentDraft();
+            // stdinDataHandler already forwarded \r to draft; component auto-submits
             return;
         }
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
@@ -3911,10 +3842,13 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (controlKey === 'up' || controlKey === 'down' || controlKey === 'tab' || controlKey === 'escape') {
             return;
         }
-        applyChunkToDraft(chunk);
+        consoleState?.processRawChunk?.(rawText);
+        currentDraft = consoleState?.input || '';
+        draftCursor = currentDraft.length;
         if (!inputLocked) {
             scheduleDraftRefresh();
         }
+        return;
     };
     process.stdin.on('data', stdinDataHandler);
     readline.emitKeypressEvents(process.stdin);
@@ -3945,26 +3879,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         if (hasBlockingSelectMenu()) {
-            if (key?.name === 'down') {
-                moveActiveMenu(1);
-                return;
-            }
-            if (key?.name === 'up') {
-                moveActiveMenu(-1);
-                return;
-            }
-            if (key?.name === 'return') {
-                confirmActiveMenuSelection();
-                return;
-            }
-            if (key?.name === 'escape' || key?.name === 'q') {
-                cancelActiveMenuSelection();
-                return;
-            }
-            if (/^[1-9]$/.test(_str || '')) {
-                confirmActiveMenuIndex(parseInt(_str, 10) - 1);
-                return;
-            }
+            return;
         }
         if (hasMessageDetailFocus()) {
             if (key?.name === 'y') {
@@ -4151,7 +4066,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (modalPromptActive || inputLocked || !hasInteractiveSuggestions()) {
             if (!modalPromptActive && !inputLocked && key?.name === 'return') {
-                void submitCurrentDraft();
+                // submit handled by component
                 return;
             }
             const isEditableKey = key?.name === 'backspace'
@@ -4189,7 +4104,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             renderScreen();
             return;
         } else if (key?.name === 'return') {
-            void submitCurrentDraft();
+            // submit handled by component
             return;
         } else if (key?.name === 'tab' && suggestionState.selectedIndex >= 0) {
             const selected = suggestionState.items[suggestionState.selectedIndex];

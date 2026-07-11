@@ -80,5 +80,6 @@ export * from './channels/PubSubAgentChannel';
 export * from './ui/AgentConsoleComponent';
 export * from './ui/AgentConsoleSessionState';
 export * from './ui/AgentConsoleEventBridge';
+export * from './ui/AgentConsoleUiDelegate';
 export * from './ui/agent-ui.module';
 export * from './ui/AgentConsolePanels';
