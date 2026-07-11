@@ -95,3 +95,24 @@ export class TuiSelectComponent {
 export class LabelComponent {
     @Attribute() labelStyle = 'color: #6e7681;';
 }
+
+
+@Directive({
+    selector: 'span'
+})
+export class SpanDirective {
+    @Attribute() textStyle = '';
+}
+
+@Directive({
+    selector: 'div'
+})
+export class DivDirective {
+    @Attribute() blockStyle = '';
+}
+
+@Directive({
+    selector: 'br'
+})
+export class BrDirective {
+}
