@@ -88,9 +88,43 @@ export class TuiRenderer extends ConsoleRenderer {
                     lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
                 }
                 return;
+            case 'select': {
+                const title = element.getAttribute('title') || '';
+                const hint = element.getAttribute('hint') || '';
+                const options = element.getAttribute('options');
+                const selectedIdx = parseInt(element.getAttribute('selectedIndex') || '0', 10);
+                let parsedOptions: Array<{label: string; value: string}> = [];
+                try {
+                    if (options) { parsedOptions = JSON.parse(options); }
+                } catch {}
+                if (title) {
+                    lines.push(this.applyAnsi(title, { ...styleMap, 'font-weight': 'bold' }, width));
+                }
+                parsedOptions.forEach((opt, idx) => {
+                    const marker = idx === selectedIdx ? '› ' : '  ';
+                    const num = (idx + 1) + '. ';
+                    lines.push(this.applyAnsi(marker + num + opt.label, styleMap, width));
+                });
+                if (hint) {
+                    lines.push(this.applyAnsi(hint, { ...styleMap, color: '#6f7c8a' }, width));
+                }
+                return;
+            }
             case 'input': {
                 const value = element.getAttribute('value') || text || '';
-                lines.push(this.applyAnsi(value, styleMap, width));
+                const prompt = element.getAttribute('prompt') || '';
+                const cursor = element.getAttribute('cursor') || ' ';
+                const cursorPos = parseInt(element.getAttribute('cursorPos') || '0', 10);
+                const shellStyle = element.getAttribute('shellStyle') || '';
+                const mergedStyle = shellStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(shellStyle)) : styleMap;
+                if (!value && !prompt) {
+                    lines.push(this.applyAnsi('', mergedStyle, width));
+                    return;
+                }
+                const cursorChar = cursorPos < value.length ? value[cursorPos] : cursor;
+                const beforeCursor = value.slice(0, Math.max(0, Math.min(cursorPos, value.length)));
+                const displayText = prompt + beforeCursor + cursorChar;
+                lines.push(this.applyAnsi(displayText, mergedStyle, width));
                 return;
             }
             case 'br':
@@ -228,6 +262,16 @@ export class TuiRenderer extends ConsoleRenderer {
             ...left,
             ...right
         };
+    }
+
+    protected parseInlineStyle(styleText: string): Record<string, string> {
+        const style: Record<string, string> = {};
+        String(styleText || '').split(';').map(s => s.trim()).filter(Boolean).forEach(part => {
+            const idx = part.indexOf(':');
+            if (idx < 0) { return; }
+            style[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
+        });
+        return style;
     }
 
     protected applyAnsi(value: string, styleMap: Record<string, string>, width?: number, inline = false): string {
