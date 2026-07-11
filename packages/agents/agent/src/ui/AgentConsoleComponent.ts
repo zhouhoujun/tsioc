@@ -12,46 +12,23 @@ import { AgentConsoleUiDelegate } from './AgentConsoleUiDelegate';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
-import {
-    AgentConsoleActivityPanelComponent,
-    AgentConsoleInputPanelComponent,
-    AgentConsoleMessageDetailPanelComponent,
-    AgentConsoleMessagesPanelComponent,
-    AgentConsoleSessionsPanelComponent,
-    AgentConsoleSelectPanelComponent,
-    AgentConsoleStatusPanelComponent,
-    AgentConsoleToolRunsPanelComponent,
-    AgentConsoleToolsPanelComponent,
-    AgentConsoleWorkingPanelComponent
-} from './AgentConsolePanels';
-import { TuiInputComponent, TuiSelectComponent } from '@tsdi/components/console';
+import { TuiInputComponent, TuiSelectComponent, LabelComponent, SpanDirective, DivDirective, BrDirective } from '@tsdi/components/console';
 
 @Component({
     selector: 'agent-console',
-    imports: [
-        AgentConsoleWorkingPanelComponent,
-        AgentConsoleSessionsPanelComponent,
-        AgentConsoleSelectPanelComponent,
-        AgentConsoleInputPanelComponent,
-        AgentConsoleMessageDetailPanelComponent,
-        AgentConsoleStatusPanelComponent,
-        AgentConsoleToolsPanelComponent,
-        AgentConsoleToolRunsPanelComponent,
-        AgentConsoleMessagesPanelComponent,
-        AgentConsoleActivityPanelComponent,
-        TuiInputComponent, TuiSelectComponent
-    ],
+    imports: [TuiInputComponent, TuiSelectComponent, LabelComponent, SpanDirective, DivDirective, BrDirective],
+    // directives: [TuiInputComponent, TuiSelectComponent, LabelComponent, SpanDirective, DivDirective, BrDirective],
     template: `
     <div class="agent-console">
-        <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
-        <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
-        <agent-console-messages-panel></agent-console-messages-panel>
-        <agent-console-message-detail-panel v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
-        <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
-        <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
-        <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
-        <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
-        <input shellStyle="{{inputShellStyle}}" prompt="> " value="{{inputValue}}" cursor=" " cursorPos="{{inputCursor}}"></input>
+        <div v-show="showStatusPanel"></div>
+        <div v-show="showSessionsPanel"></div>
+        <div class="messages-panel"></div>
+        <div v-show="showMessageDetailPanel"></div>
+        <div v-show="showActivityPanel"></div>
+        <div v-show="showToolsPanel"></div>
+        <div v-show="showWorkingPanel"></div>
+        <div v-show="showToolRunsPanel"></div>
+        <input shellStyle="{{inputShellStyle}}" prompt="> " value="{{inputValue}}" cursor=" " cursorPos="{{inputCursor}}">
         <select v-show="showSelectPanel" title="{{selectTitle}}" hint="{{selectHint}}" options="{{selectOptions}}" selectedIndex="{{selectIndex}}"></select>
     </div>
     `
@@ -621,32 +598,11 @@ export class AgentConsoleComponent {
             return;
         }
         this.refreshQueued = true;
-        Promise.resolve().then(async () => {
+        Promise.resolve().then(() => {
             this.refreshQueued = false;
-            await this.refreshPanels();
+            if (this.componentRef?.hostView) {
+                void this.componentRef.render();
+            }
         });
-    }
-
-    protected async refreshPanels(): Promise<void> {
-        const hostView = this.componentRef?.hostView;
-        if (!hostView) {
-            return;
-        }
-        const refs = [
-            hostView.query(AgentConsoleStatusPanelComponent),
-            hostView.query(AgentConsoleSessionsPanelComponent),
-            hostView.query(AgentConsoleMessagesPanelComponent),
-            hostView.query(AgentConsoleMessageDetailPanelComponent),
-            hostView.query(AgentConsoleToolRunsPanelComponent),
-            hostView.query(AgentConsoleActivityPanelComponent),
-            hostView.query(AgentConsoleToolsPanelComponent),
-            hostView.query(AgentConsoleWorkingPanelComponent),
-            hostView.query(AgentConsoleInputPanelComponent),
-            hostView.query(AgentConsoleSelectPanelComponent)
-        ].filter(Boolean) as Array<ComponentRef<any>>;
-
-        for (const ref of refs) {
-            await ref.render();
-        }
     }
 }
