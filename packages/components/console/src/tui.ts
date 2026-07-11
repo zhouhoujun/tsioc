@@ -74,13 +74,17 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'label':
             case 'li':
                 if (text) {
-                    lines.push(this.renderInlineLine(element, styleMap, width));
+                    const labelStyle = element.getAttribute('labelStyle');
+                    const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
+                    lines.push(this.renderInlineLine(element, merged, width));
                 }
                 return;
             case 'span':
             case 'a':
                 if (text) {
-                    lines.push(this.renderInlineLine(element, styleMap, width));
+                    const textStyle = element.getAttribute('textStyle');
+                    const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
+                    lines.push(this.renderInlineLine(element, merged, width));
                 }
                 return;
             case 'button':
