@@ -188,6 +188,13 @@ export class AgentConsoleSessionState {
         Array.from(this.listeners.values()).forEach(listener => listener());
     }
 
+    protected syncDerivedInputFocus(): void {
+        this.inputFocused = !this.sessionsFocused
+            && !this.messagesFocused
+            && !this.messageDetailOpen
+            && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
+    }
+
     get highlightedToolRun(): AgentConsoleToolRun | undefined {
         const active = this.toolRuns.find(item => item.status === 'running');
         if (active) {
@@ -225,6 +232,7 @@ export class AgentConsoleSessionState {
             this.messageDetailScroll = 0;
             this.messageDetailColumnScroll = 0;
         }
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -293,6 +301,7 @@ export class AgentConsoleSessionState {
         this.messageDetailOpen = true;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -303,6 +312,7 @@ export class AgentConsoleSessionState {
         this.messageDetailOpen = false;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -418,12 +428,14 @@ export class AgentConsoleSessionState {
         this.input = value;
         this.inputCursor = clampConsoleTextCursor(this.input, cursor);
         this.refreshInputSuggestions();
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
     setInputCursor(cursor: number): void {
         this.inputCursor = clampConsoleTextCursor(this.input, cursor);
         this.refreshInputSuggestions();
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -459,6 +471,7 @@ export class AgentConsoleSessionState {
         if (focused && !this.selectedSessionId && this.sessions.length) {
             this.selectedSessionId = this.sessions.find(item => item.current)?.id || this.sessions[0].id;
         }
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -556,6 +569,7 @@ export class AgentConsoleSessionState {
             options: options.slice(),
             selectedIndex: Math.max(0, Math.min(Math.max(options.length - 1, 0), selectedIndex))
         };
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -591,7 +605,32 @@ export class AgentConsoleSessionState {
 
     closeSelectMenu(): void {
         this.selectMenu = undefined;
+        this.syncDerivedInputFocus();
         this.notify();
+    }
+
+    async dismissFocusLayer(): Promise<boolean> {
+        if (this.selectMenu) {
+            await this.cancelSelectMenu();
+            return true;
+        }
+        if (this.messageDetailOpen) {
+            this.closeMessageDetail();
+            return true;
+        }
+        if (this.messagesFocused) {
+            this.setMessagesFocused(false);
+            return true;
+        }
+        if (this.sessionsFocused) {
+            this.setSessionsFocused(false);
+            return true;
+        }
+        if (!this.inputFocused) {
+            this.setInputFocused(true);
+            return true;
+        }
+        return false;
     }
 
     setSelectMenuIndex(index: number): void {
@@ -657,6 +696,7 @@ export class AgentConsoleSessionState {
                 this.selectMenu = undefined;
                 this.selectMenuAction = undefined;
             }
+            this.syncDerivedInputFocus();
             return;
         }
         const selectedValue = this.selectedSelectMenuOption?.value;
@@ -667,6 +707,7 @@ export class AgentConsoleSessionState {
             options,
             selectedIndex
         };
+        this.syncDerivedInputFocus();
         this.selectMenuAction = async (value?: string) => {
             if (!value) {
                 return;
@@ -675,6 +716,7 @@ export class AgentConsoleSessionState {
             this.input = next.value;
             this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
             this.refreshInputSuggestions();
+            this.syncDerivedInputFocus();
             this.notify();
         };
     }

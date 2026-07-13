@@ -1946,6 +1946,20 @@ async function runInteractiveChat(options: any): Promise<void> {
         renderScreen();
     };
 
+    const dismissConsoleFocusLayer = () => {
+        if (!consoleState?.dismissFocusLayer) {
+            return;
+        }
+        void consoleState.dismissFocusLayer().then(dismissed => {
+            if (!dismissed) {
+                return;
+            }
+            applyScreenNotice('');
+            syncDraftFromConsoleState();
+            renderScreen();
+        });
+    };
+
     const syncPendingApprovals = (targetSessionId = currentSessionId) => {
         if (!consoleState) {
             return [];
@@ -3425,8 +3439,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (controlKey === 'escape') {
                 lastRawControlKey = 'escape';
                 lastRawControlAt = Date.now();
-                consoleState.closeMessageDetail();
-                renderScreen();
+                dismissConsoleFocusLayer();
                 return;
             }
             return;
@@ -3484,7 +3497,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (controlKey === 'escape') {
                 lastRawControlKey = 'escape';
                 lastRawControlAt = Date.now();
-                exitMessageFocus();
+                dismissConsoleFocusLayer();
                 return;
             }
             return;
@@ -3548,7 +3561,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (controlKey === 'escape') {
                 lastRawControlKey = 'escape';
                 lastRawControlAt = Date.now();
-                exitSessionFocus();
+                dismissConsoleFocusLayer();
                 return;
             }
             return;
@@ -3756,8 +3769,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
             if (key?.name === 'escape' || key?.name === 'q') {
-                consoleState.closeMessageDetail();
-                renderScreen();
+                dismissConsoleFocusLayer();
                 return;
             }
             return;
@@ -3803,7 +3815,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
             if (key?.name === 'escape' || key?.name === 'q') {
-                exitMessageFocus();
+                dismissConsoleFocusLayer();
                 return;
             }
             return;
@@ -3855,7 +3867,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
             if (key?.name === 'escape' || key?.name === 'q') {
-                exitSessionFocus();
+                dismissConsoleFocusLayer();
                 return;
             }
             return;

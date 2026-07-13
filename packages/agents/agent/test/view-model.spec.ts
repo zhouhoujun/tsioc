@@ -501,6 +501,21 @@ export class AgentConsoleComponentTest {
         expect(uiDelegate.copiedTargets).toEqual(['input']);
     }
 
+    @Test('handled slash commands clear input after submit')
+    async handledSlashCommandsClearInputAfterSubmit() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+
+        component.input = '/clear';
+        await component.submit();
+
+        expect(component.input).toEqual('');
+        expect(component.messages).toEqual([]);
+        expect(uiDelegate.notices).toContain('Session cleared.');
+    }
+
     @Test('help menu selections execute commands and mentions')
     async helpMenuSelectionsExecuteActions() {
         const runtime = new RuntimeStub();
@@ -602,6 +617,34 @@ export class AgentConsoleComponentTest {
 
         expect(resolved).toEqual(['/tools']);
         expect(state.selectMenu).toEqual(undefined);
+    }
+
+    @Test('escape dismisses focused layers back to input focus')
+    async escapeDismissesFocusedLayersBackToInputFocus() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'm1', role: 'assistant', content: 'hello', createdAt: 1 } as any
+        ]);
+        state.setMessagesFocused(true);
+        state.openMessageDetail();
+
+        expect(state.inputFocused).toEqual(false);
+
+        await state.dismissFocusLayer();
+        expect(state.messageDetailOpen).toEqual(false);
+        expect(state.messagesFocused).toEqual(true);
+        expect(state.inputFocused).toEqual(false);
+
+        await state.dismissFocusLayer();
+        expect(state.messagesFocused).toEqual(false);
+        expect(state.inputFocused).toEqual(true);
+
+        state.openSelectMenu('Help', [{ label: '/help', value: '/help' }], 0);
+        expect(state.inputFocused).toEqual(false);
+
+        await state.dismissFocusLayer();
+        expect(state.selectMenu).toEqual(undefined);
+        expect(state.inputFocused).toEqual(true);
     }
 
     @Test('submit failure resets ui state and records error')

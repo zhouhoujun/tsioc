@@ -633,8 +633,12 @@ export class AgentConsoleComponent {
     async submit(): Promise<void> {
         const value = this.state.input.trim();
         if (!value) { return; }
-        if (value.startsWith('/') && (await this.handleCommand(value))) {
-            return;
+        if (value.startsWith('/')) {
+            this.state.setInput('');
+            if (await this.handleCommand(value)) {
+                return;
+            }
+            this.state.setInput(value, value.length);
         }
         if (this.multilineMode) {
             this.draftLines.push(value);

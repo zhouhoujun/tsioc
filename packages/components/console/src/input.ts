@@ -405,6 +405,22 @@ export function syncConsoleEditableElement(
     if (typeof element.textContent === 'string' && element.tagName?.toLowerCase?.() === 'textarea') {
         element.textContent = value;
     }
+    const ownerDocument = element?.ownerDocument;
+    const isActive = ownerDocument?.activeElement === element;
+    if (state.focused && typeof element.focus === 'function' && !isActive) {
+        try {
+            element.focus();
+        } catch {
+            // Ignore renderers without native focus support.
+        }
+    }
+    if (!state.focused && typeof element.blur === 'function' && isActive) {
+        try {
+            element.blur();
+        } catch {
+            // Ignore renderers without native blur support.
+        }
+    }
     if (state.focused && typeof element.setSelectionRange === 'function') {
         try {
             element.setSelectionRange(cursor, cursor);

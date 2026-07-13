@@ -71,12 +71,26 @@ export class ConsoleInputTest {
 
     @Test('syncs editable elements including selection for focused textarea')
     syncsEditableElements() {
+        let focused = 0;
+        let blurred = 0;
+        const ownerDocument: any = {
+            activeElement: null
+        };
         const element: any = {
             value: '',
             textContent: '',
             tagName: 'TEXTAREA',
+            ownerDocument,
             selectionStart: 0,
             selectionEnd: 0,
+            focus() {
+                focused += 1;
+                ownerDocument.activeElement = this;
+            },
+            blur() {
+                blurred += 1;
+                ownerDocument.activeElement = null;
+            },
             setSelectionRange(start: number, end: number) {
                 this.selectionStart = start;
                 this.selectionEnd = end;
@@ -93,6 +107,8 @@ export class ConsoleInputTest {
         expect(element.textContent).toBe('hello');
         expect(element.selectionStart).toBe(3);
         expect(element.selectionEnd).toBe(3);
+        expect(focused).toBe(1);
+        expect(ownerDocument.activeElement).toBe(element);
 
         syncConsoleEditableElement(element, {
             value: 'world',
@@ -104,6 +120,8 @@ export class ConsoleInputTest {
         expect(element.textContent).toBe('world');
         expect(element.selectionStart).toBe(3);
         expect(element.selectionEnd).toBe(3);
+        expect(blurred).toBe(1);
+        expect(ownerDocument.activeElement).toBe(null);
     }
 
     @Test('resolves enter actions from the base console layer')
