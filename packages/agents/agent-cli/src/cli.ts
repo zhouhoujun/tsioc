@@ -7,6 +7,7 @@ import { spawnSync } from 'child_process';
 import {
     getDisplayWidth,
     formatConsoleIndexedOptionLabel,
+    resolveConsolePlaceholderDisplayValue,
     resolveConsoleRawKeypressSuppressionKey,
     resolveConsoleSelectDetailLines,
     resolveConsoleSelectWindow,
@@ -1950,7 +1951,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (!consoleState?.dismissFocusLayer) {
             return;
         }
-        void consoleState.dismissFocusLayer().then(dismissed => {
+        void consoleState.dismissFocusLayer().then((dismissed: boolean) => {
             if (!dismissed) {
                 return;
             }
@@ -2905,7 +2906,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (!showingExitFrame) {
             const promptValue = consoleState?.input || '';
             const placeholder = inputPanel?.placeholderLabel || '';
-            const promptText = `> ${promptValue || placeholder}`;
+            const promptText = `> ${resolveConsolePlaceholderDisplayValue(promptValue, placeholder, true)}`;
             inputLines = [
                 ...renderShellBlock(promptText, width, ANSI.bg, promptValue ? ANSI.text : ANSI.muted),
                 paint(inputPanel?.hintLabel || '', ANSI.muted)

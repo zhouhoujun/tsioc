@@ -78,6 +78,26 @@ export interface ConsoleTranscriptVisibilityState {
     hasMessageDetailFocus?: boolean;
 }
 
+export function isConsolePlaceholderActive(value: string, placeholder?: string): boolean {
+    return !String(value || '') && !!String(placeholder || '');
+}
+
+export function resolveConsolePlaceholderDisplayValue(
+    value: string,
+    placeholder?: string,
+    focused = false
+): string {
+    const text = String(value || '');
+    if (text) {
+        return text;
+    }
+    const placeholderText = String(placeholder || '');
+    if (!placeholderText) {
+        return '';
+    }
+    return focused ? ` ${placeholderText}` : placeholderText;
+}
+
 export function shouldSubmitConsoleTextChunk(chunk: Buffer | string): boolean {
     const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
     if (!text || isConsoleAltEnterChunk(text)) {

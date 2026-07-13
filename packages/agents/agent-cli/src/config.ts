@@ -77,8 +77,72 @@ export interface AgentCliResolvedConfig {
     settingsModel?: Partial<AgentCliProviderProfile>;
 }
 
+function isCancelledConfigValue(value: unknown): boolean {
+    if (typeof value !== 'string') {
+        return false;
+    }
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'cancel' || normalized === '/cancel' || normalized === 'q';
+}
+
+function hasInvalidConfigSentinel(model?: Partial<AgentCliProviderProfile>): boolean {
+    if (!model) {
+        return false;
+    }
+    return isCancelledConfigValue(model.provider)
+        || isCancelledConfigValue(model.model)
+        || isCancelledConfigValue(model.baseUrl)
+        || isCancelledConfigValue(model.apiKey);
+}
+
 function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProviderProfile> {
-    return { ...model } as Partial<AgentCliProviderProfile>;
+    const next: Record<string, any> = { ...model };
+    if (next.profiles && typeof next.profiles === 'object' && !Array.isArray(next.profiles)) {
+        const sanitizedProfiles = Object.entries(next.profiles as Record<string, any>)
+            .reduce((profiles, [name, profile]) => {
+                if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+                    return profiles;
+                }
+                const sanitized = sanitizeModelProfile(profile as Record<string, any>);
+                if (hasInvalidConfigSentinel(sanitized)) {
+                    return profiles;
+                }
+                profiles[name] = sanitized;
+                return profiles;
+            }, {} as Record<string, any>);
+        if (Object.keys(sanitizedProfiles).length) {
+            next.profiles = sanitizedProfiles;
+        } else {
+            delete next.profiles;
+        }
+    }
+    if (next.defaultProfile && (!next.profiles || !next.profiles[next.defaultProfile])) {
+        delete next.defaultProfile;
+    }
+    if (next.complexityRouting && typeof next.complexityRouting === 'object' && !Array.isArray(next.complexityRouting)) {
+        const sanitizedRouting = Object.entries(next.complexityRouting as Record<string, any>)
+            .reduce((routes, [key, entry]) => {
+                if (typeof entry === 'string') {
+                    if (next.profiles?.[entry]) {
+                        routes[key] = entry;
+                    }
+                    return routes;
+                }
+                if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+                    const sanitized = sanitizeModelProfile(entry as Record<string, any>);
+                    if (!hasInvalidConfigSentinel(sanitized)) {
+                        routes[key] = sanitized;
+                    }
+                }
+                return routes;
+            }, {} as Record<string, any>);
+        if (Object.keys(sanitizedRouting).length) {
+            next.complexityRouting = sanitizedRouting;
+        } else {
+            delete next.complexityRouting;
+        }
+    }
+    return next as Partial<AgentCliProviderProfile>;
 }
 
 function readSettingsModel(root?: string): Partial<AgentCliProviderProfile> | undefined {
@@ -97,21 +161,27 @@ function resolveInitialModelSelection(model?: Partial<AgentCliProviderProfile>):
     if (!model) {
         return {};
     }
+    const fallback = hasInvalidConfigSentinel(model) ? {} : model;
     if (model.provider || model.model) {
-        return model;
+        return hasInvalidConfigSentinel(model) ? {} : model;
     }
     if (model.defaultProfile && model.profiles?.[model.defaultProfile]) {
-        return model.profiles[model.defaultProfile];
+        const selected = model.profiles[model.defaultProfile];
+        return hasInvalidConfigSentinel(selected) ? fallback : selected;
     }
     const simpleRoute = model.complexityRouting?.simple;
     if (typeof simpleRoute === 'string' && model.profiles?.[simpleRoute]) {
-        return model.profiles[simpleRoute];
+        const selected = model.profiles[simpleRoute];
+        return hasInvalidConfigSentinel(selected) ? fallback : selected;
     }
     if (simpleRoute && typeof simpleRoute === 'object') {
-        return simpleRoute;
+        return hasInvalidConfigSentinel(simpleRoute) ? fallback : simpleRoute;
     }
     const firstProfile = model.profiles ? Object.values(model.profiles)[0] : undefined;
-    return firstProfile || {};
+    if (firstProfile && !hasInvalidConfigSentinel(firstProfile)) {
+        return firstProfile;
+    }
+    return fallback || {};
 }
 
 function isKnownGroup(name: string, groups: Record<string, unknown>): boolean {

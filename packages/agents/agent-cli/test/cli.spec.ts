@@ -449,6 +449,43 @@ export class AgentCliTest {
         expect((modelConfig.complexityRouting as any).complex).toBe('strong');
     }
 
+    @Test('falls back to top-level model config when selected profile contains cancel sentinel values')
+    async fallsBackFromCancelledSelectedProfile() {
+        const root = await this.createRoot();
+        writeSettingsModelProfile(root, {
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            apiKey: 'real-key',
+            baseUrl: 'https://rehdasu.cn',
+            timeoutMs: 120000,
+            defaultProfile: 'flash',
+            profiles: {
+                flash: {
+                    provider: 'openai-compatible',
+                    model: 'cancel',
+                    apiKey: 'cancel',
+                    baseUrl: 'cancel'
+                } as any,
+                strong: {
+                    provider: 'openai-compatible',
+                    model: 'gpt-5.5',
+                    baseUrl: 'https://rehdasu.cn',
+                    reasoning: true
+                } as any
+            }
+        } as any);
+
+        const resolved = resolveCliConfig({ root });
+        const modelConfig = resolveCliModelConfig({}, root);
+        expect((resolved.settingsModel as any).profiles.flash).toBe(undefined);
+        expect((resolved.settingsModel as any).defaultProfile).toBe(undefined);
+        expect((resolved.settingsModel as any).complexityRouting?.simple).toBe(undefined);
+        expect(modelConfig.provider).toBe('openai-compatible');
+        expect(modelConfig.model).toBe('gpt-5.4');
+        expect(modelConfig.baseUrl).toBe('https://rehdasu.cn');
+        expect(modelConfig.apiKey).toBe('real-key');
+    }
+
     @Test('formats activity and tool run lines with timestamps')
     formatsActivityAndToolRunLines() {
         const time = new Date(2026, 0, 2, 3, 4, 5).getTime();

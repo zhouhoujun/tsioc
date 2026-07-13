@@ -69,6 +69,11 @@ export class AgentConsoleComponent {
         return '';
     }
 
+    protected isCancelPromptValue(value?: string): boolean {
+        const normalized = String(value || '').trim().toLowerCase();
+        return normalized === 'cancel' || normalized === '/cancel' || normalized === 'q';
+    }
+
     get title(): string {
         return this.state.title;
     }
@@ -549,19 +554,20 @@ export class AgentConsoleComponent {
         const flash = models.length
             ? await this.uiDelegate.select('Flash model for ' + prov, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(currModel)))
             : await this.uiDelegate.prompt('Flash model [' + defModel + ']:');
-        if (!flash) { return; }
+        if (!flash || this.isCancelPromptValue(flash)) { return; }
         const strong = models.length
             ? await this.uiDelegate.select('Strong model for ' + prov, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(currModel)))
             : await this.uiDelegate.prompt('Strong model [' + strongDef + ']:');
-        if (!strong) { return; }
+        if (!strong || this.isCancelPromptValue(strong)) { return; }
         let baseUrl = this.PROVIDER_BASE_URLS[prov];
         if (prov === 'openai-compatible' || prov === 'anthropic') {
             const input = await this.uiDelegate.prompt('Base URL [' + (baseUrl || '') + ']:');
+            if (this.isCancelPromptValue(input)) { return; }
             if (input) { baseUrl = input; }
         }
         const keyLabel = currProv === prov && this.options.model?.apiKey ? '******' : '(required)';
         const key = await this.uiDelegate.prompt('API key for ' + prov + ' [' + keyLabel + ']:', true);
-        if (!key) { return; }
+        if (!key || this.isCancelPromptValue(key)) { return; }
         await this.uiDelegate.applyModelProfile({ provider: prov, flashModel: flash, strongModel: strong, baseUrl, apiKey: key });
     }
 

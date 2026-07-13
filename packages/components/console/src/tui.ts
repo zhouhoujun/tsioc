@@ -21,7 +21,9 @@ import { fitByDisplayWidth, getDisplayWidth, sliceByDisplayWidth } from './displ
 import {
     clampConsoleSelectIndex,
     formatConsoleIndexedOptionLabel,
+    isConsolePlaceholderActive,
     resolveConsoleSelectDetailLines,
+    resolveConsolePlaceholderDisplayValue,
     resolveConsoleSelectWindow
 } from './input';
 import { TuiInputComponent, TuiTextareaComponent, TuiSelectComponent, LabelComponent } from './components';
@@ -179,8 +181,8 @@ export class TuiRenderer extends ConsoleRenderer {
                     lines.push(this.applyAnsi('', mergedStyle, width));
                     return;
                 }
-                const displayValue = value || placeholder;
-                const isPlaceholder = !value && !!placeholder;
+                const displayValue = resolveConsolePlaceholderDisplayValue(value, placeholder, focused);
+                const isPlaceholder = isConsolePlaceholderActive(value, placeholder);
                 const safeCursorPos = Math.max(0, Math.min(cursorPos, displayValue.length));
                 const promptText = prompt
                     ? this.applyAnsi(prompt, this.mergeStyles(mergedStyle, promptStyle), undefined, true)
@@ -226,7 +228,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 const valueStyle = this.parseInlineStyle(element.getAttribute('valueStyle') || '');
                 const cursorStyle = this.parseInlineStyle(element.getAttribute('cursorStyle') || '');
                 const mergedStyle = shellStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(shellStyle)) : styleMap;
-                const displayValue = value || placeholder;
+                const displayValue = resolveConsolePlaceholderDisplayValue(value, placeholder, focused);
                 if (!displayValue && !prompt) {
                     lines.push(this.applyAnsi('', mergedStyle, width));
                     return;
@@ -241,7 +243,7 @@ export class TuiRenderer extends ConsoleRenderer {
                     promptStyle,
                     valueStyle,
                     cursorStyle,
-                    placeholderActive: !value && !!placeholder,
+                    placeholderActive: isConsolePlaceholderActive(value, placeholder),
                     showCursor: focused
                 });
                 lines.push(...rendered);

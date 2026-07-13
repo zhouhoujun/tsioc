@@ -5,8 +5,10 @@ import {
     clampConsoleSelectIndex,
     clampConsoleTextCursor,
     formatConsoleIndexedOptionLabel,
+    isConsolePlaceholderActive,
     processConsoleTextInputChunk,
     resolveConsoleRawKeypressSuppressionKey,
+    resolveConsolePlaceholderDisplayValue,
     resolveConsoleListWindow,
     resolveConsoleSelectDetailLines,
     resolveConsoleEnterAction,
@@ -160,6 +162,9 @@ export class ConsoleInputTest {
             description: 'fallback'
         })).toEqual(['fallback']);
         expect(formatConsoleIndexedOptionLabel(1, '/messages', true)).toBe('› 2. /messages');
+        expect(isConsolePlaceholderActive('', 'Ask code or files')).toBe(true);
+        expect(resolveConsolePlaceholderDisplayValue('', 'Ask code or files', true)).toBe(' Ask code or files');
+        expect(resolveConsolePlaceholderDisplayValue('', 'Ask code or files', false)).toBe('Ask code or files');
     }
 
     @Test('resolves shared console cursor navigation and transcript visibility rules')
