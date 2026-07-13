@@ -1,3 +1,5 @@
+import { applyConsoleTextInputChunk, formatConsoleIndexedOptionLabel } from '@tsdi/components/console';
+
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
 export interface SelectMenuOption {
@@ -410,10 +412,8 @@ export function renderSelectMenu(title: string, options: SelectMenuOption[], sel
         ...String(title || '').split('\n'),
         '',
         ...options.map((option, index) => {
-            const marker = index === selectedIndex ? '›' : ' ';
-            const number = `${index + 1}.`;
             const suffix = option.description ? `  ${option.description}` : '';
-            return `${marker} ${number} ${option.label}${suffix}`;
+            return `${formatConsoleIndexedOptionLabel(index, option.label, index === selectedIndex)}${suffix}`;
         }),
         '',
         hint
@@ -669,78 +669,7 @@ export function applyTerminalInputChunk(value: string, cursor: number, chunk: Bu
     if (!text || parseTerminalMouseEvent(text)) {
         return { value, cursor };
     }
-    let nextValue = value;
-    let nextCursor = Math.max(0, Math.min(cursor, value.length));
-    for (let index = 0; index < text.length; index++) {
-        const char = text[index];
-        if (char === '\t') {
-            continue;
-        }
-        if (char === '\u007f') {
-            if (nextCursor > 0) {
-                nextValue = `${nextValue.slice(0, nextCursor - 1)}${nextValue.slice(nextCursor)}`;
-                nextCursor -= 1;
-            }
-            continue;
-        }
-        if (char === '\u001b') {
-            const seq3 = text.slice(index, index + 3);
-            const seq4 = text.slice(index, index + 4);
-            if (seq3 === '\u001b[D') {
-                nextCursor = Math.max(0, nextCursor - 1);
-                index += 2;
-                continue;
-            }
-            if (seq3 === '\u001b[C') {
-                nextCursor = Math.min(nextValue.length, nextCursor + 1);
-                index += 2;
-                continue;
-            }
-            if (seq3 === '\u001b[H') {
-                nextCursor = 0;
-                index += 2;
-                continue;
-            }
-            if (seq3 === '\u001b[F') {
-                nextCursor = nextValue.length;
-                index += 2;
-                continue;
-            }
-            if (seq4 === '\u001b[3~') {
-                if (nextCursor < nextValue.length) {
-                    nextValue = `${nextValue.slice(0, nextCursor)}${nextValue.slice(nextCursor + 1)}`;
-                }
-                index += 3;
-                continue;
-            }
-            if (text[index + 1] === '[') {
-                let seqEnd = index + 2;
-                while (seqEnd < text.length) {
-                    const code = text.charCodeAt(seqEnd);
-                    if (code >= 0x40 && code <= 0x7e) {
-                        break;
-                    }
-                    seqEnd += 1;
-                }
-                index = seqEnd < text.length ? seqEnd : text.length;
-                continue;
-            }
-            if (text[index + 1] === 'O') {
-                index = Math.min(text.length - 1, index + 2);
-                continue;
-            }
-            continue;
-        }
-        if (char < ' ') {
-            continue;
-        }
-        nextValue = `${nextValue.slice(0, nextCursor)}${char}${nextValue.slice(nextCursor)}`;
-        nextCursor += char.length;
-    }
-    return {
-        value: nextValue,
-        cursor: nextCursor
-    };
+    return applyConsoleTextInputChunk(value, cursor, text);
 }
 
 export function buildTerminalHeaderLine(options: TerminalHeaderOptions): string {

@@ -252,11 +252,31 @@ export class ConsoleElement extends ConsoleNode implements RElement {
     }
 
     hasAttribute(name: string): boolean {
-        return this.attributes.has(name);
+        return this.resolveAttribute(name) != null;
     }
 
     getAttribute(name: string): string | null {
-        return this.attributes.get(name)?.value ?? null;
+        return this.resolveAttribute(name)?.value ?? null;
+    }
+
+    protected resolveAttribute(name: string): RAttr | undefined {
+        const direct = this.attributes.get(name);
+        if (direct) {
+            return direct;
+        }
+        const lowered = name.toLowerCase();
+        if (lowered !== name) {
+            const lower = this.attributes.get(lowered);
+            if (lower) {
+                return lower;
+            }
+        }
+        for (const [key, attr] of this.attributes.entries()) {
+            if (key.toLowerCase() === lowered) {
+                return attr;
+            }
+        }
+        return undefined;
     }
 
     setAttribute(name: string, value: string): void {
@@ -472,6 +492,13 @@ export class ConsoleRenderer implements Renderer {
                 }
                 case 'input': {
                     pushLine(element.getAttribute('value') || collectText(element));
+                    return;
+                }
+                case 'textarea': {
+                    const value = element.getAttribute('value') || collectText(element);
+                    String(value || '')
+                        .split('\n')
+                        .forEach(line => pushLine(line));
                     return;
                 }
                 case 'br':

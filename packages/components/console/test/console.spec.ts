@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, ConsoleText, TuiRenderer, TuiTemplateModule } from '../src';
+import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, ConsoleText, resolveConsoleEnterAction, TuiRenderer, TuiTemplateModule } from '../src';
 import { Application } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 
@@ -71,6 +71,52 @@ class ConsolePanelTestComponent {
     `
 })
 class ConsoleCjkTestComponent {
+}
+
+@Component({
+    selector: 'console-textarea-test',
+    template: `
+    <section>
+        <textarea prompt="> " value="line1\nline2" cursorPos="7" placeholder="Ask"></textarea>
+    </section>
+    `
+})
+class ConsoleTextareaTestComponent {
+}
+
+@Component({
+    selector: 'console-textarea-focused-test',
+    template: `
+    <section>
+        <textarea
+            prompt="> "
+            continuationPrompt=".. "
+            value="line1\nline2"
+            cursorPos="7"
+            focused="true"></textarea>
+    </section>
+    `
+})
+class ConsoleTextareaFocusedTestComponent {
+}
+
+@Component({
+    selector: 'console-select-test',
+    template: `
+    <section>
+        <select
+            title="Help"
+            meta="2/3"
+            hint="enter confirm"
+            selectedIndex="1"
+            visibleCount="2"
+            detailTitle="Preview"
+            options='[{"label":"/help","value":"/help","description":"Show help"},{"label":"/messages","value":"/messages","description":"Browse messages"},{"label":"/exit","value":"/exit","description":"Exit"}]'
+            detailLines='["Browse messages"]'></select>
+    </section>
+    `
+})
+class ConsoleSelectTestComponent {
 }
 
 @Suite('Console Renderer')
@@ -210,5 +256,68 @@ export class ConsoleRendererTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('renders textarea content through tui renderer')
+    async rendersTextareaContentThroughTuiRenderer() {
+        const ctx = await Application.run(ConsoleTextareaTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleTextareaTestComponent) as ComponentRef<ConsoleTextareaTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 24 });
+            expect(lines.some(line => line.includes('line1'))).toBe(true);
+            expect(lines.some(line => line.includes('line2'))).toBe(true);
+            expect(lines.some(line => line.includes('>'))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('renders focused textarea cursor and continuation prompt through tui renderer')
+    async rendersFocusedTextareaCursorThroughTuiRenderer() {
+        const ctx = await Application.run(ConsoleTextareaFocusedTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleTextareaFocusedTestComponent) as ComponentRef<ConsoleTextareaFocusedTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 24 });
+            expect(lines.some(line => line.includes('>'))).toBe(true);
+            expect(lines.some(line => line.includes('.. '))).toBe(true);
+            expect(lines.some(line => line.includes('\x1b['))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('renders select window and detail preview through tui renderer')
+    async rendersSelectWindowThroughTuiRenderer() {
+        const ctx = await Application.run(ConsoleSelectTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleSelectTestComponent) as ComponentRef<ConsoleSelectTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 28 });
+            expect(lines.some(line => line.includes('Help'))).toBe(true);
+            expect(lines.some(line => line.includes('2. /messages'))).toBe(true);
+            expect(lines.some(line => line.includes('Preview'))).toBe(true);
+            expect(lines.some(line => line.includes('Browse messages'))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('resolves console enter actions at the base input layer')
+    resolvesConsoleEnterActions() {
+        expect(resolveConsoleEnterAction()).toBe('submit');
+        expect(resolveConsoleEnterAction({ ctrlKey: true })).toBe('newline');
+        expect(resolveConsoleEnterAction({ altKey: true })).toBe('newline');
+        expect(resolveConsoleEnterAction({ hasSelectMenu: true })).toBe('confirm-selection');
     }
 }

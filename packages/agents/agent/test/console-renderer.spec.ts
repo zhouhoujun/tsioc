@@ -41,6 +41,7 @@ export class AgentConsoleRendererTest {
         ]);
         ref.instance.sessionState.setTasksCount(1);
         await ref.render();
+        await Promise.resolve();
         const renderer = this.ctx.get(ConsoleRenderer);
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
@@ -96,6 +97,7 @@ export class AgentConsoleRendererTest {
         ref.instance.sessionState.scrollMessageDetailToEdge('end');
         ref.instance.sessionState.scrollMessageDetailColumns(4);
         await ref.render();
+        await Promise.resolve();
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const detailPanel = ref.hostView.query(AgentConsoleMessageDetailPanelComponent) as ComponentRef<AgentConsoleMessageDetailPanelComponent>;
@@ -239,6 +241,7 @@ export class AgentConsoleRendererTest {
         ref.instance.sessionState.setSessionsFocused(true);
         ref.instance.sessionState.setSelectedSessionId('chat-9');
         await ref.render();
+        await Promise.resolve();
 
         const renderer = this.ctx.get(ConsoleRenderer);
         const sessionsPanel = ref.hostView.query(AgentConsoleSessionsPanelComponent) as ComponentRef<AgentConsoleSessionsPanelComponent>;

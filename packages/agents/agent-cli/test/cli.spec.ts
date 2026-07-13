@@ -4,6 +4,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
 import { TuiRenderer } from '@tsdi/components/console';
+import { ComponentFactory } from '@tsdi/components';
+import { AgentConsoleComponent, AgentConsoleUiDelegate, ModelProfile } from '@tsdi/agent';
 import { runAgentApplication } from '../src/run-command';
 import {
     createAgentCli,
@@ -30,6 +32,7 @@ import {
     resolveUniqueCommandPrefix,
     resolveInputSuggestions,
     shouldAcceptSuggestionOnEnter,
+    resolveRawKeypressSuppressionKey,
     resolveCliConfig,
     resolveCliModelConfig,
     resolveProviderApiKeyEnv,
@@ -127,18 +130,17 @@ export class AgentCliTest {
         expect(resolved.channels.defaultChannel).toBe('local');
     }
 
-    @Test('defaults workspace to current repository root')
-    async defaultsWorkspaceToCurrentRepositoryRoot() {
+    @Test('defaults workspace to launch git root')
+    async defaultsWorkspaceToLaunchGitRoot() {
         const home = await this.createRoot();
         const originalHome = process.env.HOME;
         process.env.HOME = home;
         try {
             const resolved = resolveCliConfig({});
-            const repoRoot = path.resolve(process.cwd(), '../../..');
             expect(resolved.root).toBe(path.resolve(home, '.tsdi-agent'));
             expect(resolved.settingsPath).toBe(path.resolve(home, '.tsdi-agent', 'settings.json'));
-            expect(resolved.workspace).toBe(repoRoot);
-            expect(resolved.tools.file?.rootDir).toBe(repoRoot);
+            expect(resolved.workspace).toBe(process.cwd());
+            expect(resolved.tools.file?.rootDir).toBe(process.cwd());
         } finally {
             process.env.HOME = originalHome;
         }
@@ -180,6 +182,67 @@ export class AgentCliTest {
         try {
             expect(ctx.get(TuiRenderer)).toBeTruthy();
             expect(ctx.get(TuiRenderer).constructor.name).toBe('TuiRenderer');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('injects console ui delegate into agent console component for slash commands')
+    async injectsConsoleUiDelegateIntoAgentConsoleComponent() {
+        const root = await this.createRoot();
+        writeSettingsModelProfile(root, {
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            apiKey: 'test-key',
+            baseUrl: 'https://api.deepseek.com',
+            timeoutMs: 120000
+        });
+        class DelegateStub extends AgentConsoleUiDelegate {
+            selected = 0;
+            quitCalled = 0;
+
+            async select(): Promise<string | undefined> {
+                this.selected += 1;
+                return undefined;
+            }
+
+            async prompt(): Promise<string | undefined> {
+                return undefined;
+            }
+
+            notify(): void {
+                return;
+            }
+
+            async copyText(): Promise<boolean> {
+                return true;
+            }
+
+            async applyModelProfile(_profile: ModelProfile): Promise<void> {
+                return;
+            }
+
+            quit(): void {
+                this.quitCalled += 1;
+            }
+        }
+        const delegate = new DelegateStub();
+        const ctx = await runAgentApplication({ root }, {}, [{
+            provide: AgentConsoleUiDelegate,
+            useValue: delegate
+        }]);
+        try {
+            const factory = ctx.get(ComponentFactory);
+            const ref = factory.create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+
+            ref.instance.input = '/help';
+            await ref.instance.submit();
+            ref.instance.input = '/exit';
+            await ref.instance.submit();
+
+            expect(delegate.selected).toBe(1);
+            expect(delegate.quitCalled).toBe(1);
         } finally {
             await ctx.close();
         }
@@ -864,11 +927,42 @@ export class AgentCliTest {
         })).toBe(true);
 
         expect(shouldSuppressDuplicatedKeypress({
+            lastRawKey: 'q',
+            lastRawAt: now,
+            now: now + 10,
+            keyName: 'q',
+            text: 'q'
+        })).toBe(true);
+
+        expect(shouldSuppressDuplicatedKeypress({
             lastRawKey: 'down',
             lastRawAt: now,
             now: now + 60,
             keyName: 'down'
         })).toBe(false);
+    }
+
+    @Test('resolves raw keypress suppression keys for menu and submit chunks')
+    resolvesRawKeypressSuppressionKeys() {
+        expect(resolveRawKeypressSuppressionKey({
+            rawText: '/help\r',
+            submitTriggered: true
+        })).toBe('return');
+
+        expect(resolveRawKeypressSuppressionKey({
+            rawText: '2',
+            menuKey: '2'
+        })).toBe('digit');
+
+        expect(resolveRawKeypressSuppressionKey({
+            rawText: 'q',
+            menuKey: 'q'
+        })).toBe('q');
+
+        expect(resolveRawKeypressSuppressionKey({
+            rawText: '\u001b[B',
+            controlKey: 'down'
+        })).toBe('down');
     }
 
     @Test('compacts rendered lines from the top and keeps recent content near input')

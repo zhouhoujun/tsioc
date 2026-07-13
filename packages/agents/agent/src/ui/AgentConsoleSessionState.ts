@@ -1,7 +1,15 @@
 import { Injectable } from '@tsdi/ioc';
+import { clampConsoleTextCursor, processConsoleTextInputChunk } from '@tsdi/components/console';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { AgentConsoleTheme, AgentConsoleThemeInput, defaultAgentConsoleTheme, mergeAgentConsoleTheme } from './AgentConsoleTheme';
+import {
+    AGENT_CONSOLE_SUGGESTIONS_HINT,
+    AGENT_CONSOLE_SUGGESTIONS_TITLE,
+    applyAgentConsoleSuggestion,
+    isAgentConsoleSuggestionMenu,
+    resolveAgentConsoleInputSuggestions
+} from './AgentConsoleSuggestions';
 
 export interface AgentConsoleToolItem {
     name: string;
@@ -83,6 +91,8 @@ export interface AgentConsoleSelectMenu {
 export class AgentConsoleSessionState {
     sessionId = 'console';
     input = '';
+    inputCursor = 0;
+    inputFocused = true;
     title = '';
     messages: AgentMessage[] = [];
     messagesFocused = false;
@@ -384,6 +394,7 @@ export class AgentConsoleSessionState {
 
     setTools(tools: AgentConsoleToolItem[]): void {
         this.tools = tools;
+        this.refreshInputSuggestions();
         this.notify();
     }
 
@@ -403,12 +414,21 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
-    setInput(value: string): void {
+    setInput(value: string, cursor = value.length): void {
         this.input = value;
-        if (value.endsWith('\r') && this.submitAction) {
-            this.input = value.slice(0, -1);
-            this.submitAction();
-        }
+        this.inputCursor = clampConsoleTextCursor(this.input, cursor);
+        this.refreshInputSuggestions();
+        this.notify();
+    }
+
+    setInputCursor(cursor: number): void {
+        this.inputCursor = clampConsoleTextCursor(this.input, cursor);
+        this.refreshInputSuggestions();
+        this.notify();
+    }
+
+    setInputFocused(focused: boolean): void {
+        this.inputFocused = !!focused;
         this.notify();
     }
 
@@ -497,6 +517,7 @@ export class AgentConsoleSessionState {
 
     setCommandHints(commands: string[]): void {
         this.commandHints = Array.from(new Set(commands.filter(Boolean)));
+        this.refreshInputSuggestions();
         this.notify();
     }
 
@@ -597,12 +618,13 @@ export class AgentConsoleSessionState {
         return this.selectMenu.options[this.selectMenu.selectedIndex];
     }
 
-    async confirmSelectMenu(value?: string): Promise<void> {
+    async confirmSelectMenu(value?: string): Promise<string | undefined> {
         const resolved = value ?? this.selectedSelectMenuOption?.value;
         const action = this.selectMenuAction;
         this.selectMenuAction = undefined;
         this.closeSelectMenu();
         await action?.(resolved);
+        return resolved;
     }
 
     async chooseSelectMenuIndex(index: number): Promise<void> {
@@ -618,6 +640,43 @@ export class AgentConsoleSessionState {
         this.selectMenuAction = undefined;
         this.closeSelectMenu();
         await action?.(undefined);
+    }
+
+    protected refreshInputSuggestions(): void {
+        if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) {
+            return;
+        }
+        const options = resolveAgentConsoleInputSuggestions(
+            this.input,
+            this.inputCursor,
+            this.commandHints,
+            this.tools
+        );
+        if (!options.length) {
+            if (isAgentConsoleSuggestionMenu(this.selectMenu)) {
+                this.selectMenu = undefined;
+                this.selectMenuAction = undefined;
+            }
+            return;
+        }
+        const selectedValue = this.selectedSelectMenuOption?.value;
+        const selectedIndex = Math.max(0, options.findIndex(option => option.value === selectedValue));
+        this.selectMenu = {
+            title: AGENT_CONSOLE_SUGGESTIONS_TITLE,
+            hint: AGENT_CONSOLE_SUGGESTIONS_HINT,
+            options,
+            selectedIndex
+        };
+        this.selectMenuAction = async (value?: string) => {
+            if (!value) {
+                return;
+            }
+            const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, value);
+            this.input = next.value;
+            this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
+            this.refreshInputSuggestions();
+            this.notify();
+        };
     }
 
     setRunningTool(toolName: string): void {
@@ -683,21 +742,35 @@ export class AgentConsoleSessionState {
         return String(value || '').replace(/\t/g, '    ');
     }
 
-    /** Process a raw input chunk from the terminal. Handles chars, backspace, Enter. */
-    processRawChunk(chunk: string): void {
-        for (let i = 0; i < chunk.length; i++) {
-            const ch = chunk[i];
-            if (ch === '\r' || ch === '\n') {
-                if (this.submitAction) {
-                    this.submitAction();
-                }
-            } else if (ch === '\u007f' || ch === '\b') {
-                this.input = this.input.slice(0, -1);
-                this.notify();
-            } else if (ch >= ' ') {
-                this.input += ch;
-                this.notify();
+    async processRawChunk(
+        chunk: string,
+        options: { submitOnEnter?: boolean; ctrlKey?: boolean; altKey?: boolean; hasSelectMenu?: boolean } = {}
+    ): Promise<{ submitted: boolean; confirmedSelection: boolean }> {
+        const next = processConsoleTextInputChunk(this.input, this.inputCursor, chunk, options);
+        this.input = this.expandTabs(next.value);
+        this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
+        let submitted = next.shouldSubmit;
+
+        if (next.shouldConfirmSelection && this.selectMenu) {
+            const shouldSubmitSelectedCommand = isAgentConsoleSuggestionMenu(this.selectMenu)
+                && String(this.selectedSelectMenuOption?.value || '').startsWith('/');
+            const resolved = await this.confirmSelectMenu();
+            if (shouldSubmitSelectedCommand && resolved && this.submitAction) {
+                await this.submitAction();
+                submitted = true;
             }
+        } else {
+            this.refreshInputSuggestions();
         }
+
+        if (next.shouldSubmit && this.submitAction) {
+            await this.submitAction();
+        }
+
+        this.notify();
+        return {
+            submitted,
+            confirmedSelection: next.shouldConfirmSelection
+        };
     }
 }

@@ -70,7 +70,7 @@ export function withAdapterProviders(): any[] {
     ];
 }
 
-export async function runAgentApplication(options: AgentCliOptions, agentOptions?: any): Promise<any> {
+export async function runAgentApplication(options: AgentCliOptions, agentOptions?: any, extraProviders: any[] = []): Promise<any> {
     const resolved = resolveCliConfig(options);
     return Application.run(AgentModule, {
         deps: [TuiTemplateModule],
@@ -78,6 +78,7 @@ export async function runAgentApplication(options: AgentCliOptions, agentOptions
             ...provideTools(resolved.tools),
             ...withAdapterProviders(),
             resolveModelAdapter(options),
+            ...extraProviders,
             ...(agentOptions ? [{ provide: AGENT_OPTIONS, useValue: agentOptions }] : [])
         ]
     });

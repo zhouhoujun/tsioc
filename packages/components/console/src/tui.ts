@@ -18,7 +18,13 @@ import {
     ConsoleText
 } from './console';
 import { fitByDisplayWidth, getDisplayWidth, sliceByDisplayWidth } from './display-width';
-import { TuiInputComponent, TuiSelectComponent, LabelComponent } from './components';
+import {
+    clampConsoleSelectIndex,
+    formatConsoleIndexedOptionLabel,
+    resolveConsoleSelectDetailLines,
+    resolveConsoleSelectWindow
+} from './input';
+import { TuiInputComponent, TuiTextareaComponent, TuiSelectComponent, LabelComponent } from './components';
 
 const ANSI_RESET = '\x1b[0m';
 const ANSI_BOLD = '\x1b[1m';
@@ -94,23 +100,66 @@ export class TuiRenderer extends ConsoleRenderer {
                 return;
             case 'select': {
                 const title = element.getAttribute('title') || '';
+                const meta = element.getAttribute('meta') || '';
                 const hint = element.getAttribute('hint') || '';
                 const options = element.getAttribute('options');
                 const selectedIdx = parseInt(element.getAttribute('selectedIndex') || '0', 10);
+                const visibleCount = parseInt(element.getAttribute('visibleCount') || '6', 10);
+                const detailTitle = element.getAttribute('detailTitle') || '';
+                const detailLinesText = element.getAttribute('detailLines');
+                const titleStyle = this.parseInlineStyle(element.getAttribute('titleStyle') || '');
+                const metaStyle = this.parseInlineStyle(element.getAttribute('metaStyle') || '');
+                const hintStyle = this.parseInlineStyle(element.getAttribute('hintStyle') || '');
+                const optionStyle = this.parseInlineStyle(element.getAttribute('optionStyle') || '');
+                const optionActiveStyle = this.parseInlineStyle(element.getAttribute('optionActiveStyle') || '');
+                const detailLabelStyle = this.parseInlineStyle(element.getAttribute('detailLabelStyle') || '');
+                const detailValueStyle = this.parseInlineStyle(element.getAttribute('detailValueStyle') || '');
                 let parsedOptions: Array<{label: string; value: string}> = [];
+                let detailLines: string[] = [];
                 try {
                     if (options) { parsedOptions = JSON.parse(options); }
                 } catch {}
+                try {
+                    if (detailLinesText) {
+                        detailLines = JSON.parse(detailLinesText);
+                    }
+                } catch {}
+                const safeSelectedIdx = clampConsoleSelectIndex(parsedOptions.length, selectedIdx);
+                const safeVisibleCount = Number.isFinite(visibleCount) && visibleCount > 0 ? visibleCount : 6;
+                const visibleWindow = resolveConsoleSelectWindow(parsedOptions.length, safeSelectedIdx, safeVisibleCount);
+                const visibleStart = visibleWindow.start;
                 if (title) {
-                    lines.push(this.applyAnsi(title, { ...styleMap, 'font-weight': 'bold' }, width));
+                    lines.push(this.applyAnsi(title, this.mergeStyles(styleMap, {
+                        'font-weight': 'bold',
+                        ...titleStyle
+                    }), width));
                 }
-                parsedOptions.forEach((opt, idx) => {
-                    const marker = idx === selectedIdx ? '› ' : '  ';
-                    const num = (idx + 1) + '. ';
-                    lines.push(this.applyAnsi(marker + num + opt.label, styleMap, width));
+                if (meta) {
+                    lines.push(this.applyAnsi(meta, this.mergeStyles(styleMap, metaStyle), width));
+                }
+                parsedOptions.slice(visibleStart, visibleStart + visibleWindow.count).forEach((opt, idx) => {
+                    const absoluteIndex = visibleStart + idx;
+                    const description = (opt as any).description ? `  ${(opt as any).description}` : '';
+                    lines.push(this.applyAnsi(
+                        formatConsoleIndexedOptionLabel(absoluteIndex, opt.label, absoluteIndex === safeSelectedIdx) + description,
+                        this.mergeStyles(styleMap, absoluteIndex === safeSelectedIdx ? optionActiveStyle : optionStyle),
+                        width
+                    ));
+                });
+                if (detailTitle) {
+                    lines.push(this.applyAnsi(detailTitle, this.mergeStyles(styleMap, detailLabelStyle), width));
+                }
+                const resolvedDetailLines = detailLines.length
+                    ? detailLines
+                    : resolveConsoleSelectDetailLines(parsedOptions[safeSelectedIdx] as any);
+                resolvedDetailLines.forEach(line => {
+                    lines.push(this.applyAnsi(String(line || ''), this.mergeStyles(styleMap, detailValueStyle), width));
                 });
                 if (hint) {
-                    lines.push(this.applyAnsi(hint, { ...styleMap, color: '#6f7c8a' }, width));
+                    lines.push(this.applyAnsi(hint, this.mergeStyles(styleMap, {
+                        color: '#6f7c8a',
+                        ...hintStyle
+                    }), width));
                 }
                 return;
             }
@@ -118,17 +167,84 @@ export class TuiRenderer extends ConsoleRenderer {
                 const value = element.getAttribute('value') || text || '';
                 const prompt = element.getAttribute('prompt') || '';
                 const cursor = element.getAttribute('cursor') || ' ';
+                const placeholder = element.getAttribute('placeholder') || '';
                 const cursorPos = parseInt(element.getAttribute('cursorPos') || '0', 10);
+                const focused = (element.getAttribute('focused') || '').toLowerCase() === 'true';
                 const shellStyle = element.getAttribute('shellStyle') || '';
+                const promptStyle = this.parseInlineStyle(element.getAttribute('promptStyle') || '');
+                const valueStyle = this.parseInlineStyle(element.getAttribute('valueStyle') || '');
+                const cursorStyle = this.parseInlineStyle(element.getAttribute('cursorStyle') || '');
                 const mergedStyle = shellStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(shellStyle)) : styleMap;
-                if (!value && !prompt) {
+                if (!value && !prompt && !placeholder) {
                     lines.push(this.applyAnsi('', mergedStyle, width));
                     return;
                 }
-                const cursorChar = cursorPos < value.length ? value[cursorPos] : cursor;
-                const beforeCursor = value.slice(0, Math.max(0, Math.min(cursorPos, value.length)));
-                const displayText = prompt + beforeCursor + cursorChar;
-                lines.push(this.applyAnsi(displayText, mergedStyle, width));
+                const displayValue = value || placeholder;
+                const isPlaceholder = !value && !!placeholder;
+                const safeCursorPos = Math.max(0, Math.min(cursorPos, displayValue.length));
+                const promptText = prompt
+                    ? this.applyAnsi(prompt, this.mergeStyles(mergedStyle, promptStyle), undefined, true)
+                    : '';
+                if (!focused) {
+                    const valueText = displayValue
+                        ? this.applyAnsi(displayValue, this.mergeStyles(mergedStyle, isPlaceholder ? {} : valueStyle), undefined, true)
+                        : '';
+                    lines.push(`${promptText}${valueText}`);
+                    return;
+                }
+                const cursorChar = safeCursorPos < displayValue.length ? displayValue[safeCursorPos] : cursor;
+                const beforeCursor = displayValue.slice(0, safeCursorPos);
+                const afterCursor = safeCursorPos < displayValue.length ? displayValue.slice(safeCursorPos + 1) : '';
+                const beforeText = beforeCursor
+                    ? this.applyAnsi(beforeCursor, this.mergeStyles(mergedStyle, isPlaceholder ? {} : valueStyle), undefined, true)
+                    : '';
+                const cursorText = this.applyAnsi(
+                    cursorChar,
+                    this.mergeStyles(
+                        this.mergeStyles(mergedStyle, isPlaceholder ? {} : valueStyle),
+                        cursorStyle
+                    ),
+                    undefined,
+                    true
+                );
+                const afterText = afterCursor
+                    ? this.applyAnsi(afterCursor, this.mergeStyles(mergedStyle, isPlaceholder ? {} : valueStyle), undefined, true)
+                    : '';
+                lines.push(`${promptText}${beforeText}${cursorText}${afterText}`);
+                return;
+            }
+            case 'textarea': {
+                const value = element.getAttribute('value') || text || '';
+                const prompt = element.getAttribute('prompt') || '';
+                const placeholder = element.getAttribute('placeholder') || '';
+                const continuationPrompt = element.getAttribute('continuationPrompt') || '  ';
+                const cursor = element.getAttribute('cursor') || ' ';
+                const cursorPos = parseInt(element.getAttribute('cursorPos') || '0', 10);
+                const focused = (element.getAttribute('focused') || '').toLowerCase() === 'true';
+                const shellStyle = element.getAttribute('shellStyle') || '';
+                const promptStyle = this.parseInlineStyle(element.getAttribute('promptStyle') || '');
+                const valueStyle = this.parseInlineStyle(element.getAttribute('valueStyle') || '');
+                const cursorStyle = this.parseInlineStyle(element.getAttribute('cursorStyle') || '');
+                const mergedStyle = shellStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(shellStyle)) : styleMap;
+                const displayValue = value || placeholder;
+                if (!displayValue && !prompt) {
+                    lines.push(this.applyAnsi('', mergedStyle, width));
+                    return;
+                }
+                const rendered = this.renderEditableTextLines({
+                    value: displayValue,
+                    cursorPos,
+                    cursor,
+                    prompt,
+                    continuationPrompt,
+                    mergedStyle,
+                    promptStyle,
+                    valueStyle,
+                    cursorStyle,
+                    placeholderActive: !value && !!placeholder,
+                    showCursor: focused
+                });
+                lines.push(...rendered);
                 return;
             }
             case 'br':
@@ -383,6 +499,84 @@ export class TuiRenderer extends ConsoleRenderer {
         }
         return fitByDisplayWidth(visible, width);
     }
+
+    protected renderEditableTextLines(options: {
+        value: string;
+        cursorPos: number;
+        cursor: string;
+        prompt: string;
+        continuationPrompt?: string;
+        mergedStyle: Record<string, string>;
+        promptStyle: Record<string, string>;
+        valueStyle: Record<string, string>;
+        cursorStyle: Record<string, string>;
+        placeholderActive?: boolean;
+        showCursor?: boolean;
+    }): string[] {
+        const {
+            value,
+            cursorPos,
+            cursor,
+            prompt,
+            continuationPrompt = '',
+            mergedStyle,
+            promptStyle,
+            valueStyle,
+            cursorStyle,
+            placeholderActive = false,
+            showCursor = true
+        } = options;
+        const normalizedValue = String(value || '').replace(/\r/g, '');
+        const lines = normalizedValue.split('\n');
+        if (!showCursor) {
+            return lines.map((lineValue, lineIndex) => {
+                const prefixValue = lineIndex === 0 ? prompt : continuationPrompt;
+                const promptText = prefixValue
+                    ? this.applyAnsi(prefixValue, this.mergeStyles(mergedStyle, promptStyle), undefined, true)
+                    : '';
+                const lineText = lineValue
+                    ? this.applyAnsi(lineValue, this.mergeStyles(mergedStyle, placeholderActive ? {} : valueStyle), undefined, true)
+                    : '';
+                return `${promptText}${lineText}`;
+            });
+        }
+        let remainingCursor = Math.max(0, Math.min(cursorPos, normalizedValue.length));
+        return lines.map((lineValue, lineIndex) => {
+            const prefixValue = lineIndex === 0 ? prompt : continuationPrompt;
+            const promptText = prefixValue
+                ? this.applyAnsi(prefixValue, this.mergeStyles(mergedStyle, promptStyle), undefined, true)
+                : '';
+            const cursorOnLine = remainingCursor <= lineValue.length || lineIndex === lines.length - 1;
+            if (!cursorOnLine) {
+                remainingCursor -= lineValue.length + 1;
+                const lineText = lineValue
+                    ? this.applyAnsi(lineValue, this.mergeStyles(mergedStyle, placeholderActive ? {} : valueStyle), undefined, true)
+                    : '';
+                return `${promptText}${lineText}`;
+            }
+            const safeCursorPos = Math.max(0, Math.min(remainingCursor, lineValue.length));
+            const beforeCursor = lineValue.slice(0, safeCursorPos);
+            const cursorChar = safeCursorPos < lineValue.length ? lineValue[safeCursorPos] : cursor;
+            const afterCursor = safeCursorPos < lineValue.length ? lineValue.slice(safeCursorPos + 1) : '';
+            const beforeText = beforeCursor
+                ? this.applyAnsi(beforeCursor, this.mergeStyles(mergedStyle, placeholderActive ? {} : valueStyle), undefined, true)
+                : '';
+            const cursorText = this.applyAnsi(
+                cursorChar,
+                this.mergeStyles(
+                    this.mergeStyles(mergedStyle, placeholderActive ? {} : valueStyle),
+                    cursorStyle
+                ),
+                undefined,
+                true
+            );
+            const afterText = afterCursor
+                ? this.applyAnsi(afterCursor, this.mergeStyles(mergedStyle, placeholderActive ? {} : valueStyle), undefined, true)
+                : '';
+            remainingCursor = 0;
+            return `${promptText}${beforeText}${cursorText}${afterText}`;
+        });
+    }
 }
 
 @Injectable()
@@ -408,7 +602,7 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
         { provide: TemplateParser, useExisting: ConsoleTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: TuiTemplateCompiler, deps: [ConsoleTemplateParser, ConsoleRenderer, CONSOLE_TEMPLATE], asDefault: true }
     ],
-    exports: [TuiRenderer, ConsoleRenderer, ConsoleTemplateParser, TuiTemplateCompiler, TuiInputComponent, TuiSelectComponent, LabelComponent]
+    exports: [TuiRenderer, ConsoleRenderer, ConsoleTemplateParser, TuiTemplateCompiler, TuiInputComponent, TuiTextareaComponent, TuiSelectComponent, LabelComponent]
 })
 export class TuiTemplateModule {
     static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<TuiTemplateModule> {

@@ -50,6 +50,7 @@ export class HtmlConsoleTest {
         ]);
         ref.instance.sessionState.setTasksCount(1);
         await ref.render();
+        await Promise.resolve();
         const root = ref.hostView.rootNodes[0] as any;
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
@@ -59,18 +60,12 @@ export class HtmlConsoleTest {
         expect(inputRoot.querySelector('.input-shell')).toBeTruthy();
         expect(inputRoot.querySelector('.input-shell')?.getAttribute('style')).toContain('background');
         expect(inputRoot.querySelector('.input-entry')?.getAttribute('style')).toContain('color');
-        expect(inputRoot.querySelector('.input-placeholder')?.textContent).toContain('Ask code or files');
-        expect(inputRoot.querySelector('.input-prompt')?.getAttribute('style')).toBeTruthy();
+        expect(inputRoot.querySelector('.agent-input')?.getAttribute('placeholder')).toContain('Ask code or files');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('style')).toContain('color');
         expect(inputRoot.querySelector('.input-hint')?.textContent).toContain('deepseek-v4-flash');
         expect(messagesRoot.textContent).toContain('› hello');
         expect(messagesRoot.textContent).toContain('world');
         expect(messagesRoot.textContent).not.toContain('agent>');
-        const visibleMessageItems = Array.from(messagesRoot.querySelectorAll('.message-item'))
-            .filter((item: any) => String(item.textContent || '').trim()) as any[];
-        expect(visibleMessageItems[0]?.getAttribute('style')).toContain('background');
-        expect(visibleMessageItems[0]?.textContent).toContain('› hello');
-        expect(visibleMessageItems[1]?.textContent).toContain('world');
         expect(root.querySelector('h1')).toBeFalsy();
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
@@ -93,7 +88,8 @@ export class HtmlConsoleTest {
 
         ref.instance.sessionState.setInput('hello|');
         await Promise.resolve();
-        expect(inputRoot.querySelector('.agent-input')?.getAttribute('value')).toBe('hello|');
+        const inputField = inputRoot.querySelector('.agent-input') as HTMLTextAreaElement | null;
+        expect(inputField?.value || inputField?.getAttribute('value')).toBe('hello|');
     }
 
     @After()

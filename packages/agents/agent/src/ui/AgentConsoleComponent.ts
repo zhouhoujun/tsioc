@@ -1,4 +1,5 @@
 import { Component, ComponentRef } from '@tsdi/components';
+import { clampConsoleTextCursor } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
 import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
@@ -12,24 +13,20 @@ import { AgentConsoleUiDelegate } from './AgentConsoleUiDelegate';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
-import { TuiInputComponent, TuiSelectComponent, LabelComponent, SpanDirective, DivDirective, BrDirective } from '@tsdi/components/console';
-
 @Component({
     selector: 'agent-console',
-    imports: [TuiInputComponent, TuiSelectComponent, LabelComponent, SpanDirective, DivDirective, BrDirective],
-    // directives: [TuiInputComponent, TuiSelectComponent, LabelComponent, SpanDirective, DivDirective, BrDirective],
     template: `
     <div class="agent-console">
-        <div v-show="showStatusPanel"></div>
-        <div v-show="showSessionsPanel"></div>
-        <div class="messages-panel"></div>
-        <div v-show="showMessageDetailPanel"></div>
-        <div v-show="showActivityPanel"></div>
-        <div v-show="showToolsPanel"></div>
-        <div v-show="showWorkingPanel"></div>
-        <div v-show="showToolRunsPanel"></div>
-        <input shellStyle="{{inputShellStyle}}" prompt="> " value="{{inputValue}}" cursor=" " cursorPos="{{inputCursor}}">
-        <select v-show="showSelectPanel" title="{{selectTitle}}" hint="{{selectHint}}" options="{{selectOptions}}" selectedIndex="{{selectIndex}}"></select>
+        <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
+        <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
+        <agent-console-messages-panel></agent-console-messages-panel>
+        <agent-console-message-detail-panel v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
+        <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
+        <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
+        <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
+        <agent-console-tool-runs-panel v-show="showToolRunsPanel"></agent-console-tool-runs-panel>
+        <agent-console-input-panel></agent-console-input-panel>
+        <agent-console-select-panel v-show="showSelectPanel"></agent-console-select-panel>
     </div>
     `
 })
@@ -47,7 +44,7 @@ export class AgentConsoleComponent {
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions,
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() private componentRef?: ComponentRef<AgentConsoleComponent> | null,
-        @Optional() private uiDelegate?: AgentConsoleUiDelegate | null,
+        @Optional() @Inject(AgentConsoleUiDelegate) private uiDelegate?: AgentConsoleUiDelegate | null,
         @Optional() private sessionStore?: SessionStore | null,
         @Optional() private approvalManager?: ToolApprovalManager | null
     ) {
@@ -111,7 +108,7 @@ export class AgentConsoleComponent {
     // ---- generic component bindings ----
 
     get inputShellStyle(): string {
-        return this.state.theme?.inputShell || 'background: #1b2128; color: #c9d1d9; padding: 1 3;';
+        return this.state.theme?.inputShell || 'background: #1b2128; color: #c9d1d9; padding: 1 1;';
     }
 
     get inputValue(): string {
@@ -119,7 +116,7 @@ export class AgentConsoleComponent {
     }
 
     get inputCursor(): number {
-        return this.state.input?.length || 0;
+        return this.state.inputCursor || 0;
     }
 
     get selectTitle(): string {
@@ -159,7 +156,7 @@ export class AgentConsoleComponent {
     }
 
     set input(value: string) {
-        this.state.setInput(value);
+        this.state.setInput(value, value.length);
     }
 
     get messages(): AgentMessage[] {
@@ -286,11 +283,92 @@ export class AgentConsoleComponent {
         this.unsubscribeState = undefined;
     }
 
+    protected parseSlashCommandLine(input: string): { raw: string; command: string; args: string } {
+        const raw = String(input || '').trim();
+        if (!raw.startsWith('/')) {
+            return { raw, command: raw, args: '' };
+        }
+        const firstSpace = raw.indexOf(' ');
+        if (firstSpace < 0) {
+            return { raw, command: raw, args: '' };
+        }
+        return {
+            raw,
+            command: raw.slice(0, firstSpace),
+            args: raw.slice(firstSpace + 1).trim()
+        };
+    }
+
+    protected resolveUniqueCommandPrefix(input: string): { command: string; matches: string[] } {
+        const matches = this.state.commandHints.filter(item => item.startsWith(input));
+        return {
+            command: matches.length === 1 ? matches[0] : input,
+            matches
+        };
+    }
+
+    protected enrichPromptWithMentions(input: string): string {
+        const text = String(input || '');
+        const matches = text.match(/(^|\s)@([a-zA-Z0-9_.-]+)/g) || [];
+        const mentions = Array.from(new Set(matches.map(item => item.trim())));
+        if (!mentions.length) {
+            return text;
+        }
+        const toolMap = new Map((this.state.tools || []).map(tool => [tool.name, tool]));
+        const contextLines: string[] = [];
+        mentions.forEach(mention => {
+            const name = mention.slice(1);
+            switch (name) {
+                case 'workspace':
+                    contextLines.push(`Workspace: ${this.state.workspace}`);
+                    break;
+                case 'session':
+                    contextLines.push(`Session: ${this.state.sessionId}`);
+                    break;
+                case 'model':
+                    contextLines.push(`Model: ${this.state.provider} / ${this.state.model}`);
+                    break;
+                case 'tools':
+                    contextLines.push(`Tools: ${(this.state.tools || []).map(tool => tool.name).join(', ') || '(none)'}`);
+                    break;
+                default: {
+                    const tool = toolMap.get(name);
+                    if (tool) {
+                        contextLines.push(`Tool ${tool.name}: toolset=${tool.toolset || 'default'}, active=${tool.active === false ? 'no' : 'yes'}`);
+                    }
+                    break;
+                }
+            }
+        });
+        if (!contextLines.length) {
+            return text;
+        }
+        return [
+            '[Mention Context]',
+            ...contextLines,
+            '',
+            text
+        ].join('\n');
+    }
+
     protected async handleCommand(value: string): Promise<boolean> {
-        switch (value) {
+        const parsed = this.parseSlashCommandLine(value);
+        if (!parsed.command.startsWith('/')) {
+            return false;
+        }
+        const resolved = this.resolveUniqueCommandPrefix(parsed.command);
+        if (!this.state.commandHints.includes(resolved.command)) {
+            if (this.uiDelegate) {
+                this.uiDelegate.notify(resolved.matches.length
+                    ? `Ambiguous command: ${parsed.command}  (${resolved.matches.join(', ')})`
+                    : `Unknown command: ${parsed.command}`);
+            }
+            return true;
+        }
+        switch (resolved.command) {
             case '/help':
                 if (!this.uiDelegate) { return true; }
-                await this.uiDelegate.select('Help', [
+                const helpSelection = await this.uiDelegate.select('Help', [
                     { label: '/model', value: '/model', detail: 'Switch provider and model.' },
                     { label: '/sessions', value: '/sessions', detail: 'Browse sessions.' },
                     { label: '/messages', value: '/messages', detail: 'Browse messages.' },
@@ -300,6 +378,9 @@ export class AgentConsoleComponent {
                     { label: '@workspace', value: '@workspace', detail: 'Inject workspace context.' },
                     { label: '/exit', value: '/exit', detail: 'Exit the chat session.' }
                 ], 0, 'up/down move   enter close   q close');
+                if (helpSelection) {
+                    await this.handleMenuSelection(helpSelection);
+                }
                 return true;
             case '/model':
                 if (!this.uiDelegate) { return true; }
@@ -328,6 +409,13 @@ export class AgentConsoleComponent {
                 return true;
             }
             case '/copy': {
+                if (parsed.args && this.uiDelegate) {
+                    const copied = await this.uiDelegate.copy(parsed.args);
+                    this.uiDelegate.notify(copied
+                        ? `Copied ${parsed.args} to clipboard.`
+                        : 'Nothing to copy.');
+                    return true;
+                }
                 const msgs = this.state.messages;
                 for (let i = msgs.length - 1; i >= 0; i--) {
                     if (msgs[i].role === 'assistant' && msgs[i].content) {
@@ -338,6 +426,32 @@ export class AgentConsoleComponent {
                 if (this.uiDelegate) { this.uiDelegate.notify('Nothing to copy.'); }
                 return true;
             }
+            case '/session': {
+                if (!this.uiDelegate) { return true; }
+                if (parsed.args) {
+                    await this.uiDelegate.switchSession(parsed.args);
+                    return true;
+                }
+                const sessions = await this.uiDelegate.listSessions();
+                if (!sessions.length) {
+                    this.uiDelegate.notify('No sessions available.');
+                    return true;
+                }
+                const selected = await this.uiDelegate.select('Sessions', sessions.map(item => ({
+                    label: item.id,
+                    value: item.id,
+                    detail: item.detail || (item.current ? 'Current session' : 'Switch to this session')
+                })), Math.max(0, sessions.findIndex(item => item.current)));
+                if (selected) {
+                    await this.uiDelegate.switchSession(selected);
+                }
+                return true;
+            }
+            case '/new':
+                if (this.uiDelegate) {
+                    await this.uiDelegate.switchSession(parsed.args || undefined);
+                }
+                return true;
             case '/sessions':
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
@@ -349,9 +463,21 @@ export class AgentConsoleComponent {
             case '/approve':
             case '/deny': {
                 if (!this.approvalManager) { return true; }
-                const isApprove = value === '/approve';
+                const isApprove = resolved.command === '/approve';
                 const pend = this.approvalManager.getPending().filter((r: any) => r.sessionId === this.state.sessionId);
                 if (!pend.length) { if (this.uiDelegate) { this.uiDelegate.notify('No pending approvals.'); } return true; }
+                if (parsed.args) {
+                    const exact = pend.find((item: any) => item.id === parsed.args);
+                    const matches = exact ? [exact] : pend.filter((item: any) => item.id.startsWith(parsed.args));
+                    if (matches.length === 1) {
+                        isApprove ? this.approvalManager.approve(matches[0].id) : this.approvalManager.reject(matches[0].id);
+                    } else if (this.uiDelegate) {
+                        this.uiDelegate.notify(matches.length > 1
+                            ? `Approval id "${parsed.args}" is ambiguous.`
+                            : `Approval id "${parsed.args}" not found.`);
+                    }
+                    return true;
+                }
                 const req = pend.length === 1 ? pend[0] : null;
                 if (!req && this.uiDelegate) {
                     const sel = await this.uiDelegate.select(isApprove ? 'Approve' : 'Deny',
@@ -449,9 +575,33 @@ export class AgentConsoleComponent {
         })), 0, 'up/down move   enter close   q close');
     }
 
+    protected async handleMenuSelection(value: string): Promise<void> {
+        const selected = String(value || '').trim();
+        if (!selected) {
+            return;
+        }
+        const currentInput = String(this.state.input || '').trim();
+        if (currentInput === '/help') {
+            this.state.setInput('');
+        }
+        if (selected.startsWith('/')) {
+            await this.handleCommand(selected);
+            return;
+        }
+        if (selected.startsWith('@')) {
+            const base = String(this.state.input || '').trim();
+            const nextInput = base
+                ? `${base} ${selected} `
+                : `${selected} `;
+            this.state.setInput(nextInput, clampConsoleTextCursor(nextInput, nextInput.length));
+            this.state.setInputFocused(true);
+        }
+    }
+
     protected async submitMultilineDraft(): Promise<void> {
         if (!this.draftLines.length) { return; }
         const draft = this.draftLines.join('\n');
+        const prompt = this.enrichPromptWithMentions(draft);
         this.draftLines = [];
         this.multilineMode = false;
         this.state.setInput('');
@@ -460,10 +610,10 @@ export class AgentConsoleComponent {
         this.state.pushActivity('turn', 'User: ' + this.state.summarize(draft));
         try {
             if (typeof (this.runtime as any).runStreamingTurn === 'function') {
-                const userMsg: any = { id: 'user-' + Date.now(), role: 'user' as any, content: draft, createdAt: Date.now() };
+                const userMsg: any = { id: 'user-' + Date.now(), role: 'user' as any, content: prompt, createdAt: Date.now() };
                 const asstMsg: any = { id: 'asst-' + Date.now(), role: 'assistant' as any, content: '', createdAt: Date.now() };
                 this.state.setMessages([...this.state.messages, userMsg, asstMsg]);
-                const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, draft);
+                const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, prompt);
                 for await (const chunk of stream) {
                     if (chunk.type === 'text' && chunk.content) {
                         asstMsg.content += chunk.content;
@@ -471,7 +621,7 @@ export class AgentConsoleComponent {
                     } else if (chunk.type === 'reasoning' && chunk.content) { this.state.setStatus('reasoning'); }
                     else if (chunk.type === 'done' && chunk.usage) { this.state.setTokenUsage(chunk.usage); }
                 }
-            } else { await this.runtime.runTurn(this.state.sessionId, draft); }
+            } else { await this.runtime.runTurn(this.state.sessionId, prompt); }
             this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
         } catch (error: any) {
             this.state.setStatus('error');
@@ -490,6 +640,7 @@ export class AgentConsoleComponent {
             this.draftLines.push(value);
             return;
         }
+        const prompt = this.enrichPromptWithMentions(value);
         this.state.setInput('');
         this.state.setStatus('running');
         this.state.setLastError('');
@@ -500,7 +651,7 @@ export class AgentConsoleComponent {
                 const userMessage: AgentMessage = {
                     id: `user-${Date.now()}`,
                     role: 'user',
-                    content: value,
+                    content: prompt,
                     createdAt: Date.now()
                 };
                 const assistantMessage: AgentMessage = {
@@ -512,7 +663,7 @@ export class AgentConsoleComponent {
                 this.state.setMessages([...this.state.messages, userMessage, assistantMessage]);
 
                 try {
-                    const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, value);
+                    const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, prompt);
                     for await (const chunk of stream) {
                         if (chunk.type === 'text' && chunk.content) {
                             assistantMessage.content += chunk.content;
@@ -533,7 +684,7 @@ export class AgentConsoleComponent {
                     this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
                 }
             } else {
-                await this.runtime.runTurn(this.state.sessionId, value);
+                await this.runtime.runTurn(this.state.sessionId, prompt);
                 this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
             }
         } catch (error: any) {

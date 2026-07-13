@@ -62,7 +62,7 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     statusNoticeLabel: 'color: #d29922;',
     statusNoticeValue: 'color: #e3b341;',
     inputTitle: 'color: #8b949e;',
-    inputShell: 'background: #1b2128; color: #c9d1d9; padding: 1 3;',
+    inputShell: 'background: #1b2128; color: #c9d1d9; padding: 1 1;',
     inputEntry: 'color: #c9d1d9;',
     inputPrompt: 'color: #7ee787; font-weight: bold;',
     inputCaption: 'color: #8b949e;',

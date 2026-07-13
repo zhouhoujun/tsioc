@@ -4,6 +4,7 @@ import { AgentConsoleComponent } from '../src/ui/AgentConsoleComponent';
 import { AgentConsoleEventBridge } from '../src/ui/AgentConsoleEventBridge';
 import { AgentConsoleInputPanelComponent } from '../src/ui/AgentConsolePanels';
 import { AgentConsoleSessionState } from '../src/ui/AgentConsoleSessionState';
+import { AgentConsoleSessionChoice, AgentConsoleUiDelegate, ModelProfile } from '../src/ui/AgentConsoleUiDelegate';
 import {
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
@@ -102,7 +103,57 @@ class ApplicationContextStub {
     readonly eventMulticaster = new EventMulticasterStub();
 }
 
-function createConsoleParts(runtime: RuntimeStub, scheduler: SchedulerStub, toolRegistry?: ToolRegistryStub, app?: ApplicationContextStub) {
+class UiDelegateStub extends AgentConsoleUiDelegate {
+    notices: string[] = [];
+    copiedTargets: Array<string | undefined> = [];
+    copiedTexts: string[] = [];
+    switchedSessions: Array<string | undefined> = [];
+    sessions: AgentConsoleSessionChoice[] = [];
+    nextSelections: Array<string | undefined> = [];
+
+    async select(_title: string, options: Array<{ value: string }>, selectedIndex = 0): Promise<string | undefined> {
+        if (this.nextSelections.length) {
+            return this.nextSelections.shift();
+        }
+        return options[selectedIndex]?.value;
+    }
+
+    async prompt(): Promise<string | undefined> {
+        return undefined;
+    }
+
+    notify(message: string): void {
+        this.notices.push(message);
+    }
+
+    async copyText(text: string): Promise<boolean> {
+        this.copiedTexts.push(text);
+        return true;
+    }
+
+    override async copy(target?: string): Promise<boolean> {
+        this.copiedTargets.push(target);
+        return true;
+    }
+
+    override async listSessions(): Promise<AgentConsoleSessionChoice[]> {
+        return this.sessions.slice();
+    }
+
+    override async switchSession(sessionId?: string): Promise<void> {
+        this.switchedSessions.push(sessionId);
+    }
+
+    async applyModelProfile(_profile: ModelProfile): Promise<void> {
+        return;
+    }
+
+    quit(): void {
+        return;
+    }
+}
+
+function createConsoleParts(runtime: RuntimeStub, scheduler: SchedulerStub, toolRegistry?: ToolRegistryStub, app?: ApplicationContextStub, uiDelegate?: AgentConsoleUiDelegate) {
     const state = new AgentConsoleSessionState();
     const bridge = new AgentConsoleEventBridge(state, runtime as any, toolRegistry as any, app as any);
     const component = new AgentConsoleComponent(
@@ -111,13 +162,15 @@ function createConsoleParts(runtime: RuntimeStub, scheduler: SchedulerStub, tool
         scheduler as any,
         bridge,
         { ui: { title: 'Console' } } as any,
-        toolRegistry as any
+        toolRegistry as any,
+        undefined,
+        uiDelegate as any
     );
     return { state, bridge, component };
 }
 
-function createConsole(runtime: RuntimeStub, scheduler: SchedulerStub, toolRegistry?: ToolRegistryStub, app?: ApplicationContextStub): AgentConsoleComponent {
-    return createConsoleParts(runtime, scheduler, toolRegistry, app).component;
+function createConsole(runtime: RuntimeStub, scheduler: SchedulerStub, toolRegistry?: ToolRegistryStub, app?: ApplicationContextStub, uiDelegate?: AgentConsoleUiDelegate): AgentConsoleComponent {
+    return createConsoleParts(runtime, scheduler, toolRegistry, app, uiDelegate).component;
 }
 
 @Suite('Agent console component')
@@ -322,6 +375,61 @@ export class AgentConsoleComponentTest {
         expect(state.selectMenu).toEqual(undefined);
     }
 
+    @Test('session state resolves slash and mention suggestions from input cursor')
+    async sessionStateResolvesSlashAndMentionSuggestions() {
+        const state = new AgentConsoleSessionState();
+        state.setCommandHints(['/help', '/hello']);
+        state.setTools([
+            { name: 'read_file', active: false },
+            { name: 'write_file', active: false }
+        ]);
+
+        state.setInput('/');
+        expect(state.selectMenu?.title).toEqual('Suggestions');
+        expect(state.selectMenu?.options.map(option => option.value)).toEqual(['/help', '/hello']);
+
+        await state.confirmSelectMenu('/hello');
+        expect(state.input).toEqual('/hello ');
+        expect(state.selectMenu).toEqual(undefined);
+
+        state.setInput('check @wo', 'check @wo'.length);
+        expect(state.selectMenu?.title).toEqual('Suggestions');
+        expect(state.selectMenu?.options.map(option => option.value)).toContain('@workspace');
+
+        await state.confirmSelectMenu('@workspace');
+        expect(state.input).toEqual('check @workspace ');
+        expect(state.selectMenu).toEqual(undefined);
+    }
+
+    @Test('session state processes raw enter chunks through shared console input rules')
+    async sessionStateProcessesRawEnterChunks() {
+        const state = new AgentConsoleSessionState();
+        let submitCount = 0;
+        state.submitAction = async () => {
+            submitCount += 1;
+        };
+
+        state.setCommandHints(['/help']);
+        state.setInput('/he');
+        expect(state.selectMenu?.title).toEqual('Suggestions');
+
+        const confirmed = await state.processRawChunk('\r', { submitOnEnter: true, hasSelectMenu: true });
+        expect(confirmed.confirmedSelection).toEqual(true);
+        expect(confirmed.submitted).toEqual(true);
+        expect(state.input).toEqual('/help ');
+        expect(submitCount).toEqual(1);
+
+        state.setInput('hello');
+        const submitted = await state.processRawChunk('\r', { submitOnEnter: true });
+        expect(submitted.confirmedSelection).toEqual(false);
+        expect(submitted.submitted).toEqual(true);
+        expect(submitCount).toEqual(2);
+
+        state.setInput('hello');
+        await state.processRawChunk('\r', { submitOnEnter: false, ctrlKey: true });
+        expect(state.input).toContain('\n');
+    }
+
     @Test('component exposes notice and select helpers through shared ui state')
     async componentExposesNoticeAndSelectHelpers() {
         const runtime = new RuntimeStub();
@@ -347,6 +455,73 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('');
     }
 
+    @Test('submit enriches mention context inside agent ui')
+    async submitEnrichesMentionContextInsideAgentUi() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        component.configure({
+            sessionId: 'chat-mentions',
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            workspace: '/tmp/workspace'
+        });
+        await component.onInit();
+
+        component.input = 'check @workspace and @read_file';
+        await component.submit();
+
+        expect(runtime.calls[0]).toContain('[Mention Context]');
+        expect(runtime.calls[0]).toContain('Workspace: /tmp/workspace');
+        expect(runtime.calls[0]).toContain('Tool read_file: toolset=filesystem, active=no');
+    }
+
+    @Test('component delegates session and copy commands through ui delegate')
+    async componentDelegatesSessionAndCopyCommandsThroughUiDelegate() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        uiDelegate.sessions = [
+            { id: 'chat-a', current: true },
+            { id: 'chat-b', current: false }
+        ];
+        uiDelegate.nextSelections = ['chat-b'];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+
+        component.input = '/session';
+        await component.submit();
+        expect(uiDelegate.switchedSessions).toEqual(['chat-b']);
+
+        component.input = '/new scratch';
+        await component.submit();
+        expect(uiDelegate.switchedSessions).toEqual(['chat-b', 'scratch']);
+
+        component.input = '/copy input';
+        await component.submit();
+        expect(uiDelegate.copiedTargets).toEqual(['input']);
+    }
+
+    @Test('help menu selections execute commands and mentions')
+    async helpMenuSelectionsExecuteActions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+
+        uiDelegate.nextSelections = ['/messages'];
+        component.input = '/help';
+        await component.submit();
+        expect(component.sessionState.messagesFocused).toEqual(true);
+
+        component.sessionState.setMessagesFocused(false);
+        uiDelegate.nextSelections = ['@workspace'];
+        component.input = '/help';
+        await component.submit();
+        expect(component.input).toEqual('@workspace ');
+        expect(component.inputCursor).toEqual('@workspace '.length);
+        expect(component.sessionState.inputFocused).toEqual(true);
+    }
+
     @Test('component handleCommand returns true for known commands')
     async componentHandleCommandReturnsTrue() {
         const state = new AgentConsoleSessionState();
@@ -354,18 +529,79 @@ export class AgentConsoleComponentTest {
         expect(state.messages.length).toEqual(0);
     }
 
-    @Test('input panel submits on enter key')
-    async inputPanelSubmitsOnEnterKey() {
+    @Test('input panel submits on plain enter and keeps ctrl-enter for newline')
+    async inputPanelSubmitsOnPlainEnterAndKeepsCtrlEnterForNewline() {
         let submitCount = 0;
         const panel = new AgentConsoleInputPanelComponent();
         panel.submitAction = async () => {
             submitCount++;
         };
 
-        await panel.onKeyup({ key: 'Escape' } as KeyboardEvent);
-        await panel.onKeyup({ key: 'Enter' } as KeyboardEvent);
+        await panel.onKeydown({ key: 'Escape' } as KeyboardEvent);
+        await panel.onKeydown({ key: 'Enter', ctrlKey: true, preventDefault() {} } as KeyboardEvent);
+        await panel.onKeydown({ key: 'Enter', altKey: true, preventDefault() {} } as KeyboardEvent);
+        await panel.onKeydown({ key: 'Enter', preventDefault() {} } as KeyboardEvent);
 
         expect(submitCount).toEqual(1);
+    }
+
+    @Test('input panel routes suggestion keys through shared session state')
+    async inputPanelRoutesSuggestionKeysThroughSharedState() {
+        const state = new AgentConsoleSessionState();
+        state.setCommandHints(['/help', '/hello']);
+        state.setInput('/');
+        const panel = new AgentConsoleInputPanelComponent(state);
+
+        await panel.onKeydown({ key: 'ArrowDown', preventDefault() {} } as KeyboardEvent);
+        expect(state.selectMenu?.selectedIndex).toEqual(1);
+
+        await panel.onKeydown({ key: 'Tab', preventDefault() {} } as KeyboardEvent);
+        expect(state.input).toEqual('/hello ');
+        expect(state.selectMenu).toEqual(undefined);
+
+        state.submitAction = async () => {
+            state.setNotice('submitted');
+        };
+        state.setInput('/he');
+        expect(state.selectMenu?.title).toEqual('Suggestions');
+
+        await panel.onKeydown({ key: 'Enter', preventDefault() {} } as KeyboardEvent);
+        expect(state.input).toEqual('/help ');
+        expect(state.notice).toEqual('submitted');
+        expect(state.selectMenu).toEqual(undefined);
+
+        state.setInput('check @wo');
+        expect(state.selectMenu?.title).toEqual('Suggestions');
+
+        await panel.onKeydown({ key: 'Enter', preventDefault() {} } as KeyboardEvent);
+        expect(state.input).toEqual('check @workspace ');
+        expect(state.notice).toEqual('submitted');
+        expect(state.selectMenu).toEqual(undefined);
+
+        state.setInput('/');
+        expect(state.selectMenu?.title).toEqual('Suggestions');
+
+        await panel.onKeydown({ key: 'Escape', preventDefault() {} } as KeyboardEvent);
+        expect(state.selectMenu).toEqual(undefined);
+    }
+
+    @Test('input panel confirms normal select menus with enter')
+    async inputPanelConfirmsNormalSelectMenusWithEnter() {
+        const state = new AgentConsoleSessionState();
+        const resolved: Array<string | undefined> = [];
+        state.openSelectMenu('Help', [
+            { label: '/model', value: '/model' },
+            { label: '/tools', value: '/tools' }
+        ], 1);
+        state.selectMenuAction = value => {
+            resolved.push(value);
+        };
+        const panel = new AgentConsoleInputPanelComponent(state);
+
+        await panel.onKeydown({ key: 'Enter', preventDefault() {} } as KeyboardEvent);
+
+        expect(resolved).toEqual(['/tools']);
+        expect(state.selectMenu).toEqual(undefined);
     }
 
     @Test('submit failure resets ui state and records error')

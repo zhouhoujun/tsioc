@@ -24,6 +24,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     private _hostView?: EmbeddedViewRef<T>;
     private _elementRef?: ElementRef<any>;
+    private initCalled = false;
+    private afterViewInitCalled = false;
     constructor(
         _classRef: ClassRef<T>,
         context: NodeInjector,
@@ -55,7 +57,10 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const def = this.classRef.getAnnotation<ComponentDef>();
         if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
 
-        await (this.instance as OnInit).onInit?.();
+        if (!this.initCalled) {
+            this.initCalled = true;
+            await (this.instance as OnInit).onInit?.();
+        }
         const directives = this.injector.get(DIRECTIVES) || [];
         const customElements = this.injector.get(CUSTOM_ELEMENTS) || [];
         // console.log('[Component.render] directives:', directives?.length, directives?.map((d: any) => d.type?.name));
@@ -82,12 +87,16 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             const compiler = this.injector.get(TemplateCompiler);
             (def as any).ƿtempFac = compiler.compile<T>(template, { directives, components, customElements });
         }
+        this._hostView?.destroy();
         const host = this._elementRef;
         const templateRef =  def.ƿtempFac!(host, this.injector);
         this.injector.setValue(TemplateRef, templateRef);
         this._hostView = templateRef.createEmbeddedView(this.instance, this.injector);
         this.attachHostViewToElement();
-        await (this.instance as AfterViewInit).onAfterViewInit?.();
+        if (!this.afterViewInitCalled) {
+            this.afterViewInitCalled = true;
+            await (this.instance as AfterViewInit).onAfterViewInit?.();
+        }
     }
 
     protected attachHostViewToElement(): void {

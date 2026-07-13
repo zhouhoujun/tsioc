@@ -1,4 +1,20 @@
-import { Attribute, Component, OnDestroy, AfterViewInit } from '@tsdi/components';
+import { Attribute, Component, AfterViewInit, OnDestroy, ComponentRef, ElementRef } from '@tsdi/components';
+import {
+    BrDirective,
+    DivDirective,
+    formatConsoleIndexedOptionLabel,
+    LabelComponent,
+    resolveConsoleListWindow,
+    SpanDirective,
+    TuiSelectComponent,
+    TuiTextareaComponent,
+    resolveConsoleEnterAction,
+    resolveConsoleSelectDetailLines,
+    resolveConsoleSelectWindow,
+    syncConsoleEditableElement
+} from '@tsdi/components/console';
+import { Inject, Optional } from '@tsdi/ioc';
+import { DOCUMENT } from '@tsdi/common';
 import {
     AgentConsoleActivity,
     AgentConsoleSelectOption,
@@ -11,17 +27,16 @@ import {
 } from './AgentConsoleSessionState';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 
+const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
+const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
+
 @Component({
     selector: 'agent-console-status-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-status-panel" v-style="shellStyle">
-        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(0)">{{statusLineAt(0)}}</p>
-        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(1)">{{statusLineAt(1)}}</p>
-        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(2)">{{statusLineAt(2)}}</p>
-        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(3)">{{statusLineAt(3)}}</p>
-        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(4)">{{statusLineAt(4)}}</p>
-        <p class="status-line" v-style="statusStyle" v-show="statusLineAt(5)">{{statusLineAt(5)}}</p>
-    </section>
+    <div class="console-panel console-status-panel" v-style="shellStyle">
+        <label class="status-line" v-style="statusStyle" v-for="line in statusLines">{{line}}</label>
+    </div>
     `
 })
 export class AgentConsoleStatusPanelComponent {
@@ -146,27 +161,48 @@ export class AgentConsoleStatusPanelComponent {
 
 @Component({
     selector: 'agent-console-input-panel',
+    imports: CONSOLE_FORM_IMPORTS,
     template: `
-    <section class="console-panel console-input-panel">
+    <div class="console-panel console-input-panel">
         <div class="input-shell" v-style="shellStyle">
-            <p class="input-entry" v-style="entryShellStyle">
-                <span class="input-prompt" v-style="promptStyle">&gt; </span>
-                <span class="input-placeholder" v-style="captionStyle">{{placeholderLabel}}</span>
-                <input class="agent-input" v-style="fieldStyle" v-model="input" @keyup="onKeyup($event)" />
-            </p>
+            <div class="input-entry" v-style="entryShellStyle">
+                <textarea
+                    class="agent-input"
+                    v-style="fieldStyle"
+                    value="{{input}}"
+                    prompt="> "
+                    placeholder="{{placeholderLabel}}"
+                    cursor=" "
+                    cursorPos="{{inputCursor}}"
+                    focused="{{inputFocused}}"
+                    continuationPrompt="  "
+                    @input="onInput($event)"
+                    @click="onCursorChange($event)"
+                    @keyup="onCursorChange($event)"
+                    @focus="onFocus()"
+                    @blur="onBlur()"
+                    @keydown="onKeydown($event)"></textarea>
+            </div>
         </div>
-        <p class="input-hint" v-style="hintStyle">{{hintLabel}}</p>
-    </section>
+        <label class="input-hint" v-style="hintStyle">{{hintLabel}}</label>
+    </div>
     `
 })
 export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy {
     protected unsubscribeState?: () => void;
     protected currentInput = '';
+    protected currentCursor = 0;
+    protected currentFocused = true;
 
     constructor(
-        private state?: AgentConsoleSessionState
+        private state?: AgentConsoleSessionState,
+        private elementRef?: ElementRef<any>,
+        @Optional() private componentRef?: ComponentRef<AgentConsoleInputPanelComponent> | null,
+        @Optional() @Inject(DOCUMENT) private document?: Document | null
     ) {
         this.currentInput = state?.input || '';
+        this.currentCursor = state?.inputCursor ?? this.currentInput.length;
+        this.currentFocused = state?.inputFocused !== false;
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -178,9 +214,20 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
 
     onAfterViewInit(): void {
         this.currentInput = this.state?.input || '';
+        this.currentCursor = this.state?.inputCursor ?? this.currentInput.length;
+        this.currentFocused = this.state?.inputFocused !== false;
         this.unsubscribeState = this.state?.subscribe(() => {
             this.currentInput = this.state?.input || '';
+            this.currentCursor = this.state?.inputCursor ?? this.currentInput.length;
+            this.currentFocused = this.state?.inputFocused !== false;
+            const renderTask = this.componentRef?.render?.();
+            if (renderTask && typeof (renderTask as Promise<void>).then === 'function') {
+                void (renderTask as Promise<void>).then(() => this.syncNativeInput());
+            } else {
+                this.syncNativeInput();
+            }
         });
+        this.syncNativeInput();
     }
 
     onDestroy(): void {
@@ -194,11 +241,20 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
 
     set input(value: string) {
         this.currentInput = value;
-        this.state?.setInput(value);
+        this.currentCursor = value.length;
+        this.state?.setInput(value, value.length);
     }
 
     get titleStyle() {
         return styleTextToObject(this.activeTheme.inputTitle);
+    }
+
+    get inputCursor(): number {
+        return this.currentCursor;
+    }
+
+    get inputFocused(): boolean {
+        return this.currentFocused;
     }
 
     get shellStyle() {
@@ -263,19 +319,117 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
         await (this.submitAction || this.state?.submitAction)?.();
     }
 
-    async onKeyup(event: KeyboardEvent): Promise<void> {
-        if (event.key !== 'Enter') {
+    onInput(event: Event): void {
+        const target = event?.target as HTMLTextAreaElement | null;
+        const value = String(target?.value || '');
+        const cursor = typeof target?.selectionStart === 'number'
+            ? target.selectionStart
+            : value.length;
+        this.currentInput = value;
+        this.currentCursor = cursor;
+        this.state?.setInput(value, cursor);
+        this.syncNativeInput();
+    }
+
+    onCursorChange(event: Event): void {
+        const target = event?.target as HTMLTextAreaElement | null;
+        if (typeof target?.selectionStart === 'number') {
+            this.currentCursor = target.selectionStart;
+            this.state?.setInputCursor(target.selectionStart);
+        }
+    }
+
+    onFocus(): void {
+        this.currentFocused = true;
+        this.state?.setInputFocused(true);
+        this.syncNativeInput();
+    }
+
+    onBlur(): void {
+        this.currentFocused = false;
+        this.state?.setInputFocused(false);
+        this.syncNativeInput();
+    }
+
+    async onKeydown(event: KeyboardEvent): Promise<void> {
+        if (this.state?.selectMenu) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault?.();
+                this.state.moveSelectMenu(1);
+                return;
+            }
+            if (event.key === 'ArrowUp') {
+                event.preventDefault?.();
+                this.state.moveSelectMenu(-1);
+                return;
+            }
+            if (event.key === 'Tab') {
+                event.preventDefault?.();
+                await this.state.confirmSelectMenu();
+                return;
+            }
+            if (event.key === 'Enter') {
+                event.preventDefault?.();
+                await this.state.processRawChunk('\r', {
+                    submitOnEnter: true,
+                    ctrlKey: event.ctrlKey,
+                    altKey: event.altKey,
+                    hasSelectMenu: true
+                });
+                return;
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault?.();
+                await this.state.cancelSelectMenu();
+                return;
+            }
+        }
+        if (event.key === 'Enter') {
+            const enterAction = resolveConsoleEnterAction({
+                ctrlKey: event.ctrlKey,
+                altKey: event.altKey,
+                hasSelectMenu: !!this.state?.selectMenu
+            });
+            if (enterAction === 'confirm-selection') {
+                event.preventDefault?.();
+                await this.state?.confirmSelectMenu();
+                return;
+            }
+            if (enterAction !== 'submit') {
+                return;
+            }
+            event.preventDefault?.();
+            await this.submit();
             return;
         }
-        await this.submit();
+    }
+
+    protected syncNativeInput(): void {
+        const host = (this.elementRef?.nativeElement || this.componentRef?.hostView?.rootNodes?.[0] || this.componentRef?.elementRef?.nativeElement) as any;
+        const candidates = Array.from(host?.querySelectorAll?.('.agent-input') || []);
+        if (host?.classList?.contains?.('agent-input')) {
+            candidates.push(host);
+        }
+        const ownerDocument = host?.ownerDocument || this.document;
+        if (!candidates.length && ownerDocument?.querySelectorAll) {
+            candidates.push(...Array.from(ownerDocument.querySelectorAll('.agent-input')));
+        }
+        candidates.forEach((input: any) => {
+            syncConsoleEditableElement(input, {
+                value: this.currentInput,
+                cursor: this.currentCursor,
+                focused: this.currentFocused
+            });
+        });
     }
 }
 
 @Component({
     selector: 'agent-console-working-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-working-panel" v-style="shellStyle">
-        <p class="working-line">
+    <div class="console-panel console-working-panel" v-style="shellStyle">
+        <label class="working-line">
             <span v-style="animatedCharStyleAt(0)">{{animatedCharAt(0)}}</span>
             <span v-style="animatedCharStyleAt(1)">{{animatedCharAt(1)}}</span>
             <span v-style="animatedCharStyleAt(2)">{{animatedCharAt(2)}}</span>
@@ -285,8 +439,8 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
             <span v-style="animatedCharStyleAt(6)">{{animatedCharAt(6)}}</span>
             <span v-style="labelStyle">{{workingSuffixLabel}}</span>
             <span v-style="lineStyle">{{workingDetail}}</span>
-        </p>
-    </section>
+        </label>
+    </div>
     `
 })
 export class AgentConsoleWorkingPanelComponent {
@@ -454,17 +608,13 @@ export class AgentConsoleWorkingPanelComponent {
 
 @Component({
     selector: 'agent-console-sessions-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-sessions-panel" v-style="shellStyle">
-        <p v-style="accentStyle">{{sessionsSummaryLabel}}</p>
-        <p v-style="metaStyle" v-show="sessionsHintLabel">{{sessionsHintLabel}}</p>
-        <p v-style="sessionStyleAt(0)" v-show="sessionLabelAt(0)">{{sessionLabelAt(0)}}</p>
-        <p v-style="sessionStyleAt(1)" v-show="sessionLabelAt(1)">{{sessionLabelAt(1)}}</p>
-        <p v-style="sessionStyleAt(2)" v-show="sessionLabelAt(2)">{{sessionLabelAt(2)}}</p>
-        <p v-style="sessionStyleAt(3)" v-show="sessionLabelAt(3)">{{sessionLabelAt(3)}}</p>
-        <p v-style="sessionStyleAt(4)" v-show="sessionLabelAt(4)">{{sessionLabelAt(4)}}</p>
-        <p v-style="sessionStyleAt(5)" v-show="sessionLabelAt(5)">{{sessionLabelAt(5)}}</p>
-    </section>
+    <div class="console-panel console-sessions-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{sessionsSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="sessionsHintLabel">{{sessionsHintLabel}}</label>
+        <label v-style="item.style" v-for="item in sessionItems">{{item.label}}</label>
+    </div>
     `
 })
 export class AgentConsoleSessionsPanelComponent {
@@ -515,13 +665,12 @@ export class AgentConsoleSessionsPanelComponent {
     }
 
     get visibleSessionStart(): number {
-        if (this.sessions.length <= AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS) {
-            return 0;
-        }
         const selectedIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.state.selectedSessionId));
-        const windowSize = AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS;
-        const centeredStart = selectedIndex - Math.floor(windowSize / 2);
-        return Math.max(0, Math.min(this.sessions.length - windowSize, centeredStart));
+        return resolveConsoleListWindow(
+            this.sessions.length,
+            selectedIndex,
+            AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS
+        ).start;
     }
 
     get visibleSessions(): AgentConsoleSessionItem[] {
@@ -565,10 +714,11 @@ export class AgentConsoleSessionsPanelComponent {
 
 @Component({
     selector: 'agent-console-tools-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-tools-panel" v-style="shellStyle">
-        <p v-style="accentStyle">{{toolsSummaryLabel}}</p>
-    </section>
+    <div class="console-panel console-tools-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{toolsSummaryLabel}}</label>
+    </div>
     `
 })
 export class AgentConsoleToolsPanelComponent {
@@ -621,10 +771,11 @@ export class AgentConsoleToolsPanelComponent {
 
 @Component({
     selector: 'agent-console-tool-runs-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-tool-runs-panel" v-style="shellStyle">
-        <p class="tool-run-item" v-style="accentStyle">{{toolRunsSummaryLabel}}</p>
-    </section>
+    <div class="console-panel console-tool-runs-panel" v-style="shellStyle">
+        <label class="tool-run-item" v-style="accentStyle">{{toolRunsSummaryLabel}}</label>
+    </div>
     `
 })
 export class AgentConsoleToolRunsPanelComponent {
@@ -706,18 +857,16 @@ export class AgentConsoleToolRunsPanelComponent {
 
 @Component({
     selector: 'agent-console-messages-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-messages-panel" v-style="shellStyle">
-        <p class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</p>
-        <p class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</p>
-        <p class="message-item" v-style="messageItemStyleAt(0)" v-show="hasMessageAt(0)"> <span v-style="messageRoleStyleAt(0)">{{messageRoleAt(0)}}</span><span v-style="messageContentStyleAt(0)">{{messageContentAt(0)}}</span> </p>
-        <p class="message-item" v-style="messageItemStyleAt(1)" v-show="hasMessageAt(1)"> <span v-style="messageRoleStyleAt(1)">{{messageRoleAt(1)}}</span><span v-style="messageContentStyleAt(1)">{{messageContentAt(1)}}</span> </p>
-        <p class="message-item" v-style="messageItemStyleAt(2)" v-show="hasMessageAt(2)"> <span v-style="messageRoleStyleAt(2)">{{messageRoleAt(2)}}</span><span v-style="messageContentStyleAt(2)">{{messageContentAt(2)}}</span> </p>
-        <p class="message-item" v-style="messageItemStyleAt(3)" v-show="hasMessageAt(3)"> <span v-style="messageRoleStyleAt(3)">{{messageRoleAt(3)}}</span><span v-style="messageContentStyleAt(3)">{{messageContentAt(3)}}</span> </p>
-        <p class="message-item" v-style="messageItemStyleAt(4)" v-show="hasMessageAt(4)"> <span v-style="messageRoleStyleAt(4)">{{messageRoleAt(4)}}</span><span v-style="messageContentStyleAt(4)">{{messageContentAt(4)}}</span> </p>
-        <p class="message-item" v-style="messageItemStyleAt(5)" v-show="hasMessageAt(5)"> <span v-style="messageRoleStyleAt(5)">{{messageRoleAt(5)}}</span><span v-style="messageContentStyleAt(5)">{{messageContentAt(5)}}</span> </p>
-        <p class="message-item" v-style="messageItemStyleAt(6)" v-show="hasMessageAt(6)"> <span v-style="messageRoleStyleAt(6)">{{messageRoleAt(6)}}</span><span v-style="messageContentStyleAt(6)">{{messageContentAt(6)}}</span> </p>
-    </section>
+    <div class="console-panel console-messages-panel" v-style="shellStyle">
+        <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
+        <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
+        <label class="message-item" v-style="item.itemStyle" v-for="item in messageItems">
+            <span v-style="item.roleStyle">{{item.role}}</span>
+            <span v-style="item.contentStyle">{{item.content}}</span>
+        </label>
+    </div>
     `
 })
 export class AgentConsoleMessagesPanelComponent {
@@ -752,12 +901,9 @@ export class AgentConsoleMessagesPanelComponent {
 
     get visibleMessages(): Array<{ id?: string; role?: string; content: string }> {
         const messages = this.messages;
-        if (messages.length <= 7) {
-            return messages;
-        }
         const selectedIndex = Math.max(0, messages.findIndex(message => message.id === this.state.selectedMessageId));
-        const start = Math.max(0, Math.min(messages.length - 7, selectedIndex - 3));
-        return messages.slice(start, start + 7);
+        const window = resolveConsoleListWindow(messages.length, selectedIndex, 7);
+        return messages.slice(window.start, window.start + window.count);
     }
 
     get messageItems(): Array<{ kind: string; role: string; content: string; selected: boolean; itemStyle: Record<string, string>; roleStyle: Record<string, string>; contentStyle: Record<string, string> }> {
@@ -770,7 +916,7 @@ export class AgentConsoleMessagesPanelComponent {
                 ? this.activeTheme.messagesSelected
                 : role === 'you'
                     ? this.activeTheme.messagesUser
-                    : '';
+                    : this.activeTheme.messagesShell;
             const itemStyle = {
                 padding: '0 1',
                 ...(rowStyleText ? styleTextToObject(rowStyleText) : {})
@@ -889,17 +1035,16 @@ export class AgentConsoleMessagesPanelComponent {
 
 @Component({
     selector: 'agent-console-message-detail-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-message-detail-panel" v-style="shellStyle">
-        <p v-style="accentStyle">{{detailSummaryLabel}}</p>
-        <p v-style="hintStyle">{{detailHintLabel}}</p>
-        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(0)}}</span><span v-style="lineStyle">{{detailLineContentAt(0)}}</span></p>
-        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(1)}}</span><span v-style="lineStyle">{{detailLineContentAt(1)}}</span></p>
-        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(2)}}</span><span v-style="lineStyle">{{detailLineContentAt(2)}}</span></p>
-        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(3)}}</span><span v-style="lineStyle">{{detailLineContentAt(3)}}</span></p>
-        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(4)}}</span><span v-style="lineStyle">{{detailLineContentAt(4)}}</span></p>
-        <p><span v-style="lineNumberStyle">{{detailLineNumberAt(5)}}</span><span v-style="lineStyle">{{detailLineContentAt(5)}}</span></p>
-    </section>
+    <div class="console-panel console-message-detail-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{detailSummaryLabel}}</label>
+        <label v-style="hintStyle">{{detailHintLabel}}</label>
+        <label v-for="index in detailIndexes">
+            <span v-style="lineNumberStyle">{{detailLineNumberAt(index)}}</span>
+            <span v-style="lineStyle">{{detailLineContentAt(index)}}</span>
+        </label>
+    </div>
     `
 })
 export class AgentConsoleMessageDetailPanelComponent {
@@ -973,6 +1118,10 @@ export class AgentConsoleMessageDetailPanelComponent {
             : 'enter to open';
     }
 
+    get detailIndexes(): number[] {
+        return [0, 1, 2, 3, 4, 5];
+    }
+
     detailLineNumberAt(index: number): string {
         if (!this.shouldShow) {
             return '';
@@ -1000,12 +1149,14 @@ export class AgentConsoleMessageDetailPanelComponent {
 
 @Component({
     selector: 'agent-console-activity-panel',
+    imports: CONSOLE_BASE_IMPORTS,
     template: `
-    <section class="console-panel console-activity-panel" v-style="shellStyle">
-        <p class="activity-item"><span v-style="activityKindStyleAt(0)">{{activityKindAt(0)}}</span><span v-style="activityMessageStyleAt(0)">{{activityMessageAt(0)}}</span></p>
-        <p class="activity-item"><span v-style="activityKindStyleAt(1)">{{activityKindAt(1)}}</span><span v-style="activityMessageStyleAt(1)">{{activityMessageAt(1)}}</span></p>
-        <p class="activity-item"><span v-style="activityKindStyleAt(2)">{{activityKindAt(2)}}</span><span v-style="activityMessageStyleAt(2)">{{activityMessageAt(2)}}</span></p>
-    </section>
+    <div class="console-panel console-activity-panel" v-style="shellStyle">
+        <label class="activity-item" v-for="item in activityItems">
+            <span v-style="item.kindStyle">{{item.kind}}</span>
+            <span v-style="item.messageStyle">{{item.message}}</span>
+        </label>
+    </div>
     `
 })
 export class AgentConsoleActivityPanelComponent {
@@ -1082,33 +1233,28 @@ export class AgentConsoleActivityPanelComponent {
 
 @Component({
     selector: 'agent-console-select-panel',
+    imports: CONSOLE_FORM_IMPORTS,
     template: `
-    <section class="console-panel console-select-panel">
+    <div class="console-panel console-select-panel">
         <div class="select-shell" v-style="shellStyle">
-            <p class="select-title" v-style="headerStyle">{{menuTitle}}</p>
-            <p class="select-caption" v-style="detailLabelStyle">{{menuMeta}}</p>
-            <p class="select-option" v-style="optionStyleAt(0)" @click="selectOptionAt(0)">{{optionLabelAt(0)}}</p>
-            <p class="select-option" v-style="optionStyleAt(1)" @click="selectOptionAt(1)">{{optionLabelAt(1)}}</p>
-            <p class="select-option" v-style="optionStyleAt(2)" @click="selectOptionAt(2)">{{optionLabelAt(2)}}</p>
-            <p class="select-option" v-style="optionStyleAt(3)" @click="selectOptionAt(3)">{{optionLabelAt(3)}}</p>
-            <p class="select-option" v-style="optionStyleAt(4)" @click="selectOptionAt(4)">{{optionLabelAt(4)}}</p>
-            <p class="select-option" v-style="optionStyleAt(5)" @click="selectOptionAt(5)">{{optionLabelAt(5)}}</p>
-            <p class="select-option" v-style="optionStyleAt(6)" @click="selectOptionAt(6)">{{optionLabelAt(6)}}</p>
-            <p class="select-option" v-style="optionStyleAt(7)" @click="selectOptionAt(7)">{{optionLabelAt(7)}}</p>
-            <p class="select-option" v-style="optionStyleAt(8)" @click="selectOptionAt(8)">{{optionLabelAt(8)}}</p>
-            <p class="select-option" v-style="optionStyleAt(9)" @click="selectOptionAt(9)">{{optionLabelAt(9)}}</p>
-            <p class="select-option" v-style="optionStyleAt(10)" @click="selectOptionAt(10)">{{optionLabelAt(10)}}</p>
-            <p class="select-option" v-style="optionStyleAt(11)" @click="selectOptionAt(11)">{{optionLabelAt(11)}}</p>
-            <p class="select-detail-label" v-style="detailLabelStyle">{{detailTitle}}</p>
-            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(0)}}</p>
-            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(1)}}</p>
-            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(2)}}</p>
-            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(3)}}</p>
-            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(4)}}</p>
-            <p class="select-detail-line" v-style="detailValueStyle">{{detailLineAt(5)}}</p>
-            <p class="select-hint" v-style="hintStyle">{{menuHint}}</p>
+            <select class="select-core"
+                title="{{menuTitle}}"
+                meta="{{menuMeta}}"
+                hint="{{menuHint}}"
+                options="{{menuOptionsJson}}"
+                selectedIndex="{{menuSelectedIndexText}}"
+                visibleCount="{{visibleOptionCountText}}"
+                detailTitle="{{detailTitle}}"
+                detailLines="{{detailLinesJson}}"
+                titleStyle="{{activeTheme.selectHeader}}"
+                metaStyle="{{activeTheme.selectDetailLabel}}"
+                hintStyle="{{activeTheme.selectHint}}"
+                optionActiveStyle="{{activeTheme.selectOptionActive}}"
+                optionStyle="{{activeTheme.selectOption}}"
+                detailLabelStyle="{{activeTheme.selectDetailLabel}}"
+                detailValueStyle="{{activeTheme.selectDetailValue}}"></select>
         </div>
-    </section>
+    </div>
     `
 })
 export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestroy {
@@ -1186,13 +1332,35 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         return `${this.menu.selectedIndex + 1}/${this.menu.options.length}`;
     }
 
+    get menuOptions(): AgentConsoleSelectOption[] {
+        return this.menu?.options || [];
+    }
+
+    get menuOptionsJson(): string {
+        return JSON.stringify(this.menuOptions);
+    }
+
+    get menuSelectedIndex(): number {
+        return this.menu?.selectedIndex ?? 0;
+    }
+
+    get menuSelectedIndexText(): string {
+        return String(this.menuSelectedIndex);
+    }
+
+    get visibleOptionCountText(): string {
+        return String(AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS);
+    }
+
     get visibleOptionStart(): number {
-        if (!this.menu || this.menu.options.length <= AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS) {
+        if (!this.menu) {
             return 0;
         }
-        const windowSize = AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS;
-        const centeredStart = this.menu.selectedIndex - Math.floor(windowSize / 2);
-        return Math.max(0, Math.min(this.menu.options.length - windowSize, centeredStart));
+        return resolveConsoleSelectWindow(
+            this.menu.options.length,
+            this.menu.selectedIndex,
+            AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS
+        ).start;
     }
 
     get visibleMenuOptions(): AgentConsoleSelectOption[] {
@@ -1208,12 +1376,15 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         }
         return this.visibleMenuOptions.map((option, index) => {
             const absoluteIndex = this.visibleOptionStart + index;
-            const marker = this.menu && this.menu.selectedIndex === absoluteIndex ? '›' : ' ';
             return {
-            label: `${marker} ${absoluteIndex + 1}. ${option.label}`,
-            value: option.value,
-            style: styleTextToObject(this.menu && this.menu.selectedIndex === absoluteIndex ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
-        };
+                label: formatConsoleIndexedOptionLabel(
+                    absoluteIndex,
+                    option.label,
+                    !!this.menu && this.menu.selectedIndex === absoluteIndex
+                ),
+                value: option.value,
+                style: styleTextToObject(this.menu && this.menu.selectedIndex === absoluteIndex ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
+            };
         });
     }
 
@@ -1229,21 +1400,11 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
     }
 
     get detailLines(): string[] {
-        const option = this.selectedOption;
-        if (!option) {
-            return [];
-        }
-        const detail = option.detail ?? option.description ?? option.label;
-        if (typeof detail === 'string') {
-            return detail
-                .split('\n')
-                .map(line => line.trim())
-                .filter(Boolean)
-                .slice(0, 3);
-        }
-        return JSON.stringify(detail, null, 2)
-            .split('\n')
-            .slice(0, 6);
+        return resolveConsoleSelectDetailLines(this.selectedOption as any);
+    }
+
+    get detailLinesJson(): string {
+        return JSON.stringify(this.detailLines);
     }
 
     detailLineAt(index: number): string {
