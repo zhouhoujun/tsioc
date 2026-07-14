@@ -175,6 +175,8 @@ export class AgentConsoleStatusPanelComponent {
                     cursor=" "
                     cursorPos="{{inputCursor}}"
                     focused="{{inputFocused}}"
+                    showCursor="false"
+                    cursorTarget="input"
                     continuationPrompt="  "
                     @input="onInput($event)"
                     @click="onCursorChange($event)"

@@ -15,6 +15,7 @@ import {
     AgentConsoleToolRunsPanelComponent,
     AgentConsoleToolsPanelComponent,
     AgentConsoleWorkingPanelComponent,
+    AgentUiModule,
     AgentModule
 } from '../src';
 
@@ -25,7 +26,7 @@ export class HtmlConsoleTest {
     @Before()
     async init() {
         this.ctx = await Application.run(AgentConsoleComponent, {
-            deps: [AgentModule, HtmlTemplateModule, ComponentsModule],
+            deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
             providers: [{
                 provide: DOCUMENT,
                 useFactory: () => {

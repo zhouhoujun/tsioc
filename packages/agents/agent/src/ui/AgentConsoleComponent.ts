@@ -554,21 +554,28 @@ export class AgentConsoleComponent {
         const flash = models.length
             ? await this.uiDelegate.select('Flash model for ' + prov, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(currModel)))
             : await this.uiDelegate.prompt('Flash model [' + defModel + ']:');
-        if (!flash || this.isCancelPromptValue(flash)) { return; }
+        if (this.isCancelPromptValue(flash)) { return; }
+        if (models.length && !flash) { return; }
+        const flashModel = flash || defModel;
         const strong = models.length
             ? await this.uiDelegate.select('Strong model for ' + prov, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(currModel)))
             : await this.uiDelegate.prompt('Strong model [' + strongDef + ']:');
-        if (!strong || this.isCancelPromptValue(strong)) { return; }
+        if (this.isCancelPromptValue(strong)) { return; }
+        if (models.length && !strong) { return; }
+        const strongModel = strong || strongDef;
         let baseUrl = this.PROVIDER_BASE_URLS[prov];
         if (prov === 'openai-compatible' || prov === 'anthropic') {
             const input = await this.uiDelegate.prompt('Base URL [' + (baseUrl || '') + ']:');
             if (this.isCancelPromptValue(input)) { return; }
             if (input) { baseUrl = input; }
         }
-        const keyLabel = currProv === prov && this.options.model?.apiKey ? '******' : '(required)';
-        const key = await this.uiDelegate.prompt('API key for ' + prov + ' [' + keyLabel + ']:', true);
-        if (!key || this.isCancelPromptValue(key)) { return; }
-        await this.uiDelegate.applyModelProfile({ provider: prov, flashModel: flash, strongModel: strong, baseUrl, apiKey: key });
+        const existingApiKey = currProv === prov ? this.options.model?.apiKey : undefined;
+        const keyLabel = existingApiKey ? '******' : '(required)';
+        const keyInput = await this.uiDelegate.prompt('API key for ' + prov + ' [' + keyLabel + ']:', true);
+        if (this.isCancelPromptValue(keyInput)) { return; }
+        const apiKey = keyInput || existingApiKey;
+        if (!apiKey) { return; }
+        await this.uiDelegate.applyModelProfile({ provider: prov, flashModel, strongModel, baseUrl, apiKey });
     }
 
     protected async showToolsList(): Promise<void> {
@@ -633,6 +640,7 @@ export class AgentConsoleComponent {
             this.state.setStatus('error');
             this.state.setLastError(error.message || 'Unknown');
             this.state.pushActivity('error', error.message || 'Unknown');
+            this.state.appendAssistantErrorMessage(error.message || 'Unknown');
         }
         if (this.state.status === 'running' || this.state.status === 'reasoning') { this.state.setStatus('idle'); }
     }
@@ -702,18 +710,7 @@ export class AgentConsoleComponent {
             this.state.setStatus('error');
             this.state.setLastError(message);
             this.state.pushActivity('error', message);
-            const currentMessages = this.state.messages.slice();
-            const lastMessage = currentMessages[currentMessages.length - 1];
-            if (lastMessage?.role === 'assistant' && !String(lastMessage.content || '').trim()) {
-                currentMessages.pop();
-            }
-            currentMessages.push({
-                id: `assistant-error-${Date.now()}`,
-                role: 'assistant',
-                content: `Error: ${message}`,
-                createdAt: Date.now()
-            } as AgentMessage);
-            this.state.setMessages(currentMessages);
+            this.state.appendAssistantErrorMessage(message);
         }
 
         await this.refreshTools();

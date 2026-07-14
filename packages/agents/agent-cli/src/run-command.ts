@@ -1,17 +1,21 @@
 import { Application } from '@tsdi/core';
-import { AgentModule, AgentRuntime, AGENT_OPTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions } from '@tsdi/agent';
+import { AgentRuntime, AGENT_OPTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentUiConfigService, AgentUiModule } from '@tsdi/agent';
 import { TuiTemplateModule } from '@tsdi/components/console';
 import { provideTools, SpawnAgentAdapter, WeatherAdapter, LlmTaskAdapter, PipelineAdapter } from '@tsdi/agent-tools';
-import { AgentCliOptions, resolveCliConfig, resolveCliModelConfig } from './config';
+import { AgentCliOptions } from './config';
+import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 
-function resolveModelAdapter(options: AgentCliOptions): any {
-    const resolved = resolveCliConfig(options);
-    const modelConfig = resolveCliModelConfig(options, resolved.root);
+function createConfigService(options: AgentCliOptions): AgentUiConfigService {
+    return new AgentUiConfigService(new CliAgentUiConfigReader(), options);
+}
+
+function resolveModelAdapter(config: AgentUiConfigService, options: AgentCliOptions): any {
+    const resolved = config.resolve(options);
+    const modelConfig = resolved.model;
 
     return {
         provide: ModelAdapter,
         useFactory: () => new RoutedModelAdapter({
-            ...(resolved.settingsModel || {}),
             provider: modelConfig.provider,
             model: modelConfig.model,
             baseUrl: modelConfig.baseUrl,
@@ -70,14 +74,16 @@ export function withAdapterProviders(): any[] {
     ];
 }
 
-export async function runAgentApplication(options: AgentCliOptions, agentOptions?: any, extraProviders: any[] = []): Promise<any> {
-    const resolved = resolveCliConfig(options);
-    return Application.run(AgentModule, {
+export async function runAgentApplication(options: AgentCliOptions, agentOptions: any, extraProviders: any[] = []): Promise<any> {
+    const config = createConfigService(options);
+    const resolved = config.resolve();
+    return Application.run(AgentUiModule, {
         deps: [TuiTemplateModule],
         providers: [
             ...provideTools(resolved.tools),
             ...withAdapterProviders(),
-            resolveModelAdapter(options),
+            resolveModelAdapter(config, options),
+            { provide: AgentUiConfigService, useValue: config },
             ...extraProviders,
             ...(agentOptions ? [{ provide: AGENT_OPTIONS, useValue: agentOptions }] : [])
         ]
@@ -85,11 +91,11 @@ export async function runAgentApplication(options: AgentCliOptions, agentOptions
 }
 
 export async function runAgentPrompt(prompt: string, options: AgentCliOptions = {}): Promise<string> {
-    const resolved = resolveCliConfig(options);
-    const modelConfig = resolveCliModelConfig(options, resolved.root);
+    const config = createConfigService(options);
+    const resolved = config.resolve();
+    const modelConfig = resolved.model;
     const agentOptions = mergeAgentOptions({
         model: {
-            ...(resolved.settingsModel || {}),
             provider: modelConfig.provider,
             model: modelConfig.model,
             baseUrl: modelConfig.baseUrl,
@@ -113,6 +119,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
     const ctx = await runAgentApplication(options, agentOptions);
 
     try {
+        await ctx.get(AgentRuntime).start();
         return agentOptions.bootstrapTurn?.output ?? '';
     } finally {
         await ctx.close();
@@ -120,11 +127,11 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
 }
 
 export async function runAgentStreaming(prompt: string, options: AgentCliOptions = {}): Promise<void> {
-    const resolved = resolveCliConfig(options);
-    const modelConfig = resolveCliModelConfig(options, resolved.root);
+    const config = createConfigService(options);
+    const resolved = config.resolve();
+    const modelConfig = resolved.model;
     const agentOptions = mergeAgentOptions({
         model: {
-            ...(resolved.settingsModel || {}),
             provider: modelConfig.provider,
             model: modelConfig.model,
             baseUrl: modelConfig.baseUrl,
@@ -142,6 +149,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     const ctx = await runAgentApplication(options, agentOptions);
 
     try {
+        await ctx.get(AgentRuntime).start();
         const runtime = ctx.get(AgentRuntime);
         const stream = runtime.runStreamingTurn(resolved.sessionId, prompt);
         for await (const chunk of stream) {

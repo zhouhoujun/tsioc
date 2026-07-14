@@ -82,5 +82,7 @@ export * from './ui/AgentConsoleSessionState';
 export * from './ui/AgentConsoleSuggestions';
 export * from './ui/AgentConsoleEventBridge';
 export * from './ui/AgentConsoleUiDelegate';
+export * from './ui/AgentUiConfigReader';
+export * from './ui/agent-ui-config';
 export * from './ui/agent-ui.module';
 export * from './ui/AgentConsolePanels';

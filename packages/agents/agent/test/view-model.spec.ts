@@ -110,6 +110,9 @@ class UiDelegateStub extends AgentConsoleUiDelegate {
     switchedSessions: Array<string | undefined> = [];
     sessions: AgentConsoleSessionChoice[] = [];
     nextSelections: Array<string | undefined> = [];
+    nextPrompts: Array<string | undefined> = [];
+    promptQuestions: string[] = [];
+    appliedProfiles: ModelProfile[] = [];
 
     async select(_title: string, options: Array<{ value: string }>, selectedIndex = 0): Promise<string | undefined> {
         if (this.nextSelections.length) {
@@ -118,7 +121,11 @@ class UiDelegateStub extends AgentConsoleUiDelegate {
         return options[selectedIndex]?.value;
     }
 
-    async prompt(): Promise<string | undefined> {
+    async prompt(question?: string): Promise<string | undefined> {
+        this.promptQuestions.push(question || '');
+        if (this.nextPrompts.length) {
+            return this.nextPrompts.shift();
+        }
         return undefined;
     }
 
@@ -144,8 +151,8 @@ class UiDelegateStub extends AgentConsoleUiDelegate {
         this.switchedSessions.push(sessionId);
     }
 
-    async applyModelProfile(_profile: ModelProfile): Promise<void> {
-        return;
+    async applyModelProfile(profile: ModelProfile): Promise<void> {
+        this.appliedProfiles.push(profile);
     }
 
     quit(): void {
@@ -499,6 +506,36 @@ export class AgentConsoleComponentTest {
         component.input = '/copy input';
         await component.submit();
         expect(uiDelegate.copiedTargets).toEqual(['input']);
+    }
+
+    @Test('model switch prompt keeps defaults and reuses existing api key')
+    async modelSwitchPromptKeepsDefaultsAndReusesExistingApiKey() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        uiDelegate.nextSelections = ['openai-compatible'];
+        uiDelegate.nextPrompts = ['', '', 'https://api.compat.local', ''];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+        (component as any).options.model = {
+            provider: 'openai-compatible',
+            model: 'custom-model',
+            apiKey: 'existing-key'
+        };
+        component.configure({
+            provider: 'openai-compatible',
+            model: 'custom-model'
+        });
+
+        component.input = '/model';
+        await component.submit();
+
+        expect(uiDelegate.appliedProfiles).toEqual([{
+            provider: 'openai-compatible',
+            flashModel: 'custom-model',
+            strongModel: 'custom-model',
+            baseUrl: 'https://api.compat.local',
+            apiKey: 'existing-key'
+        }]);
     }
 
     @Test('handled slash commands clear input after submit')

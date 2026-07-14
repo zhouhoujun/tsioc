@@ -40,6 +40,7 @@ import {
     runAgentPrompt,
     parseSlashCommandLine,
     parseTerminalControlKey,
+    parseTerminalTextPromptChunk,
     buildChatSessionId,
     buildOsc52ClipboardSequence,
     pickRestoredSessionId,
@@ -137,10 +138,19 @@ export class AgentCliTest {
         process.env.HOME = home;
         try {
             const resolved = resolveCliConfig({});
+            let expectedWorkspace = process.cwd();
+            while (!fs.existsSync(path.join(expectedWorkspace, '.git'))) {
+                const parent = path.dirname(expectedWorkspace);
+                if (parent === expectedWorkspace) {
+                    expectedWorkspace = process.cwd();
+                    break;
+                }
+                expectedWorkspace = parent;
+            }
             expect(resolved.root).toBe(path.resolve(home, '.tsdi-agent'));
             expect(resolved.settingsPath).toBe(path.resolve(home, '.tsdi-agent', 'settings.json'));
-            expect(resolved.workspace).toBe(process.cwd());
-            expect(resolved.tools.file?.rootDir).toBe(process.cwd());
+            expect(resolved.workspace).toBe(expectedWorkspace);
+            expect(resolved.tools.file?.rootDir).toBe(expectedWorkspace);
         } finally {
             process.env.HOME = originalHome;
         }
@@ -157,6 +167,13 @@ export class AgentCliTest {
         expect(cli.args.length).toBe(0);
     }
 
+    @Test('package main and bin entries point to runnable files')
+    packageEntrypointsExist() {
+        const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
+        expect(fs.existsSync(path.resolve(__dirname, '..', pkg.main))).toBe(true);
+        expect(fs.existsSync(path.resolve(__dirname, '..', pkg.bin['tsdi-agent']))).toBe(true);
+    }
+
     @Test('rejects API call without configured key')
     async rejectsApiCallWithoutKey() {
         const root = await this.createRoot();
@@ -166,6 +183,18 @@ export class AgentCliTest {
         } catch (error: any) {
             expect(error.message).toContain('API key');
         }
+    }
+
+    @Test('runs a prompt with echo provider without external API configuration')
+    async runsPromptWithEchoProvider() {
+        const root = await this.createRoot();
+        const output = await runAgentPrompt('hello agent', {
+            root,
+            session: 'echo-run',
+            provider: 'echo',
+            model: 'echo'
+        });
+        expect(output).toContain('Echo: hello agent');
     }
 
     @Test('resolves tui renderer for interactive chat application context')
@@ -707,6 +736,22 @@ export class AgentCliTest {
         expect(parseTerminalControlKey('\r')).toBe('return');
         expect(parseTerminalControlKey('\u001b')).toBe('escape');
         expect(parseTerminalControlKey('x')).toBe(undefined);
+    }
+
+    @Test('parses pasted terminal text prompt chunks before generic submit handling')
+    parsesPastedTerminalTextPromptChunks() {
+        expect(parseTerminalTextPromptChunk('sk-test')).toEqual({
+            text: 'sk-test',
+            submitted: false
+        });
+        expect(parseTerminalTextPromptChunk('sk-test\r')).toEqual({
+            text: 'sk-test',
+            submitted: true
+        });
+        expect(parseTerminalTextPromptChunk(Buffer.from('sk-test\nextra'))).toEqual({
+            text: 'sk-test',
+            submitted: true
+        });
     }
 
     @Test('uses primary screen by default and allows explicit alternate-screen opt-in')

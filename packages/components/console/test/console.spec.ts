@@ -1,6 +1,17 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, ConsoleText, resolveConsoleEnterAction, TuiRenderer, TuiTemplateModule } from '../src';
+import {
+    buildClearScreenSequence,
+    buildTerminalCleanupSequence,
+    buildTerminalCursorSequence,
+    ConsoleElement,
+    ConsoleRenderer,
+    ConsoleTemplateModule,
+    ConsoleText,
+    resolveConsoleEnterAction,
+    TuiRenderer,
+    TuiTemplateModule
+} from '../src';
 import { Application } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 
@@ -93,11 +104,27 @@ class ConsoleTextareaTestComponent {
             continuationPrompt=".. "
             value="line1\nline2"
             cursorPos="7"
+            cursorTarget="draft"
             focused="true"></textarea>
     </section>
     `
 })
 class ConsoleTextareaFocusedTestComponent {
+}
+
+@Component({
+    selector: 'console-nested-textarea-test',
+    template: `
+    <section>
+        <div style="background: #1b2128; color: #c9d1d9; padding: 1 1;">
+            <div>
+                <textarea prompt="> " value="hi" cursorTarget="draft"></textarea>
+            </div>
+        </div>
+    </section>
+    `
+})
+class ConsoleNestedTextareaTestComponent {
 }
 
 @Component({
@@ -286,9 +313,49 @@ export class ConsoleRendererTest {
             const renderer = ctx.get(TuiRenderer);
             const root = ref.hostView.rootNodes[0] as ConsoleElement;
             const lines = renderer.renderToTuiLines(root, { width: 24 });
+            const layout = renderer.renderToTuiLayout(root, { width: 24 });
             expect(lines.some(line => line.includes('>'))).toBe(true);
             expect(lines.some(line => line.includes('.. '))).toBe(true);
             expect(lines.some(line => line.includes('\x1b['))).toBe(true);
+            expect(layout.cursorTargets).toEqual([{
+                id: 'draft',
+                row: 1,
+                column: 4
+            }]);
+            const narrowLayout = renderer.renderToTuiLayout(root, { width: 10 });
+            expect(narrowLayout.lines.some(line => line.includes('...'))).toBe(false);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('does not add extra spacer rows for plain div wrappers around inputs')
+    async avoidsExtraSpacerRowsForPlainDivWrappers() {
+        const ctx = await Application.run(ConsoleNestedTextareaTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleNestedTextareaTestComponent) as ComponentRef<ConsoleNestedTextareaTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const layout = renderer.renderToTuiLayout(root, { width: 20 });
+            const visible = layout.lines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const inputRow = visible.findIndex(line => line.includes('> hi'));
+            expect(inputRow).toBeGreaterThan(0);
+            expect(layout.cursorTargets).toEqual([{
+                id: 'draft',
+                row: inputRow,
+                column: 3
+            }]);
+            expect(visible[inputRow - 1].trim()).toBe('');
+            let blankRowsAfterInput = 0;
+            for (let index = inputRow + 1; index < visible.length; index++) {
+                if (visible[index].trim()) {
+                    break;
+                }
+                blankRowsAfterInput += 1;
+            }
+            expect(blankRowsAfterInput).toBeLessThanOrEqual(1);
         } finally {
             await ctx.close();
         }
@@ -319,5 +386,40 @@ export class ConsoleRendererTest {
         expect(resolveConsoleEnterAction({ ctrlKey: true })).toBe('newline');
         expect(resolveConsoleEnterAction({ altKey: true })).toBe('newline');
         expect(resolveConsoleEnterAction({ hasSelectMenu: true })).toBe('confirm-selection');
+    }
+
+    @Test('builds terminal cleanup sequences for host cli adapters')
+    buildsTerminalCleanupSequences() {
+        expect(buildClearScreenSequence()).toBe('\x1b[2J\x1b[H');
+        expect(buildClearScreenSequence(true)).toBe('\x1b[2J\x1b[3J\x1b[H');
+        expect(buildTerminalCleanupSequence({
+            reset: '\x1b[0m',
+            preserveScreen: true
+        })).toBe('\x1b[0m\r\x1b[J');
+        expect(buildTerminalCleanupSequence({
+            reset: '\x1b[0m',
+            preserveScreen: true,
+            cursorRowOffset: 4
+        })).toBe('\x1b[0m\r\x1b[4A\x1b[J');
+        expect(buildTerminalCleanupSequence({
+            reset: '\x1b[0m',
+            paintedLineCount: 2,
+            terminalRows: 1
+        })).toBe('\x1b[0m\x1b[1;1H\x1b[2K\x1b[2;1H\x1b[2K\x1b[1;1H');
+        expect(buildTerminalCursorSequence({
+            target: { row: 2, column: 4 },
+            width: 80
+        })).toBe('\x1b[3;5H');
+        expect(buildTerminalCursorSequence({
+            target: { row: 2, column: 4 },
+            width: 80,
+            renderedLineCount: 5,
+            mode: 'flow'
+        })).toBe('\x1b[2A\r\x1b[4C');
+        expect(buildTerminalCursorSequence({
+            target: { row: 2, column: 4 },
+            width: 80,
+            mode: 'line'
+        })).toBe('\r\x1b[4C');
     }
 }

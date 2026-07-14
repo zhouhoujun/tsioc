@@ -52,7 +52,9 @@ export class BootstrapTest {
 
     @Before()
     async init() {
-        this.ctx = await Application.run(AgentModule);
+        this.ctx = await Application.run(AgentModule, {
+            deps: [AgentUiModule]
+        });
     }
 
     @Test('can bootstrap hermes module')

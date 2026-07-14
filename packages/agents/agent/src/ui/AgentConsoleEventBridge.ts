@@ -128,6 +128,7 @@ export class AgentConsoleEventBridge {
                 updatedAt: Date.now()
             });
             this.state.pushActivity('error', `${event.toolName}: ${event.error.message}`);
+            this.state.appendAssistantErrorMessage(`${event.toolName}: ${event.error.message}`);
         });
 
         bind(AgentModelCompletedEvent, (event: AgentModelCompletedEvent) => {
@@ -172,6 +173,7 @@ export class AgentConsoleEventBridge {
             this.state.removePendingApproval(event.request.id);
             this.state.setLastError(event.error.message);
             this.state.pushActivity('error', `${event.request.toolName}: ${event.error.message}`);
+            this.state.appendAssistantErrorMessage(`${event.request.toolName}: ${event.error.message}`);
         });
 
         bind(AgentErrorEvent, (event: AgentErrorEvent) => {
@@ -179,6 +181,7 @@ export class AgentConsoleEventBridge {
             this.state.setStatus('error');
             this.state.setLastError(event.error.message);
             this.state.pushActivity('error', event.error.message);
+            this.state.appendAssistantErrorMessage(event.error.message);
         });
 
         this.subscribed = true;

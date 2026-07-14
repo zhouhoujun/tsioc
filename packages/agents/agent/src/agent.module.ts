@@ -33,8 +33,6 @@ import { AgentServer } from './channels/AgentServer';
 import { AgentClient } from './channels/AgentClient';
 import { LocalAgentClient } from './channels/LocalAgentClient';
 import { PubSubAgentChannel } from './channels/PubSubAgentChannel';
-import { AgentConsoleComponent } from './ui/AgentConsoleComponent';
-import { AgentUiModule } from './ui/agent-ui.module';
 import { ToolExecutionCoordinator } from './harness/ToolExecutionCoordinator';
 import { ToolSchemaValidator } from './harness/ToolSchemaValidator';
 import { RateLimitManager } from './harness/RateLimitManager';
@@ -47,8 +45,7 @@ import { createAgentProviders } from './provider';
 
 @Module({
     imports: [
-        ConfigModule,
-        AgentUiModule
+        ConfigModule
     ],
     bootstrap: [AgentRuntime],
     providers: [
@@ -106,7 +103,6 @@ import { createAgentProviders } from './provider';
     ],
     exports: [
         DefaultAgentRuntime,
-        AgentConsoleComponent,
         LocalToolRegistry,
         InMemorySessionStore,
         InMemoryMemoryStore,

@@ -11,24 +11,30 @@ import {
     resolveConsoleRawKeypressSuppressionKey,
     resolveConsoleSelectDetailLines,
     resolveConsoleSelectWindow,
+    shouldSkipConsoleHistoryEntry,
     shouldPlaceConsoleCursor,
     shouldRenderConsoleTranscript,
     shouldRouteConsoleDraftNavigation,
     shouldSuppressConsoleDuplicatedKeypress,
     shouldSubmitConsoleTextChunk,
-    sliceByDisplayWidth
-} from '@tsdi/components/console';
-import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
-import { AgentCliProviderProfile, ensureAgentWorkspaceConfig, resolveCliConfig, resolveCliModelConfig, resolveProviderApiKeyEnv, resolveProviderBaseUrl, writeSettingsModelProfile } from './config';
-import { TerminalConsoleUiDelegate } from './terminal-ui-delegate';
-import {
+    sliceByDisplayWidth,
     applyTerminalInputChunk,
+    buildClearScreenSequence,
+    buildTerminalCleanupSequence,
+    buildTerminalCursorSequence,
     findSelectMenuOptionIndexFromRenderedLines,
     fitLine,
     getChatCommands,
     isSuggestionMenu,
     parseTerminalMouseEvent
-} from './ui';
+} from '@tsdi/components/console';
+import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
+import { AgentCliProviderProfile } from './config';
+import { CliAgentUiConfigReader } from './agent-ui-config-reader';
+import { TerminalConsoleUiDelegate } from './terminal-ui-delegate';
+import { AgentUiConfigService } from '@tsdi/agent';
+
+const configReader = new CliAgentUiConfigReader();
 
 const HISTORY_FILE = 'chat-history.json';
 const CLI_VERSION = '6.0.31';
@@ -367,10 +373,6 @@ function wrapStyledSegments(segments: StyledTextSegment[], width: number): strin
     return lines;
 }
 
-function buildClearScreenSequence(clearScrollback = false): string {
-    return `\x1b[2J${clearScrollback ? '\x1b[3J' : ''}\x1b[H`;
-}
-
 function renderMarkdownTextLine(sourceLine: string, width: number): string[] {
     const chunkWidth = Math.max(12, width);
     const original = String(sourceLine || '');
@@ -621,6 +623,18 @@ export function parseTerminalControlKey(chunk: Buffer | string): TerminalControl
         return 'pagedown';
     }
     return undefined;
+}
+
+export function parseTerminalTextPromptChunk(chunk: Buffer | string): { text: string; submitted: boolean } {
+    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+    const submitIndex = text.search(/[\r\n]/);
+    if (submitIndex < 0) {
+        return { text, submitted: false };
+    }
+    return {
+        text: text.slice(0, submitIndex),
+        submitted: true
+    };
 }
 
 function isTerminalNavigationChunk(chunk: Buffer | string): boolean {
@@ -1135,7 +1149,7 @@ function createAgentCli(): Command {
         .option('--tools <items>', 'Comma-separated tool names.')
         .option('--no-default-tools', 'Disable defaults.')
         .action((options: any) => {
-            const resolved = resolveCliConfig(options);
+            const resolved = new AgentUiConfigService(configReader, options).resolve();
             process.stdout.write(JSON.stringify({
                 root: resolved.root,
                 settingsPath: resolved.settingsPath,
@@ -1165,15 +1179,15 @@ async function runInteractiveChat(options: any): Promise<void> {
         AgentConsoleWorkingPanelComponent,
         AgentUiModule
     } = require('@tsdi/agent');
-    const { ComponentFactory } = require('@tsdi/components');
     const { ConsoleRenderer, TuiRenderer } = require('@tsdi/components/console');
 
-    const resolved = resolveCliConfig(options);
-    ensureAgentWorkspaceConfig(resolved.root);
+    const config = new AgentUiConfigService(configReader, options);
+    const resolved = config.resolve();
+    config.ensureWorkspaceConfig(resolved.root);
     const historyPath = path.join(resolved.root, HISTORY_FILE);
 
     let currentSessionId = resolved.sessionId;
-    let currentProfile = resolveCliModelConfig(options, resolved.root);
+    let currentProfile = resolved.model;
     let currentCtx: any = null;
     let runtime: any = null;
     let toolRegistry: any = null;
@@ -1230,6 +1244,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let lastInlineStablePrefixRows = 0;
     let lastInlineCursorRow = 0;
     let lastInlineCursorMode: 'prompt' | 'bottom' = 'bottom';
+    let currentCursorTarget: { row: number; column: number } | null = null;
     let terminalCursorVisible = true;
     const useAlternateScreen = shouldUseAlternateScreen();
     const syncTerminalCursorVisibility = (visible: boolean) => {
@@ -1238,6 +1253,21 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         process.stdout.write(visible ? '\x1b[?25h' : '\x1b[?25l');
         terminalCursorVisible = visible;
+    };
+    const renderTuiPanelLayout = (ref: any, width: number): { lines: string[]; cursorTarget?: { row: number; column: number } } | null => {
+        const rootNodes = ref?.hostView?.rootNodes;
+        const node = Array.isArray(rootNodes) ? rootNodes[0] : rootNodes;
+        if (!node || !consoleRenderer?.renderToTuiLayout) {
+            return null;
+        }
+        const layout = consoleRenderer.renderToTuiLayout(node, { width });
+        const target = layout?.cursorTargets?.[0];
+        return {
+            lines: layout?.lines || [],
+            cursorTarget: target
+                ? { row: target.row, column: target.column }
+                : undefined
+        };
     };
     const applyScreenNotice = (message = '', transientMs?: number) => {
         screenNotice = message;
@@ -1283,6 +1313,10 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
+    };
+
+    const isStreamingTurn = (): boolean => {
+        return !!viewModel && (viewModel.status === 'running' || viewModel.status === 'reasoning');
     };
 
     const getActiveSelectMenu = (): { title: string; hint?: string; options: SelectMenuOption[]; selectedIndex: number } | undefined => {
@@ -1431,6 +1465,9 @@ async function runInteractiveChat(options: any): Promise<void> {
         const nextRenderKey = `inline:${width}:${fittedLines.join('\n')}`;
         syncMouseTracking();
         if (nextRenderKey === lastRenderKey) {
+            if (cursorMode === 'prompt') {
+                placeTerminalCursorColumn(fittedLines, width);
+            }
             return;
         }
         const previousVisibleLines = lastPaintedLines.map((line: string) => stripAnsi(line));
@@ -1667,7 +1704,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 `Provider: ${item.provider}`,
                 `Flash: ${PROVIDER_DEFAULT_MODELS[item.provider] || 'custom-model'}`,
                 `Strong: ${PROVIDER_STRONG_MODELS[item.provider] || PROVIDER_DEFAULT_MODELS[item.provider] || 'custom-model'}`,
-                `Base URL: ${resolveProviderBaseUrl(item.provider) || '(custom)'}`
+                `Base URL: ${config.resolveProviderBaseUrl(item.provider) || '(custom)'}`
             ].join('\n')
         }));
         const currentProviderIndex = Math.max(0, MODEL_PROVIDER_CHOICES.findIndex(item => item.provider === currentProvider));
@@ -1745,7 +1782,7 @@ async function runInteractiveChat(options: any): Promise<void> {
 
             const defaultBaseUrl = (flashCurrent?.provider === provider && flashCurrent?.baseUrl)
                 || (strongCurrent?.provider === provider && strongCurrent?.baseUrl)
-                || resolveProviderBaseUrl(provider)
+                || config.resolveProviderBaseUrl(provider)
                 || '';
             let baseUrl = defaultBaseUrl;
             if (provider === 'openai-compatible' || provider === 'anthropic') {
@@ -1803,7 +1840,7 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const ensureInteractiveProfile = async (): Promise<AgentCliProviderProfile> => {
         const hasExplicitConfig = !!options.provider || !!options.model || !!options.apiKey || !!options.baseUrl;
-        const resolvedProfile = resolveCliModelConfig(options, resolved.root);
+        const resolvedProfile = config.resolve().model;
         const hasPersistedProvider = !!resolved.settingsModel?.provider && !!resolved.settingsModel?.model;
         const hasAdaptiveModelConfig = !!resolved.settingsModel?.defaultProfile || !!resolved.settingsModel?.profiles || !!resolved.settingsModel?.complexityRouting;
         const hasResolvedApiKey = !!resolvedProfile.apiKey;
@@ -1821,7 +1858,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             throw new Error('Model setup cancelled.');
         }
         const profile = buildAdaptiveModelProfile(selected, apiKey, 120000);
-        const settingsPath = writeSettingsModelProfile(resolved.root, profile);
+        const settingsPath = config.writeModelProfile(resolved.root, profile);
         if (!fs.existsSync(resolved.workspace)) {
             fs.mkdirSync(resolved.workspace, { recursive: true });
         }
@@ -2157,7 +2194,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 strongModel: profile.strongModel,
                 baseUrl: profile.baseUrl
             }, profile.apiKey, currentProfile.timeoutMs || 120000);
-            writeSettingsModelProfile(resolved.root, nextProfile);
+            config.writeModelProfile(resolved.root, nextProfile);
             await createChatContext(nextProfile);
             applyScreenNotice(`Switched to ${nextProfile.provider} / flash ${profile.flashModel} / strong ${profile.strongModel}`, 1800);
         }
@@ -2378,8 +2415,10 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
         }
-        const componentFactory = currentCtx.get(ComponentFactory);
-        consoleComponentRef = componentFactory.create(AgentConsoleComponent, { injector: currentCtx });
+        consoleComponentRef = currentCtx.runners.getRef(AgentConsoleComponent);
+        if (!consoleComponentRef) {
+            throw new Error('Agent UI did not bootstrap AgentConsoleComponent.');
+        }
         viewModel = consoleComponentRef.instance;
         await consoleComponentRef.render();
         consoleState = viewModel.sessionState || consoleComponentRef.injector.get(AgentConsoleSessionState);
@@ -2444,60 +2483,18 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (process.stdin.isTTY) {
             setMouseTracking(false);
             syncTerminalCursorVisibility(true);
-            if (useAlternateScreen) {
-                if (preserveScreen) {
-                    process.stdout.write(`${ANSI.reset}\x1b[?1049l`);
-                    if (clearScrollback) {
-                        process.stdout.write(buildClearScreenSequence(true));
-                    }
-                    if (retainedLines.length) {
-                        process.stdout.write(`${retainedLines.join('\n')}\n`);
-                    }
-                } else if (clearScrollback) {
-                    process.stdout.write(`\x1b[?1049l${buildClearScreenSequence(true)}`);
-                } else {
-                    process.stdout.write(`${buildClearScreenSequence()}\x1b[?1049l`);
-                }
-            } else {
-                if (clearScrollback) {
-                    process.stdout.write(`${ANSI.reset}${buildClearScreenSequence(true)}`);
-                    if (retainedLines.length) {
-                        process.stdout.write(`${retainedLines.join('\n')}\n`);
-                    }
-                } else
-                if (preserveScreen) {
-                    const plainLines = lastPaintedLines.map((line: string) => stripAnsi(line));
-                    const promptRow = findInputPromptRow(plainLines);
-                    const retainedPrefixRows = Math.max(0, Math.min(retainedLines.length, lastPaintedLines.length));
-                    if (!useAlternateScreen && retainedPrefixRows > 0) {
-                        process.stdout.write(`${ANSI.reset}\x1b[${retainedPrefixRows + 1};1H\x1b[J`);
-                    } else {
-                        const anchorRow = promptRow >= retainedPrefixRows
-                            ? promptRow - retainedPrefixRows
-                            : Math.max(0, lastPaintedLines.length - retainedPrefixRows - 1);
-                        const commands: string[] = [ANSI.reset, '\r'];
-                        if (anchorRow > 0) {
-                            commands.push(`\x1b[${anchorRow}A`);
-                        }
-                        commands.push('\x1b[J');
-                        process.stdout.write(commands.join(''));
-                    }
-                    if (retainedLines.length) {
-                        process.stdout.write(`\x1b[1;1H${retainedLines.join('\n')}\n`);
-                    }
-                } else {
-                    const clearCommands: string[] = [];
-                    const clearRows = Math.max(
-                        1,
-                        process.stdout.rows || 0,
-                        lastPaintedLines.length
-                    );
-                    for (let index = 0; index < clearRows; index++) {
-                        clearCommands.push(`\x1b[${index + 1};1H\x1b[2K`);
-                    }
-                    process.stdout.write(`${ANSI.reset}${clearCommands.join('')}\x1b[1;1H`);
-                }
-            }
+            process.stdout.write(buildTerminalCleanupSequence({
+                reset: ANSI.reset,
+                alternateScreen: useAlternateScreen,
+                preserveScreen,
+                clearScrollback,
+                retainedLines,
+                paintedLineCount: lastPaintedLines.length,
+                terminalRows: process.stdout.rows || 0,
+                cursorRowOffset: !useAlternateScreen && preserveScreen
+                    ? Math.max(0, lastInlineCursorRow - retainedLines.length)
+                    : 0
+            }));
             process.stdin.setRawMode?.(false);
         }
         lastPaintedLines = [];
@@ -2530,6 +2527,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         const brandModel = consoleState?.model || currentProfile?.model || '';
         const brandWorkspace = consoleState?.workspace || resolved.workspace;
         const brandLines = buildBrandHeaderBlock(width, 'TSDI Agent', brandModel, brandWorkspace);
+        currentCursorTarget = null;
         let wantsDynamicTranscriptFlow = false;
         if (consoleState?.setStatus && viewModel) {
             consoleState.setStatus(viewModel.status);
@@ -2692,7 +2690,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             && !messageDetailFocused
             && !selectPanel?.menu
             && !activeTextPrompt
-            && (viewModel.status === 'running' || viewModel.status === 'reasoning');
+            && isStreamingTurn();
         const liveTurnBlocks: string[][] = [];
         const transcriptKinds: Array<'you' | 'agent' | 'other'> = [];
         wantsDynamicTranscriptFlow = shouldRenderTranscript
@@ -2907,10 +2905,14 @@ async function runInteractiveChat(options: any): Promise<void> {
             const promptValue = consoleState?.input || '';
             const placeholder = inputPanel?.placeholderLabel || '';
             const promptText = `> ${resolveConsolePlaceholderDisplayValue(promptValue, placeholder, true)}`;
-            inputLines = [
-                ...renderShellBlock(promptText, width, ANSI.bg, promptValue ? ANSI.text : ANSI.muted),
-                paint(inputPanel?.hintLabel || '', ANSI.muted)
-            ];
+            const inputLayout = renderTuiPanelLayout(panelRefs.input, width);
+            inputLines = inputLayout?.lines?.length
+                ? inputLayout.lines
+                : [
+                    ...renderShellBlock(promptText, width, ANSI.bg, promptValue ? ANSI.text : ANSI.muted),
+                    paint(inputPanel?.hintLabel || '', ANSI.muted)
+                ];
+            currentCursorTarget = inputLayout?.cursorTarget || null;
         }
         if (!showingExitFrame && selectPanel?.menu) {
             pushBlank(selectLines);
@@ -2954,6 +2956,16 @@ async function runInteractiveChat(options: any): Promise<void> {
                 ...inputLines,
                 ...selectLines
             ];
+            if (currentCursorTarget) {
+                currentCursorTarget = {
+                    row: brandLines.length
+                        + topFixedBlocks.flatMap(block => block).length
+                        + transcriptBlocks.flatMap(block => block).length
+                        + bottomFixedBlocks.flatMap(block => block).length
+                        + currentCursorTarget.row,
+                    column: currentCursorTarget.column
+                };
+            }
             renderPrimaryScreenFlowBlock(
                 rendered,
                 width,
@@ -3143,6 +3155,15 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
         }
         syncTerminalCursorVisibility(true);
+        if (currentCursorTarget) {
+            process.stdout.write(buildTerminalCursorSequence({
+                target: currentCursorTarget,
+                width,
+                renderedLineCount: rendered.length,
+                mode: flowMode ? 'flow' : 'absolute'
+            }));
+            return;
+        }
         const plainLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
         const promptRow = findInputPromptRow(plainLines);
         if (promptRow < 0) {
@@ -3173,6 +3194,50 @@ async function runInteractiveChat(options: any): Promise<void> {
         process.stdout.write(`\x1b[${cursorRow};${cursorColumn}H`);
     }
 
+    function placeTerminalCursorColumn(rendered: string[], width: number) {
+        if (!shouldPlaceTerminalCursor({
+            isTTY: !!process.stdout.isTTY,
+            isSelecting,
+            hasBlockingSelectMenu: hasBlockingSelectMenu(),
+            inputLocked,
+            modalPromptActive,
+            hasActiveTextPrompt: !!activeTextPrompt,
+            hasSessionFocus: hasSessionFocus(),
+            hasMessageFocus: hasMessageFocus(),
+            hasMessageDetailFocus: hasMessageDetailFocus()
+        })) {
+            syncTerminalCursorVisibility(false);
+            return;
+        }
+        syncTerminalCursorVisibility(true);
+        if (currentCursorTarget) {
+            process.stdout.write(buildTerminalCursorSequence({
+                target: currentCursorTarget,
+                width,
+                mode: 'line'
+            }));
+            return;
+        }
+        const plainLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
+        const promptRow = findInputPromptRow(plainLines);
+        if (promptRow < 0) {
+            syncTerminalCursorVisibility(false);
+            return;
+        }
+        const promptColumn = plainLines[promptRow].indexOf('> ');
+        if (promptColumn < 0) {
+            syncTerminalCursorVisibility(false);
+            return;
+        }
+        const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
+        const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
+        const commands = ['\r'];
+        if (cursorColumn > 1) {
+            commands.push(`\x1b[${cursorColumn - 1}C`);
+        }
+        process.stdout.write(commands.join(''));
+    }
+
     const pushHistoryEntry = (value: string) => {
         const trimmed = value.trim();
         if (!trimmed) {
@@ -3183,6 +3248,15 @@ async function runInteractiveChat(options: any): Promise<void> {
         historyDraft = '';
     };
 
+    const findHistoryIndex = (startIndex: number, step: number) => {
+        for (let index = startIndex; index >= 0 && index < historyEntries.length; index += step) {
+            if (!shouldSkipConsoleHistoryEntry(historyEntries[index])) {
+                return index;
+            }
+        }
+        return -1;
+    };
+
     const navigateHistory = (delta: number) => {
         if (!historyEntries.length) {
             return;
@@ -3190,21 +3264,24 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (delta < 0) {
             if (historyIndex === -1) {
                 historyDraft = currentDraft;
-                historyIndex = 0;
-            } else if (historyIndex < historyEntries.length - 1) {
-                historyIndex += 1;
             }
+            const nextIndex = findHistoryIndex(historyIndex + 1, 1);
+            if (nextIndex < 0) {
+                return;
+            }
+            historyIndex = nextIndex;
         } else {
             if (historyIndex === -1) {
                 return;
             }
-            if (historyIndex === 0) {
+            const nextIndex = findHistoryIndex(historyIndex - 1, -1);
+            if (nextIndex < 0) {
                 historyIndex = -1;
                 updateDraftState(historyDraft, historyDraft.length);
                 renderScreen();
                 return;
             }
-            historyIndex -= 1;
+            historyIndex = nextIndex;
         }
         const next = historyEntries[historyIndex] || '';
         updateDraftState(next, next.length);
@@ -3598,6 +3675,16 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
+        if (activeTextPrompt && !controlKey && (rawText.includes('\r') || rawText.includes('\n'))) {
+            const promptChunk = parseTerminalTextPromptChunk(rawText);
+            if (promptChunk.text) {
+                applyChunkToDraft(promptChunk.text);
+            }
+            if (promptChunk.submitted) {
+                resolveTextPrompt(currentDraft);
+            }
+            return;
+        }
         if ((rawText.includes('\r') || rawText.includes('\n')) && !controlKey) {
             const shouldSubmit = shouldSubmitConsoleTextChunk(rawText);
             const suppressionKey = resolveRawKeypressSuppressionKey({
@@ -3986,9 +4073,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         void cleanupAndExit('Closing session...', true, false, getRetainedBrandLines());
     };
     process.on('SIGINT', sigintHandler);
-
-    renderScreen();
-    safePrompt();
 
     try {
         currentProfile = await ensureInteractiveProfile();

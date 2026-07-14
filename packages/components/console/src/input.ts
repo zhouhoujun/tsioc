@@ -17,6 +17,12 @@ export interface ConsoleTextInputChunkResult extends ConsoleTextInputState {
     shouldConfirmSelection: boolean;
 }
 
+export interface ConsoleClipboardSelection {
+    start: number;
+    end: number;
+    text: string;
+}
+
 export interface ConsoleSelectOptionLike {
     label: string;
     value: string;
@@ -76,6 +82,15 @@ export interface ConsoleTranscriptVisibilityState {
     hasSessionFocus?: boolean;
     hasMessageFocus?: boolean;
     hasMessageDetailFocus?: boolean;
+}
+
+export function shouldSkipConsoleHistoryEntry(value: string): boolean {
+    const text = String(value || '').trimStart();
+    return !!text && text.startsWith('/');
+}
+
+export function shouldPreserveConsoleDraftFromHistory(value: string): boolean {
+    return shouldSkipConsoleHistoryEntry(value);
 }
 
 export function isConsolePlaceholderActive(value: string, placeholder?: string): boolean {
@@ -257,6 +272,45 @@ export function clampConsoleTextCursor(value: string, cursor: number): number {
     const text = String(value || '');
     const nextCursor = Number.isFinite(cursor) ? cursor : text.length;
     return Math.max(0, Math.min(text.length, nextCursor));
+}
+
+export function normalizeConsoleClipboardText(tagName: string | undefined, text: string): string {
+    const normalized = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    return String(tagName || '').toLowerCase() === 'textarea'
+        ? normalized
+        : normalized.replace(/\n+/g, ' ');
+}
+
+export function resolveConsoleClipboardSelection(
+    value: string,
+    selectionStart: number,
+    selectionEnd: number
+): ConsoleClipboardSelection {
+    const text = String(value || '');
+    const start = clampConsoleTextCursor(text, Math.min(selectionStart, selectionEnd));
+    const end = clampConsoleTextCursor(text, Math.max(selectionStart, selectionEnd));
+    return {
+        start,
+        end,
+        text: text.slice(start, end)
+    };
+}
+
+export function applyConsoleClipboardPaste(
+    value: string,
+    selectionStart: number,
+    selectionEnd: number,
+    clipboardText: string,
+    tagName?: string
+): ConsoleTextInputState {
+    const text = String(value || '');
+    const selection = resolveConsoleClipboardSelection(text, selectionStart, selectionEnd);
+    const insertText = normalizeConsoleClipboardText(tagName, clipboardText);
+    const nextValue = `${text.slice(0, selection.start)}${insertText}${text.slice(selection.end)}`;
+    return {
+        value: nextValue,
+        cursor: selection.start + insertText.length
+    };
 }
 
 export function resolveConsoleEnterAction(options: {

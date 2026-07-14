@@ -2,12 +2,17 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     applyConsoleTextInputChunk,
+    applyConsoleClipboardPaste,
     clampConsoleSelectIndex,
     clampConsoleTextCursor,
     formatConsoleIndexedOptionLabel,
     isConsolePlaceholderActive,
+    normalizeConsoleClipboardText,
     processConsoleTextInputChunk,
+    shouldSkipConsoleHistoryEntry,
+    TerminalUiController,
     resolveConsoleRawKeypressSuppressionKey,
+    resolveConsoleClipboardSelection,
     resolveConsolePlaceholderDisplayValue,
     resolveConsoleListWindow,
     resolveConsoleSelectDetailLines,
@@ -69,6 +74,26 @@ export class ConsoleInputTest {
         expect(applyConsoleTextInputChunk('ab', 2, '\t')).toEqual({ value: 'ab', cursor: 2 });
         expect(applyConsoleTextInputChunk('ab', 2, '\u0001')).toEqual({ value: 'ab', cursor: 2 });
         expect(applyConsoleTextInputChunk('ab', 1, '\u001b[<0;10;5M')).toEqual({ value: 'ab', cursor: 1 });
+    }
+
+    @Test('resolves clipboard selection and paste edits for input and textarea')
+    resolvesClipboardSelectionAndPasteEdits() {
+        expect(resolveConsoleClipboardSelection('abcdef', 4, 2)).toEqual({
+            start: 2,
+            end: 4,
+            text: 'cd'
+        });
+        expect(normalizeConsoleClipboardText('input', 'a\r\nb\nc')).toBe('a b c');
+        expect(normalizeConsoleClipboardText('textarea', 'a\r\nb')).toBe('a\nb');
+
+        expect(applyConsoleClipboardPaste('hello world', 6, 11, 'there', 'input')).toEqual({
+            value: 'hello there',
+            cursor: 11
+        });
+        expect(applyConsoleClipboardPaste('a\nz', 2, 2, 'b\r\nc', 'textarea')).toEqual({
+            value: 'a\nb\ncz',
+            cursor: 5
+        });
     }
 
     @Test('syncs editable elements including selection for focused textarea')
@@ -226,6 +251,48 @@ export class ConsoleInputTest {
             hasMessageFocus: true,
             hasMessageDetailFocus: false
         })).toBe(false);
+    }
+
+    @Test('filters slash commands from history navigation')
+    filtersSlashCommandsFromHistoryNavigation() {
+        expect(shouldSkipConsoleHistoryEntry('/model')).toBe(true);
+        expect(shouldSkipConsoleHistoryEntry('   /model')).toBe(true);
+        expect(shouldSkipConsoleHistoryEntry('hello')).toBe(false);
+        expect(shouldSkipConsoleHistoryEntry('@workspace')).toBe(false);
+
+        let rendered = '';
+        const controller = new TerminalUiController({
+            getCommands: () => ['/help', '/model'],
+            getMentionCandidates: () => ['@workspace'],
+            render: () => undefined,
+            setDraftDisplay: value => {
+                rendered = value;
+            },
+            submit: () => undefined,
+            isClosed: () => false,
+            isInputLocked: () => false,
+            isModalPromptActive: () => false,
+            isSelecting: () => false
+        });
+
+        controller.setHistoryEntries(['/help', 'hello', '/exit', 'world']);
+        controller.updateDraft('/model');
+        controller.navigateHistory(-1);
+        expect(controller.draft).toBe('hello');
+        expect(rendered).toBe('hello');
+
+        controller.navigateHistory(-1);
+        expect(controller.draft).toBe('world');
+
+        controller.navigateHistory(1);
+        expect(controller.draft).toBe('hello');
+
+        controller.navigateHistory(1);
+        expect(controller.draft).toBe('/model');
+
+        controller.updateDraft('hello');
+        controller.navigateHistory(-1);
+        expect(controller.draft).toBe('hello');
     }
 
     @Test('suppresses duplicated console keypress events through shared helpers')

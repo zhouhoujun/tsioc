@@ -1,5 +1,11 @@
 import { Attribute, Directive, ElementRef, OnDestroy, AfterViewInit, Renderer } from '@tsdi/components';
-import { clampConsoleSelectIndex, formatConsoleIndexedOptionLabel, resolveConsoleSelectWindow } from './input';
+import {
+    applyConsoleClipboardPaste,
+    clampConsoleSelectIndex,
+    formatConsoleIndexedOptionLabel,
+    resolveConsoleClipboardSelection,
+    resolveConsoleSelectWindow
+} from './input';
 
 abstract class ConsoleEditableDirective implements AfterViewInit, OnDestroy {
     protected _value = '';
@@ -51,12 +57,48 @@ abstract class ConsoleEditableDirective implements AfterViewInit, OnDestroy {
         if (!nativeElement?.addEventListener) {
             return;
         }
+        const syncValue = () => {
+            const nextValue = typeof nativeElement.value === 'string' ? nativeElement.value : '';
+            this._value = nextValue;
+            this.renderer.setAttribute(nativeElement, 'value', nextValue);
+            syncCursor();
+        };
         const syncCursor = () => {
             const selection = typeof nativeElement.selectionStart === 'number'
                 ? nativeElement.selectionStart
                 : this._value.length;
             this._cursorPos = Math.max(0, Math.min(this._value.length, selection));
             this.renderer.setAttribute(nativeElement, 'cursorPos', String(this._cursorPos));
+        };
+        const getSelection = () => resolveConsoleClipboardSelection(
+            typeof nativeElement.value === 'string' ? nativeElement.value : this._value,
+            typeof nativeElement.selectionStart === 'number' ? nativeElement.selectionStart : this._cursorPos,
+            typeof nativeElement.selectionEnd === 'number' ? nativeElement.selectionEnd : this._cursorPos
+        );
+        const readClipboardText = (event: any): string | undefined => {
+            const data = event?.clipboardData || event?.originalEvent?.clipboardData;
+            if (data && typeof data.getData === 'function') {
+                const text = data.getData('text/plain') || data.getData('text');
+                return typeof text === 'string' ? text : undefined;
+            }
+            return undefined;
+        };
+        const writeClipboardText = (event: any, text: string): boolean => {
+            const data = event?.clipboardData || event?.originalEvent?.clipboardData;
+            if (!data || typeof data.setData !== 'function') {
+                return false;
+            }
+            data.setData('text/plain', text);
+            return true;
+        };
+        const setNativeValueAndCursor = (value: string, cursor: number) => {
+            nativeElement.value = value;
+            this._value = value;
+            this._cursorPos = Math.max(0, Math.min(value.length, cursor));
+            this.renderer.setAttribute(nativeElement, 'value', value);
+            this.renderer.setAttribute(nativeElement, 'cursorPos', String(this._cursorPos));
+            this.syncNativeValue();
+            this.syncNativeCursor();
         };
         const bind = (type: string, listener: EventListener) => {
             nativeElement.addEventListener(type, listener);
@@ -73,20 +115,45 @@ abstract class ConsoleEditableDirective implements AfterViewInit, OnDestroy {
         });
         bind('click', syncCursor);
         bind('keyup', syncCursor);
-        bind('input', () => {
-            const nextValue = typeof nativeElement.value === 'string' ? nativeElement.value : '';
-            this._value = nextValue;
-            this.renderer.setAttribute(nativeElement, 'value', nextValue);
-            syncCursor();
-        });
-        bind('paste', () => {
-            Promise.resolve().then(() => {
-                const nextValue = typeof nativeElement.value === 'string' ? nativeElement.value : '';
-                this._value = nextValue;
-                this.renderer.setAttribute(nativeElement, 'value', nextValue);
-                syncCursor();
-            });
-        });
+        bind('input', syncValue);
+        bind('copy', ((event: any) => {
+            const selection = getSelection();
+            if (!selection.text) {
+                return;
+            }
+            if (writeClipboardText(event, selection.text)) {
+                event.preventDefault?.();
+            }
+        }) as EventListener);
+        bind('cut', ((event: any) => {
+            const selection = getSelection();
+            if (!selection.text) {
+                return;
+            }
+            if (!writeClipboardText(event, selection.text)) {
+                return;
+            }
+            const nextValue = `${this._value.slice(0, selection.start)}${this._value.slice(selection.end)}`;
+            event.preventDefault?.();
+            setNativeValueAndCursor(nextValue, selection.start);
+        }) as EventListener);
+        bind('paste', ((event: any) => {
+            const clipboardText = readClipboardText(event);
+            if (clipboardText === undefined) {
+                Promise.resolve().then(syncValue);
+                return;
+            }
+            const selection = getSelection();
+            const next = applyConsoleClipboardPaste(
+                this._value,
+                selection.start,
+                selection.end,
+                clipboardText,
+                nativeElement.tagName
+            );
+            event.preventDefault?.();
+            setNativeValueAndCursor(next.value, next.cursor);
+        }) as EventListener);
         const MutationObserverCtor = nativeElement?.ownerDocument?.defaultView?.MutationObserver || (globalThis as any).MutationObserver;
         if (MutationObserverCtor) {
             this.mutationObserver = new MutationObserverCtor(() => {

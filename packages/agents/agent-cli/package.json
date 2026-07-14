@@ -4,7 +4,7 @@
   "description": "Command line interface for @tsdi/agent packages.",
   "main": "./index.js",
   "bin": {
-    "tsdi-agent": "./src/cli.js"
+    "tsdi-agent": "./bin/tsdi-agent.js"
   },
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",

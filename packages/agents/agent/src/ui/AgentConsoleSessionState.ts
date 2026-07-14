@@ -222,6 +222,29 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    appendMessage(message: AgentMessage): void {
+        this.setMessages([...this.messages, message]);
+    }
+
+    appendAssistantErrorMessage(message: string): void {
+        const text = String(message || '').trim();
+        const currentMessages = this.messages.slice();
+        const lastMessage = currentMessages[currentMessages.length - 1];
+        if (lastMessage?.role === 'assistant' && !String(lastMessage.content || '').trim()) {
+            currentMessages.pop();
+        }
+        currentMessages.push({
+            id: `assistant-error-${Date.now()}`,
+            role: 'assistant',
+            content: text ? `Error: ${text}` : 'Error',
+            createdAt: Date.now(),
+            metadata: {
+                error: true
+            }
+        });
+        this.setMessages(currentMessages);
+    }
+
     setMessagesFocused(focused: boolean): void {
         this.messagesFocused = focused;
         if (focused && !this.selectedMessageId && this.messages.length) {

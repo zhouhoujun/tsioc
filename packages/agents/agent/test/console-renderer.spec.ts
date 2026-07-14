@@ -14,6 +14,7 @@ import {
     AgentConsoleToolRunsPanelComponent,
     AgentConsoleToolsPanelComponent,
     AgentConsoleWorkingPanelComponent,
+    AgentUiModule,
     AgentModule
 } from '../src';
 
@@ -24,7 +25,7 @@ export class AgentConsoleRendererTest {
     @Before()
     async init() {
         this.ctx = await Application.run(AgentConsoleComponent, {
-            deps: [AgentModule, ConsoleTemplateModule, ComponentsModule]
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
         });
     }
 
@@ -113,7 +114,7 @@ export class AgentConsoleRendererTest {
     @Test('renders agent console panels when created from module context for tui chat')
     async renderFromModuleContext() {
         const tuiCtx = await Application.run(AgentModule, {
-            deps: [TuiTemplateModule, ComponentsModule]
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
         });
         try {
             const componentFactory = tuiCtx.get(ComponentFactory);
@@ -138,7 +139,7 @@ export class AgentConsoleRendererTest {
     @Test('renders live input content in root tui tree')
     async renderLiveInputInRootTree() {
         const tuiCtx = await Application.run(AgentModule, {
-            deps: [TuiTemplateModule, ComponentsModule]
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
         });
         try {
             const componentFactory = tuiCtx.get(ComponentFactory);
@@ -160,7 +161,7 @@ export class AgentConsoleRendererTest {
     @Test('renders select menu in root tui tree when session state opens suggestions')
     async renderSelectMenuInRootTree() {
         const tuiCtx = await Application.run(AgentModule, {
-            deps: [TuiTemplateModule, ComponentsModule]
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
         });
         try {
             const componentFactory = tuiCtx.get(ComponentFactory);
@@ -206,7 +207,7 @@ export class AgentConsoleRendererTest {
     @Test('renders selected select-menu option beyond the first page')
     async renderScrolledSelectMenuWindow() {
         const tuiCtx = await Application.run(AgentModule, {
-            deps: [TuiTemplateModule, ComponentsModule]
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
         });
         try {
             const componentFactory = tuiCtx.get(ComponentFactory);

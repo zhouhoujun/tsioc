@@ -1,4 +1,4 @@
-import { applyConsoleTextInputChunk, formatConsoleIndexedOptionLabel } from '@tsdi/components/console';
+import { applyConsoleTextInputChunk, formatConsoleIndexedOptionLabel, shouldSkipConsoleHistoryEntry } from './input';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -79,6 +79,29 @@ export interface TerminalChatScreenLayout {
     selectMenuScreenRow: number;
 }
 
+export interface TerminalCleanupOptions {
+    reset?: string;
+    alternateScreen?: boolean;
+    preserveScreen?: boolean;
+    clearScrollback?: boolean;
+    retainedLines?: string[];
+    paintedLineCount?: number;
+    terminalRows?: number;
+    cursorRowOffset?: number;
+}
+
+export interface TerminalCursorTarget {
+    row: number;
+    column: number;
+}
+
+export interface TerminalCursorSequenceOptions {
+    target: TerminalCursorTarget;
+    width: number;
+    renderedLineCount?: number;
+    mode?: 'absolute' | 'flow' | 'line';
+}
+
 export interface TerminalMenuStateLike {
     title?: string | null;
 }
@@ -134,6 +157,60 @@ export interface TerminalUiControllerOptions {
 
 export function getChatCommands(): string[] {
     return CHAT_COMMANDS.slice();
+}
+
+export function buildClearScreenSequence(clearScrollback = false): string {
+    return `\x1b[2J${clearScrollback ? '\x1b[3J' : ''}\x1b[H`;
+}
+
+export function buildTerminalCleanupSequence(options: TerminalCleanupOptions = {}): string {
+    const reset = options.reset || '';
+    const retainedLines = options.retainedLines || [];
+    if (options.alternateScreen) {
+        if (options.preserveScreen) {
+            return [
+                `${reset}\x1b[?1049l`,
+                options.clearScrollback ? buildClearScreenSequence(true) : '',
+                retainedLines.length ? `${retainedLines.join('\n')}\n` : ''
+            ].join('');
+        }
+        if (options.clearScrollback) {
+            return `\x1b[?1049l${buildClearScreenSequence(true)}`;
+        }
+        return `${buildClearScreenSequence()}\x1b[?1049l`;
+    }
+    if (options.clearScrollback) {
+        return `${reset}${buildClearScreenSequence(true)}${retainedLines.length ? `${retainedLines.join('\n')}\n` : ''}`;
+    }
+    if (options.preserveScreen) {
+        const rowOffset = Math.max(0, Math.floor(options.cursorRowOffset || 0));
+        return `${reset}\r${rowOffset > 0 ? `\x1b[${rowOffset}A` : ''}\x1b[J`;
+    }
+    const clearRows = Math.max(1, options.terminalRows || 0, options.paintedLineCount || 0);
+    const clearCommands: string[] = [];
+    for (let index = 0; index < clearRows; index++) {
+        clearCommands.push(`\x1b[${index + 1};1H\x1b[2K`);
+    }
+    return `${reset}${clearCommands.join('')}\x1b[1;1H`;
+}
+
+export function buildTerminalCursorSequence(options: TerminalCursorSequenceOptions): string {
+    const target = options.target;
+    const cursorColumn = Math.min(
+        Math.max(1, options.width || 1),
+        Math.max(0, Math.floor(target.column || 0)) + 1
+    );
+    const targetRow = Math.max(0, Math.floor(target.row || 0));
+    const mode = options.mode || 'absolute';
+    if (mode === 'line') {
+        return `\r${cursorColumn > 1 ? `\x1b[${cursorColumn - 1}C` : ''}`;
+    }
+    if (mode === 'flow') {
+        const lineCount = Math.max(0, Math.floor(options.renderedLineCount || 0));
+        const linesAfterTarget = Math.max(0, lineCount - targetRow - 1);
+        return `${linesAfterTarget > 0 ? `\x1b[${linesAfterTarget}A` : ''}\r${cursorColumn > 1 ? `\x1b[${cursorColumn - 1}C` : ''}`;
+    }
+    return `\x1b[${targetRow + 1};${cursorColumn}H`;
 }
 
 export class TerminalUiController {
@@ -229,6 +306,15 @@ export class TerminalUiController {
         this.historyDraft = '';
     }
 
+    protected findHistoryIndex(startIndex: number, step: number): number {
+        for (let index = startIndex; index >= 0 && index < this.historyEntries.length; index += step) {
+            if (!shouldSkipConsoleHistoryEntry(this.historyEntries[index])) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
     navigateHistory(delta: number): void {
         if (!this.historyEntries.length) {
             return;
@@ -236,21 +322,24 @@ export class TerminalUiController {
         if (delta < 0) {
             if (this.historyIndex === -1) {
                 this.historyDraft = this.currentDraft;
-                this.historyIndex = 0;
-            } else if (this.historyIndex < this.historyEntries.length - 1) {
-                this.historyIndex += 1;
             }
+            const nextIndex = this.findHistoryIndex(this.historyIndex + 1, 1);
+            if (nextIndex < 0) {
+                return;
+            }
+            this.historyIndex = nextIndex;
         } else {
             if (this.historyIndex === -1) {
                 return;
             }
-            if (this.historyIndex === 0) {
+            const nextIndex = this.findHistoryIndex(this.historyIndex - 1, -1);
+            if (nextIndex < 0) {
                 this.historyIndex = -1;
                 this.updateDraft(this.historyDraft, this.historyDraft.length);
                 this.options.render();
                 return;
             }
-            this.historyIndex -= 1;
+            this.historyIndex = nextIndex;
         }
         const next = this.historyEntries[this.historyIndex] || '';
         this.updateDraft(next, next.length);
