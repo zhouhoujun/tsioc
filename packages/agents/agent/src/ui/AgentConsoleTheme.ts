@@ -91,13 +91,13 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     activityTitle: 'color: #8b949e;',
     activityShell: 'color: #c9d1d9;',
     selectTitle: 'color: #8b949e;',
-    selectShell: 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;',
-    selectHeader: 'color: #f3f6fb; font-weight: bold;',
-    selectHint: 'color: #6f7c8a;',
-    selectOption: 'background: #10161d; color: #93a4b8; padding: 0 1;',
-    selectOptionActive: 'background: #18222d; color: #8fd0ff; padding: 0 1; font-weight: bold;',
+    selectShell: 'color: #d6dee6; padding: 0 1;',
+    selectHeader: 'color: #c9d1d9; font-weight: bold;',
+    selectHint: 'color: #6e7681;',
+    selectOption: 'color: #8b949e; padding: 0 1;',
+    selectOptionActive: 'color: #5f8fc7; padding: 0 1; font-weight: bold;',
     selectDetailLabel: 'color: #6f7c8a;',
-    selectDetailValue: 'background: #0b1117; color: #dce6f2; padding: 0 1;'
+    selectDetailValue: 'color: #c9d1d9; padding: 0 1;'
 };
 
 export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): AgentConsoleTheme {

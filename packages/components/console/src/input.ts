@@ -1,3 +1,5 @@
+import { fitByDisplayWidth, getDisplayWidth } from './display-width';
+
 export interface ConsoleTextInputState {
     value: string;
     cursor: number;
@@ -241,6 +243,34 @@ export function resolveConsoleListWindow(
 export function formatConsoleIndexedOptionLabel(index: number, label: string, selected = false): string {
     const marker = selected ? '›' : ' ';
     return `${marker} ${index + 1}. ${label}`;
+}
+
+export function resolveConsoleOptionLabelColumnWidth(
+    options: Array<{ label?: string }>,
+    startIndex = 0
+): number {
+    return options.reduce((width, option, index) => Math.max(
+        width,
+        getDisplayWidth(formatConsoleIndexedOptionLabel(startIndex + index, String(option?.label || ''), false))
+    ), 0);
+}
+
+export function formatConsoleSelectOptionTableRow(
+    index: number,
+    label: string,
+    selected = false,
+    description = '',
+    labelColumnWidth = 0,
+    descriptionMaxWidth = 32
+): string {
+    const left = formatConsoleIndexedOptionLabel(index, label, selected);
+    const rawRight = String(description || '').replace(/\s+/g, ' ').trim();
+    const right = descriptionMaxWidth > 0 ? fitByDisplayWidth(rawRight, descriptionMaxWidth) : rawRight;
+    if (!right) {
+        return left;
+    }
+    const padding = ' '.repeat(Math.max(0, labelColumnWidth - getDisplayWidth(left)));
+    return `${left}${padding}  ${right}`;
 }
 
 export function resolveConsoleSelectDetailLines(

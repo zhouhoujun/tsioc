@@ -195,10 +195,12 @@ export class AgentConsoleRendererTest {
             await new Promise(resolve => setTimeout(resolve, 10));
 
             const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 80 });
-            expect(rootLines.some((line: string) => line.includes('Suggestions'))).toBe(true);
             expect(rootLines.some((line: string) => line.includes('/help'))).toBe(true);
-            expect(rootLines.some((line: string) => line.includes('Preview'))).toBe(true);
-            expect(rootLines.some((line: string) => line.includes('"command": "/help"'))).toBe(true);
+            expect(rootLines.some((line: string) => /\/help\s{2,}Commands/.test(line))).toBe(true);
+            expect(rootLines.some((line: string) => line.includes('Suggestions'))).toBe(false);
+            expect(rootLines.some((line: string) => line.includes('Preview'))).toBe(false);
+            expect(rootLines.some((line: string) => line.includes('"command": "/help"'))).toBe(false);
+            expect(rootLines.some((line: string) => /[┌┐└┘│]/.test(line))).toBe(false);
         } finally {
             await tuiCtx.close();
         }
@@ -225,6 +227,33 @@ export class AgentConsoleRendererTest {
             const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 80 });
             expect(rootLines.some((line: string) => line.includes('› 13. Option 13'))).toBe(true);
             expect(rootLines.some((line: string) => line.includes('16. Option 16'))).toBe(true);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('updates select menu selection without rerendering root tree')
+    async updateSelectMenuSelectionWithoutRootRender() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+
+            consoleRef.instance.sessionState.openSelectMenu('Choices', [
+                { label: 'First', value: 'first' },
+                { label: 'Second', value: 'second' }
+            ], 0);
+            await Promise.resolve();
+            let rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 80 });
+            expect(rootLines.some((line: string) => line.includes('› 1. First'))).toBe(true);
+
+            consoleRef.instance.sessionState.setSelectMenuIndex(1);
+            rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 80 });
+            expect(rootLines.some((line: string) => line.includes('› 2. Second'))).toBe(true);
         } finally {
             await tuiCtx.close();
         }

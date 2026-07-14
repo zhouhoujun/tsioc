@@ -22,11 +22,19 @@ import {
     buildClearScreenSequence,
     buildTerminalCleanupSequence,
     buildTerminalCursorSequence,
+    composePrimaryTerminalScreen,
+    composeTerminalScreenSections,
     findSelectMenuOptionIndexFromRenderedLines,
     fitLine,
     getChatCommands,
+    handleTerminalMenuKey,
     isSuggestionMenu,
-    parseTerminalMouseEvent
+    parseTerminalMouseEvent,
+    renderPrimaryTerminalScreen,
+    TerminalInputSequenceDecoder,
+    resolveTerminalMenuNextIndex,
+    resolveTerminalMenuInputKey,
+    TerminalPrimaryRenderState
 } from '@tsdi/components/console';
 import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
 import { AgentCliProviderProfile } from './config';
@@ -1219,6 +1227,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let keypressHandler: ((str: string, key: readline.Key) => void) | null = null;
     let lastRawControlKey = '';
     let lastRawControlAt = 0;
+    const terminalInputDecoder = new TerminalInputSequenceDecoder();
     let resizeHandler: (() => void) | null = null;
     let sigintHandler: (() => void) | null = null;
     let historyEntries: string[] = [];
@@ -1241,9 +1250,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let transcriptScrollbarDragging = false;
     let frozenTranscriptWindow: CompactRenderedBlocksWindow | null = null;
     let frozenTranscriptWindowKey = '';
-    let lastInlineStablePrefixRows = 0;
     let lastInlineCursorRow = 0;
-    let lastInlineCursorMode: 'prompt' | 'bottom' = 'bottom';
     let currentCursorTarget: { row: number; column: number } | null = null;
     let terminalCursorVisible = true;
     const useAlternateScreen = shouldUseAlternateScreen();
@@ -1254,7 +1261,18 @@ async function runInteractiveChat(options: any): Promise<void> {
         process.stdout.write(visible ? '\x1b[?25h' : '\x1b[?25l');
         terminalCursorVisible = visible;
     };
-    const renderTuiPanelLayout = (ref: any, width: number): { lines: string[]; cursorTarget?: { row: number; column: number } } | null => {
+    const shouldRenderTerminalCursor = () => shouldPlaceTerminalCursor({
+        isTTY: !!process.stdout.isTTY,
+        isSelecting,
+        hasBlockingSelectMenu: hasBlockingSelectMenu(),
+        inputLocked,
+        modalPromptActive,
+        hasActiveTextPrompt: !!activeTextPrompt,
+        hasSessionFocus: hasSessionFocus(),
+        hasMessageFocus: hasMessageFocus(),
+        hasMessageDetailFocus: hasMessageDetailFocus()
+    });
+    const renderTuiPanelLayout = (ref: any, width: number): { lines: string[]; cursorTargets?: Array<{ row: number; column: number }>; cursorTarget?: { row: number; column: number }; regions?: Array<{ id: string; startRow: number; endRow: number }> } | null => {
         const rootNodes = ref?.hostView?.rootNodes;
         const node = Array.isArray(rootNodes) ? rootNodes[0] : rootNodes;
         if (!node || !consoleRenderer?.renderToTuiLayout) {
@@ -1264,10 +1282,24 @@ async function runInteractiveChat(options: any): Promise<void> {
         const target = layout?.cursorTargets?.[0];
         return {
             lines: layout?.lines || [],
+            cursorTargets: (layout?.cursorTargets || []).map((item: any) => ({
+                row: item.row,
+                column: item.column
+            })),
             cursorTarget: target
                 ? { row: target.row, column: target.column }
-                : undefined
+                : undefined,
+            regions: layout?.regions || []
         };
+    };
+    const getComponentRenderState = (ref: any): TerminalPrimaryRenderState | undefined => {
+        return ref?.__consolePrimaryRenderState;
+    };
+    const setComponentRenderState = (ref: any, state?: TerminalPrimaryRenderState): void => {
+        if (!ref) {
+            return;
+        }
+        ref.__consolePrimaryRenderState = state;
     };
     const applyScreenNotice = (message = '', transientMs?: number) => {
         screenNotice = message;
@@ -1320,10 +1352,10 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const getActiveSelectMenu = (): { title: string; hint?: string; options: SelectMenuOption[]; selectedIndex: number } | undefined => {
-        if (consoleState?.selectMenu) {
-            return consoleState.selectMenu;
+        if (selectMenu) {
+            return selectMenu;
         }
-        return selectMenu || undefined;
+        return consoleState?.selectMenu || undefined;
     };
 
     const hasBlockingSelectMenu = (): boolean => {
@@ -1447,96 +1479,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         process.stdout.write(buildClearScreenSequence(clearScrollback));
         lastPaintedLines = [];
         lastPaintedWidth = 0;
-    };
-
-    const renderPrimaryScreenFlowBlock = (
-        rendered: string[],
-        width: number,
-        stablePrefixRows = 0,
-        cursorMode: 'prompt' | 'bottom' = 'prompt'
-    ) => {
-        lastRenderedLines = rendered.slice();
-        const fittedLines = rendered.map((line: string) => fitAnsiLine(line, width));
-        const visibleLines = fittedLines.map((line: string) => stripAnsi(line));
-        const currentPromptRow = findInputPromptRow(visibleLines);
-        const currentCursorRow = cursorMode === 'prompt' && currentPromptRow >= 0
-            ? currentPromptRow
-            : Math.max(0, fittedLines.length - 1);
-        const nextRenderKey = `inline:${width}:${fittedLines.join('\n')}`;
-        syncMouseTracking();
-        if (nextRenderKey === lastRenderKey) {
-            if (cursorMode === 'prompt') {
-                placeTerminalCursorColumn(fittedLines, width);
-            }
-            return;
-        }
-        const previousVisibleLines = lastPaintedLines.map((line: string) => stripAnsi(line));
-        const previousPromptRow = findInputPromptRow(previousVisibleLines);
-        const stablePrefixCount = Math.max(0, Math.min(
-            stablePrefixRows,
-            fittedLines.length,
-            Number.MAX_SAFE_INTEGER
-        ));
-        const previousStablePrefixCount = Math.max(0, Math.min(
-            lastInlineStablePrefixRows,
-            lastPaintedLines.length
-        ));
-        const stablePrefixExtendsPrevious = lastRenderKey.startsWith('inline:')
-            && width === lastPaintedWidth
-            && lastInlineCursorMode === 'prompt'
-            && previousPromptRow >= previousStablePrefixCount
-            && stablePrefixCount >= previousStablePrefixCount
-            && lastPaintedLines.slice(0, previousStablePrefixCount).every((line, index) => line === fittedLines[index]);
-        if (stablePrefixExtendsPrevious) {
-            const commands: string[] = ['\r'];
-            const linesUp = Math.max(0, lastInlineCursorRow - previousStablePrefixCount);
-            if (linesUp > 0) {
-                commands.push(`\x1b[${linesUp}A`);
-            }
-            commands.push('\x1b[J');
-            process.stdout.write(commands.join(''));
-            const appendedLines = [
-                ...fittedLines.slice(previousStablePrefixCount, stablePrefixCount),
-                ...fittedLines.slice(stablePrefixCount)
-            ];
-            if (appendedLines.length) {
-                process.stdout.write(appendedLines.join('\n'));
-            }
-            lastRenderKey = nextRenderKey;
-            lastPaintedLines = fittedLines.slice();
-            lastPaintedWidth = width;
-            lastInlineStablePrefixRows = stablePrefixCount;
-            lastInlineCursorRow = currentCursorRow;
-            lastInlineCursorMode = cursorMode;
-            if (cursorMode === 'prompt') {
-                placeTerminalCursor(fittedLines, width, true);
-            }
-            return;
-        }
-        const previousAnchorRow = Math.max(0, Math.min(
-            lastInlineCursorRow,
-            Math.max(0, lastPaintedLines.length - 1)
-        ));
-        if (lastRenderKey.startsWith('inline:') && lastPaintedLines.length) {
-            const commands: string[] = ['\r'];
-            if (previousAnchorRow > 0) {
-                commands.push(`\x1b[${previousAnchorRow}A`);
-            }
-            commands.push('\x1b[J');
-            process.stdout.write(commands.join(''));
-        }
-        lastRenderKey = nextRenderKey;
-        if (fittedLines.length) {
-            process.stdout.write(fittedLines.join('\n'));
-        }
-        lastPaintedLines = fittedLines.slice();
-        lastPaintedWidth = width;
-        lastInlineStablePrefixRows = stablePrefixCount;
-        lastInlineCursorRow = currentCursorRow;
-        lastInlineCursorMode = cursorMode;
-        if (cursorMode === 'prompt') {
-            placeTerminalCursor(fittedLines, width, true);
-        }
+        setComponentRenderState(consoleComponentRef, undefined);
     };
 
     const queueRenderScreen = () => {
@@ -2159,7 +2102,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     );
     terminalUiDelegate.setQuitFn(() => {
         isClosed = true;
-        void cleanupAndExit('Closing session...', true, false, getRetainedBrandLines());
+        void cleanupAndExit('', true, false, getRetainedBrandLines());
     });
     terminalUiDelegate.setCopyTargetFn(async (target?: string) => {
         return copyTextToClipboard(resolveCopyText(target));
@@ -2491,9 +2434,9 @@ async function runInteractiveChat(options: any): Promise<void> {
                 retainedLines,
                 paintedLineCount: lastPaintedLines.length,
                 terminalRows: process.stdout.rows || 0,
-                cursorRowOffset: !useAlternateScreen && preserveScreen
-                    ? Math.max(0, lastInlineCursorRow - retainedLines.length)
-                    : 0
+                currentRow: !useAlternateScreen && preserveScreen
+                    ? lastInlineCursorRow
+                    : undefined
             }));
             process.stdin.setRawMode?.(false);
         }
@@ -2511,7 +2454,9 @@ async function runInteractiveChat(options: any): Promise<void> {
             await currentCtx.close();
             currentCtx = null;
         }
-        process.stdout.write(`${farewell || 'Closing session...'}\n`);
+        if (farewell) {
+            process.stdout.write(`${farewell}\n`);
+        }
         process.exit(0);
     };
 
@@ -2550,6 +2495,8 @@ async function runInteractiveChat(options: any): Promise<void> {
         let flatScrollableTranscriptLines: string[] = [];
         let shouldFreezeTranscriptWindow = false;
         let frozenTranscriptSourceKey = '';
+        let inputLayout: { lines: string[]; cursorTargets?: Array<{ row: number; column: number }>; cursorTarget?: { row: number; column: number }; regions?: Array<{ id: string; startRow: number; endRow: number }> } | null = null;
+        let selectLayout: { lines: string[]; cursorTargets?: Array<{ row: number; column: number }>; cursorTarget?: { row: number; column: number }; regions?: Array<{ id: string; startRow: number; endRow: number }> } | null = null;
         const browsingTranscriptHistory = transcriptScrollOffset > 0;
         const toPaintedLine = (line?: string, ...codes: string[]): string | undefined => {
             if (!line) {
@@ -2637,12 +2584,33 @@ async function runInteractiveChat(options: any): Promise<void> {
                     : selectLines)
             ];
             if (!useAlternateScreen) {
-                renderPrimaryScreenFlowBlock(
-                    rendered,
+                lastRenderedLines = rendered.slice();
+                const cursorMode = activeMenu ? 'bottom' : 'prompt';
+                const visibleLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
+                const promptRow = findInputPromptRow(visibleLines);
+                const cursorRow = cursorMode === 'prompt' && promptRow >= 0
+                    ? promptRow
+                    : Math.max(0, rendered.length - 1);
+                syncMouseTracking();
+                const result = renderPrimaryTerminalScreen({
+                    state: getComponentRenderState(consoleComponentRef),
+                    lines: rendered,
                     width,
-                    brandLines.length + preInputLines.length,
-                    activeMenu ? 'bottom' : 'prompt'
-                );
+                    stablePrefixRows: brandLines.length + preInputLines.length,
+                    cursorRow,
+                    cursorTarget: shouldRenderTerminalCursor() ? currentCursorTarget || undefined : undefined,
+                    cursorMode,
+                    placeCursor: true
+                });
+                setComponentRenderState(consoleComponentRef, result.state);
+                if (result.output) {
+                    process.stdout.write(result.output);
+                }
+                lastRenderKey = '';
+                lastPaintedLines = result.fittedLines.slice();
+                lastPaintedWidth = width;
+                lastInlineCursorRow = result.terminalRow;
+                syncTerminalCursorVisibility(shouldRenderTerminalCursor());
                 return;
             }
             lastRenderedLines = rendered.slice();
@@ -2860,7 +2828,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 Math.min(4, Math.max(2, Math.floor(livePanelRows / 3)))
             );
             const liveLines = liveWindow.startRow > 0
-                ? [paint('Streaming reply folded · PgUp/PgDn view all', ANSI.dim), ...liveWindow.lines]
+                ? liveWindow.lines
                 : liveWindow.lines;
             const paddedLiveLines = liveLines.length < livePanelRows
                 ? [
@@ -2905,75 +2873,124 @@ async function runInteractiveChat(options: any): Promise<void> {
             const promptValue = consoleState?.input || '';
             const placeholder = inputPanel?.placeholderLabel || '';
             const promptText = `> ${resolveConsolePlaceholderDisplayValue(promptValue, placeholder, true)}`;
-            const inputLayout = renderTuiPanelLayout(panelRefs.input, width);
+            inputLayout = renderTuiPanelLayout(panelRefs.input, width);
+            const hintText = formatChatFooter(
+                consoleState?.model || currentProfile?.model || '',
+                String(consoleState?.modelProfile || resolveModelProfileLabel(currentProfile || {} as AgentCliProviderProfile) || '').trim(),
+                consoleState?.workspace || resolved.workspace
+            );
             inputLines = inputLayout?.lines?.length
-                ? inputLayout.lines
+                ? inputLayout.lines.slice()
                 : [
                     ...renderShellBlock(promptText, width, ANSI.bg, promptValue ? ANSI.text : ANSI.muted),
-                    paint(inputPanel?.hintLabel || '', ANSI.muted)
+                    paint(hintText, ANSI.muted)
                 ];
+            if (inputLayout?.lines?.length && hintText) {
+                inputLines[inputLines.length - 1] = paint(hintText, ANSI.muted);
+            }
+            if (bottomFixedBlocks.length && inputLines.length) {
+                inputLines.unshift('');
+            }
             currentCursorTarget = inputLayout?.cursorTarget || null;
         }
         if (!showingExitFrame && selectPanel?.menu) {
-            pushBlank(selectLines);
-            pushLine(selectLines, selectPanel.menuTitle, ANSI.text);
-            pushLine(selectLines, selectPanel.menuMeta, ANSI.dim);
-            for (let index = 0; index < SELECT_MENU_VISIBLE_OPTIONS; index++) {
-                const line = selectPanel.optionLabelAt?.(index);
-                if (!line) {
-                    continue;
-                }
-                if (line.trimStart().startsWith('›')) {
-                    selectLines.push(paintActive(line, ANSI.bgSelected, ANSI.blueStrong));
-                    continue;
-                }
-                pushLine(selectLines, line, ANSI.text);
-            }
-            pushLine(selectLines, selectPanel.detailTitle, ANSI.dim);
-            for (let index = 0; index < 6; index++) {
-                const line = selectPanel.detailLineAt?.(index);
-                if (line) {
+            selectLayout = renderTuiPanelLayout(panelRefs.select, width);
+            if (selectLayout?.lines?.length) {
+                pushBlank(selectLines);
+                selectLines.push(...selectLayout.lines);
+            } else {
+                pushBlank(selectLines);
+                pushLine(selectLines, selectPanel.menuTitle, ANSI.text);
+                pushLine(selectLines, selectPanel.menuMeta, ANSI.dim);
+                for (let index = 0; index < SELECT_MENU_VISIBLE_OPTIONS; index++) {
+                    const line = selectPanel.optionLabelAt?.(index);
+                    if (!line) {
+                        continue;
+                    }
+                    if (line.trimStart().startsWith('›')) {
+                        selectLines.push(paintActive(line, ANSI.bgSelected, ANSI.blueStrong));
+                        continue;
+                    }
                     pushLine(selectLines, line, ANSI.text);
                 }
+                pushLine(selectLines, selectPanel.detailTitle, ANSI.dim);
+                for (let index = 0; index < 6; index++) {
+                    const line = selectPanel.detailLineAt?.(index);
+                    if (line) {
+                        pushLine(selectLines, line, ANSI.text);
+                    }
+                }
+                pushLine(selectLines, selectPanel.menuHint, ANSI.dim);
             }
-            pushLine(selectLines, selectPanel.menuHint, ANSI.dim);
         }
         }
         if (!useAlternateScreen) {
-            frozenTranscriptWindow = null;
-            frozenTranscriptWindowKey = '';
-            transcriptVisibleRows = transcriptBlocks.flatMap(block => block).length;
-            transcriptMaxScrollOffset = 0;
-            transcriptScrollbarColumn = terminalColumns;
-            transcriptScrollbarTopRow = 1;
-            transcriptScrollbarVisibleRows = 0;
-            transcriptScrollbarTotalRows = transcriptVisibleRows;
-            const rendered = [
-                ...brandLines,
-                ...topFixedBlocks.flatMap(block => block),
-                ...transcriptBlocks.flatMap(block => block),
-                ...bottomFixedBlocks.flatMap(block => block),
-                ...inputLines,
-                ...selectLines
-            ];
-            if (currentCursorTarget) {
-                currentCursorTarget = {
-                    row: brandLines.length
-                        + topFixedBlocks.flatMap(block => block).length
-                        + transcriptBlocks.flatMap(block => block).length
-                        + bottomFixedBlocks.flatMap(block => block).length
-                        + currentCursorTarget.row,
-                    column: currentCursorTarget.column
-                };
+            if (!shouldFreezeTranscriptWindow) {
+                frozenTranscriptWindow = null;
+                frozenTranscriptWindowKey = '';
             }
-            renderPrimaryScreenFlowBlock(
-                rendered,
-                width,
-                brandLines.length + topFixedBlocks.flatMap(block => block).length + transcriptBlocks.flatMap(block => block).length,
-                selectLines.length || hasSessionFocus() || hasMessageFocus() || hasMessageDetailFocus() || inputLocked || modalPromptActive
-                    ? 'bottom'
-                    : 'prompt'
+            const topFixedLines = topFixedBlocks.flatMap(block => block);
+            const rawBottomFixedLines = bottomFixedBlocks.flatMap(block => block);
+            const footerSections = composeTerminalScreenSections(
+                rawBottomFixedLines,
+                inputLayout,
+                selectLayout
             );
+            const primaryLayout = composePrimaryTerminalScreen({
+                state: getComponentRenderState(consoleComponentRef),
+                topLines: [
+                    ...brandLines,
+                    ...topFixedLines
+                ],
+                transcriptBlocks,
+                footerSections,
+                scrollOffset: transcriptScrollOffset,
+                anchorBlockIndex: messagesFocused && selectedMessageBlockIndex >= 0
+                    ? selectedMessageBlockIndex
+                    : -1,
+                minContextRows: Math.min(6, Math.max(2, Math.floor(height / 6)))
+            });
+            transcriptVisibleRows = primaryLayout.transcriptVisibleRows;
+            transcriptMaxScrollOffset = primaryLayout.transcriptMaxScrollOffset;
+            transcriptScrollbarColumn = terminalColumns;
+            transcriptScrollbarTopRow = primaryLayout.transcriptStartRow + 1;
+            transcriptScrollbarVisibleRows = 0;
+            transcriptScrollbarTotalRows = primaryLayout.transcriptTotalRows;
+            if (transcriptScrollOffset > transcriptMaxScrollOffset) {
+                transcriptScrollOffset = transcriptMaxScrollOffset;
+            }
+            const rendered = primaryLayout.lines;
+            currentCursorTarget = primaryLayout.cursorTargets[0] || null;
+            lastRenderedLines = rendered.slice();
+            const cursorMode = selectLines.length || hasSessionFocus() || hasMessageFocus() || hasMessageDetailFocus() || inputLocked || modalPromptActive
+                ? 'bottom'
+                : 'prompt';
+            const visibleLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
+            const promptRow = findInputPromptRow(visibleLines);
+            const cursorRow = cursorMode === 'prompt' && promptRow >= 0
+                ? promptRow
+                : Math.max(0, rendered.length - 1);
+            syncMouseTracking();
+            const result = renderPrimaryTerminalScreen({
+                state: getComponentRenderState(consoleComponentRef),
+                lines: rendered,
+                regions: primaryLayout.regions,
+                width,
+                stablePrefixRows: brandLines.length + topFixedLines.length + primaryLayout.visibleTranscriptLines.length,
+                cursorRow,
+                cursorTarget: shouldRenderTerminalCursor() ? currentCursorTarget || undefined : undefined,
+                cursorMode,
+                placeCursor: true
+            });
+            setComponentRenderState(consoleComponentRef, result.state);
+            if (result.output) {
+                process.stdout.write(result.output);
+            }
+            lastRenderKey = '';
+            lastPaintedLines = result.fittedLines.slice();
+            lastPaintedWidth = width;
+            lastInlineCursorRow = result.terminalRow;
+            syncTerminalCursorVisibility(shouldRenderTerminalCursor());
             return;
         }
         const topReservedRows = brandLines.length + inputLines.length + selectLines.length;
@@ -3092,9 +3109,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             transcriptScrollOffset = maxTranscriptScrollOffset;
         }
         const transcriptBottomBlocks = bottomFixedBlocks.flatMap(block => block);
-        if (transcriptScrollOffset === 0 && transcriptWindow.startRow > 0) {
-            transcriptBottomBlocks.unshift(paint('Folded transcript · PgUp/PgDn view all', ANSI.dim));
-        }
         const compactBottomFixedLines = compactRenderedLines(
             transcriptBottomBlocks,
             Math.max(0, height - brandLines.length - compactTopFixedLines.lines.length - transcriptWindow.lines.length - inputLines.length - selectLines.length)
@@ -3194,7 +3208,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         process.stdout.write(`\x1b[${cursorRow};${cursorColumn}H`);
     }
 
-    function placeTerminalCursorColumn(rendered: string[], width: number) {
+    function placeTerminalCursorColumn(rendered: string[], width: number, currentRow: number) {
         if (!shouldPlaceTerminalCursor({
             isTTY: !!process.stdout.isTTY,
             isSelecting,
@@ -3214,7 +3228,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             process.stdout.write(buildTerminalCursorSequence({
                 target: currentCursorTarget,
                 width,
-                mode: 'line'
+                currentRow,
+                mode: 'relative'
             }));
             return;
         }
@@ -3231,11 +3246,12 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
         const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
-        const commands = ['\r'];
-        if (cursorColumn > 1) {
-            commands.push(`\x1b[${cursorColumn - 1}C`);
-        }
-        process.stdout.write(commands.join(''));
+        process.stdout.write(buildTerminalCursorSequence({
+            target: { row: promptRow, column: cursorColumn - 1 },
+            width,
+            currentRow,
+            mode: 'relative'
+        }));
     }
 
     const pushHistoryEntry = (value: string) => {
@@ -3367,7 +3383,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (!activeMenu || !activeMenu.options.length) {
             return;
         }
-        const nextIndex = (activeMenu.selectedIndex + delta + activeMenu.options.length) % activeMenu.options.length;
+        const nextIndex = resolveTerminalMenuNextIndex(activeMenu.selectedIndex, activeMenu.options.length, delta);
         setActiveMenuIndex(nextIndex);
     };
 
@@ -3419,12 +3435,39 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
     };
 
+    const terminalMenuController = {
+        getMenu: getActiveSelectMenu,
+        move: moveActiveMenu,
+        confirm: confirmActiveMenuSelection,
+        confirmIndex: confirmActiveMenuIndex,
+        cancel: cancelActiveMenuSelection
+    };
+
     stdinDataHandler = (chunk: Buffer | string) => {
         if (isClosed) {
             return;
         }
-        const rawText = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
-        const controlKey = parseTerminalControlKey(chunk);
+        const decodedInput = terminalInputDecoder.decode(chunk);
+        if (decodedInput.partial) {
+            return;
+        }
+        const rawText = decodedInput.text;
+        const controlKey = decodedInput.controlKey || parseTerminalControlKey(rawText);
+        const rawMenuKey = resolveTerminalMenuInputKey(controlKey || '', rawText, {
+            blockingMenu: hasBlockingSelectMenu()
+        });
+        if (handleTerminalMenuKey(terminalMenuController, rawMenuKey, '', { render: queueRenderScreen })) {
+            const suppressionKey = resolveRawKeypressSuppressionKey({
+                rawText,
+                controlKey,
+                menuKey: rawMenuKey
+            });
+            if (suppressionKey) {
+                lastRawControlKey = suppressionKey;
+                lastRawControlAt = Date.now();
+            }
+            return;
+        }
         if (hasBlockingSelectMenu()) {
             const mouse = parseTerminalMouseEvent(chunk);
             if (mouse && !mouse.release) {
@@ -3435,25 +3478,6 @@ async function runInteractiveChat(options: any): Promise<void> {
                     consoleState?.chooseSelectMenuIndex?.(index);
                 }
                 return;
-            }
-            const keyMap: Record<string, string> = { 'up': 'up', 'down': 'down', 'return': 'return', 'escape': 'escape' };
-            const control = controlKey ? (keyMap[controlKey] || '') : '';
-            const menuKey = control || (/^[1-9q]$/.test(rawText) ? rawText : '');
-            if (menuKey) {
-                if (consoleState?.handleSelectKey?.(menuKey)) {
-                    if (menuKey === 'up' || menuKey === 'down') {
-                        renderScreen();
-                    }
-                    const suppressionKey = resolveRawKeypressSuppressionKey({
-                        rawText,
-                        controlKey: control,
-                        menuKey
-                    });
-                    if (suppressionKey) {
-                        lastRawControlKey = suppressionKey;
-                        lastRawControlAt = Date.now();
-                    }
-                }
             }
             return;
         }
@@ -3786,29 +3810,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             void cleanupAndExit('Closing session...', true, false, getRetainedBrandLines());
             return;
         }
-        if (hasBlockingSelectMenu()) {
-            if (key?.name === 'down') {
-                moveActiveMenu(1);
-                renderScreen();
-                return;
-            }
-            if (key?.name === 'up') {
-                moveActiveMenu(-1);
-                renderScreen();
-                return;
-            }
-            if (key?.name === 'escape' || key?.name === 'q') {
-                cancelActiveMenuSelection();
-                return;
-            }
-            if (key?.name === 'return' || key?.name === 'tab') {
-                confirmActiveMenuSelection();
-                return;
-            }
-            if (/^[1-9]$/.test(_str || '')) {
-                confirmActiveMenuIndex(parseInt(_str, 10) - 1);
-                return;
-            }
+        if (handleTerminalMenuKey(terminalMenuController, key?.name || '', _str || '', { render: queueRenderScreen })) {
             return;
         }
         if (hasMessageDetailFocus()) {
@@ -3968,7 +3970,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             adjustTranscriptScroll(-8);
             return;
         }
-        const activeMenu = getActiveSelectMenu();
         if ((key?.name === 'escape' || key?.name === 'q') && transcriptScrollOffset > 0) {
             jumpTranscriptScroll('end');
             return;

@@ -219,6 +219,68 @@ export class ConsoleComment extends ConsoleNode implements RComment {
     }
 }
 
+export type ConsoleElementAttributeValue = string | number | boolean | null | undefined;
+
+export function queryConsoleNode(root: RNode | RNode[] | null | undefined, selector: string): ConsoleNode | null {
+    const nodes = isArray(root) ? root : (root ? [root] : []);
+    for (const node of nodes) {
+        const result = (node as ConsoleNode)?.querySelector?.(selector);
+        if (result) {
+            return result;
+        }
+    }
+    return null;
+}
+
+export function queryConsoleNodes(root: RNode | RNode[] | null | undefined, selector: string): ConsoleNode[] {
+    const nodes = isArray(root) ? root : (root ? [root] : []);
+    const results: ConsoleNode[] = [];
+    nodes.forEach(node => {
+        const found = (node as ConsoleNode)?.querySelectorAll?.(selector);
+        if (found?.length) {
+            results.push(...found);
+        }
+    });
+    return results;
+}
+
+export function syncConsoleElementAttributes(
+    root: RNode | RNode[] | null | undefined,
+    selector: string,
+    attributes: Record<string, ConsoleElementAttributeValue>
+): ConsoleElement | null {
+    const element = queryConsoleNode(root, selector) as ConsoleElement | null;
+    if (!element?.setAttribute) {
+        return null;
+    }
+    Object.entries(attributes).forEach(([name, value]) => {
+        if (value == null) {
+            element.removeAttribute?.(name);
+            return;
+        }
+        element.setAttribute(name, String(value));
+    });
+    return element;
+}
+
+export function syncConsoleElementsAttributes(
+    root: RNode | RNode[] | null | undefined,
+    selector: string,
+    attributes: Record<string, ConsoleElementAttributeValue>
+): ConsoleElement[] {
+    const elements = queryConsoleNodes(root, selector).filter((node): node is ConsoleElement => !!(node as ConsoleElement)?.setAttribute);
+    elements.forEach(element => {
+        Object.entries(attributes).forEach(([name, value]) => {
+            if (value == null) {
+                element.removeAttribute?.(name);
+                return;
+            }
+            element.setAttribute(name, String(value));
+        });
+    });
+    return elements;
+}
+
 export class ConsoleElement extends ConsoleNode implements RElement {
     firstChild: RNode | null = null;
     style: RCssStyleDeclaration = new ConsoleCssStyleDeclaration();

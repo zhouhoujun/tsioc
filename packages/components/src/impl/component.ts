@@ -57,14 +57,6 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const def = this.classRef.getAnnotation<ComponentDef>();
         if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
 
-        if (!this.initCalled) {
-            this.initCalled = true;
-            await (this.instance as OnInit).onInit?.();
-        }
-        const directives = this.injector.get(DIRECTIVES) || [];
-        const customElements = this.injector.get(CUSTOM_ELEMENTS) || [];
-        // console.log('[Component.render] directives:', directives?.length, directives?.map((d: any) => d.type?.name));
-        const components = this.injector.get(COMPONENTS) || [];
         if (!this._elementRef) {
             let renderer = this.injector.get(Renderer, null);
             
@@ -80,7 +72,17 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             }
             
             this._elementRef = this.injector.getElementRef(renderer.createElement(def.selector ?? this.classRef.className));
+            this.injector.setValue(ElementRef, this._elementRef);
         }
+        this.injector.setPayload(this._elementRef);
+        if (!this.initCalled) {
+            this.initCalled = true;
+            await (this.instance as OnInit).onInit?.();
+        }
+        const directives = this.injector.get(DIRECTIVES) || [];
+        const customElements = this.injector.get(CUSTOM_ELEMENTS) || [];
+        // console.log('[Component.render] directives:', directives?.length, directives?.map((d: any) => d.type?.name));
+        const components = this.injector.get(COMPONENTS) || [];
         
         if (!def.ƿtempFac) {
             const template = def.template || await fetchTemplate(def.templateUrl!);

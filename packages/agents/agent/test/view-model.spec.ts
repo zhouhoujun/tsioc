@@ -538,8 +538,8 @@ export class AgentConsoleComponentTest {
         }]);
     }
 
-    @Test('handled slash commands clear input after submit')
-    async handledSlashCommandsClearInputAfterSubmit() {
+    @Test('clear command starts a new session after submit')
+    async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const uiDelegate = new UiDelegateStub();
@@ -549,8 +549,8 @@ export class AgentConsoleComponentTest {
         await component.submit();
 
         expect(component.input).toEqual('');
-        expect(component.messages).toEqual([]);
-        expect(uiDelegate.notices).toContain('Session cleared.');
+        expect(uiDelegate.switchedSessions).toEqual([undefined]);
+        expect(uiDelegate.notices).toContain('Started a new session.');
     }
 
     @Test('help menu selections execute commands and mentions')

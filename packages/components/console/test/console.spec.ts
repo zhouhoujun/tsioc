@@ -4,11 +4,18 @@ import {
     buildClearScreenSequence,
     buildTerminalCleanupSequence,
     buildTerminalCursorSequence,
+    composePrimaryTerminalScreen,
     ConsoleElement,
     ConsoleRenderer,
     ConsoleTemplateModule,
     ConsoleText,
+    renderPanel,
+    renderPrimaryTerminalScreen,
+    renderSelectMenu,
     resolveConsoleEnterAction,
+    TerminalInputSequenceDecoder,
+    resolveTerminalMenuInputKey,
+    resolveTerminalMenuNextIndex,
     TuiRenderer,
     TuiTemplateModule
 } from '../src';
@@ -113,6 +120,17 @@ class ConsoleTextareaFocusedTestComponent {
 }
 
 @Component({
+    selector: 'console-placeholder-textarea-test',
+    template: `
+    <section>
+        <textarea prompt="> " value="" placeholder="Ask code or files" focused="false"></textarea>
+    </section>
+    `
+})
+class ConsolePlaceholderTextareaTestComponent {
+}
+
+@Component({
     selector: 'console-nested-textarea-test',
     template: `
     <section>
@@ -125,6 +143,53 @@ class ConsoleTextareaFocusedTestComponent {
     `
 })
 class ConsoleNestedTextareaTestComponent {
+}
+
+@Component({
+    selector: 'console-region-test',
+    template: `
+    <section>
+        <div renderRegion="input">
+            <textarea prompt="> " value="hi" cursorTarget="draft"></textarea>
+        </div>
+    </section>
+    `
+})
+class ConsoleRegionTestComponent {
+}
+
+@Component({
+    selector: 'console-nested-region-test',
+    template: `
+    <section>
+        <div style="padding: 1 1;">
+            <div renderRegion="inner">
+                <textarea prompt="> " value="hi"></textarea>
+            </div>
+        </div>
+    </section>
+    `
+})
+class ConsoleNestedRegionTestComponent {
+}
+
+@Component({
+    selector: 'console-all-region-test',
+    template: `
+    <section>
+        <label class="label-region">Label</label>
+        <span class="span-region">Span</span>
+        <input class="input-region" prompt="> " value="one"></input>
+        <textarea class="textarea-region" prompt="> " value="two"></textarea>
+        <select
+            class="select-region"
+            title="Menu"
+            options='[{"label":"A","value":"a"}]'></select>
+        <br class="break-region"></br>
+    </section>
+    `
+})
+class ConsoleAllRegionTestComponent {
 }
 
 @Component({
@@ -240,6 +305,23 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('renders placeholder text with dimmer placeholder style')
+    async rendersPlaceholderTextWithDarkerStyle() {
+        const ctx = await Application.run(ConsolePlaceholderTextareaTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsolePlaceholderTextareaTestComponent) as ComponentRef<ConsolePlaceholderTextareaTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 40 });
+            expect(lines[0]).toContain('Ask code or files');
+            expect(lines[0]).toContain('[38;2;110;118;129m');
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('renders framed panel blocks through tui renderer')
     async rendersFramedPanelBlocksThroughTuiRenderer() {
         const ctx = await Application.run(ConsolePanelTestComponent, {
@@ -259,6 +341,33 @@ export class ConsoleRendererTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('renders panel body at natural height before footer when height is unset')
+    rendersPanelBodyAtNaturalHeightBeforeFooterWhenHeightIsUnset() {
+        const lines = renderPanel('Tasks', ['one', 'two', 'three'], 24, undefined, {
+            footerLines: ['status ready']
+        });
+        expect(lines).toEqual([
+            'Tasks',
+            '  one',
+            '  two',
+            '  three',
+            'status ready'
+        ]);
+    }
+
+    @Test('clips panel body only when height is set')
+    clipsPanelBodyOnlyWhenHeightIsSet() {
+        expect(renderPanel('Tasks', ['one', 'two', 'three'], 24, 4, {
+            footerLines: ['footer']
+        })).toEqual(['Tasks', '  two', '  three', 'footer']);
+        expect(renderPanel('Tasks', ['hidden'], 24, 2, {
+            footerLines: ['footer']
+        })).toEqual(['Tasks', 'footer']);
+        expect(renderPanel('Tasks', ['hidden'], 24, 2, {
+            footerLines: ['footer one', 'footer two']
+        })).toEqual(['Tasks', 'footer one', 'footer two']);
     }
 
     @Test('prefers six digit hex colors in tui renderer')
@@ -370,11 +479,75 @@ export class ConsoleRendererTest {
             const ref = ctx.runners.getRef(ConsoleSelectTestComponent) as ComponentRef<ConsoleSelectTestComponent>;
             const renderer = ctx.get(TuiRenderer);
             const root = ref.hostView.rootNodes[0] as ConsoleElement;
-            const lines = renderer.renderToTuiLines(root, { width: 28 });
+            const lines = renderer.renderToTuiLines(root, { width: 48 });
             expect(lines.some(line => line.includes('Help'))).toBe(true);
             expect(lines.some(line => line.includes('2. /messages'))).toBe(true);
+            expect(lines.some(line => /1\. \/help\s{4,}Show help/.test(line))).toBe(true);
+            expect(lines.some(line => /2\. \/messages\s{2,}Browse messages/.test(line))).toBe(true);
             expect(lines.some(line => line.includes('Preview'))).toBe(true);
             expect(lines.some(line => line.includes('Browse messages'))).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('records render regions declared by console directives')
+    async recordsRenderRegionsThroughTuiRenderer() {
+        const ctx = await Application.run(ConsoleRegionTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleRegionTestComponent) as ComponentRef<ConsoleRegionTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const layout = renderer.renderToTuiLayout(root, { width: 20 });
+            const regionElement = renderer.querySelector(root, '[renderRegion]') as ConsoleElement;
+            expect(layout.regions.some(region => region.id === 'input' && region.endRow > region.startRow)).toBe(true);
+            expect(regionElement.getAttribute('data-render-region-start')).toBe('0');
+            expect(regionElement.getAttribute('data-render-region-end')).toBe('1');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('records nested render regions after parent block offsets')
+    async recordsNestedRenderRegionsAfterOffsets() {
+        const ctx = await Application.run(ConsoleNestedRegionTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleNestedRegionTestComponent) as ComponentRef<ConsoleNestedRegionTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const layout = renderer.renderToTuiLayout(root, { width: 20 });
+            const region = layout.regions.find(item => item.id === 'inner');
+            const regionElement = renderer.querySelector(root, '[renderRegion]') as ConsoleElement;
+            expect(region?.startRow).toBe(1);
+            expect(region?.endRow).toBe(2);
+            expect(regionElement.getAttribute('data-render-region-start')).toBe('1');
+            expect(regionElement.getAttribute('data-render-region-end')).toBe('2');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('records render regions for all base tui directives')
+    async recordsRenderRegionsForAllBaseTuiDirectives() {
+        const ctx = await Application.run(ConsoleAllRegionTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleAllRegionTestComponent) as ComponentRef<ConsoleAllRegionTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const layout = renderer.renderToTuiLayout(root, { width: 32 });
+            const regionIds = layout.regions.map(region => region.id);
+            ['label-region', 'span-region', 'input-region', 'textarea-region', 'select-region', 'break-region'].forEach(id => {
+                expect(regionIds).toContain(id);
+                const element = renderer.querySelector(root, `.${id}`) as ConsoleElement;
+                expect(element.getAttribute('data-render-region-start')).not.toBe(null);
+                expect(element.getAttribute('data-render-region-end')).not.toBe(null);
+            });
         } finally {
             await ctx.close();
         }
@@ -388,6 +561,38 @@ export class ConsoleRendererTest {
         expect(resolveConsoleEnterAction({ hasSelectMenu: true })).toBe('confirm-selection');
     }
 
+    @Test('renders select menu descriptions as compact table rows')
+    rendersSelectMenuDescriptionsAsCompactTableRows() {
+        const lines = renderSelectMenu('Commands', [
+            { label: '/a', value: '/a', description: 'short' },
+            { label: '/very-long-command', value: '/very-long-command', description: 'very long command description that should not flood the menu' }
+        ], 0);
+        expect(lines.some(line => /\/a\s{10,}short/.test(line))).toBe(true);
+        expect(lines.some(line => line.includes('very long command description...'))).toBe(true);
+        expect(lines.every(line => !line.includes('should not flood'))).toBe(true);
+    }
+
+    @Test('resolves terminal menu input keys in the base console layer')
+    resolvesTerminalMenuInputKeys() {
+        expect(resolveTerminalMenuInputKey('down')).toBe('down');
+        expect(resolveTerminalMenuInputKey('escape')).toBe('');
+        expect(resolveTerminalMenuInputKey('', '2', { blockingMenu: true })).toBe('2');
+        expect(resolveTerminalMenuInputKey('', '2', { blockingMenu: false })).toBe('');
+        expect(resolveTerminalMenuNextIndex(0, 3, -1)).toBe(2);
+        expect(resolveTerminalMenuNextIndex(2, 3, 1)).toBe(0);
+        expect(resolveTerminalMenuNextIndex(0, 0, 1)).toBe(-1);
+    }
+
+    @Test('decodes split terminal input control sequences in the base console layer')
+    decodesSplitTerminalInputControlSequences() {
+        const decoder = new TerminalInputSequenceDecoder();
+        expect(decoder.decode('\u001b')).toEqual({ text: '', partial: true });
+        expect(decoder.decode('[')).toEqual({ text: '', partial: true });
+        expect(decoder.decode('B')).toEqual({ text: '\u001b[B', controlKey: 'down', partial: false });
+        expect(decoder.decode('\u001b[A')).toEqual({ text: '\u001b[A', controlKey: 'up', partial: false });
+        expect(decoder.decode('x')).toEqual({ text: 'x', partial: false });
+    }
+
     @Test('builds terminal cleanup sequences for host cli adapters')
     buildsTerminalCleanupSequences() {
         expect(buildClearScreenSequence()).toBe('\x1b[2J\x1b[H');
@@ -395,12 +600,13 @@ export class ConsoleRendererTest {
         expect(buildTerminalCleanupSequence({
             reset: '\x1b[0m',
             preserveScreen: true
-        })).toBe('\x1b[0m\r\x1b[J');
+        })).toBe('\x1b[0m\r');
         expect(buildTerminalCleanupSequence({
             reset: '\x1b[0m',
             preserveScreen: true,
-            cursorRowOffset: 4
-        })).toBe('\x1b[0m\r\x1b[4A\x1b[J');
+            paintedLineCount: 5,
+            currentRow: 2
+        })).toBe('\x1b[0m\x1b[3B\r');
         expect(buildTerminalCleanupSequence({
             reset: '\x1b[0m',
             paintedLineCount: 2,
@@ -421,5 +627,162 @@ export class ConsoleRendererTest {
             width: 80,
             mode: 'line'
         })).toBe('\r\x1b[4C');
+        expect(buildTerminalCursorSequence({
+            target: { row: 2, column: 4 },
+            width: 80,
+            currentRow: 1,
+            mode: 'relative'
+        })).toBe('\x1b[1B\r\x1b[4C');
+    }
+
+    @Test('keeps footer sections pinned and offsets their component positions')
+    keepsFooterSectionsPinnedAndOffsetsComponentPositions() {
+        const layout = composePrimaryTerminalScreen({
+            topLines: ['logo'],
+            transcriptBlocks: [
+                ['u1'],
+                ['a1', 'a2', 'a3', 'a4', 'a5']
+            ],
+            footerSections: [
+                {
+                    lines: ['status 1']
+                },
+                {
+                    lines: ['> ask', 'model flash'],
+                    regions: [{ id: 'input-shell', startRow: 0, endRow: 2 }],
+                    cursorTargets: [{ row: 0, column: 4 }]
+                }
+            ],
+            height: 5,
+            minContextRows: 1
+        });
+        expect(layout.lines).toEqual(['logo', 'a5', 'status 1', '> ask', 'model flash']);
+        expect(layout.regions.find(region => region.id === 'input-shell')).toEqual({ id: 'input-shell', startRow: 3, endRow: 5 });
+        expect(layout.cursorTargets[0]).toEqual({ row: 3, column: 4 });
+    }
+
+    @Test('lets primary body grow when height is unset')
+    letsPrimaryBodyGrowWhenHeightIsUnset() {
+        const first = composePrimaryTerminalScreen({
+            topLines: ['logo'],
+            transcriptBlocks: [['message 1']],
+            footerSections: [{ lines: ['footer'] }]
+        });
+        const render = renderPrimaryTerminalScreen({
+            lines: first.lines,
+            width: 40
+        });
+        const next = composePrimaryTerminalScreen({
+            state: render.state,
+            topLines: ['logo'],
+            transcriptBlocks: [['message 1', 'message 2', 'message 3']],
+            footerSections: [{ lines: ['footer'] }]
+        });
+        expect(first.lines).toEqual(['logo', 'message 1', 'footer']);
+        expect(next.lines).toEqual(['logo', 'message 1', 'message 2', 'message 3', 'footer']);
+    }
+
+    @Test('renders primary terminal screen from previous render state')
+    rendersPrimaryTerminalScreenFromState() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', '> hi'],
+            width: 20,
+            stablePrefixRows: 1,
+            cursorRow: 1,
+            cursorMode: 'prompt'
+        });
+        expect(first.output).toContain('logo');
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', '> hi'],
+            width: 20,
+            stablePrefixRows: 1,
+            cursorRow: 1,
+            cursorMode: 'prompt'
+        });
+        expect(second.changed).toBe(false);
+        expect(second.output).toBe('');
+    }
+
+    @Test('rewrites primary tail growth without repainting stable history')
+    rewritesPrimaryTailGrowthWithoutRepaintingStableHistory() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', '> hi', 'footer'],
+            width: 40,
+            stablePrefixRows: 2,
+            cursorRow: 1,
+            cursorMode: 'prompt'
+        });
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', '> hi', 'answer', 'footer'],
+            width: 40,
+            stablePrefixRows: 3,
+            cursorRow: 3,
+            cursorMode: 'prompt'
+        });
+        expect(second.output).not.toContain('logo');
+        expect(second.output).toContain('\x1b[J');
+        expect(second.output).toContain('answer');
+        expect(second.output).toContain('footer');
+    }
+
+    @Test('rewrites primary footer growth without repainting stable prefix')
+    rewritesPrimaryFooterGrowthWithoutRepaintingStablePrefix() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', '> hi', 'model'],
+            width: 40,
+            stablePrefixRows: 1,
+            cursorRow: 1,
+            cursorMode: 'prompt'
+        });
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', '› hi', '> Ask', 'model'],
+            width: 40,
+            stablePrefixRows: 2,
+            cursorRow: 2,
+            cursorMode: 'prompt'
+        });
+        expect(second.output).not.toContain('logo');
+        expect(second.output).toContain('› hi');
+        expect(second.output).toContain('> Ask');
+    }
+
+    @Test('keeps primary render state anchored after same-height region patch')
+    keepsPrimaryRenderStateAnchoredAfterPatch() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', 'Working (0s)', '> ask'],
+            width: 40,
+            stablePrefixRows: 1,
+            cursorRow: 2,
+            cursorTarget: { row: 2, column: 5 },
+            cursorMode: 'prompt',
+            placeCursor: true
+        });
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', 'Working (1s)', '> ask'],
+            width: 40,
+            stablePrefixRows: 1,
+            cursorRow: 2,
+            cursorTarget: { row: 2, column: 5 },
+            cursorMode: 'prompt',
+            placeCursor: true
+        });
+        expect(second.output).toContain('Working (1s)');
+        expect(second.state.terminalRow).toBe(2);
+        const third = renderPrimaryTerminalScreen({
+            state: second.state,
+            lines: ['logo', 'Working (2s)', '> ask'],
+            width: 40,
+            stablePrefixRows: 1,
+            cursorRow: 2,
+            cursorTarget: { row: 2, column: 5 },
+            cursorMode: 'prompt',
+            placeCursor: true
+        });
+        expect(third.output).toContain('Working (2s)');
+        expect(third.output).toContain('\x1b[1A');
     }
 }

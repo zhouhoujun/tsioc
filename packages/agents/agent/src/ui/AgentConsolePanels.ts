@@ -9,9 +9,9 @@ import {
     TuiSelectComponent,
     TuiTextareaComponent,
     resolveConsoleEnterAction,
-    resolveConsoleSelectDetailLines,
     resolveConsoleSelectWindow,
-    syncConsoleEditableElement
+    syncConsoleEditableElement,
+    syncConsoleElementsAttributes
 } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
 import { DOCUMENT } from '@tsdi/common';
@@ -1240,21 +1240,11 @@ export class AgentConsoleActivityPanelComponent {
     <div class="console-panel console-select-panel">
         <div class="select-shell" v-style="shellStyle">
             <select class="select-core"
-                title="{{menuTitle}}"
-                meta="{{menuMeta}}"
-                hint="{{menuHint}}"
                 options="{{menuOptionsJson}}"
                 selectedIndex="{{menuSelectedIndexText}}"
                 visibleCount="{{visibleOptionCountText}}"
-                detailTitle="{{detailTitle}}"
-                detailLines="{{detailLinesJson}}"
-                titleStyle="{{activeTheme.selectHeader}}"
-                metaStyle="{{activeTheme.selectDetailLabel}}"
-                hintStyle="{{activeTheme.selectHint}}"
                 optionActiveStyle="{{activeTheme.selectOptionActive}}"
-                optionStyle="{{activeTheme.selectOption}}"
-                detailLabelStyle="{{activeTheme.selectDetailLabel}}"
-                detailValueStyle="{{activeTheme.selectDetailValue}}"></select>
+                optionStyle="{{activeTheme.selectOption}}"></select>
         </div>
     </div>
     `
@@ -1265,7 +1255,9 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
     protected currentMenu?: AgentConsoleSelectMenu;
 
     constructor(
-        private state: AgentConsoleSessionState
+        private state: AgentConsoleSessionState,
+        private elementRef?: ElementRef<any>,
+        @Optional() private componentRef?: ComponentRef<AgentConsoleSelectPanelComponent> | null
     ) {
         this.currentMenu = this.state.selectMenu;
     }
@@ -1279,14 +1271,28 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
 
     onAfterViewInit(): void {
         this.currentMenu = this.state.selectMenu;
+        this.syncRenderedState();
         this.unsubscribeState = this.state.subscribe(() => {
-            this.currentMenu = this.state.selectMenu;
+            this.syncRenderedState();
         });
     }
 
     onDestroy(): void {
         this.unsubscribeState?.();
         this.unsubscribeState = undefined;
+    }
+
+    syncRenderedState(): boolean {
+        this.currentMenu = this.state.selectMenu;
+        const host = this.elementRef?.nativeElement;
+        const roots = this.componentRef?.hostView?.rootNodes;
+        return !!syncConsoleElementsAttributes([host, ...(Array.isArray(roots) ? roots : roots ? [roots] : [])], '.select-core', {
+            options: this.menuOptionsJson,
+            selectedIndex: this.menuSelectedIndexText,
+            visibleCount: this.visibleOptionCountText,
+            optionActiveStyle: this.activeTheme.selectOptionActive,
+            optionStyle: this.activeTheme.selectOption
+        }).length;
     }
 
     get menu(): AgentConsoleSelectMenu | undefined {
@@ -1297,45 +1303,12 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         return this.menu ? styleTextToObject(this.activeTheme.selectShell) : {};
     }
 
-    get titleStyle() {
-        return styleTextToObject(this.activeTheme.selectTitle);
-    }
-
-    get headerStyle() {
-        return styleTextToObject(this.activeTheme.selectHeader);
-    }
-
-    get hintStyle() {
-        return styleTextToObject(this.activeTheme.selectHint);
-    }
-
-    get detailLabelStyle() {
-        return styleTextToObject(this.activeTheme.selectDetailLabel);
-    }
-
-    get detailValueStyle() {
-        return styleTextToObject(this.activeTheme.selectDetailValue);
-    }
-
-    get menuTitle(): string {
-        return this.menu ? this.menu.title : '';
-    }
-
-    get menuHint(): string {
-        return this.menu
-            ? (this.menu.hint ? this.menu.hint : 'up/down move   enter confirm   esc close')
-            : '';
-    }
-
-    get menuMeta(): string {
-        if (!this.menu || !this.menu.options.length) {
-            return '';
-        }
-        return `${this.menu.selectedIndex + 1}/${this.menu.options.length}`;
-    }
-
-    get menuOptions(): AgentConsoleSelectOption[] {
-        return this.menu?.options || [];
+    get menuOptions(): Array<{ label: string; value: string; description?: string }> {
+        return (this.menu?.options || []).map(option => ({
+            label: option.label,
+            value: option.value,
+            description: option.description || ''
+        }));
     }
 
     get menuOptionsJson(): string {
@@ -1388,29 +1361,6 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
                 style: styleTextToObject(this.menu && this.menu.selectedIndex === absoluteIndex ? this.activeTheme.selectOptionActive : this.activeTheme.selectOption)
             };
         });
-    }
-
-    get selectedOption() {
-        if (!this.menu) {
-            return undefined;
-        }
-        return this.menu.options[this.menu.selectedIndex];
-    }
-
-    get detailTitle(): string {
-        return this.selectedOption ? 'Preview' : '';
-    }
-
-    get detailLines(): string[] {
-        return resolveConsoleSelectDetailLines(this.selectedOption as any);
-    }
-
-    get detailLinesJson(): string {
-        return JSON.stringify(this.detailLines);
-    }
-
-    detailLineAt(index: number): string {
-        return this.detailLines[index] || '';
     }
 
     optionAt(index: number): { label: string; value: string; style: Record<string, string> } | undefined {

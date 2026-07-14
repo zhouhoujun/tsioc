@@ -11,7 +11,7 @@ import { SessionStore } from '../memory/SessionStore';
 import { ToolApprovalManager } from '../tools/ToolApprovalManager';
 import { AgentConsoleUiDelegate } from './AgentConsoleUiDelegate';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
-import { AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleSelectMenu, AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 @Component({
     selector: 'agent-console',
@@ -35,6 +35,8 @@ export class AgentConsoleComponent {
     protected refreshQueued = false;
     protected multilineMode = false;
     protected draftLines: string[] = [];
+    protected renderedLayoutKey = '';
+    protected renderedSelectMenu?: AgentConsoleSelectMenu;
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -136,7 +138,7 @@ export class AgentConsoleComponent {
         return this.state.selectMenu?.options?.map((o: any) => ({
             label: o.label,
             value: o.value,
-            description: typeof o.detail === 'string' ? o.detail : undefined
+            description: o.description || ''
         })) || [];
     }
 
@@ -278,8 +280,9 @@ export class AgentConsoleComponent {
     }
 
     onAfterViewInit(): void {
+        this.captureRenderedState();
         this.unsubscribeState = this.state.subscribe(() => {
-            this.queuePanelRefresh();
+            this.refreshRenderedState();
         });
     }
 
@@ -374,14 +377,14 @@ export class AgentConsoleComponent {
             case '/help':
                 if (!this.uiDelegate) { return true; }
                 const helpSelection = await this.uiDelegate.select('Help', [
-                    { label: '/model', value: '/model', detail: 'Switch provider and model.' },
-                    { label: '/sessions', value: '/sessions', detail: 'Browse sessions.' },
-                    { label: '/messages', value: '/messages', detail: 'Browse messages.' },
-                    { label: '/multiline', value: '/multiline', detail: 'Toggle multiline draft mode.' },
-                    { label: '/copy', value: '/copy', detail: 'Copy latest assistant reply.' },
-                    { label: '/approvals', value: '/approvals', detail: 'List pending approvals.' },
-                    { label: '@workspace', value: '@workspace', detail: 'Inject workspace context.' },
-                    { label: '/exit', value: '/exit', detail: 'Exit the chat session.' }
+                    { label: '/model', value: '/model', description: 'switch model' },
+                    { label: '/sessions', value: '/sessions', description: 'sessions' },
+                    { label: '/messages', value: '/messages', description: 'messages' },
+                    { label: '/multiline', value: '/multiline', description: 'multiline' },
+                    { label: '/copy', value: '/copy', description: 'copy reply' },
+                    { label: '/approvals', value: '/approvals', description: 'approvals' },
+                    { label: '@workspace', value: '@workspace', description: 'context' },
+                    { label: '/exit', value: '/exit', description: 'exit' }
                 ], 0, 'up/down move   enter close   q close');
                 if (helpSelection) {
                     await this.handleMenuSelection(helpSelection);
@@ -396,12 +399,10 @@ export class AgentConsoleComponent {
                 await this.showToolsList();
                 return true;
             case '/clear':
-                if (this.sessionStore) { await this.sessionStore.delete(this.state.sessionId); }
-                this.state.setMessages([]);
-                this.state.setMessagesFocused(false);
-                this.state.setSessionsFocused(false);
-                this.state.closeMessageDetail();
-                if (this.uiDelegate) { this.uiDelegate.notify('Session cleared.'); }
+                if (this.uiDelegate) {
+                    await this.uiDelegate.switchSession(undefined);
+                    this.uiDelegate.notify('Started a new session.');
+                }
                 return true;
             case '/approvals': {
                 const pending = this.approvalManager
@@ -445,7 +446,7 @@ export class AgentConsoleComponent {
                 const selected = await this.uiDelegate.select('Sessions', sessions.map(item => ({
                     label: item.id,
                     value: item.id,
-                    detail: item.detail || (item.current ? 'Current session' : 'Switch to this session')
+                    description: item.detail || (item.current ? 'current' : 'switch')
                 })), Math.max(0, sessions.findIndex(item => item.current)));
                 if (selected) {
                     await this.uiDelegate.switchSession(selected);
@@ -486,7 +487,7 @@ export class AgentConsoleComponent {
                 const req = pend.length === 1 ? pend[0] : null;
                 if (!req && this.uiDelegate) {
                     const sel = await this.uiDelegate.select(isApprove ? 'Approve' : 'Deny',
-                        pend.map((r: any) => ({ label: r.toolName + ' (' + r.id.slice(0, 8) + ')', value: r.id, detail: 'Reason: ' + r.reason })));
+                        pend.map((r: any) => ({ label: r.toolName + ' (' + r.id.slice(0, 8) + ')', value: r.id, description: r.reason })));
                     if (!sel) { return true; }
                     const found = pend.find((r: any) => r.id === sel);
                     if (found) { isApprove ? this.approvalManager.approve(found.id) : this.approvalManager.reject(found.id); }
@@ -545,7 +546,7 @@ export class AgentConsoleComponent {
         const currModel = this.state.model;
         const prov = await this.uiDelegate.select('Model providers', this.MODEL_PROVIDER_CHOICES.map((i: any) => ({
             label: i.label, value: i.provider,
-            detail: 'Provider: ' + i.provider + '\nDefault: ' + (this.PROVIDER_DEFAULT_MODELS[i.provider] || 'custom') + '\nStrong: ' + (this.PROVIDER_STRONG_MODELS[i.provider] || this.PROVIDER_DEFAULT_MODELS[i.provider] || 'custom')
+            description: i.provider
         })), Math.max(0, this.MODEL_PROVIDER_CHOICES.findIndex((p: any) => p.provider === currProv)));
         if (!prov) { return; }
         const models = this.PROVIDER_MODELS[prov] || [];
@@ -584,7 +585,7 @@ export class AgentConsoleComponent {
         if (!tools.length) { this.uiDelegate.notify('No tools available.'); return; }
         await this.uiDelegate.select('Tools', tools.map((t: any) => ({
             label: t.name + (t.active ? '' : ' [inactive]'), value: t.name,
-            detail: 'Tool: ' + t.name + '\nStatus: ' + (t.active ? 'active' : 'inactive') + '\nToolset: ' + (t.toolset || '-')
+            description: t.active ? 'active' : 'inactive'
         })), 0, 'up/down move   enter close   q close');
     }
 
@@ -751,6 +752,35 @@ export class AgentConsoleComponent {
         this.state.setTools(tools);
     }
 
+    protected refreshRenderedState(): void {
+        const layoutKey = this.resolveLayoutKey();
+        const selectMenu = this.state.selectMenu;
+
+        if (layoutKey === this.renderedLayoutKey && selectMenu === this.renderedSelectMenu) {
+            this.captureRenderedState();
+            return;
+        }
+
+        this.queuePanelRefresh();
+    }
+
+    protected resolveLayoutKey(): string {
+        return [
+            this.showStatusPanel ? 'status' : '',
+            this.showSessionsPanel ? 'sessions' : '',
+            this.showMessageDetailPanel ? 'detail' : '',
+            this.showActivityPanel ? 'activity' : '',
+            this.showWorkingPanel ? 'working' : '',
+            this.showToolRunsPanel ? 'toolRuns' : '',
+            this.showSelectPanel ? 'select' : ''
+        ].join('|');
+    }
+
+    protected captureRenderedState(): void {
+        this.renderedLayoutKey = this.resolveLayoutKey();
+        this.renderedSelectMenu = this.state.selectMenu;
+    }
+
     protected queuePanelRefresh(): void {
         if (this.refreshQueued) {
             return;
@@ -759,7 +789,9 @@ export class AgentConsoleComponent {
         Promise.resolve().then(() => {
             this.refreshQueued = false;
             if (this.componentRef?.hostView) {
-                void this.componentRef.render();
+                void this.componentRef.render().then(() => {
+                    this.captureRenderedState();
+                });
             }
         });
     }

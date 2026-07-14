@@ -2,7 +2,8 @@ import { Attribute, Directive, ElementRef, OnDestroy, AfterViewInit, Renderer } 
 import {
     applyConsoleClipboardPaste,
     clampConsoleSelectIndex,
-    formatConsoleIndexedOptionLabel,
+    formatConsoleSelectOptionTableRow,
+    resolveConsoleOptionLabelColumnWidth,
     resolveConsoleClipboardSelection,
     resolveConsoleSelectWindow
 } from './input';
@@ -238,7 +239,9 @@ export class TuiInputComponent extends ConsoleEditableDirective {
     @Attribute() shellStyle = 'background: #1b2128; color: #c9d1d9; padding: 1 3;';
     @Attribute() promptStyle = 'color: #7ee787; font-weight: bold;';
     @Attribute() valueStyle = 'color: #c9d1d9;';
+    @Attribute() placeholderStyle = 'color: #6e7681;';
     @Attribute() cursorStyle = 'color: #7ee787; background: #2ea043;';
+    @Attribute() renderRegion = '';
 
     get displayPrompt(): string {
         return this.prompt;
@@ -272,7 +275,9 @@ export class TuiTextareaComponent extends ConsoleEditableDirective {
     @Attribute() shellStyle = 'background: #1b2128; color: #c9d1d9; padding: 1 3;';
     @Attribute() promptStyle = 'color: #7ee787; font-weight: bold;';
     @Attribute() valueStyle = 'color: #c9d1d9;';
+    @Attribute() placeholderStyle = 'color: #6e7681;';
     @Attribute() cursorStyle = 'color: #7ee787; background: #2ea043;';
+    @Attribute() renderRegion = '';
 }
 
 @Directive({
@@ -287,6 +292,7 @@ export class TuiSelectComponent {
     @Attribute() detailTitle = '';
     @Attribute() detailLines: string[] = [];
     @Attribute() visibleCount = 6;
+    @Attribute() descriptionMaxWidth = 32;
     @Attribute() shellStyle = 'background: #10161d; color: #d6dee6; padding: 1; border: 1px solid #2a3441;';
     @Attribute() titleStyle = 'color: #f3f6fb; font-weight: bold;';
     @Attribute() metaStyle = 'color: #6f7c8a;';
@@ -295,6 +301,7 @@ export class TuiSelectComponent {
     @Attribute() hintStyle = 'color: #6f7c8a;';
     @Attribute() optionActiveStyle = 'background: #18222d; color: #8fd0ff; padding: 0 1; font-weight: bold;';
     @Attribute() optionStyle = 'background: #10161d; color: #93a4b8; padding: 0 1;';
+    @Attribute() renderRegion = '';
 
     protected readonly VISIBLE = 6;
 
@@ -323,12 +330,14 @@ export class TuiSelectComponent {
         const opt = this.visibleOptions[index];
         if (!opt) { return ''; }
         const absIdx = this.visibleStart + index;
-        const desc = opt.description ? `  ${opt.description}` : '';
-        return `${formatConsoleIndexedOptionLabel(
+        return formatConsoleSelectOptionTableRow(
             absIdx,
             opt.label,
-            absIdx === clampConsoleSelectIndex(this.options.length, this.selectedIndex)
-        )}${desc}`;
+            absIdx === clampConsoleSelectIndex(this.options.length, this.selectedIndex),
+            opt.description || '',
+            resolveConsoleOptionLabelColumnWidth(this.visibleOptions, this.visibleStart),
+            Number.parseInt(String(this.descriptionMaxWidth || 32), 10) || 32
+        );
     }
 
     optionStyleAt(index: number): Record<string, string> {
@@ -354,6 +363,7 @@ export class TuiSelectComponent {
 })
 export class LabelComponent {
     @Attribute() labelStyle = 'color: #6e7681;';
+    @Attribute() renderRegion = '';
 }
 
 
@@ -362,6 +372,7 @@ export class LabelComponent {
 })
 export class SpanDirective {
     @Attribute() textStyle = '';
+    @Attribute() renderRegion = '';
 }
 
 @Directive({
@@ -369,10 +380,12 @@ export class SpanDirective {
 })
 export class DivDirective {
     @Attribute() blockStyle = '';
+    @Attribute() renderRegion = '';
 }
 
 @Directive({
     selector: 'br'
 })
 export class BrDirective {
+    @Attribute() renderRegion = '';
 }

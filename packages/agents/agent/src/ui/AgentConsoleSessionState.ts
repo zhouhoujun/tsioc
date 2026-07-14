@@ -601,11 +601,9 @@ export class AgentConsoleSessionState {
         switch (key) {
             case 'up':
                 this.moveSelectMenu(-1);
-                this.notify();
                 return true;
             case 'down':
                 this.moveSelectMenu(1);
-                this.notify();
                 return true;
             case 'return':
                 void this.confirmSelectMenu();
