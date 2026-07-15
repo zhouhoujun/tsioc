@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     buildClearScreenSequence,
+    buildTerminalBrandBlock,
     buildTerminalCleanupSequence,
     buildTerminalCursorSequence,
     composePrimaryTerminalScreen,
@@ -674,6 +675,15 @@ export class ConsoleRendererTest {
             currentRow: 1,
             mode: 'relative'
         })).toBe('\x1b[1B\r\x1b[4C');
+    }
+
+    @Test('centers terminal brand title while keeping metadata left aligned')
+    centersTerminalBrandTitle() {
+        const lines = buildTerminalBrandBlock(40, 'TSDI Agent', 'gpt-5.4', '/home/zhouyou/workspace/core')
+            .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        expect(lines[1]).toContain('│');
+        expect(lines[1]).toContain(' TSDI AGENT ');
+        expect(lines[2]).toContain('gpt-5.4 · ~/workspace/core');
     }
 
     @Test('keeps footer sections pinned and offsets their component positions')

@@ -6,7 +6,7 @@ import {
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { AgentConsoleTheme, AgentConsoleThemeInput, defaultAgentConsoleTheme, mergeAgentConsoleTheme } from './AgentConsoleTheme';
-import { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
+import { DEFAULT_TERMINAL_COLUMNS } from '@tsdi/components/console';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -540,7 +540,7 @@ export class AgentConsoleSessionState {
     }
 
     get inputHintLabel(): string {
-        return formatTerminalStatusFooter(this.model, this.modelProfile, this.workspace);
+        return '';
     }
 
     setLastError(message: string): void {

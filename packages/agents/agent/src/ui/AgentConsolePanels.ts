@@ -210,7 +210,7 @@ export class AgentConsoleStatusPanelComponent {
                     @keydown="onKeydown($event)"></textarea>
             </div>
         </div>
-        <label class="input-hint" v-style="hintStyle">{{hintLabel}}</label>
+        <label class="input-hint" v-show="showHint" v-style="hintStyle">{{hintLabel}}</label>
     </div>
     `
 })
@@ -316,6 +316,10 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
 
     get hintLabel(): string {
         return this.state?.inputHintLabel || '';
+    }
+
+    get showHint(): boolean {
+        return !!this.hintLabel;
     }
 
     async submit(): Promise<void> {

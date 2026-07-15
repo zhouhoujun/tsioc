@@ -847,17 +847,19 @@ export function buildTerminalBrandBlock(width: number, appTitle = DEFAULT_TERMIN
         maxInnerWidth,
         Math.max(8, getDisplayWidth(titleLine), getDisplayWidth(metaLine))
     ));
-    const fitContent = (value: string, ...codes: string[]): string => {
+    const fitContent = (value: string, align: 'left' | 'center', ...codes: string[]): string => {
         const clipped = getDisplayWidth(value) > innerWidth
             ? sliceByDisplayWidth(value, innerWidth)
             : value;
-        const padding = ' '.repeat(Math.max(0, innerWidth - getDisplayWidth(clipped)));
-        return `${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}${paintTerminalText(clipped, ...codes)}${padding}${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}`;
+        const remaining = Math.max(0, innerWidth - getDisplayWidth(clipped));
+        const leftPadding = align === 'center' ? Math.floor(remaining / 2) : 0;
+        const rightPadding = remaining - leftPadding;
+        return `${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}${' '.repeat(leftPadding)}${paintTerminalText(clipped, ...codes)}${' '.repeat(rightPadding)}${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}`;
     };
     return [
         paintTerminalText(`╭${'─'.repeat(innerWidth)}╮`, TERMINAL_RENDER_ANSI.dim),
-        fitContent(titleLine, TERMINAL_RENDER_ANSI.blueStrong),
-        fitContent(metaLine, TERMINAL_RENDER_ANSI.dim),
+        fitContent(titleLine, 'center', TERMINAL_RENDER_ANSI.blueStrong),
+        fitContent(metaLine, 'left', TERMINAL_RENDER_ANSI.dim),
         paintTerminalText(`╰${'─'.repeat(innerWidth)}╯`, TERMINAL_RENDER_ANSI.dim)
     ];
 }

@@ -184,6 +184,9 @@ export class AgentConsoleRendererTest {
 
             expect(surface.lastRenderedLines.some(line => line.includes('Working'))).toBe(false);
             expect(surface.lastRenderedLines.some(line => line.includes('hello'))).toBe(true);
+            expect(surface.lastRenderedLines
+                .map(line => line.replace(/\x1b\[[0-9;]*m/g, '').trim())
+                .some(line => line === consoleRef.instance.sessionState.model)).toBe(false);
             expect(output.join('')).toContain('hello');
         } finally {
             surface?.destroy();
