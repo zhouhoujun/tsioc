@@ -84,6 +84,27 @@ class ConsoleStyleTestComponent {
 }
 
 @Component({
+    selector: 'console-working-child',
+    template: '<p>Working</p>'
+})
+class ConsoleWorkingChildComponent {
+}
+
+@Component({
+    selector: 'console-show-host-test',
+    imports: [ConsoleWorkingChildComponent],
+    template: `
+    <section>
+        <console-working-child v-show="visible"></console-working-child>
+        <textarea prompt="> " value="ask"></textarea>
+    </section>
+    `
+})
+class ConsoleShowHostTestComponent {
+    visible = false;
+}
+
+@Component({
     selector: 'console-panel-test',
     template: `
     <section style="background: #102218; color: #d8ffea; padding: 1; border: 1px solid #29543d;">
@@ -306,6 +327,38 @@ export class ConsoleRendererTest {
             expect(output.join('')).toContain('Updated');
             surface.destroy();
         } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('updates terminal surface when component host v-show changes')
+    async updatesTerminalSurfaceFromHostShowDirective() {
+        const ctx = await Application.run(ConsoleShowHostTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const output: string[] = [];
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleShowHostTestComponent) as ComponentRef<ConsoleShowHostTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.elementRef.nativeElement,
+                width: 60,
+                output: { write: value => output.push(value) }
+            });
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.some(line => line.includes('Working'))).toBe(false);
+
+            ref.instance.visible = true;
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.some(line => line.includes('Working'))).toBe(true);
+            expect(output.join('')).toContain('Working');
+        } finally {
+            surface?.destroy();
             await ctx.close();
         }
     }

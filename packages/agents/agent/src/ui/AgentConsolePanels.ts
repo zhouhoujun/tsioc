@@ -1,4 +1,4 @@
-import { Attribute, Component, AfterViewInit, OnDestroy, ComponentRef, ElementRef } from '@tsdi/components';
+import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
 import {
     buildTerminalBrandBlock,
     BrDirective,
@@ -10,12 +10,8 @@ import {
     TuiSelectComponent,
     TuiTextareaComponent,
     resolveConsoleEnterAction,
-    resolveConsoleSelectWindow,
-    syncConsoleEditableElement,
-    syncConsoleElementsAttributes
+    resolveConsoleSelectWindow
 } from '@tsdi/components/console';
-import { Inject, Optional } from '@tsdi/ioc';
-import { DOCUMENT } from '@tsdi/common';
 import {
     AgentConsoleActivity,
     AgentConsoleSelectOption,
@@ -214,21 +210,10 @@ export class AgentConsoleStatusPanelComponent {
     </div>
     `
 })
-export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy {
-    protected unsubscribeState?: () => void;
-    protected currentInput = '';
-    protected currentCursor = 0;
-    protected currentFocused = true;
-
+export class AgentConsoleInputPanelComponent {
     constructor(
-        private state?: AgentConsoleSessionState,
-        private elementRef?: ElementRef<any>,
-        @Optional() private componentRef?: ComponentRef<AgentConsoleInputPanelComponent> | null,
-        @Optional() @Inject(DOCUMENT) private document?: Document | null
+        private state?: AgentConsoleSessionState
     ) {
-        this.currentInput = state?.input || '';
-        this.currentCursor = state?.inputCursor ?? this.currentInput.length;
-        this.currentFocused = state?.inputFocused !== false;
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -238,31 +223,11 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
-    onAfterViewInit(): void {
-        this.currentInput = this.state?.input || '';
-        this.currentCursor = this.state?.inputCursor ?? this.currentInput.length;
-        this.currentFocused = this.state?.inputFocused !== false;
-        this.unsubscribeState = this.state?.subscribe(() => {
-            this.currentInput = this.state?.input || '';
-            this.currentCursor = this.state?.inputCursor ?? this.currentInput.length;
-            this.currentFocused = this.state?.inputFocused !== false;
-            this.syncNativeInput();
-        });
-        this.syncNativeInput();
-    }
-
-    onDestroy(): void {
-        this.unsubscribeState?.();
-        this.unsubscribeState = undefined;
-    }
-
     get input(): string {
-        return this.currentInput;
+        return this.state?.input || '';
     }
 
     set input(value: string) {
-        this.currentInput = value;
-        this.currentCursor = value.length;
         this.state?.setInput(value, value.length);
     }
 
@@ -271,11 +236,11 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     }
 
     get inputCursor(): number {
-        return this.currentCursor;
+        return this.state?.inputCursor ?? this.input.length;
     }
 
     get inputFocused(): boolean {
-        return this.currentFocused;
+        return this.state?.inputFocused !== false;
     }
 
     get shellStyle() {
@@ -332,30 +297,22 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
         const cursor = typeof target?.selectionStart === 'number'
             ? target.selectionStart
             : value.length;
-        this.currentInput = value;
-        this.currentCursor = cursor;
         this.state?.setInput(value, cursor);
-        this.syncNativeInput();
     }
 
     onCursorChange(event: Event): void {
         const target = event?.target as HTMLTextAreaElement | null;
         if (typeof target?.selectionStart === 'number') {
-            this.currentCursor = target.selectionStart;
             this.state?.setInputCursor(target.selectionStart);
         }
     }
 
     onFocus(): void {
-        this.currentFocused = true;
         this.state?.setInputFocused(true);
-        this.syncNativeInput();
     }
 
     onBlur(): void {
-        this.currentFocused = false;
         this.state?.setInputFocused(false);
-        this.syncNativeInput();
     }
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
@@ -409,25 +366,6 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
             await this.submit();
             return;
         }
-    }
-
-    protected syncNativeInput(): void {
-        const host = (this.elementRef?.nativeElement || this.componentRef?.hostView?.rootNodes?.[0] || this.componentRef?.elementRef?.nativeElement) as any;
-        const candidates = Array.from(host?.querySelectorAll?.('.agent-input') || []);
-        if (host?.classList?.contains?.('agent-input')) {
-            candidates.push(host);
-        }
-        const ownerDocument = host?.ownerDocument || this.document;
-        if (!candidates.length && ownerDocument?.querySelectorAll) {
-            candidates.push(...Array.from(ownerDocument.querySelectorAll('.agent-input')));
-        }
-        candidates.forEach((input: any) => {
-            syncConsoleEditableElement(input, {
-                value: this.currentInput,
-                cursor: this.currentCursor,
-                focused: this.currentFocused
-            });
-        });
     }
 }
 
@@ -1283,16 +1221,10 @@ export class AgentConsoleActivityPanelComponent {
     </div>
     `
 })
-export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestroy {
-    protected unsubscribeState?: () => void;
-    protected currentMenu?: AgentConsoleSelectMenu;
-
+export class AgentConsoleSelectPanelComponent {
     constructor(
-        private state: AgentConsoleSessionState,
-        private elementRef?: ElementRef<any>,
-        @Optional() private componentRef?: ComponentRef<AgentConsoleSelectPanelComponent> | null
+        private state: AgentConsoleSessionState
     ) {
-        this.currentMenu = this.state.selectMenu;
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -1302,34 +1234,8 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
-    onAfterViewInit(): void {
-        this.currentMenu = this.state.selectMenu;
-        this.syncRenderedState();
-        this.unsubscribeState = this.state.subscribe(() => {
-            this.syncRenderedState();
-        });
-    }
-
-    onDestroy(): void {
-        this.unsubscribeState?.();
-        this.unsubscribeState = undefined;
-    }
-
-    syncRenderedState(): boolean {
-        this.currentMenu = this.state.selectMenu;
-        const host = this.elementRef?.nativeElement;
-        const roots = this.componentRef?.hostView?.rootNodes;
-        return !!syncConsoleElementsAttributes([host, ...(Array.isArray(roots) ? roots : roots ? [roots] : [])], '.select-core', {
-            options: this.menuOptionsJson,
-            selectedIndex: this.menuSelectedIndexText,
-            visibleCount: this.visibleOptionCountText,
-            optionActiveStyle: this.activeTheme.selectOptionActive,
-            optionStyle: this.activeTheme.selectOption
-        }).length;
-    }
-
     get menu(): AgentConsoleSelectMenu | undefined {
-        return this.currentMenu;
+        return this.state.selectMenu;
     }
 
     get shellStyle() {

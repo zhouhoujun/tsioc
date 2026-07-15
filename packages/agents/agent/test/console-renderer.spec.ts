@@ -188,6 +188,15 @@ export class AgentConsoleRendererTest {
                 .map(line => line.replace(/\x1b\[[0-9;]*m/g, '').trim())
                 .some(line => line.includes(consoleRef.instance.sessionState.model))).toBe(true);
             expect(output.join('')).toContain('hello');
+
+            consoleRef.instance.sessionState.setStatus('running');
+            await Promise.resolve();
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(surface.lastRenderedLines
+                .map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))
+                .some(line => line.includes('Working'))).toBe(true);
         } finally {
             surface?.destroy();
             await tuiCtx.close();

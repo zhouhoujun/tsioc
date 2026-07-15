@@ -116,6 +116,9 @@ export class TuiRenderer extends ConsoleRenderer {
 
         const element = current as ConsoleElement;
         const styleMap = this.mergeStyles(inherited, this.getStyleMap(element));
+        if (String(styleMap.display || '').trim().toLowerCase() === 'none') {
+            return;
+        }
         const tag = (element.tagName || '').toLowerCase();
         const text = this.collectText(element);
         const regionId = this.resolveRenderRegionId(element);

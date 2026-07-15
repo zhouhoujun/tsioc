@@ -22,7 +22,10 @@ export function isReactive(target: any): boolean {
 
 export function canReactive(target: any) {
     // 如果target已经是响应式的，直接返回
-    if (!target || !isObject(target) || target[REACT_FlAG] || target[noReact]) {
+    if (!target || !isObject(target) || target[noReact]) {
+        return false
+    }
+    if (target[REACT_FlAG] && !isSubscribable(target)) {
         return false
     }
     // if (isNode(target)) return false;

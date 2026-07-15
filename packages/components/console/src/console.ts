@@ -22,9 +22,19 @@ import {
 export class ConsoleCssStyleDeclaration implements RCssStyleDeclaration {
     protected styles: Record<string, string> = {};
 
+    constructor(protected onChange?: () => void) {
+    }
+
+    setChangeListener(onChange?: () => void): void {
+        this.onChange = onChange;
+    }
+
     removeProperty(propertyName: string): string {
         const value = this.styles[propertyName];
-        delete this.styles[propertyName];
+        if (Object.prototype.hasOwnProperty.call(this.styles, propertyName)) {
+            delete this.styles[propertyName];
+            this.onChange?.();
+        }
         return value;
     }
 
@@ -33,7 +43,11 @@ export class ConsoleCssStyleDeclaration implements RCssStyleDeclaration {
             this.removeProperty(propertyName);
             return;
         }
+        if (this.styles[propertyName] === value) {
+            return;
+        }
         this.styles[propertyName] = value;
+        this.onChange?.();
     }
 
     getProperties(): Record<string, string> {
@@ -326,7 +340,7 @@ export function syncConsoleElementsAttributes(
 
 export class ConsoleElement extends ConsoleNode implements RElement {
     firstChild: RNode | null = null;
-    style: RCssStyleDeclaration = new ConsoleCssStyleDeclaration();
+    style: RCssStyleDeclaration = new ConsoleCssStyleDeclaration(() => this.notifyChanged());
     classList = new ConsoleDomTokenList();
 
     constructor(
@@ -393,6 +407,7 @@ export class ConsoleElement extends ConsoleNode implements RElement {
         } else if (name === 'style') {
             const styles = new ConsoleCssStyleDeclaration();
             styles.applyCssText(next);
+            styles.setChangeListener(() => this.notifyChanged());
             this.style = styles;
         }
         if (previous !== next) {
@@ -405,7 +420,7 @@ export class ConsoleElement extends ConsoleNode implements RElement {
         if (name === 'class') {
             this.classList.reset([]);
         } else if (name === 'style') {
-            this.style = new ConsoleCssStyleDeclaration();
+            this.style = new ConsoleCssStyleDeclaration(() => this.notifyChanged());
         }
         if (hadAttribute) {
             this.notifyChanged();
