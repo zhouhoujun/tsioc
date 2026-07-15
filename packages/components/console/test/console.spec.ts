@@ -544,10 +544,11 @@ export class ConsoleRendererTest {
             const renderer = ctx.get(TuiRenderer);
             const root = ref.hostView.rootNodes[0] as ConsoleElement;
             const layout = renderer.renderToTuiLayout(root, { width: 20 });
-            const regionElement = renderer.querySelector(root, '[renderRegion]') as ConsoleElement;
-            expect(layout.regions.some(region => region.id === 'input' && region.endRow > region.startRow)).toBe(true);
-            expect(regionElement.getAttribute('data-render-region-start')).toBe('0');
-            expect(regionElement.getAttribute('data-render-region-end')).toBe('1');
+            expect(layout.regions.find(region => region.id === 'input')).toEqual({
+                id: 'input',
+                startRow: 0,
+                endRow: 1
+            });
         } finally {
             await ctx.close();
         }
@@ -564,11 +565,8 @@ export class ConsoleRendererTest {
             const root = ref.hostView.rootNodes[0] as ConsoleElement;
             const layout = renderer.renderToTuiLayout(root, { width: 20 });
             const region = layout.regions.find(item => item.id === 'inner');
-            const regionElement = renderer.querySelector(root, '[renderRegion]') as ConsoleElement;
             expect(region?.startRow).toBe(1);
             expect(region?.endRow).toBe(2);
-            expect(regionElement.getAttribute('data-render-region-start')).toBe('1');
-            expect(regionElement.getAttribute('data-render-region-end')).toBe('2');
         } finally {
             await ctx.close();
         }
@@ -587,9 +585,9 @@ export class ConsoleRendererTest {
             const regionIds = layout.regions.map(region => region.id);
             ['label-region', 'span-region', 'input-region', 'textarea-region', 'select-region', 'break-region'].forEach(id => {
                 expect(regionIds).toContain(id);
-                const element = renderer.querySelector(root, `.${id}`) as ConsoleElement;
-                expect(element.getAttribute('data-render-region-start')).not.toBe(null);
-                expect(element.getAttribute('data-render-region-end')).not.toBe(null);
+                expect(layout.regions.find(region => region.id === id)?.endRow).toBeGreaterThanOrEqual(
+                    layout.regions.find(region => region.id === id)?.startRow || 0
+                );
             });
         } finally {
             await ctx.close();

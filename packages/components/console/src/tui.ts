@@ -125,8 +125,6 @@ export class TuiRenderer extends ConsoleRenderer {
                 return;
             }
             const region = { id: regionId, startRow: regionStart, endRow: lines.length };
-            element.setAttribute('data-render-region-start', String(region.startRow));
-            element.setAttribute('data-render-region-end', String(region.endRow));
             regions.push({ ...region, element });
         };
 
@@ -372,8 +370,6 @@ export class TuiRenderer extends ConsoleRenderer {
                         startRow: start + offset.row + region.startRow,
                         endRow: start + offset.row + region.endRow
                     };
-                    region.element?.setAttribute('data-render-region-start', String(absolute.startRow));
-                    region.element?.setAttribute('data-render-region-end', String(absolute.endRow));
                     regions.push({ ...absolute, element: region.element });
                 });
                 if (hasOwnFrame && lines.length > start && this.stripAnsi(lines[lines.length - 1]).trim()) {

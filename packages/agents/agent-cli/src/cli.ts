@@ -1,15 +1,12 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
 import {
-    resolveConsoleRawKeypressSuppressionKey,
     shouldSkipConsoleHistoryEntry,
     shouldPlaceConsoleCursor,
     shouldRouteConsoleDraftNavigation,
-    shouldSuppressConsoleDuplicatedKeypress,
     shouldSubmitConsoleTextChunk,
     applyTerminalInputChunk,
     buildClearScreenSequence,
@@ -280,9 +277,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let activeTextPrompt: { question: string; resolve: (value: string) => void; previousLocked: boolean; secret?: boolean } | null = null;
     let isSelecting = false;
     let stdinDataHandler: ((chunk: Buffer | string) => void) | null = null;
-    let keypressHandler: ((str: string, key: readline.Key) => void) | null = null;
-    let lastRawControlKey = '';
-    let lastRawControlAt = 0;
+    let stdinPollTimer: NodeJS.Timeout | null = null;
     const terminalInputDecoder = new TerminalInputSequenceDecoder();
     let sigintHandler: (() => void) | null = null;
     let historyEntries: string[] = [];
@@ -473,6 +468,13 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (root) {
             consoleSurface?.attach(root);
         }
+    };
+
+    const activateTerminalInputMode = () => {
+        if (process.stdin.isTTY) {
+            process.stdin.setRawMode?.(true);
+        }
+        process.stdin.resume();
     };
 
     const pauseReadlineForSelection = () => {
@@ -1270,6 +1272,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             : null;
         await refreshSessionState(currentSessionId);
         currentProfile = profile;
+        activateTerminalInputMode();
     };
 
     const cleanupAndExit = async (
@@ -1286,9 +1289,9 @@ async function runInteractiveChat(options: any): Promise<void> {
             process.stdin.off('data', stdinDataHandler as any);
             stdinDataHandler = null;
         }
-        if (keypressHandler) {
-            process.stdin.off('keypress', keypressHandler as any);
-            keypressHandler = null;
+        if (stdinPollTimer) {
+            clearInterval(stdinPollTimer);
+            stdinPollTimer = null;
         }
         if (sigintHandler) {
             process.off('SIGINT', sigintHandler);
@@ -1513,7 +1516,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         cancel: cancelActiveMenuSelection
     };
 
-    stdinDataHandler = (chunk: Buffer | string) => {
+    const handleTerminalInputChunk = (chunk: Buffer | string) => {
         if (isClosed) {
             return;
         }
@@ -1532,15 +1535,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             blockingMenu: hasBlockingSelectMenu()
         });
         if (handleTerminalMenuKey(terminalMenuController, rawMenuKey, '')) {
-            const suppressionKey = resolveConsoleRawKeypressSuppressionKey({
-                rawText,
-                controlKey,
-                menuKey: rawMenuKey
-            });
-            if (suppressionKey) {
-                lastRawControlKey = suppressionKey;
-                lastRawControlAt = Date.now();
-            }
             return;
         }
         if (hasBlockingSelectMenu()) {
@@ -1558,56 +1552,38 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (hasMessageDetailFocus()) {
             if (controlKey === 'down') {
-                lastRawControlKey = 'down';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetail(1);
                 return;
             }
             if (controlKey === 'up') {
-                lastRawControlKey = 'up';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetail(-1);
                 return;
             }
             if (controlKey === 'left') {
-                lastRawControlKey = 'left';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetailColumns(-4);
                 return;
             }
             if (controlKey === 'right') {
-                lastRawControlKey = 'right';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetailColumns(4);
                 return;
             }
             if (controlKey === 'pageup') {
-                lastRawControlKey = 'pageup';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetailPage(-1);
                 return;
             }
             if (controlKey === 'pagedown') {
-                lastRawControlKey = 'pagedown';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetailPage(1);
                 return;
             }
             if (controlKey === 'home') {
-                lastRawControlKey = 'home';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetailToEdge('start');
                 return;
             }
             if (controlKey === 'end') {
-                lastRawControlKey = 'end';
-                lastRawControlAt = Date.now();
                 consoleState.scrollMessageDetailToEdge('end');
                 return;
             }
             if (controlKey === 'escape') {
-                lastRawControlKey = 'escape';
-                lastRawControlAt = Date.now();
                 dismissConsoleFocusLayer();
                 return;
             }
@@ -1615,50 +1591,34 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (hasMessageFocus()) {
             if (controlKey === 'down') {
-                lastRawControlKey = 'down';
-                lastRawControlAt = Date.now();
                 consoleState.moveMessageSelection(1);
                 return;
             }
             if (controlKey === 'up') {
-                lastRawControlKey = 'up';
-                lastRawControlAt = Date.now();
                 consoleState.moveMessageSelection(-1);
                 return;
             }
             if (controlKey === 'pageup') {
-                lastRawControlKey = 'pageup';
-                lastRawControlAt = Date.now();
                 consoleState.moveMessageSelectionPage(-1);
                 return;
             }
             if (controlKey === 'pagedown') {
-                lastRawControlKey = 'pagedown';
-                lastRawControlAt = Date.now();
                 consoleState.moveMessageSelectionPage(1);
                 return;
             }
             if (controlKey === 'home') {
-                lastRawControlKey = 'home';
-                lastRawControlAt = Date.now();
                 consoleState.selectFirstMessage();
                 return;
             }
             if (controlKey === 'end') {
-                lastRawControlKey = 'end';
-                lastRawControlAt = Date.now();
                 consoleState.selectLastMessage();
                 return;
             }
             if (controlKey === 'return') {
-                lastRawControlKey = 'return';
-                lastRawControlAt = Date.now();
                 consoleState.openMessageDetail();
                 return;
             }
             if (controlKey === 'escape') {
-                lastRawControlKey = 'escape';
-                lastRawControlAt = Date.now();
                 dismissConsoleFocusLayer();
                 return;
             }
@@ -1666,44 +1626,30 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (hasSessionFocus()) {
             if (controlKey === 'down') {
-                lastRawControlKey = 'down';
-                lastRawControlAt = Date.now();
                 consoleState.moveSessionSelection(1);
                 return;
             }
             if (controlKey === 'up') {
-                lastRawControlKey = 'up';
-                lastRawControlAt = Date.now();
                 consoleState.moveSessionSelection(-1);
                 return;
             }
             if (controlKey === 'pageup') {
-                lastRawControlKey = 'pageup';
-                lastRawControlAt = Date.now();
                 consoleState.moveSessionSelectionPage(-1);
                 return;
             }
             if (controlKey === 'pagedown') {
-                lastRawControlKey = 'pagedown';
-                lastRawControlAt = Date.now();
                 consoleState.moveSessionSelectionPage(1);
                 return;
             }
             if (controlKey === 'home') {
-                lastRawControlKey = 'home';
-                lastRawControlAt = Date.now();
                 consoleState.selectFirstSession();
                 return;
             }
             if (controlKey === 'end') {
-                lastRawControlKey = 'end';
-                lastRawControlAt = Date.now();
                 consoleState.selectLastSession();
                 return;
             }
             if (controlKey === 'return') {
-                lastRawControlKey = 'return';
-                lastRawControlAt = Date.now();
                 const selected = consoleState?.selectedSession;
                 if (selected) {
                     void switchSession(selected.id).then(() => {
@@ -1715,8 +1661,6 @@ async function runInteractiveChat(options: any): Promise<void> {
                 return;
             }
             if (controlKey === 'escape') {
-                lastRawControlKey = 'escape';
-                lastRawControlAt = Date.now();
                 dismissConsoleFocusLayer();
                 return;
             }
@@ -1744,28 +1688,16 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if ((rawText.includes('\r') || rawText.includes('\n')) && !controlKey) {
             const shouldSubmit = shouldSubmitConsoleTextChunk(rawText);
-            const suppressionKey = resolveConsoleRawKeypressSuppressionKey({
-                rawText,
-                submitTriggered: shouldSubmit
-            });
-            if (suppressionKey) {
-                lastRawControlKey = suppressionKey;
-                lastRawControlAt = Date.now();
-            }
             void routeConsoleInputChunk(rawText, {
                 submitOnEnter: shouldSubmit
             });
             return;
         }
         if (activeTextPrompt && controlKey === 'escape') {
-            lastRawControlKey = 'escape';
-            lastRawControlAt = Date.now();
             cancelTextPrompt();
             return;
         }
         if (controlKey === 'return') {
-            lastRawControlKey = 'return';
-            lastRawControlAt = Date.now();
             if (activeTextPrompt) {
                 resolveTextPrompt(currentDraft);
                 return;
@@ -1776,8 +1708,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         if (controlKey === 'left' || controlKey === 'right' || controlKey === 'home' || controlKey === 'end') {
-            lastRawControlKey = controlKey;
-            lastRawControlAt = Date.now();
             if (shouldRouteDraftNavigation()) {
                 applyChunkToDraft(chunk);
             }
@@ -1790,229 +1720,29 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         if (shouldRouteDraftNavigation()) {
-            lastRawControlKey = 'text';
-            lastRawControlAt = Date.now();
             void routeConsoleInputChunk(rawText, { submitOnEnter: false });
         }
         return;
     };
-    process.stdin.on('data', stdinDataHandler);
-    readline.emitKeypressEvents(process.stdin);
-    process.stdin.resume();
     if (process.stdin.isTTY) {
         if (useAlternateScreen) {
             process.stdout.write('\x1b[?1049h');
         }
         clearTerminalScreen(false);
-        process.stdin.setRawMode?.(true);
     }
-    keypressHandler = (_str, key) => {
-        if (isClosed) {
+    stdinDataHandler = (chunk: Buffer | string) => handleTerminalInputChunk(chunk);
+    process.stdin.on('data', stdinDataHandler);
+    activateTerminalInputMode();
+    stdinPollTimer = setInterval(() => {
+        if (isClosed || !process.stdin.readable) {
             return;
         }
-        if (shouldSuppressConsoleDuplicatedKeypress({
-            lastRawKey: lastRawControlKey,
-            lastRawAt: lastRawControlAt,
-            now: Date.now(),
-            keyName: key?.name,
-            text: _str
-        })) {
-            return;
+        let chunk: Buffer | string | null;
+        while ((chunk = process.stdin.read()) !== null) {
+            handleTerminalInputChunk(chunk);
         }
-        if (key?.ctrl && key.name === 'c') {
-            isClosed = true;
-            void cleanupAndExit('Closing session...', true);
-            return;
-        }
-        if (handleTerminalMenuKey(terminalMenuController, key?.name || '', _str || '')) {
-            return;
-        }
-        if (hasMessageDetailFocus()) {
-            if (key?.name === 'y') {
-                copyFocusedText(resolveCopyText('selected'), 'selected message');
-                return;
-            }
-            if (key?.name === 'down') {
-                consoleState.scrollMessageDetail(1);
-                return;
-            }
-            if (key?.name === 'up') {
-                consoleState.scrollMessageDetail(-1);
-                return;
-            }
-            if (key?.name === 'left') {
-                consoleState.scrollMessageDetailColumns(-4);
-                return;
-            }
-            if (key?.name === 'right') {
-                consoleState.scrollMessageDetailColumns(4);
-                return;
-            }
-            if (key?.name === 'pageup') {
-                consoleState.scrollMessageDetailPage(-1);
-                return;
-            }
-            if (key?.name === 'pagedown') {
-                consoleState.scrollMessageDetailPage(1);
-                return;
-            }
-            if (key?.name === 'home') {
-                consoleState.scrollMessageDetailToEdge('start');
-                return;
-            }
-            if (key?.name === 'end') {
-                consoleState.scrollMessageDetailToEdge('end');
-                return;
-            }
-            if (key?.name === 'escape' || key?.name === 'q') {
-                dismissConsoleFocusLayer();
-                return;
-            }
-            return;
-        }
-        if (hasMessageFocus()) {
-            if (key?.name === 'y') {
-                copyFocusedText(resolveCopyText('selected'), 'selected message');
-                return;
-            }
-            if (key?.name === 'down') {
-                consoleState.moveMessageSelection(1);
-                return;
-            }
-            if (key?.name === 'up') {
-                consoleState.moveMessageSelection(-1);
-                return;
-            }
-            if (key?.name === 'pageup') {
-                consoleState.moveMessageSelectionPage(-1);
-                return;
-            }
-            if (key?.name === 'pagedown') {
-                consoleState.moveMessageSelectionPage(1);
-                return;
-            }
-            if (key?.name === 'home') {
-                consoleState.selectFirstMessage();
-                return;
-            }
-            if (key?.name === 'end') {
-                consoleState.selectLastMessage();
-                return;
-            }
-            if (key?.name === 'return') {
-                consoleState.openMessageDetail();
-                return;
-            }
-            if (key?.name === 'escape' || key?.name === 'q') {
-                dismissConsoleFocusLayer();
-                return;
-            }
-            return;
-        }
-        if (hasSessionFocus()) {
-            if (key?.name === 'y') {
-                copyFocusedText(consoleState?.selectedSession?.id || '', 'selected session id');
-                return;
-            }
-            if (key?.name === 'down') {
-                consoleState.moveSessionSelection(1);
-                return;
-            }
-            if (key?.name === 'up') {
-                consoleState.moveSessionSelection(-1);
-                return;
-            }
-            if (key?.name === 'pageup') {
-                consoleState.moveSessionSelectionPage(-1);
-                return;
-            }
-            if (key?.name === 'pagedown') {
-                consoleState.moveSessionSelectionPage(1);
-                return;
-            }
-            if (key?.name === 'home') {
-                consoleState.selectFirstSession();
-                return;
-            }
-            if (key?.name === 'end') {
-                consoleState.selectLastSession();
-                return;
-            }
-            if (key?.name === 'return') {
-                const selected = consoleState?.selectedSession;
-                if (selected) {
-                    void switchSession(selected.id).then(() => {
-                        exitSessionFocus();
-                    });
-                } else {
-                    exitSessionFocus();
-                }
-                return;
-            }
-            if (key?.name === 'escape' || key?.name === 'q') {
-                dismissConsoleFocusLayer();
-                return;
-            }
-            return;
-        }
-        if ((key?.ctrl || key?.meta) && key?.name === 'return' && shouldRouteDraftNavigation()) {
-            void routeConsoleInputChunk(key?.meta ? '\u001b\r' : '\r', {
-                submitOnEnter: false,
-                ctrlKey: !!key?.ctrl,
-                altKey: !!key?.meta
-            });
-            return;
-        }
-        if (activeTextPrompt && key?.name === 'escape') {
-            cancelTextPrompt();
-            return;
-        }
-        if (activeTextPrompt && key?.name === 'return') {
-            resolveTextPrompt(currentDraft);
-            return;
-        }
-        if (_str && !key?.ctrl && !key?.meta && shouldRouteDraftNavigation()) {
-            void routeConsoleInputChunk(_str, { submitOnEnter: false });
-            return;
-        }
-        if (!modalPromptActive && !inputLocked && !hasInteractiveSuggestions() && key?.name === 'up') {
-            navigateHistory(-1);
-            return;
-        }
-        if (!modalPromptActive && !inputLocked && !hasInteractiveSuggestions() && key?.name === 'down') {
-            navigateHistory(1);
-            return;
-        }
-        if (modalPromptActive || inputLocked || !hasInteractiveSuggestions()) {
-            if (!modalPromptActive && !inputLocked && key?.name === 'return') {
-                void routeConsoleInputChunk('\r', { submitOnEnter: true });
-                return;
-            }
-            return;
-        }
-        if (key?.name === 'down') {
-            consoleState?.moveSelectMenu?.(1);
-        } else if (key?.name === 'up') {
-            consoleState?.moveSelectMenu?.(-1);
-            return;
-        } else if (key?.name === 'escape') {
-            void consoleState?.cancelSelectMenu?.().then(() => {
-                syncDraftFromConsoleState();
-            });
-            return;
-        } else if (key?.name === 'return') {
-            void consoleState?.confirmSelectMenu?.().then(() => {
-                syncDraftFromConsoleState();
-            });
-            return;
-        } else if (key?.name === 'tab') {
-            void consoleState?.confirmSelectMenu?.().then(() => {
-                syncDraftFromConsoleState();
-            });
-            return;
-        }
-    };
-    process.stdin.on('keypress', keypressHandler);
+    }, 20);
+    stdinPollTimer.unref?.();
 
     sigintHandler = () => {
         if (isClosed) {
