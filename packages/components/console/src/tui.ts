@@ -499,7 +499,8 @@ export class TuiRenderer extends ConsoleRenderer {
             : '';
         const content = `${leftPad}${this.renderInlineText(element, inherited)}${rightPad}`;
         const hasBackground = !!(inherited.background || inherited['background-color']);
-        if (!width || !hasBackground) {
+        const hasPadding = padding.top > 0 || padding.right > 0 || padding.bottom > 0 || padding.left > 0;
+        if (!width || (!hasBackground && !hasPadding)) {
             return content;
         }
         return this.applyAnsi(this.padVisible(content, width), inherited, undefined, true);

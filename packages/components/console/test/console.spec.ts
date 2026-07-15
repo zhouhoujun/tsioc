@@ -454,8 +454,9 @@ export class ConsoleRendererTest {
             const ref = ctx.runners.getRef(ConsoleInlinePaddingTestComponent) as ComponentRef<ConsoleInlinePaddingTestComponent>;
             const renderer = ctx.get(TuiRenderer);
             const root = ref.hostView.rootNodes[0] as ConsoleElement;
-            const lines = renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
-            expect(lines[0]).toBe(' › hi ');
+            const lines = renderer.renderToTuiLines(root, { width: 12 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            expect(lines[0]).toBe(' › hi       ');
+            expect(lines[0].length).toBe(12);
         } finally {
             await ctx.close();
         }
