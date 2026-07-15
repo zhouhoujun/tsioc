@@ -170,7 +170,6 @@ function createConsoleParts(runtime: RuntimeStub, scheduler: SchedulerStub, tool
         bridge,
         { ui: { title: 'Console' } } as any,
         toolRegistry as any,
-        undefined,
         uiDelegate as any
     );
     return { state, bridge, component };

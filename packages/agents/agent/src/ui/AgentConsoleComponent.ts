@@ -1,4 +1,4 @@
-import { Component, ComponentRef } from '@tsdi/components';
+import { Component } from '@tsdi/components';
 import { clampConsoleTextCursor } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
 import { AGENT_OPTIONS } from '../tokens';
@@ -11,7 +11,7 @@ import { SessionStore } from '../memory/SessionStore';
 import { ToolApprovalManager } from '../tools/ToolApprovalManager';
 import { AgentConsoleUiDelegate } from './AgentConsoleUiDelegate';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
-import { AgentConsoleSelectMenu, AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 @Component({
     selector: 'agent-console',
@@ -31,12 +31,8 @@ import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
     `
 })
 export class AgentConsoleComponent {
-    protected unsubscribeState?: () => void;
-    protected refreshQueued = false;
     protected multilineMode = false;
     protected draftLines: string[] = [];
-    protected renderedLayoutKey = '';
-    protected renderedSelectMenu?: AgentConsoleSelectMenu;
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -45,7 +41,6 @@ export class AgentConsoleComponent {
         private bridge: AgentConsoleEventBridge,
         @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions,
         @Optional() private toolRegistry?: ToolRegistry | null,
-        @Optional() private componentRef?: ComponentRef<AgentConsoleComponent> | null,
         @Optional() @Inject(AgentConsoleUiDelegate) private uiDelegate?: AgentConsoleUiDelegate | null,
         @Optional() private sessionStore?: SessionStore | null,
         @Optional() private approvalManager?: ToolApprovalManager | null
@@ -278,18 +273,6 @@ export class AgentConsoleComponent {
         }
         await this.refreshTools();
         this.state.setTasksCount(this.scheduler.getTasks().length);
-    }
-
-    onAfterViewInit(): void {
-        this.captureRenderedState();
-        this.unsubscribeState = this.state.subscribe(() => {
-            this.refreshRenderedState();
-        });
-    }
-
-    onDestroy(): void {
-        this.unsubscribeState?.();
-        this.unsubscribeState = undefined;
     }
 
     protected parseSlashCommandLine(input: string): { raw: string; command: string; args: string } {
@@ -753,47 +736,4 @@ export class AgentConsoleComponent {
         this.state.setTools(tools);
     }
 
-    protected refreshRenderedState(): void {
-        const layoutKey = this.resolveLayoutKey();
-        const selectMenu = this.state.selectMenu;
-
-        if (layoutKey === this.renderedLayoutKey && selectMenu === this.renderedSelectMenu) {
-            this.captureRenderedState();
-            return;
-        }
-
-        this.queuePanelRefresh();
-    }
-
-    protected resolveLayoutKey(): string {
-        return [
-            this.showStatusPanel ? 'status' : '',
-            this.showSessionsPanel ? 'sessions' : '',
-            this.showMessageDetailPanel ? 'detail' : '',
-            this.showActivityPanel ? 'activity' : '',
-            this.showWorkingPanel ? 'working' : '',
-            this.showToolRunsPanel ? 'toolRuns' : '',
-            this.showSelectPanel ? 'select' : ''
-        ].join('|');
-    }
-
-    protected captureRenderedState(): void {
-        this.renderedLayoutKey = this.resolveLayoutKey();
-        this.renderedSelectMenu = this.state.selectMenu;
-    }
-
-    protected queuePanelRefresh(): void {
-        if (this.refreshQueued) {
-            return;
-        }
-        this.refreshQueued = true;
-        Promise.resolve().then(() => {
-            this.refreshQueued = false;
-            if (this.componentRef?.hostView) {
-                void this.componentRef.render().then(() => {
-                    this.captureRenderedState();
-                });
-            }
-        });
-    }
 }

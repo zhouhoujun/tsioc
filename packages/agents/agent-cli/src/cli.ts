@@ -362,9 +362,6 @@ async function runInteractiveChat(options: any): Promise<void> {
     let historyDraft = '';
     let isCleaningUp = false;
     let approvalPromptActive = false;
-    let renderQueued = false;
-    let renderVersion = 0;
-    let unsubscribeConsoleState: (() => void) | null = null;
     let terminalUiDelegate: TerminalConsoleUiDelegate | null = null;
     let mouseTrackingEnabled = false;
     let transcriptScrollOffset = 0;
@@ -609,21 +606,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         setComponentRenderState(consoleComponentRef, undefined);
     };
 
-    const queueRenderScreen = () => {
-        if (isClosed || renderQueued) {
-            return;
-        }
-        const scheduledVersion = renderVersion;
-        renderQueued = true;
-        Promise.resolve().then(() => {
-            renderQueued = false;
-            if (isClosed || renderVersion !== scheduledVersion) {
-                return;
-            }
-            renderScreen();
-        });
-    };
-
     const pauseReadlineForSelection = () => {
         if (isClosed) {
             return;
@@ -733,7 +715,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (isClosed || isSelecting || inputLocked) {
                 return;
             }
-            queueRenderScreen();
+            renderScreen();
         });
     };
 
@@ -1410,8 +1392,6 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const createChatContext = async (profile: AgentCliProviderProfile, allowSessionRestore = true): Promise<void> => {
         if (viewModel) {
-            unsubscribeConsoleState?.();
-            unsubscribeConsoleState = null;
             viewModel.dispose?.();
             viewModel = null;
         }
@@ -1492,11 +1472,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         viewModel = consoleComponentRef.instance;
         await consoleComponentRef.render();
         consoleState = viewModel.sessionState || consoleComponentRef.injector.get(AgentConsoleSessionState);
-        unsubscribeConsoleState = typeof consoleState?.subscribe === 'function'
-            ? consoleState.subscribe(() => {
-                queueRenderScreen();
-            })
-            : null;
         consoleState.setCommandHints(getChatCommands());
         consoleRenderer = currentCtx.get(TuiRenderer) || currentCtx.get(ConsoleRenderer);
         const runnerRef = consoleComponentRef;
@@ -1570,8 +1545,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         lastPaintedLines = [];
         lastPaintedWidth = 0;
         persistHistory();
-        unsubscribeConsoleState?.();
-        unsubscribeConsoleState = null;
         viewModel?.dispose?.();
         viewModel = null;
         await consoleComponentRef?.destroy?.();
@@ -1591,7 +1564,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (isClosed) {
             return;
         }
-        renderVersion += 1;
         const terminalSize = resolveTerminalSize(process.stdout);
         const terminalColumns = terminalSize.columns;
         const width = terminalSize.columns;
@@ -2565,7 +2537,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         const rawMenuKey = resolveTerminalMenuInputKey(controlKey || '', rawText, {
             blockingMenu: hasBlockingSelectMenu()
         });
-        if (handleTerminalMenuKey(terminalMenuController, rawMenuKey, '', { render: queueRenderScreen })) {
+        if (handleTerminalMenuKey(terminalMenuController, rawMenuKey, '', { render: renderScreen })) {
             const suppressionKey = resolveConsoleRawKeypressSuppressionKey({
                 rawText,
                 controlKey,
@@ -2919,7 +2891,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             void cleanupAndExit('Closing session...', true, false, getRetainedBrandLines());
             return;
         }
-        if (handleTerminalMenuKey(terminalMenuController, key?.name || '', _str || '', { render: queueRenderScreen })) {
+        if (handleTerminalMenuKey(terminalMenuController, key?.name || '', _str || '', { render: renderScreen })) {
             return;
         }
         if (hasMessageDetailFocus()) {
