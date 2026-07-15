@@ -427,8 +427,14 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     </div>
     `
 })
-export class AgentConsoleWorkingPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestroy {
+    protected frame = 0;
+    protected frameTimer?: ReturnType<typeof setInterval>;
+
+    constructor(
+        private state: AgentConsoleSessionState,
+        @Optional() private componentRef?: ComponentRef<AgentConsoleWorkingPanelComponent> | null
+    ) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -534,9 +540,7 @@ export class AgentConsoleWorkingPanelComponent {
     }
 
     get activeAnimatedCharIndex(): number {
-        const frame = Number.parseInt(String(this.state.workingFrame || '0'), 10);
-        const safeFrame = Number.isFinite(frame) ? Math.max(0, frame) : 0;
-        return safeFrame % Math.max(this.animatedLabel.length, 1);
+        return this.frame % Math.max(this.animatedLabel.length, 1);
     }
 
     get animatedGlowRadius(): number {
@@ -587,6 +591,24 @@ export class AgentConsoleWorkingPanelComponent {
 
     protected isTerminalTool(toolName: string): boolean {
         return /terminal|process|shell|exec|command/i.test(String(toolName || ''));
+    }
+
+    onAfterViewInit(): void {
+        this.frameTimer = setInterval(() => {
+            if (!this.shouldShow) {
+                return;
+            }
+            this.frame = (this.frame + 1) % Math.max(this.animatedLabel.length, 1);
+            void this.componentRef?.render?.();
+        }, 80);
+        this.frameTimer.unref?.();
+    }
+
+    onDestroy(): void {
+        if (this.frameTimer) {
+            clearInterval(this.frameTimer);
+            this.frameTimer = undefined;
+        }
     }
 }
 

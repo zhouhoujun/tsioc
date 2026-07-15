@@ -6,6 +6,8 @@ import {
     shouldSkipConsoleHistoryEntry
 } from './input';
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
+import { RNode } from '@tsdi/components';
+import { ConsoleNode } from './console';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
@@ -197,6 +199,182 @@ export interface TerminalPrimaryRenderResult {
     terminalRow: number;
     changed: boolean;
     state: TerminalPrimaryRenderState;
+}
+
+export interface TuiTerminalSurfaceRenderer {
+    renderToTuiLayout(node: RNode | RNode[], options?: { width?: number }): {
+        lines: string[];
+        cursorTargets?: TerminalCursorTarget[];
+        regions?: TerminalRenderRegion[];
+    };
+}
+
+export interface TuiTerminalSurfaceOptions {
+    renderer: TuiTerminalSurfaceRenderer;
+    output?: { write(value: string): void; on?(event: string, listener: () => void): void; off?(event: string, listener: () => void): void };
+    root?: RNode | RNode[];
+    width?: number | (() => number);
+    placeCursor?: boolean | (() => boolean);
+    cursorMode?: 'prompt' | 'bottom' | (() => 'prompt' | 'bottom');
+    stablePrefixRows?: number | ((lines: string[]) => number);
+    scheduler?: (task: () => void) => void;
+}
+
+export class TuiTerminalSurface {
+    protected root?: RNode | RNode[];
+    protected renderState?: TerminalPrimaryRenderState;
+    protected scheduled = false;
+    protected destroyed = false;
+    protected listeners: Array<{ node: ConsoleNode; listener: EventListener }> = [];
+    protected outputResizeListener?: () => void;
+    protected renderedLines: string[] = [];
+    protected terminalRow = 0;
+
+    constructor(protected options: TuiTerminalSurfaceOptions) {
+        this.bindOutputResize();
+        if (options.root) {
+            this.attach(options.root);
+        }
+    }
+
+    get lastRenderedLines(): string[] {
+        return this.renderedLines.slice();
+    }
+
+    get lastTerminalRow(): number {
+        return this.terminalRow;
+    }
+
+    attach(root: RNode | RNode[]): this {
+        this.detach();
+        this.root = root;
+        const nodes = Array.isArray(root) ? root : [root];
+        nodes.forEach(node => {
+            const consoleNode = node as ConsoleNode;
+            if (!consoleNode?.addEventListener) {
+                return;
+            }
+            const listener = (() => this.requestRender()) as EventListener;
+            consoleNode.addEventListener(ConsoleNode.CHANGE_EVENT, listener);
+            this.listeners.push({ node: consoleNode, listener });
+        });
+        this.requestRender();
+        return this;
+    }
+
+    detach(): void {
+        this.listeners.forEach(({ node, listener }) => node.removeEventListener(ConsoleNode.CHANGE_EVENT, listener));
+        this.listeners = [];
+        this.root = undefined;
+        this.renderState = undefined;
+        this.renderedLines = [];
+        this.terminalRow = 0;
+        this.scheduled = false;
+    }
+
+    requestRender(): void {
+        if (this.destroyed || this.scheduled) {
+            return;
+        }
+        this.scheduled = true;
+        const run = () => {
+            this.scheduled = false;
+            this.render();
+        };
+        if (this.options.scheduler) {
+            this.options.scheduler(run);
+            return;
+        }
+        Promise.resolve().then(run);
+    }
+
+    render(): TerminalPrimaryRenderResult | undefined {
+        if (this.destroyed || !this.root) {
+            return undefined;
+        }
+        const width = this.resolveWidth();
+        const layout = this.options.renderer.renderToTuiLayout(this.root, { width });
+        const lines = layout.lines || [];
+        const cursorTarget = layout.cursorTargets?.[0];
+        const cursorMode = this.resolveCursorMode();
+        const cursorRow = cursorMode === 'prompt' && cursorTarget
+            ? cursorTarget.row
+            : Math.max(0, lines.length - 1);
+        const result = renderPrimaryTerminalScreen({
+            state: this.renderState,
+            lines,
+            regions: layout.regions,
+            width,
+            stablePrefixRows: this.resolveStablePrefixRows(lines),
+            cursorRow,
+            cursorTarget: this.resolvePlaceCursor() ? cursorTarget : undefined,
+            cursorMode,
+            placeCursor: this.resolvePlaceCursor()
+        });
+        this.renderState = result.state;
+        this.renderedLines = result.fittedLines.slice();
+        this.terminalRow = result.terminalRow;
+        if (result.output) {
+            this.resolveOutput()?.write(result.output);
+        }
+        return result;
+    }
+
+    destroy(): void {
+        this.destroyed = true;
+        this.detach();
+        this.unbindOutputResize();
+    }
+
+    protected resolveWidth(): number {
+        const configured = typeof this.options.width === 'function'
+            ? this.options.width()
+            : this.options.width;
+        return Math.max(1, Math.floor(configured || DEFAULT_TERMINAL_COLUMNS));
+    }
+
+    protected resolvePlaceCursor(): boolean {
+        return typeof this.options.placeCursor === 'function'
+            ? this.options.placeCursor()
+            : this.options.placeCursor !== false;
+    }
+
+    protected resolveCursorMode(): 'prompt' | 'bottom' {
+        const value = typeof this.options.cursorMode === 'function'
+            ? this.options.cursorMode()
+            : this.options.cursorMode;
+        return value || 'prompt';
+    }
+
+    protected resolveStablePrefixRows(lines: string[]): number {
+        const configured = typeof this.options.stablePrefixRows === 'function'
+            ? this.options.stablePrefixRows(lines)
+            : this.options.stablePrefixRows;
+        return Math.max(0, Math.min(Math.floor(configured || 0), lines.length));
+    }
+
+    protected resolveOutput(): { write(value: string): void; on?(event: string, listener: () => void): void; off?(event: string, listener: () => void): void } | undefined {
+        return this.options.output || (globalThis as any).process?.stdout;
+    }
+
+    protected bindOutputResize(): void {
+        const output = this.resolveOutput();
+        if (!output?.on || this.outputResizeListener) {
+            return;
+        }
+        this.outputResizeListener = () => this.requestRender();
+        output.on('resize', this.outputResizeListener);
+    }
+
+    protected unbindOutputResize(): void {
+        const output = this.resolveOutput();
+        if (!output?.off || !this.outputResizeListener) {
+            this.outputResizeListener = undefined;
+            return;
+        }
+        output.off('resize', this.outputResizeListener);
+        this.outputResizeListener = undefined;
+    }
 }
 
 export interface TerminalRenderedWindow {

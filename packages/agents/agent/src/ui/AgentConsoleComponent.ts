@@ -1,4 +1,4 @@
-import { Component } from '@tsdi/components';
+import { AfterViewInit, Component, ComponentRef, OnDestroy } from '@tsdi/components';
 import { clampConsoleTextCursor } from '@tsdi/components/console';
 import { Inject, Optional } from '@tsdi/ioc';
 import { AGENT_OPTIONS } from '../tokens';
@@ -30,9 +30,12 @@ import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
     </div>
     `
 })
-export class AgentConsoleComponent {
+export class AgentConsoleComponent implements AfterViewInit, OnDestroy {
     protected multilineMode = false;
     protected draftLines: string[] = [];
+    protected unsubscribeState?: () => void;
+    protected renderScheduled = false;
+    protected destroyed = false;
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -43,7 +46,8 @@ export class AgentConsoleComponent {
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AgentConsoleUiDelegate) private uiDelegate?: AgentConsoleUiDelegate | null,
         @Optional() private sessionStore?: SessionStore | null,
-        @Optional() private approvalManager?: ToolApprovalManager | null
+        @Optional() private approvalManager?: ToolApprovalManager | null,
+        @Optional() private componentRef?: ComponentRef<AgentConsoleComponent> | null
     ) {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
@@ -273,6 +277,31 @@ export class AgentConsoleComponent {
         }
         await this.refreshTools();
         this.state.setTasksCount(this.scheduler.getTasks().length);
+    }
+
+    onAfterViewInit(): void {
+        this.unsubscribeState = this.state.subscribe(() => this.scheduleRender());
+    }
+
+    onDestroy(): void {
+        this.destroyed = true;
+        this.unsubscribeState?.();
+        this.unsubscribeState = undefined;
+        this.dispose();
+    }
+
+    protected scheduleRender(): void {
+        if (this.destroyed || this.renderScheduled) {
+            return;
+        }
+        this.renderScheduled = true;
+        Promise.resolve().then(async () => {
+            this.renderScheduled = false;
+            if (this.destroyed) {
+                return;
+            }
+            await this.componentRef?.render?.();
+        });
     }
 
     protected parseSlashCommandLine(input: string): { raw: string; command: string; args: string } {
@@ -717,6 +746,8 @@ export class AgentConsoleComponent {
     }
 
     dispose(): void {
+        this.unsubscribeState?.();
+        this.unsubscribeState = undefined;
         this.bridge.dispose();
     }
 

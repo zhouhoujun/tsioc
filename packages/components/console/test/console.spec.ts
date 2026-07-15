@@ -29,6 +29,7 @@ import {
     resolveTerminalMenuInputKey,
     resolveTerminalMenuNextIndex,
     TuiRenderer,
+    TuiTerminalSurface,
     TuiTemplateModule
 } from '../src';
 import { Application } from '@tsdi/core';
@@ -273,6 +274,35 @@ export class ConsoleRendererTest {
                 'Console',
                 'Ready'
             ]);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('updates tui terminal surface from component property changes')
+    async updatesTuiTerminalSurfaceFromComponentChanges() {
+        const ctx = await Application.run(ConsoleTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const output: string[] = [];
+        try {
+            const ref = ctx.runners.getRef(ConsoleTestComponent) as ComponentRef<ConsoleTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 40,
+                output: { write: value => output.push(value) },
+                scheduler: task => task()
+            });
+
+            expect(output.join('')).toContain('Ready');
+            ref.instance.message = 'Updated';
+
+            expect(surface.lastRenderedLines.join('\n')).toContain('Updated');
+            expect(output.join('')).toContain('Updated');
+            surface.destroy();
         } finally {
             await ctx.close();
         }

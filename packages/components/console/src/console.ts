@@ -81,6 +81,8 @@ export class ConsoleDomTokenList implements RDomTokenList {
 }
 
 export class ConsoleNode implements RNode {
+    static readonly CHANGE_EVENT = 'console:change';
+
     readonly events = new EventEmitter();
     readonly attributes = new Map<string, RAttr>();
 
@@ -109,6 +111,7 @@ export class ConsoleNode implements RNode {
             child.parentNode = null;
             child.nextSibling = null;
             this.syncSiblings();
+            this.notifyChanged();
         }
         return child;
     }
@@ -122,6 +125,7 @@ export class ConsoleNode implements RNode {
             child.parentNode = null;
             child.nextSibling = null;
             this.syncSiblings();
+            this.notifyChanged();
         }
         return child;
     }
@@ -140,6 +144,7 @@ export class ConsoleNode implements RNode {
             }
         }
         this.syncSiblings();
+        this.notifyChanged();
     }
 
     appendChild(newChild: ConsoleNode): ConsoleNode {
@@ -147,6 +152,7 @@ export class ConsoleNode implements RNode {
         newChild.parentNode = this;
         this.childNodes.push(newChild);
         this.syncSiblings();
+        this.notifyChanged();
         return newChild;
     }
 
@@ -205,17 +211,54 @@ export class ConsoleNode implements RNode {
             child.nextSibling = this.childNodes[index + 1] || null;
         });
     }
+
+    protected notifyChanged(): void {
+        this.events.emit(ConsoleNode.CHANGE_EVENT, { type: ConsoleNode.CHANGE_EVENT, target: this });
+        this.parentNode?.notifyChanged();
+    }
 }
 
 export class ConsoleText extends ConsoleNode implements RText {
-    constructor(public textContent: string) {
+    protected value = '';
+
+    constructor(textContent: string) {
         super(NodeType.Text);
+        this.value = textContent;
+    }
+
+    get textContent(): string {
+        return this.value;
+    }
+
+    set textContent(value: string) {
+        const next = String(value ?? '');
+        if (this.value === next) {
+            return;
+        }
+        this.value = next;
+        this.notifyChanged();
     }
 }
 
 export class ConsoleComment extends ConsoleNode implements RComment {
-    constructor(public textContent: string) {
+    protected value = '';
+
+    constructor(textContent: string) {
         super(NodeType.Comment);
+        this.value = textContent;
+    }
+
+    get textContent(): string {
+        return this.value;
+    }
+
+    set textContent(value: string) {
+        const next = String(value ?? '');
+        if (this.value === next) {
+            return;
+        }
+        this.value = next;
+        this.notifyChanged();
     }
 }
 
@@ -342,26 +385,30 @@ export class ConsoleElement extends ConsoleNode implements RElement {
     }
 
     setAttribute(name: string, value: string): void {
-        this.attributes.set(name, { name, value });
+        const next = String(value ?? '');
+        const previous = this.attributes.get(name)?.value;
+        this.attributes.set(name, { name, value: next });
         if (name === 'class') {
-            this.classList.reset(value.split(/\s+/).filter(Boolean));
-            return;
-        }
-        if (name === 'style') {
+            this.classList.reset(next.split(/\s+/).filter(Boolean));
+        } else if (name === 'style') {
             const styles = new ConsoleCssStyleDeclaration();
-            styles.applyCssText(value);
+            styles.applyCssText(next);
             this.style = styles;
+        }
+        if (previous !== next) {
+            this.notifyChanged();
         }
     }
 
     removeAttribute(name: string): void {
-        this.attributes.delete(name);
+        const hadAttribute = this.attributes.delete(name);
         if (name === 'class') {
             this.classList.reset([]);
-            return;
-        }
-        if (name === 'style') {
+        } else if (name === 'style') {
             this.style = new ConsoleCssStyleDeclaration();
+        }
+        if (hadAttribute) {
+            this.notifyChanged();
         }
     }
 
@@ -374,15 +421,28 @@ export class ConsoleElement extends ConsoleNode implements RElement {
     }
 
     setAttributeNS(namespace: string, name: string, value: string): void {
-        this.attributes.set(`${name}:${namespace}`, { name, namespace, value });
+        const key = `${name}:${namespace}`;
+        const next = String(value ?? '');
+        const previous = this.attributes.get(key)?.value;
+        this.attributes.set(key, { name, namespace, value: next });
+        if (previous !== next) {
+            this.notifyChanged();
+        }
     }
 
     removeAttributeNS(namespace: string, localName: string): void {
-        this.attributes.delete(`${localName}:${namespace}`);
+        if (this.attributes.delete(`${localName}:${namespace}`)) {
+            this.notifyChanged();
+        }
     }
 
     setProperty(name: string, value: any): void {
-        this.attributes.set(name, { name, value: String(value ?? '') });
+        const next = String(value ?? '');
+        const previous = this.attributes.get(name)?.value;
+        this.attributes.set(name, { name, value: next });
+        if (previous !== next) {
+            this.notifyChanged();
+        }
     }
 }
 

@@ -69,7 +69,6 @@ export class AgentConsoleRendererTest {
     async renderWorkingLine() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setStatus('running');
-        ref.instance.sessionState.setWorkingFrame('3');
         ref.instance.sessionState.turnStartedAt = Date.now() - 65000;
         ref.instance.sessionState.setTokenUsage({
             promptTokens: 120,
