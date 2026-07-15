@@ -10,7 +10,6 @@ import {
     normalizeConsoleClipboardText,
     processConsoleTextInputChunk,
     shouldSkipConsoleHistoryEntry,
-    TerminalUiController,
     resolveConsoleRawKeypressSuppressionKey,
     resolveConsoleClipboardSelection,
     resolveConsolePlaceholderDisplayValue,
@@ -259,40 +258,6 @@ export class ConsoleInputTest {
         expect(shouldSkipConsoleHistoryEntry('   /model')).toBe(true);
         expect(shouldSkipConsoleHistoryEntry('hello')).toBe(false);
         expect(shouldSkipConsoleHistoryEntry('@workspace')).toBe(false);
-
-        let rendered = '';
-        const controller = new TerminalUiController({
-            getCommands: () => ['/help', '/model'],
-            getMentionCandidates: () => ['@workspace'],
-            render: () => undefined,
-            setDraftDisplay: value => {
-                rendered = value;
-            },
-            submit: () => undefined,
-            isClosed: () => false,
-            isInputLocked: () => false,
-            isModalPromptActive: () => false,
-            isSelecting: () => false
-        });
-
-        controller.setHistoryEntries(['/help', 'hello', '/exit', 'world']);
-        controller.updateDraft('/model');
-        controller.navigateHistory(-1);
-        expect(controller.draft).toBe('hello');
-        expect(rendered).toBe('hello');
-
-        controller.navigateHistory(-1);
-        expect(controller.draft).toBe('world');
-
-        controller.navigateHistory(1);
-        expect(controller.draft).toBe('hello');
-
-        controller.navigateHistory(1);
-        expect(controller.draft).toBe('/model');
-
-        controller.updateDraft('hello');
-        controller.navigateHistory(-1);
-        expect(controller.draft).toBe('hello');
     }
 
     @Test('suppresses duplicated console keypress events through shared helpers')

@@ -84,7 +84,7 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get workspaceSummary(): string {
-        return this.workspace || '-';
+        return this.workspace || this.state.consoleOptions.emptyValueLabel;
     }
 
     get shellStyle() {
@@ -100,11 +100,11 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get runningToolsLabel(): string {
-        return this.state.runningTools.length ? this.state.runningTools.join(', ') : 'none';
+        return this.state.runningTools.length ? this.state.runningTools.join(', ') : this.state.consoleOptions.noneValueLabel;
     }
 
     get lastErrorLabel(): string {
-        return this.state.lastError || 'none';
+        return this.state.lastError || this.state.consoleOptions.noneValueLabel;
     }
 
     get statusStyle() {
@@ -119,7 +119,7 @@ export class AgentConsoleStatusPanelComponent {
             .split('\n')
             .map(line => line.trimEnd())
             .filter(Boolean)
-            .slice(0, 6);
+            .slice(0, this.state.consoleOptions.statusVisibleLines);
     }
 
     get shouldShow(): boolean {
@@ -170,8 +170,8 @@ export class AgentConsoleStatusPanelComponent {
                     class="agent-input"
                     v-style="fieldStyle"
                     value="{{input}}"
-                    prompt="> "
-                    placeholder="{{placeholderLabel}}"
+                    prompt="{{inputPrompt}}"
+                    placeholder="{{inputPlaceholderLabel}}"
                     cursor=" "
                     cursorPos="{{inputCursor}}"
                     focused="{{inputFocused}}"
@@ -267,8 +267,12 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
         return styleTextToObject(this.activeTheme.inputCaption);
     }
 
-    get placeholderLabel(): string {
-        return this.input ? '' : 'Ask code or files';
+    get inputPrompt(): string {
+        return this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || '';
+    }
+
+    get inputPlaceholderLabel(): string {
+        return this.state?.inputPlaceholderLabel || '';
     }
 
     get entryStyle() {
@@ -292,29 +296,7 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
     }
 
     get hintLabel(): string {
-        const parts = [
-            this.modelLabel,
-            this.shortWorkspaceLabel
-        ].filter(Boolean);
-        return parts.join(' · ');
-    }
-
-    get modelLabel(): string {
-        const model = this.state?.model || 'model';
-        const profile = String(this.state?.modelProfile || '').trim();
-        return profile ? `${model} ${profile}` : model;
-    }
-
-    get shortWorkspaceLabel(): string {
-        const workspace = String(this.state?.workspace || '').trim();
-        if (!workspace) {
-            return '';
-        }
-        const home = typeof process !== 'undefined' ? (process.env.HOME || '') : '';
-        if (home && workspace.startsWith(home)) {
-            return `~${workspace.slice(home.length)}`;
-        }
-        return workspace;
+        return this.state?.inputHintLabel || '';
     }
 
     async submit(): Promise<void> {
@@ -620,8 +602,6 @@ export class AgentConsoleWorkingPanelComponent {
     `
 })
 export class AgentConsoleSessionsPanelComponent {
-    protected static readonly VISIBLE_SESSIONS = 6;
-
     constructor(private state: AgentConsoleSessionState) {
     }
 
@@ -671,14 +651,14 @@ export class AgentConsoleSessionsPanelComponent {
         return resolveConsoleListWindow(
             this.sessions.length,
             selectedIndex,
-            AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS
+            this.state.consoleOptions.sessionsVisibleItems
         ).start;
     }
 
     get visibleSessions(): AgentConsoleSessionItem[] {
         return this.sessions.slice(
             this.visibleSessionStart,
-            this.visibleSessionStart + AgentConsoleSessionsPanelComponent.VISIBLE_SESSIONS
+            this.visibleSessionStart + this.state.consoleOptions.sessionsVisibleItems
         );
     }
 
@@ -694,7 +674,7 @@ export class AgentConsoleSessionsPanelComponent {
         if (!this.shouldShow || !this.sessions.length || !this.state.sessionsFocused) {
             return '';
         }
-        return 'up/down move   pg jump   enter switch   y copy   esc';
+        return this.state.consoleOptions.sessionHint;
     }
 
     get shouldShow(): boolean {
@@ -753,7 +733,9 @@ export class AgentConsoleToolsPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
-        return this.tools.slice(0, 4).map(tool => `${tool.name}${tool.active ? '' : ' [inactive]'}${tool.toolset ? ` (${tool.toolset})` : ''}`);
+        return this.tools
+            .slice(0, this.state.consoleOptions.toolsVisibleItems)
+            .map(tool => `${tool.name}${tool.active ? '' : ' [inactive]'}${tool.toolset ? ` (${tool.toolset})` : ''}`);
     }
 
     get toolsSummary(): string {
@@ -811,7 +793,7 @@ export class AgentConsoleToolRunsPanelComponent {
     }
 
     get toolRunLabels(): string[] {
-        return this.toolRuns.slice(0, 3).map(run => {
+        return this.toolRuns.slice(0, this.state.consoleOptions.toolRunsVisibleItems).map(run => {
             const duration = run.durationMs == null ? '' : ` ${run.durationMs}ms`;
             return `${run.name} ${run.status}${duration}`;
         });
@@ -831,16 +813,16 @@ export class AgentConsoleToolRunsPanelComponent {
 
     get highlightedToolRunInput(): string {
         if (!this.highlightedToolRun) {
-            return '-';
+            return this.state.consoleOptions.emptyValueLabel;
         }
-        return this.highlightedToolRun.inputSummary || '-';
+        return this.highlightedToolRun.inputSummary || this.state.consoleOptions.emptyValueLabel;
     }
 
     get highlightedToolRunOutput(): string {
         if (!this.highlightedToolRun) {
-            return '-';
+            return this.state.consoleOptions.emptyValueLabel;
         }
-        return this.highlightedToolRun.outputSummary || this.highlightedToolRun.error || '-';
+        return this.highlightedToolRun.outputSummary || this.highlightedToolRun.error || this.state.consoleOptions.emptyValueLabel;
     }
 
     get toolRunsSummaryLabel(): string {
@@ -853,7 +835,9 @@ export class AgentConsoleToolRunsPanelComponent {
 
     protected summarize(value: string): string {
         const text = String(value || '').replace(/\s+/g, ' ').trim();
-        return text.length > 96 ? `${text.slice(0, 96)}...` : text;
+        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
+            : text;
     }
 }
 
@@ -904,7 +888,7 @@ export class AgentConsoleMessagesPanelComponent {
     get visibleMessages(): Array<{ id?: string; role?: string; content: string }> {
         const messages = this.messages;
         const selectedIndex = Math.max(0, messages.findIndex(message => message.id === this.state.selectedMessageId));
-        const window = resolveConsoleListWindow(messages.length, selectedIndex, 7);
+        const window = resolveConsoleListWindow(messages.length, selectedIndex, this.state.consoleOptions.messagesVisibleItems);
         return messages.slice(window.start, window.start + window.count);
     }
 
@@ -951,7 +935,7 @@ export class AgentConsoleMessagesPanelComponent {
             return '';
         }
         return this.state.messagesFocused
-            ? 'up/down move   pg jump   enter open   y copy   esc'
+            ? this.state.consoleOptions.messagesHint
             : '';
     }
 
@@ -1012,7 +996,9 @@ export class AgentConsoleMessagesPanelComponent {
 
     protected summarize(value: string): string {
         const text = String(value || '').replace(/\s+/g, ' ').trim();
-        return text.length > 80 ? `${text.slice(0, 80)}...` : text;
+        return text.length > this.state.consoleOptions.summaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.summaryMaxLength)}...`
+            : text;
     }
 
     protected summarizeMessage(value: string, role: string): string {
@@ -1094,7 +1080,7 @@ export class AgentConsoleMessageDetailPanelComponent {
     get visibleLines(): string[] {
         const lines = this.contentLines;
         const start = Math.max(0, Math.min(lines.length, this.state.messageDetailScroll));
-        return lines.slice(start, start + 6);
+        return lines.slice(start, start + this.state.consoleOptions.messageDetailVisibleLines);
     }
 
     get detailSummaryLabel(): string {
@@ -1116,12 +1102,12 @@ export class AgentConsoleMessageDetailPanelComponent {
             return '';
         }
         return this.state.messageDetailOpen
-            ? 'up/down scroll   left/right pan   pg jump   y copy   esc'
-            : 'enter to open';
+            ? this.state.consoleOptions.messageDetailHint
+            : this.state.consoleOptions.messageDetailClosedHint;
     }
 
     get detailIndexes(): number[] {
-        return [0, 1, 2, 3, 4, 5];
+        return Array.from({ length: this.state.consoleOptions.messageDetailVisibleLines }, (_value, index) => index);
     }
 
     detailLineNumberAt(index: number): string {
@@ -1187,7 +1173,7 @@ export class AgentConsoleActivityPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
-        return this.activities.slice(-3).map(activity => ({
+        return this.activities.slice(-this.state.consoleOptions.activityVisibleItems).map(activity => ({
             kind: `${activity.kind}: `,
             message: this.summarize(activity.message),
             kindStyle: styleTextToObject(this.activeTheme.toolsAccent),
@@ -1229,7 +1215,9 @@ export class AgentConsoleActivityPanelComponent {
 
     protected summarize(value: string): string {
         const text = String(value || '').replace(/\s+/g, ' ').trim();
-        return text.length > 80 ? `${text.slice(0, 80)}...` : text;
+        return text.length > this.state.consoleOptions.summaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.summaryMaxLength)}...`
+            : text;
     }
 }
 
@@ -1250,7 +1238,6 @@ export class AgentConsoleActivityPanelComponent {
     `
 })
 export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestroy {
-    protected static readonly VISIBLE_OPTIONS = 12;
     protected unsubscribeState?: () => void;
     protected currentMenu?: AgentConsoleSelectMenu;
 
@@ -1324,7 +1311,7 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
     }
 
     get visibleOptionCountText(): string {
-        return String(AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS);
+        return String(this.state.consoleOptions.selectVisibleOptions);
     }
 
     get visibleOptionStart(): number {
@@ -1334,7 +1321,7 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         return resolveConsoleSelectWindow(
             this.menu.options.length,
             this.menu.selectedIndex,
-            AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS
+            this.state.consoleOptions.selectVisibleOptions
         ).start;
     }
 
@@ -1342,7 +1329,7 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
         if (!this.menu) {
             return [];
         }
-        return this.menu.options.slice(this.visibleOptionStart, this.visibleOptionStart + AgentConsoleSelectPanelComponent.VISIBLE_OPTIONS);
+        return this.menu.options.slice(this.visibleOptionStart, this.visibleOptionStart + this.state.consoleOptions.selectVisibleOptions);
     }
 
     get menuOptionItems(): Array<{ label: string; value: string; style: Record<string, string> }> {

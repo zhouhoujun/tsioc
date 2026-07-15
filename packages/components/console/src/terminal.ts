@@ -9,6 +9,39 @@ import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
+const TERMINAL_RENDER_ANSI = {
+    reset: '\x1b[0m',
+    dim: '\x1b[38;2;110;118;129m',
+    blue: '\x1b[38;2;121;192;255m',
+    blueStrong: '\x1b[1m\x1b[38;2;143;208;255m',
+    green: '\x1b[1m\x1b[38;2;126;231;135m',
+    amber: '\x1b[38;2;255;184;107m',
+    bgSelected: '\x1b[48;2;19;32;43m'
+} as const;
+
+const JS_LIKE_TERMINAL_KEYWORDS = new Set([
+    'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default',
+    'delete', 'else', 'export', 'extends', 'false', 'finally', 'for', 'from', 'function',
+    'if', 'import', 'in', 'interface', 'let', 'new', 'null', 'return', 'static', 'switch',
+    'throw', 'true', 'try', 'type', 'typeof', 'undefined', 'var', 'while', 'yield'
+]);
+
+const SHELL_TERMINAL_KEYWORDS = new Set([
+    'case', 'cd', 'do', 'done', 'echo', 'elif', 'else', 'esac', 'export', 'fi', 'for',
+    'function', 'git', 'if', 'local', 'node', 'npm', 'pnpm', 'return', 'then', 'while', 'yarn'
+]);
+
+export const DEFAULT_TERMINAL_APP_TITLE = 'TSDI Agent';
+export const DEFAULT_TERMINAL_COLUMNS = 100;
+export const DEFAULT_TERMINAL_ROWS = 24;
+export const MIN_TERMINAL_COLUMNS = 24;
+export const MIN_TERMINAL_ROWS = 16;
+export const MIN_TERMINAL_CONTENT_WIDTH = 8;
+export const DEFAULT_CONSOLE_SELECT_VISIBLE_OPTIONS = 12;
+export const DEFAULT_CONSOLE_SELECT_DETAIL_VISIBLE_LINES = 6;
+export const DEFAULT_CONSOLE_SELECT_HINT = '1-9 select   up/down move   enter confirm   q cancel';
+export const DEFAULT_CONSOLE_SELECT_CLOSE_HINT = 'up/down move   enter close   q close';
+
 export interface SelectMenuOption {
     label: string;
     value: string;
@@ -164,6 +197,30 @@ export interface TerminalPrimaryRenderResult {
     terminalRow: number;
     changed: boolean;
     state: TerminalPrimaryRenderState;
+}
+
+export interface TerminalRenderedWindow {
+    lines: string[];
+    startRow: number;
+    totalRows: number;
+}
+
+export interface TerminalSizeLike {
+    columns?: number;
+    rows?: number;
+}
+
+export interface TerminalSize {
+    columns: number;
+    rows: number;
+}
+
+export interface TerminalBlockRenderOptions {
+    width: number;
+    frame?: boolean;
+    shellCodes?: string[];
+    lineCodes?: string[];
+    paint?: (value: string, ...codes: string[]) => string;
 }
 
 export interface TerminalCleanupOptions {
@@ -398,19 +455,6 @@ export class TerminalInputSequenceDecoder {
     }
 }
 
-export interface TerminalUiControllerOptions {
-    getCommands: () => string[];
-    getMentionCandidates: () => string[];
-    render: () => void;
-    setDraftDisplay: (displayDraft: string) => void;
-    submit: (value: string) => Promise<void> | void;
-    isClosed: () => boolean;
-    isInputLocked: () => boolean;
-    isModalPromptActive: () => boolean;
-    isSelecting: () => boolean;
-    menu?: TerminalMenuController;
-}
-
 export function getChatCommands(): string[] {
     return CHAT_COMMANDS.slice();
 }
@@ -476,6 +520,13 @@ export function buildTerminalCursorSequence(options: TerminalCursorSequenceOptio
     return `\x1b[${targetRow + 1};${cursorColumn}H`;
 }
 
+export function resolveTerminalSize(size: TerminalSizeLike = {}): TerminalSize {
+    return {
+        columns: Math.max(MIN_TERMINAL_COLUMNS, size.columns || DEFAULT_TERMINAL_COLUMNS),
+        rows: Math.max(MIN_TERMINAL_ROWS, size.rows || DEFAULT_TERMINAL_ROWS)
+    };
+}
+
 function stripAnsi(value: string): string {
     return String(value || '').replace(/\x1b\[[0-9;]*m/g, '');
 }
@@ -488,7 +539,418 @@ function fitAnsiLine(line: string, width: number): string {
     return sliceByDisplayWidth(plain, width);
 }
 
-function compactTerminalRenderedLines(lines: string[], maxRows: number): string[] {
+function padTerminalDisplayText(value: string, width: number): string {
+    const rendered = String(value || '');
+    const plain = stripAnsi(rendered);
+    const plainWidth = getDisplayWidth(plain);
+    if (plainWidth >= width) {
+        return /\x1b\[[0-9;]*m/.test(rendered)
+            ? fitAnsiLine(rendered, width)
+            : sliceByDisplayWidth(rendered, width);
+    }
+    return `${rendered}${' '.repeat(width - plainWidth)}`;
+}
+
+export function renderTerminalBlockLines(contentLines: string[], options: TerminalBlockRenderOptions): string[] {
+    const shellWidth = Math.max(MIN_TERMINAL_COLUMNS, options.width);
+    const shellInnerWidth = Math.max(MIN_TERMINAL_CONTENT_WIDTH, shellWidth - 2);
+    const paintLine = options.paint || ((value: string) => value);
+    const shellCodes = options.shellCodes || [];
+    const lineCodes = options.lineCodes || shellCodes;
+    const body = contentLines.map(line => paintLine(` ${padTerminalDisplayText(line, shellInnerWidth)} `, ...lineCodes));
+    if (options.frame === false) {
+        return body;
+    }
+    return [
+        paintLine(' '.repeat(shellWidth), ...shellCodes),
+        ...body,
+        paintLine(' '.repeat(shellWidth), ...shellCodes)
+    ];
+}
+
+export function renderTerminalBlock(content: string, options: TerminalBlockRenderOptions): string[] {
+    return renderTerminalBlockLines([content], options);
+}
+
+function paintTerminalText(value: string, ...codes: string[]): string {
+    const prefix = codes.filter(Boolean).join('');
+    return prefix ? `${prefix}${value}${TERMINAL_RENDER_ANSI.reset}` : value;
+}
+
+export function shouldUseAlternateScreen(env: Record<string, string | undefined> = typeof process !== 'undefined' ? process.env : {}): boolean {
+    const configured = String(env.TSDI_AGENT_ALT_SCREEN || '').trim().toLowerCase();
+    if (!configured) {
+        return false;
+    }
+    return configured !== '0' && configured !== 'false' && configured !== 'no';
+}
+
+export function wrapTerminalText(value: string, width: number): string[] {
+    const chunkWidth = Math.max(1, width);
+    const normalized = String(value || '').replace(/\r/g, '').split('\n');
+    const lines: string[] = [];
+    normalized.forEach(line => {
+        if (!line) {
+            lines.push('');
+            return;
+        }
+        let rest = line;
+        while (rest) {
+            const chunk = sliceByDisplayWidth(rest, chunkWidth) || rest.slice(0, chunkWidth);
+            lines.push(chunk);
+            rest = rest.slice(chunk.length);
+        }
+    });
+    return lines.length ? lines : [''];
+}
+
+export function wrapPrefixedText(value: string, width: number, firstPrefix = '', continuationPrefix = ''): string[] {
+    const normalized = String(value || '').replace(/\r/g, '').split('\n');
+    const lines: string[] = [];
+    let renderedAny = false;
+    normalized.forEach(line => {
+        const prefix = renderedAny ? continuationPrefix : firstPrefix;
+        const availableWidth = Math.max(1, width - getDisplayWidth(prefix));
+        if (!line) {
+            lines.push(prefix);
+            renderedAny = true;
+            return;
+        }
+        wrapTerminalText(line, availableWidth).forEach((chunk, index) => {
+            const currentPrefix = renderedAny || index > 0 ? continuationPrefix : firstPrefix;
+            lines.push(`${currentPrefix}${chunk}`);
+            renderedAny = true;
+        });
+    });
+    return lines.length ? lines : [firstPrefix];
+}
+
+export function parseTerminalTextPromptChunk(chunk: Buffer | string): { text: string; submitted: boolean } {
+    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+    const submitIndex = text.search(/[\r\n]/);
+    if (submitIndex < 0) {
+        return { text, submitted: false };
+    }
+    return {
+        text: text.slice(0, submitIndex),
+        submitted: true
+    };
+}
+
+export function buildOsc52ClipboardSequence(text: string): string {
+    const payload = Buffer.from(text, 'utf8').toString('base64');
+    return `\x1b]52;c;${payload}\x07`;
+}
+
+export function shortenTerminalPath(workspace: string, home = typeof process !== 'undefined' ? (process.env.HOME || '') : ''): string {
+    const value = String(workspace || '').trim();
+    if (!value) {
+        return '';
+    }
+    if (home && value.startsWith(home)) {
+        return `~${value.slice(home.length)}`;
+    }
+    return value;
+}
+
+export function formatTerminalStatusFooter(model: string, profile: string, workspace: string): string {
+    const modelLabel = String(model || '').trim();
+    const profileLabel = String(profile || '').trim();
+    const workspaceLabel = shortenTerminalPath(workspace);
+    const left = [modelLabel, profileLabel].filter(Boolean).join(' ');
+    return [left, workspaceLabel].filter(Boolean).join(' · ');
+}
+
+export function buildTerminalBrandBlock(width: number, appTitle = DEFAULT_TERMINAL_APP_TITLE, model = '', workspace = '', version = ''): string[] {
+    const titleLine = version ? `${appTitle.toUpperCase()} v${version}` : appTitle.toUpperCase();
+    const metaLine = formatTerminalStatusFooter(model, '', workspace);
+    const maxInnerWidth = Math.max(1, width - 2);
+    const innerWidth = Math.max(1, Math.min(
+        maxInnerWidth,
+        Math.max(8, getDisplayWidth(titleLine), getDisplayWidth(metaLine))
+    ));
+    const fitContent = (value: string, ...codes: string[]): string => {
+        const clipped = getDisplayWidth(value) > innerWidth
+            ? sliceByDisplayWidth(value, innerWidth)
+            : value;
+        const padding = ' '.repeat(Math.max(0, innerWidth - getDisplayWidth(clipped)));
+        return `${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}${paintTerminalText(clipped, ...codes)}${padding}${paintTerminalText('│', TERMINAL_RENDER_ANSI.dim)}`;
+    };
+    return [
+        paintTerminalText(`╭${'─'.repeat(innerWidth)}╮`, TERMINAL_RENDER_ANSI.dim),
+        fitContent(titleLine, TERMINAL_RENDER_ANSI.blueStrong),
+        fitContent(metaLine, TERMINAL_RENDER_ANSI.dim),
+        paintTerminalText(`╰${'─'.repeat(innerWidth)}╯`, TERMINAL_RENDER_ANSI.dim)
+    ];
+}
+
+export function buildTerminalEmptyStateBlock(width: number, appTitle = DEFAULT_TERMINAL_APP_TITLE, model = '', workspace = '', version = ''): string[] {
+    return buildTerminalBrandBlock(width, appTitle, model, workspace, version);
+}
+
+function paintTerminalToken(value: string, color?: string): string {
+    return color ? paintTerminalText(value, color) : value;
+}
+
+interface StyledTerminalTextSegment {
+    text: string;
+    codes?: string[];
+}
+
+function isTerminalJsonLanguage(lang: string): boolean {
+    return lang === 'json' || lang === 'jsonc';
+}
+
+function isTerminalShellLanguage(lang: string): boolean {
+    return lang === 'bash' || lang === 'sh' || lang === 'shell' || lang === 'zsh';
+}
+
+function isTerminalJsLikeLanguage(lang: string): boolean {
+    return !lang || lang === 'js' || lang === 'jsx' || lang === 'ts' || lang === 'tsx' || lang === 'javascript' || lang === 'typescript';
+}
+
+function mergeTerminalAnsiCodes(...groups: Array<string[] | undefined>): string[] | undefined {
+    const merged = groups.flatMap(group => group || []).filter(Boolean);
+    return merged.length ? merged : undefined;
+}
+
+function paintStyledTerminalSegment(segment: StyledTerminalTextSegment): string {
+    return segment.codes?.length ? paintTerminalText(segment.text, ...segment.codes) : segment.text;
+}
+
+function unescapeTerminalMarkdownText(value: string): string {
+    return String(value || '').replace(/\\([\\`*_{}\[\]()#+\-.!>])/g, '$1');
+}
+
+function tokenizeTerminalMarkdownInline(value: string, baseCodes?: string[]): StyledTerminalTextSegment[] {
+    const input = String(value || '');
+    const tokenPattern = /(`[^`\n]+`|!\[[^\]]*\]\(([^)]+)\)|\[[^\]]+\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~|\*([^*\n]+)\*|_([^_\n]+)_)/g;
+    const segments: StyledTerminalTextSegment[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = tokenPattern.exec(input))) {
+        if (match.index > lastIndex) {
+            segments.push({ text: unescapeTerminalMarkdownText(input.slice(lastIndex, match.index)), codes: baseCodes });
+        }
+        const token = match[0];
+        if (token.startsWith('`')) {
+            segments.push({ text: token.slice(1, -1), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.bgSelected, TERMINAL_RENDER_ANSI.amber]) });
+        } else if (token.startsWith('![')) {
+            const imageMatch = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
+            const alt = unescapeTerminalMarkdownText(imageMatch?.[1] || 'image');
+            const url = unescapeTerminalMarkdownText(imageMatch?.[2] || '');
+            segments.push({ text: alt, codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blueStrong]) });
+            if (url) {
+                segments.push({ text: ` (${url})`, codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.dim]) });
+            }
+        } else if (token.startsWith('[')) {
+            const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
+            const label = unescapeTerminalMarkdownText(linkMatch?.[1] || '');
+            const url = unescapeTerminalMarkdownText(linkMatch?.[2] || '');
+            segments.push({ text: label || url, codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blueStrong]) });
+            if (url && url !== label) {
+                segments.push({ text: ` (${url})`, codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.dim]) });
+            }
+        } else if (token.startsWith('**') || token.startsWith('__')) {
+            segments.push({ text: unescapeTerminalMarkdownText(token.slice(2, -2)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blueStrong]) });
+        } else if (token.startsWith('~~')) {
+            segments.push({ text: unescapeTerminalMarkdownText(token.slice(2, -2)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.dim]) });
+        } else {
+            segments.push({ text: unescapeTerminalMarkdownText(token.slice(1, -1)), codes: mergeTerminalAnsiCodes(baseCodes, [TERMINAL_RENDER_ANSI.blue]) });
+        }
+        lastIndex = match.index + token.length;
+    }
+    if (lastIndex < input.length) {
+        segments.push({ text: unescapeTerminalMarkdownText(input.slice(lastIndex)), codes: baseCodes });
+    }
+    return segments.length ? segments : [{ text: unescapeTerminalMarkdownText(input), codes: baseCodes }];
+}
+
+function wrapStyledTerminalSegments(segments: StyledTerminalTextSegment[], width: number): string[] {
+    const chunkWidth = Math.max(1, width);
+    const lines: string[] = [];
+    let currentLine = '';
+    let currentWidth = 0;
+    const flushLine = () => {
+        lines.push(currentLine);
+        currentLine = '';
+        currentWidth = 0;
+    };
+    for (const segment of segments) {
+        let rest = segment.text;
+        while (rest) {
+            if (currentWidth >= chunkWidth) {
+                flushLine();
+            }
+            const availableWidth = Math.max(1, chunkWidth - currentWidth);
+            const chunk = sliceByDisplayWidth(rest, availableWidth) || rest.slice(0, 1);
+            currentLine += paintStyledTerminalSegment({ text: chunk, codes: segment.codes });
+            currentWidth += getDisplayWidth(chunk);
+            rest = rest.slice(chunk.length);
+            if (rest && currentWidth >= chunkWidth) {
+                flushLine();
+            }
+        }
+    }
+    if (!lines.length || currentLine || !segments.length) {
+        lines.push(currentLine);
+    }
+    return lines;
+}
+
+function renderTerminalMarkdownTextLine(sourceLine: string, width: number): string[] {
+    const chunkWidth = Math.max(12, width);
+    const original = String(sourceLine || '');
+    let line = original;
+    let firstPrefix = '';
+    let continuationPrefix = '';
+    let baseCodes: string[] | undefined;
+    const headingMatch = /^(\s*)(#{1,6})\s+(.*)$/.exec(line);
+    if (headingMatch) {
+        firstPrefix = headingMatch[1];
+        continuationPrefix = headingMatch[1];
+        line = headingMatch[3];
+        baseCodes = [TERMINAL_RENDER_ANSI.blueStrong];
+    } else {
+        const quoteMatch = /^(\s*)>\s?(.*)$/.exec(line);
+        if (quoteMatch) {
+            firstPrefix = `${quoteMatch[1]}| `;
+            continuationPrefix = `${quoteMatch[1]}  `;
+            line = quoteMatch[2];
+            baseCodes = [TERMINAL_RENDER_ANSI.dim];
+        } else {
+            const taskMatch = /^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
+            if (taskMatch) {
+                firstPrefix = `${taskMatch[1]}[${taskMatch[2].toLowerCase() === 'x' ? 'x' : ' '}] `;
+                continuationPrefix = `${taskMatch[1]}    `;
+                line = taskMatch[3];
+            } else {
+                const orderedMatch = /^(\s*\d+\.)\s+(.*)$/.exec(line);
+                if (orderedMatch) {
+                    firstPrefix = `${orderedMatch[1]} `;
+                    continuationPrefix = `${' '.repeat(getDisplayWidth(firstPrefix))}`;
+                    line = orderedMatch[2];
+                } else {
+                    const bulletMatch = /^(\s*)[-*+]\s+(.*)$/.exec(line);
+                    if (bulletMatch) {
+                        firstPrefix = `${bulletMatch[1]}- `;
+                        continuationPrefix = `${bulletMatch[1]}  `;
+                        line = bulletMatch[2];
+                    }
+                }
+            }
+        }
+    }
+    if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(original)) {
+        return [paintTerminalText('-'.repeat(chunkWidth), TERMINAL_RENDER_ANSI.dim)];
+    }
+    const wrapped = wrapStyledTerminalSegments(
+        tokenizeTerminalMarkdownInline(line, baseCodes),
+        Math.max(1, chunkWidth - getDisplayWidth(firstPrefix || continuationPrefix))
+    );
+    return wrapped.map((chunk, index) => `${index === 0 ? firstPrefix : continuationPrefix}${chunk}`);
+}
+
+export function highlightTerminalCodeLine(line: string, language = ''): string {
+    const lang = String(language || '').trim().toLowerCase();
+    const source = String(line || '');
+    const jsLike = isTerminalJsLikeLanguage(lang);
+    const keywordSet = isTerminalShellLanguage(lang) ? SHELL_TERMINAL_KEYWORDS : JS_LIKE_TERMINAL_KEYWORDS;
+    let index = 0;
+    let result = '';
+    while (index < source.length) {
+        const rest = source.slice(index);
+        if (rest.startsWith('//') && jsLike) {
+            result += paintTerminalToken(rest, TERMINAL_RENDER_ANSI.dim);
+            break;
+        }
+        if (rest.startsWith('#') && isTerminalShellLanguage(lang)) {
+            result += paintTerminalToken(rest, TERMINAL_RENDER_ANSI.dim);
+            break;
+        }
+        const char = source[index];
+        if (char === '"' || char === '\'' || char === '`') {
+            let end = index + 1;
+            while (end < source.length) {
+                if (source[end] === '\\') {
+                    end += 2;
+                    continue;
+                }
+                if (source[end] === char) {
+                    end += 1;
+                    break;
+                }
+                end += 1;
+            }
+            const token = source.slice(index, end);
+            if (isTerminalJsonLanguage(lang)) {
+                const remaining = source.slice(end);
+                result += paintTerminalToken(token, /^(\s*):/.test(remaining) ? TERMINAL_RENDER_ANSI.blueStrong : TERMINAL_RENDER_ANSI.green);
+            } else {
+                result += paintTerminalToken(token, TERMINAL_RENDER_ANSI.green);
+            }
+            index = end;
+            continue;
+        }
+        const numberMatch = /^\d+(?:\.\d+)?/.exec(rest);
+        if (numberMatch) {
+            result += paintTerminalToken(numberMatch[0], TERMINAL_RENDER_ANSI.amber);
+            index += numberMatch[0].length;
+            continue;
+        }
+        const variableMatch = isTerminalShellLanguage(lang) ? /^\$[A-Za-z_][A-Za-z0-9_]*/.exec(rest) : null;
+        if (variableMatch) {
+            result += paintTerminalToken(variableMatch[0], TERMINAL_RENDER_ANSI.blue);
+            index += variableMatch[0].length;
+            continue;
+        }
+        const identifierMatch = /^[A-Za-z_$][A-Za-z0-9_$-]*/.exec(rest);
+        if (identifierMatch) {
+            const token = identifierMatch[0];
+            if (keywordSet.has(token)) {
+                result += paintTerminalToken(token, TERMINAL_RENDER_ANSI.blueStrong);
+            } else if (token === 'true' || token === 'false' || token === 'null') {
+                result += paintTerminalToken(token, TERMINAL_RENDER_ANSI.amber);
+            } else {
+                result += token;
+            }
+            index += token.length;
+            continue;
+        }
+        result += char;
+        index += 1;
+    }
+    return result;
+}
+
+export function renderTerminalMarkdownLines(content: string, width: number): string[] {
+    const chunkWidth = Math.max(12, width);
+    const sourceLines = String(content || '').replace(/\r/g, '').split('\n');
+    const rendered: string[] = [];
+    let inFence = false;
+    let fenceLanguage = '';
+    for (const sourceLine of sourceLines) {
+        const trimmed = sourceLine.trim();
+        if (trimmed.startsWith('```')) {
+            if (inFence) {
+                inFence = false;
+                fenceLanguage = '';
+                continue;
+            }
+            inFence = true;
+            fenceLanguage = trimmed.slice(3).trim().toLowerCase();
+            continue;
+        }
+        if (inFence) {
+            wrapTerminalText(sourceLine, chunkWidth).forEach(line => rendered.push(highlightTerminalCodeLine(line, fenceLanguage)));
+            continue;
+        }
+        rendered.push(...renderTerminalMarkdownTextLine(sourceLine, chunkWidth));
+    }
+    return rendered.length ? rendered : ['…'];
+}
+
+export function compactRenderedLines(lines: string[], maxRows: number): string[] {
     const isPaintedBlankLine = (value: string): boolean => {
         const rendered = String(value || '');
         return /\x1b\[[0-9;]*m/.test(rendered) && !stripAnsi(rendered).trim();
@@ -519,7 +981,7 @@ function compactTerminalRenderedLines(lines: string[], maxRows: number): string[
     return trimmed;
 }
 
-function windowTerminalLinesFromBottom(lines: string[], maxRows: number, scrollOffset = 0): { lines: string[]; startRow: number; totalRows: number } {
+export function windowRenderedLinesFromBottom(lines: string[], maxRows: number, scrollOffset = 0): TerminalRenderedWindow {
     if (maxRows <= 0) {
         return { lines: [], startRow: 0, totalRows: lines.length };
     }
@@ -536,17 +998,208 @@ function windowTerminalLinesFromBottom(lines: string[], maxRows: number, scrollO
     };
 }
 
-function windowTerminalBlocksFromBottomWithContext(blocks: string[][], maxRows: number, minLatestRows = 0): { lines: string[]; startRow: number; totalRows: number } {
+function trimRenderedBlockEdge(lines: string[], maxRows: number, fromEnd: boolean): string[] {
+    if (maxRows <= 0) {
+        return [];
+    }
+    if (lines.length <= maxRows) {
+        return lines.slice();
+    }
+    if (maxRows === 1) {
+        return ['…'];
+    }
+    if (fromEnd) {
+        return ['…', ...lines.slice(lines.length - (maxRows - 1))];
+    }
+    return [...lines.slice(0, maxRows - 1), '…'];
+}
+
+export function windowRenderedBlocksFromBottomWithContext(blocks: string[][], maxRows: number, minLatestRows = 0): TerminalRenderedWindow {
     if (maxRows <= 0) {
         return { lines: [], startRow: 0, totalRows: 0 };
     }
     const normalizedBlocks = blocks
-        .map(block => compactTerminalRenderedLines(block, block.length || 0))
+        .map(block => compactRenderedLines(block, block.length || 0))
+        .filter(block => block.length > 0);
+    if (!normalizedBlocks.length) {
+        return { lines: [], startRow: 0, totalRows: 0 };
+    }
+    const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
+    const rowOffsets: number[] = [];
+    let nextOffset = 0;
+    normalizedBlocks.forEach(block => {
+        rowOffsets.push(nextOffset);
+        nextOffset += block.length;
+    });
+    if (totalRows <= maxRows) {
+        return {
+            lines: normalizedBlocks.flat(),
+            startRow: 0,
+            totalRows
+        };
+    }
+    const latestIndex = normalizedBlocks.length - 1;
+    const latestBlock = normalizedBlocks[latestIndex];
+    if (normalizedBlocks.length === 1) {
+        return {
+            lines: trimRenderedBlockEdge(latestBlock, maxRows, true),
+            startRow: rowOffsets[latestIndex] + Math.max(0, latestBlock.length - Math.max(1, maxRows - 1)),
+            totalRows
+        };
+    }
+    const latestFloor = Math.max(1, Math.min(maxRows, minLatestRows || 0));
+    const historyRows = Math.max(0, maxRows - latestFloor);
+    const priorLines = normalizedBlocks.slice(0, latestIndex).flat();
+    const historyWindow = historyRows > 0 ? trimRenderedBlockEdge(priorLines, historyRows, true) : [];
+    const latestRows = Math.max(1, maxRows - historyWindow.length);
+    const latestWindow = latestBlock.length > latestRows
+        ? trimRenderedBlockEdge(latestBlock, latestRows, true)
+        : latestBlock.slice();
+    const rendered = [...historyWindow, ...latestWindow];
+    const priorTotalRows = rowOffsets[latestIndex];
+    const historyStartRow = historyWindow.length === 0
+        ? rowOffsets[latestIndex]
+        : priorLines.length <= historyWindow.length
+            ? 0
+            : Math.max(0, priorTotalRows - Math.max(0, historyWindow.length - 1));
+    const latestStartRow = latestBlock.length > latestRows
+        ? rowOffsets[latestIndex] + Math.max(0, latestBlock.length - Math.max(1, latestRows - 1))
+        : rowOffsets[latestIndex];
+    return {
+        lines: rendered.slice(-maxRows),
+        startRow: historyWindow.length > 0 ? historyStartRow : latestStartRow,
+        totalRows
+    };
+}
+
+export function compactRenderedBlocksWindow(blocks: string[][], maxRows: number, anchorIndex = -1): TerminalRenderedWindow {
+    if (maxRows <= 0) {
+        return { lines: [], startRow: 0, totalRows: 0 };
+    }
+    const normalizedBlocks = blocks
+        .map(block => compactRenderedLines(block, block.length || 0))
+        .filter(block => block.length > 0);
+    if (!normalizedBlocks.length) {
+        return { lines: [], startRow: 0, totalRows: 0 };
+    }
+    const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
+    const rowOffsets: number[] = [];
+    let nextOffset = 0;
+    normalizedBlocks.forEach(block => {
+        rowOffsets.push(nextOffset);
+        nextOffset += block.length;
+    });
+    if (totalRows <= maxRows) {
+        return {
+            lines: normalizedBlocks.flat(),
+            startRow: 0,
+            totalRows
+        };
+    }
+
+    const resolvedAnchor = Math.max(0, Math.min(
+        normalizedBlocks.length - 1,
+        anchorIndex >= 0 ? anchorIndex : normalizedBlocks.length - 1
+    ));
+    const anchorBlock = normalizedBlocks[resolvedAnchor];
+    if (anchorBlock.length >= maxRows) {
+        const fromEnd = resolvedAnchor > 0;
+        return {
+            lines: trimRenderedBlockEdge(anchorBlock, maxRows, fromEnd),
+            startRow: fromEnd
+                ? rowOffsets[resolvedAnchor] + Math.max(0, anchorBlock.length - Math.max(1, maxRows - 1))
+                : rowOffsets[resolvedAnchor],
+            totalRows
+        };
+    }
+
+    let start = resolvedAnchor;
+    let end = resolvedAnchor;
+    let usedRows = anchorBlock.length;
+    const centered = resolvedAnchor < normalizedBlocks.length - 1;
+    let preferNext = centered;
+
+    const tryExtend = (direction: 'prev' | 'next'): boolean => {
+        if (direction === 'prev') {
+            const nextIndex = start - 1;
+            if (nextIndex < 0) {
+                return false;
+            }
+            const nextBlock = normalizedBlocks[nextIndex];
+            if (usedRows + nextBlock.length > maxRows) {
+                return false;
+            }
+            start = nextIndex;
+            usedRows += nextBlock.length;
+            return true;
+        }
+        const nextIndex = end + 1;
+        if (nextIndex >= normalizedBlocks.length) {
+            return false;
+        }
+        const nextBlock = normalizedBlocks[nextIndex];
+        if (usedRows + nextBlock.length > maxRows) {
+            return false;
+        }
+        end = nextIndex;
+        usedRows += nextBlock.length;
+        return true;
+    };
+
+    while (usedRows < maxRows) {
+        const primary = preferNext ? 'next' : 'prev';
+        const secondary = preferNext ? 'prev' : 'next';
+        const extended = tryExtend(primary) || tryExtend(secondary);
+        if (!extended) {
+            break;
+        }
+        if (centered) {
+            preferNext = !preferNext;
+        }
+    }
+
+    const rendered: string[] = [];
+    const remainingRows = maxRows - usedRows;
+    let startRow = rowOffsets[start];
+    if (remainingRows > 0 && start > 0) {
+        const previousBlock = normalizedBlocks[start - 1];
+        rendered.push(...trimRenderedBlockEdge(previousBlock, remainingRows, true));
+        startRow = previousBlock.length > remainingRows
+            ? rowOffsets[start - 1] + Math.max(0, previousBlock.length - Math.max(1, remainingRows - 1))
+            : rowOffsets[start - 1];
+    }
+    for (let index = start; index <= end; index++) {
+        rendered.push(...normalizedBlocks[index]);
+    }
+    if (remainingRows > 0 && rendered.length < maxRows && end < normalizedBlocks.length - 1) {
+        rendered.push(...trimRenderedBlockEdge(
+            normalizedBlocks[end + 1],
+            Math.max(0, maxRows - rendered.length),
+            false
+        ));
+    }
+    return {
+        lines: rendered.slice(0, maxRows),
+        startRow,
+        totalRows
+    };
+}
+
+export function compactRenderedBlocks(blocks: string[][], maxRows: number, anchorIndex = -1): string[] {
+    return compactRenderedBlocksWindow(blocks, maxRows, anchorIndex).lines;
+}
+
+function windowTerminalBlocksForPrimaryScreen(blocks: string[][], maxRows: number, minLatestRows = 0): TerminalRenderedWindow {
+    if (maxRows <= 0) {
+        return { lines: [], startRow: 0, totalRows: 0 };
+    }
+    const normalizedBlocks = blocks
+        .map(block => compactRenderedLines(block, block.length || 0))
         .filter(block => block.length > 0);
     const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
     if (totalRows <= maxRows) {
         return {
-            lines: normalizedBlocks.flatMap(block => block),
+            lines: normalizedBlocks.flat(),
             startRow: 0,
             totalRows
         };
@@ -557,61 +1210,12 @@ function windowTerminalBlocksFromBottomWithContext(blocks: string[][], maxRows: 
     const remainingRows = Math.max(0, maxRows - latestTail.length);
     const precedingLines = normalizedBlocks
         .slice(0, latestRows >= latestBlock.length ? -1 : normalizedBlocks.length)
-        .flatMap(block => block);
-    const precedingWindow = windowTerminalLinesFromBottom(precedingLines, remainingRows, 0);
-    const lines = [
-        ...precedingWindow.lines,
-        ...latestTail
-    ].slice(-maxRows);
+        .flat();
+    const precedingWindow = windowRenderedLinesFromBottom(precedingLines, remainingRows, 0);
+    const lines = [...precedingWindow.lines, ...latestTail].slice(-maxRows);
     return {
         lines,
         startRow: Math.max(0, totalRows - lines.length),
-        totalRows
-    };
-}
-
-function windowTerminalBlocksAroundAnchor(blocks: string[][], maxRows: number, anchorIndex = -1): { lines: string[]; startRow: number; totalRows: number } {
-    if (maxRows <= 0) {
-        return { lines: [], startRow: 0, totalRows: 0 };
-    }
-    const normalizedBlocks = blocks
-        .map(block => compactTerminalRenderedLines(block, block.length || 0))
-        .filter(block => block.length > 0);
-    const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
-    if (totalRows <= maxRows) {
-        return {
-            lines: normalizedBlocks.flatMap(block => block),
-            startRow: 0,
-            totalRows
-        };
-    }
-    const safeAnchor = anchorIndex >= 0
-        ? Math.max(0, Math.min(anchorIndex, normalizedBlocks.length - 1))
-        : normalizedBlocks.length - 1;
-    const lines: string[] = [];
-    let startBlock = safeAnchor;
-    let endBlock = safeAnchor;
-    while (startBlock >= 0 || endBlock < normalizedBlocks.length) {
-        const candidateBlocks = normalizedBlocks.slice(Math.max(0, startBlock), Math.min(normalizedBlocks.length, endBlock + 1));
-        const candidateLines = candidateBlocks.flatMap(block => block);
-        if (candidateLines.length > maxRows) {
-            break;
-        }
-        lines.splice(0, lines.length, ...candidateLines);
-        const canGrowBefore = startBlock > 0;
-        const canGrowAfter = endBlock < normalizedBlocks.length - 1;
-        if (canGrowAfter) {
-            endBlock += 1;
-        } else if (canGrowBefore) {
-            startBlock -= 1;
-        } else {
-            break;
-        }
-    }
-    const compacted = compactTerminalRenderedLines(lines, maxRows);
-    return {
-        lines: compacted,
-        startRow: Math.max(0, totalRows - compacted.length),
         totalRows
     };
 }
@@ -755,10 +1359,10 @@ export function composePrimaryTerminalScreen(options: TerminalPrimaryScreenOptio
         visibleTopLines = topLines.slice(0, Math.max(0, availableTopAndTranscriptRows - reservedTranscriptRows));
         const availableTranscriptRows = Math.max(0, availableTopAndTranscriptRows - visibleTopLines.length);
         const window = options.scrollOffset && options.scrollOffset > 0
-            ? windowTerminalLinesFromBottom(transcriptLines, availableTranscriptRows, options.scrollOffset)
+            ? windowRenderedLinesFromBottom(transcriptLines, availableTranscriptRows, options.scrollOffset)
             : typeof options.anchorBlockIndex === 'number' && options.anchorBlockIndex >= 0
-                ? windowTerminalBlocksAroundAnchor(transcriptBlocks, availableTranscriptRows, options.anchorBlockIndex)
-                : windowTerminalBlocksFromBottomWithContext(transcriptBlocks, availableTranscriptRows, options.minContextRows || 0);
+                ? compactRenderedBlocksWindow(transcriptBlocks, availableTranscriptRows, options.anchorBlockIndex)
+                : windowTerminalBlocksForPrimaryScreen(transcriptBlocks, availableTranscriptRows, options.minContextRows || 0);
         visibleTranscriptLines = window.lines;
         transcriptTotalRows = window.totalRows;
         transcriptMaxScrollOffset = Math.max(0, window.totalRows - window.lines.length);
@@ -983,251 +1587,6 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
     };
 }
 
-export class TerminalUiController {
-    protected currentDraft = '';
-    protected draftCursor = 0;
-    protected suggestionState: SuggestionState = { items: [], selectedIndex: -1 };
-    protected historyEntries: string[] = [];
-    protected historyIndex = -1;
-    protected historyDraft = '';
-    protected activeTextPrompt: { question: string; resolve: (value: string) => void } | null = null;
-
-    constructor(protected options: TerminalUiControllerOptions) {
-    }
-
-    get draft(): string {
-        return this.currentDraft;
-    }
-
-    get cursor(): number {
-        return this.draftCursor;
-    }
-
-    get suggestions(): SuggestionState {
-        return this.suggestionState;
-    }
-
-    get promptQuestion(): string {
-        return this.activeTextPrompt?.question || '';
-    }
-
-    setHistoryEntries(entries: string[]): void {
-        this.historyEntries = entries.slice();
-        this.historyIndex = -1;
-        this.historyDraft = '';
-    }
-
-    getHistoryEntries(): string[] {
-        return this.historyEntries.slice();
-    }
-
-    beginTextPrompt(question: string, resolve: (value: string) => void): void {
-        this.activeTextPrompt = { question, resolve };
-        this.historyIndex = -1;
-        this.historyDraft = '';
-        this.suggestionState = { items: [], selectedIndex: -1 };
-        this.updateDraft('', 0);
-    }
-
-    clearTextPrompt(): void {
-        this.activeTextPrompt = null;
-        this.updateDraft('', 0);
-    }
-
-    updateDraft(nextDraft: string, cursor = nextDraft.length): void {
-        this.currentDraft = nextDraft;
-        this.draftCursor = Math.max(0, Math.min(cursor, this.currentDraft.length));
-        this.options.setDraftDisplay(formatDisplayDraft(this.currentDraft, this.draftCursor));
-        const nextItems = resolveInputSuggestions(
-            this.currentDraft,
-            this.options.getCommands(),
-            this.options.getMentionCandidates()
-        );
-        this.suggestionState = normalizeSuggestionState(nextItems, this.suggestionState.selectedIndex >= 0 ? this.suggestionState.selectedIndex : 0);
-    }
-
-    applyChunk(chunk: Buffer | string): void {
-        const next = applyTerminalInputChunk(this.currentDraft, this.draftCursor, chunk);
-        this.updateDraft(next.value, next.cursor);
-    }
-
-    hasInteractiveSuggestions(): boolean {
-        const token = getActiveInputToken(this.currentDraft);
-        return !!token && (token.startsWith('/') || token.startsWith('@')) && this.suggestionState.items.length > 0;
-    }
-
-    applySuggestionValue(value?: string): void {
-        if (!value) {
-            return;
-        }
-        const nextInput = applySuggestionToInput(this.currentDraft, value);
-        this.suggestionState = { items: [], selectedIndex: -1 };
-        this.updateDraft(nextInput, nextInput.length);
-        this.options.render();
-    }
-
-    pushHistoryEntry(value: string): void {
-        const trimmed = value.trim();
-        if (!trimmed) {
-            return;
-        }
-        this.historyEntries = [trimmed, ...this.historyEntries.filter(item => item !== trimmed)].slice(0, 200);
-        this.historyIndex = -1;
-        this.historyDraft = '';
-    }
-
-    protected findHistoryIndex(startIndex: number, step: number): number {
-        for (let index = startIndex; index >= 0 && index < this.historyEntries.length; index += step) {
-            if (!shouldSkipConsoleHistoryEntry(this.historyEntries[index])) {
-                return index;
-            }
-        }
-        return -1;
-    }
-
-    navigateHistory(delta: number): void {
-        if (!this.historyEntries.length) {
-            return;
-        }
-        if (delta < 0) {
-            if (this.historyIndex === -1) {
-                this.historyDraft = this.currentDraft;
-            }
-            const nextIndex = this.findHistoryIndex(this.historyIndex + 1, 1);
-            if (nextIndex < 0) {
-                return;
-            }
-            this.historyIndex = nextIndex;
-        } else {
-            if (this.historyIndex === -1) {
-                return;
-            }
-            const nextIndex = this.findHistoryIndex(this.historyIndex - 1, -1);
-            if (nextIndex < 0) {
-                this.historyIndex = -1;
-                this.updateDraft(this.historyDraft, this.historyDraft.length);
-                this.options.render();
-                return;
-            }
-            this.historyIndex = nextIndex;
-        }
-        const next = this.historyEntries[this.historyIndex] || '';
-        this.updateDraft(next, next.length);
-        this.options.render();
-    }
-
-    resolveTextPrompt(): boolean {
-        const prompt = this.activeTextPrompt;
-        if (!prompt) {
-            return false;
-        }
-        this.activeTextPrompt = null;
-        prompt.resolve(this.currentDraft);
-        this.options.render();
-        return true;
-    }
-
-    async submitCurrentDraft(): Promise<void> {
-        const line = this.currentDraft;
-        this.historyIndex = -1;
-        this.historyDraft = '';
-        this.suggestionState = { items: [], selectedIndex: -1 };
-        this.updateDraft('', 0);
-        await this.options.submit(line);
-    }
-
-    scheduleRender(): void {
-        if (this.options.isClosed() || this.options.isSelecting() || this.options.isInputLocked()) {
-            return;
-        }
-        Promise.resolve().then(() => {
-            if (this.options.isClosed() || this.options.isSelecting() || this.options.isInputLocked()) {
-                return;
-            }
-            this.options.render();
-        });
-    }
-
-    async handleKeypress(str: string, key: TerminalKeyPress): Promise<boolean> {
-        if (this.options.isClosed()) {
-            return true;
-        }
-        const menu = this.options.menu?.getMenu();
-        if (menu && handleTerminalMenuKey(this.options.menu, key?.name || '', str, { render: this.options.render })) {
-            return true;
-        }
-        if (menu && !isSuggestionMenu(menu)) {
-            return true;
-        }
-        if (this.activeTextPrompt && key?.name === 'return') {
-            this.resolveTextPrompt();
-            return true;
-        }
-        if (!this.options.isModalPromptActive() && !this.options.isInputLocked() && !this.hasInteractiveSuggestions() && key?.name === 'up') {
-            this.navigateHistory(-1);
-            return true;
-        }
-        if (!this.options.isModalPromptActive() && !this.options.isInputLocked() && !this.hasInteractiveSuggestions() && key?.name === 'down') {
-            this.navigateHistory(1);
-            return true;
-        }
-        if (this.options.isModalPromptActive() || this.options.isInputLocked() || !this.hasInteractiveSuggestions()) {
-            if (!this.options.isModalPromptActive() && !this.options.isInputLocked() && key?.name === 'return') {
-                await this.submitCurrentDraft();
-                return true;
-            }
-            const isEditableKey = key?.name === 'backspace'
-                || key?.name === 'delete'
-                || key?.name === 'left'
-                || key?.name === 'right'
-                || key?.name === 'home'
-                || key?.name === 'end'
-                || (!!str && !key?.ctrl && !key?.meta && key?.name !== 'return' && key?.name !== 'tab');
-            if (isEditableKey) {
-                this.scheduleRender();
-                return true;
-            }
-            return false;
-        }
-        if (key?.name === 'down') {
-            this.suggestionState = moveSuggestionSelection(this.suggestionState, 1);
-            this.options.render();
-            return true;
-        }
-        if (key?.name === 'up') {
-            this.suggestionState = moveSuggestionSelection(this.suggestionState, -1);
-            this.options.render();
-            return true;
-        }
-        if (key?.name === 'return' && shouldAcceptSuggestionOnEnter(this.currentDraft, this.suggestionState)) {
-            const selected = this.suggestionState.items[this.suggestionState.selectedIndex];
-            this.applySuggestionValue(selected?.value);
-            return true;
-        }
-        if (key?.name === 'return') {
-            await this.submitCurrentDraft();
-            return true;
-        }
-        if (key?.name === 'tab' && this.suggestionState.selectedIndex >= 0) {
-            const selected = this.suggestionState.items[this.suggestionState.selectedIndex];
-            this.applySuggestionValue(selected?.value);
-            return true;
-        }
-        const isEditableKey = key?.name === 'backspace'
-            || key?.name === 'delete'
-            || key?.name === 'left'
-            || key?.name === 'right'
-            || key?.name === 'home'
-            || key?.name === 'end'
-            || (!!str && !key?.ctrl && !key?.meta && key?.name !== 'return' && key?.name !== 'tab');
-        if (isEditableKey) {
-            this.scheduleRender();
-            return true;
-        }
-        return false;
-    }
-}
-
 export function formatDisplayDraft(value: string, cursor: number): string {
     void cursor;
     return value;
@@ -1244,7 +1603,7 @@ export function buildSuggestionMenuOptions(state: SuggestionState): SelectMenuOp
     }));
 }
 
-export function renderSelectMenu(title: string, options: SelectMenuOption[], selectedIndex: number, hint = '1-9 select   up/down move   enter confirm   q cancel'): string[] {
+export function renderSelectMenu(title: string, options: SelectMenuOption[], selectedIndex: number, hint = DEFAULT_CONSOLE_SELECT_HINT): string[] {
     const labelColumnWidth = resolveConsoleOptionLabelColumnWidth(options, 0);
     return [
         ...String(title || '').split('\n'),

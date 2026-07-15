@@ -12,6 +12,18 @@ import {
     renderPanel,
     renderPrimaryTerminalScreen,
     renderSelectMenu,
+    wrapPrefixedText,
+    compactRenderedLines,
+    compactRenderedBlocks,
+    compactRenderedBlocksWindow,
+    windowRenderedLinesFromBottom,
+    windowRenderedBlocksFromBottomWithContext,
+    buildOsc52ClipboardSequence,
+    getDisplayWidth,
+    sliceByDisplayWidth,
+    parseTerminalInputControlKey,
+    parseTerminalTextPromptChunk,
+    shouldPlaceConsoleCursor,
     resolveConsoleEnterAction,
     TerminalInputSequenceDecoder,
     resolveTerminalMenuInputKey,
@@ -784,5 +796,72 @@ export class ConsoleRendererTest {
         });
         expect(third.output).toContain('Working (2s)');
         expect(third.output).toContain('\x1b[1A');
+    }
+
+    @Test('wraps terminal prefixed text locally')
+    wrapsTerminalPrefixedTextLocally() {
+        expect(wrapPrefixedText('hello world wide', 10, '> ', '  ')).toEqual([
+            '> hello wo',
+            '  rld wide'
+        ]);
+    }
+
+    @Test('resolves terminal rendering helpers locally')
+    resolvesTerminalRenderingHelpersLocally() {
+        expect(getDisplayWidth('你好')).toBe(4);
+        expect(sliceByDisplayWidth('abc你好', 6)).toBe('abc你');
+        expect(buildOsc52ClipboardSequence('hello')).toBe('\u001b]52;c;aGVsbG8=\u0007');
+    }
+
+    @Test('windows terminal rendered blocks locally')
+    windowsTerminalRenderedBlocksLocally() {
+        expect(compactRenderedLines(['', 'old', 'new', ''], 2)).toEqual(['old', 'new']);
+        expect(compactRenderedBlocks([
+            ['old-1'],
+            ['selected-1', 'selected-2'],
+            ['new-1']
+        ], 3, 1)).toEqual(['selected-1', 'selected-2', 'new-1']);
+
+        expect(compactRenderedBlocksWindow([
+            ['old'],
+            ['new-1', 'new-2']
+        ], 2, 1).lines).toEqual(['new-1', 'new-2']);
+
+        expect(windowRenderedLinesFromBottom(['l1', 'l2', 'l3'], 2, 1)).toEqual({
+            lines: ['l1', 'l2'],
+            startRow: 0,
+            totalRows: 3
+        });
+
+        expect(windowRenderedBlocksFromBottomWithContext([
+            ['old-1', 'old-2'],
+            ['new-1', 'new-2', 'new-3']
+        ], 4, 2)).toEqual({
+            lines: ['old-1', 'old-2', '…', 'new-3'],
+            startRow: 0,
+            totalRows: 5
+        });
+    }
+
+    @Test('parses terminal prompt and cursor helpers locally')
+    parsesTerminalPromptAndCursorHelpersLocally() {
+        expect(parseTerminalInputControlKey('\u001b[A')).toBe('up');
+        expect(parseTerminalInputControlKey('\r')).toBe('return');
+        expect(parseTerminalInputControlKey('x')).toBe(undefined);
+        expect(parseTerminalTextPromptChunk(Buffer.from('sk-test\nextra'))).toEqual({
+            text: 'sk-test',
+            submitted: true
+        });
+        expect(shouldPlaceConsoleCursor({
+            isTTY: true,
+            isSelecting: false,
+            hasBlockingSelectMenu: false,
+            inputLocked: true,
+            modalPromptActive: true,
+            hasActiveTextPrompt: true,
+            hasSessionFocus: false,
+            hasMessageFocus: false,
+            hasMessageDetailFocus: false
+        })).toBe(true);
     }
 }

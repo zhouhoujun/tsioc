@@ -25,7 +25,6 @@ import {
     composePrimaryTerminalScreen,
     composeTerminalScreenSections,
     findSelectMenuOptionIndexFromRenderedLines,
-    fitLine,
     getChatCommands,
     handleTerminalMenuKey,
     isSuggestionMenu,
@@ -34,18 +33,39 @@ import {
     TerminalInputSequenceDecoder,
     resolveTerminalMenuNextIndex,
     resolveTerminalMenuInputKey,
-    TerminalPrimaryRenderState
+    parseTerminalInputControlKey,
+    TerminalPrimaryRenderState,
+    shouldUseAlternateScreen,
+    wrapTerminalText,
+    wrapPrefixedText,
+    parseTerminalTextPromptChunk,
+    compactRenderedLines,
+    windowRenderedLinesFromBottom,
+    windowRenderedBlocksFromBottomWithContext,
+    compactRenderedBlocksWindow,
+    compactRenderedBlocks,
+    buildOsc52ClipboardSequence,
+    TerminalRenderedWindow,
+    DEFAULT_TERMINAL_APP_TITLE,
+    DEFAULT_CONSOLE_SELECT_HINT,
+    buildTerminalBrandBlock,
+    formatTerminalStatusFooter,
+    renderTerminalMarkdownLines,
+    renderTerminalBlock,
+    renderTerminalBlockLines,
+    resolveTerminalSize
 } from '@tsdi/components/console';
 import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
 import { AgentCliProviderProfile } from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { TerminalConsoleUiDelegate } from './terminal-ui-delegate';
-import { AgentUiConfigService } from '@tsdi/agent';
+import { AgentUiConfigService, defaultAgentConsoleOptions } from '@tsdi/agent';
 
 const configReader = new CliAgentUiConfigReader();
 
 const HISTORY_FILE = 'chat-history.json';
 const CLI_VERSION = '6.0.31';
+const DEFAULT_CONSOLE_OPTIONS = defaultAgentConsoleOptions;
 const SPINNER_FRAMES = Array.from({ length: 14 }, (_value, index) => String(Math.floor(index / 2)));
 const CANCEL_INPUTS = new Set(['q', 'cancel', '/cancel']);
 const EXIT_INPUTS = new Set(['/exit', '/quit']);
@@ -73,7 +93,6 @@ const PROVIDER_STRONG_MODELS: Record<string, string> = {
     'openai-compatible': 'custom-model',
     anthropic: 'claude-sonnet-4-20250514'
 };
-const SELECT_MENU_VISIBLE_OPTIONS = 12;
 
 const ANSI = {
     reset: '\x1b[0m',
@@ -90,457 +109,6 @@ const ANSI = {
     bgUser: '\x1b[48;2;26;37;31m'
 } as const;
 
-const JS_LIKE_KEYWORDS = new Set([
-    'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default',
-    'delete', 'else', 'export', 'extends', 'false', 'finally', 'for', 'from', 'function',
-    'if', 'import', 'in', 'interface', 'let', 'new', 'null', 'return', 'static', 'switch',
-    'throw', 'true', 'try', 'type', 'typeof', 'undefined', 'var', 'while', 'yield'
-]);
-
-const SHELL_KEYWORDS = new Set([
-    'case', 'cd', 'do', 'done', 'echo', 'elif', 'else', 'esac', 'export', 'fi', 'for',
-    'function', 'git', 'if', 'local', 'node', 'npm', 'pnpm', 'return', 'then', 'while', 'yarn'
-]);
-
-export function findInputPromptRow(lines: string[]): number {
-    for (let index = lines.length - 1; index >= 0; index--) {
-        const line = lines[index];
-        const promptColumn = line.indexOf('> ');
-        if (promptColumn < 0) {
-            continue;
-        }
-        const beforePrompt = line.slice(0, promptColumn).trim();
-        if (beforePrompt === '│' || beforePrompt === '') {
-            return index;
-        }
-    }
-    return -1;
-}
-
-export function getTerminalDisplayWidth(value: string): number {
-    return getDisplayWidth(value);
-}
-
-export function fitTerminalAnsiLine(line: string, width: number): string {
-    return fitAnsiLine(line, width);
-}
-
-export function shortenWorkspacePath(workspace: string): string {
-    const value = String(workspace || '').trim();
-    if (!value) {
-        return '';
-    }
-    const home = typeof process !== 'undefined' ? (process.env.HOME || '') : '';
-    if (home && value.startsWith(home)) {
-        return `~${value.slice(home.length)}`;
-    }
-    return value;
-}
-
-export function formatChatFooter(model: string, profile: string, workspace: string): string {
-    const modelLabel = String(model || '').trim();
-    const profileLabel = String(profile || '').trim();
-    const workspaceLabel = shortenWorkspacePath(workspace);
-    const left = [modelLabel, profileLabel].filter(Boolean).join(' ');
-    const parts = [left, workspaceLabel].filter(Boolean);
-    return parts.join(' · ');
-}
-
-export function buildEmptyStateLogoBlock(width: number, appTitle = 'TSDI Agent', model = '', workspace = '', version = CLI_VERSION): string[] {
-    return buildBrandHeaderBlock(width, appTitle, model, workspace, version);
-}
-
-export function buildBrandHeaderBlock(width: number, appTitle = 'TSDI Agent', model = '', workspace = '', version = CLI_VERSION): string[] {
-    const titleLine = `${appTitle.toUpperCase()} v${version}`;
-    const metaLine = formatChatFooter(model, '', workspace);
-    const borderLeft = '│';
-    const borderRight = '│';
-    const borderTop = '╭';
-    const borderBottom = '╰';
-    const borderTopRight = '╮';
-    const borderBottomRight = '╯';
-    const borderHorizontal = '─';
-    const maxInnerWidth = Math.max(1, width - 2);
-    const innerWidth = Math.max(1, Math.min(
-        maxInnerWidth,
-        Math.max(8, getDisplayWidth(titleLine), getDisplayWidth(metaLine))
-    ));
-    const fitContent = (value: string, ...codes: string[]): string => {
-        const clipped = getDisplayWidth(value) > innerWidth
-            ? sliceByDisplayWidth(value, innerWidth)
-            : value;
-        const padding = ' '.repeat(Math.max(0, innerWidth - getDisplayWidth(clipped)));
-        return `${paint(borderLeft, ANSI.dim)}${paint(clipped, ...codes)}${padding}${paint(borderRight, ANSI.dim)}`;
-    };
-    return [
-        paint(`${borderTop}${borderHorizontal.repeat(innerWidth)}${borderTopRight}`, ANSI.dim),
-        fitContent(titleLine, ANSI.blueStrong),
-        fitContent(metaLine, ANSI.dim),
-        paint(`${borderBottom}${borderHorizontal.repeat(innerWidth)}${borderBottomRight}`, ANSI.dim)
-    ];
-}
-
-export function shouldUseAlternateScreen(): boolean {
-    const configured = String(process.env.TSDI_AGENT_ALT_SCREEN || '').trim().toLowerCase();
-    if (!configured) {
-        return false;
-    }
-    return configured !== '0' && configured !== 'false' && configured !== 'no';
-}
-
-export function wrapTerminalText(value: string, width: number): string[] {
-    const chunkWidth = Math.max(1, width);
-    const normalized = String(value || '').replace(/\r/g, '').split('\n');
-    const lines: string[] = [];
-    normalized.forEach(line => {
-        if (!line) {
-            lines.push('');
-            return;
-        }
-        let rest = line;
-        while (rest) {
-            const chunk = sliceByDisplayWidth(rest, chunkWidth) || rest.slice(0, chunkWidth);
-            lines.push(chunk);
-            rest = rest.slice(chunk.length);
-        }
-    });
-    return lines.length ? lines : [''];
-}
-
-export function wrapPrefixedText(value: string, width: number, firstPrefix = '', continuationPrefix = ''): string[] {
-    const normalized = String(value || '').replace(/\r/g, '').split('\n');
-    const lines: string[] = [];
-    let renderedAny = false;
-    normalized.forEach(line => {
-        const prefix = renderedAny ? continuationPrefix : firstPrefix;
-        const availableWidth = Math.max(1, width - getDisplayWidth(prefix));
-        if (!line) {
-            lines.push(prefix);
-            renderedAny = true;
-            return;
-        }
-        const wrapped = wrapTerminalText(line, availableWidth);
-        wrapped.forEach((chunk, index) => {
-            const currentPrefix = renderedAny || index > 0 ? continuationPrefix : firstPrefix;
-            lines.push(`${currentPrefix}${chunk}`);
-            renderedAny = true;
-        });
-    });
-    return lines.length ? lines : [firstPrefix];
-}
-
-function paintToken(value: string, color?: string): string {
-    return color ? paint(value, color) : value;
-}
-
-interface StyledTextSegment {
-    text: string;
-    codes?: string[];
-}
-
-function isJsonLanguage(lang: string): boolean {
-    return lang === 'json' || lang === 'jsonc';
-}
-
-function isShellLanguage(lang: string): boolean {
-    return lang === 'bash' || lang === 'sh' || lang === 'shell' || lang === 'zsh';
-}
-
-function isJsLikeLanguage(lang: string): boolean {
-    return !lang || lang === 'js' || lang === 'jsx' || lang === 'ts' || lang === 'tsx' || lang === 'javascript' || lang === 'typescript';
-}
-
-function mergeAnsiCodes(...groups: Array<string[] | undefined>): string[] | undefined {
-    const merged = groups.flatMap(group => group || []).filter(Boolean);
-    return merged.length ? merged : undefined;
-}
-
-function paintStyledSegment(segment: StyledTextSegment): string {
-    return segment.codes?.length ? paint(segment.text, ...segment.codes) : segment.text;
-}
-
-function unescapeMarkdownText(value: string): string {
-    return String(value || '').replace(/\\([\\`*_{}\[\]()#+\-.!>])/g, '$1');
-}
-
-function tokenizeMarkdownInline(value: string, baseCodes?: string[]): StyledTextSegment[] {
-    const input = String(value || '');
-    const tokenPattern = /(`[^`\n]+`|!\[[^\]]*\]\(([^)]+)\)|\[[^\]]+\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~|\*([^*\n]+)\*|_([^_\n]+)_)/g;
-    const segments: StyledTextSegment[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = tokenPattern.exec(input))) {
-        if (match.index > lastIndex) {
-            segments.push({
-                text: unescapeMarkdownText(input.slice(lastIndex, match.index)),
-                codes: baseCodes
-            });
-        }
-        const token = match[0];
-        if (token.startsWith('`')) {
-            segments.push({
-                text: token.slice(1, -1),
-                codes: mergeAnsiCodes(baseCodes, [ANSI.bgSelected, ANSI.amber])
-            });
-        } else if (token.startsWith('![')) {
-            const imageMatch = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
-            const alt = unescapeMarkdownText(imageMatch?.[1] || 'image');
-            const url = unescapeMarkdownText(imageMatch?.[2] || '');
-            segments.push({
-                text: alt,
-                codes: mergeAnsiCodes(baseCodes, [ANSI.blueStrong])
-            });
-            if (url) {
-                segments.push({
-                    text: ` (${url})`,
-                    codes: mergeAnsiCodes(baseCodes, [ANSI.dim])
-                });
-            }
-        } else if (token.startsWith('[')) {
-            const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
-            const label = unescapeMarkdownText(linkMatch?.[1] || '');
-            const url = unescapeMarkdownText(linkMatch?.[2] || '');
-            segments.push({
-                text: label || url,
-                codes: mergeAnsiCodes(baseCodes, [ANSI.blueStrong])
-            });
-            if (url && url !== label) {
-                segments.push({
-                    text: ` (${url})`,
-                    codes: mergeAnsiCodes(baseCodes, [ANSI.dim])
-                });
-            }
-        } else if (token.startsWith('**') || token.startsWith('__')) {
-            segments.push({
-                text: unescapeMarkdownText(token.slice(2, -2)),
-                codes: mergeAnsiCodes(baseCodes, [ANSI.blueStrong])
-            });
-        } else if (token.startsWith('~~')) {
-            segments.push({
-                text: unescapeMarkdownText(token.slice(2, -2)),
-                codes: mergeAnsiCodes(baseCodes, [ANSI.dim])
-            });
-        } else {
-            segments.push({
-                text: unescapeMarkdownText(token.slice(1, -1)),
-                codes: mergeAnsiCodes(baseCodes, [ANSI.blue])
-            });
-        }
-        lastIndex = match.index + token.length;
-    }
-    if (lastIndex < input.length) {
-        segments.push({
-            text: unescapeMarkdownText(input.slice(lastIndex)),
-            codes: baseCodes
-        });
-    }
-    return segments.length ? segments : [{
-        text: unescapeMarkdownText(input),
-        codes: baseCodes
-    }];
-}
-
-function wrapStyledSegments(segments: StyledTextSegment[], width: number): string[] {
-    const chunkWidth = Math.max(1, width);
-    const lines: string[] = [];
-    let currentLine = '';
-    let currentWidth = 0;
-    const flushLine = () => {
-        lines.push(currentLine);
-        currentLine = '';
-        currentWidth = 0;
-    };
-    for (const segment of segments) {
-        let rest = segment.text;
-        if (!rest) {
-            continue;
-        }
-        while (rest) {
-            if (currentWidth >= chunkWidth) {
-                flushLine();
-            }
-            const availableWidth = Math.max(1, chunkWidth - currentWidth);
-            let chunk = sliceByDisplayWidth(rest, availableWidth);
-            if (!chunk) {
-                chunk = rest.slice(0, 1);
-            }
-            currentLine += paintStyledSegment({
-                text: chunk,
-                codes: segment.codes
-            });
-            currentWidth += getDisplayWidth(chunk);
-            rest = rest.slice(chunk.length);
-            if (rest && currentWidth >= chunkWidth) {
-                flushLine();
-            }
-        }
-    }
-    if (!lines.length || currentLine || !segments.length) {
-        lines.push(currentLine);
-    }
-    return lines;
-}
-
-function renderMarkdownTextLine(sourceLine: string, width: number): string[] {
-    const chunkWidth = Math.max(12, width);
-    const original = String(sourceLine || '');
-    let line = original;
-    let firstPrefix = '';
-    let continuationPrefix = '';
-    let baseCodes: string[] | undefined;
-
-    const headingMatch = /^(\s*)(#{1,6})\s+(.*)$/.exec(line);
-    if (headingMatch) {
-        firstPrefix = headingMatch[1];
-        continuationPrefix = headingMatch[1];
-        line = headingMatch[3];
-        baseCodes = [ANSI.blueStrong];
-    } else {
-        const quoteMatch = /^(\s*)>\s?(.*)$/.exec(line);
-        if (quoteMatch) {
-            firstPrefix = `${quoteMatch[1]}| `;
-            continuationPrefix = `${quoteMatch[1]}  `;
-            line = quoteMatch[2];
-            baseCodes = [ANSI.dim];
-        } else {
-            const taskMatch = /^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
-            if (taskMatch) {
-                firstPrefix = `${taskMatch[1]}[${taskMatch[2].toLowerCase() === 'x' ? 'x' : ' '}] `;
-                continuationPrefix = `${taskMatch[1]}    `;
-                line = taskMatch[3];
-            } else {
-                const orderedMatch = /^(\s*\d+\.)\s+(.*)$/.exec(line);
-                if (orderedMatch) {
-                    firstPrefix = `${orderedMatch[1]} `;
-                    continuationPrefix = `${' '.repeat(getDisplayWidth(firstPrefix))}`;
-                    line = orderedMatch[2];
-                } else {
-                    const bulletMatch = /^(\s*)[-*+]\s+(.*)$/.exec(line);
-                    if (bulletMatch) {
-                        firstPrefix = `${bulletMatch[1]}- `;
-                        continuationPrefix = `${bulletMatch[1]}  `;
-                        line = bulletMatch[2];
-                    }
-                }
-            }
-        }
-    }
-
-    if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(original)) {
-        return [paint('-'.repeat(chunkWidth), ANSI.dim)];
-    }
-
-    const wrapped = wrapStyledSegments(
-        tokenizeMarkdownInline(line, baseCodes),
-        Math.max(1, chunkWidth - getDisplayWidth(firstPrefix || continuationPrefix))
-    );
-    return wrapped.map((chunk, index) => {
-        const prefix = index === 0 ? firstPrefix : continuationPrefix;
-        return `${prefix}${chunk}`;
-    });
-}
-
-export function highlightCodeLine(line: string, language = ''): string {
-    const lang = String(language || '').trim().toLowerCase();
-    const source = String(line || '');
-    const jsLike = isJsLikeLanguage(lang);
-    const keywordSet = isShellLanguage(lang) ? SHELL_KEYWORDS : JS_LIKE_KEYWORDS;
-    let index = 0;
-    let result = '';
-    while (index < source.length) {
-        const rest = source.slice(index);
-        if (rest.startsWith('//') && jsLike) {
-            result += paintToken(rest, ANSI.dim);
-            break;
-        }
-        if (rest.startsWith('#') && isShellLanguage(lang)) {
-            result += paintToken(rest, ANSI.dim);
-            break;
-        }
-        const char = source[index];
-        if (char === '"' || char === '\'' || char === '`') {
-            let end = index + 1;
-            while (end < source.length) {
-                if (source[end] === '\\') {
-                    end += 2;
-                    continue;
-                }
-                if (source[end] === char) {
-                    end += 1;
-                    break;
-                }
-                end += 1;
-            }
-            const token = source.slice(index, end);
-            if (isJsonLanguage(lang)) {
-                const remaining = source.slice(end);
-                const isKey = /^(\s*):/.test(remaining);
-                result += paintToken(token, isKey ? ANSI.blueStrong : ANSI.green);
-            } else {
-                result += paintToken(token, ANSI.green);
-            }
-            index = end;
-            continue;
-        }
-        const numberMatch = /^\d+(?:\.\d+)?/.exec(rest);
-        if (numberMatch) {
-            result += paintToken(numberMatch[0], ANSI.amber);
-            index += numberMatch[0].length;
-            continue;
-        }
-        const variableMatch = isShellLanguage(lang) ? /^\$[A-Za-z_][A-Za-z0-9_]*/.exec(rest) : null;
-        if (variableMatch) {
-            result += paintToken(variableMatch[0], ANSI.blue);
-            index += variableMatch[0].length;
-            continue;
-        }
-        const identifierMatch = /^[A-Za-z_$][A-Za-z0-9_$-]*/.exec(rest);
-        if (identifierMatch) {
-            const token = identifierMatch[0];
-            if (keywordSet.has(token)) {
-                result += paintToken(token, ANSI.blueStrong);
-            } else if (token === 'true' || token === 'false' || token === 'null') {
-                result += paintToken(token, ANSI.amber);
-            } else {
-                result += token;
-            }
-            index += token.length;
-            continue;
-        }
-        result += char;
-        index += 1;
-    }
-    return result;
-}
-
-export function renderAssistantMessageLines(content: string, width: number): string[] {
-    const chunkWidth = Math.max(12, width);
-    const sourceLines = String(content || '').replace(/\r/g, '').split('\n');
-    const rendered: string[] = [];
-    let inFence = false;
-    let fenceLanguage = '';
-    for (const sourceLine of sourceLines) {
-        const trimmed = sourceLine.trim();
-        if (trimmed.startsWith('```')) {
-            if (inFence) {
-                inFence = false;
-                fenceLanguage = '';
-                continue;
-            }
-            inFence = true;
-            fenceLanguage = trimmed.slice(3).trim().toLowerCase();
-            continue;
-        }
-        if (inFence) {
-            const wrappedCodeLines = wrapTerminalText(sourceLine, chunkWidth);
-            wrappedCodeLines.forEach(line => rendered.push(highlightCodeLine(line, fenceLanguage)));
-            continue;
-        }
-        rendered.push(...renderMarkdownTextLine(sourceLine, chunkWidth));
-    }
-    return rendered.length ? rendered : ['…'];
-}
-
 function stripAnsi(value: string): string {
     return value.replace(/\x1b\[[0-9;]*m/g, '');
 }
@@ -556,447 +124,6 @@ function fitAnsiLine(line: string, width: number): string {
 function paint(value: string, ...codes: string[]): string {
     const prefix = codes.filter(Boolean).join('');
     return prefix ? `${prefix}${value}${ANSI.reset}` : value;
-}
-
-function paintActive(value: string, ...codes: string[]): string {
-    return paint(` ${value} `, ...codes);
-}
-
-function paintBlock(value: string, width: number, ...codes: string[]): string {
-    const innerWidth = Math.max(0, width - 2);
-    return paint(` ${padDisplayText(value, innerWidth)} `, ...codes);
-}
-
-function padDisplayText(value: string, width: number): string {
-    const rendered = String(value || '');
-    const plain = stripAnsi(rendered);
-    const plainWidth = getDisplayWidth(plain);
-    if (plainWidth >= width) {
-        return /\x1b\[[0-9;]*m/.test(rendered)
-            ? fitAnsiLine(rendered, width)
-            : sliceByDisplayWidth(rendered, width);
-    }
-    return `${rendered}${' '.repeat(width - plainWidth)}`;
-}
-
-type TerminalControlKey =
-    | 'up'
-    | 'down'
-    | 'left'
-    | 'right'
-    | 'home'
-    | 'end'
-    | 'pageup'
-    | 'pagedown'
-    | 'return'
-    | 'escape'
-    | 'tab';
-
-export function parseTerminalControlKey(chunk: Buffer | string): TerminalControlKey | undefined {
-    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : chunk;
-    if (!text) {
-        return undefined;
-    }
-    if (text === '\r' || text === '\n') {
-        return 'return';
-    }
-    if (text === '\t') {
-        return 'tab';
-    }
-    if (text === '\u001b') {
-        return 'escape';
-    }
-    if (text === '\u001b[A' || text === '\u001bOA' || /^\u001b\[\d+(;\d+)*A$/.test(text)) {
-        return 'up';
-    }
-    if (text === '\u001b[B' || text === '\u001bOB' || /^\u001b\[\d+(;\d+)*B$/.test(text)) {
-        return 'down';
-    }
-    if (text === '\u001b[C' || text === '\u001bOC' || /^\u001b\[\d+(;\d+)*C$/.test(text)) {
-        return 'right';
-    }
-    if (text === '\u001b[D' || text === '\u001bOD' || /^\u001b\[\d+(;\d+)*D$/.test(text)) {
-        return 'left';
-    }
-    if (text === '\u001b[H' || text === '\u001bOH' || text === '\u001b[1~' || text === '\u001b[7~') {
-        return 'home';
-    }
-    if (text === '\u001b[F' || text === '\u001bOF' || text === '\u001b[4~' || text === '\u001b[8~') {
-        return 'end';
-    }
-    if (text === '\u001b[5~' || text === '\u001b[5;2~') {
-        return 'pageup';
-    }
-    if (text === '\u001b[6~' || text === '\u001b[6;2~') {
-        return 'pagedown';
-    }
-    return undefined;
-}
-
-export function parseTerminalTextPromptChunk(chunk: Buffer | string): { text: string; submitted: boolean } {
-    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
-    const submitIndex = text.search(/[\r\n]/);
-    if (submitIndex < 0) {
-        return { text, submitted: false };
-    }
-    return {
-        text: text.slice(0, submitIndex),
-        submitted: true
-    };
-}
-
-function isTerminalNavigationChunk(chunk: Buffer | string): boolean {
-    return !!parseTerminalControlKey(chunk);
-}
-
-export function shouldPlaceTerminalCursor(state: {
-    isTTY: boolean;
-    isSelecting: boolean;
-    hasBlockingSelectMenu: boolean;
-    inputLocked: boolean;
-    modalPromptActive: boolean;
-    hasActiveTextPrompt: boolean;
-    hasSessionFocus: boolean;
-    hasMessageFocus: boolean;
-    hasMessageDetailFocus: boolean;
-}): boolean {
-    return shouldPlaceConsoleCursor(state);
-}
-
-export function shouldRouteDraftNavigationKeys(state: {
-    hasBlockingSelectMenu: boolean;
-    hasSessionFocus: boolean;
-    hasMessageFocus: boolean;
-    hasMessageDetailFocus: boolean;
-    inputLocked: boolean;
-    modalPromptActive: boolean;
-    hasActiveTextPrompt: boolean;
-}): boolean {
-    return shouldRouteConsoleDraftNavigation(state);
-}
-
-export function shouldSuppressDuplicatedKeypress(state: {
-    lastRawKey?: string;
-    lastRawAt?: number;
-    now: number;
-    keyName?: string;
-    text?: string;
-}): boolean {
-    return shouldSuppressConsoleDuplicatedKeypress(state);
-}
-
-export function resolveRawKeypressSuppressionKey(state: {
-    rawText?: string;
-    controlKey?: string;
-    submitTriggered?: boolean;
-    menuKey?: string;
-}): string | undefined {
-    return resolveConsoleRawKeypressSuppressionKey(state);
-}
-
-export function compactRenderedLines(lines: string[], maxRows: number): string[] {
-    const isPaintedBlankLine = (value: string): boolean => {
-        const rendered = String(value || '');
-        return /\x1b\[[0-9;]*m/.test(rendered) && !stripAnsi(rendered).trim();
-    };
-    const normalized: string[] = [];
-    for (const line of lines) {
-        const rendered = String(line || '');
-        const isAnsiPainted = /\x1b\[[0-9;]*m/.test(rendered);
-        const isBlank = !stripAnsi(rendered).trim() && !isAnsiPainted;
-        if (isBlank && (!normalized.length || !stripAnsi(normalized[normalized.length - 1]).trim())) {
-            continue;
-        }
-        normalized.push(line);
-    }
-    while (normalized.length && !stripAnsi(normalized[0]).trim() && !isPaintedBlankLine(normalized[0])) {
-        normalized.shift();
-    }
-    while (normalized.length && !stripAnsi(normalized[normalized.length - 1]).trim() && !isPaintedBlankLine(normalized[normalized.length - 1])) {
-        normalized.pop();
-    }
-    if (normalized.length <= maxRows) {
-        return normalized;
-    }
-    const trimmed = normalized.slice(normalized.length - Math.max(0, maxRows));
-    while (trimmed.length && !stripAnsi(trimmed[0]).trim() && !isPaintedBlankLine(trimmed[0])) {
-        trimmed.shift();
-    }
-    return trimmed;
-}
-
-interface CompactRenderedBlocksWindow {
-    lines: string[];
-    startRow: number;
-    totalRows: number;
-}
-
-export function windowRenderedLinesFromBottom(lines: string[], maxRows: number, scrollOffset = 0): CompactRenderedBlocksWindow {
-    if (maxRows <= 0) {
-        return {
-            lines: [],
-            startRow: 0,
-            totalRows: lines.length
-        };
-    }
-    const totalRows = lines.length;
-    if (totalRows <= maxRows) {
-        return {
-            lines: lines.slice(),
-            startRow: 0,
-            totalRows
-        };
-    }
-    const boundedOffset = Math.max(0, Math.min(scrollOffset, totalRows - maxRows));
-    const startRow = Math.max(0, totalRows - maxRows - boundedOffset);
-    return {
-        lines: lines.slice(startRow, startRow + maxRows),
-        startRow,
-        totalRows
-    };
-}
-
-export function windowRenderedBlocksFromBottomWithContext(blocks: string[][], maxRows: number, minLatestRows = 0): CompactRenderedBlocksWindow {
-    if (maxRows <= 0) {
-        return {
-            lines: [],
-            startRow: 0,
-            totalRows: 0
-        };
-    }
-    const normalizedBlocks = blocks
-        .map(block => compactRenderedLines(block, block.length || 0))
-        .filter(block => block.length > 0);
-    if (!normalizedBlocks.length) {
-        return {
-            lines: [],
-            startRow: 0,
-            totalRows: 0
-        };
-    }
-    const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
-    const rowOffsets: number[] = [];
-    let nextOffset = 0;
-    normalizedBlocks.forEach(block => {
-        rowOffsets.push(nextOffset);
-        nextOffset += block.length;
-    });
-    if (totalRows <= maxRows) {
-        return {
-            lines: normalizedBlocks.flat(),
-            startRow: 0,
-            totalRows
-        };
-    }
-    const latestIndex = normalizedBlocks.length - 1;
-    const latestBlock = normalizedBlocks[latestIndex];
-    if (normalizedBlocks.length === 1) {
-        return {
-            lines: trimRenderedBlockEdge(latestBlock, maxRows, true),
-            startRow: rowOffsets[latestIndex] + Math.max(0, latestBlock.length - Math.max(1, maxRows - 1)),
-            totalRows
-        };
-    }
-    const latestFloor = Math.max(1, Math.min(maxRows, minLatestRows || 0));
-    const historyRows = Math.max(0, maxRows - latestFloor);
-    const priorLines = normalizedBlocks.slice(0, latestIndex).flat();
-    const historyWindow = historyRows > 0
-        ? trimRenderedBlockEdge(priorLines, historyRows, true)
-        : [];
-    const latestRows = Math.max(1, maxRows - historyWindow.length);
-    const latestWindow = latestBlock.length > latestRows
-        ? trimRenderedBlockEdge(latestBlock, latestRows, true)
-        : latestBlock.slice();
-    const rendered = [...historyWindow, ...latestWindow];
-    const priorTotalRows = rowOffsets[latestIndex];
-    const historyStartRow = historyWindow.length === 0
-        ? rowOffsets[latestIndex]
-        : priorLines.length <= historyWindow.length
-            ? 0
-            : Math.max(0, priorTotalRows - Math.max(0, historyWindow.length - 1));
-    const latestStartRow = latestBlock.length > latestRows
-        ? rowOffsets[latestIndex] + Math.max(0, latestBlock.length - Math.max(1, latestRows - 1))
-        : rowOffsets[latestIndex];
-    return {
-        lines: rendered.slice(-maxRows),
-        startRow: historyWindow.length > 0 ? historyStartRow : latestStartRow,
-        totalRows
-    };
-}
-
-function trimRenderedBlockEdge(lines: string[], maxRows: number, fromEnd: boolean): string[] {
-    if (maxRows <= 0) {
-        return [];
-    }
-    if (lines.length <= maxRows) {
-        return lines.slice();
-    }
-    if (maxRows === 1) {
-        return ['…'];
-    }
-    if (fromEnd) {
-        return ['…', ...lines.slice(lines.length - (maxRows - 1))];
-    }
-    return [...lines.slice(0, maxRows - 1), '…'];
-}
-
-export function compactRenderedBlocksWindow(blocks: string[][], maxRows: number, anchorIndex = -1): CompactRenderedBlocksWindow {
-    if (maxRows <= 0) {
-        return {
-            lines: [],
-            startRow: 0,
-            totalRows: 0
-        };
-    }
-    const normalizedBlocks = blocks
-        .map(block => compactRenderedLines(block, block.length || 0))
-        .filter(block => block.length > 0);
-    if (!normalizedBlocks.length) {
-        return {
-            lines: [],
-            startRow: 0,
-            totalRows: 0
-        };
-    }
-    const totalRows = normalizedBlocks.reduce((sum, block) => sum + block.length, 0);
-    const rowOffsets: number[] = [];
-    let nextOffset = 0;
-    normalizedBlocks.forEach(block => {
-        rowOffsets.push(nextOffset);
-        nextOffset += block.length;
-    });
-    if (totalRows <= maxRows) {
-        return {
-            lines: normalizedBlocks.flat(),
-            startRow: 0,
-            totalRows
-        };
-    }
-
-    const resolvedAnchor = Math.max(0, Math.min(
-        normalizedBlocks.length - 1,
-        anchorIndex >= 0 ? anchorIndex : normalizedBlocks.length - 1
-    ));
-    const anchorBlock = normalizedBlocks[resolvedAnchor];
-    if (anchorBlock.length >= maxRows) {
-        const fromEnd = resolvedAnchor > 0;
-        return {
-            lines: trimRenderedBlockEdge(anchorBlock, maxRows, fromEnd),
-            startRow: fromEnd
-                ? rowOffsets[resolvedAnchor] + Math.max(0, anchorBlock.length - Math.max(1, maxRows - 1))
-                : rowOffsets[resolvedAnchor],
-            totalRows
-        };
-    }
-
-    let start = resolvedAnchor;
-    let end = resolvedAnchor;
-    let usedRows = anchorBlock.length;
-    const centered = resolvedAnchor < normalizedBlocks.length - 1;
-    let preferNext = centered;
-
-    const tryExtend = (direction: 'prev' | 'next'): boolean => {
-        if (direction === 'prev') {
-            const nextIndex = start - 1;
-            if (nextIndex < 0) {
-                return false;
-            }
-            const nextBlock = normalizedBlocks[nextIndex];
-            if (usedRows + nextBlock.length > maxRows) {
-                return false;
-            }
-            start = nextIndex;
-            usedRows += nextBlock.length;
-            return true;
-        }
-        const nextIndex = end + 1;
-        if (nextIndex >= normalizedBlocks.length) {
-            return false;
-        }
-        const nextBlock = normalizedBlocks[nextIndex];
-        if (usedRows + nextBlock.length > maxRows) {
-            return false;
-        }
-        end = nextIndex;
-        usedRows += nextBlock.length;
-        return true;
-    };
-
-    while (usedRows < maxRows) {
-        const primary = preferNext ? 'next' : 'prev';
-        const secondary = preferNext ? 'prev' : 'next';
-        const extended = tryExtend(primary) || tryExtend(secondary);
-        if (!extended) {
-            break;
-        }
-        if (centered) {
-            preferNext = !preferNext;
-        }
-    }
-
-    const rendered: string[] = [];
-    const remainingRows = maxRows - usedRows;
-    let startRow = rowOffsets[start];
-    if (remainingRows > 0 && start > 0) {
-        const previousBlock = normalizedBlocks[start - 1];
-        rendered.push(...trimRenderedBlockEdge(previousBlock, remainingRows, true));
-        startRow = previousBlock.length > remainingRows
-            ? rowOffsets[start - 1] + Math.max(0, previousBlock.length - Math.max(1, remainingRows - 1))
-            : rowOffsets[start - 1];
-    }
-    for (let index = start; index <= end; index++) {
-        rendered.push(...normalizedBlocks[index]);
-    }
-    if (remainingRows > 0 && rendered.length < maxRows && end < normalizedBlocks.length - 1) {
-        rendered.push(...trimRenderedBlockEdge(
-            normalizedBlocks[end + 1],
-            Math.max(0, maxRows - rendered.length),
-            false
-        ));
-    }
-    return {
-        lines: rendered.slice(0, maxRows),
-        startRow,
-        totalRows
-    };
-}
-
-export function compactRenderedBlocks(blocks: string[][], maxRows: number, anchorIndex = -1): string[] {
-    return compactRenderedBlocksWindow(blocks, maxRows, anchorIndex).lines;
-}
-
-export function buildOsc52ClipboardSequence(text: string): string {
-    const payload = Buffer.from(text, 'utf8').toString('base64');
-    return `\x1b]52;c;${payload}\x07`;
-}
-
-function renderShellBlockLines(contentLines: string[], width: number, ...codes: string[]): string[] {
-    const shellWidth = Math.max(24, width);
-    const shellInnerWidth = Math.max(8, shellWidth - 2);
-    return [
-        paint(' '.repeat(shellWidth), ...codes),
-        ...contentLines.map(line => paint(` ${padDisplayText(line, shellInnerWidth)} `, ...codes)),
-        paint(' '.repeat(shellWidth), ...codes)
-    ];
-}
-
-function renderShellMessageLines(contentLines: string[], width: number, ...codes: string[]): string[] {
-    const shellWidth = Math.max(24, width);
-    const shellInnerWidth = Math.max(8, shellWidth - 2);
-    return contentLines.map(line => paint(` ${padDisplayText(line, shellInnerWidth)} `, ...codes));
-}
-
-function renderPaddedMessageBlock(contentLines: string[], width: number, shellCodes: string[], ...lineCodes: string[]): string[] {
-    const shellWidth = Math.max(24, width);
-    return [
-        paint(' '.repeat(shellWidth), ...shellCodes),
-        ...renderShellMessageLines(contentLines, width, ...lineCodes),
-        paint(' '.repeat(shellWidth), ...shellCodes)
-    ];
-}
-
-function renderShellBlock(content: string, width: number, ...codes: string[]): string[] {
-    return renderShellBlockLines([content], width, ...codes);
 }
 
 class ChatExitRequest extends Error {
@@ -1248,7 +375,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     let transcriptScrollbarVisibleRows = 0;
     let transcriptScrollbarTotalRows = 0;
     let transcriptScrollbarDragging = false;
-    let frozenTranscriptWindow: CompactRenderedBlocksWindow | null = null;
+    let frozenTranscriptWindow: TerminalRenderedWindow | null = null;
     let frozenTranscriptWindowKey = '';
     let lastInlineCursorRow = 0;
     let currentCursorTarget: { row: number; column: number } | null = null;
@@ -1261,7 +388,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         process.stdout.write(visible ? '\x1b[?25h' : '\x1b[?25l');
         terminalCursorVisible = visible;
     };
-    const shouldRenderTerminalCursor = () => shouldPlaceTerminalCursor({
+    const shouldRenderTerminalCursor = () => shouldPlaceConsoleCursor({
         isTTY: !!process.stdout.isTTY,
         isSelecting,
         hasBlockingSelectMenu: hasBlockingSelectMenu(),
@@ -1363,7 +490,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         return !!activeMenu && !isSuggestionMenu(activeMenu);
     };
 
-    const shouldRouteDraftNavigation = (): boolean => shouldRouteDraftNavigationKeys({
+    const shouldRouteDraftNavigation = (): boolean => shouldRouteConsoleDraftNavigation({
         hasBlockingSelectMenu: hasBlockingSelectMenu(),
         hasSessionFocus: hasSessionFocus(),
         hasMessageFocus: hasMessageFocus(),
@@ -1536,7 +663,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         };
     };
 
-    const showSelectMenu = (title: string, options: SelectMenuOption[], initialIndex = 0, hint = '1-9 select   up/down move   enter confirm   q cancel'): Promise<string | undefined> => {
+    const showSelectMenu = (title: string, options: SelectMenuOption[], initialIndex = 0, hint = DEFAULT_CONSOLE_SELECT_HINT): Promise<string | undefined> => {
         return new Promise(resolve => {
             selectMenu = {
                 title,
@@ -1563,7 +690,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         });
     };
 
-    const promptSelect = async (title: string, options: SelectMenuOption[], initialIndex = 0, hint = '1-9 select   up/down move   enter confirm   q cancel'): Promise<string | undefined> => {
+    const promptSelect = async (title: string, options: SelectMenuOption[], initialIndex = 0, hint = DEFAULT_CONSOLE_SELECT_HINT): Promise<string | undefined> => {
         const finishSelectInteraction = beginSelectInteraction();
         try {
             return await showSelectMenu(title, options, initialIndex, hint);
@@ -1618,9 +745,9 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
     };
 
-    const getRetainedBrandLines = (): string[] => buildBrandHeaderBlock(
-        Math.max(24, process.stdout.columns || 100),
-        'TSDI Agent',
+    const getRetainedBrandLines = (): string[] => buildTerminalBrandBlock(
+        resolveTerminalSize(process.stdout).columns,
+        DEFAULT_TERMINAL_APP_TITLE,
         consoleState?.model || currentProfile?.model || '',
         consoleState?.workspace || resolved.workspace
     );
@@ -2465,13 +1592,14 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         renderVersion += 1;
-        const terminalColumns = process.stdout.columns || 100;
-        const width = Math.max(24, terminalColumns);
-        const height = Math.max(16, process.stdout.rows || 24);
+        const terminalSize = resolveTerminalSize(process.stdout);
+        const terminalColumns = terminalSize.columns;
+        const width = terminalSize.columns;
+        const height = terminalSize.rows;
         const showingExitFrame = exitFrameMode;
         const brandModel = consoleState?.model || currentProfile?.model || '';
         const brandWorkspace = consoleState?.workspace || resolved.workspace;
-        const brandLines = buildBrandHeaderBlock(width, 'TSDI Agent', brandModel, brandWorkspace);
+        const brandLines = buildTerminalBrandBlock(width, DEFAULT_TERMINAL_APP_TITLE, brandModel, brandWorkspace);
         currentCursorTarget = null;
         let wantsDynamicTranscriptFlow = false;
         if (consoleState?.setStatus && viewModel) {
@@ -2497,6 +1625,15 @@ async function runInteractiveChat(options: any): Promise<void> {
         let frozenTranscriptSourceKey = '';
         let inputLayout: { lines: string[]; cursorTargets?: Array<{ row: number; column: number }>; cursorTarget?: { row: number; column: number }; regions?: Array<{ id: string; startRow: number; endRow: number }> } | null = null;
         let selectLayout: { lines: string[]; cursorTargets?: Array<{ row: number; column: number }>; cursorTarget?: { row: number; column: number }; regions?: Array<{ id: string; startRow: number; endRow: number }> } | null = null;
+        const offsetCursorTarget = (target: { row: number; column: number } | null | undefined, rowOffset: number): { row: number; column: number } | null => {
+            if (!target) {
+                return null;
+            }
+            return {
+                row: rowOffset + target.row,
+                column: target.column
+            };
+        };
         const browsingTranscriptHistory = transcriptScrollOffset > 0;
         const toPaintedLine = (line?: string, ...codes: string[]): string | undefined => {
             if (!line) {
@@ -2534,15 +1671,25 @@ async function runInteractiveChat(options: any): Promise<void> {
                 pushLine(preInputLines, activeTextPrompt.question, ANSI.dim);
             }
             pushBlank(preInputLines);
-            const promptText = `> ${currentDraft}`;
+            const inputPrompt = consoleState?.inputPrompt || DEFAULT_CONSOLE_OPTIONS.inputPrompt || '';
+            const promptText = `${inputPrompt}${currentDraft}`;
             inputLines = [
-                ...renderShellBlock(promptText, width, ANSI.bg, ANSI.text),
-                paint(formatChatFooter(
+                ...renderTerminalBlock(promptText, {
+                    width,
+                    shellCodes: [ANSI.bg],
+                    lineCodes: [ANSI.text],
+                    paint
+                }),
+                paint(formatTerminalStatusFooter(
                     currentProfile?.model || '',
                     resolveModelProfileLabel(currentProfile || {} as AgentCliProviderProfile),
                     resolved.workspace
                 ), ANSI.dim)
             ];
+            currentCursorTarget = {
+                row: brandLines.length + preInputLines.length + 1,
+                column: Math.min(width - 1, 1 + getDisplayWidth(inputPrompt) + getDisplayWidth(currentDraft.slice(0, draftCursor)))
+            };
             const activeMenu = getActiveSelectMenu();
             if (activeMenu) {
                 pushBlank(selectLines);
@@ -2551,7 +1698,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 const visibleWindow = resolveConsoleSelectWindow(
                     activeMenu.options.length,
                     activeMenu.selectedIndex,
-                    SELECT_MENU_VISIBLE_OPTIONS
+                    DEFAULT_CONSOLE_OPTIONS.selectVisibleOptions || 0
                 );
                 activeMenu.options.slice(visibleWindow.start, visibleWindow.start + visibleWindow.count).forEach((option, index) => {
                     const absoluteIndex = visibleWindow.start + index;
@@ -2561,13 +1708,16 @@ async function runInteractiveChat(options: any): Promise<void> {
                         activeMenu.selectedIndex === absoluteIndex
                     );
                     if (activeMenu.selectedIndex === absoluteIndex) {
-                        selectLines.push(paintActive(label, ANSI.bgSelected, ANSI.blueStrong));
+                        selectLines.push(paint(` ${label} `, ANSI.bgSelected, ANSI.blueStrong));
                         return;
                     }
                     pushLine(selectLines, label, ANSI.text);
                 });
                 const selected = activeMenu.options[activeMenu.selectedIndex];
-                const detailLines = resolveConsoleSelectDetailLines(selected as any, { text: 6, json: 6 });
+                const detailLines = resolveConsoleSelectDetailLines(selected as any, {
+                    text: DEFAULT_CONSOLE_OPTIONS.selectDetailVisibleLines || 0,
+                    json: DEFAULT_CONSOLE_OPTIONS.selectDetailVisibleLines || 0
+                });
                 if (detailLines.length) {
                     pushLine(selectLines, 'Preview', ANSI.dim);
                     detailLines.forEach(line => pushLine(selectLines, line, ANSI.text));
@@ -2586,10 +1736,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             if (!useAlternateScreen) {
                 lastRenderedLines = rendered.slice();
                 const cursorMode = activeMenu ? 'bottom' : 'prompt';
-                const visibleLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
-                const promptRow = findInputPromptRow(visibleLines);
-                const cursorRow = cursorMode === 'prompt' && promptRow >= 0
-                    ? promptRow
+                const cursorRow = cursorMode === 'prompt' && currentCursorTarget
+                    ? currentCursorTarget.row
                     : Math.max(0, rendered.length - 1);
                 syncMouseTracking();
                 const result = renderPrimaryTerminalScreen({
@@ -2678,7 +1826,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             && visibleMessages.length === 0
             && !!statusPanel?.shouldShow;
         if (showStatusPanel) {
-            pushBlock(topFixedBlocks, Array.from({ length: 6 }, (_, index) => toPaintedLine(
+            pushBlock(topFixedBlocks, Array.from({ length: DEFAULT_CONSOLE_OPTIONS.statusVisibleLines || 0 }, (_, index) => toPaintedLine(
                 statusPanel?.statusLineAt?.(index),
                 ANSI.dim
             )));
@@ -2687,13 +1835,13 @@ async function runInteractiveChat(options: any): Promise<void> {
             pushBlock(topFixedBlocks, [
                 toPaintedLine(sessionsPanel.sessionsSummaryLabel, ANSI.amber),
                 toPaintedLine(sessionsPanel.sessionsHintLabel, ANSI.dim),
-                ...Array.from({ length: 6 }, (_, index) => {
+                ...Array.from({ length: DEFAULT_CONSOLE_OPTIONS.sessionsVisibleItems || 0 }, (_, index) => {
                     const line = sessionsPanel.sessionLabelAt?.(index);
                     if (!line) {
                         return undefined;
                     }
                     if (line.trimStart().startsWith('›')) {
-                        return paintActive(line, ANSI.bgSelected, ANSI.amber);
+                        return paint(` ${line} `, ANSI.bgSelected, ANSI.amber);
                     }
                     return paint(line, line.includes(' [current]') ? ANSI.amber : ANSI.text);
                 })
@@ -2702,14 +1850,14 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (!showingExitFrame && messagesFocused && messagesPanel) {
             pushBlock(topFixedBlocks, [
                 toPaintedLine(messagesPanel.messagesHintLabel, ANSI.dim),
-                ...Array.from({ length: 7 }, (_, index) => {
+                ...Array.from({ length: DEFAULT_CONSOLE_OPTIONS.messagesVisibleItems || 0 }, (_, index) => {
                     const item = messagesPanel.messageAt?.(index);
                     if (!item) {
                         return undefined;
                     }
                     const line = `${item.role || ''}${item.content || ''}`;
                     if (item.selected) {
-                        return paintActive(line || ' ', ANSI.bgSelected, ANSI.blueStrong);
+                        return paint(` ${line || ' '} `, ANSI.bgSelected, ANSI.blueStrong);
                     }
                     if (item.kind === 'you') {
                         return paint(line, ANSI.text);
@@ -2750,13 +1898,12 @@ async function runInteractiveChat(options: any): Promise<void> {
             const isLiveUser = messageIndex === liveUserMessageIndex;
             if (kind === 'you') {
                 const wrapped = wrapPrefixedText(content, Math.max(8, transcriptContentWidth), '› ', '  ');
-                const userBlock = renderPaddedMessageBlock(
-                    wrapped,
+                const userBlock = renderTerminalBlockLines(wrapped, {
                     width,
-                    [ANSI.bg],
-                    ANSI.bg,
-                    selected ? ANSI.blueStrong : ANSI.text
-                );
+                    shellCodes: [ANSI.bg],
+                    lineCodes: [ANSI.bg, selected ? ANSI.blueStrong : ANSI.text],
+                    paint
+                });
                 if (isLiveUser) {
                     liveTurnBlocks.push(userBlock);
                 } else {
@@ -2768,8 +1915,8 @@ async function runInteractiveChat(options: any): Promise<void> {
                 }
                 return;
             }
-            const renderedLines = renderAssistantMessageLines(content, transcriptContentWidth);
-            const assistantBlock = renderPaddedMessageBlock(renderedLines.map(renderedLine => {
+            const renderedLines = renderTerminalMarkdownLines(content, transcriptContentWidth);
+            const assistantBlock = renderTerminalBlockLines(renderedLines.map(renderedLine => {
                 if (!renderedLine) {
                     return '';
                 }
@@ -2780,7 +1927,11 @@ async function runInteractiveChat(options: any): Promise<void> {
                     return renderedLine;
                 }
                 return paint(renderedLine, ANSI.text);
-            }), width, selected ? [ANSI.bgSelected] : [ANSI.text]);
+            }), {
+                width,
+                shellCodes: selected ? [ANSI.bgSelected] : [ANSI.text],
+                paint
+            });
             if (isLiveAssistant) {
                 liveTurnBlocks.push(assistantBlock);
             } else {
@@ -2807,7 +1958,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             pushBlock(topFixedBlocks, [
                 toPaintedLine(detailPanel.detailSummaryLabel, ANSI.blue),
                 toPaintedLine(detailPanel.detailHintLabel, ANSI.dim),
-                ...Array.from({ length: 6 }, (_, index) => {
+                ...Array.from({ length: DEFAULT_CONSOLE_OPTIONS.messageDetailVisibleLines || 0 }, (_, index) => {
                     const number = detailPanel.detailLineNumberAt?.(index);
                     const content = detailPanel.detailLineContentAt?.(index);
                     return number || content
@@ -2871,10 +2022,10 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (!showingExitFrame) {
             const promptValue = consoleState?.input || '';
-            const placeholder = inputPanel?.placeholderLabel || '';
-            const promptText = `> ${resolveConsolePlaceholderDisplayValue(promptValue, placeholder, true)}`;
+            const placeholder = consoleState?.inputPlaceholderLabel || '';
+            const promptText = `${consoleState?.inputPrompt || DEFAULT_CONSOLE_OPTIONS.inputPrompt || ''}${resolveConsolePlaceholderDisplayValue(promptValue, placeholder, true)}`;
             inputLayout = renderTuiPanelLayout(panelRefs.input, width);
-            const hintText = formatChatFooter(
+            const hintText = consoleState?.inputHintLabel || formatTerminalStatusFooter(
                 consoleState?.model || currentProfile?.model || '',
                 String(consoleState?.modelProfile || resolveModelProfileLabel(currentProfile || {} as AgentCliProviderProfile) || '').trim(),
                 consoleState?.workspace || resolved.workspace
@@ -2882,7 +2033,12 @@ async function runInteractiveChat(options: any): Promise<void> {
             inputLines = inputLayout?.lines?.length
                 ? inputLayout.lines.slice()
                 : [
-                    ...renderShellBlock(promptText, width, ANSI.bg, promptValue ? ANSI.text : ANSI.muted),
+                    ...renderTerminalBlock(promptText, {
+                        width,
+                        shellCodes: [ANSI.bg],
+                        lineCodes: [promptValue ? ANSI.text : ANSI.muted],
+                        paint
+                    }),
                     paint(hintText, ANSI.muted)
                 ];
             if (inputLayout?.lines?.length && hintText) {
@@ -2902,19 +2058,19 @@ async function runInteractiveChat(options: any): Promise<void> {
                 pushBlank(selectLines);
                 pushLine(selectLines, selectPanel.menuTitle, ANSI.text);
                 pushLine(selectLines, selectPanel.menuMeta, ANSI.dim);
-                for (let index = 0; index < SELECT_MENU_VISIBLE_OPTIONS; index++) {
+                for (let index = 0; index < (DEFAULT_CONSOLE_OPTIONS.selectVisibleOptions || 0); index++) {
                     const line = selectPanel.optionLabelAt?.(index);
                     if (!line) {
                         continue;
                     }
                     if (line.trimStart().startsWith('›')) {
-                        selectLines.push(paintActive(line, ANSI.bgSelected, ANSI.blueStrong));
+                        selectLines.push(paint(` ${line} `, ANSI.bgSelected, ANSI.blueStrong));
                         continue;
                     }
                     pushLine(selectLines, line, ANSI.text);
                 }
                 pushLine(selectLines, selectPanel.detailTitle, ANSI.dim);
-                for (let index = 0; index < 6; index++) {
+                for (let index = 0; index < (DEFAULT_CONSOLE_OPTIONS.selectDetailVisibleLines || 0); index++) {
                     const line = selectPanel.detailLineAt?.(index);
                     if (line) {
                         pushLine(selectLines, line, ANSI.text);
@@ -2948,7 +2104,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 anchorBlockIndex: messagesFocused && selectedMessageBlockIndex >= 0
                     ? selectedMessageBlockIndex
                     : -1,
-                minContextRows: Math.min(6, Math.max(2, Math.floor(height / 6)))
+                minContextRows: Math.min(DEFAULT_CONSOLE_OPTIONS.messageDetailVisibleLines || 0, Math.max(2, Math.floor(height / 6)))
             });
             transcriptVisibleRows = primaryLayout.transcriptVisibleRows;
             transcriptMaxScrollOffset = primaryLayout.transcriptMaxScrollOffset;
@@ -2965,10 +2121,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             const cursorMode = selectLines.length || hasSessionFocus() || hasMessageFocus() || hasMessageDetailFocus() || inputLocked || modalPromptActive
                 ? 'bottom'
                 : 'prompt';
-            const visibleLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
-            const promptRow = findInputPromptRow(visibleLines);
-            const cursorRow = cursorMode === 'prompt' && promptRow >= 0
-                ? promptRow
+            const cursorRow = cursorMode === 'prompt' && currentCursorTarget
+                ? currentCursorTarget.row
                 : Math.max(0, rendered.length - 1);
             syncMouseTracking();
             const result = renderPrimaryTerminalScreen({
@@ -3022,30 +2176,29 @@ async function runInteractiveChat(options: any): Promise<void> {
                 ...inputLines,
                 ...selectLines
             ];
+            const inputRowOffset = brandLines.length
+                + topFixedBlocks.flatMap(block => block).length
+                + transcriptBlocks.flatMap(block => block).length
+                + bottomFixedBlocks.flatMap(block => block).length;
+            currentCursorTarget = offsetCursorTarget(inputLayout?.cursorTarget || currentCursorTarget, inputRowOffset);
             lastRenderedLines = rendered.slice();
             const fittedLines = rendered.map((line: string) => fitAnsiLine(line, width));
-            const visibleLines = fittedLines.map((line: string) => stripAnsi(line));
             const nextRenderKey = `flow:${width}:${fittedLines.join('\n')}`;
             syncMouseTracking();
             if (nextRenderKey === lastRenderKey) {
                 placeTerminalCursor(fittedLines, width, true);
                 return;
             }
-            const previousVisibleLines = lastPaintedLines.map((line: string) => stripAnsi(line));
-            const currentPromptRow = findInputPromptRow(visibleLines);
-            const previousPromptRow = findInputPromptRow(previousVisibleLines);
+            const currentPromptRow = currentCursorTarget?.row ?? -1;
             const canPatchPromptOnly = lastRenderKey.startsWith('flow:')
                 && currentPromptRow >= 0
-                && currentPromptRow === previousPromptRow
                 && fittedLines.length === lastPaintedLines.length
                 && fittedLines.every((line, index) => index === currentPromptRow || line === lastPaintedLines[index]);
             if (canPatchPromptOnly) {
-                const promptColumn = visibleLines[currentPromptRow].indexOf('> ');
-                const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
-                const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
+                const cursorTarget = currentCursorTarget!;
                 process.stdout.write(`\r${fittedLines[currentPromptRow]}\x1b[K\r`);
-                if (cursorColumn > 1) {
-                    process.stdout.write(`\x1b[${cursorColumn - 1}C`);
+                if (cursorTarget.column > 0) {
+                    process.stdout.write(`\x1b[${Math.min(width - 1, cursorTarget.column)}C`);
                 }
                 lastRenderKey = nextRenderKey;
                 lastRenderedLines = rendered.slice();
@@ -3083,7 +2236,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 : windowRenderedBlocksFromBottomWithContext(
                     contextTranscriptBlocks,
                     availableTranscriptRows,
-                    Math.min(6, Math.max(2, Math.floor(availableTranscriptRows / 3)))
+                    Math.min(DEFAULT_CONSOLE_OPTIONS.messageDetailVisibleLines || 0, Math.max(2, Math.floor(availableTranscriptRows / 3)))
                 );
         if (!shouldFreezeTranscriptWindow) {
             frozenTranscriptWindow = null;
@@ -3125,6 +2278,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             ...inputLines,
             ...compactRenderedLines(selectLines, Math.max(0, height))
         ];
+        currentCursorTarget = offsetCursorTarget(inputLayout?.cursorTarget || currentCursorTarget, preInputLines.length);
         lastRenderedLines = rendered.slice();
         const fittedLines = rendered.map((line: string) => fitAnsiLine(line, width));
         const nextRenderKey = `${width}:${fittedLines.join('\n')}${scrollbarOverlay}`;
@@ -3154,7 +2308,7 @@ async function runInteractiveChat(options: any): Promise<void> {
     }
 
     function placeTerminalCursor(rendered: string[], width: number, flowMode = false) {
-        if (!shouldPlaceTerminalCursor({
+        if (!shouldPlaceConsoleCursor({
             isTTY: !!process.stdout.isTTY,
             isSelecting,
             hasBlockingSelectMenu: hasBlockingSelectMenu(),
@@ -3178,38 +2332,11 @@ async function runInteractiveChat(options: any): Promise<void> {
             }));
             return;
         }
-        const plainLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
-        const promptRow = findInputPromptRow(plainLines);
-        if (promptRow < 0) {
-            syncTerminalCursorVisibility(false);
-            return;
-        }
-        const promptColumn = plainLines[promptRow].indexOf('> ');
-        if (promptColumn < 0) {
-            syncTerminalCursorVisibility(false);
-            return;
-        }
-        const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
-        const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
-        const cursorRow = promptRow + 1;
-        if (flowMode) {
-            const linesAfterPrompt = Math.max(0, plainLines.length - promptRow - 1);
-            const commands: string[] = [];
-            if (linesAfterPrompt > 0) {
-                commands.push(`\x1b[${linesAfterPrompt}A`);
-            }
-            commands.push('\r');
-            if (cursorColumn > 1) {
-                commands.push(`\x1b[${cursorColumn - 1}C`);
-            }
-            process.stdout.write(commands.join(''));
-            return;
-        }
-        process.stdout.write(`\x1b[${cursorRow};${cursorColumn}H`);
+        syncTerminalCursorVisibility(false);
     }
 
     function placeTerminalCursorColumn(rendered: string[], width: number, currentRow: number) {
-        if (!shouldPlaceTerminalCursor({
+        if (!shouldPlaceConsoleCursor({
             isTTY: !!process.stdout.isTTY,
             isSelecting,
             hasBlockingSelectMenu: hasBlockingSelectMenu(),
@@ -3233,25 +2360,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             }));
             return;
         }
-        const plainLines = rendered.map((line: string) => stripAnsi(fitAnsiLine(line, width)));
-        const promptRow = findInputPromptRow(plainLines);
-        if (promptRow < 0) {
-            syncTerminalCursorVisibility(false);
-            return;
-        }
-        const promptColumn = plainLines[promptRow].indexOf('> ');
-        if (promptColumn < 0) {
-            syncTerminalCursorVisibility(false);
-            return;
-        }
-        const draftWidth = getDisplayWidth(currentDraft.slice(0, draftCursor));
-        const cursorColumn = Math.min(width, promptColumn + 2 + draftWidth) + 1;
-        process.stdout.write(buildTerminalCursorSequence({
-            target: { row: promptRow, column: cursorColumn - 1 },
-            width,
-            currentRow,
-            mode: 'relative'
-        }));
+        syncTerminalCursorVisibility(false);
     }
 
     const pushHistoryEntry = (value: string) => {
@@ -3452,12 +2561,12 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         const rawText = decodedInput.text;
-        const controlKey = decodedInput.controlKey || parseTerminalControlKey(rawText);
+        const controlKey = decodedInput.controlKey || parseTerminalInputControlKey(rawText);
         const rawMenuKey = resolveTerminalMenuInputKey(controlKey || '', rawText, {
             blockingMenu: hasBlockingSelectMenu()
         });
         if (handleTerminalMenuKey(terminalMenuController, rawMenuKey, '', { render: queueRenderScreen })) {
-            const suppressionKey = resolveRawKeypressSuppressionKey({
+            const suppressionKey = resolveConsoleRawKeypressSuppressionKey({
                 rawText,
                 controlKey,
                 menuKey: rawMenuKey
@@ -3711,7 +2820,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if ((rawText.includes('\r') || rawText.includes('\n')) && !controlKey) {
             const shouldSubmit = shouldSubmitConsoleTextChunk(rawText);
-            const suppressionKey = resolveRawKeypressSuppressionKey({
+            const suppressionKey = resolveConsoleRawKeypressSuppressionKey({
                 rawText,
                 submitTriggered: shouldSubmit
             });
@@ -3796,7 +2905,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (isClosed) {
             return;
         }
-        if (shouldSuppressDuplicatedKeypress({
+        if (shouldSuppressConsoleDuplicatedKeypress({
             lastRawKey: lastRawControlKey,
             lastRawAt: lastRawControlAt,
             now: Date.now(),

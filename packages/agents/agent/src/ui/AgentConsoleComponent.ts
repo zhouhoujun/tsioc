@@ -55,6 +55,7 @@ export class AgentConsoleComponent {
         this.state.setModel(this.options.model?.model ?? '');
         this.state.setModelProfile(this.resolveInitialModelProfile());
         this.state.setTheme(mergeAgentConsoleTheme(this.options.ui?.theme));
+        this.state.setConsoleOptions(this.options.ui?.console);
     }
 
     protected resolveInitialModelProfile(): string {
@@ -131,7 +132,7 @@ export class AgentConsoleComponent {
     }
 
     get selectHint(): string {
-        return this.state.selectMenu?.hint || '1-9 select   up/down move   enter confirm   q cancel';
+        return this.state.selectMenu?.hint || this.state.consoleOptions.selectHint;
     }
 
     get selectOptions(): Array<{ label: string; value: string; description?: string }> {
@@ -385,7 +386,7 @@ export class AgentConsoleComponent {
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
                     { label: '@workspace', value: '@workspace', description: 'context' },
                     { label: '/exit', value: '/exit', description: 'exit' }
-                ], 0, 'up/down move   enter close   q close');
+                ], 0, this.state.consoleOptions.selectCloseHint);
                 if (helpSelection) {
                     await this.handleMenuSelection(helpSelection);
                 }
@@ -586,7 +587,7 @@ export class AgentConsoleComponent {
         await this.uiDelegate.select('Tools', tools.map((t: any) => ({
             label: t.name + (t.active ? '' : ' [inactive]'), value: t.name,
             description: t.active ? 'active' : 'inactive'
-        })), 0, 'up/down move   enter close   q close');
+        })), 0, this.state.consoleOptions.selectCloseHint);
     }
 
     protected async handleMenuSelection(value: string): Promise<void> {

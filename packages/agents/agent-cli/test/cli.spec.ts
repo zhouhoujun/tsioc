@@ -3,15 +3,10 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
-import { TuiRenderer } from '@tsdi/components/console';
-import { ComponentFactory } from '@tsdi/components';
-import { AgentConsoleComponent, AgentConsoleUiDelegate, ModelProfile } from '@tsdi/agent';
-import { runAgentApplication } from '../src/run-command';
 import {
-    createAgentCli,
+    TuiRenderer,
     applyTerminalInputChunk,
     buildMentionCandidates,
-    ensureAgentWorkspaceConfig,
     enrichPromptWithMentions,
     extractMentions,
     formatClockTime,
@@ -25,42 +20,35 @@ import {
     renderDraftLine,
     buildMentionContextLines,
     renderMessagePreview,
-    renderAssistantMessageLines,
     renderSelectMenu,
     renderToolDetail,
     renderToolRunLine,
     resolveUniqueCommandPrefix,
     resolveInputSuggestions,
     shouldAcceptSuggestionOnEnter,
-    resolveRawKeypressSuppressionKey,
+    resolveConsoleRawKeypressSuppressionKey,
+    shouldRouteConsoleDraftNavigation,
+    shouldSuppressConsoleDuplicatedKeypress,
+    sortToolRuns
+} from '@tsdi/components/console';
+import { ComponentFactory } from '@tsdi/components';
+import {
+    AgentConsoleComponent,
+    AgentConsoleUiDelegate,
+    ModelProfile
+} from '@tsdi/agent';
+import { runAgentApplication } from '../src/run-command';
+import {
+    createAgentCli,
+    ensureAgentWorkspaceConfig,
     resolveCliConfig,
     resolveCliModelConfig,
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
     runAgentPrompt,
     parseSlashCommandLine,
-    parseTerminalControlKey,
-    parseTerminalTextPromptChunk,
     buildChatSessionId,
-    buildOsc52ClipboardSequence,
     pickRestoredSessionId,
-    shouldPlaceTerminalCursor,
-    shouldUseAlternateScreen,
-    shouldRouteDraftNavigationKeys,
-    shouldSuppressDuplicatedKeypress,
-    compactRenderedLines,
-    compactRenderedBlocks,
-    compactRenderedBlocksWindow,
-    windowRenderedLinesFromBottom,
-    windowRenderedBlocksFromBottomWithContext,
-    sortToolRuns,
-    findInputPromptRow,
-    getTerminalDisplayWidth,
-    highlightCodeLine,
-    fitTerminalAnsiLine,
-    wrapPrefixedText,
-    buildBrandHeaderBlock,
-    buildEmptyStateLogoBlock,
     writeProviderProfile,
     writeSettingsModelProfile
 } from '../src';
@@ -607,40 +595,6 @@ export class AgentCliTest {
         ]);
     }
 
-    @Test('wraps multiline messages and highlights fenced code blocks')
-    wrapsMessagesAndHighlightsCodeBlocks() {
-        expect(wrapPrefixedText('hello world wide', 10, '› ', '  ')).toEqual([
-            '› hello wo',
-            '  rld wide'
-        ]);
-
-        const rendered = renderAssistantMessageLines('当然，可以。\n```javascript\nconst a = 1\n```', 24);
-        expect(rendered[0]).toBe('当然，可以。');
-        expect(rendered[1]).toContain('const');
-        expect(rendered[1]).toContain('\u001b[');
-        expect(rendered.some(line => line.includes('```'))).toBe(false);
-
-        const highlighted = highlightCodeLine('const total = 42', 'javascript');
-        expect(highlighted).toContain('\u001b[');
-        expect(highlighted).toContain('const');
-        expect(highlighted).toContain('42');
-
-        const wrappedCode = renderAssistantMessageLines('```javascript\nconst extremelyLongVariableName = 42\n```', 18);
-        expect(wrappedCode.length).toBeGreaterThan(1);
-        expect(wrappedCode[0]).toContain('extremelyLon');
-        expect(wrappedCode[1]).toContain('42');
-
-        const markdown = renderAssistantMessageLines('# Title\n- **Bold** item with `code`\n> quote [link](https://a.test)', 36);
-        expect(markdown[0]).toContain('Title');
-        expect(markdown[0]).not.toContain('#');
-        expect(markdown[1]).toContain('- ');
-        expect(markdown[1]).toContain('Bold');
-        expect(markdown.some(line => line.includes('code'))).toBe(true);
-        expect(markdown.some(line => line.includes('https://a.test'))).toBe(true);
-        expect(markdown.some(line => line.includes('| '))).toBe(true);
-        expect(markdown.some(line => line.includes('quote'))).toBe(true);
-    }
-
     @Test('resolves slash and mention suggestions')
     resolvesSlashAndMentionSuggestions() {
         const mentions = buildMentionCandidates(['read_file', 'write_file']);
@@ -721,63 +675,11 @@ export class AgentCliTest {
         });
         expect(buildChatSessionId('feature branch #1')).toBe('feature-branch-1');
         expect(buildChatSessionId('')).toMatch(/^chat-\d{8}-\d{6}$/);
-        expect(buildOsc52ClipboardSequence('hello')).toBe('\u001b]52;c;aGVsbG8=\u0007');
-    }
-
-    @Test('parses terminal control keys from raw stdin chunks')
-    parsesTerminalControlKeys() {
-        expect(parseTerminalControlKey('\u001b[A')).toBe('up');
-        expect(parseTerminalControlKey('\u001bOA')).toBe('up');
-        expect(parseTerminalControlKey('\u001b[1;2B')).toBe('down');
-        expect(parseTerminalControlKey('\u001b[5~')).toBe('pageup');
-        expect(parseTerminalControlKey('\u001b[6~')).toBe('pagedown');
-        expect(parseTerminalControlKey('\u001b[H')).toBe('home');
-        expect(parseTerminalControlKey('\u001b[F')).toBe('end');
-        expect(parseTerminalControlKey('\r')).toBe('return');
-        expect(parseTerminalControlKey('\u001b')).toBe('escape');
-        expect(parseTerminalControlKey('x')).toBe(undefined);
-    }
-
-    @Test('parses pasted terminal text prompt chunks before generic submit handling')
-    parsesPastedTerminalTextPromptChunks() {
-        expect(parseTerminalTextPromptChunk('sk-test')).toEqual({
-            text: 'sk-test',
-            submitted: false
-        });
-        expect(parseTerminalTextPromptChunk('sk-test\r')).toEqual({
-            text: 'sk-test',
-            submitted: true
-        });
-        expect(parseTerminalTextPromptChunk(Buffer.from('sk-test\nextra'))).toEqual({
-            text: 'sk-test',
-            submitted: true
-        });
-    }
-
-    @Test('uses primary screen by default and allows explicit alternate-screen opt-in')
-    usesAlternateScreenByDefault() {
-        const previous = process.env.TSDI_AGENT_ALT_SCREEN;
-        delete process.env.TSDI_AGENT_ALT_SCREEN;
-        try {
-            expect(shouldUseAlternateScreen()).toBe(false);
-            process.env.TSDI_AGENT_ALT_SCREEN = '0';
-            expect(shouldUseAlternateScreen()).toBe(false);
-            process.env.TSDI_AGENT_ALT_SCREEN = 'false';
-            expect(shouldUseAlternateScreen()).toBe(false);
-            process.env.TSDI_AGENT_ALT_SCREEN = '1';
-            expect(shouldUseAlternateScreen()).toBe(true);
-        } finally {
-            if (previous === undefined) {
-                delete process.env.TSDI_AGENT_ALT_SCREEN;
-            } else {
-                process.env.TSDI_AGENT_ALT_SCREEN = previous;
-            }
-        }
     }
 
     @Test('routes draft navigation keys to input editing only in editable prompt states')
     routesDraftNavigationKeys() {
-        expect(shouldRouteDraftNavigationKeys({
+        expect(shouldRouteConsoleDraftNavigation({
             hasBlockingSelectMenu: false,
             hasSessionFocus: false,
             hasMessageFocus: false,
@@ -787,7 +689,7 @@ export class AgentCliTest {
             hasActiveTextPrompt: false
         })).toBe(true);
 
-        expect(shouldRouteDraftNavigationKeys({
+        expect(shouldRouteConsoleDraftNavigation({
             hasBlockingSelectMenu: false,
             hasSessionFocus: false,
             hasMessageFocus: false,
@@ -797,7 +699,7 @@ export class AgentCliTest {
             hasActiveTextPrompt: true
         })).toBe(true);
 
-        expect(shouldRouteDraftNavigationKeys({
+        expect(shouldRouteConsoleDraftNavigation({
             hasBlockingSelectMenu: true,
             hasSessionFocus: false,
             hasMessageFocus: false,
@@ -807,7 +709,7 @@ export class AgentCliTest {
             hasActiveTextPrompt: false
         })).toBe(false);
 
-        expect(shouldRouteDraftNavigationKeys({
+        expect(shouldRouteConsoleDraftNavigation({
             hasBlockingSelectMenu: false,
             hasSessionFocus: true,
             hasMessageFocus: false,
@@ -904,111 +806,24 @@ export class AgentCliTest {
         expect(layout.selectMenuScreenRow).toBe(selectIndex + 1);
     }
 
-    @Test('finds bottom input prompt row instead of message prompt row')
-    findsBottomInputPromptRow() {
-        const row = findInputPromptRow([
-            'tsdi-agent',
-            'you> previous message',
-            '│ Ask code or files                         │',
-            '│ > hello|                                 │',
-            '│ enter send tab complete /quit exit       │'
-        ]);
-
-        expect(row).toBe(3);
-    }
-
-    @Test('builds left-aligned empty-state logo block')
-    buildsLeftAlignedEmptyStateLogoBlock() {
-        const lines = buildEmptyStateLogoBlock(60, 'TSDI Agent', 'gpt-5.4-flash', '/tmp/workspace', '6.0.31');
-        expect(lines).toHaveLength(4);
-        expect(lines[0]).toContain('╭');
-        expect(lines[1]).toContain('TSDI AGENT v6.0.31');
-        expect(lines[1]).toContain('│');
-        expect(lines[2]).toContain('gpt-5.4-flash');
-        expect(lines[2]).toContain('/tmp/workspace');
-        expect(lines[3]).toContain('╰');
-    }
-
-    @Test('builds content-adaptive brand header width')
-    buildsContentAdaptiveBrandHeaderWidth() {
-        const lines = buildBrandHeaderBlock(80, 'A', '', '', '1');
-        expect(lines[0]).toContain('╭');
-        expect(lines[0]).toContain('─');
-        expect(lines[1]).toContain('A v1');
-        expect(lines[2]).toContain('│');
-        expect(lines[3]).toContain('╰');
-    }
-
-    @Test('preserves empty-state logo block when fixed blocks are compacted')
-    preservesEmptyStateLogoBlockWhenFixedBlocksAreCompacted() {
-        const logo = buildEmptyStateLogoBlock(36, 'TSDI Agent', 'gpt-5.4-flash', '/tmp/workspace', '6.0.31');
-        const window = compactRenderedBlocksWindow([
-            ['note previous status'],
-            logo
-        ], 4, 1);
-
-        expect(window.lines.join('\n')).toContain('TSDI AGENT v6.0.31');
-        expect(window.lines.join('\n')).toContain('gpt-5.4-flash');
-    }
-
-    @Test('measures terminal display width for chinese text')
-    measuresTerminalDisplayWidthForChineseText() {
-        expect(getTerminalDisplayWidth('abc')).toBe(3);
-        expect(getTerminalDisplayWidth('你好')).toBe(4);
-        expect(getTerminalDisplayWidth('a你b好')).toBe(6);
-    }
-
-    @Test('fits terminal lines by display width for chinese text')
-    fitsTerminalLinesByDisplayWidthForChineseText() {
-        expect(fitTerminalAnsiLine('你好世界', 6)).toBe('你好世');
-        expect(fitTerminalAnsiLine('abc你好', 6)).toBe('abc你');
-    }
-
-    @Test('places terminal cursor for active text prompts after menu selection')
-    placesTerminalCursorForActiveTextPrompt() {
-        expect(shouldPlaceTerminalCursor({
-            isTTY: true,
-            isSelecting: false,
-            hasBlockingSelectMenu: false,
-            inputLocked: true,
-            modalPromptActive: true,
-            hasActiveTextPrompt: true,
-            hasSessionFocus: false,
-            hasMessageFocus: false,
-            hasMessageDetailFocus: false
-        })).toBe(true);
-
-        expect(shouldPlaceTerminalCursor({
-            isTTY: true,
-            isSelecting: false,
-            hasBlockingSelectMenu: false,
-            inputLocked: true,
-            modalPromptActive: true,
-            hasActiveTextPrompt: false,
-            hasSessionFocus: false,
-            hasMessageFocus: false,
-            hasMessageDetailFocus: false
-        })).toBe(false);
-    }
-
     @Test('suppresses duplicated keypress events after raw control handling')
     suppressesDuplicatedKeypressEvents() {
         const now = Date.now();
-        expect(shouldSuppressDuplicatedKeypress({
+        expect(shouldSuppressConsoleDuplicatedKeypress({
             lastRawKey: 'down',
             lastRawAt: now,
             now: now + 10,
             keyName: 'down'
         })).toBe(true);
 
-        expect(shouldSuppressDuplicatedKeypress({
+        expect(shouldSuppressConsoleDuplicatedKeypress({
             lastRawKey: 'digit',
             lastRawAt: now,
             now: now + 10,
             text: '2'
         })).toBe(true);
 
-        expect(shouldSuppressDuplicatedKeypress({
+        expect(shouldSuppressConsoleDuplicatedKeypress({
             lastRawKey: 'q',
             lastRawAt: now,
             now: now + 10,
@@ -1016,7 +831,7 @@ export class AgentCliTest {
             text: 'q'
         })).toBe(true);
 
-        expect(shouldSuppressDuplicatedKeypress({
+        expect(shouldSuppressConsoleDuplicatedKeypress({
             lastRawKey: 'down',
             lastRawAt: now,
             now: now + 60,
@@ -1026,136 +841,25 @@ export class AgentCliTest {
 
     @Test('resolves raw keypress suppression keys for menu and submit chunks')
     resolvesRawKeypressSuppressionKeys() {
-        expect(resolveRawKeypressSuppressionKey({
+        expect(resolveConsoleRawKeypressSuppressionKey({
             rawText: '/help\r',
             submitTriggered: true
         })).toBe('return');
 
-        expect(resolveRawKeypressSuppressionKey({
+        expect(resolveConsoleRawKeypressSuppressionKey({
             rawText: '2',
             menuKey: '2'
         })).toBe('digit');
 
-        expect(resolveRawKeypressSuppressionKey({
+        expect(resolveConsoleRawKeypressSuppressionKey({
             rawText: 'q',
             menuKey: 'q'
         })).toBe('q');
 
-        expect(resolveRawKeypressSuppressionKey({
+        expect(resolveConsoleRawKeypressSuppressionKey({
             rawText: '\u001b[B',
             controlKey: 'down'
         })).toBe('down');
-    }
-
-    @Test('compacts rendered lines from the top and keeps recent content near input')
-    compactsRenderedLinesFromTop() {
-        expect(compactRenderedLines([
-            '',
-            'old-1',
-            '',
-            '',
-            'old-2',
-            'recent-1',
-            '',
-            'recent-2',
-            ''
-        ], 4)).toEqual([
-            'old-2',
-            'recent-1',
-            '',
-            'recent-2'
-        ]);
-    }
-
-    @Test('keeps ansi-painted shell spacer lines during compaction')
-    keepsAnsiPaintedShellSpacerLinesDuringCompaction() {
-        const ansiBlank = '\u001b[48;2;27;33;40m    \u001b[0m';
-        expect(compactRenderedLines([
-            '',
-            ansiBlank,
-            '\u001b[48;2;27;33;40m   › hi   \u001b[0m',
-            ansiBlank,
-            '',
-            'footer'
-        ], 6)).toEqual([
-            ansiBlank,
-            '\u001b[48;2;27;33;40m   › hi   \u001b[0m',
-            ansiBlank,
-            'footer'
-        ]);
-    }
-
-    @Test('compacts rendered blocks around the newest transcript blocks')
-    compactsRenderedBlocksAroundNewestTranscriptBlocks() {
-        expect(compactRenderedBlocks([
-            ['notice'],
-            ['msg-1-a', 'msg-1-b'],
-            ['shell-1', 'shell-2'],
-            ['working']
-        ], 4)).toEqual([
-            '…',
-            'shell-1',
-            'shell-2',
-            'working'
-        ]);
-    }
-
-    @Test('anchors rendered block compaction around selected message blocks')
-    anchorsRenderedBlockCompactionAroundSelectedMessageBlocks() {
-        expect(compactRenderedBlocks([
-            ['old-1'],
-            ['selected-1', 'selected-2'],
-            ['new-1'],
-            ['new-2']
-        ], 4, 1)).toEqual([
-            'old-1',
-            'selected-1',
-            'selected-2',
-            'new-1'
-        ]);
-    }
-
-    @Test('windows transcript lines from the bottom for history scrolling')
-    windowsTranscriptLinesFromTheBottom() {
-        expect(windowRenderedLinesFromBottom([
-            'l1', 'l2', 'l3', 'l4', 'l5'
-        ], 3, 0)).toEqual({
-            lines: ['l3', 'l4', 'l5'],
-            startRow: 2,
-            totalRows: 5
-        });
-
-        expect(windowRenderedLinesFromBottom([
-            'l1', 'l2', 'l3', 'l4', 'l5'
-        ], 3, 1)).toEqual({
-            lines: ['l2', 'l3', 'l4'],
-            startRow: 1,
-            totalRows: 5
-        });
-    }
-
-    @Test('preserves previous transcript context when latest message is taller than the viewport')
-    preservesPreviousTranscriptContextWhenLatestMessageIsTallerThanTheViewport() {
-        expect(windowRenderedBlocksFromBottomWithContext([
-            ['old-1', 'old-2'],
-            ['new-1', 'new-2', 'new-3', 'new-4', 'new-5', 'new-6']
-        ], 5, 2)).toEqual({
-            lines: ['old-1', 'old-2', '…', 'new-5', 'new-6'],
-            startRow: 0,
-            totalRows: 8
-        });
-    }
-
-    @Test('preserves tail context even when the previous transcript block is also taller than the viewport budget')
-    preservesTailContextWhenPreviousTranscriptBlockIsAlsoTall() {
-        expect(windowRenderedBlocksFromBottomWithContext([
-            ['old-1', 'old-2', 'old-3', 'old-4', 'old-5'],
-            ['new-1', 'new-2', 'new-3', 'new-4', 'new-5', 'new-6']
-        ], 5, 2)).toEqual({
-            lines: ['…', 'old-4', 'old-5', '…', 'new-6'],
-            startRow: 3,
-            totalRows: 11
-        });
     }
 
     @Test('keeps suggestion rows separate from select panel rows')

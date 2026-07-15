@@ -1,8 +1,12 @@
 import { Injectable } from '@tsdi/ioc';
-import { clampConsoleTextCursor, processConsoleTextInputChunk } from '@tsdi/components/console';
+import {
+    clampConsoleTextCursor,
+    processConsoleTextInputChunk
+} from '@tsdi/components/console';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { AgentConsoleTheme, AgentConsoleThemeInput, defaultAgentConsoleTheme, mergeAgentConsoleTheme } from './AgentConsoleTheme';
+import { formatTerminalStatusFooter } from '@tsdi/components/console';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -87,8 +91,71 @@ export interface AgentConsoleSelectMenu {
     selectedIndex: number;
 }
 
+export interface AgentConsoleOptions {
+    inputPrompt?: string;
+    inputPlaceholder?: string;
+    inputContinuationPrompt?: string;
+    emptyValueLabel?: string;
+    noneValueLabel?: string;
+    statusVisibleLines?: number;
+    sessionsVisibleItems?: number;
+    messagesVisibleItems?: number;
+    messageDetailVisibleLines?: number;
+    messageSelectionPageSize?: number;
+    messageDetailPageSize?: number;
+    sessionSelectionPageSize?: number;
+    selectDetailVisibleLines?: number;
+    toolsVisibleItems?: number;
+    toolRunsVisibleItems?: number;
+    selectVisibleOptions?: number;
+    storedToolRunsLimit?: number;
+    activityVisibleItems?: number;
+    activityHistoryLimit?: number;
+    summaryMaxLength?: number;
+    toolRunSummaryMaxLength?: number;
+    sessionHint?: string;
+    messagesHint?: string;
+    messageDetailHint?: string;
+    messageDetailClosedHint?: string;
+    selectHint?: string;
+    selectCloseHint?: string;
+    suggestionsHint?: string;
+}
+
+export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
+    inputPrompt: '> ',
+    inputPlaceholder: 'Ask code or files',
+    inputContinuationPrompt: '  ',
+    emptyValueLabel: '-',
+    noneValueLabel: 'none',
+    statusVisibleLines: 6,
+    sessionsVisibleItems: 6,
+    messagesVisibleItems: 7,
+    messageDetailVisibleLines: 6,
+    messageSelectionPageSize: 6,
+    messageDetailPageSize: 5,
+    sessionSelectionPageSize: 5,
+    selectDetailVisibleLines: 6,
+    toolsVisibleItems: 4,
+    toolRunsVisibleItems: 3,
+    selectVisibleOptions: 12,
+    storedToolRunsLimit: 8,
+    activityVisibleItems: 3,
+    activityHistoryLimit: 30,
+    summaryMaxLength: 80,
+    toolRunSummaryMaxLength: 96,
+    sessionHint: 'up/down move   pg jump   enter switch   y copy   esc',
+    messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
+    messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
+    messageDetailClosedHint: 'enter to open',
+    selectHint: '1-9 select   up/down move   enter confirm   q cancel',
+    selectCloseHint: 'up/down move   enter close   q close',
+    suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT
+};
+
 @Injectable()
 export class AgentConsoleSessionState {
+    consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     sessionId = 'console';
     input = '';
     inputCursor = 0;
@@ -120,6 +187,9 @@ export class AgentConsoleSessionState {
         completionTokens: 0,
         totalTokens: 0
     };
+    inputPrompt = this.consoleOptions.inputPrompt;
+    inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
+    inputPlaceholder = this.consoleOptions.inputPlaceholder;
     lastError = '';
     notice = '';
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -281,12 +351,13 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
-    moveMessageSelectionPage(delta: number, pageSize = 6): void {
+    moveMessageSelectionPage(delta: number, pageSize?: number): void {
         if (!this.messages.length) {
             return;
         }
         const currentIndex = Math.max(0, this.messages.findIndex(item => item.id === this.selectedMessageId));
-        const nextIndex = Math.max(0, Math.min(this.messages.length - 1, currentIndex + (delta * Math.max(1, pageSize))));
+        const resolvedPageSize = pageSize ?? this.consoleOptions.messageSelectionPageSize;
+        const nextIndex = Math.max(0, Math.min(this.messages.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedMessageId = this.messages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
@@ -344,16 +415,17 @@ export class AgentConsoleSessionState {
             return;
         }
         const lines = this.messageDetailLines;
-        const maxScroll = Math.max(0, lines.length - 6);
+        const maxScroll = Math.max(0, lines.length - this.consoleOptions.messageDetailVisibleLines);
         this.messageDetailScroll = Math.max(0, Math.min(maxScroll, this.messageDetailScroll + delta));
         this.notify();
     }
 
-    scrollMessageDetailPage(delta: number, pageSize = 5): void {
+    scrollMessageDetailPage(delta: number, pageSize?: number): void {
         if (!this.messageDetailOpen || !this.selectedMessage) {
             return;
         }
-        this.scrollMessageDetail(delta * Math.max(1, pageSize));
+        const resolvedPageSize = pageSize ?? this.consoleOptions.messageDetailPageSize;
+        this.scrollMessageDetail(delta * Math.max(1, resolvedPageSize));
     }
 
     scrollMessageDetailToEdge(position: 'start' | 'end'): void {
@@ -363,7 +435,7 @@ export class AgentConsoleSessionState {
         const lines = this.messageDetailLines;
         this.messageDetailScroll = position === 'start'
             ? 0
-            : Math.max(0, lines.length - 6);
+            : Math.max(0, lines.length - this.consoleOptions.messageDetailVisibleLines);
         this.notify();
     }
 
@@ -467,6 +539,19 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    setInputPlaceholder(value: string): void {
+        this.inputPlaceholder = String(value || '').trim();
+        this.notify();
+    }
+
+    get inputPlaceholderLabel(): string {
+        return this.input ? '' : this.inputPlaceholder;
+    }
+
+    get inputHintLabel(): string {
+        return formatTerminalStatusFooter(this.model, this.modelProfile, this.workspace);
+    }
+
     setLastError(message: string): void {
         this.lastError = message;
         this.notify();
@@ -516,12 +601,13 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
-    moveSessionSelectionPage(delta: number, pageSize = 5): void {
+    moveSessionSelectionPage(delta: number, pageSize?: number): void {
         if (!this.sessions.length) {
             return;
         }
         const currentIndex = Math.max(0, this.sessions.findIndex(item => item.id === this.selectedSessionId));
-        const nextIndex = Math.max(0, Math.min(this.sessions.length - 1, currentIndex + (delta * Math.max(1, pageSize))));
+        const resolvedPageSize = pageSize ?? this.consoleOptions.sessionSelectionPageSize;
+        const nextIndex = Math.max(0, Math.min(this.sessions.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
         this.selectedSessionId = this.sessions[nextIndex].id;
         this.notify();
     }
@@ -562,6 +648,17 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    setConsoleOptions(options?: AgentConsoleOptions | null): void {
+        this.consoleOptions = {
+            ...defaultAgentConsoleOptions,
+            ...(options || {})
+        };
+        this.inputPrompt = this.consoleOptions.inputPrompt;
+        this.inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
+        this.inputPlaceholder = this.consoleOptions.inputPlaceholder;
+        this.notify();
+    }
+
     setPendingApprovals(requests: AgentConsoleApprovalRequest[]): void {
         this.pendingApprovals = requests
             .slice()
@@ -588,7 +685,7 @@ export class AgentConsoleSessionState {
     openSelectMenu(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): void {
         this.selectMenu = {
             title,
-            hint,
+            hint: hint || this.consoleOptions.selectHint,
             options: options.slice(),
             selectedIndex: Math.max(0, Math.min(Math.max(options.length - 1, 0), selectedIndex))
         };
@@ -724,7 +821,7 @@ export class AgentConsoleSessionState {
         const selectedIndex = Math.max(0, options.findIndex(option => option.value === selectedValue));
         this.selectMenu = {
             title: AGENT_CONSOLE_SUGGESTIONS_TITLE,
-            hint: AGENT_CONSOLE_SUGGESTIONS_HINT,
+            hint: this.consoleOptions.suggestionsHint,
             options,
             selectedIndex
         };
@@ -756,7 +853,7 @@ export class AgentConsoleSessionState {
 
     pushActivity(kind: AgentConsoleActivity['kind'], message: string): void {
         this.activities = [
-            ...this.activities.slice(-29),
+            ...this.activities.slice(-(this.consoleOptions.activityHistoryLimit - 1)),
             {
                 id: `${kind}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
                 kind,
@@ -770,13 +867,15 @@ export class AgentConsoleSessionState {
     upsertToolRun(run: AgentConsoleToolRun): void {
         const next = this.toolRuns.filter(item => item.name !== run.name);
         next.unshift(run);
-        this.toolRuns = next.slice(0, 8);
+        this.toolRuns = next.slice(0, this.consoleOptions.storedToolRunsLimit);
         this.notify();
     }
 
     summarize(value: string): string {
         const text = value.replace(/\s+/g, ' ').trim();
-        return text.length > 80 ? `${text.slice(0, 80)}...` : text;
+        return text.length > this.consoleOptions.summaryMaxLength
+            ? `${text.slice(0, this.consoleOptions.summaryMaxLength)}...`
+            : text;
     }
 
     toToolItem(definition: AgentToolDefinition, active: boolean): AgentConsoleToolItem {

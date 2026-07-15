@@ -1,5 +1,6 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
 import { AgentConsoleThemeInput, defaultAgentConsoleTheme } from './ui/AgentConsoleTheme';
+import { AgentConsoleOptions, defaultAgentConsoleOptions } from './ui/AgentConsoleSessionState';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -39,6 +40,7 @@ export interface AgentSchedulerOptions {
 export interface AgentUIOptions {
     title?: string;
     theme?: AgentConsoleThemeInput;
+    console?: AgentConsoleOptions;
 }
 
 export interface AgentBootstrapTurnOptions {
@@ -88,7 +90,8 @@ export const defaultAgentOptions: AgentOptions = {
     },
     ui: {
         title: 'tsdi-agent',
-        theme: defaultAgentConsoleTheme
+        theme: defaultAgentConsoleTheme,
+        console: defaultAgentConsoleOptions
     },
     model: {
         provider: 'deepseek',
@@ -127,7 +130,11 @@ export function mergeAgentOptions(options?: AgentOptions): AgentOptions {
         },
         ui: {
             ...defaultAgentOptions.ui,
-            ...(options?.ui ?? {})
+            ...(options?.ui ?? {}),
+            console: {
+                ...defaultAgentOptions.ui?.console,
+                ...(options?.ui?.console ?? {})
+            }
         },
         model: {
             ...defaultAgentOptions.model,
