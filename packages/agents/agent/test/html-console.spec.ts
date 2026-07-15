@@ -63,7 +63,7 @@ export class HtmlConsoleTest {
         expect(inputRoot.querySelector('.input-entry')?.getAttribute('style')).toContain('color');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('placeholder')).toContain('Ask code or files');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('style')).toContain('color');
-        expect(inputRoot.querySelector('.input-hint')?.textContent || '').toBe('');
+        expect(inputRoot.querySelector('.input-hint')?.textContent).toContain('deepseek-v4-flash');
         expect(messagesRoot.textContent).toContain('› hello');
         expect(messagesRoot.textContent).toContain('world');
         expect(messagesRoot.textContent).not.toContain('agent>');

@@ -6,7 +6,7 @@ import {
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { AgentConsoleTheme, AgentConsoleThemeInput, defaultAgentConsoleTheme, mergeAgentConsoleTheme } from './AgentConsoleTheme';
-import { DEFAULT_TERMINAL_COLUMNS } from '@tsdi/components/console';
+import { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -540,7 +540,7 @@ export class AgentConsoleSessionState {
     }
 
     get inputHintLabel(): string {
-        return '';
+        return formatTerminalStatusFooter(this.model, this.modelProfile, this.workspace);
     }
 
     setLastError(message: string): void {
@@ -909,7 +909,7 @@ export class AgentConsoleSessionState {
                 && String(this.selectedSelectMenuOption?.value || '').startsWith('/');
             const resolved = await this.confirmSelectMenu();
             if (shouldSubmitSelectedCommand && resolved && this.submitAction) {
-                await this.submitAction();
+                void this.submitAction();
                 submitted = true;
             }
         } else {
@@ -917,7 +917,7 @@ export class AgentConsoleSessionState {
         }
 
         if (next.shouldSubmit && this.submitAction) {
-            await this.submitAction();
+            void this.submitAction();
         }
 
         this.notify();

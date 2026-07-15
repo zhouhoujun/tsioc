@@ -197,6 +197,34 @@ export class AgentConsoleComponentTest {
         expect(component.runningTools).toEqual([]);
     }
 
+    @Test('submit exposes running state before the turn completes')
+    async submitExposesRunningStateBeforeCompletion() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        let releaseTurn!: () => void;
+        (runtime as any).runStreamingTurn = undefined;
+        runtime.runTurn = async (sessionId: string, input: string): Promise<any> => {
+            runtime.calls.push(`${sessionId}:${input}`);
+            await new Promise<void>(resolve => {
+                releaseTurn = resolve;
+            });
+            runtime.messages = [
+                { id: '1', role: 'user', content: input, createdAt: 1 },
+                { id: '2', role: 'assistant', content: `Echo: ${input}`, createdAt: 2 }
+            ] as any;
+            return { sessionId, message: runtime.messages[1] };
+        };
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        component.input = 'hello';
+        const submitPromise = component.submit();
+        await Promise.resolve();
+        expect(component.status).toEqual('running');
+        expect(typeof releaseTurn).toEqual('function');
+        releaseTurn();
+        await submitPromise;
+        expect(component.status).toEqual('idle');
+    }
+
     @Test('schedulePrompt adds task and updates tasks count')
     async schedulePromptAddsTask() {
         const runtime = new RuntimeStub();
@@ -434,6 +462,31 @@ export class AgentConsoleComponentTest {
         state.setInput('hello');
         await state.processRawChunk('\r', { submitOnEnter: false, ctrlKey: true });
         expect(state.input).toContain('\n');
+    }
+
+    @Test('session state starts submit without waiting for model turn completion')
+    async sessionStateStartsSubmitWithoutWaitingForTurnCompletion() {
+        const state = new AgentConsoleSessionState();
+        let releaseSubmit!: () => void;
+        let completed = false;
+        state.submitAction = async () => {
+            state.setStatus('running');
+            await new Promise<void>(resolve => {
+                releaseSubmit = resolve;
+            });
+            completed = true;
+            state.setStatus('idle');
+        };
+
+        state.setInput('hello');
+        const result = await state.processRawChunk('\r', { submitOnEnter: true });
+
+        expect(result.submitted).toEqual(true);
+        expect(state.status).toEqual('running');
+        expect(completed).toEqual(false);
+        releaseSubmit();
+        await Promise.resolve();
+        expect(completed).toEqual(true);
     }
 
     @Test('component exposes notice and select helpers through shared ui state')

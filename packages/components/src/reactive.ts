@@ -4,9 +4,11 @@ import { ComputedMetadata } from './decorators/computed';
 // import { RNode } from './renderer/Node';
 
 const REACT_FlAG = Symbol('__REACT');
+const SUBSCRIBABLE_NOTIFY = Symbol('__SUBSCRIBABLE_NOTIFY');
 
 // 计算属性缓存和依赖追踪
 const computedCache = new WeakMap<any, Map<string | symbol, { value: any, deps: Set<string | symbol> }>>();
+const subscribableEffects = new WeakMap<object, WeakMap<ReactiveEffect, () => void>>();
 
 // // 检查是否为Node节点
 // function isNode(target: any): target is RNode {
@@ -47,6 +49,27 @@ function isNative(target: any) {
         || target instanceof WeakSet
 }
 
+function isSubscribable(target: any): target is { subscribe(listener: () => void): () => void } {
+    return !!target && isFunction(target.subscribe);
+}
+
+function bindSubscribableEffect(target: object, effect: ReactiveEffect): void {
+    if (!isSubscribable(target)) {
+        return;
+    }
+    let effects = subscribableEffects.get(target);
+    if (!effects) {
+        effects = new WeakMap();
+        subscribableEffects.set(target, effects);
+    }
+    if (effects.has(effect)) {
+        return;
+    }
+    effects.set(effect, target.subscribe(() => {
+        effect.trigger(target, SUBSCRIBABLE_NOTIFY);
+    }));
+}
+
 export function reactive(target: any, effect: ReactiveEffect, computeds?: ComputedMetadata[]) {
     // 直接返回，不进行代理
     if (!canReactive(target)) {
@@ -56,6 +79,10 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
     // 创建代理
     const proxy = new Proxy(target, {
         get(target, key, receiver) {
+            if (key !== REACT_FlAG && isSubscribable(target)) {
+                bindSubscribableEffect(target, effect);
+                effect.track(target, SUBSCRIBABLE_NOTIFY);
+            }
             // 如果是计算属性求值过程，只追踪依赖属性的访问
             if (isComputing && currentComputedKey) {
                 const computedDep = computeds?.find(c => c.propertyKey === currentComputedKey);

@@ -263,10 +263,10 @@ export function compileComponentToFactory(
     componentDef: ComponentDef,
     attrs: RAttr[],
     bindings: any[]
-): (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector) => RElement | null {
+): Rendering<RElement> {
     const compiledAttrs = attrs.map(attr => compileAttributeToFactory(attr));
 
-    return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector) => {
+    return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(node.tagName);
 
@@ -293,7 +293,7 @@ export function compileComponentToFactory(
 
         // 应用绑定
         bindings.forEach(binding => {
-            const unbinding = binding(element, null, effect, injector);
+            const unbinding = binding(element, context, effect, injector);
             unbinding && injector.onDestroy(unbinding);
         });
 
@@ -1577,6 +1577,9 @@ const attrPrefixes = [':', '@', '*', 'v-'];
 export function toMatchNames(attrName: string): string[] {
     const names: string[] = [];
     const kebabName = camelToKebab(attrName);
+    if (kebabName !== attrName) {
+        names.push(kebabName);
+    }
     for (const prefix of attrPrefixes) {
         names.push(prefix + attrName);
         names.push(prefix + kebabName);

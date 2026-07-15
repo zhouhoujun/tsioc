@@ -455,8 +455,7 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
     protected frameTimer?: ReturnType<typeof setInterval>;
 
     constructor(
-        private state: AgentConsoleSessionState,
-        @Optional() private componentRef?: ComponentRef<AgentConsoleWorkingPanelComponent> | null
+        private state: AgentConsoleSessionState
     ) {
     }
 
@@ -625,7 +624,6 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
                 return;
             }
             this.frame = (this.frame + 1) % Math.max(this.animatedLabel.length, 1);
-            void this.componentRef?.render?.();
         }, 80);
         this.frameTimer.unref?.();
     }
