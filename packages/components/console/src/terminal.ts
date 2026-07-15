@@ -1647,6 +1647,12 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
             terminalRow: target.row
         };
     };
+    const isSameCursorTarget = (left?: TerminalCursorTarget, right?: TerminalCursorTarget): boolean => {
+        if (!left || !right) {
+            return !left && !right;
+        }
+        return left.row === right.row && left.column === right.column;
+    };
     const createNextState = (terminalRow: number): TerminalPrimaryRenderState => ({
         renderKey: nextRenderKey,
         paintedLines: fittedLines.slice(),
@@ -1659,6 +1665,21 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
         regions: options.regions || []
     });
     if (nextRenderKey === previous.renderKey) {
+        if (!options.placeCursor
+            || cursorMode !== 'prompt'
+            || !cursorTarget
+            || (previous.cursorMode === cursorMode
+                && previous.terminalRow === cursorTarget.row
+                && isSameCursorTarget(previous.cursorTarget, cursorTarget))) {
+            return {
+                output: '',
+                fittedLines,
+                cursorRow,
+                terminalRow: previous.terminalRow ?? cursorRow,
+                changed: false,
+                state: createNextState(previous.terminalRow ?? cursorRow)
+            };
+        }
         const placed = placeCursor('', previous.terminalRow ?? previous.cursorRow);
         return {
             output: placed.output,

@@ -1,5 +1,6 @@
 import { Attribute, Component, AfterViewInit, OnDestroy, ComponentRef, ElementRef } from '@tsdi/components';
 import {
+    buildTerminalBrandBlock,
     BrDirective,
     DivDirective,
     formatConsoleIndexedOptionLabel,
@@ -29,6 +30,29 @@ import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from '
 
 const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
 const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
+
+@Component({
+    selector: 'agent-console-brand-panel',
+    imports: CONSOLE_BASE_IMPORTS,
+    template: `
+    <div class="console-panel console-brand-panel">
+        <label class="brand-line" v-for="line in brandLines">{{line}}</label>
+    </div>
+    `
+})
+export class AgentConsoleBrandPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    get brandLines(): string[] {
+        return buildTerminalBrandBlock(
+            this.state.consoleOptions.brandWidth,
+            this.state.title,
+            this.state.model,
+            this.state.workspace
+        );
+    }
+}
 
 @Component({
     selector: 'agent-console-status-panel',
@@ -222,12 +246,7 @@ export class AgentConsoleInputPanelComponent implements AfterViewInit, OnDestroy
             this.currentInput = this.state?.input || '';
             this.currentCursor = this.state?.inputCursor ?? this.currentInput.length;
             this.currentFocused = this.state?.inputFocused !== false;
-            const renderTask = this.componentRef?.render?.();
-            if (renderTask && typeof (renderTask as Promise<void>).then === 'function') {
-                void (renderTask as Promise<void>).then(() => this.syncNativeInput());
-            } else {
-                this.syncNativeInput();
-            }
+            this.syncNativeInput();
         });
         this.syncNativeInput();
     }

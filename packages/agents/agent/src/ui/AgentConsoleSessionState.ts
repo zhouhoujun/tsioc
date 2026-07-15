@@ -6,7 +6,7 @@ import {
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { AgentConsoleTheme, AgentConsoleThemeInput, defaultAgentConsoleTheme, mergeAgentConsoleTheme } from './AgentConsoleTheme';
-import { formatTerminalStatusFooter } from '@tsdi/components/console';
+import { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
@@ -120,6 +120,7 @@ export interface AgentConsoleOptions {
     selectHint?: string;
     selectCloseHint?: string;
     suggestionsHint?: string;
+    brandWidth?: number;
 }
 
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
@@ -150,7 +151,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
     selectCloseHint: 'up/down move   enter close   q close',
-    suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT
+    suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT,
+    brandWidth: DEFAULT_TERMINAL_COLUMNS
 };
 
 @Injectable()

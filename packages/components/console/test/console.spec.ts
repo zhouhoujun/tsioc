@@ -24,6 +24,7 @@ import {
     parseTerminalInputControlKey,
     parseTerminalTextPromptChunk,
     shouldPlaceConsoleCursor,
+    shouldSuppressConsoleDuplicatedKeypress,
     resolveConsoleEnterAction,
     TerminalInputSequenceDecoder,
     resolveTerminalMenuInputKey,
@@ -746,6 +747,31 @@ export class ConsoleRendererTest {
         expect(second.output).toBe('');
     }
 
+    @Test('does not emit cursor-only output for unchanged primary screen')
+    doesNotEmitCursorOnlyOutputForUnchangedPrimaryScreen() {
+        const first = renderPrimaryTerminalScreen({
+            lines: ['logo', '> hi'],
+            width: 20,
+            stablePrefixRows: 1,
+            cursorRow: 1,
+            cursorTarget: { row: 1, column: 4 },
+            cursorMode: 'prompt',
+            placeCursor: true
+        });
+        const second = renderPrimaryTerminalScreen({
+            state: first.state,
+            lines: ['logo', '> hi'],
+            width: 20,
+            stablePrefixRows: 1,
+            cursorRow: 1,
+            cursorTarget: { row: 1, column: 4 },
+            cursorMode: 'prompt',
+            placeCursor: true
+        });
+        expect(second.changed).toBe(false);
+        expect(second.output).toBe('');
+    }
+
     @Test('rewrites primary tail growth without repainting stable history')
     rewritesPrimaryTailGrowthWithoutRepaintingStableHistory() {
         const first = renderPrimaryTerminalScreen({
@@ -892,6 +918,12 @@ export class ConsoleRendererTest {
             hasSessionFocus: false,
             hasMessageFocus: false,
             hasMessageDetailFocus: false
+        })).toBe(true);
+        expect(shouldSuppressConsoleDuplicatedKeypress({
+            lastRawKey: 'x',
+            lastRawAt: 100,
+            now: 120,
+            text: 'x'
         })).toBe(true);
     }
 }

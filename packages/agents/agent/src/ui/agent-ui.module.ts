@@ -6,6 +6,7 @@ import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
 import {
     AgentConsoleActivityPanelComponent,
+    AgentConsoleBrandPanelComponent,
     AgentConsoleInputPanelComponent,
     AgentConsoleMessageDetailPanelComponent,
     AgentConsoleMessagesPanelComponent,
@@ -27,6 +28,7 @@ import {
     ],
     declarations: [
         AgentConsoleComponent,
+        AgentConsoleBrandPanelComponent,
         AgentConsoleStatusPanelComponent,
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,
@@ -44,6 +46,7 @@ import {
     ],
     exports: [
         AgentConsoleComponent,
+        AgentConsoleBrandPanelComponent,
         AgentConsoleStatusPanelComponent,
         AgentConsoleInputPanelComponent,
         AgentConsoleWorkingPanelComponent,

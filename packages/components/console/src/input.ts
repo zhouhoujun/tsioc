@@ -173,6 +173,9 @@ export function shouldSuppressConsoleDuplicatedKeypress(state: ConsoleDuplicated
     if (state.text && /^\d$/.test(state.text) && rawKey === 'digit') {
         return true;
     }
+    if (state.text && rawKey === state.text) {
+        return true;
+    }
     return false;
 }
 
@@ -503,6 +506,13 @@ export function syncConsoleEditableElement(
     }
     const value = String(state.value || '');
     const cursor = clampConsoleTextCursor(value, state.cursor);
+    if (typeof element.setAttribute === 'function') {
+        element.setAttribute('value', value);
+        element.setAttribute('cursorPos', String(cursor));
+        if (state.focused !== undefined) {
+            element.setAttribute('focused', state.focused ? 'true' : 'false');
+        }
+    }
     if ('value' in element && element.value !== value) {
         element.value = value;
     }

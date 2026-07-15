@@ -103,12 +103,16 @@ export class ConsoleInputTest {
             activeElement: null
         };
         const element: any = {
+            attributes: new Map<string, string>(),
             value: '',
             textContent: '',
             tagName: 'TEXTAREA',
             ownerDocument,
             selectionStart: 0,
             selectionEnd: 0,
+            setAttribute(name: string, value: string) {
+                this.attributes.set(name, value);
+            },
             focus() {
                 focused += 1;
                 ownerDocument.activeElement = this;
@@ -130,6 +134,9 @@ export class ConsoleInputTest {
         });
 
         expect(element.value).toBe('hello');
+        expect(element.attributes.get('value')).toBe('hello');
+        expect(element.attributes.get('cursorPos')).toBe('3');
+        expect(element.attributes.get('focused')).toBe('true');
         expect(element.textContent).toBe('hello');
         expect(element.selectionStart).toBe(3);
         expect(element.selectionEnd).toBe(3);
@@ -143,6 +150,9 @@ export class ConsoleInputTest {
         });
 
         expect(element.value).toBe('world');
+        expect(element.attributes.get('value')).toBe('world');
+        expect(element.attributes.get('cursorPos')).toBe('1');
+        expect(element.attributes.get('focused')).toBe('false');
         expect(element.textContent).toBe('world');
         expect(element.selectionStart).toBe(3);
         expect(element.selectionEnd).toBe(3);

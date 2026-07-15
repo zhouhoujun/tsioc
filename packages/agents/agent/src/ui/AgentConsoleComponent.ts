@@ -17,6 +17,7 @@ import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
     selector: 'agent-console',
     template: `
     <div class="agent-console">
+        <agent-console-brand-panel></agent-console-brand-panel>
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-messages-panel></agent-console-messages-panel>

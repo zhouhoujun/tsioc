@@ -52,7 +52,7 @@ export class AgentConsoleRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(root.tagName).toEqual('div');
-        expect(lines.some(line => line.includes('tsdi-agent'))).toBe(false);
+        expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => !line.includes('agent>') && line.includes('world'))).toBe(true);
@@ -199,7 +199,7 @@ export class AgentConsoleRendererTest {
             expect(rootLines.some((line: string) => line.includes('Suggestions'))).toBe(false);
             expect(rootLines.some((line: string) => line.includes('Preview'))).toBe(false);
             expect(rootLines.some((line: string) => line.includes('"command": "/help"'))).toBe(false);
-            expect(rootLines.some((line: string) => /[┌┐└┘│]/.test(line))).toBe(false);
+            expect(rootLines.some((line: string) => /[┌┐└┘]/.test(line))).toBe(false);
         } finally {
             await tuiCtx.close();
         }
