@@ -136,7 +136,7 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'h2':
             case 'h3':
             case 'h4':
-                if (text) {
+                if (text.trim()) {
                     lines.push(this.renderInlineLine(element, { ...styleMap, 'font-weight': 'bold' }, width));
                 }
                 finishRegion();
@@ -144,7 +144,7 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'p':
             case 'label':
             case 'li':
-                if (text) {
+                if (text.trim()) {
                     const labelStyle = element.getAttribute('labelStyle');
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
                     lines.push(this.renderInlineLine(element, merged, width));
@@ -153,7 +153,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 return;
             case 'span':
             case 'a':
-                if (text) {
+                if (text.trim()) {
                     const textStyle = element.getAttribute('textStyle');
                     const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
                     lines.push(this.renderInlineLine(element, merged, width));
@@ -161,7 +161,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 finishRegion();
                 return;
             case 'button':
-                if (text) {
+                if (text.trim()) {
                     lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
                 }
                 finishRegion();
@@ -490,7 +490,14 @@ export class TuiRenderer extends ConsoleRenderer {
     }
 
     protected renderInlineLine(element: ConsoleElement, inherited: Record<string, string>, width?: number): string {
-        const content = this.renderInlineText(element, inherited);
+        const padding = this.resolveBoxPadding(inherited.padding);
+        const leftPad = padding.left > 0
+            ? this.applyAnsi(' '.repeat(padding.left), inherited, undefined, true)
+            : '';
+        const rightPad = padding.right > 0
+            ? this.applyAnsi(' '.repeat(padding.right), inherited, undefined, true)
+            : '';
+        const content = `${leftPad}${this.renderInlineText(element, inherited)}${rightPad}`;
         const hasBackground = !!(inherited.background || inherited['background-color']);
         if (!width || !hasBackground) {
             return content;
@@ -507,7 +514,10 @@ export class TuiRenderer extends ConsoleRenderer {
             if (!value.trim()) {
                 return '';
             }
-            return this.applyAnsi(this.normalizeInlineWhitespace(value), inherited, undefined, true);
+            const text = /[\r\n\t]/.test(value)
+                ? this.normalizeInlineWhitespace(value).trim()
+                : value;
+            return this.applyAnsi(text, inherited, undefined, true);
         }
         const element = current as ConsoleElement;
         const styleMap = this.mergeStyles(inherited, this.getStyleMap(element));
@@ -535,7 +545,7 @@ export class TuiRenderer extends ConsoleRenderer {
             return current.textContent || '';
         }
         if (current instanceof ConsoleElement) {
-            return current.childNodes.map(child => this.collectText(child as ConsoleNode, visited)).join('').trim();
+            return current.childNodes.map(child => this.collectText(child as ConsoleNode, visited)).join('');
         }
         return '';
     }

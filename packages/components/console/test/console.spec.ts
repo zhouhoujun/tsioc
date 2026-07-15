@@ -73,6 +73,44 @@ class ConsoleLoopTestComponent {
 }
 
 @Component({
+    selector: 'console-loop-update-test',
+    template: `
+    <section>
+        <label class="loop-row" v-for="item in items">{{item.label}}</label>
+    </section>
+    `
+})
+class ConsoleLoopUpdateTestComponent {
+    items = [
+        { label: '› hi' },
+        { label: '…' }
+    ];
+}
+
+@Component({
+    selector: 'console-inline-padding-test',
+    template: `
+    <section>
+        <label style="padding: 0 1;">› hi</label>
+    </section>
+    `
+})
+class ConsoleInlinePaddingTestComponent {
+}
+
+@Component({
+    selector: 'console-brand-lines-test',
+    template: `
+    <section>
+        <label v-for="line in lines">{{line}}</label>
+    </section>
+    `
+})
+class ConsoleBrandLinesTestComponent {
+    lines = buildTerminalBrandBlock(28, 'TSDI-AGENT', 'gpt-5.4', '/home/zhouyou/workspace/core');
+}
+
+@Component({
     selector: 'console-style-test',
     template: `
     <section>
@@ -379,6 +417,65 @@ export class ConsoleRendererTest {
 
             renderer.click(items[1]);
             expect(ref.instance.selected).toBe('2');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('updates reused v-for view context values')
+    async updatesReusedVForViewContextValues() {
+        const ctx = await Application.run(ConsoleLoopUpdateTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopUpdateTestComponent) as ComponentRef<ConsoleLoopUpdateTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+
+            expect(renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual(['› hi', '…']);
+
+            ref.instance.items = [
+                { label: '› hi' },
+                { label: 'Echo: hi' }
+            ];
+
+            expect(renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual(['› hi', 'Echo: hi']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('preserves inline padding in tui renderer')
+    async preservesInlinePaddingInTuiRenderer() {
+        const ctx = await Application.run(ConsoleInlinePaddingTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleInlinePaddingTestComponent) as ComponentRef<ConsoleInlinePaddingTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            expect(lines[0]).toBe(' › hi ');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('preserves preformatted brand line spacing in tui renderer')
+    async preservesPreformattedBrandLineSpacingInTuiRenderer() {
+        const ctx = await Application.run(ConsoleBrandLinesTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleBrandLinesTestComponent) as ComponentRef<ConsoleBrandLinesTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            const lines = renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            expect(lines[0]).toBe('╭──────────────────────────╮');
+            expect(lines[1]).toBe('│        TSDI-AGENT        │');
+            expect(lines[1].length).toBe(lines[0].length);
+            expect(lines[2].length).toBe(lines[0].length);
+            expect(lines[3]).toBe('╰──────────────────────────╯');
         } finally {
             await ctx.close();
         }

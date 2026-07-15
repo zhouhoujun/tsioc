@@ -255,8 +255,13 @@ export class VForDirective {
             // 检查是否重用现有视图
             const existingView = oldViewRefs.get(trackByKey);
             if (existingView) {
-                // 更新现有视图的上下文
-                existingView.context = reactive(context, this._effect);
+                // Keep the original reactive context so existing bindings stay subscribed.
+                Object.keys(existingView.context || {}).forEach(key => {
+                    if (!(key in context)) {
+                        delete existingView.context[key];
+                    }
+                });
+                Object.assign(existingView.context, context);
                 newViewRefs.push(existingView);
                 oldViewRefs.delete(trackByKey);
             } else {
