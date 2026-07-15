@@ -1522,6 +1522,11 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         const rawText = decodedInput.text;
+        if (rawText === '\u0003') {
+            isClosed = true;
+            void cleanupAndExit('Closing session...', true);
+            return;
+        }
         const controlKey = decodedInput.controlKey || parseTerminalInputControlKey(rawText);
         const rawMenuKey = resolveTerminalMenuInputKey(controlKey || '', rawText, {
             blockingMenu: hasBlockingSelectMenu()
@@ -1785,7 +1790,9 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         if (shouldRouteDraftNavigation()) {
-            applyChunkToDraft(rawText);
+            lastRawControlKey = 'text';
+            lastRawControlAt = Date.now();
+            void routeConsoleInputChunk(rawText, { submitOnEnter: false });
         }
         return;
     };
@@ -1962,6 +1969,10 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         if (activeTextPrompt && key?.name === 'return') {
             resolveTextPrompt(currentDraft);
+            return;
+        }
+        if (_str && !key?.ctrl && !key?.meta && shouldRouteDraftNavigation()) {
+            void routeConsoleInputChunk(_str, { submitOnEnter: false });
             return;
         }
         if (!modalPromptActive && !inputLocked && !hasInteractiveSuggestions() && key?.name === 'up') {

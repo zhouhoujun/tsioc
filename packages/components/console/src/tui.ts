@@ -72,7 +72,8 @@ export class TuiRenderer extends ConsoleRenderer {
         const cursorTargets: TuiCursorTarget[] = [];
         const regions: TuiRenderRegionDraft[] = [];
         const width = options.width;
-        nodes.forEach(current => this.walkTuiNode(current as ConsoleNode, lines, {}, width, cursorTargets, regions));
+        const visited = new WeakSet<object>();
+        nodes.forEach(current => this.walkTuiNode(current as ConsoleNode, lines, {}, width, cursorTargets, regions, visited));
         while (lines.length && !this.stripAnsi(lines[lines.length - 1]).trim()) {
             lines.pop();
         }
@@ -93,8 +94,15 @@ export class TuiRenderer extends ConsoleRenderer {
         inherited: Record<string, string>,
         width?: number,
         cursorTargets: TuiCursorTarget[] = [],
-        regions: TuiRenderRegionDraft[] = []
+        regions: TuiRenderRegionDraft[] = [],
+        visited: WeakSet<object> = new WeakSet<object>()
     ): void {
+        if (current && typeof current === 'object') {
+            if (visited.has(current)) {
+                return;
+            }
+            visited.add(current);
+        }
         if (current instanceof ConsoleText) {
             const value = current.textContent || '';
             if (value.trim()) {
@@ -349,7 +357,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 const childRegions: TuiRenderRegionDraft[] = [];
                 const childInherited = this.getInheritedStyleMap(styleMap);
                 const hasOwnFrame = this.hasBlockFrame(styleMap, width);
-                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, childLines, childInherited, width, childTargets, childRegions));
+                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, childLines, childInherited, width, childTargets, childRegions, visited));
                 const framed = this.renderBlockLines(childLines, styleMap, width);
                 lines.push(...framed);
                 const offset = this.resolveBlockContentOffset(styleMap);
@@ -375,7 +383,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 return;
             }
             default:
-                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, lines, this.getInheritedStyleMap(styleMap), width, cursorTargets, regions));
+                element.childNodes.forEach(child => this.walkTuiNode(child as ConsoleNode, lines, this.getInheritedStyleMap(styleMap), width, cursorTargets, regions, visited));
                 finishRegion();
                 return;
         }
@@ -517,12 +525,18 @@ export class TuiRenderer extends ConsoleRenderer {
             .join('');
     }
 
-    protected collectText(current: ConsoleNode): string {
+    protected collectText(current: ConsoleNode, visited: WeakSet<object> = new WeakSet<object>()): string {
+        if (current && typeof current === 'object') {
+            if (visited.has(current)) {
+                return '';
+            }
+            visited.add(current);
+        }
         if (current instanceof ConsoleText || current instanceof ConsoleComment) {
             return current.textContent || '';
         }
         if (current instanceof ConsoleElement) {
-            return current.childNodes.map(child => this.collectText(child as ConsoleNode)).join('').trim();
+            return current.childNodes.map(child => this.collectText(child as ConsoleNode, visited)).join('').trim();
         }
         return '';
     }

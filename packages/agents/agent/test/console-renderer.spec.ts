@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
-import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, TuiRenderer, TuiTemplateModule } from '@tsdi/components/console';
+import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, TuiRenderer, TuiTemplateModule, TuiTerminalSurface } from '@tsdi/components/console';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleComponent,
@@ -153,6 +153,40 @@ export class AgentConsoleRendererTest {
             const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 60 });
             expect(rootLines.some((line: string) => line.includes('hello'))).toBe(true);
         } finally {
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('terminal surface updates working state and input from shared component state')
+    async terminalSurfaceUpdatesSharedState() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        const output: string[] = [];
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 80,
+                output: { write: value => output.push(value) }
+            });
+            await Promise.resolve();
+
+            consoleRef.instance.sessionState.setStatus('idle');
+            consoleRef.instance.sessionState.setInput('hello');
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(surface.lastRenderedLines.some(line => line.includes('Working'))).toBe(false);
+            expect(surface.lastRenderedLines.some(line => line.includes('hello'))).toBe(true);
+            expect(output.join('')).toContain('hello');
+        } finally {
+            surface?.destroy();
             await tuiCtx.close();
         }
     }

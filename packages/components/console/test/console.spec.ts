@@ -925,5 +925,11 @@ export class ConsoleRendererTest {
             now: 120,
             text: 'x'
         })).toBe(true);
+        expect(shouldSuppressConsoleDuplicatedKeypress({
+            lastRawKey: 'text',
+            lastRawAt: 100,
+            now: 120,
+            text: 'x'
+        })).toBe(true);
     }
 }

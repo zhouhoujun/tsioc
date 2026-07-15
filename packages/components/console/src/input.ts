@@ -176,6 +176,9 @@ export function shouldSuppressConsoleDuplicatedKeypress(state: ConsoleDuplicated
     if (state.text && rawKey === state.text) {
         return true;
     }
+    if (state.text && rawKey === 'text') {
+        return true;
+    }
     return false;
 }
 

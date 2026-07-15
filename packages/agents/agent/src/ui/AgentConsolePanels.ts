@@ -540,6 +540,9 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
     }
 
     get animatedLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
         const running = this.state.runningTools;
         if (!running.length) {
             return 'Working';
