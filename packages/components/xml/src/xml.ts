@@ -7,6 +7,7 @@ import {
     TemplateCompiler, TemplateCompilerOptions, noReact
 } from '@tsdi/components';
 import { EventEmitter } from 'events';
+import { transformBlocks } from '../../src/impl/block';
 
 
 
@@ -476,7 +477,7 @@ export class XmlTemplateParser implements TemplateParser {
 
     parse(template: string): XmlNode[] {
         const parser = new XMLParser(htmlParsingOptions);
-        const jsonObj = parser.parse(template);
+        const jsonObj = parser.parse(transformBlocks(template));
         // 将 JSON 对象转换为虚拟 DOM 节点
         return this.convertToNodes(jsonObj);
     }

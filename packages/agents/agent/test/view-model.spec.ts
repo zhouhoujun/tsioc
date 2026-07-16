@@ -464,6 +464,26 @@ export class AgentConsoleComponentTest {
         expect(state.input).toContain('\n');
     }
 
+    @Test('session state tracks input history and skips slash commands')
+    async sessionStateTracksInputHistory() {
+        const state = new AgentConsoleSessionState();
+        state.pushInputHistory('first');
+        state.pushInputHistory('/help');
+        state.pushInputHistory('second');
+        state.setInput('draft');
+
+        expect(state.getInputHistoryEntries()).toEqual(['second', '/help', 'first']);
+        expect(state.navigateInputHistory(-1)).toEqual(true);
+        expect(state.input).toEqual('second');
+        expect(state.navigateInputHistory(-1)).toEqual(true);
+        expect(state.input).toEqual('first');
+        expect(state.navigateInputHistory(1)).toEqual(true);
+        expect(state.input).toEqual('second');
+        expect(state.navigateInputHistory(1)).toEqual(true);
+        expect(state.input).toEqual('draft');
+        expect(state.navigateInputHistory(1)).toEqual(false);
+    }
+
     @Test('session state starts submit without waiting for model turn completion')
     async sessionStateStartsSubmitWithoutWaitingForTurnCompletion() {
         const state = new AgentConsoleSessionState();

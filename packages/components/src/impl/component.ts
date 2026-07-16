@@ -13,7 +13,9 @@ import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
 import { TemplateRef } from '../refs/template';
-import { RNode } from '../renderer/Node';
+import { LOCAL_REFS, RNode } from '../renderer/Node';
+import { DirectiveRef } from '../refs/directive';
+import { ViewChildMetadata } from '../decorators/query';
 import { DefaultReactiveEffect } from './effect';
 import { DIRECTIVES, CUSTOM_ELEMENTS } from '../decorators/directive';
 import { COMPONENTS } from '../decorators/component';
@@ -42,6 +44,10 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     get hostView(): EmbeddedViewRef<T> {
         return this._hostView!;
+    }
+
+    get def(): ComponentDef<T> {
+        return this.classRef.getAnnotation<ComponentDef>();
     }
 
     private _inst?: T;
@@ -95,6 +101,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         this.injector.setValue(TemplateRef, templateRef);
         this._hostView = templateRef.createEmbeddedView(this.instance, this.injector);
         this.attachHostViewToElement();
+        this.resolveViewChilds(def);
         if (!this.afterViewInitCalled) {
             this.afterViewInitCalled = true;
             await (this.instance as AfterViewInit).onAfterViewInit?.();
@@ -123,6 +130,155 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
                 hostElement.appendChild(node);
             }
         });
+    }
+
+    protected resolveViewChilds(def: ComponentDef): void {
+        const queries = def.viewChilds || [];
+        if (!queries.length) {
+            return;
+        }
+        queries.forEach(query => {
+            (this.instance as any)[query.propertyKey] = this.resolveViewChild(query);
+        });
+    }
+
+    protected resolveViewChild(query: ViewChildMetadata): any {
+        const propertyType = query.type as AbstractType | undefined;
+        const selector = query.selector ?? propertyType;
+        if (!selector || !this._hostView) {
+            return undefined;
+        }
+        if (typeof selector === 'string') {
+            const node = this.resolveViewChildNode(selector);
+            if (!node) {
+                return undefined;
+            }
+            return this.readNodeValue(node, query, propertyType);
+        }
+        const result = this._hostView.query(selector as any);
+        return this.readResolvedValue(result, query, propertyType);
+    }
+
+    protected resolveViewChildNode(selector: string): RNode | null {
+        const refNode = this.findNodeByLocalRef(selector);
+        if (refNode) {
+            return refNode;
+        }
+        if (this.isSelectorExpression(selector)) {
+            const found = this._hostView?.query(selector);
+            return (found instanceof ElementRef
+                ? found.nativeElement
+                : ((found as any)?.elementRef?.nativeElement || null)) as RNode | null;
+        }
+        return null;
+    }
+
+    protected isSelectorExpression(selector: string): boolean {
+        return /^[#.[\s>:*]/.test(selector) || selector.includes('[') || selector.includes(' ');
+    }
+
+    protected findNodeByLocalRef(refName: string): RNode | null {
+        const normalizedRefName = refName.startsWith('#') ? refName.slice(1) : refName;
+        const renderer = this.injector.get(Renderer);
+        const walk = (node: RNode): RNode | null => {
+            const localRefs = (node as any)[LOCAL_REFS] as string[] | undefined;
+            if (localRefs?.includes(normalizedRefName)) {
+                return node;
+            }
+            try {
+                const attrName = `#${normalizedRefName}`;
+                const attrs = renderer.getAttributes(node) || [];
+                if (attrs.some(attr => attr?.name === attrName)) {
+                    return node;
+                }
+            } catch {
+                // Ignore nodes that do not support attributes.
+            }
+            const children = (node as any)?.childNodes as RNode[] | undefined;
+            if (!children?.length) {
+                return null;
+            }
+            for (const child of children) {
+                const found = walk(child);
+                if (found) {
+                    return found;
+                }
+            }
+            return null;
+        };
+
+        for (const node of this._hostView?.rootNodes || []) {
+            const found = walk(node);
+            if (found) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    protected readNodeValue(node: RNode, query: ViewChildMetadata, propertyType?: AbstractType): any {
+        const read = query.read as any;
+        if (read === TemplateRef || propertyType === TemplateRef) {
+            return this._hostView?.injector.getTemplateRef(node) ?? undefined;
+        }
+        if (read === ElementRef || propertyType === ElementRef) {
+            return this._hostView?.injector.getElementRef(node) ?? undefined;
+        }
+        const componentRef = this._hostView?.injector.getComponentRefByNode(node) ?? null;
+        if (read === ComponentRef || propertyType === ComponentRef) {
+            return componentRef ?? undefined;
+        }
+        const directiveRef = this._hostView?.injector.getDirectiveRefByNode(node) ?? null;
+        if (read === DirectiveRef || propertyType === DirectiveRef) {
+            return directiveRef ?? undefined;
+        }
+        if (read && componentRef?.instance instanceof read) {
+            return componentRef.instance;
+        }
+        if (read && directiveRef?.instance instanceof read) {
+            return directiveRef.instance;
+        }
+        if (propertyType && componentRef?.instance instanceof propertyType) {
+            return componentRef.instance;
+        }
+        if (propertyType && directiveRef?.instance instanceof propertyType) {
+            return directiveRef.instance;
+        }
+        return componentRef?.instance
+            ?? directiveRef?.instance
+            ?? this._hostView?.injector.getTemplateRef(node)
+            ?? this._hostView?.injector.getElementRef(node)
+            ?? undefined;
+    }
+
+    protected readResolvedValue(result: any, query: ViewChildMetadata, propertyType?: AbstractType): any {
+        if (!result) {
+            return undefined;
+        }
+        const read = query.read as any;
+        if (read === ComponentRef || propertyType === ComponentRef) {
+            return result;
+        }
+        if (read === DirectiveRef || propertyType === DirectiveRef) {
+            return result;
+        }
+        if (read === ElementRef || propertyType === ElementRef) {
+            if (result instanceof ElementRef) {
+                return result;
+            }
+            return result.elementRef ?? undefined;
+        }
+        if (read === TemplateRef || propertyType === TemplateRef) {
+            if (result instanceof TemplateRef) {
+                return result;
+            }
+            const node = result instanceof ElementRef ? result.nativeElement : result?.elementRef?.nativeElement;
+            return node ? this._hostView?.injector.getTemplateRef(node) ?? undefined : undefined;
+        }
+        if (result instanceof ElementRef || result instanceof TemplateRef) {
+            return result;
+        }
+        return result.instance ?? result;
     }
 
     protected override clean(): void {

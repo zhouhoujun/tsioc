@@ -96,6 +96,22 @@ export class ComplexTest {
         expect(caseP?.textContent).toContain('case');
     }
 
+    @Test('should not duplicate v-switch case nodes on rerender')
+    async testSwitchRerender() {
+        const complexRef = this.ctx.runners.getRef(ComplexComponent) as ComponentRef<ComplexComponent>;
+
+        await complexRef.render();
+        await Promise.resolve();
+        await complexRef.render();
+        await Promise.resolve();
+
+        const elementRef = complexRef.hostView.query('.switch-content') as ElementRef;
+        const root = elementRef.nativeElement;
+        const casePs = root.querySelectorAll('p');
+        expect(casePs.length).toBe(1);
+        expect(casePs[0]?.textContent).toContain('case');
+    }
+
     @After()
     async afterClean() {
         await this.ctx.close();
@@ -255,6 +271,48 @@ export class HtmlComplexTemplateTest {
         const nodes = this.parser.parse(template);
 
         expect(nodes.length).toBeGreaterThan(0);
+    }
+
+    @Test('should parse @if blocks into conditional templates')
+    testIfBlocks() {
+        const template = '<div>@if (show) {<span>A</span>} @else if (alt) {<span>B</span>} @else {<span>C</span>}</div>';
+        const nodes = this.parser.parse(template);
+        const div = nodes[0] as any;
+        const blocks = Array.from(div.querySelectorAll('template')) as any[];
+
+        expect(blocks.length).toBe(3);
+        expect(blocks[0].getAttribute('v-if')).toBe('show');
+        expect(blocks[1].getAttribute('v-else-if')).toBe('alt');
+        expect(blocks[2].hasAttribute('v-else')).toBe(true);
+        expect(blocks[0].content.firstElementChild.tagName.toLowerCase()).toBe('span');
+    }
+
+    @Test('should parse @switch blocks into case templates')
+    testSwitchBlocks() {
+        const template = '<div>@switch (kind) {@case (\'a\') {<span>A</span>} @case (\'b\') {<span>B</span>} @default {<span>Z</span>}}</div>';
+        const nodes = this.parser.parse(template);
+        const div = nodes[0] as any;
+        const switchBlock = div.querySelector('template') as any;
+        const caseBlocks = Array.from(switchBlock.content.querySelectorAll('template')) as any[];
+
+        expect(switchBlock.getAttribute('v-switch')).toBe('kind');
+        expect(caseBlocks.length).toBe(3);
+        expect(caseBlocks[0].getAttribute('v-case')).toBe('\'a\'');
+        expect(caseBlocks[1].getAttribute('v-case')).toBe('\'b\'');
+        expect(caseBlocks[2].hasAttribute('v-default')).toBe(true);
+    }
+
+    @Test('should parse nested block templates')
+    testNestedBlocks() {
+        const template = '<div>@if (show) {@switch (kind) {@case (\'a\') {<span>A</span>} @default {<span>Z</span>}}}</div>';
+        const nodes = this.parser.parse(template);
+        const div = nodes[0] as any;
+        const ifBlock = div.querySelector('template') as any;
+        const switchBlock = ifBlock.content.querySelector('template') as any;
+
+        expect(ifBlock.getAttribute('v-if')).toBe('show');
+        expect(switchBlock.getAttribute('v-switch')).toBe('kind');
+        expect(switchBlock.content.querySelectorAll('template').length).toBe(2);
     }
 
     @After()

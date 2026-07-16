@@ -157,6 +157,42 @@ export class AgentConsoleRendererTest {
         }
     }
 
+    @Test('wraps markdown message lines in tui messages panel')
+    async renderWrappedMarkdownMessageInTui() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const messagesPanel = consoleRef.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+
+            consoleRef.instance.sessionState.setMessages([
+                {
+                    id: 'a1',
+                    role: 'assistant',
+                    content: `**assistant**\n\`\`\`ts\n${'averylongconversationtoken'.repeat(4)}\n\`\`\``,
+                    createdAt: 1
+                } as any
+            ]);
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const lines = renderer.renderToTuiLines(messagesPanel.hostView.rootNodes[0], { width: 24 });
+            const visibleLines = lines
+                .map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '').trim())
+                .filter(Boolean);
+
+            expect(visibleLines.some((line: string) => line.includes('assistant'))).toBe(true);
+            expect(visibleLines.some((line: string) => line.includes('**assistant**'))).toBe(false);
+            expect(visibleLines.length).toBeGreaterThan(2);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
     @Test('terminal surface updates working state and input from shared component state')
     async terminalSurfaceUpdatesSharedState() {
         const tuiCtx = await Application.run(AgentModule, {

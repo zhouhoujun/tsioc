@@ -1,7 +1,8 @@
 import { Injectable } from '@tsdi/ioc';
 import {
     clampConsoleTextCursor,
-    processConsoleTextInputChunk
+    processConsoleTextInputChunk,
+    shouldSkipConsoleHistoryEntry
 } from '@tsdi/components/console';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
@@ -191,6 +192,9 @@ export class AgentConsoleSessionState {
     inputPrompt = this.consoleOptions.inputPrompt;
     inputContinuationPrompt = this.consoleOptions.inputContinuationPrompt;
     inputPlaceholder = this.consoleOptions.inputPlaceholder;
+    inputHistoryEntries: string[] = [];
+    inputHistoryIndex = -1;
+    inputHistoryDraft = '';
     lastError = '';
     notice = '';
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -516,6 +520,73 @@ export class AgentConsoleSessionState {
         this.refreshInputSuggestions();
         this.syncDerivedInputFocus();
         this.notify();
+    }
+
+    pushInputHistory(value: string): void {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) {
+            return;
+        }
+        this.inputHistoryEntries = [trimmed, ...this.inputHistoryEntries.filter(item => item !== trimmed)].slice(0, 200);
+        this.inputHistoryIndex = -1;
+        this.inputHistoryDraft = '';
+    }
+
+    navigateInputHistory(delta: number): boolean {
+        if (!this.inputHistoryEntries.length) {
+            return false;
+        }
+        if (this.inputHistoryIndex === -1 && this.input.includes('\n')) {
+            return false;
+        }
+        if (delta < 0) {
+            if (this.inputHistoryIndex === -1) {
+                this.inputHistoryDraft = this.input;
+            }
+            const nextIndex = this.findInputHistoryIndex(this.inputHistoryIndex + 1, 1);
+            if (nextIndex < 0) {
+                return false;
+            }
+            this.inputHistoryIndex = nextIndex;
+        } else {
+            if (this.inputHistoryIndex === -1) {
+                return false;
+            }
+            const nextIndex = this.findInputHistoryIndex(this.inputHistoryIndex - 1, -1);
+            if (nextIndex < 0) {
+                this.inputHistoryIndex = -1;
+                this.setInput(this.inputHistoryDraft, this.inputHistoryDraft.length);
+                return true;
+            }
+            this.inputHistoryIndex = nextIndex;
+        }
+        const next = this.inputHistoryEntries[this.inputHistoryIndex] || '';
+        this.setInput(next, next.length);
+        return true;
+    }
+
+    resetInputHistoryNavigation(): void {
+        this.inputHistoryIndex = -1;
+        this.inputHistoryDraft = '';
+    }
+
+    getInputHistoryEntries(): string[] {
+        return this.inputHistoryEntries.slice();
+    }
+
+    setInputHistoryEntries(entries: string[]): void {
+        this.inputHistoryEntries = Array.from(new Set((entries || []).filter(Boolean)));
+        this.inputHistoryIndex = -1;
+        this.inputHistoryDraft = '';
+    }
+
+    protected findInputHistoryIndex(startIndex: number, step: number): number {
+        for (let index = startIndex; index >= 0 && index < this.inputHistoryEntries.length; index += step) {
+            if (!shouldSkipConsoleHistoryEntry(this.inputHistoryEntries[index])) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     setInputCursor(cursor: number): void {
@@ -902,6 +973,7 @@ export class AgentConsoleSessionState {
         const next = processConsoleTextInputChunk(this.input, this.inputCursor, chunk, options);
         this.input = this.expandTabs(next.value);
         this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
+        this.resetInputHistoryNavigation();
         let submitted = next.shouldSubmit;
 
         if (next.shouldConfirmSelection && this.selectMenu) {

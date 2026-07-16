@@ -5,6 +5,7 @@ import {
     RComment, RElement, RNode, RText, RAttr,
     TemplateCompiler, TemplateCompilerOptions, noReact
 } from '@tsdi/components';
+import { transformBlocks } from '../../src/impl/block';
 
 @Injectable()
 export class HtmlRenderer implements Renderer {
@@ -320,7 +321,7 @@ export class HtmlTemplateParser implements TemplateParser {
     parse(template: string): RNode[] {
         const doc = (this.renderer as any).document as Document;
         const container = doc.createElement('div');
-        container.innerHTML = template.trim();
+        container.innerHTML = transformBlocks(template).trim();
         return Array.from(container.childNodes).map(n => n as unknown as RNode);
     }
 

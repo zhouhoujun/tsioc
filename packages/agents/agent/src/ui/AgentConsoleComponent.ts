@@ -609,6 +609,7 @@ export class AgentConsoleComponent implements OnDestroy {
         const prompt = this.enrichPromptWithMentions(draft);
         this.draftLines = [];
         this.multilineMode = false;
+        this.state.pushInputHistory(draft);
         this.state.setInput('');
         this.state.setStatus('running');
         this.state.setLastError('');
@@ -639,6 +640,7 @@ export class AgentConsoleComponent implements OnDestroy {
     async submit(): Promise<void> {
         const value = this.state.input.trim();
         if (!value) { return; }
+        this.state.pushInputHistory(value);
         if (value.startsWith('/')) {
             this.state.setInput('');
             if (await this.handleCommand(value)) {

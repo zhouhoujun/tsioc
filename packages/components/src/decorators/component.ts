@@ -5,6 +5,7 @@ import { DIRECTIVES } from './directive';
 import { ComponentDef } from '../refs/component';
 import { DirectiveType, Factoriable, factoryKey } from '../refs/directive';
 import { Computed, ComputedMetadata } from './computed';
+import { ViewChild, ViewChildMetadata } from './query';
 
 
 
@@ -34,6 +35,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             // def.states = typeRef.getDefines(State).map(d => d as StateMetadata);
             def.attributes = typeRef.getDefines(Attribute).map(d => d.metadata as AttributeMetadata);
             def.computeds = typeRef.getDefines(Computed).map(d => d.metadata as ComputedMetadata);
+            def.viewChilds = typeRef.getDefines(ViewChild).map(d => d.metadata as ViewChildMetadata);
 
             if (dir$.test(def.selector)) {
                 const selectors = def.selector.split(',');

@@ -75,7 +75,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
                 } else if (part.includes('-')) {
                     custParts.push(part);
                     normalizedParts.push(part);
-                } else if (htmlElements.includes(part.toLowerCase())) {
+                } else if (htmlElements.includes(part)) {
                     custParts.push(part);
                     normalizedParts.push(part);
                 } else {

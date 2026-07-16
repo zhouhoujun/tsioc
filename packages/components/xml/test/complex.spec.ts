@@ -272,6 +272,48 @@ export class XmlComplexTemplateTest {
         expect(nodes.length).toBeGreaterThan(0);
     }
 
+    @Test('should parse @if blocks into conditional templates')
+    testIfBlocks() {
+        const template = '<div>@if (show) {<span>A</span>} @else if (alt) {<span>B</span>} @else {<span>C</span>}</div>';
+        const nodes = this.parser.parse(template);
+        const div = nodes[0] as XmlElement;
+        const blocks = div.childNodes.filter(node => (node as XmlElement).tagName === 'template') as XmlElement[];
+
+        expect(blocks.length).toBe(3);
+        expect(blocks[0].getAttribute('v-if')).toBe('show');
+        expect(blocks[1].getAttribute('v-else-if')).toBe('alt');
+        expect(blocks[2].hasAttribute('v-else')).toBe(true);
+        expect((blocks[0].childNodes[0] as XmlElement).tagName).toBe('span');
+    }
+
+    @Test('should parse @switch blocks into case templates')
+    testSwitchBlocks() {
+        const template = '<div>@switch (kind) {@case (\'a\') {<span>A</span>} @case (\'b\') {<span>B</span>} @default {<span>Z</span>}}</div>';
+        const nodes = this.parser.parse(template);
+        const div = nodes[0] as XmlElement;
+        const switchBlock = div.childNodes.find(node => (node as XmlElement).tagName === 'template') as XmlElement;
+        const caseBlocks = switchBlock.childNodes.filter(node => (node as XmlElement).tagName === 'template') as XmlElement[];
+
+        expect(switchBlock.getAttribute('v-switch')).toBe('kind');
+        expect(caseBlocks.length).toBe(3);
+        expect(caseBlocks[0].getAttribute('v-case')).toBe('\'a\'');
+        expect(caseBlocks[1].getAttribute('v-case')).toBe('\'b\'');
+        expect(caseBlocks[2].hasAttribute('v-default')).toBe(true);
+    }
+
+    @Test('should parse nested block templates')
+    testNestedBlocks() {
+        const template = '<div>@if (show) {@switch (kind) {@case (\'a\') {<span>A</span>} @default {<span>Z</span>}}}</div>';
+        const nodes = this.parser.parse(template);
+        const div = nodes[0] as XmlElement;
+        const ifBlock = div.childNodes.find(node => (node as XmlElement).tagName === 'template') as XmlElement;
+        const switchBlock = ifBlock.childNodes.find(node => (node as XmlElement).tagName === 'template') as XmlElement;
+
+        expect(ifBlock.getAttribute('v-if')).toBe('show');
+        expect(switchBlock.getAttribute('v-switch')).toBe('kind');
+        expect(switchBlock.childNodes.filter(node => (node as XmlElement).tagName === 'template').length).toBe(2);
+    }
+
     @After()
     async clean() {
     }

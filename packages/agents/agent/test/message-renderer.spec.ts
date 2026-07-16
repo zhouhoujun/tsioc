@@ -1,0 +1,42 @@
+import expect = require('expect');
+import { Suite, Test } from '@tsdi/unit';
+import {
+    renderAgentConsoleMessageItems,
+    resolveMessageTemplateKind
+} from '../src/ui/AgentConsoleMessageRenderers';
+
+@Suite('Agent console message renderers')
+export class AgentConsoleMessageRendererDispatchTest {
+    @Test('dispatches message template kinds by role and metadata')
+    renderTemplateKinds() {
+        const messages = [
+            { id: 'u1', role: 'user', content: 'hello', createdAt: 1 },
+            { id: 'a1', role: 'assistant', content: '**world**', createdAt: 2 },
+            { id: 't1', role: 'tool', content: '{"ok":true}', createdAt: 3 },
+            { id: 'e1', role: 'assistant', content: 'Error: boom', createdAt: 4, metadata: { error: true } },
+            { id: 's1', role: 'system', content: 'ready', createdAt: 5 }
+        ] as any;
+
+        const items = renderAgentConsoleMessageItems(messages, {
+            selectedMessageId: 'a1',
+            messagesFocused: true
+        });
+
+        expect(items.map(item => item.templateKind)).toEqual(['user', 'assistant', 'tool', 'error', 'system']);
+        expect(items[0].lines[0].content).toEqual('hello');
+        expect(items[1].lines[0].content).toEqual('world');
+        expect(items[1].lines[0].role).toEqual('› ');
+        expect(items[3].lines[0].tokens[0]?.style.color).toBeTruthy();
+    }
+
+    @Test('resolves error template before assistant role')
+    resolveErrorTemplate() {
+        expect(resolveMessageTemplateKind({
+            id: 'e1',
+            role: 'assistant',
+            content: 'boom',
+            createdAt: 1,
+            metadata: { error: true }
+        } as any)).toEqual('error');
+    }
+}

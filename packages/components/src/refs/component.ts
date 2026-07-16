@@ -8,6 +8,7 @@ import { Renderer } from '../renderer/Renderer';
 import { noReact } from '../effect';
 import { RNode } from '../renderer/Node';
 import { TemplateFactory } from './template';
+import { ViewChildMetadata } from '../decorators/query';
 
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
@@ -15,6 +16,7 @@ export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof fact
     templateUrl?: string;
     ƿFac?: (ctx: NodeInjector, options: ComponentOptions) => ComponentRef<T>;
     ƿtempFac?: TemplateFactory<T>;
+    viewChilds?: ViewChildMetadata[];
 }
 
 /**
@@ -24,6 +26,11 @@ export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof fact
 export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions, NodeInjector> {
 
     [noReact] = true;
+
+    /**
+     * Component definition metadata.
+     */
+    abstract get def(): ComponentDef<T>;
 
     /**
      * The host view defined by the template
@@ -73,5 +80,3 @@ export abstract class ComponentFactory<TOpts extends ComponentOptions = Componen
     abstract create<T>(type: AbstractType<T> | ClassRef<T> | ComponentDef<T>, option?: TOpts): ComponentRef<T>;
 
 }
-
-

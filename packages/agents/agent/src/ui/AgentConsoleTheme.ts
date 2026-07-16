@@ -62,7 +62,7 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     statusNoticeLabel: 'color: #d29922;',
     statusNoticeValue: 'color: #e3b341;',
     inputTitle: 'color: #8b949e;',
-    inputShell: 'background: #1b2128; color: #c9d1d9; padding: 1 1;',
+    inputShell: 'background: #1b2128; color: #c9d1d9; padding: 1em 1ch;',
     inputEntry: 'color: #c9d1d9;',
     inputPrompt: 'color: #8b949e;',
     inputCaption: 'color: #8b949e;',
@@ -76,7 +76,7 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     sessionsTitle: 'color: #8b949e;',
     sessionsShell: 'color: #c9d1d9;',
     sessionsAccent: 'color: #ffb86b;',
-    sessionsSelected: 'background: #2a1f12; color: #ffb86b; padding: 0 1; font-weight: bold;',
+    sessionsSelected: 'background: #2a1f12; color: #ffb86b; padding: 0 1ch; font-weight: bold;',
     toolsTitle: 'color: #8b949e;',
     toolsShell: 'color: #c9d1d9;',
     toolsAccent: 'color: #79c0ff;',
@@ -85,19 +85,19 @@ export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     toolRunsAccent: 'color: #79c0ff;',
     messagesTitle: 'color: #8b949e;',
     messagesShell: 'color: #c9d1d9;',
-    messagesUser: 'background: #1b2128; color: #c9d1d9; padding: 0 1;',
-    messagesSelected: 'background: #13202b; color: #8fd0ff; padding: 0 1; font-weight: bold;',
+    messagesUser: 'background: #1b2128; color: #c9d1d9; padding: 0 1ch;',
+    messagesSelected: 'background: #13202b; color: #8fd0ff; padding: 0 1ch; font-weight: bold;',
     messageDetailLineNumber: 'color: #6e7681;',
     activityTitle: 'color: #8b949e;',
     activityShell: 'color: #c9d1d9;',
     selectTitle: 'color: #8b949e;',
-    selectShell: 'color: #d6dee6; padding: 0 1;',
+    selectShell: 'color: #d6dee6; padding: 0 1ch;',
     selectHeader: 'color: #c9d1d9; font-weight: bold;',
     selectHint: 'color: #6e7681;',
-    selectOption: 'color: #8b949e; padding: 0 1;',
-    selectOptionActive: 'color: #5f8fc7; padding: 0 1; font-weight: bold;',
+    selectOption: 'color: #8b949e; padding: 0 1ch;',
+    selectOptionActive: 'color: #5f8fc7; padding: 0 1ch; font-weight: bold;',
     selectDetailLabel: 'color: #6f7c8a;',
-    selectDetailValue: 'color: #c9d1d9; padding: 0 1;'
+    selectDetailValue: 'color: #c9d1d9; padding: 0 1ch;'
 };
 
 export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): AgentConsoleTheme {

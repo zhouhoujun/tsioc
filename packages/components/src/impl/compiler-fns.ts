@@ -1,6 +1,6 @@
 import { Exception, isString, remove } from '@tsdi/ioc';
 import { CompilerOptions } from '../template/compiler';
-import { DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText, COMPONENTDEF, CUSTOM_ELEMENTS } from '../renderer/Node';
+import { DIRECTIVES, BINDINGS, NodeType, RAttr, RElement, RNode, RText, COMPONENTDEF, CUSTOM_ELEMENTS, LOCAL_REFS, TEMPLATE_FACTORY } from '../renderer/Node';
 import { ComponentDef } from '../refs/component';
 import { DirectiveDef, DirectiveType, Factoriable } from '../refs/directive';
 import { NodeInjector } from '../refs/injector';
@@ -24,13 +24,33 @@ export interface RendererOptions {
     textFactory: (node: RText, options: CompilerOptions) => Rendering<RText>;
     elementFactory: (node: RElement, renderer: Renderer, options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>;
     attributeFactory: (attr: RAttr) => (element: RElement, renderer: Renderer) => void;
-    componentFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[]) => Rendering<RElement>,
+    componentFactory: (node: RElement, renderer: Renderer, componentDef: ComponentDef, attrs: RAttr[], bindings: any[], delimiter: RegExp) => Rendering<RElement>,
     templateFactory: (node: RElement, renderer: Renderer, attrs: RAttr[], bindings: any[], options: CompilerOptions, rendererOptions: RendererOptions) => Rendering<RElement>,
     bindDirective: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, injector: NodeInjector, context: any, delimiter: RegExp) => void,
 }
 
+function resolveNodeTagName(node: RElement): string {
+    return ((node as any).localName || node.tagName || '') as string;
+}
+
 const outputSubscriptions = new WeakMap<object, Map<string, Subscription>>();
 const outputSubscriptionCleanup = new WeakSet<object>();
+
+function extractLocalRefs(attrs: RAttr[]): string[] {
+    return (attrs || [])
+        .map(attr => attr?.name || '')
+        .filter(name => name.startsWith('#'))
+        .map(name => name.slice(1))
+        .filter(Boolean);
+}
+
+function assignLocalRefs(node: RNode, attrs: RAttr[]): void {
+    const localRefs = extractLocalRefs(attrs);
+    if (!localRefs.length) {
+        return;
+    }
+    node[LOCAL_REFS] = localRefs;
+}
 
 function replaceOutputSubscription(target: object, key: string, emitter: EventEmitter<any>, handler: any, injector: NodeInjector): void {
     let subscriptions = outputSubscriptions.get(target);
@@ -135,7 +155,7 @@ export function compileElementToFactory(
     options: CompilerOptions,
     rendererOptions: RendererOptions
 ): Rendering<RElement> {
-    const tagName = node.tagName;
+    const tagName = resolveNodeTagName(node);
     const attrs = renderer.getAttributes(node);
     const bindings = node[BINDINGS] || [];
     const directives = node[DIRECTIVES] || [];
@@ -143,11 +163,11 @@ export function compileElementToFactory(
     // 检查是否是组件
     const componentDef = node[COMPONENTDEF];
     if (componentDef) {
-        return rendererOptions.componentFactory(node, renderer, componentDef, attrs, bindings);
+        return rendererOptions.componentFactory(node, renderer, componentDef, attrs, bindings, rendererOptions.delimiter);
     }
 
     // 检查是否是模板标签
-    if (tagName === rendererOptions.templateTag) {
+    if (tagName === (rendererOptions.templateTag || '')) {
         return  rendererOptions.templateFactory(node, renderer, attrs, bindings, options, rendererOptions);
     }
 
@@ -172,6 +192,7 @@ export function compileElementToFactory(
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(tagName);
+        assignLocalRefs(element, attrs);
         // Copy nodeType from original node to preserve ElementContainer flag (only for virtual DOM)
         try {
             element.nodeType = node.nodeType;
@@ -262,13 +283,35 @@ export function compileComponentToFactory(
     renderer: Renderer,
     componentDef: ComponentDef,
     attrs: RAttr[],
-    bindings: any[]
+    bindings: any[],
+    delimiter: RegExp
 ): Rendering<RElement> {
-    const compiledAttrs = attrs.map(attr => compileAttributeToFactory(attr));
+    const compiledAttrs = attrs
+        .filter(({ name, value }) =>
+            !name.startsWith('@')
+            && !name.startsWith(':')
+            && !name.startsWith('[')
+            && !name.startsWith('v-')
+            && !hasDelimiter(value, delimiter))
+        .map(attr => compileAttributeToFactory(attr));
+    const tagName = resolveNodeTagName(node);
+    const directives = node[DIRECTIVES] || [];
+    const hostBindingCount = attrs.filter(({ name, value }) =>
+        name.startsWith('@')
+        || name.startsWith(':')
+        || name === 'v-model'
+        || hasDelimiter(value, delimiter)
+    ).length;
 
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
-        const element = renderer.createElement(node.tagName);
+        const element = renderer.createElement(tagName);
+        assignLocalRefs(element, attrs);
+        try {
+            element.nodeType = node.nodeType;
+        } catch {
+            // Real DOM nodes have read-only nodeType, skip
+        }
 
         // 应用属性
         compiledAttrs.forEach(applyAttr => {
@@ -291,17 +334,29 @@ export function compileComponentToFactory(
             }
         });
 
-        // 应用绑定
-        bindings.forEach(binding => {
-            const unbinding = binding(element, context, effect, injector);
-            unbinding && injector.onDestroy(unbinding);
-        });
-
         // 附加组件到环境
         injector.attachComponent(componentRef);
 
+        attrs.forEach(({ name, value }) => {
+            processComponentAttribute(componentRef, name, value, context, effect, injector, delimiter);
+        });
+
+        directives.forEach(dirDef => {
+            applyDirectiveToElementWithSelectors(element, dirDef, attrs, effect, injector, context, delimiter);
+        });
+
         // 渲染组件
         componentRef.render();
+
+        if (hostBindingCount > 0) {
+            const hostBindings = bindings.slice(0, hostBindingCount);
+            Promise.resolve().then(() => {
+                hostBindings.forEach(binding => {
+                    const unbinding = binding(element, context, effect, injector);
+                    unbinding && injector.onDestroy(unbinding);
+                });
+            });
+        }
 
         return element;
     };
@@ -325,6 +380,7 @@ export function compileTemplateToFactory(
     rendererOptions: RendererOptions
 ): (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RElement | null {
     const compiledAttrs = attrs.map(attr => compileAttributeToFactory(attr));
+    const tagName = resolveNodeTagName(node);
     const childNodes = node.childNodes || [];
     const childFactories: Array<(renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => RNode | null> = [];
 
@@ -336,20 +392,36 @@ export function compileTemplateToFactory(
 
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
-        const element = renderer.createElement(node.tagName);
+        const element = renderer.createElement(tagName);
+        assignLocalRefs(element, attrs);
+        try {
+            element.nodeType = NodeType.Template;
+        } catch {
+            // Real DOM nodes have read-only nodeType, skip
+        }
 
         // 应用属性
         compiledAttrs.forEach(applyAttr => {
             applyAttr(element, renderer);
         });
 
-        // 创建并添加子节点
-        childFactories.forEach(createChild => {
-            const child = createChild(renderer, effect, injector, context);
-            if (child) {
-                renderer.appendChild(element, child);
-            }
-        });
+        // 将模板子树保存为 factory，避免在宿主视图中提前实例化
+        element[TEMPLATE_FACTORY] = (renderer: Renderer, injector: NodeInjector, factoryContext: any, factoryEffect: ReactiveEffect) => {
+            const createdNodes: RNode[] = [];
+            childFactories.forEach(createChild => {
+                const child = createChild(renderer, factoryEffect, injector, factoryContext);
+                if (child) {
+                    createdNodes.push(child);
+                }
+            });
+            return createdNodes;
+        };
+
+        const elementRef = injector.getElementRef(element);
+        injector.attachTemplate(createTemplateRef(element[TEMPLATE_FACTORY], elementRef, {
+            injector,
+            context
+        }));
 
         // 应用绑定
         bindings.forEach(binding => {
@@ -404,6 +476,44 @@ export function applyDirectiveToElement(
     }
 }
 
+function applyDirectiveToElementWithSelectors(
+    element: RElement,
+    directive: DirectiveDef,
+    attrs: RAttr[],
+    effect: ReactiveEffect,
+    injector: NodeInjector,
+    context: any,
+    delimiter: RegExp
+): void {
+    const elementRef = injector.getElementRef(element);
+    const directiveRef = (directive as Factoriable).ƿfac?.(injector, { elementRef, context });
+
+    if (!directiveRef) return;
+
+    injector.attachDirective(directiveRef);
+
+    const instance = directiveRef.instance;
+
+    if (instance instanceof SwitchDirective) {
+        registerSwitchDirective(instance, element);
+    }
+
+    processDirectiveAttributes(
+        directiveRef,
+        directive,
+        directive.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, '').trim()).filter(Boolean),
+        attrs,
+        context,
+        effect,
+        injector,
+        delimiter
+    );
+
+    if (instance.onInit) {
+        instance.onInit();
+    }
+}
+
 
 /**
  * 遍历节点创建绑定工厂
@@ -448,13 +558,29 @@ export function generateNodeBindings<C>(
     customElements: DirectiveDef[] = []
 ): void {
     const rootNodes = nodes;
+    const seenComponents = new Map<string, ComponentDef>();
 
     // 收集组件和指令
     components.forEach(cdef => {
+        const selector = cdef.selector;
+        if (!selector) {
+            return;
+        }
+        const seen = seenComponents.get(selector);
+        if (seen) {
+            if (seen.type === cdef.type) {
+                return;
+            }
+            throw new Exception(`has dup component selector: ${selector}`);
+        }
+        seenComponents.set(selector, cdef);
         const nodes = renderer.querySelectorAll(rootNodes, cdef.selector);
         nodes?.forEach(n => {
             if (n[COMPONENTDEF]) {
-                throw new Exception('has dup component selector');
+                if (n[COMPONENTDEF]?.type === cdef.type) {
+                    return;
+                }
+                throw new Exception(`has dup component selector: ${cdef.selector}`);
             }
             n[COMPONENTDEF] = cdef;
         });
@@ -578,6 +704,7 @@ export function bindingTemplate(element: RElement, renderer: Renderer, delimiter
         if (injector.destroyed) return;
         const el = target as RElement;
         const elementRef = injector.getElementRef(el);
+        const templateFactory = (el as any)[TEMPLATE_FACTORY] as NodeFactory<any> | undefined;
         let ctx: any;
 
         if (el.hasAttribute(':templateOutletContext')) {
@@ -604,7 +731,7 @@ export function bindingTemplate(element: RElement, renderer: Renderer, delimiter
             }
         }
 
-        const templateRef = createTemplateRef(childNodes, elementRef, { injector, context: ctx })
+        const templateRef = createTemplateRef(templateFactory || childNodes, elementRef, { injector, context: ctx })
 
         if (templateRef) {
             injector.attachTemplate(templateRef);
@@ -876,7 +1003,7 @@ export function processComponentAttribute(componentRef: any, attrName: string, e
         const inputDef = attributes.find((attr: any) => attr.alias === propName || attr.propertyKey === propName);
         if (inputDef) {
             effect.run(() => {
-                const attValue = context[expr];
+                const attValue = evaluateExpression(expr, context, injector, delimiter);
                 componentRef.instance[inputDef.propertyKey] = attValue;
             });
         }
@@ -1077,7 +1204,7 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
         const name = a.alias ?? a.propertyKey;
         const propertyKey = a.propertyKey;
         const matchNames = toMatchNames(name);
-        const attr = attrs.find(r => matchNames.includes(r.name));
+        const attr = findMatchingAttribute(attrs, matchNames);
         if (!attr) {
             if (directiveDef.dirType === DirectiveType.Conditional && a.propertyKey === 'context') {
                 directiveInstance[propertyKey] = context;
@@ -1103,23 +1230,33 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
         } else if (attr.name.startsWith(':')) {
             if (isString(attr.value)) {
                 effect.run(() => {
-                    const attValue = context[attr.value] ?? attr.value;
+                    const attValue = evaluateExpression(attr.value, context, injector, delimiter);
                     directiveInstance[propertyKey] = attValue;
                 });
             } else {
                 directiveInstance[propertyKey] = attr.value;
             }
-        } else if (selectors.includes(attr.name)) {
+        } else if (matchesSelectorName(attr.name, selectors)) {
             if (isString(attr.value)) {
+                if (propertyKey === 'templateOutlet' && isSimpleReferenceExpression(attr.value)) {
+                    directiveInstance[propertyKey] = attr.value;
+                    return;
+                }
                 if (directiveDef.dirType === DirectiveType.Iterable) {
                     evaluateIterableExpression(directiveInstance, propertyKey, attr.value, context, effect, injector, delimiter);
                 } else {
-                    // Capture attr.value in a closure-safe way
                     const attrValue = attr.value;
-                    effect.run(() => {
-                        const attValue = evaluateExpression(attrValue, context, injector, delimiter);
-                        directiveInstance[propertyKey] = attValue;
-                    });
+                    const applyValue = () => {
+                        effect.run(() => {
+                            const attValue = evaluateExpression(attrValue, context, injector, delimiter);
+                            directiveInstance[propertyKey] = attValue;
+                        });
+                    };
+                    if (shouldDeferSelectorExpression(attrValue, context, injector)) {
+                        Promise.resolve().then(applyValue);
+                    } else {
+                        applyValue();
+                    }
                 }
             } else {
                 directiveInstance[propertyKey] = attr.value;
@@ -1172,16 +1309,17 @@ export function evaluateDelimiterExpression(text: string, context: any, effect: 
  */
 export function evaluateExpression(expr: string, context: any, injector: NodeInjector, delimiter: RegExp): any {
     try {
+        const scope = createExpressionScope(context, injector);
         const parts = splitTopLevel(expr, '|').map(part => part.trim()).filter(Boolean);
         if (parts.length <= 1) {
-            return new Function('ctx', `with(ctx){return ${expr}}`)(context);
+            return new Function('ctx', `with(ctx){return ${expr}}`)(scope);
         } else {
             const [expression, ...pipeNames] = parsePipes(parts);
             const pipes = pipeNames.reduce((obj, name) => {
                 obj[name] = injector.get(name);
                 return obj;
             }, {} as any);
-            return new Function('ctx', 'pipes', `with(ctx){return ${expression}}`)(context, pipes);
+            return new Function('ctx', 'pipes', `with(ctx){return ${expression}}`)(scope, pipes);
         }
     } catch (e) {
         console.error(`Error evaluating expression: ${expr}`, e);
@@ -1568,6 +1706,120 @@ function splitTopLevel(input: string, separator: '|' | ':'): string[] {
 
 // 保留文件末尾的辅助函数
 const attrPrefixes = [':', '@', '*', 'v-'];
+
+function createExpressionScope(context: any, injector: NodeInjector): any {
+    if (context == null || (typeof context !== 'object' && typeof context !== 'function')) {
+        return context;
+    }
+
+    const scope = Object.create(context);
+    const seen = new Set<string>();
+    let current: NodeInjector | null = injector;
+
+    while (current) {
+        bindLocalRefs(scope, current, seen);
+        current = current.getParentInjector();
+    }
+
+    return new Proxy(scope, {
+        has(target, prop) {
+            return Reflect.has(target, prop) || findCaseInsensitiveKey(target, prop) !== undefined;
+        },
+        get(target, prop, receiver) {
+            if (Reflect.has(target, prop)) {
+                return Reflect.get(target, prop, receiver);
+            }
+            const matchedKey = findCaseInsensitiveKey(target, prop);
+            if (matchedKey !== undefined) {
+                return Reflect.get(target, matchedKey, receiver);
+            }
+            return Reflect.get(target, prop, receiver);
+        }
+    });
+}
+
+function bindLocalRefs(scope: any, injector: NodeInjector, seen: Set<string>): void {
+    const bindNode = (node: RNode, value: any) => {
+        const refs = node?.[LOCAL_REFS];
+        if (!refs?.length) {
+            return;
+        }
+        refs.forEach(refName => {
+            if (!refName || seen.has(refName)) {
+                return;
+            }
+            seen.add(refName);
+            scope[refName] = value;
+        });
+    };
+
+    injector.templateRefs.forEach((templateRef, node) => bindNode(node, templateRef));
+    injector.componentRefs.forEach((componentRef, node) => bindNode(node, componentRef.instance ?? componentRef));
+    injector.directiveRefs.forEach((directiveRefs, node) => bindNode(node, directiveRefs[0]?.instance ?? directiveRefs[0]));
+    injector.elementRefs.forEach((elementRef, node) => bindNode(node, elementRef.nativeElement ?? elementRef));
+}
+
+function findCaseInsensitiveKey(target: any, prop: string | symbol): string | symbol | undefined {
+    if (typeof prop !== 'string') {
+        return undefined;
+    }
+    const lowerProp = prop.toLowerCase();
+    let current = target;
+    while (current && current !== Object.prototype) {
+        const keys = Reflect.ownKeys(current);
+        const match = keys.find(key => typeof key === 'string' && key.toLowerCase() === lowerProp);
+        if (match !== undefined) {
+            return match;
+        }
+        current = Object.getPrototypeOf(current);
+    }
+    return undefined;
+}
+
+function shouldDeferSelectorExpression(expr: string, context: any, injector: NodeInjector): boolean {
+    const trimmed = expr.trim();
+    if (!isSimpleReferenceExpression(trimmed)) {
+        return false;
+    }
+    const scope = createExpressionScope(context, injector);
+    return !hasExpressionPath(scope, trimmed);
+}
+
+function isSimpleReferenceExpression(expr: string): boolean {
+    return /^[_$a-zA-Z][_$a-zA-Z0-9.]*$/.test(expr);
+}
+
+function hasExpressionPath(scope: any, expr: string): boolean {
+    const parts = expr.split('.');
+    let current = scope;
+    for (const part of parts) {
+        if (current == null || !(part in Object(current))) {
+            return false;
+        }
+        current = current[part];
+    }
+    return true;
+}
+
+function normalizeAttributeMatchName(attrName: string): string {
+    const prefix = attrPrefixes.find(item => attrName.startsWith(item)) || '';
+    const name = prefix ? attrName.slice(prefix.length) : attrName;
+    return `${prefix}${name.replace(/-/g, '').toLowerCase()}`;
+}
+
+function findMatchingAttribute(attrs: RAttr[], matchNames: string[]): RAttr | undefined {
+    const exact = attrs.find(attr => matchNames.includes(attr.name));
+    if (exact) {
+        return exact;
+    }
+    const normalized = new Set(matchNames.map(normalizeAttributeMatchName));
+    return attrs.find(attr => normalized.has(normalizeAttributeMatchName(attr.name)));
+}
+
+function matchesSelectorName(attrName: string, selectors: string[]): boolean {
+    const normalizedAttrName = normalizeAttributeMatchName(attrName);
+    return selectors.some(selector => normalizeAttributeMatchName(selector) === normalizedAttrName);
+}
 
 /**
  * 转换为匹配名称列表

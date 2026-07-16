@@ -37,6 +37,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         // 将模板编译为 node factory
         const factory = compileToFactory<C>(nodes, this.renderer, options, {
             delimiter: this.delimiter,
+            templateTag: this.options.templateTag || 'v-template',
             textFactory: compileTextToFactory,
             elementFactory: compileElementToFactory,
             attributeFactory: compileAttributeToFactory,
@@ -50,4 +51,3 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
 
 
 }
-

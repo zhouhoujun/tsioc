@@ -5,7 +5,7 @@ import { ElementRef } from '../refs/element';
 import { NodeInjector } from '../refs/injector';
 import { DirectiveDef } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
-import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS, DIRECTIVES, COMPONENTDEF, CUSTOM_ELEMENTS } from '../renderer/Node';
+import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS, DIRECTIVES, COMPONENTDEF, CUSTOM_ELEMENTS, LOCAL_REFS } from '../renderer/Node';
 import { noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
@@ -70,29 +70,31 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         const renderer = injector.get(Renderer);
         effect = effect || injector.get(ReactiveEffect);
 
+        let resolvedContext = context;
         if (context) {
             if (this.options?.context) {
                 if (typeof context === 'object' && context !== null) {
                     const parentContext = this.options.context;
                     if (parentContext && context !== parentContext) {
-                        Object.defineProperty(context, TEMPLATE_SCOPE_PARENT, {
+                        resolvedContext = Object.assign({}, context);
+                        Object.defineProperty(resolvedContext, TEMPLATE_SCOPE_PARENT, {
                             value: parentContext,
                             configurable: true,
                             enumerable: false,
                             writable: true
                         });
-                        Object.setPrototypeOf(context, parentContext);
+                        Object.setPrototypeOf(resolvedContext, parentContext);
                     }
                 } else {
-                    context = this.options.context;
+                    resolvedContext = this.options.context;
                 }
             }
         } else {
-            context = this.options?.context ?? {};
+            resolvedContext = this.options?.context ?? {};
         }
 
         // 响应式处理上下文
-        context = isReactive(context) ? context : reactive(context, effect);
+        context = isReactive(resolvedContext) ? resolvedContext : reactive(resolvedContext, effect);
 
         // 默认处理抽象节点
         let rootNodes: RNode[];
@@ -134,6 +136,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         cloned[DIRECTIVES] = node[DIRECTIVES]?.slice(0);
         cloned[CUSTOM_ELEMENTS] = node[CUSTOM_ELEMENTS]?.slice(0);
         cloned[COMPONENTDEF] = node[COMPONENTDEF];
+        cloned[LOCAL_REFS] = node[LOCAL_REFS]?.slice(0);
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
                 cloned.appendChild(this.clone(n, renderer));

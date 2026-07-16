@@ -60,6 +60,11 @@ export interface TuiRenderLayout {
 
 type TuiRenderRegionDraft = TuiRenderRegion & { element?: ConsoleElement };
 
+interface TuiStyledSegment {
+    text: string;
+    styleMap: Record<string, string>;
+}
+
 @Injectable()
 export class TuiRenderer extends ConsoleRenderer {
     renderToTuiLines(node: RNode | RNode[], options: TuiRenderOptions = {}): string[] {
@@ -137,7 +142,7 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'h3':
             case 'h4':
                 if (text.trim()) {
-                    lines.push(this.renderInlineLine(element, { ...styleMap, 'font-weight': 'bold' }, width));
+                    lines.push(...this.renderInlineLines(element, { ...styleMap, 'font-weight': 'bold' }, width));
                 }
                 finishRegion();
                 return;
@@ -147,7 +152,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     const labelStyle = element.getAttribute('labelStyle');
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
-                    lines.push(this.renderInlineLine(element, merged, width));
+                    lines.push(...this.renderInlineLines(element, merged, width));
                 }
                 finishRegion();
                 return;
@@ -156,7 +161,7 @@ export class TuiRenderer extends ConsoleRenderer {
                 if (text.trim()) {
                     const textStyle = element.getAttribute('textStyle');
                     const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
-                    lines.push(this.renderInlineLine(element, merged, width));
+                    lines.push(...this.renderInlineLines(element, merged, width));
                 }
                 finishRegion();
                 return;
@@ -489,7 +494,7 @@ export class TuiRenderer extends ConsoleRenderer {
         return hasBoxStyle;
     }
 
-    protected renderInlineLine(element: ConsoleElement, inherited: Record<string, string>, width?: number): string {
+    protected renderInlineLines(element: ConsoleElement, inherited: Record<string, string>, width?: number): string[] {
         const padding = this.resolveBoxPadding(inherited.padding);
         const leftPad = padding.left > 0
             ? this.applyAnsi(' '.repeat(padding.left), inherited, undefined, true)
@@ -497,13 +502,35 @@ export class TuiRenderer extends ConsoleRenderer {
         const rightPad = padding.right > 0
             ? this.applyAnsi(' '.repeat(padding.right), inherited, undefined, true)
             : '';
-        const content = `${leftPad}${this.renderInlineText(element, inherited)}${rightPad}`;
+        const availableWidth = width
+            ? Math.max(1, width - padding.left - padding.right)
+            : undefined;
         const hasBackground = !!(inherited.background || inherited['background-color']);
         const hasPadding = padding.top > 0 || padding.right > 0 || padding.bottom > 0 || padding.left > 0;
-        if (!width || (!hasBackground && !hasPadding)) {
-            return content;
+        const wrapped = this.wrapStyledSegments(
+            this.collectInlineSegmentLines(element, inherited),
+            availableWidth,
+            width != null && String(inherited['white-space'] || '').trim().toLowerCase() !== 'nowrap'
+        );
+        const rows = wrapped.map(chunk => {
+            const content = `${leftPad}${chunk}${rightPad}`;
+            if (!width || (!hasBackground && !hasPadding)) {
+                return content;
+            }
+            return this.applyAnsi(this.padVisible(content, width), inherited, undefined, true);
+        });
+        if (!hasPadding || (padding.top <= 0 && padding.bottom <= 0)) {
+            return rows;
         }
-        return this.applyAnsi(this.padVisible(content, width), inherited, undefined, true);
+        const blankContent = `${leftPad}${rightPad}`;
+        const blankRow = width && (hasBackground || hasPadding)
+            ? this.applyAnsi(this.padVisible(blankContent, width), inherited, undefined, true)
+            : blankContent;
+        return [
+            ...Array.from({ length: Math.max(0, padding.top) }, () => blankRow),
+            ...rows,
+            ...Array.from({ length: Math.max(0, padding.bottom) }, () => blankRow)
+        ];
     }
 
     protected renderInlineText(current: ConsoleNode, inherited: Record<string, string>): string {
@@ -533,6 +560,103 @@ export class TuiRenderer extends ConsoleRenderer {
         return element.childNodes
             .map(child => this.renderInlineText(child as ConsoleNode, styleMap))
             .join('');
+    }
+
+    protected collectInlineSegmentLines(current: ConsoleNode, inherited: Record<string, string>): TuiStyledSegment[][] {
+        const lines: TuiStyledSegment[][] = [[]];
+        this.appendInlineSegments(current, inherited, lines);
+        return lines.length ? lines : [[]];
+    }
+
+    protected appendInlineSegments(
+        current: ConsoleNode,
+        inherited: Record<string, string>,
+        lines: TuiStyledSegment[][]
+    ): void {
+        if (current instanceof ConsoleComment) {
+            return;
+        }
+        if (current instanceof ConsoleText) {
+            const value = current.textContent || '';
+            if (!value.trim()) {
+                return;
+            }
+            const text = /[\r\n\t]/.test(value)
+                ? this.normalizeInlineWhitespace(value).trim()
+                : value;
+            if (!text) {
+                return;
+            }
+            lines[lines.length - 1].push({ text, styleMap: inherited });
+            return;
+        }
+        const element = current as ConsoleElement;
+        const styleMap = this.mergeStyles(inherited, this.getStyleMap(element));
+        const tag = (element.tagName || '').toLowerCase();
+        if (tag === 'br') {
+            lines.push([]);
+            return;
+        }
+        if (tag === 'input') {
+            const value = element.getAttribute('value') || this.collectText(element) || '';
+            if (value) {
+                lines[lines.length - 1].push({ text: value, styleMap });
+            }
+            return;
+        }
+        element.childNodes.forEach(child => this.appendInlineSegments(child as ConsoleNode, styleMap, lines));
+    }
+
+    protected wrapStyledSegments(
+        segmentLines: TuiStyledSegment[][],
+        width?: number,
+        wrap = true
+    ): string[] {
+        if (!segmentLines.length) {
+            return [''];
+        }
+        return segmentLines.flatMap(segments => this.wrapStyledSegmentLine(segments, width, wrap));
+    }
+
+    protected wrapStyledSegmentLine(
+        segments: TuiStyledSegment[],
+        width?: number,
+        wrap = true
+    ): string[] {
+        if (!segments.length) {
+            return [''];
+        }
+        if (!wrap || !width || width <= 0) {
+            return [segments.map(segment => this.applyAnsi(segment.text, segment.styleMap, undefined, true)).join('')];
+        }
+        const lines: string[] = [];
+        let currentLine = '';
+        let currentWidth = 0;
+        const flush = () => {
+            lines.push(currentLine);
+            currentLine = '';
+            currentWidth = 0;
+        };
+        segments.forEach(segment => {
+            let rest = segment.text;
+            while (rest) {
+                if (currentWidth >= width) {
+                    flush();
+                }
+                const availableWidth = Math.max(1, width - currentWidth);
+                const chunk = sliceByDisplayWidth(rest, availableWidth) || rest.slice(0, 1);
+                currentLine += this.applyAnsi(chunk, segment.styleMap, undefined, true);
+                currentWidth += getDisplayWidth(chunk);
+                rest = rest.slice(chunk.length);
+                if (rest && currentWidth >= width) {
+                    flush();
+                }
+            }
+        });
+        if (!lines.length || currentLine) {
+            lines.push(currentLine);
+        }
+        return lines;
     }
 
     protected collectText(current: ConsoleNode, visited: WeakSet<object> = new WeakSet<object>()): string {

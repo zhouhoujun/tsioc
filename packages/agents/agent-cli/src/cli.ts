@@ -1255,6 +1255,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         viewModel = consoleComponentRef.instance;
         await consoleComponentRef.render();
         consoleState = viewModel.sessionState || consoleComponentRef.injector.get(AgentConsoleSessionState);
+        consoleState?.setInputHistoryEntries?.(historyEntries);
         consoleState.setCommandHints(getChatCommands());
         consoleRenderer = currentCtx.get(TuiRenderer) || currentCtx.get(ConsoleRenderer);
         consoleSurface?.destroy();
@@ -1413,7 +1414,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
-        const submittedDraft = currentDraft;
         try {
             applyScreenNotice('');
             historyIndex = -1;
@@ -1426,11 +1426,8 @@ async function runInteractiveChat(options: any): Promise<void> {
                 }
             );
             if (result.submitted) {
-                const trimmed = submittedDraft.trim();
-                if (trimmed) {
-                    pushHistoryEntry(trimmed);
-                    persistHistory();
-                }
+                historyEntries = consoleState?.getInputHistoryEntries?.() || historyEntries;
+                persistHistory();
                 await refreshSessionsList(currentSessionId);
             }
             syncDraftFromConsoleState();
@@ -1714,6 +1711,9 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         if ((controlKey === 'up' || controlKey === 'down') && shouldRouteDraftNavigation()) {
+            if (consoleState?.navigateInputHistory?.(controlKey === 'up' ? -1 : 1)) {
+                syncDraftFromConsoleState();
+            }
             return;
         }
         if (controlKey === 'up' || controlKey === 'down' || controlKey === 'tab' || controlKey === 'escape') {

@@ -4,7 +4,7 @@ import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
 import { RNode } from '../renderer/Node';
-import { Host } from '@tsdi/ioc';
+import { Host, Optional } from '@tsdi/ioc';
 
 interface SwitchChain {
     switchDirective: SwitchDirective;
@@ -72,6 +72,36 @@ function flushPendingDefaults(parentNode: RNode, switchDir: SwitchDirective) {
     }
 }
 
+function getSwitchLookupNode(directive: { parentNode?: RNode | null; _switchLookupNode?: RNode | null; }): RNode | null {
+    return directive._switchLookupNode ?? directive.parentNode ?? null;
+}
+
+function clearPendingCase(parentNode: RNode | null, caseDirective: CaseDirective) {
+    if (!parentNode) return;
+    const cases = pendingCases.get(parentNode);
+    if (!cases) return;
+    const index = cases.indexOf(caseDirective);
+    if (index > -1) {
+        cases.splice(index, 1);
+    }
+    if (!cases.length) {
+        pendingCases.delete(parentNode);
+    }
+}
+
+function clearPendingDefault(parentNode: RNode | null, defaultDirective: DefaultDirective) {
+    if (!parentNode) return;
+    const defaults = pendingDefaults.get(parentNode);
+    if (!defaults) return;
+    const index = defaults.indexOf(defaultDirective);
+    if (index > -1) {
+        defaults.splice(index, 1);
+    }
+    if (!defaults.length) {
+        pendingDefaults.delete(parentNode);
+    }
+}
+
 @Directive({
     selector: '[v-switch],[*switch]',
     priority: 30  // Higher priority than v-case (20) so switch is registered first
@@ -111,7 +141,9 @@ export class SwitchDirective {
     registerDefault(defaultDirective: DefaultDirective) {
         if (!this.parentNode) return;
         const chain = getOrCreateSwitchChain(this.parentNode);
-        chain.defaults.push(defaultDirective);
+        if (chain.defaults.indexOf(defaultDirective) === -1) {
+            chain.defaults.push(defaultDirective);
+        }
         if (this._value !== undefined) {
             this.updateCases();
         }
@@ -156,11 +188,15 @@ export class SwitchDirective {
 
     onDestroy() {
         if (!this.parentNode) return;
-        const chain = getOrCreateSwitchChain(this.parentNode);
+        const chain = switchChains.get(this.parentNode);
+        if (!chain || chain.switchDirective !== this) {
+            return;
+        }
         chain.cases.forEach(caseDirective => caseDirective.clearView());
         chain.defaults.forEach(defaultDirective => defaultDirective.clearView());
         chain.cases = [];
         chain.defaults = [];
+        chain.switchDirective = null as any;
     }
 }
 
@@ -168,7 +204,23 @@ export function registerSwitchDirective(directive: SwitchDirective, parentNode: 
     directive.parentNode = parentNode;
     if (parentNode) {
         const chain = getOrCreateSwitchChain(parentNode);
+        const existingCases = chain.cases.slice();
+        const existingDefaults = chain.defaults.slice();
+        if (chain.switchDirective && chain.switchDirective !== directive) {
+            existingCases.forEach(caseDirective => caseDirective.clearView());
+            existingDefaults.forEach(defaultDirective => defaultDirective.clearView());
+        }
+        chain.cases = [];
+        chain.defaults = [];
         chain.switchDirective = directive;
+        existingCases.forEach(caseDirective => {
+            (caseDirective as any)._switchDirective = directive;
+            directive.registerCase(caseDirective);
+        });
+        existingDefaults.forEach(defaultDirective => {
+            (defaultDirective as any)._switchDirective = directive;
+            directive.registerDefault(defaultDirective);
+        });
         // Flush any pending cases/defaults that were registered before the switch
         flushPendingCases(parentNode, directive);
         flushPendingDefaults(parentNode, directive);
@@ -205,11 +257,9 @@ export class CaseDirective {
     constructor(
         private viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        @Host() private _switchDirective: SwitchDirective
+        @Optional() @Host() private _switchDirective?: SwitchDirective | null
     ) {
         this._template = templateRef;
-        // 注册到 SwitchDirective
-        _switchDirective.registerCase(this);
     }
 
     @Attribute()
@@ -228,6 +278,38 @@ export class CaseDirective {
     @Attribute()
     set template(templateRef: TemplateRef<any>) {
         this._template = templateRef;
+    }
+
+    onInit() {
+        const lookupNode = getSwitchLookupNode(this as any);
+        const resolvedSwitch = findSwitchDirective(lookupNode);
+        if (resolvedSwitch) {
+            this.bindToSwitch(resolvedSwitch);
+            if (this._switchDirective && this._switchDirective['_value'] !== undefined) {
+                this.updateView(this._switchDirective['_value']);
+            }
+            return;
+        }
+
+        clearPendingCase(lookupNode, this);
+        if (lookupNode) {
+            addPendingCase(lookupNode, this);
+        }
+        if (this._switchDirective) {
+            this._switchDirective.unregisterCase(this);
+            this._switchDirective = null;
+        }
+    }
+
+    private bindToSwitch(nextSwitch: SwitchDirective) {
+        if (this._switchDirective === nextSwitch) {
+            return;
+        }
+        if (this._switchDirective && typeof this._switchDirective.unregisterCase === 'function') {
+            this._switchDirective.unregisterCase(this);
+        }
+        this._switchDirective = nextSwitch;
+        nextSwitch.registerCase(this);
     }
 
     updateView(switchValue: any): boolean {
@@ -254,9 +336,10 @@ export class CaseDirective {
     }
 
     onDestroy() {
-        if (this._switchDirective) {
+        if (this._switchDirective && typeof this._switchDirective.unregisterCase === 'function') {
             this._switchDirective.unregisterCase(this);
         }
+        clearPendingCase(getSwitchLookupNode(this as any), this);
         this.clearView();
     }
 }
@@ -274,11 +357,9 @@ export class DefaultDirective {
     constructor(
         private viewContainer: ViewContainerRef,
         templateRef: TemplateRef<any>,
-        @Host() private _switchDirective: SwitchDirective
+        @Optional() @Host() private _switchDirective?: SwitchDirective | null
     ) {
         this._template = templateRef;
-        // 注册到 SwitchDirective
-        _switchDirective.registerDefault(this);
     }
 
     @Attribute()
@@ -289,6 +370,35 @@ export class DefaultDirective {
     @Attribute()
     set template(templateRef: TemplateRef<any>) {
         this._template = templateRef;
+    }
+
+    onInit() {
+        const lookupNode = getSwitchLookupNode(this as any);
+        const resolvedSwitch = findSwitchDirective(lookupNode);
+        if (resolvedSwitch) {
+            this.bindToSwitch(resolvedSwitch);
+            return;
+        }
+
+        clearPendingDefault(lookupNode, this);
+        if (lookupNode) {
+            addPendingDefault(lookupNode, this);
+        }
+        if (this._switchDirective) {
+            this._switchDirective.unregisterDefault(this);
+            this._switchDirective = null;
+        }
+    }
+
+    private bindToSwitch(nextSwitch: SwitchDirective) {
+        if (this._switchDirective === nextSwitch) {
+            return;
+        }
+        if (this._switchDirective && typeof this._switchDirective.unregisterDefault === 'function') {
+            this._switchDirective.unregisterDefault(this);
+        }
+        this._switchDirective = nextSwitch;
+        nextSwitch.registerDefault(this);
     }
 
     updateView(shouldShow: boolean) {
@@ -325,9 +435,10 @@ export class DefaultDirective {
     }
 
     onDestroy() {
-        if (this._switchDirective) {
+        if (this._switchDirective && typeof this._switchDirective.unregisterDefault === 'function') {
             this._switchDirective.unregisterDefault(this);
         }
+        clearPendingDefault(getSwitchLookupNode(this as any), this);
         this.clearView();
     }
 }

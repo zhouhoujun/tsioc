@@ -1,4 +1,4 @@
-import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
+import { Attribute, Component, AfterViewInit, OnDestroy, TemplateRef, ViewChild } from '@tsdi/components';
 import {
     buildTerminalBrandBlock,
     BrDirective,
@@ -22,6 +22,19 @@ import {
     AgentConsoleToolItem,
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
+import {
+    AgentConsoleMarkdownLine,
+    AgentConsoleMarkdownToken,
+    AgentConsoleMarkdownTone,
+    renderAgentConsoleMarkdownLines
+} from './AgentConsoleMarkdown';
+import {
+    AgentConsoleMessageTemplateKind,
+    AgentConsoleRenderedLine,
+    AgentConsoleRenderedMessageItem,
+    renderAgentConsoleMessageItems,
+    resolveAgentConsoleMarkdownToneStyle
+} from './AgentConsoleMessageRenderers';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
 
 const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
@@ -298,6 +311,7 @@ export class AgentConsoleInputPanelComponent {
             ? target.selectionStart
             : value.length;
         this.state?.setInput(value, cursor);
+        this.state?.resetInputHistoryNavigation();
     }
 
     onCursorChange(event: Event): void {
@@ -345,6 +359,13 @@ export class AgentConsoleInputPanelComponent {
             if (event.key === 'Escape') {
                 event.preventDefault?.();
                 await this.state.cancelSelectMenu();
+                return;
+            }
+        }
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            const handled = this.state?.navigateInputHistory(event.key === 'ArrowUp' ? -1 : 1);
+            if (handled) {
+                event.preventDefault?.();
                 return;
             }
         }
@@ -826,35 +847,206 @@ export class AgentConsoleToolRunsPanelComponent {
 }
 
 @Component({
-    selector: 'agent-console-messages-panel',
-    imports: CONSOLE_BASE_IMPORTS,
+    selector: 'agent-console-message-tokens',
+    imports: [SpanDirective],
     template: `
-    <div class="console-panel console-messages-panel" v-style="shellStyle">
+    <span class="message-content">
+        <span class="message-token" v-style="token.style" v-for="token in tokens">{{token.text}}</span>
+    </span>
+    `
+})
+export class AgentConsoleMessageTokensComponent {
+    @Attribute() tokens: Array<AgentConsoleMarkdownToken & { style: Record<string, string> }> = [];
+}
+
+@Component({
+    selector: 'agent-console-message-line',
+    imports: [LabelComponent, SpanDirective, AgentConsoleMessageTokensComponent],
+    template: `
+    <label class="message-line" v-style="itemStyle">
+        <span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="tokens"></agent-console-message-tokens></span>
+    </label>
+    `
+})
+export class AgentConsoleMessageLineComponent {
+    @Attribute() line?: AgentConsoleRenderedLine;
+
+    get itemStyle(): Record<string, string> {
+        return this.line?.itemStyle || {};
+    }
+
+    get role(): string {
+        return this.line?.role || '';
+    }
+
+    get roleStyle(): Record<string, string> {
+        return this.line?.roleStyle || {};
+    }
+
+    get prefix(): string {
+        return this.line?.prefix || '';
+    }
+
+    get prefixStyle(): Record<string, string> {
+        return this.line?.prefixStyle || {};
+    }
+
+    get tokens(): Array<AgentConsoleMarkdownToken & { style: Record<string, string> }> {
+        return this.line?.tokens || [];
+    }
+
+    get lineStyle(): Record<string, string> {
+        return this.line?.lineStyle || {};
+    }
+}
+
+const MESSAGE_ITEM_TEMPLATE = `
+    <div class="message-item-block">
+        <agent-console-message-line v-for="line in lines" :line="line"></agent-console-message-line>
+    </div>
+`;
+
+const messageItemsCache = new WeakMap<object, {
+    messages: Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }>;
+    selectedMessageId: string;
+    messagesFocused: boolean;
+    theme: AgentConsoleTheme;
+    visibleItems: number;
+    items: AgentConsoleRenderedMessageItem[];
+}>();
+
+abstract class AgentConsoleMessageItemComponentBase {
+    protected item?: AgentConsoleRenderedMessageItem;
+
+    get lines(): AgentConsoleRenderedLine[] {
+        return this.item?.lines || [];
+    }
+}
+
+@Component({
+    selector: 'agent-console-user-message-item',
+    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    template: MESSAGE_ITEM_TEMPLATE
+})
+export class AgentConsoleUserMessageItemComponent extends AgentConsoleMessageItemComponentBase {
+    @Attribute() item?: AgentConsoleRenderedMessageItem;
+}
+
+@Component({
+    selector: 'agent-console-assistant-message-item',
+    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    template: MESSAGE_ITEM_TEMPLATE
+})
+export class AgentConsoleAssistantMessageItemComponent extends AgentConsoleMessageItemComponentBase {
+    @Attribute() item?: AgentConsoleRenderedMessageItem;
+}
+
+@Component({
+    selector: 'agent-console-tool-message-item',
+    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    template: MESSAGE_ITEM_TEMPLATE
+})
+export class AgentConsoleToolMessageItemComponent extends AgentConsoleMessageItemComponentBase {
+    @Attribute() item?: AgentConsoleRenderedMessageItem;
+}
+
+@Component({
+    selector: 'agent-console-error-message-item',
+    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    template: MESSAGE_ITEM_TEMPLATE
+})
+export class AgentConsoleErrorMessageItemComponent extends AgentConsoleMessageItemComponentBase {
+    @Attribute() item?: AgentConsoleRenderedMessageItem;
+}
+
+@Component({
+    selector: 'agent-console-system-message-item',
+    imports: [...CONSOLE_BASE_IMPORTS, AgentConsoleMessageLineComponent],
+    template: MESSAGE_ITEM_TEMPLATE
+})
+export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageItemComponentBase {
+    @Attribute() item?: AgentConsoleRenderedMessageItem;
+}
+
+@Component({
+    selector: 'agent-console-messages-panel',
+    imports: [
+        ...CONSOLE_BASE_IMPORTS,
+        AgentConsoleUserMessageItemComponent,
+        AgentConsoleAssistantMessageItemComponent,
+        AgentConsoleToolMessageItemComponent,
+        AgentConsoleErrorMessageItemComponent,
+        AgentConsoleSystemMessageItemComponent
+    ],
+    template: `
+    <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
-        <label class="message-item" v-style="item.itemStyle" v-for="item in messageItems">
-            <span v-style="item.roleStyle">{{item.role}}</span>
-            <span v-style="item.contentStyle">{{item.content}}</span>
-        </label>
+        <v-container v-for="item in messageItems">
+            <div data-template-kind="{{item.templateKind}}" v-templateOutlet="resolveMessageTemplate(item)" :templateOutletContext="item"></div>
+        </v-container>
+        <v-template #user class="user-message-template">
+            <agent-console-user-message-item :item="item"></agent-console-user-message-item>
+        </v-template>
+        <v-template #assistant class="assistant-message-template">
+            <agent-console-assistant-message-item :item="item"></agent-console-assistant-message-item>
+        </v-template>
+        <v-template #tool class="tool-message-template">
+            <agent-console-tool-message-item :item="item"></agent-console-tool-message-item>
+        </v-template>
+        <v-template #error class="error-message-template">
+            <agent-console-error-message-item :item="item"></agent-console-error-message-item>
+        </v-template>
+        <v-template #system class="system-message-template">
+            <agent-console-system-message-item :item="item"></agent-console-system-message-item>
+        </v-template>
     </div>
     `
 })
-export class AgentConsoleMessagesPanelComponent {
-    constructor(private state: AgentConsoleSessionState) {
+export class AgentConsoleMessagesPanelComponent implements AfterViewInit {
+    protected templateRegistryVersion = 0;
+
+    constructor(
+        private state: AgentConsoleSessionState
+    ) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+    @ViewChild('user') protected userTemplate?: TemplateRef<any>;
+    @ViewChild('assistant') protected assistantTemplate?: TemplateRef<any>;
+    @ViewChild('tool') protected toolTemplate?: TemplateRef<any>;
+    @ViewChild('error') protected errorTemplate?: TemplateRef<any>;
+    @ViewChild('system') protected systemTemplate?: TemplateRef<any>;
 
     protected get activeTheme(): AgentConsoleTheme {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
-    get messages(): Array<{ id?: string; role?: string; content: string }> {
+    async onAfterViewInit(): Promise<void> {
+        this.templateRegistryVersion += 1;
+    }
+
+    protected get messageTemplates(): Partial<Record<AgentConsoleMessageTemplateKind, TemplateRef<any> | null>> {
+        return {
+            user: this.userTemplate || null,
+            assistant: this.assistantTemplate || null,
+            tool: this.toolTemplate || null,
+            error: this.errorTemplate || null,
+            system: this.systemTemplate || null
+        };
+    }
+
+    get messages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         return this.state.messages;
     }
 
     get shellStyle() {
-        return (this.messageItems.length || this.emptyLabel) ? styleTextToObject(this.activeTheme.messagesShell) : {};
+        return (this.messageItems.length || this.emptyLabel)
+            ? {
+                padding: '1em 1ch',
+                ...(styleTextToObject(this.activeTheme.messagesShell))
+            }
+            : {};
     }
 
     get titleStyle() {
@@ -869,49 +1061,44 @@ export class AgentConsoleMessagesPanelComponent {
         return '';
     }
 
-    get visibleMessages(): Array<{ id?: string; role?: string; content: string }> {
+    get visibleMessages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         const messages = this.messages;
         const selectedIndex = Math.max(0, messages.findIndex(message => message.id === this.state.selectedMessageId));
         const window = resolveConsoleListWindow(messages.length, selectedIndex, this.state.consoleOptions.messagesVisibleItems);
         return messages.slice(window.start, window.start + window.count);
     }
 
-    get messageItems(): Array<{ kind: string; role: string; content: string; selected: boolean; itemStyle: Record<string, string>; roleStyle: Record<string, string>; contentStyle: Record<string, string> }> {
-        return this.visibleMessages.map(message => {
-            const role = this.getMessageRoleLabel(message.role);
-            const selected = message.id === this.state.selectedMessageId;
-            const summary = this.summarizeMessage(message.content, role);
-            const rowSelected = selected && this.state.messagesFocused;
-            const rowStyleText = selected && this.state.messagesFocused
-                ? this.activeTheme.messagesSelected
-                : role === 'you'
-                    ? this.activeTheme.messagesUser
-                    : this.activeTheme.messagesShell;
-            const itemStyle = {
-                padding: '0 1',
-                ...(rowStyleText ? styleTextToObject(rowStyleText) : {})
-            };
-            if (role === 'you') {
-                return {
-                    kind: role,
-                    role: '› ',
-                    content: summary,
-                    selected,
-                    itemStyle,
-                    roleStyle: rowSelected ? {} : styleTextToObject(this.activeTheme.statusValue),
-                    contentStyle: rowSelected ? {} : styleTextToObject(this.activeTheme.statusValue)
-                };
-            }
-            return {
-                kind: role,
-                role: rowSelected ? '› ' : '',
-                content: summary,
-                selected,
-                itemStyle,
-                roleStyle: rowSelected ? {} : styleTextToObject(this.resolveMessageRoleStyle(role)),
-                contentStyle: rowSelected ? {} : styleTextToObject(this.activeTheme.statusValue)
-            };
+    get messageItems(): AgentConsoleRenderedMessageItem[] {
+        const messages = this.messages;
+        const theme = this.activeTheme;
+        const selectedMessageId = this.state.selectedMessageId;
+        const messagesFocused = this.state.messagesFocused;
+        const visibleItems = this.state.consoleOptions.messagesVisibleItems;
+        const cached = messageItemsCache.get(this);
+
+        if (cached
+            && cached.messages === messages
+            && cached.selectedMessageId === selectedMessageId
+            && cached.messagesFocused === messagesFocused
+            && cached.theme === theme
+            && cached.visibleItems === visibleItems) {
+            return cached.items;
+        }
+
+        const items = renderAgentConsoleMessageItems(this.visibleMessages as any, {
+            theme: this.activeTheme,
+            selectedMessageId: this.state.selectedMessageId,
+            messagesFocused: this.state.messagesFocused
         });
+        messageItemsCache.set(this, {
+            messages,
+            selectedMessageId,
+            messagesFocused,
+            theme,
+            visibleItems,
+            items
+        });
+        return items;
     }
 
     get messagesHintLabel(): string {
@@ -924,84 +1111,24 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get messageLabels(): string[] {
-        return this.messageItems.map(item => `${item.role}${item.content}`);
+        return this.messageItems.flatMap(item => item.lines).map(line =>
+            `${line.role || ''}${line.prefix || ''}${line.content}`
+        );
     }
 
     get messagesSummary(): string {
         return this.messageLabels.join(' | ');
     }
 
-    messageAt(index: number): { kind: string; role: string; content: string; selected: boolean; itemStyle: Record<string, string>; roleStyle: Record<string, string>; contentStyle: Record<string, string> } | undefined {
-        return this.messageItems[index];
+    resolveMessageTemplate(item: AgentConsoleRenderedMessageItem): TemplateRef<any> | null {
+        this.templateRegistryVersion;
+        return this.messageTemplates[item.templateKind]
+            || this.messageTemplates.system
+            || null;
     }
 
-    hasMessageAt(index: number): boolean {
-        return !!this.messageAt(index);
-    }
-
-    messageKindAt(index: number): string {
-        return this.messageAt(index)?.kind || '';
-    }
-
-    messageRoleAt(index: number): string {
-        return this.messageAt(index)?.role || '';
-    }
-
-    messageContentAt(index: number): string {
-        return this.messageAt(index)?.content || '';
-    }
-
-    messageSelectedAt(index: number): boolean {
-        return !!this.messageAt(index)?.selected;
-    }
-
-    messageItemStyleAt(index: number): Record<string, string> {
-        return this.messageAt(index)?.itemStyle || {};
-    }
-
-    messageRoleStyleAt(index: number): Record<string, string> {
-        return this.messageAt(index)?.roleStyle || {};
-    }
-
-    messageContentStyleAt(index: number): Record<string, string> {
-        return this.messageAt(index)?.contentStyle || {};
-    }
-
-    protected getMessageRoleLabel(role?: string): string {
-        switch (String(role || '').toLowerCase()) {
-            case 'user':
-                return 'you';
-            case 'assistant':
-                return 'agent';
-            default:
-                return String(role || 'system').toLowerCase();
-        }
-    }
-
-    protected summarize(value: string): string {
-        const text = String(value || '').replace(/\s+/g, ' ').trim();
-        return text.length > this.state.consoleOptions.summaryMaxLength
-            ? `${text.slice(0, this.state.consoleOptions.summaryMaxLength)}...`
-            : text;
-    }
-
-    protected summarizeMessage(value: string, role: string): string {
-        const summary = this.summarize(value);
-        if (summary) {
-            return summary;
-        }
-        return role === 'agent' ? '…' : '';
-    }
-
-    protected resolveMessageRoleStyle(role: string): string {
-        switch (role) {
-            case 'you':
-                return this.activeTheme.messagesUser;
-            case 'agent':
-                return this.activeTheme.toolsAccent;
-            default:
-                return this.activeTheme.statusLabel;
-        }
+    protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {
+        return resolveAgentConsoleMarkdownToneStyle(tone, this.activeTheme);
     }
 }
 
@@ -1012,9 +1139,8 @@ export class AgentConsoleMessagesPanelComponent {
     <div class="console-panel console-message-detail-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{detailSummaryLabel}}</label>
         <label v-style="hintStyle">{{detailHintLabel}}</label>
-        <label v-for="index in detailIndexes">
-            <span v-style="lineNumberStyle">{{detailLineNumberAt(index)}}</span>
-            <span v-style="lineStyle">{{detailLineContentAt(index)}}</span>
+        <label v-style="detailLineStyleAt(index)" v-for="index in detailIndexes">
+            <span v-style="lineNumberStyle">{{detailLineNumberAt(index)}}</span><span v-style="detailLinePrefixStyleAt(index)" v-show="detailLinePrefixAt(index)">{{detailLinePrefixAt(index)}}</span><span v-style="detailLineContentStyleAt(index)">{{detailLineContentAt(index)}}</span>
         </label>
     </div>
     `
@@ -1034,7 +1160,12 @@ export class AgentConsoleMessageDetailPanelComponent {
     }
 
     get shellStyle() {
-        return this.shouldShow ? styleTextToObject(this.activeTheme.messagesShell) : {};
+        return this.shouldShow
+            ? {
+                padding: '1em 1ch',
+                ...(styleTextToObject(this.activeTheme.messagesShell))
+            }
+            : {};
     }
 
     get accentStyle() {
@@ -1046,7 +1177,10 @@ export class AgentConsoleMessageDetailPanelComponent {
     }
 
     get lineStyle() {
-        return styleTextToObject(this.activeTheme.statusValue);
+        return {
+            ...styleTextToObject(this.activeTheme.statusValue),
+            'white-space': 'nowrap'
+        };
     }
 
     get lineNumberStyle() {
@@ -1117,6 +1251,93 @@ export class AgentConsoleMessageDetailPanelComponent {
         const start = Math.max(0, this.state.messageDetailColumnScroll);
         return line.slice(start);
     }
+
+    detailLinePrefixAt(index: number): string {
+        const line = this.detailMarkdownLineAt(index);
+        if (!line) {
+            return '';
+        }
+        if (this.state.messageDetailColumnScroll > 0) {
+            return '';
+        }
+        return line.prefix || '';
+    }
+
+    detailLinePrefixStyleAt(index: number): Record<string, string> {
+        const line = this.detailMarkdownLineAt(index);
+        if (!line || this.state.messageDetailColumnScroll > 0) {
+            return this.lineStyle;
+        }
+        if (line.prefixTone === 'quote') {
+            return styleTextToObject(this.activeTheme.statusLabel);
+        }
+        if (line.prefixTone === 'heading') {
+            return {
+                ...styleTextToObject(this.activeTheme.toolsAccent),
+                'font-weight': 'bold'
+            };
+        }
+        return this.lineStyle;
+    }
+
+    detailLineStyleAt(index: number): Record<string, string> {
+        return {
+            display: 'block',
+            'white-space': 'nowrap',
+            ...(this.detailLineContentStyleAt(index))
+        };
+    }
+
+    detailLineContentStyleAt(index: number): Record<string, string> {
+        const line = this.detailMarkdownLineAt(index);
+        if (!line || this.state.messageDetailColumnScroll > 0) {
+            return this.lineStyle;
+        }
+        return {
+            ...this.resolveMarkdownToneStyle(line.tone || 'default'),
+            'white-space': 'nowrap'
+        };
+    }
+
+    protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {
+        switch (tone) {
+            case 'accent':
+                return styleTextToObject(this.activeTheme.toolsAccent);
+            case 'strong':
+                return {
+                    ...styleTextToObject(this.activeTheme.statusValue),
+                    'font-weight': 'bold'
+                };
+            case 'code':
+                return {
+                    ...styleTextToObject(this.activeTheme.toolsAccent),
+                    background: '#161b22'
+                };
+            case 'heading':
+                return {
+                    ...styleTextToObject(this.activeTheme.toolsAccent),
+                    'font-weight': 'bold'
+                };
+            case 'muted':
+            case 'quote':
+                return styleTextToObject(this.activeTheme.statusLabel);
+            default:
+                return styleTextToObject(this.activeTheme.statusValue);
+        }
+    }
+
+    protected detailMarkdownLineAt(index: number): AgentConsoleMarkdownLine | undefined {
+        const line = this.visibleLines[index];
+        if (line == null || !this.selectedMessage) {
+            return undefined;
+        }
+        const sourceLines = renderAgentConsoleMarkdownLines(this.selectedMessage.content, {
+            preserveFenceMarkers: true
+        });
+        const sourceIndex = this.state.messageDetailScroll + index;
+        return sourceLines[sourceIndex];
+    }
+
 }
 
 @Component({

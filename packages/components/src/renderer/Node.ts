@@ -53,6 +53,8 @@ export const BINDINGS = Symbol('__BINDINGS');
 export const DIRECTIVES = Symbol('__DIRECTIVES');
 export const COMPONENTDEF = Symbol('__COMPONENTDEF');
 export const CUSTOM_ELEMENTS = Symbol('__CUSTOM_ELEMENTS');
+export const LOCAL_REFS = Symbol('__LOCAL_REFS');
+export const TEMPLATE_FACTORY = Symbol('__TEMPLATE_FACTORY');
 
 /**
  * A node in the DOM tree.
@@ -154,6 +156,10 @@ export interface RNode {
   [CUSTOM_ELEMENTS]?: DirectiveDef[];
 
   [COMPONENTDEF]?: ComponentDef;
+
+  [LOCAL_REFS]?: string[];
+
+  [TEMPLATE_FACTORY]?: any;
 
 }
 
