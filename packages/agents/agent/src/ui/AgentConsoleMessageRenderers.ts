@@ -33,6 +33,8 @@ export interface AgentConsoleRenderedMessageItem {
     lines: AgentConsoleRenderedLine[];
 }
 
+type AgentConsoleInlineRowStyle = Partial<Record<'background' | 'background-color' | 'color' | 'font-weight', string>>;
+
 export interface AgentConsoleMessageRenderContext {
     theme?: AgentConsoleTheme;
     selectedMessageId?: string;
@@ -108,6 +110,7 @@ export function renderAgentConsoleMessageItem(
     const selected = message?.id === context.selectedMessageId;
     const rowSelected = !!(selected && context.messagesFocused);
     const itemStyle = renderer.itemStyle(theme, rowSelected);
+    const inlineRowStyle = resolveInlineRowStyle(itemStyle);
     const markdownLines = renderAgentConsoleMarkdownLines(message?.content || '', { compactBlankLines: true });
     const fallbackLine = renderer.roleLabel === 'agent'
         ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
@@ -122,7 +125,8 @@ export function renderAgentConsoleMessageItem(
             renderer,
             theme,
             rowSelected,
-            templateKind
+            templateKind,
+            inlineRowStyle
         );
         return {
             ...rendered,
@@ -245,9 +249,11 @@ function buildRenderedLine(
     renderer: AgentConsoleResolvedMessageRenderer,
     theme: AgentConsoleTheme,
     rowSelected: boolean,
-    templateKind: AgentConsoleMessageTemplateKind
+    templateKind: AgentConsoleMessageTemplateKind,
+    inlineRowStyle: AgentConsoleInlineRowStyle
 ): AgentConsoleRenderedLine {
     const lineStyle = {
+        ...inlineRowStyle,
         'white-space': 'normal',
         'overflow-wrap': 'anywhere'
     };
@@ -267,9 +273,12 @@ function buildRenderedLine(
         }));
     return {
         role: roleLead,
-        roleStyle: rowSelected ? {} : renderer.roleStyle(theme),
+        roleStyle: rowSelected ? {} : { ...inlineRowStyle, ...renderer.roleStyle(theme) },
         prefix: line.prefix || '',
-        prefixStyle: resolveAgentConsoleMarkdownPrefixStyle(line, theme, rowSelected),
+        prefixStyle: {
+            ...inlineRowStyle,
+            ...resolveAgentConsoleMarkdownPrefixStyle(line, theme, rowSelected)
+        },
         content: tokens.map(token => token.text).join(''),
         tokens,
         lineStyle,
@@ -295,4 +304,23 @@ function resolveRenderedLineTone(line: AgentConsoleRenderedLine): AgentConsoleMa
     }
     const tokenTone = line.tokens.find(token => token.tone && token.tone !== 'default')?.tone;
     return tokenTone || 'default';
+}
+
+function resolveInlineRowStyle(style: Record<string, string>): AgentConsoleInlineRowStyle {
+    const inlineStyle: AgentConsoleInlineRowStyle = {};
+    if (style.background) {
+        inlineStyle.background = style.background;
+        inlineStyle['background-color'] = style.background;
+    }
+    if (style['background-color']) {
+        inlineStyle['background-color'] = style['background-color'];
+        inlineStyle.background = style['background-color'];
+    }
+    if (style.color) {
+        inlineStyle.color = style.color;
+    }
+    if (style['font-weight']) {
+        inlineStyle['font-weight'] = style['font-weight'];
+    }
+    return inlineStyle;
 }

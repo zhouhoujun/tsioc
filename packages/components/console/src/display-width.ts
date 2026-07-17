@@ -1,3 +1,5 @@
+const ANSI_SGR_SEQUENCE = /^\x1b\[[0-9;]*m/;
+
 export function isWideCodePoint(codePoint: number): boolean {
     return (
         codePoint >= 0x1100 && (
@@ -18,11 +20,26 @@ export function isWideCodePoint(codePoint: number): boolean {
     );
 }
 
+function matchAnsiSequence(value: string, index: number): string | null {
+    if (value.charCodeAt(index) !== 0x1b) {
+        return null;
+    }
+    const match = value.slice(index).match(ANSI_SGR_SEQUENCE);
+    return match?.[0] ?? null;
+}
+
 export function getDisplayWidth(value: string): number {
     let width = 0;
-    for (const char of value) {
-        const codePoint = char.codePointAt(0);
+    for (let index = 0; index < value.length;) {
+        const ansi = matchAnsiSequence(value, index);
+        if (ansi) {
+            index += ansi.length;
+            continue;
+        }
+
+        const codePoint = value.codePointAt(index);
         if (codePoint == null) {
+            index += 1;
             continue;
         }
         if (
@@ -33,9 +50,12 @@ export function getDisplayWidth(value: string): number {
             (codePoint >= 0x0300 && codePoint <= 0x036f) ||
             (codePoint >= 0xfe00 && codePoint <= 0xfe0f)
         ) {
+            index += codePoint > 0xffff ? 2 : 1;
             continue;
         }
+
         width += isWideCodePoint(codePoint) ? 2 : 1;
+        index += codePoint > 0xffff ? 2 : 1;
     }
     return width;
 }
@@ -46,13 +66,34 @@ export function sliceByDisplayWidth(value: string, width: number): string {
     }
     let used = 0;
     let result = '';
-    for (const char of value) {
+    let hasAnsi = false;
+    let styleOpen = false;
+    for (let index = 0; index < value.length;) {
+        const ansi = matchAnsiSequence(value, index);
+        if (ansi) {
+            hasAnsi = true;
+            styleOpen = ansi !== '\x1b[0m';
+            result += ansi;
+            index += ansi.length;
+            continue;
+        }
+
+        const codePoint = value.codePointAt(index);
+        if (codePoint == null) {
+            index += 1;
+            continue;
+        }
+        const char = String.fromCodePoint(codePoint);
         const charWidth = getDisplayWidth(char);
         if (used + charWidth > width) {
             break;
         }
         result += char;
         used += charWidth;
+        index += char.length;
+    }
+    if (hasAnsi && styleOpen && !result.endsWith('\x1b[0m')) {
+        result += '\x1b[0m';
     }
     return result;
 }

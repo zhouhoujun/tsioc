@@ -6,7 +6,14 @@ import {
 } from '@tsdi/components/console';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
-import { AgentConsoleTheme, AgentConsoleThemeInput, defaultAgentConsoleTheme, mergeAgentConsoleTheme } from './AgentConsoleTheme';
+import {
+    AgentConsoleTheme,
+    AgentConsoleThemeInput,
+    AgentConsoleThemeStyles,
+    defaultAgentConsoleTheme,
+    mergeAgentConsoleTheme,
+    resolveAgentConsoleThemeStyles
+} from './AgentConsoleTheme';
 import { DEFAULT_TERMINAL_COLUMNS, formatTerminalStatusFooter } from '@tsdi/components/console';
 import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
@@ -107,6 +114,9 @@ export interface AgentConsoleOptions {
     sessionSelectionPageSize?: number;
     selectDetailVisibleLines?: number;
     toolsVisibleItems?: number;
+    toolSelectionPageSize?: number;
+    approvalsVisibleItems?: number;
+    approvalSelectionPageSize?: number;
     toolRunsVisibleItems?: number;
     selectVisibleOptions?: number;
     storedToolRunsLimit?: number;
@@ -116,6 +126,8 @@ export interface AgentConsoleOptions {
     toolRunSummaryMaxLength?: number;
     sessionHint?: string;
     messagesHint?: string;
+    toolsHint?: string;
+    approvalsHint?: string;
     messageDetailHint?: string;
     messageDetailClosedHint?: string;
     selectHint?: string;
@@ -139,6 +151,9 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     sessionSelectionPageSize: 5,
     selectDetailVisibleLines: 6,
     toolsVisibleItems: 4,
+    toolSelectionPageSize: 4,
+    approvalsVisibleItems: 4,
+    approvalSelectionPageSize: 4,
     toolRunsVisibleItems: 3,
     selectVisibleOptions: 12,
     storedToolRunsLimit: 8,
@@ -148,6 +163,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     toolRunSummaryMaxLength: 96,
     sessionHint: 'up/down move   pg jump   enter switch   y copy   esc',
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
+    toolsHint: 'up/down move   pg jump   y copy   esc',
+    approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -181,6 +198,10 @@ export class AgentConsoleSessionState {
     sessionsFocused = false;
     selectedSessionId = '';
     tools: AgentConsoleToolItem[] = [];
+    toolsFocused = false;
+    selectedToolName = '';
+    approvalsFocused = false;
+    selectedApprovalId = '';
     activities: AgentConsoleActivity[] = [];
     runningTools: string[] = [];
     toolRuns: AgentConsoleToolRun[] = [];
@@ -198,10 +219,14 @@ export class AgentConsoleSessionState {
     lastError = '';
     notice = '';
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+    themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
     pendingApprovals: AgentConsoleApprovalRequest[] = [];
     submitAction?: () => Promise<void>;
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
+    copyFocusedTextAction?: (text: string, label: string) => void | Promise<void>;
+    activateSelectedSessionAction?: (sessionId: string) => void | Promise<void>;
+    resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     commandHints = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
     protected activeToolSet = new Set<string>();
@@ -265,6 +290,8 @@ export class AgentConsoleSessionState {
 
     protected syncDerivedInputFocus(): void {
         this.inputFocused = !this.sessionsFocused
+            && !this.toolsFocused
+            && !this.approvalsFocused
             && !this.messagesFocused
             && !this.messageDetailOpen
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
@@ -278,6 +305,10 @@ export class AgentConsoleSessionState {
         return this.toolRuns
             .slice()
             .sort((left, right) => right.updatedAt - left.updatedAt)[0];
+    }
+
+    get visibleActivities(): AgentConsoleActivity[] {
+        return this.activities.filter(activity => activity.kind !== 'turn');
     }
 
     setMessages(messages: AgentMessage[]): void {
@@ -494,6 +525,14 @@ export class AgentConsoleSessionState {
 
     setTools(tools: AgentConsoleToolItem[]): void {
         this.tools = tools;
+        if (!this.tools.length) {
+            this.selectedToolName = '';
+            this.toolsFocused = false;
+        } else if (this.selectedToolName && this.tools.some(item => item.name === this.selectedToolName)) {
+            // Preserve explicit tool selection when possible.
+        } else {
+            this.selectedToolName = this.tools[0].name;
+        }
         this.refreshInputSuggestions();
         this.notify();
     }
@@ -694,6 +733,122 @@ export class AgentConsoleSessionState {
         return this.sessions.find(item => item.id === this.selectedSessionId);
     }
 
+    setToolsFocused(focused: boolean): void {
+        this.toolsFocused = focused;
+        if (focused && !this.selectedToolName && this.tools.length) {
+            this.selectedToolName = this.tools[0].name;
+        }
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    setSelectedToolName(toolName: string): void {
+        if (!toolName || !this.tools.some(item => item.name === toolName)) {
+            return;
+        }
+        this.selectedToolName = toolName;
+        this.notify();
+    }
+
+    moveToolSelection(delta: number): void {
+        if (!this.tools.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.tools.findIndex(item => item.name === this.selectedToolName));
+        const nextIndex = (currentIndex + delta + this.tools.length) % this.tools.length;
+        this.selectedToolName = this.tools[nextIndex].name;
+        this.notify();
+    }
+
+    moveToolSelectionPage(delta: number, pageSize?: number): void {
+        if (!this.tools.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.tools.findIndex(item => item.name === this.selectedToolName));
+        const resolvedPageSize = pageSize ?? this.consoleOptions.toolSelectionPageSize;
+        const nextIndex = Math.max(0, Math.min(this.tools.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+        this.selectedToolName = this.tools[nextIndex].name;
+        this.notify();
+    }
+
+    selectFirstTool(): void {
+        if (!this.tools.length) {
+            return;
+        }
+        this.selectedToolName = this.tools[0].name;
+        this.notify();
+    }
+
+    selectLastTool(): void {
+        if (!this.tools.length) {
+            return;
+        }
+        this.selectedToolName = this.tools[this.tools.length - 1].name;
+        this.notify();
+    }
+
+    get selectedTool(): AgentConsoleToolItem | undefined {
+        return this.tools.find(item => item.name === this.selectedToolName);
+    }
+
+    setApprovalsFocused(focused: boolean): void {
+        this.approvalsFocused = focused;
+        if (focused && !this.selectedApprovalId && this.pendingApprovals.length) {
+            this.selectedApprovalId = this.pendingApprovals[0].id;
+        }
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    setSelectedApprovalId(approvalId: string): void {
+        if (!approvalId || !this.pendingApprovals.some(item => item.id === approvalId)) {
+            return;
+        }
+        this.selectedApprovalId = approvalId;
+        this.notify();
+    }
+
+    moveApprovalSelection(delta: number): void {
+        if (!this.pendingApprovals.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.pendingApprovals.findIndex(item => item.id === this.selectedApprovalId));
+        const nextIndex = (currentIndex + delta + this.pendingApprovals.length) % this.pendingApprovals.length;
+        this.selectedApprovalId = this.pendingApprovals[nextIndex].id;
+        this.notify();
+    }
+
+    moveApprovalSelectionPage(delta: number, pageSize?: number): void {
+        if (!this.pendingApprovals.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.pendingApprovals.findIndex(item => item.id === this.selectedApprovalId));
+        const resolvedPageSize = pageSize ?? this.consoleOptions.approvalSelectionPageSize;
+        const nextIndex = Math.max(0, Math.min(this.pendingApprovals.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+        this.selectedApprovalId = this.pendingApprovals[nextIndex].id;
+        this.notify();
+    }
+
+    selectFirstApproval(): void {
+        if (!this.pendingApprovals.length) {
+            return;
+        }
+        this.selectedApprovalId = this.pendingApprovals[0].id;
+        this.notify();
+    }
+
+    selectLastApproval(): void {
+        if (!this.pendingApprovals.length) {
+            return;
+        }
+        this.selectedApprovalId = this.pendingApprovals[this.pendingApprovals.length - 1].id;
+        this.notify();
+    }
+
+    get selectedApproval(): AgentConsoleApprovalRequest | undefined {
+        return this.pendingApprovals.find(item => item.id === this.selectedApprovalId);
+    }
+
     setNotice(message: string): void {
         this.notice = message;
         this.notify();
@@ -707,6 +862,7 @@ export class AgentConsoleSessionState {
 
     setTheme(theme?: AgentConsoleThemeInput | null): void {
         this.theme = mergeAgentConsoleTheme(theme);
+        this.themeStyles = resolveAgentConsoleThemeStyles(this.theme);
         this.notify();
     }
 
@@ -725,6 +881,15 @@ export class AgentConsoleSessionState {
         this.pendingApprovals = requests
             .slice()
             .sort((left, right) => left.createdAt - right.createdAt);
+        if (!this.pendingApprovals.length) {
+            this.selectedApprovalId = '';
+            this.approvalsFocused = false;
+        } else if (this.selectedApprovalId && this.pendingApprovals.some(item => item.id === this.selectedApprovalId)) {
+            // Preserve explicit approval selection when possible.
+        } else {
+            this.selectedApprovalId = this.pendingApprovals[0].id;
+        }
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -732,6 +897,13 @@ export class AgentConsoleSessionState {
         const next = this.pendingApprovals.filter(item => item.id !== request.id);
         next.push(request);
         this.pendingApprovals = next.sort((left, right) => left.createdAt - right.createdAt);
+        if (!this.pendingApprovals.length) {
+            this.selectedApprovalId = '';
+            this.approvalsFocused = false;
+        } else if (!this.pendingApprovals.some(item => item.id === this.selectedApprovalId)) {
+            this.selectedApprovalId = this.pendingApprovals[0].id;
+        }
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -741,6 +913,13 @@ export class AgentConsoleSessionState {
             return;
         }
         this.pendingApprovals = next;
+        if (!this.pendingApprovals.length) {
+            this.selectedApprovalId = '';
+            this.approvalsFocused = false;
+        } else if (!this.pendingApprovals.some(item => item.id === this.selectedApprovalId)) {
+            this.selectedApprovalId = this.pendingApprovals[0].id;
+        }
+        this.syncDerivedInputFocus();
         this.notify();
     }
 
@@ -800,6 +979,14 @@ export class AgentConsoleSessionState {
         }
         if (this.messagesFocused) {
             this.setMessagesFocused(false);
+            return true;
+        }
+        if (this.approvalsFocused) {
+            this.setApprovalsFocused(false);
+            return true;
+        }
+        if (this.toolsFocused) {
+            this.setToolsFocused(false);
             return true;
         }
         if (this.sessionsFocused) {
@@ -964,6 +1151,203 @@ export class AgentConsoleSessionState {
 
     protected expandTabs(value: string): string {
         return String(value || '').replace(/\t/g, '    ');
+    }
+
+    protected buildSelectedApprovalCopyText(): string {
+        const selected = this.selectedApproval;
+        if (!selected) {
+            return '';
+        }
+        return [
+            `${selected.toolName} (${selected.id})`,
+            selected.reason,
+            selected.inputSummary || selected.summary
+        ].filter(Boolean).join('\n');
+    }
+
+    async handleFocusKey(key: string): Promise<boolean> {
+        const normalized = String(key || '').trim().toLowerCase();
+        if (!normalized) {
+            return false;
+        }
+        if (this.messageDetailOpen) {
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
+                    return true;
+                case 'down':
+                    this.scrollMessageDetail(1);
+                    return true;
+                case 'up':
+                    this.scrollMessageDetail(-1);
+                    return true;
+                case 'left':
+                    this.scrollMessageDetailColumns(-4);
+                    return true;
+                case 'right':
+                    this.scrollMessageDetailColumns(4);
+                    return true;
+                case 'pageup':
+                    this.scrollMessageDetailPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.scrollMessageDetailPage(1);
+                    return true;
+                case 'home':
+                    this.scrollMessageDetailToEdge('start');
+                    return true;
+                case 'end':
+                    this.scrollMessageDetailToEdge('end');
+                    return true;
+                case 'escape':
+                    await this.dismissFocusLayer();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        if (this.messagesFocused) {
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
+                    return true;
+                case 'down':
+                    this.moveMessageSelection(1);
+                    return true;
+                case 'up':
+                    this.moveMessageSelection(-1);
+                    return true;
+                case 'pageup':
+                    this.moveMessageSelectionPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.moveMessageSelectionPage(1);
+                    return true;
+                case 'home':
+                    this.selectFirstMessage();
+                    return true;
+                case 'end':
+                    this.selectLastMessage();
+                    return true;
+                case 'enter':
+                    this.openMessageDetail();
+                    return true;
+                case 'escape':
+                    await this.dismissFocusLayer();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        if (this.approvalsFocused) {
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.buildSelectedApprovalCopyText(), 'selected approval');
+                    return true;
+                case 'approve':
+                    if (this.selectedApproval?.id) {
+                        await this.resolveApprovalAction?.('approve', this.selectedApproval.id);
+                        return true;
+                    }
+                    return false;
+                case 'deny':
+                    if (this.selectedApproval?.id) {
+                        await this.resolveApprovalAction?.('deny', this.selectedApproval.id);
+                        return true;
+                    }
+                    return false;
+                case 'down':
+                    this.moveApprovalSelection(1);
+                    return true;
+                case 'up':
+                    this.moveApprovalSelection(-1);
+                    return true;
+                case 'pageup':
+                    this.moveApprovalSelectionPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.moveApprovalSelectionPage(1);
+                    return true;
+                case 'home':
+                    this.selectFirstApproval();
+                    return true;
+                case 'end':
+                    this.selectLastApproval();
+                    return true;
+                case 'escape':
+                    await this.dismissFocusLayer();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        if (this.toolsFocused) {
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.selectedTool?.name || '', 'tool name');
+                    return true;
+                case 'down':
+                    this.moveToolSelection(1);
+                    return true;
+                case 'up':
+                    this.moveToolSelection(-1);
+                    return true;
+                case 'pageup':
+                    this.moveToolSelectionPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.moveToolSelectionPage(1);
+                    return true;
+                case 'home':
+                    this.selectFirstTool();
+                    return true;
+                case 'end':
+                    this.selectLastTool();
+                    return true;
+                case 'escape':
+                    await this.dismissFocusLayer();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        if (this.sessionsFocused) {
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.selectedSession?.id || '', 'session id');
+                    return true;
+                case 'down':
+                    this.moveSessionSelection(1);
+                    return true;
+                case 'up':
+                    this.moveSessionSelection(-1);
+                    return true;
+                case 'pageup':
+                    this.moveSessionSelectionPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.moveSessionSelectionPage(1);
+                    return true;
+                case 'home':
+                    this.selectFirstSession();
+                    return true;
+                case 'end':
+                    this.selectLastSession();
+                    return true;
+                case 'enter':
+                    if (this.selectedSession?.id) {
+                        await this.activateSelectedSessionAction?.(this.selectedSession.id);
+                        return true;
+                    }
+                    return false;
+                case 'escape':
+                    await this.dismissFocusLayer();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        return false;
     }
 
     async processRawChunk(

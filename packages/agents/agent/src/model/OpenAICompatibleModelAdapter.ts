@@ -216,6 +216,91 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 name?: string;
                 args: string;
             }>();
+            const processSsePayload = async (payloadText: string): Promise<StreamChunk[]> => {
+                const payload = payloadText.trim();
+                if (!payload || payload === '[DONE]') {
+                    return [];
+                }
+
+                let event: SSEEvent;
+                try {
+                    event = JSON.parse(payload);
+                } catch {
+                    return [];
+                }
+
+                const choice = event.choices?.[0];
+                if (!choice) {
+                    if (event.usage) {
+                        return [{ type: 'done', usage: event.usage as any }];
+                    }
+                    return [];
+                }
+
+                const emitted: StreamChunk[] = [];
+
+                const delta = this.extractStreamText(choice.delta);
+                if (delta) {
+                    accumulatedText += delta;
+                    emitted.push({ type: 'text', content: delta });
+                }
+
+                const reasoningDelta = this.extractStreamReasoning(choice.delta);
+                if (reasoningDelta) {
+                    accumulatedReasoning += reasoningDelta;
+                    emitted.push({ type: 'reasoning', content: reasoningDelta });
+                }
+
+                const toolCallDeltas = choice.delta?.tool_calls;
+                if (toolCallDeltas) {
+                    for (const tc of toolCallDeltas) {
+                        const existing = accumulatedToolCalls.get(tc.index) ?? { args: '' };
+                        if (tc.id) { existing.id = tc.id; }
+                        if (tc.function?.name) { existing.name = toolNames.reverse.get(tc.function.name) || tc.function.name; }
+                        if (tc.function?.arguments) { existing.args += tc.function.arguments; }
+                        accumulatedToolCalls.set(tc.index, existing);
+                    }
+                }
+
+                if (choice.finish_reason) {
+                    const toolCalls: AgentToolCall[] = [];
+                    for (const [, val] of accumulatedToolCalls) {
+                        if (val.name) {
+                            toolCalls.push({
+                                id: val.id ?? `tc-${Date.now()}-${toolCalls.length}`,
+                                name: val.name,
+                                input: this.parseToolInput(val.args)
+                            });
+                        }
+                    }
+                    emitted.push({
+                        type: 'done',
+                        toolCalls: toolCalls.length ? toolCalls : undefined,
+                        usage: event.usage as any,
+                        metadata: {
+                            finishReason: choice.finish_reason,
+                            provider: this.options.provider,
+                            model: this.resolveModel()
+                        }
+                    });
+                }
+
+                return emitted;
+            };
+            const flushBuffer = async (source: string): Promise<StreamChunk[]> => {
+                const chunks: StreamChunk[] = [];
+                const lines = source
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(Boolean);
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) {
+                        continue;
+                    }
+                    chunks.push(...(await processSsePayload(line.slice(6))));
+                }
+                return chunks;
+            };
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -228,78 +313,16 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 buffer = lines.pop() ?? '';
 
                 for (const line of lines) {
-                    if (!line.startsWith('data: ')) {
-                        continue;
+                    const chunks = await processSsePayload(line.startsWith('data: ') ? line.slice(6) : '');
+                    for (const chunk of chunks) {
+                        yield chunk;
                     }
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') {
-                        break;
-                    }
+                }
+            }
 
-                    let event: SSEEvent;
-                    try {
-                        event = JSON.parse(payload);
-                    } catch {
-                        continue;
-                    }
-
-                    const choice = event.choices?.[0];
-                    if (!choice) {
-                        if (event.usage) {
-                            yield { type: 'done', usage: event.usage as any };
-                        }
-                        continue;
-                    }
-
-                    // Text content delta
-                    const delta = this.extractStreamText(choice.delta);
-                    if (delta) {
-                        accumulatedText += delta;
-                        yield { type: 'text', content: delta };
-                    }
-
-                    // Reasoning content delta
-                    const reasoningDelta = this.extractStreamReasoning(choice.delta);
-                    if (reasoningDelta) {
-                        accumulatedReasoning += reasoningDelta;
-                        yield { type: 'reasoning', content: reasoningDelta };
-                    }
-
-                    // Tool call deltas (streamed as chunks with index)
-                    const toolCallDeltas = choice.delta?.tool_calls;
-                    if (toolCallDeltas) {
-                        for (const tc of toolCallDeltas) {
-                        const existing = accumulatedToolCalls.get(tc.index) ?? { args: '' };
-                            if (tc.id) { existing.id = tc.id; }
-                            if (tc.function?.name) { existing.name = toolNames.reverse.get(tc.function.name) || tc.function.name; }
-                            if (tc.function?.arguments) { existing.args += tc.function.arguments; }
-                            accumulatedToolCalls.set(tc.index, existing);
-                        }
-                    }
-
-                    // Finish reason signals end of this choice
-                    if (choice.finish_reason) {
-                        const toolCalls: AgentToolCall[] = [];
-                        for (const [, val] of accumulatedToolCalls) {
-                            if (val.name) {
-                                toolCalls.push({
-                                    id: val.id ?? `tc-${Date.now()}-${toolCalls.length}`,
-                                    name: val.name,
-                                    input: this.parseToolInput(val.args)
-                                });
-                            }
-                        }
-                        yield {
-                            type: 'done',
-                            toolCalls: toolCalls.length ? toolCalls : undefined,
-                            usage: event.usage as any,
-                            metadata: {
-                                finishReason: choice.finish_reason,
-                                provider: this.options.provider,
-                                model: this.resolveModel()
-                            }
-                        };
-                    }
+            if (buffer.trim()) {
+                for (const chunk of await flushBuffer(buffer)) {
+                    yield chunk;
                 }
             }
         } finally {

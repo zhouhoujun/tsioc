@@ -266,7 +266,6 @@ async function runInteractiveChat(options: any): Promise<void> {
     let consoleComponentRef: any = null;
     let consoleSurface: TuiTerminalSurface | null = null;
     let noticeTimer: NodeJS.Timeout | null = null;
-    let approvalCheckTimer: NodeJS.Timeout | null = null;
     let inputLocked = false;
     let screenNotice = '';
     let currentDraft = '';
@@ -284,7 +283,6 @@ async function runInteractiveChat(options: any): Promise<void> {
     let historyIndex = -1;
     let historyDraft = '';
     let isCleaningUp = false;
-    let approvalPromptActive = false;
     let terminalUiDelegate: TerminalConsoleUiDelegate | null = null;
     let mouseTrackingEnabled = false;
     let terminalCursorVisible = true;
@@ -296,7 +294,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         process.stdout.write(visible ? '\x1b[?25h' : '\x1b[?25l');
         terminalCursorVisible = visible;
     };
-    const shouldRenderTerminalCursor = () => shouldPlaceConsoleCursor({
+    const shouldRenderTerminalCursor = () => !hasToolFocus() && !hasApprovalFocus() && shouldPlaceConsoleCursor({
         isTTY: !!process.stdout.isTTY,
         isSelecting,
         hasBlockingSelectMenu: hasBlockingSelectMenu(),
@@ -339,6 +337,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             : currentDraft;
         const inputFocused = !hasBlockingSelectMenu()
             && !hasSessionFocus()
+            && !hasToolFocus()
+            && !hasApprovalFocus()
             && !hasMessageFocus()
             && !hasMessageDetailFocus()
             && (!inputLocked || !!activeTextPrompt);
@@ -364,7 +364,7 @@ async function runInteractiveChat(options: any): Promise<void> {
         return !!activeMenu && !isSuggestionMenu(activeMenu);
     };
 
-    const shouldRouteDraftNavigation = (): boolean => shouldRouteConsoleDraftNavigation({
+    const shouldRouteDraftNavigation = (): boolean => !hasToolFocus() && !hasApprovalFocus() && shouldRouteConsoleDraftNavigation({
         hasBlockingSelectMenu: hasBlockingSelectMenu(),
         hasSessionFocus: hasSessionFocus(),
         hasMessageFocus: hasMessageFocus(),
@@ -828,6 +828,8 @@ async function runInteractiveChat(options: any): Promise<void> {
     };
 
     const hasSessionFocus = (): boolean => !!consoleState?.sessionsFocused;
+    const hasToolFocus = (): boolean => !!consoleState?.toolsFocused;
+    const hasApprovalFocus = (): boolean => !!consoleState?.approvalsFocused;
     const hasMessageFocus = (): boolean => !!consoleState?.messagesFocused;
     const hasMessageDetailFocus = (): boolean => !!consoleState?.messageDetailOpen;
 
@@ -838,6 +840,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         consoleState.closeMessageDetail?.();
+        consoleState.setToolsFocused(false);
         consoleState.setMessagesFocused(false);
         consoleState.setSessionsFocused(true);
         applyScreenNotice('');
@@ -857,6 +860,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         consoleState.setSessionsFocused(false);
+        consoleState.setToolsFocused(false);
         consoleState.closeMessageDetail?.();
         consoleState.setMessagesFocused(true);
         applyScreenNotice('');
@@ -867,6 +871,27 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         consoleState.setMessagesFocused(false);
+        applyScreenNotice('');
+    };
+
+    const enterToolFocus = async () => {
+        await refreshToolsForSession(currentSessionId);
+        if (!consoleState?.tools?.length) {
+            applyScreenNotice('No tools available.', 1200);
+            return;
+        }
+        consoleState.setSessionsFocused(false);
+        consoleState.setMessagesFocused(false);
+        consoleState.closeMessageDetail?.();
+        consoleState.setToolsFocused(true);
+        applyScreenNotice('');
+    };
+
+    const exitToolFocus = () => {
+        if (!consoleState) {
+            return;
+        }
+        consoleState.setToolsFocused(false);
         applyScreenNotice('');
     };
 
@@ -1031,6 +1056,13 @@ async function runInteractiveChat(options: any): Promise<void> {
             : `Nothing to copy for ${label}.`, 1500);
     };
 
+    const isCopyKey = (rawText: string, controlKey?: string | null): boolean => {
+        if (controlKey) {
+            return false;
+        }
+        return rawText === 'y' || rawText === 'Y';
+    };
+
     terminalUiDelegate = new TerminalConsoleUiDelegate(
         promptSelect,
         promptLine,
@@ -1078,99 +1110,6 @@ async function runInteractiveChat(options: any): Promise<void> {
             applyScreenNotice(`Switched to ${nextProfile.provider} / flash ${profile.flashModel} / strong ${profile.strongModel}`, 1800);
         }
     });
-
-    const resolveApprovalRequest = async (requestId?: string): Promise<any | undefined> => {
-        const pending = syncPendingApprovals();
-        if (!pending.length) {
-            return undefined;
-        }
-        if (!requestId) {
-            if (pending.length === 1) {
-                return pending[0];
-            }
-            const selected = await promptSelect('Pending approvals', pending.map((item: any) => ({
-                label: `${item.toolName} (${item.id.slice(0, 8)})`,
-                value: item.id,
-                detail: [
-                    `Reason: ${item.reason}`,
-                    item.inputSummary ? `Input: ${item.inputSummary}` : 'Input: -',
-                    `Timeout: ${item.timeoutMs}ms`
-                ].join('\n')
-            })), 0, 'enter inspect   q cancel');
-            if (!selected) {
-                return undefined;
-            }
-            return pending.find((item: any) => item.id === selected);
-        }
-        const exact = pending.find((item: any) => item.id === requestId);
-        if (exact) {
-            return exact;
-        }
-        const matches = pending.filter((item: any) => item.id.startsWith(requestId));
-        if (matches.length === 1) {
-            return matches[0];
-        }
-        if (matches.length > 1) {
-            throw new Error(`Approval id "${requestId}" is ambiguous.`);
-        }
-        throw new Error(`Approval id "${requestId}" not found.`);
-    };
-
-    const handleApprovalDecision = async (decision: 'approve' | 'deny', requestId?: string) => {
-        try {
-            const request = await resolveApprovalRequest(requestId);
-            if (!request) {
-                applyScreenNotice('No pending approvals.', 1500);
-                return;
-            }
-            const applied = decision === 'approve'
-                ? approvalManager?.approve?.(request.id)
-                : approvalManager?.reject?.(request.id);
-            syncPendingApprovals();
-            applyScreenNotice(applied
-                ? `${decision === 'approve' ? 'Approved' : 'Denied'} ${request.toolName} (${request.id.slice(0, 8)})`
-                : `Approval request ${request.id.slice(0, 8)} is no longer pending.`, 1500);
-        } catch (error: any) {
-            applyScreenNotice(`Error: ${error.message}`);
-        }
-    };
-
-    const maybePromptPendingApproval = async () => {
-        if (approvalPromptActive || !approvalManager || isClosed || modalPromptActive || inputLocked || isSelecting) {
-            return;
-        }
-        const pending = syncPendingApprovals();
-        const request = pending[0];
-        if (!request) {
-            return;
-        }
-        approvalPromptActive = true;
-        try {
-            const result = await promptSelect('Approval required', [
-                {
-                    label: 'Approve',
-                    value: 'approve',
-                    detail: [
-                        `Tool: ${request.toolName}`,
-                        `Reason: ${request.reason}`,
-                        request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -'
-                    ].join('\n')
-                },
-                {
-                    label: 'Deny',
-                    value: 'deny',
-                    detail: [
-                        `Tool: ${request.toolName}`,
-                        `Reason: ${request.reason}`,
-                        `Reject request ${request.id.slice(0, 8)}`
-                    ].join('\n')
-                }
-            ], 0, 'enter approve   down choose deny   q deny');
-            await handleApprovalDecision(result === 'approve' ? 'approve' : 'deny', request.id);
-        } finally {
-            approvalPromptActive = false;
-        }
-    };
 
     const createChatContext = async (profile: AgentCliProviderProfile, allowSessionRestore = true): Promise<void> => {
         if (viewModel) {
@@ -1266,7 +1205,7 @@ async function runInteractiveChat(options: any): Promise<void> {
                 width: () => resolveTerminalSize(process.stdout).columns,
                 output: process.stdout,
                 placeCursor: () => shouldRenderTerminalCursor(),
-                cursorMode: () => hasBlockingSelectMenu() || hasSessionFocus() || hasMessageFocus() || hasMessageDetailFocus() || inputLocked || modalPromptActive
+                cursorMode: () => hasBlockingSelectMenu() || hasSessionFocus() || hasToolFocus() || hasApprovalFocus() || hasMessageFocus() || hasMessageDetailFocus() || inputLocked || modalPromptActive
                     ? 'bottom'
                     : 'prompt'
             })
@@ -1301,10 +1240,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         if (noticeTimer) {
             clearTimeout(noticeTimer);
             noticeTimer = null;
-        }
-        if (approvalCheckTimer) {
-            clearInterval(approvalCheckTimer);
-            approvalCheckTimer = null;
         }
         if (process.stdin.isTTY) {
             setMouseTracking(false);
@@ -1547,118 +1482,20 @@ async function runInteractiveChat(options: any): Promise<void> {
             }
             return;
         }
-        if (hasMessageDetailFocus()) {
-            if (controlKey === 'down') {
-                consoleState.scrollMessageDetail(1);
-                return;
-            }
-            if (controlKey === 'up') {
-                consoleState.scrollMessageDetail(-1);
-                return;
-            }
-            if (controlKey === 'left') {
-                consoleState.scrollMessageDetailColumns(-4);
-                return;
-            }
-            if (controlKey === 'right') {
-                consoleState.scrollMessageDetailColumns(4);
-                return;
-            }
-            if (controlKey === 'pageup') {
-                consoleState.scrollMessageDetailPage(-1);
-                return;
-            }
-            if (controlKey === 'pagedown') {
-                consoleState.scrollMessageDetailPage(1);
-                return;
-            }
-            if (controlKey === 'home') {
-                consoleState.scrollMessageDetailToEdge('start');
-                return;
-            }
-            if (controlKey === 'end') {
-                consoleState.scrollMessageDetailToEdge('end');
-                return;
-            }
-            if (controlKey === 'escape') {
-                dismissConsoleFocusLayer();
-                return;
-            }
-            return;
-        }
-        if (hasMessageFocus()) {
-            if (controlKey === 'down') {
-                consoleState.moveMessageSelection(1);
-                return;
-            }
-            if (controlKey === 'up') {
-                consoleState.moveMessageSelection(-1);
-                return;
-            }
-            if (controlKey === 'pageup') {
-                consoleState.moveMessageSelectionPage(-1);
-                return;
-            }
-            if (controlKey === 'pagedown') {
-                consoleState.moveMessageSelectionPage(1);
-                return;
-            }
-            if (controlKey === 'home') {
-                consoleState.selectFirstMessage();
-                return;
-            }
-            if (controlKey === 'end') {
-                consoleState.selectLastMessage();
-                return;
-            }
-            if (controlKey === 'return') {
-                consoleState.openMessageDetail();
-                return;
-            }
-            if (controlKey === 'escape') {
-                dismissConsoleFocusLayer();
-                return;
-            }
-            return;
-        }
-        if (hasSessionFocus()) {
-            if (controlKey === 'down') {
-                consoleState.moveSessionSelection(1);
-                return;
-            }
-            if (controlKey === 'up') {
-                consoleState.moveSessionSelection(-1);
-                return;
-            }
-            if (controlKey === 'pageup') {
-                consoleState.moveSessionSelectionPage(-1);
-                return;
-            }
-            if (controlKey === 'pagedown') {
-                consoleState.moveSessionSelectionPage(1);
-                return;
-            }
-            if (controlKey === 'home') {
-                consoleState.selectFirstSession();
-                return;
-            }
-            if (controlKey === 'end') {
-                consoleState.selectLastSession();
-                return;
-            }
-            if (controlKey === 'return') {
-                const selected = consoleState?.selectedSession;
-                if (selected) {
-                    void switchSession(selected.id).then(() => {
-                        exitSessionFocus();
-                    });
-                } else {
-                    exitSessionFocus();
-                }
-                return;
-            }
-            if (controlKey === 'escape') {
-                dismissConsoleFocusLayer();
+        if (hasMessageDetailFocus() || hasMessageFocus() || hasApprovalFocus() || hasToolFocus() || hasSessionFocus()) {
+            const focusKey = isCopyKey(rawText, controlKey)
+                ? 'copy'
+                : !controlKey && (rawText === 'a' || rawText === 'A')
+                    ? 'approve'
+                    : !controlKey && (rawText === 'd' || rawText === 'D')
+                        ? 'deny'
+                        : controlKey === 'return'
+                            ? 'enter'
+                            : (controlKey || '');
+            if (focusKey && consoleState?.handleFocusKey) {
+                void consoleState.handleFocusKey(focusKey).then(() => {
+                    syncDraftFromConsoleState();
+                });
                 return;
             }
             return;
@@ -1767,16 +1604,6 @@ async function runInteractiveChat(options: any): Promise<void> {
         await cleanupAndExit('Closing session...', true);
         return;
     }
-
-    approvalCheckTimer = setInterval(() => {
-        if (isClosed || approvalPromptActive || modalPromptActive || inputLocked || isSelecting) {
-            return;
-        }
-        if (consoleState?.pendingApprovals?.length) {
-            void maybePromptPendingApproval();
-        }
-    }, 250);
-    approvalCheckTimer.unref?.();
 }
 
 if (require.main === module) {

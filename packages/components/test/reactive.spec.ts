@@ -51,6 +51,14 @@ describe('Reactive', () => {
             expect(isReactive({})).toBeFalsy();
         });
 
+        it('should return false for object inheriting reactive flag from prototype', () => {
+            const parent = reactive({ value: 1 }, new MockEffect());
+            const child = Object.create(parent);
+            child.value = 2;
+
+            expect(isReactive(child)).toBeFalsy();
+        });
+
         it('should return false for null', () => {
             expect(isReactive(null)).toBeFalsy();
         });
@@ -118,6 +126,23 @@ describe('Reactive', () => {
             const proxy = reactive(obj, effect);
             expect(proxy).not.toBe(obj);
             expect(isReactive(proxy)).toBeTruthy();
+        });
+
+        it('should create a fresh proxy for child scope inheriting from reactive parent', () => {
+            const parent = reactive({ title: 'Console' }, effect);
+            const child = Object.create(parent);
+            child.item = { label: 'One' };
+
+            const childEffect = new MockEffect();
+            const proxy = reactive(child, childEffect);
+
+            expect(proxy).not.toBe(child);
+            expect(isReactive(proxy)).toBeTruthy();
+
+            proxy.item = { label: 'Two' };
+            expect(childEffect.getTriggerCount()).toBe(1);
+            expect(proxy.item.label).toBe('Two');
+            expect(proxy.title).toBe('Console');
         });
 
         it('should track property access', () => {

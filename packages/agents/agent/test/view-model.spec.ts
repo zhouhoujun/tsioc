@@ -3,7 +3,7 @@ import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent } from '../src/ui/AgentConsoleComponent';
 import { AgentConsoleEventBridge } from '../src/ui/AgentConsoleEventBridge';
 import { AgentConsoleInputPanelComponent } from '../src/ui/AgentConsolePanels';
-import { AgentConsoleSessionState } from '../src/ui/AgentConsoleSessionState';
+import { AgentConsoleApprovalRequest, AgentConsoleSessionState } from '../src/ui/AgentConsoleSessionState';
 import { AgentConsoleSessionChoice, AgentConsoleUiDelegate, ModelProfile } from '../src/ui/AgentConsoleUiDelegate';
 import {
     AgentApprovalCompletedEvent,
@@ -160,7 +160,42 @@ class UiDelegateStub extends AgentConsoleUiDelegate {
     }
 }
 
-function createConsoleParts(runtime: RuntimeStub, scheduler: SchedulerStub, toolRegistry?: ToolRegistryStub, app?: ApplicationContextStub, uiDelegate?: AgentConsoleUiDelegate) {
+class ApprovalManagerStub {
+    pending: AgentConsoleApprovalRequest[] = [];
+    approved: string[] = [];
+    denied: string[] = [];
+
+    getPending(): AgentConsoleApprovalRequest[] {
+        return this.pending.slice();
+    }
+
+    approve(requestId: string): boolean {
+        if (!this.pending.some(item => item.id === requestId)) {
+            return false;
+        }
+        this.approved.push(requestId);
+        this.pending = this.pending.filter(item => item.id !== requestId);
+        return true;
+    }
+
+    reject(requestId: string): boolean {
+        if (!this.pending.some(item => item.id === requestId)) {
+            return false;
+        }
+        this.denied.push(requestId);
+        this.pending = this.pending.filter(item => item.id !== requestId);
+        return true;
+    }
+}
+
+function createConsoleParts(
+    runtime: RuntimeStub,
+    scheduler: SchedulerStub,
+    toolRegistry?: ToolRegistryStub,
+    app?: ApplicationContextStub,
+    uiDelegate?: AgentConsoleUiDelegate,
+    approvalManager?: ApprovalManagerStub
+) {
     const state = new AgentConsoleSessionState();
     const bridge = new AgentConsoleEventBridge(state, runtime as any, toolRegistry as any, app as any);
     const component = new AgentConsoleComponent(
@@ -170,13 +205,22 @@ function createConsoleParts(runtime: RuntimeStub, scheduler: SchedulerStub, tool
         bridge,
         { ui: { title: 'Console' } } as any,
         toolRegistry as any,
-        uiDelegate as any
+        uiDelegate as any,
+        undefined,
+        approvalManager as any
     );
     return { state, bridge, component };
 }
 
-function createConsole(runtime: RuntimeStub, scheduler: SchedulerStub, toolRegistry?: ToolRegistryStub, app?: ApplicationContextStub, uiDelegate?: AgentConsoleUiDelegate): AgentConsoleComponent {
-    return createConsoleParts(runtime, scheduler, toolRegistry, app, uiDelegate).component;
+function createConsole(
+    runtime: RuntimeStub,
+    scheduler: SchedulerStub,
+    toolRegistry?: ToolRegistryStub,
+    app?: ApplicationContextStub,
+    uiDelegate?: AgentConsoleUiDelegate,
+    approvalManager?: ApprovalManagerStub
+): AgentConsoleComponent {
+    return createConsoleParts(runtime, scheduler, toolRegistry, app, uiDelegate, approvalManager).component;
 }
 
 @Suite('Agent console component')
@@ -625,6 +669,64 @@ export class AgentConsoleComponentTest {
         expect(uiDelegate.notices).toContain('Started a new session.');
     }
 
+    @Test('submit keeps draft intact while a turn is already running')
+    async submitKeepsDraftIntactWhileTurnRunning() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+
+        component.sessionState.setStatus('running');
+        component.input = 'hello again';
+        await component.submit();
+
+        expect(runtime.calls).toEqual([]);
+        expect(component.input).toEqual('hello again');
+        expect(uiDelegate.notices).toContain('Wait for the current turn to finish.');
+    }
+
+    @Test('approvals command focuses pending requests instead of opening modal')
+    async approvalsCommandFocusesPendingRequests() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        const approvals = new ApprovalManagerStub();
+        approvals.pending = [{
+            id: 'approval-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate, approvals);
+
+        component.input = '/approvals';
+        await component.submit();
+
+        expect(component.sessionState.approvalsFocused).toEqual(true);
+        expect(component.sessionState.selectedApproval?.id).toEqual('approval-1');
+        expect(approvals.approved).toEqual([]);
+    }
+
+    @Test('tools command focuses tool panel instead of opening modal')
+    async toolsCommandFocusesToolPanel() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+        await component.onInit();
+
+        component.input = '/tools';
+        await component.submit();
+
+        expect(component.sessionState.toolsFocused).toEqual(true);
+        expect(component.sessionState.selectedTool?.name).toEqual('read_file');
+    }
+
     @Test('help menu selections execute commands and mentions')
     async helpMenuSelectionsExecuteActions() {
         const runtime = new RuntimeStub();
@@ -753,6 +855,23 @@ export class AgentConsoleComponentTest {
 
         await state.dismissFocusLayer();
         expect(state.selectMenu).toEqual(undefined);
+        expect(state.inputFocused).toEqual(true);
+
+        state.setPendingApprovals([{
+            id: 'approval-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval.',
+            hasInput: true,
+            createdAt: 1,
+            timeoutMs: 30000
+        } as any]);
+        state.setApprovalsFocused(true);
+        expect(state.inputFocused).toEqual(false);
+
+        await state.dismissFocusLayer();
+        expect(state.approvalsFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
     }
 
@@ -914,6 +1033,70 @@ export class AgentConsoleComponentTest {
 
         state.setSessionsFocused(false);
         expect(state.sessionsFocused).toEqual(false);
+    }
+
+    @Test('session state supports focused tool list navigation')
+    sessionStateSupportsFocusedToolListNavigation() {
+        const state = new AgentConsoleSessionState();
+        state.setTools([
+            { name: 'read_file', toolset: 'filesystem', active: true, activationKind: 'always' },
+            { name: 'write_file', toolset: 'filesystem', active: false, activationKind: 'approval' }
+        ]);
+
+        expect(state.selectedTool?.name).toEqual('read_file');
+
+        state.setToolsFocused(true);
+        expect(state.toolsFocused).toEqual(true);
+
+        state.moveToolSelection(1);
+        expect(state.selectedTool?.name).toEqual('write_file');
+
+        state.setSelectedToolName('read_file');
+        expect(state.selectedTool?.name).toEqual('read_file');
+
+        state.setToolsFocused(false);
+        expect(state.toolsFocused).toEqual(false);
+    }
+
+    @Test('session state supports focused approval list navigation')
+    sessionStateSupportsFocusedApprovalListNavigation() {
+        const state = new AgentConsoleSessionState();
+        state.setPendingApprovals([
+            {
+                id: 'approval-1',
+                toolName: 'write_file',
+                sessionId: 'console',
+                reason: 'Writing files requires approval.',
+                summary: 'Writing files requires approval.',
+                hasInput: true,
+                createdAt: 1,
+                timeoutMs: 30000
+            } as any,
+            {
+                id: 'approval-2',
+                toolName: 'terminal',
+                sessionId: 'console',
+                reason: 'Shell execution requires approval.',
+                summary: 'Shell execution requires approval.',
+                hasInput: true,
+                createdAt: 2,
+                timeoutMs: 60000
+            } as any
+        ]);
+
+        expect(state.selectedApproval?.id).toEqual('approval-1');
+
+        state.setApprovalsFocused(true);
+        expect(state.approvalsFocused).toEqual(true);
+
+        state.moveApprovalSelection(1);
+        expect(state.selectedApproval?.id).toEqual('approval-2');
+
+        state.setSelectedApprovalId('approval-1');
+        expect(state.selectedApproval?.id).toEqual('approval-1');
+
+        state.setApprovalsFocused(false);
+        expect(state.approvalsFocused).toEqual(false);
     }
 
     @Test('session state supports paged session navigation and edges')

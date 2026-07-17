@@ -1,4 +1,4 @@
-import { Attribute, Component, AfterViewInit, OnDestroy, TemplateRef, ViewChild } from '@tsdi/components';
+import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
 import {
     buildTerminalBrandBlock,
     BrDirective,
@@ -14,6 +14,7 @@ import {
 } from '@tsdi/components/console';
 import {
     AgentConsoleActivity,
+    AgentConsoleApprovalRequest,
     AgentConsoleSelectOption,
     AgentConsoleSessionItem,
     AgentConsoleSelectMenu,
@@ -35,10 +36,20 @@ import {
     renderAgentConsoleMessageItems,
     resolveAgentConsoleMarkdownToneStyle
 } from './AgentConsoleMessageRenderers';
-import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
+import {
+    AgentConsoleTheme,
+    AgentConsoleThemeStyles,
+    defaultAgentConsoleTheme,
+    resolveAgentConsoleThemeStyles,
+    styleTextToObject
+} from './AgentConsoleTheme';
 
 const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
 const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
+
+function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
+    return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
+}
 
 @Component({
     selector: 'agent-console-brand-panel',
@@ -82,6 +93,10 @@ export class AgentConsoleStatusPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
     get status(): string {
         return this.state.status;
     }
@@ -107,13 +122,20 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get statusSummary(): string {
+        const lines: string[] = [];
         if (this.notice) {
-            return this.notice;
+            lines.push(this.notice);
         }
         if (this.state.lastError) {
-            return `Error: ${this.lastErrorLabel}`;
+            lines.push(`Error: ${this.lastErrorLabel}`);
         }
-        return '';
+        if (this.state.pendingApprovals.length) {
+            const requests = this.state.pendingApprovals;
+            const first = requests[0];
+            const extra = requests.length > 1 ? ` (+${requests.length - 1})` : '';
+            lines.push(`Approval required: ${first.toolName} (${first.id.slice(0, 8)})${extra}`);
+        }
+        return lines.join('\n');
     }
 
     get workspaceSummary(): string {
@@ -121,15 +143,15 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get shellStyle() {
-        return this.shouldShow ? styleTextToObject(this.activeTheme.statusShell) : {};
+        return this.shouldShow ? this.activeThemeStyles.statusShell : {};
     }
 
     get titleStyle() {
-        return styleTextToObject(this.activeTheme.statusTitle);
+        return this.activeThemeStyles.statusTitle;
     }
 
     get valueStyle() {
-        return styleTextToObject(this.activeTheme.statusValue);
+        return this.activeThemeStyles.statusValue;
     }
 
     get runningToolsLabel(): string {
@@ -156,7 +178,7 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return !!this.notice;
+        return !!this.notice || !!this.state.lastError || !!this.state.pendingApprovals.length;
     }
 
     statusLineAt(index: number): string {
@@ -164,15 +186,15 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get runningStyle() {
-        return styleTextToObject(this.state.runningTools.length ? this.activeTheme.statusBusyValue : this.activeTheme.statusIdleValue);
+        return this.state.runningTools.length ? this.activeThemeStyles.statusBusyValue : this.activeThemeStyles.statusIdleValue;
     }
 
     get errorStyle() {
-        return styleTextToObject(this.state.lastError ? this.activeTheme.statusErrorValue : this.activeTheme.statusLabel);
+        return this.state.lastError ? this.activeThemeStyles.statusErrorValue : this.activeThemeStyles.statusLabel;
     }
 
     get noticeStyle() {
-        return styleTextToObject(this.activeTheme.statusNoticeValue);
+        return this.activeThemeStyles.statusNoticeValue;
     }
 
     protected resolveToneStyle(status: string): string {
@@ -236,6 +258,10 @@ export class AgentConsoleInputPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
     get input(): string {
         return this.state?.input || '';
     }
@@ -245,7 +271,7 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get titleStyle() {
-        return styleTextToObject(this.activeTheme.inputTitle);
+        return this.activeThemeStyles.inputTitle;
     }
 
     get inputCursor(): number {
@@ -257,11 +283,11 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get shellStyle() {
-        return styleTextToObject(this.activeTheme.inputShell);
+        return this.activeThemeStyles.inputShell;
     }
 
     get captionStyle() {
-        return styleTextToObject(this.activeTheme.inputCaption);
+        return this.activeThemeStyles.inputCaption;
     }
 
     get inputPrompt(): string {
@@ -273,23 +299,23 @@ export class AgentConsoleInputPanelComponent {
     }
 
     get entryStyle() {
-        return styleTextToObject(this.activeTheme.inputField);
+        return this.activeThemeStyles.inputField;
     }
 
     get entryShellStyle() {
-        return styleTextToObject(this.activeTheme.inputEntry);
+        return this.activeThemeStyles.inputEntry;
     }
 
     get promptStyle() {
-        return styleTextToObject(this.activeTheme.inputPrompt);
+        return this.activeThemeStyles.inputPrompt;
     }
 
     get fieldStyle() {
-        return styleTextToObject(this.activeTheme.inputField);
+        return this.activeThemeStyles.inputField;
     }
 
     get hintStyle() {
-        return styleTextToObject(this.activeTheme.inputHint);
+        return this.activeThemeStyles.inputHint;
     }
 
     get hintLabel(): string {
@@ -429,24 +455,28 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
     get shellStyle() {
-        return this.shouldShow ? styleTextToObject(this.activeTheme.workingShell) : {};
+        return this.shouldShow ? this.activeThemeStyles.workingShell : {};
     }
 
     get titleStyle() {
-        return styleTextToObject(this.activeTheme.workingTitle);
+        return this.activeThemeStyles.workingTitle;
     }
 
     get lineStyle() {
-        return styleTextToObject(this.activeTheme.workingValue);
+        return this.activeThemeStyles.workingValue;
     }
 
     get labelStyle() {
-        return styleTextToObject(this.activeTheme.workingLabel);
+        return this.activeThemeStyles.workingLabel;
     }
 
     get accentStyle() {
-        return styleTextToObject(this.activeTheme.toolsAccent);
+        return this.activeThemeStyles.toolsAccent;
     }
 
     get promptTokens(): number {
@@ -489,7 +519,7 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
         if (!this.shouldShow) {
             return '';
         }
-        const parts = [`(${this.elapsedLabel} • esc to interrupt)`];
+        const parts = [`(${this.elapsedLabel} • wait for reply)`];
         if (this.state.runningTools.length) {
             parts.push(this.runningLabel);
         }
@@ -616,20 +646,24 @@ export class AgentConsoleSessionsPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
     get sessions(): AgentConsoleSessionItem[] {
         return this.state.sessions;
     }
 
     get shellStyle() {
-        return this.shouldShow ? styleTextToObject(this.activeTheme.sessionsShell) : {};
+        return this.shouldShow ? this.activeThemeStyles.sessionsShell : {};
     }
 
     get accentStyle() {
-        return styleTextToObject(this.activeTheme.sessionsAccent);
+        return this.activeThemeStyles.sessionsAccent;
     }
 
     get metaStyle() {
-        return styleTextToObject(this.activeTheme.statusLabel);
+        return this.activeThemeStyles.statusLabel;
     }
 
     get sessionItems(): Array<{ id: string; label: string; style: Record<string, string> }> {
@@ -645,8 +679,8 @@ export class AgentConsoleSessionsPanelComponent {
                 id: session.id,
                 label: `${marker} ${session.id}${current}${count}`,
                 style: selected
-                    ? styleTextToObject(this.activeTheme.sessionsSelected)
-                    : styleTextToObject(this.activeTheme.statusValue)
+                    ? this.activeThemeStyles.sessionsSelected
+                    : this.activeThemeStyles.statusValue
             };
         });
     }
@@ -700,11 +734,139 @@ export class AgentConsoleSessionsPanelComponent {
 }
 
 @Component({
+    selector: 'agent-console-approvals-panel',
+    imports: CONSOLE_BASE_IMPORTS,
+    template: `
+    <div class="console-panel console-approvals-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{approvalsSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="approvalsHintLabel">{{approvalsHintLabel}}</label>
+        <label v-style="listStyle" v-show="approvalListLabel">{{approvalListLabel}}</label>
+        <label v-style="detailStyle" v-show="selectedApprovalDetailLabel">{{selectedApprovalDetailLabel}}</label>
+    </div>
+    `
+})
+export class AgentConsoleApprovalsPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
+    get approvals(): AgentConsoleApprovalRequest[] {
+        return this.state.pendingApprovals;
+    }
+
+    get shellStyle() {
+        return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
+    }
+
+    get accentStyle() {
+        return this.activeThemeStyles.toolsAccent;
+    }
+
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get detailStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get listStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get approvalItems(): Array<{ id: string; label: string }> {
+        if (!this.shouldShow) {
+            return [];
+        }
+        return this.visibleApprovals.map(request => {
+            const selected = this.state.selectedApprovalId === request.id;
+            return {
+                id: request.id,
+                label: `${selected ? '›' : ' '} ${request.toolName} (${request.id.slice(0, 8)})`
+            };
+        });
+    }
+
+    get approvalListLabel(): string {
+        if (!this.shouldShow || !this.approvalItems.length) {
+            return '';
+        }
+        return this.approvalItems.map(item => item.label).join('\n');
+    }
+
+    get visibleApprovalStart(): number {
+        const selectedIndex = Math.max(0, this.approvals.findIndex(item => item.id === this.state.selectedApprovalId));
+        return resolveConsoleListWindow(
+            this.approvals.length,
+            selectedIndex,
+            this.state.consoleOptions.approvalsVisibleItems
+        ).start;
+    }
+
+    get visibleApprovals(): AgentConsoleApprovalRequest[] {
+        return this.approvals.slice(
+            this.visibleApprovalStart,
+            this.visibleApprovalStart + this.state.consoleOptions.approvalsVisibleItems
+        );
+    }
+
+    get approvalsSummaryLabel(): string {
+        if (!this.shouldShow || !this.approvals.length) {
+            return '';
+        }
+        const selectedIndex = Math.max(0, this.approvals.findIndex(item => item.id === this.state.selectedApprovalId));
+        return `approvals ${this.approvals.length} · ${selectedIndex + 1}/${this.approvals.length}`;
+    }
+
+    get approvalsHintLabel(): string {
+        if (!this.shouldShow || !this.approvals.length || !this.state.approvalsFocused) {
+            return '';
+        }
+        return this.state.consoleOptions.approvalsHint;
+    }
+
+    get selectedApprovalDetailLabel(): string {
+        if (!this.shouldShow || !this.state.selectedApproval) {
+            return '';
+        }
+        const request = this.state.selectedApproval;
+        return [
+            `tool ${request.toolName} · reason ${request.reason}`,
+            request.inputSummary ? `input ${this.summarize(request.inputSummary)}` : 'input -',
+            `timeout ${request.timeoutMs}ms · session ${request.sessionId}`
+        ].join('\n');
+    }
+
+    get shouldShow(): boolean {
+        return this.state.approvalsFocused;
+    }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
+            : text;
+    }
+}
+
+@Component({
     selector: 'agent-console-tools-panel',
     imports: CONSOLE_BASE_IMPORTS,
     template: `
     <div class="console-panel console-tools-panel" v-style="shellStyle">
         <label v-style="accentStyle">{{toolsSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="toolsHintLabel">{{toolsHintLabel}}</label>
+        <label v-style="listStyle" v-show="toolListLabel">{{toolListLabel}}</label>
+        <label v-style="detailStyle" v-show="selectedToolDetailLabel">{{selectedToolDetailLabel}}</label>
     </div>
     `
 })
@@ -718,43 +880,126 @@ export class AgentConsoleToolsPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
     get tools(): AgentConsoleToolItem[] {
         return this.state.tools;
     }
 
     get shellStyle() {
-        return this.shouldShow ? styleTextToObject(this.activeTheme.toolsShell) : {};
+        return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
     }
 
     get titleStyle() {
-        return styleTextToObject(this.activeTheme.toolsTitle);
+        return this.activeThemeStyles.toolsTitle;
     }
 
     get accentStyle() {
-        return styleTextToObject(this.activeTheme.toolsAccent);
+        return this.activeThemeStyles.toolsAccent;
     }
 
-    get toolLabels(): string[] {
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get detailStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get listStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get toolItems(): Array<{ name: string; label: string; style: Record<string, string> }> {
         if (!this.shouldShow) {
             return [];
         }
-        return this.tools
-            .slice(0, this.state.consoleOptions.toolsVisibleItems)
-            .map(tool => `${tool.name}${tool.active ? '' : ' [inactive]'}${tool.toolset ? ` (${tool.toolset})` : ''}`);
+        return this.visibleTools.map(tool => {
+            const selected = this.state.selectedToolName === tool.name;
+            return {
+                name: tool.name,
+                label: `${selected ? '›' : ' '} ${tool.name}${tool.active ? '' : ' [inactive]'}${tool.toolset ? ` (${tool.toolset})` : ''}`,
+                style: selected
+                    ? this.activeThemeStyles.sessionsSelected
+                    : this.activeThemeStyles.statusValue
+            };
+        });
+    }
+
+    get toolLabels(): string[] {
+        return this.toolItems.map(item => item.label);
+    }
+
+    get toolListLabel(): string {
+        if (!this.shouldShow || !this.toolItems.length) {
+            return '';
+        }
+        return this.toolLabels.join('\n');
     }
 
     get toolsSummary(): string {
         return this.toolLabels.join(' | ');
     }
 
+    get visibleToolStart(): number {
+        const selectedIndex = Math.max(0, this.tools.findIndex(item => item.name === this.state.selectedToolName));
+        return resolveConsoleListWindow(
+            this.tools.length,
+            selectedIndex,
+            this.state.consoleOptions.toolsVisibleItems
+        ).start;
+    }
+
+    get visibleTools(): AgentConsoleToolItem[] {
+        return this.tools.slice(
+            this.visibleToolStart,
+            this.visibleToolStart + this.state.consoleOptions.toolsVisibleItems
+        );
+    }
+
     get toolsSummaryLabel(): string {
-        return this.shouldShow
-            ? `tools ${this.tools.length}  |  ${this.toolsSummary}`
-            : '';
+        if (!this.shouldShow || !this.tools.length) {
+            return '';
+        }
+        const selectedIndex = Math.max(0, this.tools.findIndex(item => item.name === this.state.selectedToolName));
+        return `tools ${this.tools.length} · ${selectedIndex + 1}/${this.tools.length}`;
+    }
+
+    get toolsHintLabel(): string {
+        if (!this.shouldShow || !this.tools.length || !this.state.toolsFocused) {
+            return '';
+        }
+        return this.state.consoleOptions.toolsHint;
+    }
+
+    get selectedToolDetailLabel(): string {
+        if (!this.shouldShow || !this.state.selectedTool) {
+            return '';
+        }
+        const tool = this.state.selectedTool;
+        const latestRun = this.state.toolRuns.find(run => run.name === tool.name);
+        const lines = [
+            `status ${tool.active ? 'active' : 'inactive'} · activation ${tool.activationKind || 'always'} · toolset ${tool.toolset || 'default'}`
+        ];
+        if (latestRun) {
+            const summary = latestRun.outputSummary || latestRun.inputSummary || latestRun.message || latestRun.error || '';
+            const duration = latestRun.durationMs != null ? ` ${latestRun.durationMs}ms` : '';
+            lines.push(`last run ${latestRun.status}${duration}: ${this.summarize(summary || latestRun.name)}`);
+        }
+        return lines.join('\n');
     }
 
     get shouldShow(): boolean {
-        return false;
+        return this.state.toolsFocused;
+    }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
+            : text;
     }
 }
 
@@ -777,6 +1022,10 @@ export class AgentConsoleToolRunsPanelComponent {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
     }
 
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
     get toolRuns(): AgentConsoleToolRun[] {
         return this.state.toolRuns;
     }
@@ -786,15 +1035,15 @@ export class AgentConsoleToolRunsPanelComponent {
     }
 
     get shellStyle() {
-        return this.toolRunsSummaryLabel ? styleTextToObject(this.activeTheme.toolRunsShell) : {};
+        return this.toolRunsSummaryLabel ? this.activeThemeStyles.toolRunsShell : {};
     }
 
     get titleStyle() {
-        return styleTextToObject(this.activeTheme.toolRunsTitle);
+        return this.activeThemeStyles.toolRunsTitle;
     }
 
     get accentStyle() {
-        return styleTextToObject(this.activeTheme.toolRunsAccent);
+        return this.activeThemeStyles.toolRunsAccent;
     }
 
     get toolRunLabels(): string[] {
@@ -971,69 +1220,30 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
 @Component({
     selector: 'agent-console-messages-panel',
     imports: [
-        ...CONSOLE_BASE_IMPORTS,
-        AgentConsoleUserMessageItemComponent,
-        AgentConsoleAssistantMessageItemComponent,
-        AgentConsoleToolMessageItemComponent,
-        AgentConsoleErrorMessageItemComponent,
-        AgentConsoleSystemMessageItemComponent
+        ...CONSOLE_BASE_IMPORTS
     ],
     template: `
     <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
-        <v-container v-for="item in messageItems">
-            <div data-template-kind="{{item.templateKind}}" v-templateOutlet="resolveMessageTemplate(item)" :templateOutletContext="item"></div>
-        </v-container>
-        <v-template #user class="user-message-template">
-            <agent-console-user-message-item :item="item"></agent-console-user-message-item>
-        </v-template>
-        <v-template #assistant class="assistant-message-template">
-            <agent-console-assistant-message-item :item="item"></agent-console-assistant-message-item>
-        </v-template>
-        <v-template #tool class="tool-message-template">
-            <agent-console-tool-message-item :item="item"></agent-console-tool-message-item>
-        </v-template>
-        <v-template #error class="error-message-template">
-            <agent-console-error-message-item :item="item"></agent-console-error-message-item>
-        </v-template>
-        <v-template #system class="system-message-template">
-            <agent-console-system-message-item :item="item"></agent-console-system-message-item>
-        </v-template>
+        <label class="message-line" v-style="line.itemStyle" v-for="line in renderedLines">
+            <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
+            <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
+            <span v-style="line.lineStyle">{{line.content}}</span>
+        </label>
     </div>
     `
 })
-export class AgentConsoleMessagesPanelComponent implements AfterViewInit {
-    protected templateRegistryVersion = 0;
-
+export class AgentConsoleMessagesPanelComponent {
     constructor(
         private state: AgentConsoleSessionState
     ) {
     }
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
-    @ViewChild('user') protected userTemplate?: TemplateRef<any>;
-    @ViewChild('assistant') protected assistantTemplate?: TemplateRef<any>;
-    @ViewChild('tool') protected toolTemplate?: TemplateRef<any>;
-    @ViewChild('error') protected errorTemplate?: TemplateRef<any>;
-    @ViewChild('system') protected systemTemplate?: TemplateRef<any>;
 
     protected get activeTheme(): AgentConsoleTheme {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;
-    }
-
-    async onAfterViewInit(): Promise<void> {
-        this.templateRegistryVersion += 1;
-    }
-
-    protected get messageTemplates(): Partial<Record<AgentConsoleMessageTemplateKind, TemplateRef<any> | null>> {
-        return {
-            user: this.userTemplate || null,
-            assistant: this.assistantTemplate || null,
-            tool: this.toolTemplate || null,
-            error: this.errorTemplate || null,
-            system: this.systemTemplate || null
-        };
     }
 
     get messages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
@@ -1042,10 +1252,7 @@ export class AgentConsoleMessagesPanelComponent implements AfterViewInit {
 
     get shellStyle() {
         return (this.messageItems.length || this.emptyLabel)
-            ? {
-                padding: '1em 1ch',
-                ...(styleTextToObject(this.activeTheme.messagesShell))
-            }
+            ? styleTextToObject(this.activeTheme.messagesShell)
             : {};
     }
 
@@ -1116,15 +1323,12 @@ export class AgentConsoleMessagesPanelComponent implements AfterViewInit {
         );
     }
 
-    get messagesSummary(): string {
-        return this.messageLabels.join(' | ');
+    get renderedLines(): AgentConsoleRenderedLine[] {
+        return this.messageItems.flatMap(item => item.lines);
     }
 
-    resolveMessageTemplate(item: AgentConsoleRenderedMessageItem): TemplateRef<any> | null {
-        this.templateRegistryVersion;
-        return this.messageTemplates[item.templateKind]
-            || this.messageTemplates.system
-            || null;
+    get messagesSummary(): string {
+        return this.messageLabels.join(' | ');
     }
 
     protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {
@@ -1387,7 +1591,7 @@ export class AgentConsoleActivityPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return !this.state.messages.length && this.activities.length > 0;
+        return this.activities.length > 0;
     }
 
     get activityLabels(): string[] {

@@ -3,7 +3,7 @@ import { ComponentDef, ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { EmbeddedViewRef, ViewRef } from './view';
-import { noReact } from '../effect';
+import { noReact, ReactiveEffect } from '../effect';
 
 
 /**
@@ -79,7 +79,8 @@ export abstract class ViewContainerRef<T = any> {
      */
     abstract createEmbeddedView<C>(templateRef: TemplateRef<C>, context: C, options?: {
         index?: number,
-        injector?: Injector
+        injector?: Injector,
+        effect?: ReactiveEffect
     }): EmbeddedViewRef<C>;
 
     /**

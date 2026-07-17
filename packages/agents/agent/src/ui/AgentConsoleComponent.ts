@@ -11,7 +11,7 @@ import { SessionStore } from '../memory/SessionStore';
 import { ToolApprovalManager } from '../tools/ToolApprovalManager';
 import { AgentConsoleUiDelegate } from './AgentConsoleUiDelegate';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
-import { AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { AgentConsoleApprovalRequest, AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 @Component({
     selector: 'agent-console',
@@ -20,6 +20,7 @@ import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
         <agent-console-brand-panel></agent-console-brand-panel>
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
+        <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
         <agent-console-message-detail-panel v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
         <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
@@ -74,16 +75,133 @@ export class AgentConsoleComponent implements OnDestroy {
         return normalized === 'cancel' || normalized === '/cancel' || normalized === 'q';
     }
 
+    protected isTurnInProgress(): boolean {
+        return this.state.status === 'running' || this.state.status === 'reasoning';
+    }
+
+    protected notify(message: string, duration?: number): void {
+        if (this.uiDelegate) {
+            this.uiDelegate.notify(message, duration);
+            return;
+        }
+        this.state.setNotice(message);
+    }
+
+    protected notifyBusyState(message = 'Wait for the current turn to finish.'): void {
+        this.notify(message);
+    }
+
+    protected async refreshSessionsFromDelegate(): Promise<void> {
+        if (!this.uiDelegate) {
+            return;
+        }
+        const sessions = await this.uiDelegate.listSessions();
+        if (!sessions.length) {
+            return;
+        }
+        this.state.setSessions(sessions.map(item => ({
+            id: item.id,
+            current: !!item.current
+        })));
+    }
+
+    protected async selectApprovalRequest(requests: AgentConsoleApprovalRequest[]): Promise<AgentConsoleApprovalRequest | undefined> {
+        if (!requests.length) {
+            return undefined;
+        }
+        if (requests.length === 1 || !this.uiDelegate) {
+            return requests[0];
+        }
+        const selected = await this.uiDelegate.select('Pending approvals', requests.map(request => ({
+            label: `${request.toolName} (${request.id.slice(0, 8)})`,
+            value: request.id,
+            description: request.reason,
+            detail: [
+                `Tool: ${request.toolName}`,
+                `Reason: ${request.reason}`,
+                request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
+                `Timeout: ${request.timeoutMs}ms`
+            ].join('\n')
+        })), 0, this.state.consoleOptions.selectCloseHint);
+        return requests.find(request => request.id === selected);
+    }
+
+    protected async openApprovalInspector(requests: AgentConsoleApprovalRequest[]): Promise<void> {
+        if (!requests.length) {
+            this.notify('No pending approvals.');
+            return;
+        }
+        if (!this.uiDelegate) {
+            this.notify([
+                'Pending approvals:',
+                ...requests.map(request => `  - ${request.id.slice(0, 8)} ${request.toolName}: ${request.reason}`)
+            ].join('\n'));
+            return;
+        }
+        const request = await this.selectApprovalRequest(requests);
+        if (!request) {
+            return;
+        }
+        const detail = [
+            `Tool: ${request.toolName}`,
+            `Reason: ${request.reason}`,
+            request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
+            `Timeout: ${request.timeoutMs}ms`
+        ].join('\n');
+        const action = await this.uiDelegate.select(`Approval ${request.id.slice(0, 8)}`, [
+            {
+                label: 'Approve',
+                value: 'approve',
+                description: 'Allow this request',
+                detail
+            },
+            {
+                label: 'Deny',
+                value: 'deny',
+                description: 'Reject this request',
+                detail
+            },
+            {
+                label: 'Copy input',
+                value: 'copy-input',
+                description: 'Copy request input summary',
+                detail
+            }
+        ], 0, this.state.consoleOptions.selectCloseHint);
+        if (action === 'approve') {
+            const approved = this.approvalManager?.approve(request.id);
+            this.notify(approved
+                ? `Approved ${request.toolName} (${request.id.slice(0, 8)}).`
+                : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+            return;
+        }
+        if (action === 'deny') {
+            const denied = this.approvalManager?.reject(request.id);
+            this.notify(denied
+                ? `Denied ${request.toolName} (${request.id.slice(0, 8)}).`
+                : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+            return;
+        }
+        if (action === 'copy-input') {
+            const copied = await this.uiDelegate.copyText(request.inputSummary || request.summary);
+            this.notify(copied ? 'Copied approval input.' : 'Nothing to copy.');
+        }
+    }
+
     get title(): string {
         return this.state.title;
     }
 
     get showStatusPanel(): boolean {
-        return !!this.state.notice;
+        return !!this.state.notice || !!this.state.lastError || !!this.state.pendingApprovals.length;
     }
 
     get showSessionsPanel(): boolean {
         return this.state.sessionsFocused;
+    }
+
+    get showApprovalsPanel(): boolean {
+        return this.state.approvalsFocused;
     }
 
     get showMessageDetailPanel(): boolean {
@@ -91,11 +209,11 @@ export class AgentConsoleComponent implements OnDestroy {
     }
 
     get showActivityPanel(): boolean {
-        return !this.state.messages.length && !!this.state.activities.length;
+        return !!this.state.visibleActivities.length;
     }
 
     get showToolsPanel(): boolean {
-        return false;
+        return this.state.toolsFocused;
     }
 
     get showWorkingPanel(): boolean {
@@ -103,7 +221,10 @@ export class AgentConsoleComponent implements OnDestroy {
     }
 
     get showToolRunsPanel(): boolean {
-        return this.showWorkingPanel && !!this.state.highlightedToolRun && this.state.highlightedToolRun.status === 'running';
+        return !!this.state.highlightedToolRun && (
+            this.showWorkingPanel
+            || this.state.toolsFocused
+        );
     }
 
     get showSelectPanel(): boolean {
@@ -240,6 +361,56 @@ export class AgentConsoleComponent implements OnDestroy {
         };
     }
 
+    get copyFocusedTextActionHandler(): (text: string, label: string) => Promise<void> {
+        return async (text: string, label: string) => {
+            if (!text) {
+                this.notify(`Nothing to copy for ${label}.`);
+                return;
+            }
+            if (!this.uiDelegate) {
+                this.notify(text);
+                return;
+            }
+            const copied = await this.uiDelegate.copyText(text);
+            this.notify(copied
+                ? `Copied ${label}.`
+                : `Nothing to copy for ${label}.`);
+        };
+    }
+
+    get activateSelectedSessionActionHandler(): (sessionId: string) => Promise<void> {
+        return async (sessionId: string) => {
+            if (this.isTurnInProgress()) {
+                this.notifyBusyState('Wait for the current turn to finish before switching sessions.');
+                return;
+            }
+            if (!this.uiDelegate || !sessionId) {
+                return;
+            }
+            await this.uiDelegate.switchSession(sessionId);
+            this.state.setSessionsFocused(false);
+        };
+    }
+
+    get resolveApprovalActionHandler(): (decision: 'approve' | 'deny', requestId: string) => Promise<void> {
+        return async (decision: 'approve' | 'deny', requestId: string) => {
+            if (!this.approvalManager || !requestId) {
+                return;
+            }
+            const request = this.approvalManager.getPending().find((item: any) => item.id === requestId)
+                || this.state.selectedApproval
+                || { id: requestId, toolName: 'request' };
+            const applied = decision === 'approve'
+                ? this.approvalManager.approve(requestId)
+                : this.approvalManager.reject(requestId);
+            const pending = this.approvalManager.getPending().filter((item: any) => item.sessionId === this.state.sessionId);
+            this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
+            this.notify(applied
+                ? `${decision === 'approve' ? 'Approved' : 'Denied'} ${request.toolName} (${requestId.slice(0, 8)}).`
+                : `Approval request ${requestId.slice(0, 8)} is no longer pending.`);
+        };
+    }
+
     showNotice(message: string): void {
         this.state.setNotice(message);
     }
@@ -268,6 +439,9 @@ export class AgentConsoleComponent implements OnDestroy {
 
     async onInit(): Promise<void> {
         this.state.submitAction = this.submitActionHandler;
+        this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;
+        this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
+        this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
         if (!this.state.messages.length) {
@@ -279,6 +453,9 @@ export class AgentConsoleComponent implements OnDestroy {
 
     onDestroy(): void {
         this.destroyed = true;
+        this.state.copyFocusedTextAction = undefined;
+        this.state.activateSelectedSessionAction = undefined;
+        this.state.resolveApprovalAction = undefined;
         this.dispose();
     }
 
@@ -382,14 +559,28 @@ export class AgentConsoleComponent implements OnDestroy {
                 }
                 return true;
             case '/model':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
                 if (!this.uiDelegate) { return true; }
                 await this.switchModel();
                 return true;
             case '/tools':
-                if (!this.uiDelegate) { return true; }
-                await this.showToolsList();
+                if (!this.state.tools.length) {
+                    this.notify('No tools available.');
+                    return true;
+                }
+                this.state.setSessionsFocused(false);
+                this.state.setMessagesFocused(false);
+                this.state.closeMessageDetail();
+                this.state.setToolsFocused(true);
                 return true;
             case '/clear':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
                 if (this.uiDelegate) {
                     await this.uiDelegate.switchSession(undefined);
                     this.uiDelegate.notify('Started a new session.');
@@ -399,10 +590,16 @@ export class AgentConsoleComponent implements OnDestroy {
                 const pending = this.approvalManager
                     ? this.approvalManager.getPending().filter((r: any) => r.sessionId === this.state.sessionId)
                     : [];
-                const msg = pending.length
-                    ? 'Pending approvals:\n' + pending.map((r: any) => '  - ' + r.id.slice(0, 8) + ' ' + r.toolName + ': ' + r.reason).join('\n')
-                    : 'Pending approvals:\n  (empty)';
-                if (this.uiDelegate) { this.uiDelegate.notify(msg); }
+                if (!pending.length) {
+                    this.notify('No pending approvals.');
+                    return true;
+                }
+                this.state.setPendingApprovals(pending as AgentConsoleApprovalRequest[]);
+                this.state.setSessionsFocused(false);
+                this.state.setToolsFocused(false);
+                this.state.setMessagesFocused(false);
+                this.state.closeMessageDetail();
+                this.state.setApprovalsFocused(true);
                 return true;
             }
             case '/copy': {
@@ -424,7 +621,12 @@ export class AgentConsoleComponent implements OnDestroy {
                 return true;
             }
             case '/session': {
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
                 if (!this.uiDelegate) { return true; }
+                await this.refreshSessionsFromDelegate();
                 if (parsed.args) {
                     await this.uiDelegate.switchSession(parsed.args);
                     return true;
@@ -445,11 +647,20 @@ export class AgentConsoleComponent implements OnDestroy {
                 return true;
             }
             case '/new':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
                 if (this.uiDelegate) {
                     await this.uiDelegate.switchSession(parsed.args || undefined);
                 }
                 return true;
             case '/sessions':
+                await this.refreshSessionsFromDelegate();
+                if (!this.state.sessions.length) {
+                    this.notify('No sessions available.');
+                    return true;
+                }
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
                 return true;
@@ -467,7 +678,12 @@ export class AgentConsoleComponent implements OnDestroy {
                     const exact = pend.find((item: any) => item.id === parsed.args);
                     const matches = exact ? [exact] : pend.filter((item: any) => item.id.startsWith(parsed.args));
                     if (matches.length === 1) {
-                        isApprove ? this.approvalManager.approve(matches[0].id) : this.approvalManager.reject(matches[0].id);
+                        const applied = isApprove ? this.approvalManager.approve(matches[0].id) : this.approvalManager.reject(matches[0].id);
+                        if (this.uiDelegate) {
+                            this.uiDelegate.notify(applied
+                                ? `${isApprove ? 'Approved' : 'Denied'} ${matches[0].toolName} (${matches[0].id.slice(0, 8)}).`
+                                : `Approval request ${matches[0].id.slice(0, 8)} is no longer pending.`);
+                        }
                     } else if (this.uiDelegate) {
                         this.uiDelegate.notify(matches.length > 1
                             ? `Approval id "${parsed.args}" is ambiguous.`
@@ -481,10 +697,22 @@ export class AgentConsoleComponent implements OnDestroy {
                         pend.map((r: any) => ({ label: r.toolName + ' (' + r.id.slice(0, 8) + ')', value: r.id, description: r.reason })));
                     if (!sel) { return true; }
                     const found = pend.find((r: any) => r.id === sel);
-                    if (found) { isApprove ? this.approvalManager.approve(found.id) : this.approvalManager.reject(found.id); }
+                    if (found) {
+                        const applied = isApprove ? this.approvalManager.approve(found.id) : this.approvalManager.reject(found.id);
+                        this.uiDelegate.notify(applied
+                            ? `${isApprove ? 'Approved' : 'Denied'} ${found.toolName} (${found.id.slice(0, 8)}).`
+                            : `Approval request ${found.id.slice(0, 8)} is no longer pending.`);
+                    }
                     return true;
                 }
-                if (req) { isApprove ? this.approvalManager.approve(req.id) : this.approvalManager.reject(req.id); }
+                if (req) {
+                    const applied = isApprove ? this.approvalManager.approve(req.id) : this.approvalManager.reject(req.id);
+                    if (this.uiDelegate) {
+                        this.uiDelegate.notify(applied
+                            ? `${isApprove ? 'Approved' : 'Denied'} ${req.toolName} (${req.id.slice(0, 8)}).`
+                            : `Approval request ${req.id.slice(0, 8)} is no longer pending.`);
+                    }
+                }
                 return true;
             }
             case '/quit':
@@ -570,16 +798,6 @@ export class AgentConsoleComponent implements OnDestroy {
         await this.uiDelegate.applyModelProfile({ provider: prov, flashModel, strongModel, baseUrl, apiKey });
     }
 
-    protected async showToolsList(): Promise<void> {
-        if (!this.uiDelegate) { return; }
-        const tools = this.state.tools;
-        if (!tools.length) { this.uiDelegate.notify('No tools available.'); return; }
-        await this.uiDelegate.select('Tools', tools.map((t: any) => ({
-            label: t.name + (t.active ? '' : ' [inactive]'), value: t.name,
-            description: t.active ? 'active' : 'inactive'
-        })), 0, this.state.consoleOptions.selectCloseHint);
-    }
-
     protected async handleMenuSelection(value: string): Promise<void> {
         const selected = String(value || '').trim();
         if (!selected) {
@@ -605,6 +823,10 @@ export class AgentConsoleComponent implements OnDestroy {
 
     protected async submitMultilineDraft(): Promise<void> {
         if (!this.draftLines.length) { return; }
+        if (this.isTurnInProgress()) {
+            this.notifyBusyState();
+            return;
+        }
         const draft = this.draftLines.join('\n');
         const prompt = this.enrichPromptWithMentions(draft);
         this.draftLines = [];
@@ -640,14 +862,19 @@ export class AgentConsoleComponent implements OnDestroy {
     async submit(): Promise<void> {
         const value = this.state.input.trim();
         if (!value) { return; }
-        this.state.pushInputHistory(value);
         if (value.startsWith('/')) {
+            this.state.pushInputHistory(value);
             this.state.setInput('');
             if (await this.handleCommand(value)) {
                 return;
             }
             this.state.setInput(value, value.length);
         }
+        if (this.isTurnInProgress()) {
+            this.notifyBusyState();
+            return;
+        }
+        this.state.pushInputHistory(value);
         if (this.multilineMode) {
             this.draftLines.push(value);
             return;

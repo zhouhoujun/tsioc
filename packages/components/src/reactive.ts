@@ -16,8 +16,14 @@ const subscribableEffects = new WeakMap<object, WeakMap<ReactiveEffect, () => vo
 //         ('nodeType' in target || 'parentNode' in target || 'childNodes' in target);
 // }
 
+function hasReactiveFlag(target: any): boolean {
+    return isObject(target)
+        && Object.prototype.hasOwnProperty.call(target, REACT_FlAG)
+        && !!target[REACT_FlAG];
+}
+
 export function isReactive(target: any): boolean {
-    return isObject(target) && target[REACT_FlAG]
+    return hasReactiveFlag(target);
 }
 
 export function canReactive(target: any) {
@@ -25,7 +31,7 @@ export function canReactive(target: any) {
     if (!target || !isObject(target) || target[noReact]) {
         return false
     }
-    if (target[REACT_FlAG] && !isSubscribable(target)) {
+    if (hasReactiveFlag(target) && !isSubscribable(target)) {
         return false
     }
     // if (isNode(target)) return false;

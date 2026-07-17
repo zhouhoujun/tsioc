@@ -446,4 +446,45 @@ export class ModelProviderTest {
         expect(received.filter(item => item.type === 'reasoning').map(item => item.content).join('')).toBe('thinking');
         expect(received.some(item => item.type === 'done' && item.usage?.total_tokens === 5)).toBe(true);
     }
+
+    @Test('parses openai-compatible streaming text when final sse buffer lacks trailing newline')
+    async parsesOpenAiCompatibleStreamingWithoutTrailingNewline() {
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => {
+            const encoder = new TextEncoder();
+            const chunks = [
+                'data: {"choices":[{"delta":{"content":"hello"},"finish_reason":null}]}'
+            ];
+            return {
+                ok: true,
+                body: new ReadableStream({
+                    start(controller) {
+                        chunks.forEach(chunk => controller.enqueue(encoder.encode(chunk)));
+                        controller.close();
+                    }
+                })
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'redhus',
+            baseUrl: 'https://example.com',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        const received: Array<{ type: string; content?: string }> = [];
+        for await (const chunk of adapter.stream({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: 'hello', createdAt: 1 }],
+            tools: []
+        })) {
+            received.push(chunk);
+        }
+
+        expect(received.filter(item => item.type === 'text').map(item => item.content).join('')).toBe('hello');
+    }
 }

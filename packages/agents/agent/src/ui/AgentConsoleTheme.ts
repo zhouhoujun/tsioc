@@ -49,6 +49,9 @@ export interface AgentConsoleTheme {
 }
 
 export type AgentConsoleThemeInput = Partial<AgentConsoleTheme>;
+export type AgentConsoleThemeStyles = {
+    [K in keyof AgentConsoleTheme]: Record<string, string>;
+};
 
 export const defaultAgentConsoleTheme: AgentConsoleTheme = {
     statusTitle: 'color: #8b949e;',
@@ -105,6 +108,14 @@ export function mergeAgentConsoleTheme(theme?: AgentConsoleThemeInput | null): A
         ...defaultAgentConsoleTheme,
         ...(theme || {})
     };
+}
+
+export function resolveAgentConsoleThemeStyles(theme: AgentConsoleTheme): AgentConsoleThemeStyles {
+    return Object.keys(theme).reduce((styles, key) => {
+        const themeKey = key as keyof AgentConsoleTheme;
+        styles[themeKey] = styleTextToObject(theme[themeKey]);
+        return styles;
+    }, {} as AgentConsoleThemeStyles);
 }
 
 export function styleTextToObject(styleText?: string | null): Record<string, string> {

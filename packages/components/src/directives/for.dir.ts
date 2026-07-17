@@ -4,7 +4,6 @@ import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
 import { ReactiveEffect } from '../effect';
-import { reactive } from '../reactive';
 import { ViewRef } from '../refs/view';
 
 /**
@@ -321,10 +320,11 @@ export class VForDirective {
             return null;
         }
 
-        // 创建响应式上下文
-        const reactiveContext = reactive(context, this._effect);
-
-        const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, reactiveContext);
+        // Let the embedded view create its reactive context with the same effect
+        // instance used by its bindings so reused views can refresh correctly.
+        const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, context, {
+            effect: this._effect
+        });
         // console.log('[VForDirective] createView created view');
         return viewRef;
     }

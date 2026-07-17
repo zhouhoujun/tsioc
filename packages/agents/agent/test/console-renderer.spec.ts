@@ -5,6 +5,7 @@ import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/componen
 import { ConsoleElement, ConsoleRenderer, ConsoleTemplateModule, TuiRenderer, TuiTemplateModule, TuiTerminalSurface } from '@tsdi/components/console';
 import {
     AgentConsoleActivityPanelComponent,
+    AgentConsoleApprovalsPanelComponent,
     AgentConsoleComponent,
     AgentConsoleInputPanelComponent,
     AgentConsoleMessageDetailPanelComponent,
@@ -82,8 +83,77 @@ export class AgentConsoleRendererTest {
         const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
 
         expect(workingLines.some(line => line.includes('Working'))).toBe(true);
-        expect(workingLines.some(line => line.includes('esc to interrupt'))).toBe(true);
+        expect(workingLines.some(line => line.includes('wait for reply'))).toBe(true);
         expect(workingLines.some(line => line.includes('200 tokens'))).toBe(true);
+    }
+
+    @Test('renders focused tool list with selected tool details')
+    async renderFocusedToolList() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setTools([
+            { name: 'read_file', toolset: 'filesystem', active: true, activationKind: 'always' } as any,
+            { name: 'write_file', toolset: 'filesystem', active: false, activationKind: 'approval' } as any
+        ]);
+        ref.instance.sessionState.upsertToolRun({
+            name: 'write_file',
+            status: 'error',
+            message: 'Permission denied',
+            error: 'Permission denied',
+            updatedAt: Date.now()
+        });
+        ref.instance.sessionState.setToolsFocused(true);
+        ref.instance.sessionState.setSelectedToolName('write_file');
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const toolsPanel = ref.hostView.query(AgentConsoleToolsPanelComponent) as ComponentRef<AgentConsoleToolsPanelComponent>;
+        const toolLines = renderer.renderToLines(toolsPanel.hostView.rootNodes[0]);
+
+        expect(toolLines.some(line => line.includes('tools 2'))).toBe(true);
+        expect(toolLines.some(line => line.includes('› write_file'))).toBe(true);
+        expect(toolLines.some(line => line.includes('status inactive'))).toBe(true);
+        expect(toolLines.some(line => line.includes('Permission denied'))).toBe(true);
+    }
+
+    @Test('renders focused approval list with selected request details')
+    async renderFocusedApprovalList() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setPendingApprovals([
+            {
+                id: 'approval-1',
+                toolName: 'write_file',
+                sessionId: 'console',
+                reason: 'Writing files requires approval.',
+                summary: 'Writing files requires approval.',
+                hasInput: true,
+                inputSummary: '{"path":"notes.txt"}',
+                createdAt: 1,
+                timeoutMs: 30000
+            } as any,
+            {
+                id: 'approval-2',
+                toolName: 'terminal',
+                sessionId: 'console',
+                reason: 'Shell execution requires approval.',
+                summary: 'Shell execution requires approval.',
+                hasInput: true,
+                inputSummary: 'npm test',
+                createdAt: 2,
+                timeoutMs: 60000
+            } as any
+        ]);
+        ref.instance.sessionState.setApprovalsFocused(true);
+        ref.instance.sessionState.setSelectedApprovalId('approval-2');
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const approvalsPanel = ref.hostView.query(AgentConsoleApprovalsPanelComponent) as ComponentRef<AgentConsoleApprovalsPanelComponent>;
+        const approvalLines = renderer.renderToLines(approvalsPanel.hostView.rootNodes[0]);
+
+        expect(approvalLines.some(line => line.includes('approvals 2'))).toBe(true);
+        expect(approvalLines.some(line => line.includes('› terminal (approval)'))).toBe(true);
+        expect(approvalLines.some(line => line.includes('Shell execution requires approval.'))).toBe(true);
+        expect(approvalLines.some(line => line.includes('npm test'))).toBe(true);
     }
 
     @Test('renders message detail panel with line numbers for selected message')
@@ -188,6 +258,39 @@ export class AgentConsoleRendererTest {
             expect(visibleLines.some((line: string) => line.includes('assistant'))).toBe(true);
             expect(visibleLines.some((line: string) => line.includes('**assistant**'))).toBe(false);
             expect(visibleLines.length).toBeGreaterThan(2);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('renders user message row with background styling in tui messages panel')
+    async renderUserMessageBackgroundInTui() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const messagesPanel = consoleRef.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+
+            consoleRef.instance.sessionState.setMessages([
+                {
+                    id: 'u1',
+                    role: 'user',
+                    content: 'hello tui',
+                    createdAt: 1
+                } as any
+            ]);
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const lines = renderer.renderToTuiLines(messagesPanel.hostView.rootNodes[0], { width: 24 });
+            const userLine = lines.find((line: string) => line.includes('hello tui')) || '';
+
+            expect(userLine).toContain('hello tui');
+            expect(/\x1b\[[0-9;]*48;/.test(userLine)).toBe(true);
         } finally {
             await tuiCtx.close();
         }

@@ -88,6 +88,22 @@ class ConsoleLoopUpdateTestComponent {
 }
 
 @Component({
+    selector: 'console-loop-scope-update-test',
+    template: `
+    <section>
+        <label class="loop-row" v-for="item in items">{{title}} {{item.label}}</label>
+    </section>
+    `
+})
+class ConsoleLoopScopeUpdateTestComponent {
+    title = 'Chat';
+    items = [
+        { label: 'One' },
+        { label: 'Two' }
+    ];
+}
+
+@Component({
     selector: 'console-inline-padding-test',
     template: `
     <section>
@@ -440,6 +456,29 @@ export class ConsoleRendererTest {
             ];
 
             expect(renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual(['› hi', 'Echo: hi']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('updates reused v-for view context values with inherited parent scope bindings')
+    async updatesReusedVForViewContextValuesWithInheritedParentScope() {
+        const ctx = await Application.run(ConsoleLoopScopeUpdateTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(ConsoleLoopScopeUpdateTestComponent) as ComponentRef<ConsoleLoopScopeUpdateTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+
+            expect(renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual(['Chat One', 'Chat Two']);
+
+            ref.instance.items = [
+                { label: 'One' },
+                { label: 'Updated' }
+            ];
+
+            expect(renderer.renderToTuiLines(root, { width: 40 }).map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual(['Chat One', 'Chat Updated']);
         } finally {
             await ctx.close();
         }
