@@ -9,6 +9,7 @@ import { createViewContainerRef } from '../impl/container';
 import { noReact } from '../effect';
 import { ViewRef } from './view';
 import { Renderer } from '../renderer/Renderer';
+import { LOCAL_REFS } from '../renderer/Node';
 
 
 export const NODES_RESOLVERS = token<ResolveInterceptorLike[]>('NODES_RESOLVERS');
@@ -73,6 +74,7 @@ export class NodeInjector extends ContextInjector {
     readonly templateRefs: Map<RNode, TemplateRef<any>> = new Map();
     readonly elementRefs: Map<RNode, ElementRef<any>> = new Map();
     readonly viewContainerRefs: Map<RNode, ViewContainerRef> = new Map();
+    readonly localRefNodes: Map<string, RNode> = new Map();
     readonly computedCache: Map<string, { value: any, deps: Set<any> }> = new Map();
     readonly parentNodes: Map<RNode, RNode> = new Map();
 
@@ -99,7 +101,44 @@ export class NodeInjector extends ContextInjector {
         this.templateRefs.clear();
         this.computedCache.clear();
         this.viewContainerRefs.clear();
+        this.localRefNodes.clear();
         this.parentNodes.clear();
+    }
+
+    detachNodes(nodes: RNode[]): void {
+        const visited = new Set<RNode>();
+        const walk = (node: RNode | null | undefined): void => {
+            if (!node || visited.has(node)) {
+                return;
+            }
+            visited.add(node);
+
+            this.componentRefs.delete(node);
+            this.directiveRefs.delete(node);
+            this.templateRefs.delete(node);
+            this.elementRefs.delete(node);
+            this.viewContainerRefs.delete(node);
+            this.parentNodes.delete(node);
+            const localRefs = (node as any)?.[LOCAL_REFS] as string[] | undefined;
+            localRefs?.forEach(ref => {
+                const key = ref?.trim().toLowerCase();
+                if (key) {
+                    this.localRefNodes.delete(key);
+                }
+            });
+
+            const staticRefs = this.allDirectiveRefs.get(node);
+            if (staticRefs) {
+                this.allDirectiveRefs.delete(node);
+            }
+
+            const children = (node as any)?.childNodes as RNode[] | undefined;
+            if (children?.length) {
+                children.forEach(child => walk(child));
+            }
+        };
+
+        nodes.forEach(node => walk(node));
     }
 
     getParentInjector(): NodeInjector | null {
@@ -112,8 +151,8 @@ export class NodeInjector extends ContextInjector {
             if (!this.elementRefs.has(el)) {
                 this.elementRefs.set(el, compRef.elementRef);
             }
-            this.componentRefs.set(compRef.elementRef.nativeElement, compRef);
-        }
+        this.componentRefs.set(compRef.elementRef.nativeElement, compRef);
+    }
     }
 
     attachDirective<C>(dirRef: DirectiveRef<C>): void {
@@ -141,6 +180,36 @@ export class NodeInjector extends ContextInjector {
             }
             this.templateRefs.set(el, tempRef);
         }
+    }
+
+    registerLocalRefs(node: RNode, refs?: string[]): void {
+        if (!refs?.length) {
+            return;
+        }
+        refs.forEach(ref => {
+            const key = ref?.trim().toLowerCase();
+            if (!key || this.localRefNodes.has(key)) {
+                return;
+            }
+            this.localRefNodes.set(key, node);
+        });
+    }
+
+    getLocalRefNode(refName: string): RNode | null {
+        const key = refName.trim().toLowerCase();
+        return this.localRefNodes.get(key) ?? this.getParentInjector()?.getLocalRefNode(refName) ?? null;
+    }
+
+    getLocalRefValue(refName: string): any {
+        const node = this.getLocalRefNode(refName);
+        if (!node) {
+            return null;
+        }
+        return this.templateRefs.get(node)
+            ?? this.componentRefs.get(node)?.instance
+            ?? this.directiveRefs.get(node)?.[0]?.instance
+            ?? this.elementRefs.get(node)
+            ?? null;
     }
 
 

@@ -4,7 +4,6 @@ import { ViewContainerRef } from '../refs/container';
 import { EmbeddedViewRef } from '../refs/view';
 import { Attribute } from '../decorators/atteribute';
 import { noReact } from '../effect';
-import { LOCAL_REFS } from '../renderer/Node';
 import { NodeInjector } from '../refs/injector';
 
 /**
@@ -131,9 +130,10 @@ export class TemplateOutletDirective {
 
         const injector = this.viewContainer.injector as NodeInjector;
         const targetName = this._templateRef.trim().toLowerCase();
-        for (const [node, templateRef] of injector.templateRefs.entries()) {
-            const refs = (node as any)[LOCAL_REFS] as string[] | undefined;
-            if (refs?.some(ref => ref.toLowerCase() === targetName)) {
+        const node = injector.getLocalRefNode(targetName);
+        if (node) {
+            const templateRef = injector.getTemplateRef(node);
+            if (templateRef) {
                 this._templateRef = templateRef;
                 return templateRef;
             }

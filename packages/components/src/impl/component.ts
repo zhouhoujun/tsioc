@@ -160,7 +160,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
     protected resolveViewChildNode(selector: string): RNode | null {
-        const refNode = this.findNodeByLocalRef(selector);
+        const normalizedRefName = selector.startsWith('#') ? selector.slice(1) : selector;
+        const refNode = this._hostView?.injector.getLocalRefNode(normalizedRefName) ?? this.findNodeByLocalRef(selector);
         if (refNode) {
             return refNode;
         }
@@ -179,20 +180,10 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     protected findNodeByLocalRef(refName: string): RNode | null {
         const normalizedRefName = refName.startsWith('#') ? refName.slice(1) : refName;
-        const renderer = this.injector.get(Renderer);
         const walk = (node: RNode): RNode | null => {
             const localRefs = (node as any)[LOCAL_REFS] as string[] | undefined;
             if (localRefs?.includes(normalizedRefName)) {
                 return node;
-            }
-            try {
-                const attrName = `#${normalizedRefName}`;
-                const attrs = renderer.getAttributes(node) || [];
-                if (attrs.some(attr => attr?.name === attrName)) {
-                    return node;
-                }
-            } catch {
-                // Ignore nodes that do not support attributes.
             }
             const children = (node as any)?.childNodes as RNode[] | undefined;
             if (!children?.length) {

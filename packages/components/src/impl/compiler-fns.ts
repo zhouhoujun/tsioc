@@ -29,12 +29,18 @@ export interface RendererOptions {
     bindDirective: (element: RElement, directive: DirectiveDef, attrs: RAttr[], effect: ReactiveEffect, injector: NodeInjector, context: any, delimiter: RegExp) => void,
 }
 
+type CompiledExpression = {
+    evaluate(scope: any, injector: NodeInjector): any;
+};
+
 function resolveNodeTagName(node: RElement): string {
     return ((node as any).localName || node.tagName || '') as string;
 }
 
 const outputSubscriptions = new WeakMap<object, Map<string, Subscription>>();
 const outputSubscriptionCleanup = new WeakSet<object>();
+const compiledExpressionCache = new Map<string, CompiledExpression>();
+const simplePathExpression = /^[_$a-zA-Z][_$a-zA-Z0-9]*(?:\.[_$a-zA-Z][_$a-zA-Z0-9]*)*$/;
 
 function extractLocalRefs(attrs: RAttr[]): string[] {
     return (attrs || [])
@@ -44,12 +50,13 @@ function extractLocalRefs(attrs: RAttr[]): string[] {
         .filter(Boolean);
 }
 
-function assignLocalRefs(node: RNode, attrs: RAttr[]): void {
+function assignLocalRefs(node: RNode, attrs: RAttr[], injector?: NodeInjector): void {
     const localRefs = extractLocalRefs(attrs);
     if (!localRefs.length) {
         return;
     }
     node[LOCAL_REFS] = localRefs;
+    injector?.registerLocalRefs(node, localRefs);
 }
 
 function replaceOutputSubscription(target: object, key: string, emitter: EventEmitter<any>, handler: any, injector: NodeInjector): void {
@@ -192,7 +199,7 @@ export function compileElementToFactory(
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(tagName);
-        assignLocalRefs(element, attrs);
+        assignLocalRefs(element, attrs, injector);
         // Copy nodeType from original node to preserve ElementContainer flag (only for virtual DOM)
         try {
             element.nodeType = node.nodeType;
@@ -306,7 +313,7 @@ export function compileComponentToFactory(
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(tagName);
-        assignLocalRefs(element, attrs);
+        assignLocalRefs(element, attrs, injector);
         try {
             element.nodeType = node.nodeType;
         } catch {
@@ -393,7 +400,7 @@ export function compileTemplateToFactory(
     return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector, context: any) => {
         // 创建元素
         const element = renderer.createElement(tagName);
-        assignLocalRefs(element, attrs);
+        assignLocalRefs(element, attrs, injector);
         try {
             element.nodeType = NodeType.Template;
         } catch {
@@ -1308,23 +1315,30 @@ export function evaluateDelimiterExpression(text: string, context: any, effect: 
  * @returns 评估结果
  */
 export function evaluateExpression(expr: string, context: any, injector: NodeInjector, delimiter: RegExp): any {
+    const trimmed = expr.trim();
+    const simpleResolved = resolveSimpleExpressionValue(trimmed, context, injector);
+    if (simpleResolved !== unresolvedExpressionBinding) {
+        return simpleResolved;
+    }
     try {
-        const scope = createExpressionScope(context, injector);
-        const parts = splitTopLevel(expr, '|').map(part => part.trim()).filter(Boolean);
-        if (parts.length <= 1) {
-            return new Function('ctx', `with(ctx){return ${expr}}`)(scope);
-        } else {
-            const [expression, ...pipeNames] = parsePipes(parts);
-            const pipes = pipeNames.reduce((obj, name) => {
-                obj[name] = injector.get(name);
-                return obj;
-            }, {} as any);
-            return new Function('ctx', 'pipes', `with(ctx){return ${expression}}`)(scope, pipes);
+        return getCompiledExpression(trimmed).evaluate(context, injector);
+    } catch (e) {
+        if (!shouldRetryExpressionWithScope(e)) {
+            console.error(`Error evaluating expression: ${expr}`, e);
+            return '';
         }
+    }
+
+    try {
+        return getCompiledExpression(trimmed).evaluate(createExpressionScope(context, injector), injector);
     } catch (e) {
         console.error(`Error evaluating expression: ${expr}`, e);
         return '';
     }
+}
+
+function shouldRetryExpressionWithScope(error: any): boolean {
+    return !!error && (error instanceof ReferenceError || error.name === 'ReferenceError');
 }
 
 const funcCallRegex = /^\s*([_$a-zA-Z\w.]+)\s*\(\s*(.*?)\s*\)\s*$/;
@@ -1706,6 +1720,39 @@ function splitTopLevel(input: string, separator: '|' | ':'): string[] {
 
 // 保留文件末尾的辅助函数
 const attrPrefixes = [':', '@', '*', 'v-'];
+const unresolvedExpressionBinding = Symbol('__UNRESOLVED_EXPRESSION_BINDING');
+
+function getCompiledExpression(expr: string): CompiledExpression {
+    let compiled = compiledExpressionCache.get(expr);
+    if (compiled) {
+        return compiled;
+    }
+
+    const parts = splitTopLevel(expr, '|').map(part => part.trim()).filter(Boolean);
+    if (parts.length <= 1) {
+        const body = new Function('ctx', `with(ctx){return ${expr}}`);
+        compiled = {
+            evaluate(scope: any): any {
+                return body(scope);
+            }
+        };
+    } else {
+        const [expression, ...pipeNames] = parsePipes(parts);
+        const body = new Function('ctx', 'pipes', `with(ctx){return ${expression}}`);
+        compiled = {
+            evaluate(scope: any, injector: NodeInjector): any {
+                const pipes = pipeNames.reduce((obj, name) => {
+                    obj[name] = injector.get(name);
+                    return obj;
+                }, {} as any);
+                return body(scope, pipes);
+            }
+        };
+    }
+
+    compiledExpressionCache.set(expr, compiled);
+    return compiled;
+}
 
 function createExpressionScope(context: any, injector: NodeInjector): any {
     if (context == null || (typeof context !== 'object' && typeof context !== 'function')) {
@@ -1713,17 +1760,13 @@ function createExpressionScope(context: any, injector: NodeInjector): any {
     }
 
     const scope = Object.create(context);
-    const seen = new Set<string>();
-    let current: NodeInjector | null = injector;
-
-    while (current) {
-        bindLocalRefs(scope, current, seen);
-        current = current.getParentInjector();
-    }
 
     return new Proxy(scope, {
         has(target, prop) {
-            return Reflect.has(target, prop) || findCaseInsensitiveKey(target, prop) !== undefined;
+            if (Reflect.has(target, prop) || findCaseInsensitiveKey(target, prop) !== undefined) {
+                return true;
+            }
+            return resolveMissingExpressionBinding(target, prop, injector) !== unresolvedExpressionBinding;
         },
         get(target, prop, receiver) {
             if (Reflect.has(target, prop)) {
@@ -1733,30 +1776,85 @@ function createExpressionScope(context: any, injector: NodeInjector): any {
             if (matchedKey !== undefined) {
                 return Reflect.get(target, matchedKey, receiver);
             }
+            const resolved = resolveMissingExpressionBinding(target, prop, injector);
+            if (resolved !== unresolvedExpressionBinding) {
+                return resolved;
+            }
             return Reflect.get(target, prop, receiver);
         }
     });
 }
 
-function bindLocalRefs(scope: any, injector: NodeInjector, seen: Set<string>): void {
-    const bindNode = (node: RNode, value: any) => {
-        const refs = node?.[LOCAL_REFS];
-        if (!refs?.length) {
-            return;
-        }
-        refs.forEach(refName => {
-            if (!refName || seen.has(refName)) {
-                return;
-            }
-            seen.add(refName);
-            scope[refName] = value;
-        });
-    };
+function resolveSimpleExpressionValue(expr: string, context: any, injector: NodeInjector): any {
+    if (!expr || !simplePathExpression.test(expr)) {
+        return unresolvedExpressionBinding;
+    }
 
-    injector.templateRefs.forEach((templateRef, node) => bindNode(node, templateRef));
-    injector.componentRefs.forEach((componentRef, node) => bindNode(node, componentRef.instance ?? componentRef));
-    injector.directiveRefs.forEach((directiveRefs, node) => bindNode(node, directiveRefs[0]?.instance ?? directiveRefs[0]));
-    injector.elementRefs.forEach((elementRef, node) => bindNode(node, elementRef.nativeElement ?? elementRef));
+    const parts = expr.split('.');
+    const root = resolveSimpleExpressionRoot(context, parts[0], injector);
+    if (root === unresolvedExpressionBinding) {
+        return unresolvedExpressionBinding;
+    }
+
+    let current = root;
+    for (let index = 1; index < parts.length; index++) {
+        if (current == null) {
+            return unresolvedExpressionBinding;
+        }
+        const key = resolvePropertyKey(current, parts[index]);
+        if (key === unresolvedExpressionBinding) {
+            return unresolvedExpressionBinding;
+        }
+        current = current[key as keyof typeof current];
+    }
+    return current;
+}
+
+function resolveSimpleExpressionRoot(context: any, prop: string, injector: NodeInjector): any {
+    if (context != null && (typeof context === 'object' || typeof context === 'function')) {
+        const key = resolvePropertyKey(context, prop);
+        if (key !== unresolvedExpressionBinding) {
+            return context[key as keyof typeof context];
+        }
+        const scopedContext = resolveScopeContext(context, prop);
+        if (scopedContext != null) {
+            const scopedKey = resolvePropertyKey(scopedContext, prop);
+            if (scopedKey !== unresolvedExpressionBinding) {
+                return scopedContext[scopedKey as keyof typeof scopedContext];
+            }
+        }
+    }
+    return resolveLocalRefValue(injector, prop);
+}
+
+function resolvePropertyKey(target: any, prop: string): string | symbol {
+    if (target == null) {
+        return unresolvedExpressionBinding;
+    }
+    if (Reflect.has(target, prop)) {
+        return prop;
+    }
+    const matchedKey = findCaseInsensitiveKey(target, prop);
+    return matchedKey !== undefined ? matchedKey : unresolvedExpressionBinding;
+}
+
+function resolveMissingExpressionBinding(target: any, prop: string | symbol, injector: NodeInjector): any {
+    if (typeof prop !== 'string') {
+        return unresolvedExpressionBinding;
+    }
+
+    const localRef = resolveLocalRefValue(injector, prop);
+    if (localRef === unresolvedExpressionBinding) {
+        return unresolvedExpressionBinding;
+    }
+
+    target[prop] = localRef;
+    return localRef;
+}
+
+function resolveLocalRefValue(injector: NodeInjector, refName: string): any {
+    const value = injector.getLocalRefValue(refName);
+    return value ?? unresolvedExpressionBinding;
 }
 
 function findCaseInsensitiveKey(target: any, prop: string | symbol): string | symbol | undefined {
@@ -1781,8 +1879,15 @@ function shouldDeferSelectorExpression(expr: string, context: any, injector: Nod
     if (!isSimpleReferenceExpression(trimmed)) {
         return false;
     }
-    const scope = createExpressionScope(context, injector);
-    return !hasExpressionPath(scope, trimmed);
+    if (hasExpressionPath(context, trimmed)) {
+        return false;
+    }
+    const [head, ...rest] = trimmed.split('.');
+    const localRef = resolveLocalRefValue(injector, head);
+    if (localRef === unresolvedExpressionBinding) {
+        return true;
+    }
+    return rest.length > 0 ? !hasExpressionPath(localRef, rest.join('.')) : false;
 }
 
 function isSimpleReferenceExpression(expr: string): boolean {

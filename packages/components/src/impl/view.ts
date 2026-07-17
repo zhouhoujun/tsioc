@@ -7,6 +7,7 @@ import { DirectiveRef } from '../refs/directive';
 import { ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 import { NodeInjector } from '../refs/injector';
+import { LOCAL_REFS } from '../renderer/Node';
 
 /**
  * Embedded view ref implement.
@@ -29,6 +30,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     readonly effect: ReactiveEffect;
     // 添加计算属性缓存
     readonly computedCache = new Map<string, { value: any, deps: Set<any> }>();
+    private _localRefIndex?: Map<string, RNode>;
 
     /**
      * Creates an instance of EmbeddedViewRefImpl.
@@ -70,6 +72,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         // 标记为已销毁
         this._isDestroyed = true;
 
+        this.injector.detachNodes(this.rootNodes);
+
         // 执行所有销毁回调
         this._destroyCallbacks.forEach(callback => callback());
         this._destroyCallbacks = [];
@@ -79,6 +83,31 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         //     this.effect.stop();
         // }
         // this.injector.destroy();
+    }
+
+    get localRefIndex(): Map<string, RNode> {
+        if (!this._localRefIndex) {
+            this._localRefIndex = new Map<string, RNode>();
+            const visit = (nodes: RNode[]) => {
+                for (const node of nodes) {
+                    const refs = (node as any)[LOCAL_REFS] as string[] | undefined;
+                    if (refs?.length) {
+                        refs.forEach(ref => {
+                            const key = ref.toLowerCase();
+                            if (!this._localRefIndex!.has(key)) {
+                                this._localRefIndex!.set(key, node);
+                            }
+                        });
+                    }
+                    const children = (node as any)?.childNodes as RNode[] | undefined;
+                    if (children?.length) {
+                        visit(children);
+                    }
+                }
+            };
+            visit(this.rootNodes);
+        }
+        return this._localRefIndex;
     }
 
     /**

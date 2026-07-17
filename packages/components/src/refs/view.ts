@@ -111,6 +111,7 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
 
   // 添加计算属性缓存
   abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
+  abstract get localRefIndex(): Map<string, any>;
   abstract query<T>(selector: Type<T>): ComponentRef<T> | DirectiveRef<T> | null;
   abstract query<C>(selector: string): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
 
