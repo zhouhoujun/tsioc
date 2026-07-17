@@ -357,22 +357,7 @@ export class AgentConsoleInputPanelComponent {
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
         if (this.state?.selectMenu) {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault?.();
-                this.state.moveSelectMenu(1);
-                return;
-            }
-            if (event.key === 'ArrowUp') {
-                event.preventDefault?.();
-                this.state.moveSelectMenu(-1);
-                return;
-            }
-            if (event.key === 'Tab') {
-                event.preventDefault?.();
-                await this.state.confirmSelectMenu();
-                return;
-            }
-            if (event.key === 'Enter') {
+            if (String(event.key || '').trim().toLowerCase() === 'enter') {
                 event.preventDefault?.();
                 await this.state.processRawChunk('\r', {
                     submitOnEnter: true,
@@ -382,9 +367,8 @@ export class AgentConsoleInputPanelComponent {
                 });
                 return;
             }
-            if (event.key === 'Escape') {
+            if (this.state.handleSelectKey(event.key)) {
                 event.preventDefault?.();
-                await this.state.cancelSelectMenu();
                 return;
             }
         }
@@ -613,7 +597,7 @@ export class AgentConsoleWorkingPanelComponent implements AfterViewInit, OnDestr
                 return;
             }
             this.frame = (this.frame + 1) % Math.max(this.animatedLabel.length, 1);
-        }, 80);
+        }, 200);
         this.frameTimer.unref?.();
     }
 
@@ -1567,7 +1551,7 @@ export class AgentConsoleActivityPanelComponent {
     }
 
     get activities(): AgentConsoleActivity[] {
-        return this.state.activities;
+        return this.state.visibleActivities;
     }
 
     get shellStyle() {

@@ -33,9 +33,12 @@ import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
     `
 })
 export class AgentConsoleComponent implements OnDestroy {
+    protected static readonly STREAM_MESSAGE_FLUSH_MS = 160;
     protected multilineMode = false;
     protected draftLines: string[] = [];
     protected destroyed = false;
+    protected streamMessageTimer?: ReturnType<typeof setTimeout>;
+    protected streamMessageText = '';
 
     constructor(
         private state: AgentConsoleSessionState,
@@ -105,7 +108,10 @@ export class AgentConsoleComponent implements OnDestroy {
         })));
     }
 
-    protected async selectApprovalRequest(requests: AgentConsoleApprovalRequest[]): Promise<AgentConsoleApprovalRequest | undefined> {
+    protected async selectApprovalRequest(
+        requests: AgentConsoleApprovalRequest[],
+        selectedIndex = 0
+    ): Promise<AgentConsoleApprovalRequest | undefined> {
         if (!requests.length) {
             return undefined;
         }
@@ -122,7 +128,7 @@ export class AgentConsoleComponent implements OnDestroy {
                 request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
                 `Timeout: ${request.timeoutMs}ms`
             ].join('\n')
-        })), 0, this.state.consoleOptions.selectCloseHint);
+        })), Math.max(0, Math.min(requests.length - 1, selectedIndex)), this.state.consoleOptions.selectCloseHint);
         return requests.find(request => request.id === selected);
     }
 
@@ -138,53 +144,64 @@ export class AgentConsoleComponent implements OnDestroy {
             ].join('\n'));
             return;
         }
-        const request = await this.selectApprovalRequest(requests);
-        if (!request) {
-            return;
-        }
-        const detail = [
-            `Tool: ${request.toolName}`,
-            `Reason: ${request.reason}`,
-            request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
-            `Timeout: ${request.timeoutMs}ms`
-        ].join('\n');
-        const action = await this.uiDelegate.select(`Approval ${request.id.slice(0, 8)}`, [
-            {
-                label: 'Approve',
-                value: 'approve',
-                description: 'Allow this request',
-                detail
-            },
-            {
-                label: 'Deny',
-                value: 'deny',
-                description: 'Reject this request',
-                detail
-            },
-            {
-                label: 'Copy input',
-                value: 'copy-input',
-                description: 'Copy request input summary',
-                detail
+        let selectedRequestIndex = 0;
+        while (true) {
+            const request = await this.selectApprovalRequest(requests, selectedRequestIndex);
+            if (!request) {
+                return;
             }
-        ], 0, this.state.consoleOptions.selectCloseHint);
-        if (action === 'approve') {
-            const approved = this.approvalManager?.approve(request.id);
-            this.notify(approved
-                ? `Approved ${request.toolName} (${request.id.slice(0, 8)}).`
-                : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
-            return;
-        }
-        if (action === 'deny') {
-            const denied = this.approvalManager?.reject(request.id);
-            this.notify(denied
-                ? `Denied ${request.toolName} (${request.id.slice(0, 8)}).`
-                : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
-            return;
-        }
-        if (action === 'copy-input') {
-            const copied = await this.uiDelegate.copyText(request.inputSummary || request.summary);
-            this.notify(copied ? 'Copied approval input.' : 'Nothing to copy.');
+            selectedRequestIndex = Math.max(0, requests.findIndex(item => item.id === request.id));
+            const detail = [
+                `Tool: ${request.toolName}`,
+                `Reason: ${request.reason}`,
+                request.inputSummary ? `Input: ${request.inputSummary}` : 'Input: -',
+                `Timeout: ${request.timeoutMs}ms`
+            ].join('\n');
+            const action = await this.uiDelegate.select(`Approval ${request.id.slice(0, 8)}`, [
+                {
+                    label: 'Approve',
+                    value: 'approve',
+                    description: 'Allow this request',
+                    detail
+                },
+                {
+                    label: 'Deny',
+                    value: 'deny',
+                    description: 'Reject this request',
+                    detail
+                },
+                {
+                    label: 'Copy input',
+                    value: 'copy-input',
+                    description: 'Copy request input summary',
+                    detail
+                }
+            ], 0, this.state.consoleOptions.selectCloseHint);
+            if (!action) {
+                if (requests.length === 1) {
+                    return;
+                }
+                continue;
+            }
+            if (action === 'approve') {
+                const approved = this.approvalManager?.approve(request.id);
+                this.notify(approved
+                    ? `Approved ${request.toolName} (${request.id.slice(0, 8)}).`
+                    : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+                return;
+            }
+            if (action === 'deny') {
+                const denied = this.approvalManager?.reject(request.id);
+                this.notify(denied
+                    ? `Denied ${request.toolName} (${request.id.slice(0, 8)}).`
+                    : `Approval request ${request.id.slice(0, 8)} is no longer pending.`);
+                return;
+            }
+            if (action === 'copy-input') {
+                const copied = await this.uiDelegate.copyText(request.inputSummary || request.summary);
+                this.notify(copied ? 'Copied approval input.' : 'Nothing to copy.');
+                return;
+            }
         }
     }
 
@@ -453,6 +470,7 @@ export class AgentConsoleComponent implements OnDestroy {
 
     onDestroy(): void {
         this.destroyed = true;
+        this.clearStreamingMessageState();
         this.state.copyFocusedTextAction = undefined;
         this.state.activateSelectedSessionAction = undefined;
         this.state.resolveApprovalAction = undefined;
@@ -763,39 +781,59 @@ export class AgentConsoleComponent implements OnDestroy {
         if (!this.uiDelegate) { return; }
         const currProv = this.state.provider;
         const currModel = this.state.model;
-        const prov = await this.uiDelegate.select('Model providers', this.MODEL_PROVIDER_CHOICES.map((i: any) => ({
-            label: i.label, value: i.provider,
-            description: i.provider
-        })), Math.max(0, this.MODEL_PROVIDER_CHOICES.findIndex((p: any) => p.provider === currProv)));
-        if (!prov) { return; }
-        const models = this.PROVIDER_MODELS[prov] || [];
-        const defModel = this.PROVIDER_DEFAULT_MODELS[prov] || 'custom-model';
-        const strongDef = this.PROVIDER_STRONG_MODELS[prov] || defModel;
-        const flash = models.length
-            ? await this.uiDelegate.select('Flash model for ' + prov, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(currModel)))
-            : await this.uiDelegate.prompt('Flash model [' + defModel + ']:');
-        if (this.isCancelPromptValue(flash)) { return; }
-        if (models.length && !flash) { return; }
-        const flashModel = flash || defModel;
-        const strong = models.length
-            ? await this.uiDelegate.select('Strong model for ' + prov, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(currModel)))
-            : await this.uiDelegate.prompt('Strong model [' + strongDef + ']:');
-        if (this.isCancelPromptValue(strong)) { return; }
-        if (models.length && !strong) { return; }
-        const strongModel = strong || strongDef;
-        let baseUrl = this.PROVIDER_BASE_URLS[prov];
-        if (prov === 'openai-compatible' || prov === 'anthropic') {
+        let provider = currProv;
+        let flashModel = currProv ? currModel : '';
+        let strongModel = currProv ? currModel : '';
+
+        while (true) {
+            const prov = await this.uiDelegate.select('Model providers', this.MODEL_PROVIDER_CHOICES.map((i: any) => ({
+                label: i.label, value: i.provider,
+                description: i.provider
+            })), Math.max(0, this.MODEL_PROVIDER_CHOICES.findIndex((p: any) => p.provider === provider)));
+            if (!prov) { return; }
+            if (prov !== provider) {
+                provider = prov;
+                flashModel = '';
+                strongModel = '';
+            } else {
+                provider = prov;
+            }
+            const models = this.PROVIDER_MODELS[provider] || [];
+            const defModel = flashModel || this.PROVIDER_DEFAULT_MODELS[provider] || 'custom-model';
+            const strongDef = strongModel || this.PROVIDER_STRONG_MODELS[provider] || defModel;
+            const flash = models.length
+                ? await this.uiDelegate.select('Flash model for ' + provider, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(defModel)))
+                : await this.uiDelegate.prompt('Flash model [' + defModel + ']:');
+            if (this.isCancelPromptValue(flash)) { return; }
+            if (models.length && !flash) {
+                continue;
+            }
+            flashModel = flash || defModel;
+
+            const strong = models.length
+                ? await this.uiDelegate.select('Strong model for ' + provider, models.map((m: string) => ({ label: m, value: m })), Math.max(0, models.indexOf(strongDef)))
+                : await this.uiDelegate.prompt('Strong model [' + strongDef + ']:');
+            if (this.isCancelPromptValue(strong)) { return; }
+            if (models.length && !strong) {
+                continue;
+            }
+            strongModel = strong || strongDef;
+            break;
+        }
+
+        let baseUrl = this.PROVIDER_BASE_URLS[provider];
+        if (provider === 'openai-compatible' || provider === 'anthropic') {
             const input = await this.uiDelegate.prompt('Base URL [' + (baseUrl || '') + ']:');
             if (this.isCancelPromptValue(input)) { return; }
             if (input) { baseUrl = input; }
         }
-        const existingApiKey = currProv === prov ? this.options.model?.apiKey : undefined;
+        const existingApiKey = currProv === provider ? this.options.model?.apiKey : undefined;
         const keyLabel = existingApiKey ? '******' : '(required)';
-        const keyInput = await this.uiDelegate.prompt('API key for ' + prov + ' [' + keyLabel + ']:', true);
+        const keyInput = await this.uiDelegate.prompt('API key for ' + provider + ' [' + keyLabel + ']:', true);
         if (this.isCancelPromptValue(keyInput)) { return; }
         const apiKey = keyInput || existingApiKey;
         if (!apiKey) { return; }
-        await this.uiDelegate.applyModelProfile({ provider: prov, flashModel, strongModel, baseUrl, apiKey });
+        await this.uiDelegate.applyModelProfile({ provider, flashModel, strongModel, baseUrl, apiKey });
     }
 
     protected async handleMenuSelection(value: string): Promise<void> {
@@ -832,32 +870,56 @@ export class AgentConsoleComponent implements OnDestroy {
         this.draftLines = [];
         this.multilineMode = false;
         this.state.pushInputHistory(draft);
-        this.state.setInput('');
-        this.state.setStatus('running');
-        this.state.setLastError('');
-        this.state.pushActivity('turn', 'User: ' + this.state.summarize(draft));
+        this.clearStreamingMessageState();
+        const userMsg: AgentMessage = {
+            id: `user-${Date.now()}`,
+            role: 'user',
+            content: prompt,
+            createdAt: Date.now()
+        };
+        const asstMsg: AgentMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: '',
+            createdAt: Date.now(),
+            metadata: { streaming: true }
+        };
+        this.state.batch(() => {
+            this.state.setInput('');
+            this.state.setStatus('running');
+            this.state.setLastError('');
+            this.state.clearActivities();
+            this.state.pushActivity('turn', 'User: ' + this.state.summarize(draft));
+            this.state.setMessages([...this.state.messages, userMsg, asstMsg]);
+        });
         try {
             if (typeof (this.runtime as any).runStreamingTurn === 'function') {
-                const userMsg: any = { id: 'user-' + Date.now(), role: 'user' as any, content: prompt, createdAt: Date.now() };
-                const asstMsg: any = { id: 'asst-' + Date.now(), role: 'assistant' as any, content: '', createdAt: Date.now() };
-                this.state.setMessages([...this.state.messages, userMsg, asstMsg]);
                 const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, prompt);
                 for await (const chunk of stream) {
                     if (chunk.type === 'text' && chunk.content) {
                         asstMsg.content += chunk.content;
-                        this.state.setMessages([...this.state.messages.slice(0, -1), { ...asstMsg }]);
+                        this.scheduleStreamingAssistantMessageFlush(asstMsg);
                     } else if (chunk.type === 'reasoning' && chunk.content) { this.state.setStatus('reasoning'); }
                     else if (chunk.type === 'done' && chunk.usage) { this.state.setTokenUsage(chunk.usage); }
                 }
             } else { await this.runtime.runTurn(this.state.sessionId, prompt); }
-            this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
+            const messages = await this.runtime.getMessages(this.state.sessionId);
+            this.clearStreamingMessageState();
+            this.state.batch(() => {
+                this.state.setMessages(messages);
+                if (this.state.status === 'running' || this.state.status === 'reasoning') {
+                    this.state.setStatus('idle');
+                }
+            });
         } catch (error: any) {
-            this.state.setStatus('error');
-            this.state.setLastError(error.message || 'Unknown');
-            this.state.pushActivity('error', error.message || 'Unknown');
-            this.state.appendAssistantErrorMessage(error.message || 'Unknown');
+            this.clearStreamingMessageState();
+            this.state.batch(() => {
+                this.state.setStatus('error');
+                this.state.setLastError(error.message || 'Unknown');
+                this.state.pushActivity('error', error.message || 'Unknown');
+                this.state.appendAssistantErrorMessage(error.message || 'Unknown');
+            });
         }
-        if (this.state.status === 'running' || this.state.status === 'reasoning') { this.state.setStatus('idle'); }
     }
     async submit(): Promise<void> {
         const value = this.state.input.trim();
@@ -880,36 +942,37 @@ export class AgentConsoleComponent implements OnDestroy {
             return;
         }
         const prompt = this.enrichPromptWithMentions(value);
-        this.state.setInput('');
-        this.state.setStatus('running');
-        this.state.setLastError('');
-        this.state.pushActivity('turn', `User: ${this.state.summarize(value)}`);
+        this.clearStreamingMessageState();
+        const userMessage: AgentMessage = {
+            id: `user-${Date.now()}`,
+            role: 'user',
+            content: prompt,
+            createdAt: Date.now()
+        };
+        const assistantMessage: AgentMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: '',
+            createdAt: Date.now(),
+            metadata: { streaming: true }
+        };
+        this.state.batch(() => {
+            this.state.setInput('');
+            this.state.setStatus('running');
+            this.state.setLastError('');
+            this.state.clearActivities();
+            this.state.pushActivity('turn', `User: ${this.state.summarize(value)}`);
+            this.state.setMessages([...this.state.messages, userMessage, assistantMessage]);
+        });
 
         try {
             if (typeof (this.runtime as any).runStreamingTurn === 'function') {
-                const userMessage: AgentMessage = {
-                    id: `user-${Date.now()}`,
-                    role: 'user',
-                    content: prompt,
-                    createdAt: Date.now()
-                };
-                const assistantMessage: AgentMessage = {
-                    id: `assistant-${Date.now()}`,
-                    role: 'assistant',
-                    content: '',
-                    createdAt: Date.now()
-                };
-                this.state.setMessages([...this.state.messages, userMessage, assistantMessage]);
-
                 try {
                     const stream = (this.runtime as any).runStreamingTurn(this.state.sessionId, prompt);
                     for await (const chunk of stream) {
                         if (chunk.type === 'text' && chunk.content) {
                             assistantMessage.content += chunk.content;
-                            this.state.setMessages([
-                                ...this.state.messages.slice(0, -1),
-                                { ...assistantMessage }
-                            ]);
+                            this.scheduleStreamingAssistantMessageFlush(assistantMessage);
                         } else if (chunk.type === 'reasoning' && chunk.content) {
                             this.state.setStatus('reasoning');
                             this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
@@ -920,25 +983,36 @@ export class AgentConsoleComponent implements OnDestroy {
                         }
                     }
                 } finally {
-                    this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
+                    const messages = await this.runtime.getMessages(this.state.sessionId);
+                    this.clearStreamingMessageState();
+                    this.state.batch(() => {
+                        this.state.setMessages(messages);
+                    });
                 }
             } else {
                 await this.runtime.runTurn(this.state.sessionId, prompt);
-                this.state.setMessages(await this.runtime.getMessages(this.state.sessionId));
+                const messages = await this.runtime.getMessages(this.state.sessionId);
+                this.state.batch(() => {
+                    this.state.setMessages(messages);
+                });
             }
         } catch (error: any) {
             const message = error?.message || String(error || 'Unknown error');
-            this.state.setStatus('error');
-            this.state.setLastError(message);
-            this.state.pushActivity('error', message);
-            this.state.appendAssistantErrorMessage(message);
+            this.state.batch(() => {
+                this.state.setStatus('error');
+                this.state.setLastError(message);
+                this.state.pushActivity('error', message);
+                this.state.appendAssistantErrorMessage(message);
+            });
         }
 
         await this.refreshTools();
-        if (this.state.status === 'running' || this.state.status === 'reasoning') {
-            this.state.setStatus('idle');
-        }
-        this.state.setTasksCount(this.scheduler.getTasks().length);
+        this.state.batch(() => {
+            if (this.state.status === 'running' || this.state.status === 'reasoning') {
+                this.state.setStatus('idle');
+            }
+            this.state.setTasksCount(this.scheduler.getTasks().length);
+        });
     }
 
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {
@@ -953,7 +1027,56 @@ export class AgentConsoleComponent implements OnDestroy {
     }
 
     dispose(): void {
+        this.clearStreamingMessageState();
         this.bridge.dispose();
+    }
+
+    protected scheduleStreamingAssistantMessageFlush(message: AgentMessage): void {
+        const shouldFlushImmediately = !this.streamMessageText;
+        this.streamMessageText = message.content || '';
+        if (shouldFlushImmediately) {
+            this.flushStreamingAssistantMessage(message);
+            return;
+        }
+        if (this.streamMessageTimer || this.destroyed) {
+            return;
+        }
+        this.streamMessageTimer = setTimeout(() => {
+            this.streamMessageTimer = undefined;
+            this.flushStreamingAssistantMessage(message);
+        }, AgentConsoleComponent.STREAM_MESSAGE_FLUSH_MS);
+    }
+
+    protected flushStreamingAssistantMessage(message?: AgentMessage): void {
+        if (this.streamMessageTimer) {
+            clearTimeout(this.streamMessageTimer);
+            this.streamMessageTimer = undefined;
+        }
+        if (this.destroyed) {
+            this.streamMessageText = '';
+            return;
+        }
+        const current = this.state.messages.slice();
+        const last = current[current.length - 1];
+        if (last?.role === 'assistant') {
+            current[current.length - 1] = {
+                ...(message || last),
+                content: this.streamMessageText,
+                metadata: {
+                    ...(message?.metadata || last.metadata || {}),
+                    streaming: true
+                }
+            };
+            this.state.setMessages(current);
+        }
+    }
+
+    protected clearStreamingMessageState(): void {
+        if (this.streamMessageTimer) {
+            clearTimeout(this.streamMessageTimer);
+            this.streamMessageTimer = undefined;
+        }
+        this.streamMessageText = '';
     }
 
     protected async refreshTools(): Promise<void> {

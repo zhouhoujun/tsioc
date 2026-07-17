@@ -217,6 +217,7 @@ export interface TuiTerminalSurfaceOptions {
     placeCursor?: boolean | (() => boolean);
     cursorMode?: 'prompt' | 'bottom' | (() => 'prompt' | 'bottom');
     stablePrefixRows?: number | ((lines: string[]) => number);
+    stableRegionId?: string | string[];
     scheduler?: (task: () => void) => void;
 }
 
@@ -305,7 +306,7 @@ export class TuiTerminalSurface {
             lines,
             regions: layout.regions,
             width,
-            stablePrefixRows: this.resolveStablePrefixRows(lines),
+            stablePrefixRows: this.resolveStablePrefixRows(lines, layout.regions || []),
             cursorRow,
             cursorTarget: this.resolvePlaceCursor() ? cursorTarget : undefined,
             cursorMode,
@@ -346,11 +347,27 @@ export class TuiTerminalSurface {
         return value || 'prompt';
     }
 
-    protected resolveStablePrefixRows(lines: string[]): number {
+    protected resolveStablePrefixRows(lines: string[], regions: TerminalRenderRegion[] = []): number {
+        const regionIds = this.resolveStableRegionIds();
+        if (regionIds.length) {
+            const matching = regions
+                .filter(region => regionIds.includes(region.id))
+                .sort((left, right) => left.startRow - right.startRow)[0];
+            if (matching) {
+                return Math.max(0, Math.min(matching.startRow, lines.length));
+            }
+        }
         const configured = typeof this.options.stablePrefixRows === 'function'
             ? this.options.stablePrefixRows(lines)
             : this.options.stablePrefixRows;
         return Math.max(0, Math.min(Math.floor(configured || 0), lines.length));
+    }
+
+    protected resolveStableRegionIds(): string[] {
+        const configured = this.options.stableRegionId;
+        return (Array.isArray(configured) ? configured : [configured])
+            .map(value => String(value || '').trim())
+            .filter(Boolean);
     }
 
     protected resolveOutput(): { write(value: string): void; on?(event: string, listener: () => void): void; off?(event: string, listener: () => void): void } | undefined {
@@ -1726,9 +1743,11 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
         previous.stablePrefixRows,
         previous.paintedLines.length
     ));
+    const commonPrefixRows = resolveCommonPrefixRowCount(previous.paintedLines, fittedLines);
     const stablePrefixExtendsPrevious = previous.renderKey.startsWith('inline:')
         && width === previous.paintedWidth
         && previous.cursorMode === 'prompt'
+        && previousStablePrefixRows > 0
         && stablePrefixRows >= previousStablePrefixRows
         && previous.paintedLines.slice(0, previousStablePrefixRows).every((line, index) => line === fittedLines[index]);
 
@@ -1761,6 +1780,26 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
             appendedLines.length ? `\n${appendedLines.join('\n')}` : ''
         ].join('');
         terminalRow = fittedLines.length ? fittedLines.length - 1 : 0;
+    } else if (previous.renderKey.startsWith('inline:')
+        && width === previous.paintedWidth
+        && commonPrefixRows > 0) {
+        const previousTerminalRow = Math.max(0, Math.min(
+            previous.terminalRow ?? previous.cursorRow,
+            Math.max(0, previous.paintedLines.length - 1)
+        ));
+        const commands: string[] = ['\r'];
+        const delta = commonPrefixRows - previousTerminalRow;
+        if (delta < 0) {
+            commands.push(`\x1b[${Math.abs(delta)}A`);
+        } else if (delta > 0) {
+            commands.push(`\x1b[${delta}B`);
+        }
+        commands.push('\x1b[J');
+        const updatedLines = fittedLines.slice(commonPrefixRows);
+        output = `${commands.join('')}${updatedLines.length ? updatedLines.join('\n') : ''}`;
+        terminalRow = updatedLines.length
+            ? commonPrefixRows + updatedLines.length - 1
+            : Math.max(0, Math.min(commonPrefixRows, Math.max(0, fittedLines.length - 1)));
     } else {
         const previousAnchorRow = Math.max(0, Math.min(
             previous.terminalRow ?? previous.cursorRow,
@@ -1786,6 +1825,15 @@ export function renderPrimaryTerminalScreen(options: TerminalPrimaryRenderOption
         changed: true,
         state: createNextState(placed.terminalRow)
     };
+}
+
+function resolveCommonPrefixRowCount(previousLines: string[], nextLines: string[]): number {
+    const max = Math.min(previousLines.length, nextLines.length);
+    let index = 0;
+    while (index < max && previousLines[index] === nextLines[index]) {
+        index++;
+    }
+    return index;
 }
 
 export function formatDisplayDraft(value: string, cursor: number): string {

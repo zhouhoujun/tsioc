@@ -231,6 +231,8 @@ export class AgentConsoleSessionState {
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
+    protected notificationBatchDepth = 0;
+    protected notificationPending = false;
 
     configure(meta: AgentConsoleSessionMeta): this {
         if (meta.sessionId) {
@@ -284,7 +286,24 @@ export class AgentConsoleSessionState {
         };
     }
 
+    batch<T>(work: () => T): T {
+        this.notificationBatchDepth += 1;
+        try {
+            return work();
+        } finally {
+            this.notificationBatchDepth = Math.max(0, this.notificationBatchDepth - 1);
+            if (!this.notificationBatchDepth && this.notificationPending) {
+                this.notificationPending = false;
+                Array.from(this.listeners.values()).forEach(listener => listener());
+            }
+        }
+    }
+
     notify(): void {
+        if (this.notificationBatchDepth > 0) {
+            this.notificationPending = true;
+            return;
+        }
         Array.from(this.listeners.values()).forEach(listener => listener());
     }
 
@@ -311,6 +330,14 @@ export class AgentConsoleSessionState {
         return this.activities.filter(activity => activity.kind !== 'turn');
     }
 
+    clearActivities(): void {
+        if (!this.activities.length) {
+            return;
+        }
+        this.activities = [];
+        this.notify();
+    }
+
     setMessages(messages: AgentMessage[]): void {
         this.messages = messages;
         if (!this.messages.length) {
@@ -318,12 +345,13 @@ export class AgentConsoleSessionState {
             this.messageDetailOpen = false;
             this.messageDetailScroll = 0;
             this.messageDetailColumnScroll = 0;
-        } else if (this.selectedMessageId && this.messages.some(item => item.id === this.selectedMessageId)) {
-            // Preserve explicit message selection when possible.
         } else {
-            this.selectedMessageId = this.messages[this.messages.length - 1].id;
-            this.messageDetailScroll = 0;
-            this.messageDetailColumnScroll = 0;
+            const shouldFollowLatest = !this.messagesFocused && !this.messageDetailOpen;
+            if (shouldFollowLatest || !this.selectedMessageId || !this.messages.some(item => item.id === this.selectedMessageId)) {
+                this.selectedMessageId = this.messages[this.messages.length - 1].id;
+                this.messageDetailScroll = 0;
+                this.messageDetailColumnScroll = 0;
+            }
         }
         this.notify();
     }
@@ -935,24 +963,30 @@ export class AgentConsoleSessionState {
     }
 
     handleSelectKey(key: string): boolean {
+        const normalized = String(key || '').trim().toLowerCase();
         if (!this.selectMenu || !this.selectMenu.options.length) { return false; }
-        switch (key) {
+        switch (normalized) {
+            case 'arrowup':
             case 'up':
                 this.moveSelectMenu(-1);
                 return true;
+            case 'arrowdown':
             case 'down':
                 this.moveSelectMenu(1);
                 return true;
+            case 'enter':
+            case 'tab':
             case 'return':
                 void this.confirmSelectMenu();
                 return true;
+            case 'esc':
             case 'escape':
             case 'q':
                 void this.cancelSelectMenu();
                 return true;
             default:
-                if (/^[1-9]$/.test(key)) {
-                    const idx = parseInt(key, 10) - 1;
+                if (/^[1-9]$/.test(normalized)) {
+                    const idx = parseInt(normalized, 10) - 1;
                     if (idx < this.selectMenu.options.length) {
                         void this.chooseSelectMenuIndex(idx);
                         return true;
@@ -1024,6 +1058,13 @@ export class AgentConsoleSessionState {
         return this.selectMenu.options[this.selectMenu.selectedIndex];
     }
 
+    protected shouldSubmitConfirmedSelectMenuValue(menu: AgentConsoleSelectMenu | undefined, value?: string): boolean {
+        return !!menu
+            && isAgentConsoleSuggestionMenu(menu)
+            && String(value || '').startsWith('/')
+            && !!this.submitAction;
+    }
+
     async confirmSelectMenu(value?: string): Promise<string | undefined> {
         const resolved = value ?? this.selectedSelectMenuOption?.value;
         const action = this.selectMenuAction;
@@ -1031,6 +1072,30 @@ export class AgentConsoleSessionState {
         this.closeSelectMenu();
         await action?.(resolved);
         return resolved;
+    }
+
+    async acceptSelectMenu(value?: string): Promise<{ value: string | undefined; submitted: boolean }> {
+        const menu = this.selectMenu;
+        const resolved = await this.confirmSelectMenu(value);
+        const submitted = this.shouldSubmitConfirmedSelectMenuValue(menu, resolved);
+        if (submitted) {
+            await this.submitAction?.();
+        }
+        return {
+            value: resolved,
+            submitted
+        };
+    }
+
+    async acceptSelectMenuIndex(index: number): Promise<{ value: string | undefined; submitted: boolean }> {
+        if (!this.selectMenu || !this.selectMenu.options.length) {
+            return {
+                value: undefined,
+                submitted: false
+            };
+        }
+        this.setSelectMenuIndex(index);
+        return this.acceptSelectMenu(this.selectedSelectMenuOption?.value);
     }
 
     async chooseSelectMenuIndex(index: number): Promise<void> {
@@ -1361,13 +1426,8 @@ export class AgentConsoleSessionState {
         let submitted = next.shouldSubmit;
 
         if (next.shouldConfirmSelection && this.selectMenu) {
-            const shouldSubmitSelectedCommand = isAgentConsoleSuggestionMenu(this.selectMenu)
-                && String(this.selectedSelectMenuOption?.value || '').startsWith('/');
-            const resolved = await this.confirmSelectMenu();
-            if (shouldSubmitSelectedCommand && resolved && this.submitAction) {
-                void this.submitAction();
-                submitted = true;
-            }
+            const accepted = await this.acceptSelectMenu();
+            submitted = submitted || accepted.submitted;
         } else {
             this.refreshInputSuggestions();
         }

@@ -296,6 +296,31 @@ export class AgentConsoleRendererTest {
         }
     }
 
+    @Test('activity panel hides turn activities and renders only visible activity kinds')
+    async renderActivityPanelFiltersTurns() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(ConsoleRenderer);
+            const activityPanel = consoleRef.hostView.query(AgentConsoleActivityPanelComponent) as ComponentRef<AgentConsoleActivityPanelComponent>;
+
+            consoleRef.instance.sessionState.pushActivity('turn', 'User: hello');
+            consoleRef.instance.sessionState.pushActivity('error', 'submit failed');
+            await Promise.resolve();
+
+            const lines = renderer.renderToLines(activityPanel.hostView.rootNodes[0]);
+            expect(lines.some((line: string) => line.includes('turn:'))).toBe(false);
+            expect(lines.some((line: string) => line.includes('error:'))).toBe(true);
+            expect(lines.some((line: string) => line.includes('submit failed'))).toBe(true);
+        } finally {
+            await tuiCtx.close();
+        }
+    }
+
     @Test('terminal surface updates working state and input from shared component state')
     async terminalSurfaceUpdatesSharedState() {
         const tuiCtx = await Application.run(AgentModule, {
@@ -338,6 +363,37 @@ export class AgentConsoleRendererTest {
                 .some(line => line.includes('Working'))).toBe(true);
         } finally {
             surface?.destroy();
+            await tuiCtx.close();
+        }
+    }
+
+    @Test('renders the latest visible message content without a stable tail region')
+    async rendersLatestVisibleMessageWithoutStableTailRegion() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const componentFactory = tuiCtx.get(ComponentFactory);
+            const consoleRef = componentFactory.create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const messagesPanel = consoleRef.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+
+            consoleRef.instance.sessionState.setMessages([
+                { id: 'u1', role: 'user', content: 'keep-me', createdAt: 1 } as any,
+                { id: 'a1', role: 'assistant', content: 'grow', createdAt: 2 } as any
+            ]);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            const layout = renderer.renderToTuiLayout(messagesPanel.hostView.rootNodes[0], { width: 80 });
+            const tailRegion = layout.regions.find(region => region.id === 'message-tail');
+            expect(tailRegion).toBeUndefined();
+            const rendered = layout.lines
+                .map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, ''))
+                .join('\n');
+            expect(rendered).toContain('grow');
+        } finally {
             await tuiCtx.close();
         }
     }

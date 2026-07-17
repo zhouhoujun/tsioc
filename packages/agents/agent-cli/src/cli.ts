@@ -1400,7 +1400,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             return;
         }
         if (consoleState?.selectMenu) {
-            void consoleState.confirmSelectMenu().then(() => {
+            const confirmSelection = consoleState.acceptSelectMenu || consoleState.confirmSelectMenu;
+            void confirmSelection.call(consoleState).then(() => {
                 syncDraftFromConsoleState();
             });
             return;
@@ -1429,7 +1430,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             selectMenu.selectedIndex = index;
         }
         if (consoleState?.selectMenu) {
-            void consoleState.chooseSelectMenuIndex(index).then(() => {
+            const confirmIndex = consoleState.acceptSelectMenuIndex || consoleState.chooseSelectMenuIndex;
+            void confirmIndex.call(consoleState, index).then(() => {
                 syncDraftFromConsoleState();
             });
             return;

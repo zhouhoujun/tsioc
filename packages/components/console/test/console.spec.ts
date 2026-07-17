@@ -159,6 +159,21 @@ class ConsoleShowHostTestComponent {
 }
 
 @Component({
+    selector: 'console-stable-region-test',
+    template: `
+    <section>
+        <label>Header</label>
+        <div renderRegion="body">
+            <label>{{message}}</label>
+        </div>
+    </section>
+    `
+})
+class ConsoleStableRegionTestComponent {
+    message = 'short';
+}
+
+@Component({
     selector: 'console-panel-test',
     template: `
     <section style="background: #102218; color: #d8ffea; padding: 1; border: 1px solid #29543d;">
@@ -411,6 +426,79 @@ export class ConsoleRendererTest {
 
             expect(surface.lastRenderedLines.some(line => line.includes('Working'))).toBe(true);
             expect(output.join('')).toContain('Working');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('keeps stable prefix when a tracked region grows')
+    async keepsStablePrefixWhenTrackedRegionGrows() {
+        const ctx = await Application.run(ConsoleStableRegionTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const output: string[] = [];
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleStableRegionTestComponent) as ComponentRef<ConsoleStableRegionTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 12,
+                output: { write: value => output.push(value) },
+                stableRegionId: 'body',
+                scheduler: task => task()
+            });
+
+            const initialWrites = output.length;
+            ref.instance.message = '12345678901234567890';
+
+            expect(surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual([
+                'Header',
+                '123456789012',
+                '34567890'
+            ]);
+            const lastWrite = output.slice(initialWrites).join('');
+            expect(lastWrite).not.toContain('Header');
+            expect(lastWrite).toContain('123456789012');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
+    @Test('keeps common prefix when trailing content grows without tracked regions')
+    async keepsCommonPrefixWhenTrailingContentGrowsWithoutTrackedRegions() {
+        const ctx = await Application.run(ConsoleStableRegionTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        const output: string[] = [];
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleStableRegionTestComponent) as ComponentRef<ConsoleStableRegionTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            const root = ref.hostView.rootNodes[0] as ConsoleElement;
+            surface = new TuiTerminalSurface({
+                renderer,
+                root,
+                width: 12,
+                output: { write: value => output.push(value) },
+                scheduler: task => task()
+            });
+
+            const initialWrites = output.length;
+            ref.instance.message = '12345678901234567890';
+
+            expect(surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''))).toEqual([
+                'Header',
+                '123456789012',
+                '34567890'
+            ]);
+            const lastWrite = output.slice(initialWrites).join('');
+            expect(lastWrite).not.toContain('Header');
+            expect(lastWrite).toContain('123456789012');
         } finally {
             surface?.destroy();
             await ctx.close();

@@ -3,6 +3,7 @@ import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
     AgentConsoleMarkdownTone,
+    flattenAgentConsoleMarkdownLine,
     renderAgentConsoleMarkdownLines
 } from './AgentConsoleMarkdown';
 import { AgentConsoleTheme, defaultAgentConsoleTheme, styleTextToObject } from './AgentConsoleTheme';
@@ -23,6 +24,7 @@ export interface AgentConsoleRenderedLine {
     itemStyle?: Record<string, string>;
     lineStyle?: Record<string, string>;
     tone?: AgentConsoleMarkdownTone;
+    renderRegion?: string;
 }
 
 export interface AgentConsoleRenderedMessageItem {
@@ -30,6 +32,7 @@ export interface AgentConsoleRenderedMessageItem {
     templateKind: AgentConsoleMessageTemplateKind;
     selected: boolean;
     itemStyle: Record<string, string>;
+    renderRegion?: string;
     lines: AgentConsoleRenderedLine[];
 }
 
@@ -111,7 +114,9 @@ export function renderAgentConsoleMessageItem(
     const rowSelected = !!(selected && context.messagesFocused);
     const itemStyle = renderer.itemStyle(theme, rowSelected);
     const inlineRowStyle = resolveInlineRowStyle(itemStyle);
-    const markdownLines = renderAgentConsoleMarkdownLines(message?.content || '', { compactBlankLines: true });
+    const markdownLines = message?.metadata?.streaming
+        ? renderAgentConsolePlainTextLines(message?.content || '', { compactBlankLines: true })
+        : renderAgentConsoleMarkdownLines(message?.content || '', { compactBlankLines: true });
     const fallbackLine = renderer.roleLabel === 'agent'
         ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
         : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
@@ -150,6 +155,37 @@ export function renderAgentConsoleMessageItem(
         itemStyle,
         lines
     };
+}
+
+function renderAgentConsolePlainTextLines(
+    content: string,
+    options: { compactBlankLines?: boolean } = {}
+): AgentConsoleMarkdownLine[] {
+    const lines = String(content || '')
+        .replace(/\r/g, '')
+        .split('\n')
+        .map(rawText => ({
+            rawText,
+            tokens: rawText ? [{ text: rawText }] as AgentConsoleMarkdownToken[] : []
+        }));
+    if (!options.compactBlankLines) {
+        return lines;
+    }
+    const normalized: AgentConsoleMarkdownLine[] = [];
+    lines.forEach(line => {
+        const text = flattenAgentConsoleMarkdownLine(line).trim();
+        if (!text && (!normalized.length || !flattenAgentConsoleMarkdownLine(normalized[normalized.length - 1]).trim())) {
+            return;
+        }
+        normalized.push(line);
+    });
+    while (normalized.length && !flattenAgentConsoleMarkdownLine(normalized[0]).trim()) {
+        normalized.shift();
+    }
+    while (normalized.length && !flattenAgentConsoleMarkdownLine(normalized[normalized.length - 1]).trim()) {
+        normalized.pop();
+    }
+    return normalized;
 }
 
 export function resolveMessageTemplateKind(message?: AgentMessage | null): AgentConsoleMessageTemplateKind {

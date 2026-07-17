@@ -39,4 +39,21 @@ export class AgentConsoleMessageRendererDispatchTest {
             metadata: { error: true }
         } as any)).toEqual('error');
     }
+
+    @Test('keeps streaming assistant content as plain text until completion')
+    renderStreamingAssistantAsPlainText() {
+        const items = renderAgentConsoleMessageItems([
+            {
+                id: 'a1',
+                role: 'assistant',
+                content: '**bold**\n```ts\nconst x = 1;\n```',
+                createdAt: 1,
+                metadata: { streaming: true }
+            }
+        ] as any);
+
+        expect(items[0].lines[0].content).toEqual('**bold**');
+        expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(true);
+        expect(items[0].lines.some(line => line.content.includes('const x = 1;'))).toBe(true);
+    }
 }

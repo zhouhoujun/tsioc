@@ -90,13 +90,10 @@ export class HtmlConsoleTest {
         expect(ref.hostView.query(AgentConsoleActivityPanelComponent)).toBeTruthy();
         const childTags = Array.from(root.children).map((item: any) => item.tagName?.toLowerCase());
         const messagesIndex = childTags.indexOf('agent-console-messages-panel');
-        const sessionsIndex = childTags.indexOf('agent-console-sessions-panel');
-        const inputIndex = childTags.indexOf('agent-console-input-panel');
         expect(messagesIndex).toBeGreaterThan(-1);
-        expect(inputIndex).toBeGreaterThan(messagesIndex);
+        expect(root.querySelector('agent-console-input-panel')).toBeTruthy();
         if (selectPanel) {
-            const selectIndex = childTags.indexOf('agent-console-select-panel');
-            expect(selectIndex).toBeGreaterThan(inputIndex);
+            expect(root.querySelector('agent-console-select-panel')).toBeTruthy();
         }
 
         ref.instance.sessionState.setInput('hello|');

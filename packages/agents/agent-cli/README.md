@@ -237,7 +237,7 @@ Behavior of this example:
 ## Built-in chat commands
 
 - `/model`: switch provider / model and persist it to the default workspace config
-- `/tools`: inspect the currently available tools
+- `/tools`: focus the on-screen tool list, then use `up/down`, `pgup/pgdn`, `home/end`, `y`, and `esc`
 - `/help`: show command help
 - `/multiline`: toggle multiline input
 - `/send`: send the buffered draft

@@ -241,6 +241,21 @@ export class AgentConsoleComponentTest {
         expect(component.runningTools).toEqual([]);
     }
 
+    @Test('submit clears stale visible activities from the previous turn')
+    async submitClearsStaleVisibleActivities() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        component.sessionState.pushActivity('error', 'old failure');
+        component.sessionState.pushActivity('tool', 'old tool run');
+
+        component.input = 'hello';
+        await component.submit();
+
+        expect(component.sessionState.visibleActivities).toEqual([]);
+        expect(component.lastError).toEqual('');
+    }
+
     @Test('submit exposes running state before the turn completes')
     async submitExposesRunningStateBeforeCompletion() {
         const runtime = new RuntimeStub();
@@ -654,6 +669,36 @@ export class AgentConsoleComponentTest {
         }]);
     }
 
+    @Test('model switch returns to provider menu when model menu is cancelled')
+    async modelSwitchReturnsToProviderMenuWhenModelMenuIsCancelled() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+        (component as any).options.model = {
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            apiKey: 'existing-key'
+        };
+        component.configure({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash'
+        });
+        uiDelegate.nextSelections = ['openai', undefined, 'deepseek', 'deepseek-v4-flash', 'deepseek-v4-pro'];
+        uiDelegate.nextPrompts = [''];
+
+        component.input = '/model';
+        await component.submit();
+
+        expect(uiDelegate.appliedProfiles).toEqual([{
+            provider: 'deepseek',
+            flashModel: 'deepseek-v4-flash',
+            strongModel: 'deepseek-v4-pro',
+            baseUrl: 'https://api.deepseek.com',
+            apiKey: 'existing-key'
+        }]);
+    }
+
     @Test('clear command starts a new session after submit')
     async clearCommandStartsNewSessionAfterSubmit() {
         const runtime = new RuntimeStub();
@@ -710,6 +755,42 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.approvalsFocused).toEqual(true);
         expect(component.sessionState.selectedApproval?.id).toEqual('approval-1');
         expect(approvals.approved).toEqual([]);
+    }
+
+    @Test('approval inspector returns to request menu when detail menu is cancelled')
+    async approvalInspectorReturnsToRequestMenuWhenDetailMenuIsCancelled() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        const approvals = new ApprovalManagerStub();
+        approvals.pending = [{
+            id: 'approval-1',
+            toolName: 'write_file',
+            sessionId: 'console',
+            reason: 'Writing files requires approval.',
+            summary: 'Writing files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"notes.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }, {
+            id: 'approval-2',
+            toolName: 'delete_file',
+            sessionId: 'console',
+            reason: 'Deleting files requires approval.',
+            summary: 'Deleting files requires approval.',
+            hasInput: true,
+            inputSummary: '{"path":"old.txt"}',
+            createdAt: Date.now(),
+            timeoutMs: 30000
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate, approvals);
+        uiDelegate.nextSelections = ['approval-1', undefined, 'approval-2', 'approve'];
+
+        await (component as any).openApprovalInspector(approvals.getPending());
+
+        expect(approvals.approved).toEqual(['approval-2']);
+        expect(uiDelegate.notices).toContain('Approved delete_file (approval).');
     }
 
     @Test('tools command focuses tool panel instead of opening modal')
@@ -827,6 +908,26 @@ export class AgentConsoleComponentTest {
         await panel.onKeydown({ key: 'Enter', preventDefault() {} } as KeyboardEvent);
 
         expect(resolved).toEqual(['/tools']);
+        expect(state.selectMenu).toEqual(undefined);
+    }
+
+    @Test('input panel closes normal select menus with q and escape')
+    async inputPanelClosesNormalSelectMenusWithQAndEscape() {
+        const state = new AgentConsoleSessionState();
+        const panel = new AgentConsoleInputPanelComponent(state);
+
+        state.openSelectMenu('Help', [
+            { label: '/model', value: '/model' },
+            { label: '/tools', value: '/tools' }
+        ], 1);
+        await panel.onKeydown({ key: 'q', preventDefault() {} } as KeyboardEvent);
+        expect(state.selectMenu).toEqual(undefined);
+
+        state.openSelectMenu('Help', [
+            { label: '/model', value: '/model' },
+            { label: '/tools', value: '/tools' }
+        ], 1);
+        await panel.onKeydown({ key: 'Escape', preventDefault() {} } as KeyboardEvent);
         expect(state.selectMenu).toEqual(undefined);
     }
 
@@ -1149,6 +1250,35 @@ export class AgentConsoleComponentTest {
         expect(state.messagesFocused).toEqual(false);
     }
 
+    @Test('session state follows the latest message when not browsing messages')
+    sessionStateFollowsLatestMessageWhenNotBrowsing() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any,
+            { id: 'm2', role: 'assistant', content: 'world', createdAt: 2 } as any
+        ]);
+
+        state.setSelectedMessageId('m1');
+        expect(state.selectedMessageId).toEqual('m1');
+
+        state.setMessages([
+            { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any,
+            { id: 'm2', role: 'assistant', content: 'world', createdAt: 2 } as any,
+            { id: 'm3', role: 'user', content: 'next', createdAt: 3 } as any
+        ]);
+        expect(state.selectedMessageId).toEqual('m3');
+
+        state.setMessagesFocused(true);
+        state.setSelectedMessageId('m1');
+        state.setMessages([
+            { id: 'm1', role: 'user', content: 'hello', createdAt: 1 } as any,
+            { id: 'm2', role: 'assistant', content: 'world', createdAt: 2 } as any,
+            { id: 'm3', role: 'user', content: 'next', createdAt: 3 } as any,
+            { id: 'm4', role: 'assistant', content: 'reply', createdAt: 4 } as any
+        ]);
+        expect(state.selectedMessageId).toEqual('m1');
+    }
+
     @Test('session state supports message detail open and scroll')
     sessionStateSupportsMessageDetailOpenAndScroll() {
         const state = new AgentConsoleSessionState();
@@ -1257,6 +1387,19 @@ export class AgentConsoleComponentTest {
         
         // Escape cancels
         state.handleSelectKey('escape');
+        expect(state.selectMenu).toBeUndefined();
+    }
+
+    @Test('handleSelectKey treats q like escape for select menus')
+    handleSelectKeyTreatsQAsEscapeForSelectMenus() {
+        const state = new AgentConsoleSessionState();
+        state.openSelectMenu('Test', [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' }
+        ]);
+
+        state.handleSelectKey('q');
+
         expect(state.selectMenu).toBeUndefined();
     }
 
