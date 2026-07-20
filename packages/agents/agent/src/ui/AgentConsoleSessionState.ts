@@ -1026,12 +1026,11 @@ export class AgentConsoleSessionState {
             case 'return':
                 void this.confirmSelectMenu();
                 return true;
-            case 'esc':
-            case 'escape':
-            case 'q':
-                void this.cancelSelectMenu();
-                return true;
             default:
+                if (this.isDismissKey(normalized)) {
+                    void this.cancelSelectMenu();
+                    return true;
+                }
                 if (/^[1-9]$/.test(normalized)) {
                     const idx = parseInt(normalized, 10) - 1;
                     if (idx < this.selectMenu.options.length) {
@@ -1039,6 +1038,17 @@ export class AgentConsoleSessionState {
                         return true;
                     }
                 }
+                return false;
+        }
+    }
+
+    protected isDismissKey(key: string): boolean {
+        switch (String(key || '').trim().toLowerCase()) {
+            case 'esc':
+            case 'escape':
+            case 'q':
+                return true;
+            default:
                 return false;
         }
     }
@@ -1305,6 +1315,10 @@ export class AgentConsoleSessionState {
             return false;
         }
         if (this.messageDetailOpen) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
             switch (normalized) {
                 case 'copy':
                     await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
@@ -1333,14 +1347,15 @@ export class AgentConsoleSessionState {
                 case 'end':
                     this.scrollMessageDetailToEdge('end');
                     return true;
-                case 'escape':
-                    await this.dismissFocusLayer();
-                    return true;
                 default:
                     return false;
             }
         }
         if (this.messagesFocused) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
             switch (normalized) {
                 case 'copy':
                     await this.copyFocusedTextAction?.(this.selectedMessage?.content || '', 'selected message');
@@ -1366,14 +1381,15 @@ export class AgentConsoleSessionState {
                 case 'enter':
                     this.openMessageDetail();
                     return true;
-                case 'escape':
-                    await this.dismissFocusLayer();
-                    return true;
                 default:
                     return false;
             }
         }
         if (this.approvalsFocused) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
             switch (normalized) {
                 case 'copy':
                     await this.copyFocusedTextAction?.(this.buildSelectedApprovalCopyText(), 'selected approval');
@@ -1408,14 +1424,15 @@ export class AgentConsoleSessionState {
                 case 'end':
                     this.selectLastApproval();
                     return true;
-                case 'escape':
-                    await this.dismissFocusLayer();
-                    return true;
                 default:
                     return false;
             }
         }
         if (this.toolsFocused) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
             switch (normalized) {
                 case 'copy':
                     await this.copyFocusedTextAction?.(this.selectedTool?.name || '', 'tool name');
@@ -1438,14 +1455,15 @@ export class AgentConsoleSessionState {
                 case 'end':
                     this.selectLastTool();
                     return true;
-                case 'escape':
-                    await this.dismissFocusLayer();
-                    return true;
                 default:
                     return false;
             }
         }
         if (this.sessionsFocused) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
             switch (normalized) {
                 case 'copy':
                     await this.copyFocusedTextAction?.(this.selectedSession?.id || '', 'session id');
@@ -1474,9 +1492,6 @@ export class AgentConsoleSessionState {
                         return true;
                     }
                     return false;
-                case 'escape':
-                    await this.dismissFocusLayer();
-                    return true;
                 default:
                     return false;
             }

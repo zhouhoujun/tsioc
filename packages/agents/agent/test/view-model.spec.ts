@@ -5,7 +5,7 @@ import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent } from '../src/ui/AgentConsoleComponent';
 import { AgentConsoleEventBridge } from '../src/ui/AgentConsoleEventBridge';
-import { AgentConsoleInputPanelComponent } from '../src/ui/AgentConsolePanels';
+import { AgentConsoleInputPanelComponent, AgentConsoleSelectPanelComponent } from '../src/ui/AgentConsolePanels';
 import { AgentConsoleApprovalRequest, AgentConsoleSessionState } from '../src/ui/AgentConsoleSessionState';
 import { AgentConsoleSessionChoice, AgentConsoleUiDelegate, ModelProfile, SavedModelProfileChoice } from '../src/ui/AgentConsoleUiDelegate';
 import { AgentConsoleWorkspaceMentionsProvider } from '../src/ui/AgentConsoleWorkspaceMentions';
@@ -1106,6 +1106,26 @@ export class AgentConsoleComponentTest {
         expect(state.selectMenu).toEqual(undefined);
     }
 
+    @Test('select panel closes menus with q and esc aliases')
+    async selectPanelClosesMenusWithDismissKeys() {
+        const state = new AgentConsoleSessionState();
+        const panel = new AgentConsoleSelectPanelComponent(state);
+
+        state.openSelectMenu('Help', [
+            { label: '/model', value: '/model' },
+            { label: '/tools', value: '/tools' }
+        ], 1);
+        await panel.onKeydown({ key: 'Q', preventDefault() {} } as KeyboardEvent);
+        expect(state.selectMenu).toEqual(undefined);
+
+        state.openSelectMenu('Help', [
+            { label: '/model', value: '/model' },
+            { label: '/tools', value: '/tools' }
+        ], 1);
+        await panel.onKeydown({ key: 'Esc', preventDefault() {} } as KeyboardEvent);
+        expect(state.selectMenu).toEqual(undefined);
+    }
+
     @Test('escape dismisses focused layers back to input focus')
     async escapeDismissesFocusedLayersBackToInputFocus() {
         const state = new AgentConsoleSessionState();
@@ -1149,6 +1169,29 @@ export class AgentConsoleComponentTest {
         await state.dismissFocusLayer();
         expect(state.approvalsFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
+    }
+
+    @Test('handleFocusKey treats q like escape for focused panels')
+    async handleFocusKeyTreatsQAsDismissAcrossFocusedPanels() {
+        const state = new AgentConsoleSessionState();
+        state.setSessions([
+            { id: 'default', current: true, messageCount: 1, updatedAt: 1 } as any
+        ]);
+        state.setSessionsFocused(true);
+
+        expect(await state.handleFocusKey('Q')).toEqual(true);
+        expect(state.sessionsFocused).toEqual(false);
+        expect(state.inputFocused).toEqual(true);
+
+        state.setMessages([
+            { id: 'm1', role: 'assistant', content: 'hello', createdAt: 1 } as any
+        ]);
+        state.setMessagesFocused(true);
+        state.openMessageDetail();
+
+        expect(await state.handleFocusKey('Esc')).toEqual(true);
+        expect(state.messageDetailOpen).toEqual(false);
+        expect(state.messagesFocused).toEqual(true);
     }
 
     @Test('submit failure resets ui state and records error')

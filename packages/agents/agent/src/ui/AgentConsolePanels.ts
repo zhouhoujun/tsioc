@@ -1634,14 +1634,15 @@ export class AgentConsoleActivityPanelComponent {
     selector: 'agent-console-select-panel',
     imports: CONSOLE_FORM_IMPORTS,
     template: `
-    <div class="console-panel console-select-panel">
-        <div class="select-shell" v-style="shellStyle">
+        <div class="console-panel console-select-panel">
+            <div class="select-shell" v-style="shellStyle">
             <select class="select-core"
                 options="{{menuOptionsJson}}"
                 selectedIndex="{{menuSelectedIndexText}}"
                 visibleCount="{{visibleOptionCountText}}"
                 optionActiveStyle="{{activeTheme.selectOptionActive}}"
-                optionStyle="{{activeTheme.selectOption}}"></select>
+                optionStyle="{{activeTheme.selectOption}}"
+                @keydown="onKeydown($event)"></select>
         </div>
     </div>
     `
@@ -1749,5 +1750,14 @@ export class AgentConsoleSelectPanelComponent {
 
     async selectOption(value: string): Promise<void> {
         await (this.selectAction || this.state.confirmSelectMenu.bind(this.state))(value);
+    }
+
+    async onKeydown(event: KeyboardEvent): Promise<void> {
+        if (!this.menu) {
+            return;
+        }
+        if (this.state.handleSelectKey(event.key)) {
+            event.preventDefault?.();
+        }
     }
 }
