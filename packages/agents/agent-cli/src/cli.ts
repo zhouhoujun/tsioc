@@ -1550,6 +1550,16 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
         const decodedInput = terminalInputDecoder.decode(chunk);
         if (decodedInput.partial) {
+            // Standalone Escape (\u001b) is treated as partial because it could be
+            // the start of an escape sequence like \u001b[A. In practice, escape
+            // sequences arrive atomically from the terminal emulator, so standalone
+            // \u001b always means the user pressed the Escape key.
+            // Cancel the blocking menu immediately rather than waiting for more
+            // input (which would never arrive and would corrupt the next keypress).
+            const raw = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
+            if (raw === '\u001b' && hasBlockingSelectMenu()) {
+                cancelActiveMenuSelection();
+            }
             return;
         }
         const rawText = decodedInput.text;

@@ -557,9 +557,14 @@ export function resolveTerminalMenuInputKey(
     if (keyName && keyName !== 'escape') {
         return keyName;
     }
-    const rawText = String(text || '');
-    if (options.blockingMenu && /^[1-9q]$/.test(rawText)) {
-        return rawText;
+    if (options.blockingMenu) {
+        if (keyName === 'escape') {
+            return 'escape';
+        }
+        const rawText = String(text || '');
+        if (/^[1-9q]$/.test(rawText)) {
+            return rawText;
+        }
     }
     return '';
 }
