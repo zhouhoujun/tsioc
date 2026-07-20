@@ -1097,7 +1097,7 @@ export class AgentConsoleMessageTokensComponent {
     imports: [LabelComponent, SpanDirective, AgentConsoleMessageTokensComponent],
     template: `
     <label class="message-line" v-style="itemStyle">
-        <span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="tokens"></agent-console-message-tokens></span>
+        <span v-style="statusStyle">{{status}}</span><span v-style="roleStyle" v-show="role">{{role}}</span><span v-style="prefixStyle" v-show="prefix">{{prefix}}</span><span v-style="lineStyle"><agent-console-message-tokens :tokens="tokens"></agent-console-message-tokens></span>
     </label>
     `
 })
@@ -1110,6 +1110,14 @@ export class AgentConsoleMessageLineComponent {
 
     get role(): string {
         return this.line?.role || '';
+    }
+
+    get status(): string {
+        return this.line?.status || '';
+    }
+
+    get statusStyle(): Record<string, string> {
+        return this.line?.statusStyle || {};
     }
 
     get roleStyle(): Record<string, string> {
@@ -1144,6 +1152,7 @@ const messageItemsCache = new WeakMap<object, {
     selectedMessageId: string;
     messagesFocused: boolean;
     theme: AgentConsoleTheme;
+    consoleOptions: AgentConsoleSessionState['consoleOptions'];
     visibleItems: number;
     items: AgentConsoleRenderedMessageItem[];
 }>();
@@ -1211,6 +1220,7 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
         <label class="message-line" v-style="line.itemStyle" v-for="line in renderedLines">
+            <span v-style="line.statusStyle">{{line.status}}</span>
             <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
             <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
             <span v-style="line.lineStyle">{{line.content}}</span>
@@ -1231,7 +1241,7 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get messages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
-        return this.state.messages;
+        return this.state.displayMessages;
     }
 
     get shellStyle() {
@@ -1265,6 +1275,7 @@ export class AgentConsoleMessagesPanelComponent {
         const selectedMessageId = this.state.selectedMessageId;
         const messagesFocused = this.state.messagesFocused;
         const visibleItems = this.state.consoleOptions.messagesVisibleItems;
+        const consoleOptions = this.state.consoleOptions;
         const cached = messageItemsCache.get(this);
 
         if (cached
@@ -1272,6 +1283,7 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.selectedMessageId === selectedMessageId
             && cached.messagesFocused === messagesFocused
             && cached.theme === theme
+            && cached.consoleOptions === consoleOptions
             && cached.visibleItems === visibleItems) {
             return cached.items;
         }
@@ -1279,13 +1291,16 @@ export class AgentConsoleMessagesPanelComponent {
         const items = renderAgentConsoleMessageItems(this.visibleMessages as any, {
             theme: this.activeTheme,
             selectedMessageId: this.state.selectedMessageId,
-            messagesFocused: this.state.messagesFocused
+            messagesFocused: this.state.messagesFocused,
+            statusLabels: this.state.consoleOptions.messageStatusLabels,
+            statusSymbol: this.state.consoleOptions.messageStatusSymbol
         });
         messageItemsCache.set(this, {
             messages,
             selectedMessageId,
             messagesFocused,
             theme,
+            consoleOptions,
             visibleItems,
             items
         });
@@ -1303,7 +1318,7 @@ export class AgentConsoleMessagesPanelComponent {
 
     get messageLabels(): string[] {
         return this.messageItems.flatMap(item => item.lines).map(line =>
-            `${line.role || ''}${line.prefix || ''}${line.content}`
+            `${line.status || ''}${line.role || ''}${line.prefix || ''}${line.content}`
         );
     }
 
@@ -1394,13 +1409,14 @@ export class AgentConsoleMessageDetailPanelComponent {
             return '';
         }
         const role = String(this.selectedMessage.role || 'system').toLowerCase();
-        const selectedIndex = Math.max(0, this.state.messages.findIndex(item => item.id === this.selectedMessage?.id));
+        const displayMessages = this.state.displayMessages;
+        const selectedIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessage?.id));
         const total = this.contentLines.length;
         const start = Math.min(total, this.state.messageDetailScroll + 1);
         const end = Math.min(total, this.state.messageDetailScroll + this.visibleLines.length);
         const column = this.state.messageDetailColumnScroll + 1;
         const totalColumns = Math.max(1, this.state.messageDetailMaxColumn);
-        return `message ${selectedIndex + 1}/${this.state.messages.length} ${role}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+        return `message ${selectedIndex + 1}/${displayMessages.length} ${role}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
     }
 
     get detailHintLabel(): string {

@@ -56,7 +56,7 @@ export class AgentConsoleRendererTest {
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
-        expect(messageLines.some(line => !line.includes('agent>') && line.includes('world'))).toBe(true);
+        expect(messageLines.some(line => line.includes('●') && line.includes('world'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleSessionsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleInputPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
@@ -64,6 +64,36 @@ export class AgentConsoleRendererTest {
         expect(ref.hostView.query(AgentConsoleToolRunsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleMessagesPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleActivityPanelComponent)).toBeTruthy();
+    }
+
+    @Test('renders shared reply statuses in messages panel')
+    async renderMessageStatuses() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            {
+                id: 'a1',
+                role: 'assistant',
+                content: 'streaming response',
+                createdAt: 1,
+                metadata: { streaming: true }
+            } as any,
+            {
+                id: 'e1',
+                role: 'assistant',
+                content: 'Error: broken',
+                createdAt: 2,
+                metadata: { error: true }
+            } as any
+        ]);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+
+        expect(messageLines.some(line => line.includes('●') && line.includes('streaming response'))).toBe(true);
+        expect(messageLines.some(line => line.includes('●') && line.includes('Error: broken'))).toBe(true);
     }
 
     @Test('renders working line with token usage while running')

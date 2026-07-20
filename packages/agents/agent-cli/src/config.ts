@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import { resolveAgentWorkspacePath } from '@tsdi/agent';
 import { AGENT_CHANNEL_GROUPS, AgentChannelsOptions } from '@tsdi/agent-channels';
 import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSettingsList, resolveAgentToolDiscovery, loadEnvFiles } from '@tsdi/agent-tools';
 
@@ -26,6 +27,15 @@ export interface AgentCliModelRoute {
     };
 }
 
+export interface AgentCliSavedModelProfile {
+    name: string;
+    provider: string;
+    flashModel: string;
+    strongModel: string;
+    baseUrl?: string;
+    apiKey?: string;
+}
+
 export interface AgentCliProviderProfile {
     provider: string;
     model: string;
@@ -46,6 +56,8 @@ export interface AgentCliProviderProfile {
         simpleMaxScore?: number;
         moderateMaxScore?: number;
     };
+    savedProfiles?: Record<string, AgentCliSavedModelProfile>;
+    activeSavedProfile?: string;
 }
 
 export interface AgentCliOptions {
@@ -142,6 +154,37 @@ function sanitizeModelProfile(model: Record<string, any>): Partial<AgentCliProvi
             delete next.complexityRouting;
         }
     }
+    if (next.savedProfiles && typeof next.savedProfiles === 'object' && !Array.isArray(next.savedProfiles)) {
+        const sanitizedSavedProfiles = Object.entries(next.savedProfiles as Record<string, any>)
+            .reduce((profiles, [name, profile]) => {
+                if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+                    return profiles;
+                }
+                const provider = String(profile.provider || '').trim();
+                const flashModel = String(profile.flashModel || '').trim();
+                const strongModel = String(profile.strongModel || '').trim();
+                if (!provider || !flashModel || !strongModel) {
+                    return profiles;
+                }
+                profiles[name] = {
+                    name: String(profile.name || name),
+                    provider,
+                    flashModel,
+                    strongModel,
+                    baseUrl: profile.baseUrl ? String(profile.baseUrl) : undefined,
+                    apiKey: profile.apiKey ? String(profile.apiKey) : undefined
+                };
+                return profiles;
+            }, {} as Record<string, AgentCliSavedModelProfile>);
+        if (Object.keys(sanitizedSavedProfiles).length) {
+            next.savedProfiles = sanitizedSavedProfiles;
+        } else {
+            delete next.savedProfiles;
+        }
+    }
+    if (next.activeSavedProfile && (!next.savedProfiles || !next.savedProfiles[next.activeSavedProfile])) {
+        delete next.activeSavedProfile;
+    }
     return next as Partial<AgentCliProviderProfile>;
 }
 
@@ -237,18 +280,17 @@ function writeJsonObject(filePath: string, value: Record<string, any>): string {
     return filePath;
 }
 
-function resolveLaunchWorkspace(): string {
-    let current = process.cwd();
-    while (true) {
-        if (fs.existsSync(path.join(current, '.git'))) {
-            return current;
-        }
-        const parent = path.dirname(current);
-        if (parent === current) {
-            return process.cwd();
-        }
-        current = parent;
-    }
+export function resolveLaunchWorkspace(): string {
+    return resolveAgentWorkspacePath({
+        currentDirectory: process.cwd(),
+        fallbackWorkspace: process.cwd(),
+        adapter: {
+            resolve: (...paths) => path.resolve(...paths),
+            join: (...paths) => path.join(...paths),
+            existsSync: (target) => fs.existsSync(target)
+        },
+        dirname: (target) => path.dirname(target)
+    });
 }
 
 export function resolveProviderProfile(root: string): AgentCliProviderProfile | undefined {
@@ -305,9 +347,26 @@ export function writeSettingsModelProfile(root: string, profile: Partial<AgentCl
     return writeJsonObject(settingsPath, next);
 }
 
+export function writeInteractiveModelProfile(root: string, profile: AgentCliProviderProfile): string {
+    const resolvedRoot = path.resolve(root);
+    const settingsPath = path.join(resolvedRoot, 'settings.json');
+    const current = readJsonObject(settingsPath);
+    return writeJsonObject(settingsPath, {
+        ...current,
+        model: profile as Record<string, any>
+    });
+}
+
 export function writeProviderProfile(root: string, profile: AgentCliProviderProfile): string {
     const providerPath = path.join(root, 'provider.json');
     return writeJsonObject(providerPath, profile as Record<string, any>);
+}
+
+export function listSavedModelProfiles(profile?: Partial<AgentCliProviderProfile>): AgentCliSavedModelProfile[] {
+    const savedProfiles = profile?.savedProfiles || {};
+    return Object.values(savedProfiles)
+        .filter((item): item is AgentCliSavedModelProfile => !!item && !!item.name && !!item.provider && !!item.flashModel && !!item.strongModel)
+        .sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export function ensureAgentWorkspaceConfig(root: string, workspaceDirName = 'workspace'): string {

@@ -1,10 +1,14 @@
 import expect = require('expect');
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleComponent } from '../src/ui/AgentConsoleComponent';
 import { AgentConsoleEventBridge } from '../src/ui/AgentConsoleEventBridge';
 import { AgentConsoleInputPanelComponent } from '../src/ui/AgentConsolePanels';
 import { AgentConsoleApprovalRequest, AgentConsoleSessionState } from '../src/ui/AgentConsoleSessionState';
-import { AgentConsoleSessionChoice, AgentConsoleUiDelegate, ModelProfile } from '../src/ui/AgentConsoleUiDelegate';
+import { AgentConsoleSessionChoice, AgentConsoleUiDelegate, ModelProfile, SavedModelProfileChoice } from '../src/ui/AgentConsoleUiDelegate';
+import { AgentConsoleWorkspaceMentionsProvider } from '../src/ui/AgentConsoleWorkspaceMentions';
 import {
     AgentApprovalCompletedEvent,
     AgentApprovalFailedEvent,
@@ -15,6 +19,7 @@ import {
     AgentToolFailedEvent,
     AgentToolInvokedEvent
 } from '../src/runtime/AgentEvents';
+import { NodeFileAdapter } from '../../../platform-server/common/src/file';
 
 class RuntimeStub {
     calls: string[] = [];
@@ -109,6 +114,7 @@ class UiDelegateStub extends AgentConsoleUiDelegate {
     copiedTexts: string[] = [];
     switchedSessions: Array<string | undefined> = [];
     sessions: AgentConsoleSessionChoice[] = [];
+    modelProfiles: SavedModelProfileChoice[] = [];
     nextSelections: Array<string | undefined> = [];
     nextPrompts: Array<string | undefined> = [];
     promptQuestions: string[] = [];
@@ -149,6 +155,10 @@ class UiDelegateStub extends AgentConsoleUiDelegate {
 
     override async switchSession(sessionId?: string): Promise<void> {
         this.switchedSessions.push(sessionId);
+    }
+
+    override async listModelProfiles(): Promise<SavedModelProfileChoice[]> {
+        return this.modelProfiles.slice();
     }
 
     async applyModelProfile(profile: ModelProfile): Promise<void> {
@@ -194,7 +204,8 @@ function createConsoleParts(
     toolRegistry?: ToolRegistryStub,
     app?: ApplicationContextStub,
     uiDelegate?: AgentConsoleUiDelegate,
-    approvalManager?: ApprovalManagerStub
+    approvalManager?: ApprovalManagerStub,
+    workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider
 ) {
     const state = new AgentConsoleSessionState();
     const bridge = new AgentConsoleEventBridge(state, runtime as any, toolRegistry as any, app as any);
@@ -207,7 +218,8 @@ function createConsoleParts(
         toolRegistry as any,
         uiDelegate as any,
         undefined,
-        approvalManager as any
+        approvalManager as any,
+        workspaceMentionsProvider as any
     );
     return { state, bridge, component };
 }
@@ -218,9 +230,45 @@ function createConsole(
     toolRegistry?: ToolRegistryStub,
     app?: ApplicationContextStub,
     uiDelegate?: AgentConsoleUiDelegate,
-    approvalManager?: ApprovalManagerStub
+    approvalManager?: ApprovalManagerStub,
+    workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider
 ): AgentConsoleComponent {
-    return createConsoleParts(runtime, scheduler, toolRegistry, app, uiDelegate, approvalManager).component;
+    return createConsoleParts(runtime, scheduler, toolRegistry, app, uiDelegate, approvalManager, workspaceMentionsProvider).component;
+}
+
+function createWorkspaceFixture(): string {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-mentions-'));
+    fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
+    fs.mkdirSync(path.join(workspace, 'docs', 'guides'), { recursive: true });
+    fs.writeFileSync(path.join(workspace, 'src', 'index.ts'), 'export const demo = 1;\n', 'utf8');
+    fs.writeFileSync(path.join(workspace, 'docs', 'guides', 'intro.md'), '# Intro\nworkspace mention test\n', 'utf8');
+    return workspace;
+}
+
+function createWorkspaceMentionsProvider(): AgentConsoleWorkspaceMentionsProvider {
+    return new AgentConsoleWorkspaceMentionsProvider(new NodeFileAdapter());
+}
+
+async function flushWorkspaceSuggestions(): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, 0));
+}
+
+async function waitForSuggestionMenu(state: AgentConsoleSessionState, attempts = 10): Promise<void> {
+    for (let index = 0; index < attempts; index++) {
+        if (state.selectMenu?.options?.length) {
+            return;
+        }
+        await flushWorkspaceSuggestions();
+    }
+}
+
+async function waitForCondition(check: () => boolean, attempts = 10): Promise<void> {
+    for (let index = 0; index < attempts; index++) {
+        if (check()) {
+            return;
+        }
+        await Promise.resolve();
+    }
 }
 
 @Suite('Agent console component')
@@ -239,6 +287,23 @@ export class AgentConsoleComponentTest {
         expect(component.status).toEqual('idle');
         expect(component.activities.length).toBeGreaterThan(0);
         expect(component.runningTools).toEqual([]);
+    }
+
+    @Test('submit keeps short follow-up answers raw before runtime request construction')
+    async submitKeepsContinuationAnswerRaw() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        component.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: '请告诉我你想查看哪个城市或地区的今天天气。', createdAt: 2 } as any
+        ]);
+        component.input = '成都';
+
+        await component.submit();
+
+        expect(runtime.calls).toHaveLength(1);
+        expect(runtime.calls[0]).toEqual('console:成都');
     }
 
     @Test('submit clears stale visible activities from the previous turn')
@@ -276,7 +341,7 @@ export class AgentConsoleComponentTest {
         const component = createConsole(runtime, scheduler, new ToolRegistryStub());
         component.input = 'hello';
         const submitPromise = component.submit();
-        await Promise.resolve();
+        await waitForCondition(() => component.status === 'running' && typeof releaseTurn === 'function');
         expect(component.status).toEqual('running');
         expect(typeof releaseTurn).toEqual('function');
         releaseTurn();
@@ -494,6 +559,35 @@ export class AgentConsoleComponentTest {
         expect(state.selectMenu).toEqual(undefined);
     }
 
+    @Test('session state resolves workspace file and folder suggestions from mention input')
+    async sessionStateResolvesWorkspaceMentionSuggestions() {
+        const workspace = createWorkspaceFixture();
+        try {
+            const state = new AgentConsoleSessionState();
+            state.setWorkspace(workspace);
+            state.setWorkspaceMentionResolver(createWorkspaceMentionsProvider());
+
+            state.setInput('check @sr', 'check @sr'.length);
+            await waitForSuggestionMenu(state);
+            expect(state.selectMenu?.title).toEqual('Suggestions');
+            expect(state.selectMenu?.options.map(option => option.value)).toContain('@src/');
+
+            state.setInput('check @src/in', 'check @src/in'.length);
+            await waitForSuggestionMenu(state);
+            expect(state.selectMenu?.options.map(option => option.value)).toContain('@src/index.ts');
+
+            state.setInput('check @guides/in', 'check @guides/in'.length);
+            await waitForSuggestionMenu(state);
+            expect(state.selectMenu?.options.map(option => option.value)).toContain('@docs/guides/intro.md');
+
+            state.setInput('check @int', 'check @int'.length);
+            await waitForSuggestionMenu(state);
+            expect(state.selectMenu?.options.map(option => option.value)).toContain('@docs/guides/intro.md');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('session state processes raw enter chunks through shared console input rules')
     async sessionStateProcessesRawEnterChunks() {
         const state = new AgentConsoleSessionState();
@@ -614,6 +708,34 @@ export class AgentConsoleComponentTest {
         expect(runtime.calls[0]).toContain('Tool read_file: toolset=filesystem, active=no');
     }
 
+    @Test('submit enriches workspace file and directory mentions inside agent ui')
+    async submitEnrichesWorkspaceMentionsInsideAgentUi() {
+        const workspace = createWorkspaceFixture();
+        try {
+            const runtime = new RuntimeStub();
+            const scheduler = new SchedulerStub();
+            const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, createWorkspaceMentionsProvider());
+            component.configure({
+                sessionId: 'chat-workspace-mentions',
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                workspace
+            });
+            await component.onInit();
+
+            component.input = 'check @src/index.ts and @docs/';
+            await component.submit();
+
+            expect(runtime.calls[0]).toContain('[Mention Context]');
+            expect(runtime.calls[0]).toContain('File src/index.ts:');
+            expect(runtime.calls[0]).toContain('export const demo = 1;');
+            expect(runtime.calls[0]).toContain('Directory docs:');
+            expect(runtime.calls[0]).toContain('guides/');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('component delegates session and copy commands through ui delegate')
     async componentDelegatesSessionAndCopyCommandsThroughUiDelegate() {
         const runtime = new RuntimeStub();
@@ -644,7 +766,7 @@ export class AgentConsoleComponentTest {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const uiDelegate = new UiDelegateStub();
-        uiDelegate.nextSelections = ['openai-compatible'];
+        uiDelegate.nextSelections = ['__edit_current__', 'openai-compatible'];
         uiDelegate.nextPrompts = ['', '', 'https://api.compat.local', ''];
         const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
         (component as any).options.model = {
@@ -684,7 +806,7 @@ export class AgentConsoleComponentTest {
             provider: 'deepseek',
             model: 'deepseek-v4-flash'
         });
-        uiDelegate.nextSelections = ['openai', undefined, 'deepseek', 'deepseek-v4-flash', 'deepseek-v4-pro'];
+        uiDelegate.nextSelections = ['__edit_current__', 'openai', undefined, 'deepseek', 'deepseek-v4-flash', 'deepseek-v4-pro'];
         uiDelegate.nextPrompts = [''];
 
         component.input = '/model';
@@ -696,6 +818,59 @@ export class AgentConsoleComponentTest {
             strongModel: 'deepseek-v4-pro',
             baseUrl: 'https://api.deepseek.com',
             apiKey: 'existing-key'
+        }]);
+    }
+
+    @Test('model switch selects saved config without prompting for api key')
+    async modelSwitchSelectsSavedConfigWithoutPromptingForApiKey() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        uiDelegate.modelProfiles = [{
+            name: 'openai-work',
+            provider: 'openai',
+            flashModel: 'gpt-4o-mini',
+            strongModel: 'gpt-4.1',
+            baseUrl: 'https://api.openai.com',
+            active: false
+        }];
+        uiDelegate.nextSelections = ['saved:openai-work'];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+
+        component.input = '/model';
+        await component.submit();
+
+        expect(uiDelegate.promptQuestions).toEqual([]);
+        expect(uiDelegate.appliedProfiles).toEqual([{
+            configName: 'openai-work',
+            provider: 'openai',
+            flashModel: 'gpt-4o-mini',
+            strongModel: 'gpt-4.1',
+            baseUrl: 'https://api.openai.com'
+        }]);
+    }
+
+    @Test('model switch create new config prompts for api key')
+    async modelSwitchCreateNewConfigPromptsForApiKey() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const uiDelegate = new UiDelegateStub();
+        uiDelegate.nextSelections = ['__create_new__', 'openai'];
+        uiDelegate.nextPrompts = ['new-openai', 'new-api-key'];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, uiDelegate);
+
+        component.input = '/model';
+        await component.submit();
+
+        expect(uiDelegate.promptQuestions).toContain('Config name [openai__gpt-4o-mini__gpt-4.1]:');
+        expect(uiDelegate.promptQuestions).toContain('API key for openai [required]:');
+        expect(uiDelegate.appliedProfiles).toEqual([{
+            configName: 'new-openai',
+            provider: 'openai',
+            flashModel: 'gpt-4o-mini',
+            strongModel: 'gpt-4.1',
+            baseUrl: 'https://api.openai.com',
+            apiKey: 'new-api-key'
         }]);
     }
 
@@ -1277,6 +1452,24 @@ export class AgentConsoleComponentTest {
             { id: 'm4', role: 'assistant', content: 'reply', createdAt: 4 } as any
         ]);
         expect(state.selectedMessageId).toEqual('m1');
+    }
+
+    @Test('session state hides tool messages and blank assistant tool-call placeholders from visible navigation')
+    sessionStateHidesToolMessagesFromVisibleNavigation() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            { id: 'u1', role: 'user', content: '查天气', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: '', createdAt: 2, metadata: { toolCalls: [{ id: 'tc1', name: 'weather' }] } } as any,
+            { id: 't1', role: 'tool', content: '{"location":"成都"}', createdAt: 3 } as any,
+            { id: 'a2', role: 'assistant', content: '成都当前天气：晴', createdAt: 4 } as any
+        ]);
+
+        expect(state.displayMessages.map(message => message.id)).toEqual(['u1', 'a2']);
+        expect(state.selectedMessage?.id).toEqual('a2');
+
+        state.setMessagesFocused(true);
+        state.moveMessageSelection(-1);
+        expect(state.selectedMessage?.id).toEqual('u1');
     }
 
     @Test('session state supports message detail open and scroll')

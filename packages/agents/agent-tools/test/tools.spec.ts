@@ -83,8 +83,10 @@ import { ProjectIntelTool } from '../project/project-intel.tool';
 import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS, withProjectAgentTools, withProcessAgentTools } from '../src/provider';
 import { AgentToolsModule } from '../src/agent-tools.module';
 import { resolveAgentRootSettings } from '../src/settings';
+import { buildSandboxEnv, extractCommandName, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter } from '@tsdi/agent';
+import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
 import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool } from '../browser';
 import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as ExportedSessionsListTool, SessionsHistoryTool as ExportedSessionsHistoryTool } from '../sessions';
@@ -2658,6 +2660,74 @@ export class AgentToolsPackageTest {
         expect(timeoutError?.message).toContain('timeout');
     }
 
+    @Test('shared sandbox policy resolves command rules and filters env')
+    sharedSandboxPolicyResolvesCommandRulesAndFiltersEnv() {
+        const policy = resolveSandboxPolicy({
+            sandbox: {
+                allowedCommands: ['node', 'npm'],
+                blockedCommands: ['rm'],
+                inheritEnv: true,
+                allowedEnv: ['PATH', 'SAFE_TOKEN'],
+                blockedEnv: ['SAFE_TOKEN']
+            }
+        } as any);
+        expect(policy.allowedCommands).toEqual(['node', 'npm']);
+        expect(policy.blockedCommands).toEqual(['rm']);
+        expect(extractCommandName('SAFE=1 node -e "console.log(1)"')).toEqual('node');
+        expect(buildSandboxEnv({ PATH: '/bin', SAFE_TOKEN: 'secret', HOME: '/tmp' }, policy)).toEqual({ PATH: '/bin' });
+    }
+
+    @Test('terminal tool applies shared sandbox command and env policy')
+    async terminalToolAppliesSharedSandboxPolicy() {
+        const workspace = await this.createWorkspace();
+        const previous = process.env.AGENT_TOOLS_SECRET;
+        process.env.AGENT_TOOLS_SECRET = 'hidden';
+        try {
+            const tool = new TerminalTool({
+                file: { rootDir: workspace },
+                terminal: { defaultTimeoutMs: 2000, maxTimeoutMs: 3000 },
+                sandbox: { blockedEnv: ['AGENT_TOOLS_SECRET'] }
+            } as any);
+            const result = await tool.invoke({ command: 'printf %s "${AGENT_TOOLS_SECRET:-missing}"' }, createSessionContext());
+            expect(result.stdout).toEqual('missing');
+        } finally {
+            if (previous == null) {
+                delete process.env.AGENT_TOOLS_SECRET;
+            } else {
+                process.env.AGENT_TOOLS_SECRET = previous;
+            }
+        }
+
+        let blocked: Error | undefined;
+        try {
+            await new TerminalTool({
+                file: { rootDir: workspace },
+                terminal: { defaultTimeoutMs: 2000, maxTimeoutMs: 3000 },
+                sandbox: { blockedCommands: ['printf'] }
+            } as any).invoke({ command: 'printf ok' }, createSessionContext());
+        } catch (err) {
+            blocked = err as Error;
+        }
+        expect(blocked?.message).toContain('blocked by sandbox policy');
+    }
+
+    @Test('process start applies shared sandbox command policy')
+    async processStartAppliesSharedSandboxPolicy() {
+        const workspace = await this.createWorkspace();
+        const tool = new ProcessStartTool(new ProcessRegistry(), {
+            file: { rootDir: workspace },
+            sandbox: { allowedCommands: ['sleep'] }
+        } as any);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({ command: 'printf ok' }, createSessionContext({ sessionId: 'proc-policy' }));
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('not allowed by sandbox policy');
+    }
+
     @Test('spawn agent requires adapter and requests delegation')
     async spawnAgentRequiresAdapterAndRequestsDelegation() {
         let adapter: Error | undefined;
@@ -2682,6 +2752,29 @@ export class AgentToolsPackageTest {
             goalError = err as Error;
         }
         expect(goalError?.message).toContain('goal');
+    }
+
+    @Test('shared spawn adapter delegates through nested agent runner')
+    async sharedSpawnAdapterDelegatesThroughNestedAgentRunner() {
+        const adapter = new DelegatingSpawnAgentAdapter({
+            run: async (request) => ({
+                content: request.prompt,
+                turnCount: 1,
+                toolCalls: 2,
+                model: 'mock'
+            })
+        } as NestedAgentRunner);
+
+        const result = await adapter.spawn({
+            goal: 'analyze project',
+            context: 'focus on risks',
+            toolsets: ['filesystem']
+        });
+
+        expect(result.output).toContain('analyze project');
+        expect(result.output).toContain('focus on risks');
+        expect(result.turnCount).toBe(1);
+        expect(result.toolCalls).toBe(2);
     }
 
     @Test('execute code requires adapter and delegates execution')
@@ -2770,6 +2863,31 @@ export class AgentToolsPackageTest {
         expect(missingAction?.message).toContain('action');
     }
 
+    @Test('git operations apply shared sandbox policy and workspace guard')
+    async gitOperationsApplySharedSandboxPolicyAndWorkspaceGuard() {
+        const workspace = process.cwd();
+        let blocked: Error | undefined;
+        try {
+            await new GitOperationsTool({
+                file: { rootDir: workspace },
+                sandbox: { blockedCommands: ['git'] }
+            } as any).invoke({ action: 'status' }, createSessionContext());
+        } catch (err) {
+            blocked = err as Error;
+        }
+        expect(blocked?.message).toContain('blocked by sandbox policy');
+
+        let outside: Error | undefined;
+        try {
+            await new GitOperationsTool({
+                file: { rootDir: workspace }
+            } as any).invoke({ action: 'status', workdir: '../outside' }, createSessionContext());
+        } catch (err) {
+            outside = err as Error;
+        }
+        expect(outside?.message).toContain('outside');
+    }
+
     @Test('weather tool requires adapter and returns structured data')
     async weatherToolRequiresAdapterAndReturnsStructuredData() {
         let adapter: Error | undefined;
@@ -2788,6 +2906,149 @@ export class AgentToolsPackageTest {
         expect(result.location).toEqual('Beijing');
         expect(result.temperature).toEqual(22);
         expect(result.description).toEqual('sunny');
+    }
+
+    @Test('shared weather adapter fails clearly without configured service')
+    async sharedWeatherAdapterFailsClearlyWithoutConfiguredService() {
+        const adapter = new UnavailableWeatherAdapter();
+        let error: Error | undefined;
+        try {
+            await adapter.getCurrentWeather('Chengdu');
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('Weather service adapter is not configured');
+    }
+
+    @Test('default open-meteo weather adapter resolves current weather and forecast')
+    async defaultOpenMeteoWeatherAdapterResolvesCurrentWeatherAndForecast() {
+        const calls: string[] = [];
+        const adapter = new OpenMeteoWeatherAdapter({
+            fetch: async (input: any) => {
+                const url = String(input);
+                calls.push(url);
+                if (url.includes('/search?')) {
+                    return createJsonResponse({
+                        results: [{ name: 'Chengdu', admin1: 'Sichuan', country: 'China', latitude: 30.67, longitude: 104.06 }]
+                    });
+                }
+                if (url.includes('current=')) {
+                    return createJsonResponse({
+                        current: {
+                            temperature_2m: 31,
+                            apparent_temperature: 34,
+                            relative_humidity_2m: 72,
+                            pressure_msl: 1004,
+                            wind_speed_10m: 8,
+                            weather_code: 3
+                        }
+                    });
+                }
+                return createJsonResponse({
+                    daily: {
+                        time: ['2026-07-20', '2026-07-21'],
+                        temperature_2m_max: [33, 32],
+                        temperature_2m_min: [25, 24],
+                        weather_code: [80, 61]
+                    }
+                });
+            }
+        });
+
+        const current = await adapter.getCurrentWeather('Chengdu');
+        const forecast = await adapter.getForecast('Chengdu', 2);
+
+        expect(calls.some(url => url.includes('geocoding-api.open-meteo.com'))).toBe(true);
+        expect(calls.some(url => url.includes('api.open-meteo.com'))).toBe(true);
+        expect(current.location).toEqual('Chengdu, Sichuan, China');
+        expect(current.description).toEqual('Overcast');
+        expect(forecast.days).toHaveLength(2);
+        expect(forecast.days[0].description).toEqual('Rain showers');
+    }
+
+    @Test('default open-meteo weather adapter retries geocoding with inferred language hints')
+    async defaultOpenMeteoWeatherAdapterRetriesGeocodingWithLanguageHints() {
+        const calls: string[] = [];
+        const adapter = new OpenMeteoWeatherAdapter({
+            fetch: async (input: any) => {
+                const url = String(input);
+                calls.push(url);
+                const parsed = new URL(url);
+                const pathname = parsed.pathname;
+                const name = parsed.searchParams.get('name');
+                const count = parsed.searchParams.get('count');
+                const language = parsed.searchParams.get('language');
+                if (pathname.endsWith('/search') && name === '成都' && count === '1') {
+                    return createJsonResponse({ results: [] });
+                }
+                if (pathname.endsWith('/search') && name === '成都' && count === '10' && language === 'zh') {
+                    return createJsonResponse({
+                        results: [{ name: 'Chengdu', admin1: 'Sichuan', country: 'China', latitude: 30.67, longitude: 104.06 }]
+                    });
+                }
+                if (pathname.endsWith('/search') && name === '成都' && count === '10') {
+                    return createJsonResponse({ results: [] });
+                }
+                return createJsonResponse({
+                    current: {
+                        temperature_2m: 30,
+                        apparent_temperature: 33,
+                        relative_humidity_2m: 70,
+                        pressure_msl: 1005,
+                        wind_speed_10m: 7,
+                        weather_code: 2
+                    }
+                });
+            }
+        });
+
+        const current = await adapter.getCurrentWeather('成都');
+
+        expect(calls.some(url => url.includes('language=zh'))).toBe(true);
+        expect(current.location).toEqual('Chengdu, Sichuan, China');
+        expect(current.temperature).toEqual(30);
+    }
+
+    @Test('provideTools wires default weather adapter from shared options')
+    async provideToolsWiresDefaultWeatherAdapterFromSharedOptions() {
+        const fetch = async (input: any) => {
+            const url = String(input);
+            if (url.includes('/search?')) {
+                return createJsonResponse({
+                    results: [{ name: 'Chengdu', admin1: 'Sichuan', country: 'China', latitude: 30.67, longitude: 104.06 }]
+                });
+            }
+            return createJsonResponse({
+                current: {
+                    temperature_2m: 30,
+                    apparent_temperature: 33,
+                    relative_humidity_2m: 70,
+                    pressure_msl: 1005,
+                    wind_speed_10m: 7,
+                    weather_code: 2
+                }
+            });
+        };
+        const app = await Application.run(AgentModule, {
+            deps: [AgentToolsModule],
+            providers: [...provideTools({
+                weather: {
+                    fetch
+                }
+            }), ...withToolTestAdapters(), {
+                provide: WeatherAdapter,
+                useValue: new OpenMeteoWeatherAdapter({ fetch })
+            }]
+        });
+        try {
+            const tool = app.get(WeatherTool);
+            const result = await tool.invoke({ location: 'Chengdu' }, createSessionContext());
+            expect(result.location).toEqual('Chengdu, Sichuan, China');
+            expect(result.description).toEqual('Partly cloudy');
+            expect(result.temperature).toEqual(30);
+        } finally {
+            await app.close();
+        }
     }
 
     @Test('session search searches session store messages')
@@ -3066,6 +3327,33 @@ export class AgentToolsPackageTest {
         expect(result.content).toEqual('Hello world');
         expect(result.model).toEqual('gpt-4');
         expect(result.usage.totalTokens).toEqual(10);
+    }
+
+    @Test('shared llm task adapter delegates through nested agent runner')
+    async sharedLlmTaskAdapterDelegatesThroughNestedAgentRunner() {
+        const adapter = new DelegatingLlmTaskAdapter({
+            run: async (request) => ({
+                content: request.prompt,
+                turnCount: 1,
+                toolCalls: 0,
+                model: request.model || 'mock-model',
+                finishReason: 'end',
+                usage: { totalTokens: 12 }
+            })
+        } as NestedAgentRunner);
+
+        const result = await adapter.execute({
+            prompt: 'summarize findings',
+            system: 'be direct',
+            model: 'analysis-model',
+            temperature: 0.1,
+            maxTokens: 64
+        });
+
+        expect(result.content).toContain('summarize findings');
+        expect(result.model).toEqual('analysis-model');
+        expect(result.finishReason).toEqual('end');
+        expect(result.usage?.totalTokens).toEqual(12);
     }
 
     @Test('screenshot requires adapter')
@@ -3383,6 +3671,7 @@ export class AgentToolsPackageTest {
 
     @Test('ai cli validates cli name and delegates to adapter')
     async aiCliValidatesCliNameAndDelegatesToAdapter() {
+        const workspace = await this.createWorkspace();
         let cliError: Error | undefined;
         try {
             await new AiCliTool().invoke({ prompt: 'hello', cli: 'invalid' }, createSessionContext());
@@ -3395,8 +3684,10 @@ export class AgentToolsPackageTest {
             async execute(_req: any) {
                 return { stdout: 'refactored code', stderr: '', exitCode: 0, sessionId: 'sess-1' };
             }
+        } as any, {
+            file: { rootDir: workspace }
         } as any);
-        const result = await tool.invoke({ prompt: 'refactor this', cli: 'claude_code', working_directory: '/tmp', timeout_ms: 60000, system_prompt: 'be concise', resume_session_id: 'sess-0' }, createSessionContext());
+        const result = await tool.invoke({ prompt: 'refactor this', cli: 'claude_code', working_directory: 'src', timeout_ms: 60000, system_prompt: 'be concise', resume_session_id: 'sess-0' }, createSessionContext());
         expect(result.stdout).toEqual('refactored code');
         expect(result.exitCode).toEqual(0);
         expect(result.sessionId).toEqual('sess-1');
@@ -3410,6 +3701,34 @@ export class AgentToolsPackageTest {
         const failResult = await failTool.invoke({ prompt: 'test', cli: 'opencode' }, createSessionContext());
         expect(failResult.exitCode).toEqual(1);
         expect(failResult.stderr).toContain('CLI not found');
+    }
+
+    @Test('ai cli resolves working directory through shared workspace policy and blocks forbidden commands')
+    async aiCliResolvesWorkingDirectoryThroughSharedWorkspacePolicyAndBlocksForbiddenCommands() {
+        const workspace = await this.createWorkspace();
+        let receivedWorkingDirectory = '';
+        const tool = new AiCliTool({
+            async execute(request: any) {
+                receivedWorkingDirectory = request.workingDirectory;
+                return { stdout: 'ok', stderr: '', exitCode: 0 };
+            }
+        } as any, {
+            file: { rootDir: workspace }
+        } as any);
+
+        await tool.invoke({ prompt: 'refactor', cli: 'claude_code', working_directory: 'src' }, createSessionContext());
+        expect(receivedWorkingDirectory).toEqual(path.join(workspace, 'src'));
+
+        let blocked: Error | undefined;
+        try {
+            await new AiCliTool(null as any, {
+                file: { rootDir: workspace },
+                sandbox: { blockedCommands: ['claude'] }
+            } as any).invoke({ prompt: 'refactor', cli: 'claude_code' }, createSessionContext());
+        } catch (err) {
+            blocked = err as Error;
+        }
+        expect(blocked?.message).toContain('blocked by sandbox policy');
     }
 
     @Test('group tool registration includes ai_cli group')
@@ -3434,6 +3753,16 @@ function withToolTestAdapters(): any[] {
         { provide: VisionAdapter, useValue: mockVision },
         { provide: ImageGenerationAdapter, useValue: mockImageGen },
     ];
+}
+
+function createJsonResponse(body: any, status = 200): any {
+    return {
+        ok: status >= 200 && status < 300,
+        status,
+        async json() {
+            return body;
+        }
+    };
 }
 
 class MockAdapter {

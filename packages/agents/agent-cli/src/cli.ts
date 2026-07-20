@@ -27,8 +27,14 @@ import {
     resolveTerminalSize,
     TuiTerminalSurface
 } from '@tsdi/components/console';
-import { runAgentApplication, runAgentPrompt, runAgentStreaming } from './run-command';
-import { AgentCliProviderProfile } from './config';
+import { runAgentApplication, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
+import {
+    AgentCliProviderProfile,
+    AgentCliSavedModelProfile,
+    listSavedModelProfiles,
+    resolveLaunchWorkspace,
+    writeInteractiveModelProfile
+} from './config';
 import { CliAgentUiConfigReader } from './agent-ui-config-reader';
 import { TerminalConsoleUiDelegate } from './terminal-ui-delegate';
 import { AgentUiConfigService } from '@tsdi/agent';
@@ -99,6 +105,12 @@ interface ParsedSlashCommandLine {
     raw: string;
     command: string;
     args: string;
+}
+
+export function resolveInteractiveWorkspacePath(options: { workspace?: string }, resolvedWorkspace: string): string {
+    return options.workspace
+        ? path.resolve(options.workspace)
+        : (resolveLaunchWorkspace() || resolvedWorkspace);
 }
 
 function sanitizeSessionId(value: string): string {
@@ -236,6 +248,24 @@ function createAgentCli(): Command {
             }, null, 2) + '\n');
         });
 
+    program
+        .command('rpc-stdio')
+        .description('Start the shared App Server over stdio using JSON-RPC 2.0 JSONL frames.')
+        .option('--session <id>', 'Default session ID for follow-up requests.')
+        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
+        .option('--workspace <dir>', 'Workspace directory for file tools.')
+        .option('--tools <items>', 'Comma-separated tool names or groups to enable.')
+        .option('--no-default-tools', 'Disable default tool groups.')
+        .option('--provider <name>', 'Model provider (deepseek, openai, etc.)')
+        .option('--model <name>', 'Model name.')
+        .option('--base-url <url>', 'API base URL.')
+        .option('--api-key <key>', 'API key.')
+        .option('--api-key-env <name>', 'Env var name for API key.')
+        .option('--timeout <ms>', 'Request timeout in ms.')
+        .action(async (options: any) => {
+            await runAgentRpcStdio(options);
+        });
+
     return program;
 }
 
@@ -250,6 +280,7 @@ async function runInteractiveChat(options: any): Promise<void> {
 
     const config = new AgentUiConfigService(configReader, options);
     const resolved = config.resolve();
+    const interactiveWorkspace = resolveInteractiveWorkspacePath(options, resolved.workspace);
     config.ensureWorkspaceConfig(resolved.root);
     const historyPath = path.join(resolved.root, HISTORY_FILE);
 
@@ -700,7 +731,9 @@ async function runInteractiveChat(options: any): Promise<void> {
     const buildAdaptiveModelProfile = (
         selected: { provider: string; flashModel: string; strongModel: string; baseUrl?: string },
         apiKey: string,
-        timeoutMs: number
+        timeoutMs: number,
+        savedProfiles?: Record<string, AgentCliSavedModelProfile>,
+        activeSavedProfile?: string
     ): AgentCliProviderProfile => {
         return {
             provider: selected.provider,
@@ -709,6 +742,8 @@ async function runInteractiveChat(options: any): Promise<void> {
             baseUrl: selected.baseUrl,
             timeoutMs,
             defaultProfile: 'flash',
+            savedProfiles,
+            activeSavedProfile,
             profiles: {
                 flash: {
                     provider: selected.provider,
@@ -727,6 +762,38 @@ async function runInteractiveChat(options: any): Promise<void> {
                 moderate: 'flash',
                 complex: 'strong'
             }
+        };
+    };
+
+    const upsertSavedModelProfiles = (
+        profile: AgentCliProviderProfile,
+        selection: { provider: string; flashModel: string; strongModel: string; baseUrl?: string },
+        apiKey: string,
+        configName?: string
+    ): { savedProfiles?: Record<string, AgentCliSavedModelProfile>; activeSavedProfile?: string } => {
+        const currentSavedProfiles = listSavedModelProfiles(profile)
+            .reduce((entries, item) => {
+                entries[item.name] = item;
+                return entries;
+            }, {} as Record<string, AgentCliSavedModelProfile>);
+        const activeName = (configName || profile.activeSavedProfile || '').trim();
+        if (!activeName) {
+            return {
+                savedProfiles: Object.keys(currentSavedProfiles).length ? currentSavedProfiles : undefined,
+                activeSavedProfile: profile.activeSavedProfile
+            };
+        }
+        currentSavedProfiles[activeName] = {
+            name: activeName,
+            provider: selection.provider,
+            flashModel: selection.flashModel,
+            strongModel: selection.strongModel,
+            baseUrl: selection.baseUrl,
+            apiKey
+        };
+        return {
+            savedProfiles: currentSavedProfiles,
+            activeSavedProfile: activeName
         };
     };
 
@@ -750,7 +817,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             throw new Error('Model setup cancelled.');
         }
         const profile = buildAdaptiveModelProfile(selected, apiKey, 120000);
-        const settingsPath = config.writeModelProfile(resolved.root, profile);
+        const settingsPath = writeInteractiveModelProfile(resolved.root, profile);
         if (!fs.existsSync(resolved.workspace)) {
             fs.mkdirSync(resolved.workspace, { recursive: true });
         }
@@ -928,7 +995,7 @@ async function runInteractiveChat(options: any): Promise<void> {
             provider: currentProfile.provider,
             model: currentProfile.model,
             modelProfile: resolveModelProfileLabel(currentProfile),
-            workspace: resolved.workspace
+            workspace: interactiveWorkspace
         });
         consoleState.setMessages(await runtime.getMessages(targetSessionId));
         consoleState.setStatus('idle');
@@ -1098,16 +1165,43 @@ async function runInteractiveChat(options: any): Promise<void> {
         }
     );
     terminalUiDelegate.setModelProfileAdapter({
+        list: async () => {
+            return listSavedModelProfiles(currentProfile).map(item => ({
+                ...item,
+                active: item.name === currentProfile.activeSavedProfile
+            }));
+        },
         apply: async (profile) => {
+            const selected = {
+                provider: profile.provider,
+                flashModel: profile.flashModel,
+                strongModel: profile.strongModel,
+                baseUrl: profile.baseUrl
+            };
+            const matchingSavedProfile = profile.configName
+                ? (currentProfile.savedProfiles || {})[profile.configName]
+                : undefined;
+            const resolvedApiKey = profile.apiKey
+                || matchingSavedProfile?.apiKey
+                || currentProfile.apiKey;
+            if (!resolvedApiKey) {
+                throw new Error(`API key required for ${profile.provider}.`);
+            }
+            const savedSelection = upsertSavedModelProfiles(currentProfile, selected, resolvedApiKey, profile.configName);
             const nextProfile = buildAdaptiveModelProfile({
                 provider: profile.provider,
                 flashModel: profile.flashModel,
                 strongModel: profile.strongModel,
                 baseUrl: profile.baseUrl
-            }, profile.apiKey, currentProfile.timeoutMs || 120000);
-            config.writeModelProfile(resolved.root, nextProfile);
+            }, resolvedApiKey, currentProfile.timeoutMs || 120000, savedSelection.savedProfiles, savedSelection.activeSavedProfile);
+            writeInteractiveModelProfile(resolved.root, nextProfile);
             await createChatContext(nextProfile);
-            applyScreenNotice(`Switched to ${nextProfile.provider} / flash ${profile.flashModel} / strong ${profile.strongModel}`, 1800);
+            applyScreenNotice(
+                savedSelection.activeSavedProfile
+                    ? `Switched to ${savedSelection.activeSavedProfile} (${nextProfile.provider} / ${profile.flashModel})`
+                    : `Switched to ${nextProfile.provider} / flash ${profile.flashModel} / strong ${profile.strongModel}`,
+                1800
+            );
         }
     });
 

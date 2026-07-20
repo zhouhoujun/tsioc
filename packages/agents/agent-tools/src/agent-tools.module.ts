@@ -13,6 +13,9 @@ import {
     DefaultDataExportAdapter,
     DefaultApprovalAdapter
 } from './default-adapters';
+import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter } from './nested-agent-runner';
+import { OpenMeteoWeatherAdapter } from './weather-adapter';
+import { WeatherAdapter } from '../utility/weather.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
@@ -172,6 +175,12 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
                 return [{ provide: 'AGENT_TOOLS_PDF_READ_ADAPTER', useValue: options?.pdf?.adapter ?? null }];
             }
         },
+        {
+            provider(injector) {
+                const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
+                return [{ provide: WeatherAdapter, useValue: options?.weather?.adapter ?? new OpenMeteoWeatherAdapter(options?.weather) }];
+            }
+        },
         DefaultBackupAdapter,
         DefaultKnowledgeAdapter,
         DefaultModelRoutingAdapter,
@@ -181,6 +190,8 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         DefaultIntentVerifierAdapter,
         DefaultDataExportAdapter,
         DefaultApprovalAdapter,
+        DelegatingSpawnAgentAdapter,
+        DelegatingLlmTaskAdapter,
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles()
     ],

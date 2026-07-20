@@ -19,9 +19,12 @@ import {
     AGENT_CONSOLE_SUGGESTIONS_HINT,
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
     applyAgentConsoleSuggestion,
+    getAgentConsoleInputTokenRange,
     isAgentConsoleSuggestionMenu,
     resolveAgentConsoleInputSuggestions
 } from './AgentConsoleSuggestions';
+import { AgentConsoleWorkspaceMentionResolver } from './AgentConsoleWorkspaceMentions';
+import { AgentConsoleMessageStatusLabels } from './AgentConsoleMessageRenderers';
 
 export interface AgentConsoleToolItem {
     name: string;
@@ -134,6 +137,8 @@ export interface AgentConsoleOptions {
     selectCloseHint?: string;
     suggestionsHint?: string;
     brandWidth?: number;
+    messageStatusLabels?: AgentConsoleMessageStatusLabels;
+    messageStatusSymbol?: string;
 }
 
 export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
@@ -170,7 +175,14 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
     selectCloseHint: 'up/down move   enter close   q close',
     suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT,
-    brandWidth: DEFAULT_TERMINAL_COLUMNS
+    brandWidth: DEFAULT_TERMINAL_COLUMNS,
+    messageStatusLabels: {
+        running: '正在执行',
+        success: '成功',
+        failed: '失败',
+        error: '错误'
+    },
+    messageStatusSymbol: '●'
 };
 
 @Injectable()
@@ -233,6 +245,8 @@ export class AgentConsoleSessionState {
     protected listeners = new Set<() => void>();
     protected notificationBatchDepth = 0;
     protected notificationPending = false;
+    protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
+    protected workspaceSuggestionRequestId = 0;
 
     configure(meta: AgentConsoleSessionMeta): this {
         if (meta.sessionId) {
@@ -271,6 +285,7 @@ export class AgentConsoleSessionState {
 
     setWorkspace(workspace: string): void {
         this.workspace = workspace;
+        this.refreshInputSuggestions();
         this.notify();
     }
 
@@ -338,17 +353,22 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    get displayMessages(): AgentMessage[] {
+        return this.messages.filter(message => this.isDisplayMessage(message));
+    }
+
     setMessages(messages: AgentMessage[]): void {
         this.messages = messages;
-        if (!this.messages.length) {
+        const displayMessages = this.displayMessages;
+        if (!displayMessages.length) {
             this.selectedMessageId = '';
             this.messageDetailOpen = false;
             this.messageDetailScroll = 0;
             this.messageDetailColumnScroll = 0;
         } else {
             const shouldFollowLatest = !this.messagesFocused && !this.messageDetailOpen;
-            if (shouldFollowLatest || !this.selectedMessageId || !this.messages.some(item => item.id === this.selectedMessageId)) {
-                this.selectedMessageId = this.messages[this.messages.length - 1].id;
+            if (shouldFollowLatest || !this.selectedMessageId || !displayMessages.some(item => item.id === this.selectedMessageId)) {
+                this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
                 this.messageDetailScroll = 0;
                 this.messageDetailColumnScroll = 0;
             }
@@ -381,8 +401,9 @@ export class AgentConsoleSessionState {
 
     setMessagesFocused(focused: boolean): void {
         this.messagesFocused = focused;
-        if (focused && !this.selectedMessageId && this.messages.length) {
-            this.selectedMessageId = this.messages[this.messages.length - 1].id;
+        const displayMessages = this.displayMessages;
+        if (focused && !this.selectedMessageId && displayMessages.length) {
+            this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         }
         if (!focused) {
             this.messageDetailOpen = false;
@@ -394,7 +415,7 @@ export class AgentConsoleSessionState {
     }
 
     setSelectedMessageId(messageId: string): void {
-        if (!messageId || !this.messages.some(item => item.id === messageId)) {
+        if (!messageId || !this.displayMessages.some(item => item.id === messageId)) {
             return;
         }
         this.selectedMessageId = messageId;
@@ -404,52 +425,56 @@ export class AgentConsoleSessionState {
     }
 
     moveMessageSelection(delta: number): void {
-        if (!this.messages.length) {
+        const displayMessages = this.displayMessages;
+        if (!displayMessages.length) {
             return;
         }
-        const currentIndex = Math.max(0, this.messages.findIndex(item => item.id === this.selectedMessageId));
-        const nextIndex = (currentIndex + delta + this.messages.length) % this.messages.length;
-        this.selectedMessageId = this.messages[nextIndex].id;
+        const currentIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessageId));
+        const nextIndex = (currentIndex + delta + displayMessages.length) % displayMessages.length;
+        this.selectedMessageId = displayMessages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.notify();
     }
 
     moveMessageSelectionPage(delta: number, pageSize?: number): void {
-        if (!this.messages.length) {
+        const displayMessages = this.displayMessages;
+        if (!displayMessages.length) {
             return;
         }
-        const currentIndex = Math.max(0, this.messages.findIndex(item => item.id === this.selectedMessageId));
+        const currentIndex = Math.max(0, displayMessages.findIndex(item => item.id === this.selectedMessageId));
         const resolvedPageSize = pageSize ?? this.consoleOptions.messageSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(this.messages.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedMessageId = this.messages[nextIndex].id;
+        const nextIndex = Math.max(0, Math.min(displayMessages.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+        this.selectedMessageId = displayMessages[nextIndex].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.notify();
     }
 
     selectFirstMessage(): void {
-        if (!this.messages.length) {
+        const displayMessages = this.displayMessages;
+        if (!displayMessages.length) {
             return;
         }
-        this.selectedMessageId = this.messages[0].id;
+        this.selectedMessageId = displayMessages[0].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.notify();
     }
 
     selectLastMessage(): void {
-        if (!this.messages.length) {
+        const displayMessages = this.displayMessages;
+        if (!displayMessages.length) {
             return;
         }
-        this.selectedMessageId = this.messages[this.messages.length - 1].id;
+        this.selectedMessageId = displayMessages[displayMessages.length - 1].id;
         this.messageDetailScroll = 0;
         this.messageDetailColumnScroll = 0;
         this.notify();
     }
 
     get selectedMessage(): AgentMessage | undefined {
-        return this.messages.find(item => item.id === this.selectedMessageId);
+        return this.displayMessages.find(item => item.id === this.selectedMessageId);
     }
 
     openMessageDetail(): void {
@@ -511,6 +536,22 @@ export class AgentConsoleSessionState {
             .replace(/\r/g, '')
             .split('\n')
             .map(line => this.expandTabs(line));
+    }
+
+    protected isDisplayMessage(message?: AgentMessage | null): boolean {
+        if (!message) {
+            return false;
+        }
+        if (String(message.role || '').toLowerCase() === 'tool') {
+            return false;
+        }
+        if (String(message.role || '').toLowerCase() === 'assistant'
+            && Array.isArray(message.metadata?.toolCalls)
+            && message.metadata.toolCalls.length
+            && !String(message.content || '').trim()) {
+            return false;
+        }
+        return true;
     }
 
     get messageDetailMaxColumn(): number {
@@ -888,6 +929,12 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    setWorkspaceMentionResolver(resolver?: AgentConsoleWorkspaceMentionResolver): void {
+        this.workspaceMentionResolver = resolver;
+        this.refreshInputSuggestions();
+        this.notify();
+    }
+
     setTheme(theme?: AgentConsoleThemeInput | null): void {
         this.theme = mergeAgentConsoleTheme(theme);
         this.themeStyles = resolveAgentConsoleThemeStyles(this.theme);
@@ -1117,40 +1164,62 @@ export class AgentConsoleSessionState {
         if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) {
             return;
         }
-        const options = resolveAgentConsoleInputSuggestions(
-            this.input,
-            this.inputCursor,
-            this.commandHints,
-            this.tools
-        );
-        if (!options.length) {
-            if (isAgentConsoleSuggestionMenu(this.selectMenu)) {
-                this.selectMenu = undefined;
-                this.selectMenuAction = undefined;
-            }
-            this.syncDerivedInputFocus();
-            return;
-        }
-        const selectedValue = this.selectedSelectMenuOption?.value;
-        const selectedIndex = Math.max(0, options.findIndex(option => option.value === selectedValue));
-        this.selectMenu = {
-            title: AGENT_CONSOLE_SUGGESTIONS_TITLE,
-            hint: this.consoleOptions.suggestionsHint,
-            options,
-            selectedIndex
-        };
-        this.syncDerivedInputFocus();
-        this.selectMenuAction = async (value?: string) => {
-            if (!value) {
+        const currentInput = this.input;
+        const currentCursor = this.inputCursor;
+        const active = getAgentConsoleInputTokenRange(currentInput, currentCursor);
+        const applySuggestions = (workspaceSuggestions: AgentConsoleSelectOption[] = []) => {
+            const options = resolveAgentConsoleInputSuggestions(
+                this.input,
+                this.inputCursor,
+                this.commandHints,
+                this.tools,
+                workspaceSuggestions
+            );
+            if (!options.length) {
+                if (isAgentConsoleSuggestionMenu(this.selectMenu)) {
+                    this.selectMenu = undefined;
+                    this.selectMenuAction = undefined;
+                }
+                this.syncDerivedInputFocus();
                 return;
             }
-            const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, value);
-            this.input = next.value;
-            this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
-            this.refreshInputSuggestions();
+            const selectedValue = this.selectedSelectMenuOption?.value;
+            const selectedIndex = Math.max(0, options.findIndex(option => option.value === selectedValue));
+            this.selectMenu = {
+                title: AGENT_CONSOLE_SUGGESTIONS_TITLE,
+                hint: this.consoleOptions.suggestionsHint,
+                options,
+                selectedIndex
+            };
             this.syncDerivedInputFocus();
-            this.notify();
+            this.selectMenuAction = async (value?: string) => {
+                if (!value) {
+                    return;
+                }
+                const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, value);
+                this.input = next.value;
+                this.inputCursor = clampConsoleTextCursor(this.input, next.cursor);
+                this.refreshInputSuggestions();
+                this.syncDerivedInputFocus();
+                this.notify();
+            };
         };
+
+        applySuggestions();
+        if (!active?.token?.startsWith('@') || !this.workspace || !this.workspaceMentionResolver) {
+            return;
+        }
+        const requestId = ++this.workspaceSuggestionRequestId;
+        void this.workspaceMentionResolver.resolveSuggestions(this.workspace, active.token).then(options => {
+            if (requestId !== this.workspaceSuggestionRequestId) {
+                return;
+            }
+            if (this.input !== currentInput || this.inputCursor !== currentCursor) {
+                return;
+            }
+            applySuggestions(options);
+            this.notify();
+        }).catch(() => undefined);
     }
 
     setRunningTool(toolName: string): void {

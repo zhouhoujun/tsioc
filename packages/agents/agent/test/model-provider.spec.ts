@@ -447,6 +447,151 @@ export class ModelProviderTest {
         expect(received.some(item => item.type === 'done' && item.usage?.total_tokens === 5)).toBe(true);
     }
 
+    @Test('parses openai-compatible streaming tool calls from choice message payload')
+    async parsesOpenAiCompatibleStreamingMessageToolCalls() {
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => {
+            const encoder = new TextEncoder();
+            const chunks = [
+                'data: {"choices":[{"delta":{},"message":{"tool_calls":[{"id":"call_1","type":"function","function":{"name":"weather_now","arguments":"{\\"city\\":\\"成都\\"}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+                'data: [DONE]\n\n'
+            ];
+            return {
+                ok: true,
+                body: new ReadableStream({
+                    start(controller) {
+                        chunks.forEach(chunk => controller.enqueue(encoder.encode(chunk)));
+                        controller.close();
+                    }
+                })
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        const received: any[] = [];
+        for await (const chunk of adapter.stream({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: '成都天气', createdAt: 1 }],
+            tools: [{
+                name: 'weather.now',
+                description: 'get weather',
+                inputSchema: { type: 'object', properties: { city: { type: 'string' } } }
+            }]
+        })) {
+            received.push(chunk);
+        }
+
+        const done = received.find(item => item.type === 'done');
+        expect(done?.toolCalls?.[0].name).toBe('weather.now');
+        expect(done?.toolCalls?.[0].input.city).toBe('成都');
+    }
+
+    @Test('parses openai-compatible streaming legacy function_call payload')
+    async parsesOpenAiCompatibleStreamingLegacyFunctionCall() {
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => {
+            const encoder = new TextEncoder();
+            const chunks = [
+                'data: {"choices":[{"delta":{"function_call":{"name":"weather_now","arguments":"{\\"city\\":\\"成都\\"}"}},"finish_reason":"tool_calls"}]}\n\n',
+                'data: [DONE]\n\n'
+            ];
+            return {
+                ok: true,
+                body: new ReadableStream({
+                    start(controller) {
+                        chunks.forEach(chunk => controller.enqueue(encoder.encode(chunk)));
+                        controller.close();
+                    }
+                })
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        const received: any[] = [];
+        for await (const chunk of adapter.stream({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: '成都天气', createdAt: 1 }],
+            tools: [{
+                name: 'weather.now',
+                description: 'get weather',
+                inputSchema: { type: 'object', properties: { city: { type: 'string' } } }
+            }]
+        })) {
+            received.push(chunk);
+        }
+
+        const done = received.find(item => item.type === 'done');
+        expect(done?.toolCalls?.[0].name).toBe('weather.now');
+        expect(done?.toolCalls?.[0].input.city).toBe('成都');
+    }
+
+    @Test('parses openai-compatible streaming tool calls embedded in delta content arrays')
+    async parsesOpenAiCompatibleStreamingContentEmbeddedToolCalls() {
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => {
+            const encoder = new TextEncoder();
+            const chunks = [
+                'data: {"choices":[{"delta":{"content":[{"type":"tool_call","id":"call_1","function":{"name":"weather_now","arguments":"{\\"city\\":\\"成"}}]},"finish_reason":null}]}\n\n',
+                'data: {"choices":[{"delta":{"content":[{"tool_calls":[{"index":0,"function":{"arguments":"都\\"}"}}]}]},"finish_reason":"tool_calls"}]}\n\n',
+                'data: [DONE]\n\n'
+            ];
+            return {
+                ok: true,
+                body: new ReadableStream({
+                    start(controller) {
+                        chunks.forEach(chunk => controller.enqueue(encoder.encode(chunk)));
+                        controller.close();
+                    }
+                })
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        const received: any[] = [];
+        for await (const chunk of adapter.stream({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: '成都天气', createdAt: 1 }],
+            tools: [{
+                name: 'weather.now',
+                description: 'get weather',
+                inputSchema: { type: 'object', properties: { city: { type: 'string' } } }
+            }]
+        })) {
+            received.push(chunk);
+        }
+
+        const done = received.find(item => item.type === 'done');
+        expect(done?.toolCalls?.[0].name).toBe('weather.now');
+        expect(done?.toolCalls?.[0].input.city).toBe('成都');
+    }
+
     @Test('parses openai-compatible streaming text when final sse buffer lacks trailing newline')
     async parsesOpenAiCompatibleStreamingWithoutTrailingNewline() {
         this.originalFetch = (globalThis as any).fetch;

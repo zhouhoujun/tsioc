@@ -15,6 +15,10 @@ export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
 }
 
 export interface AgentConsoleRenderedLine {
+    statusKind?: AgentConsoleMessageStatus;
+    statusLabel?: string;
+    status?: string;
+    statusStyle?: Record<string, string>;
     role?: string;
     roleStyle?: Record<string, string>;
     prefix?: string;
@@ -31,9 +35,22 @@ export interface AgentConsoleRenderedMessageItem {
     kind: string;
     templateKind: AgentConsoleMessageTemplateKind;
     selected: boolean;
+    statusKind?: AgentConsoleMessageStatus;
+    statusLabel?: string;
+    status?: string;
+    statusStyle?: Record<string, string>;
     itemStyle: Record<string, string>;
     renderRegion?: string;
     lines: AgentConsoleRenderedLine[];
+}
+
+export type AgentConsoleMessageStatus = 'running' | 'success' | 'failed' | 'error';
+
+export interface AgentConsoleMessageStatusLabels {
+    running?: string;
+    success?: string;
+    failed?: string;
+    error?: string;
 }
 
 type AgentConsoleInlineRowStyle = Partial<Record<'background' | 'background-color' | 'color' | 'font-weight', string>>;
@@ -42,6 +59,8 @@ export interface AgentConsoleMessageRenderContext {
     theme?: AgentConsoleTheme;
     selectedMessageId?: string;
     messagesFocused?: boolean;
+    statusLabels?: AgentConsoleMessageStatusLabels;
+    statusSymbol?: string;
 }
 
 interface AgentConsoleResolvedMessageRenderer {
@@ -114,6 +133,10 @@ export function renderAgentConsoleMessageItem(
     const rowSelected = !!(selected && context.messagesFocused);
     const itemStyle = renderer.itemStyle(theme, rowSelected);
     const inlineRowStyle = resolveInlineRowStyle(itemStyle);
+    const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
+    const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
+    const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
+    const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const markdownLines = message?.metadata?.streaming
         ? renderAgentConsolePlainTextLines(message?.content || '', { compactBlankLines: true })
         : renderAgentConsoleMarkdownLines(message?.content || '', { compactBlankLines: true });
@@ -131,7 +154,11 @@ export function renderAgentConsoleMessageItem(
             theme,
             rowSelected,
             templateKind,
-            inlineRowStyle
+            inlineRowStyle,
+            isFirst ? status : formatAgentConsoleMessageStatus(undefined, context.statusSymbol),
+            statusKind,
+            statusLabel,
+            isFirst ? statusStyle : rowSelected ? {} : inlineRowStyle
         );
         return {
             ...rendered,
@@ -152,6 +179,10 @@ export function renderAgentConsoleMessageItem(
         kind: renderer.roleLabel,
         templateKind,
         selected,
+        statusKind,
+        statusLabel,
+        status,
+        statusStyle,
         itemStyle,
         lines
     };
@@ -201,6 +232,43 @@ export function resolveMessageTemplateKind(message?: AgentMessage | null): Agent
             return 'tool';
         default:
             return 'system';
+    }
+}
+
+export function resolveAgentConsoleMessageStatus(
+    message?: AgentMessage | null,
+    templateKind: AgentConsoleMessageTemplateKind = resolveMessageTemplateKind(message)
+): AgentConsoleMessageStatus | undefined {
+    if (!message || templateKind === 'user') {
+        return undefined;
+    }
+    if (message?.metadata?.streaming) {
+        return 'running';
+    }
+    if (String(message.role || '').toLowerCase() === 'tool' && message?.metadata?.error) {
+        return 'failed';
+    }
+    if (templateKind === 'error') {
+        return 'error';
+    }
+    return 'success';
+}
+
+export function resolveAgentConsoleMessageStatusLabel(
+    status?: AgentConsoleMessageStatus,
+    labels?: AgentConsoleMessageStatusLabels
+): string {
+    switch (status) {
+        case 'running':
+            return labels?.running || '正在执行';
+        case 'failed':
+            return labels?.failed || '失败';
+        case 'error':
+            return labels?.error || '错误';
+        case 'success':
+            return labels?.success || '成功';
+        default:
+            return '';
     }
 }
 
@@ -286,7 +354,11 @@ function buildRenderedLine(
     theme: AgentConsoleTheme,
     rowSelected: boolean,
     templateKind: AgentConsoleMessageTemplateKind,
-    inlineRowStyle: AgentConsoleInlineRowStyle
+    inlineRowStyle: AgentConsoleInlineRowStyle,
+    status: string,
+    statusKind: AgentConsoleMessageStatus | undefined,
+    statusLabel: string,
+    statusStyle: Record<string, string>
 ): AgentConsoleRenderedLine {
     const lineStyle = {
         ...inlineRowStyle,
@@ -308,6 +380,10 @@ function buildRenderedLine(
                 }
         }));
     return {
+        statusKind,
+        statusLabel,
+        status,
+        statusStyle,
         role: roleLead,
         roleStyle: rowSelected ? {} : { ...inlineRowStyle, ...renderer.roleStyle(theme) },
         prefix: line.prefix || '',
@@ -359,4 +435,30 @@ function resolveInlineRowStyle(style: Record<string, string>): AgentConsoleInlin
         inlineStyle['font-weight'] = style['font-weight'];
     }
     return inlineStyle;
+}
+
+function resolveAgentConsoleMessageStatusStyle(
+    theme: AgentConsoleTheme,
+    status?: AgentConsoleMessageStatus,
+    rowSelected = false
+): Record<string, string> {
+    if (rowSelected || !status) {
+        return {};
+    }
+    switch (status) {
+        case 'running':
+            return styleTextToObject(theme.statusBusyValue);
+        case 'failed':
+        case 'error':
+            return styleTextToObject(theme.statusErrorValue);
+        default:
+            return styleTextToObject(theme.statusIdleValue);
+    }
+}
+
+function formatAgentConsoleMessageStatus(status?: AgentConsoleMessageStatus, symbol = '●'): string {
+    if (!status) {
+        return '  ';
+    }
+    return `${symbol} `;
 }

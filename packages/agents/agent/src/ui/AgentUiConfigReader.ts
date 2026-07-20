@@ -1,3 +1,12 @@
+export interface AgentUiSavedModelProfile {
+    name: string;
+    provider: string;
+    flashModel: string;
+    strongModel: string;
+    baseUrl?: string;
+    apiKey?: string;
+}
+
 export interface AgentUiResolvedModelProfile {
     provider: string;
     model: string;
@@ -18,6 +27,8 @@ export interface AgentUiResolvedModelProfile {
         simpleMaxScore?: number;
         moderateMaxScore?: number;
     };
+    savedProfiles?: Record<string, AgentUiSavedModelProfile>;
+    activeSavedProfile?: string;
 }
 
 export interface AgentUiResolvedConfig {

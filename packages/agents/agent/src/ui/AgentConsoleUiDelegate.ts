@@ -5,7 +5,17 @@ export interface ModelProfile {
     flashModel: string;
     strongModel: string;
     baseUrl?: string;
-    apiKey: string;
+    apiKey?: string;
+    configName?: string;
+}
+
+export interface SavedModelProfileChoice {
+    name: string;
+    provider: string;
+    flashModel: string;
+    strongModel: string;
+    baseUrl?: string;
+    active?: boolean;
 }
 
 export interface AgentConsoleSessionChoice {
@@ -41,6 +51,10 @@ export abstract class AgentConsoleUiDelegate {
 
     switchSession(_sessionId?: string): Promise<void> {
         return Promise.resolve();
+    }
+
+    listModelProfiles(): Promise<SavedModelProfileChoice[]> {
+        return Promise.resolve([]);
     }
 
     abstract applyModelProfile(profile: ModelProfile): Promise<void>;

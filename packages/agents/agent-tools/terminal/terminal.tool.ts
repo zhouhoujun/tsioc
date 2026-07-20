@@ -5,6 +5,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
+import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 
 const DEFAULT_TIMEOUT_MS = 180000;
 const DEFAULT_MAX_TIMEOUT_MS = 600000;
@@ -39,6 +40,7 @@ export class TerminalTool implements AgentTool {
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const command = this.requireCommand(input?.command);
+        assertSandboxCommand(command, resolveSandboxPolicy(this.options), this.name);
         const timeoutMs = this.resolveTimeout(input?.timeoutMs);
         const cwd = await this.resolveCwd(input?.workdir);
         const result = await this.exec(command, cwd, timeoutMs);
@@ -81,11 +83,12 @@ export class TerminalTool implements AgentTool {
     }
 
     private async exec(command: string, cwd: string, timeoutMs: number): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean; }> {
+        const sandbox = resolveSandboxPolicy(this.options);
         return new Promise((resolve, reject) => {
             const child = spawn(command, {
                 cwd,
                 shell: true,
-                env: process.env
+                env: buildSandboxEnv(process.env, sandbox)
             });
             let stdout = '';
             let stderr = '';

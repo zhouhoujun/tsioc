@@ -15,6 +15,9 @@ import { MemoryHandler } from './api/MemoryHandler';
 import { ToolsHandler } from './api/ToolsHandler';
 import { EventHandler } from './api/EventHandler';
 import { AuditHandler } from './api/AuditHandler';
+import { AppRpcHandler } from './api/AppRpcHandler';
+import { AppRpcServer } from './app-rpc/AppRpcServer';
+import { StdioAppRpcServer } from './app-rpc/StdioAppRpcServer';
 import { ChatWebSocket } from './ws/ChatWebSocket';
 import { GatewayConfig } from './contracts/GatewayConfig';
 import { createAgentGatewayProviders } from './provider';
@@ -37,6 +40,9 @@ import { createAgentGatewayProviders } from './provider';
         ToolsHandler,
         EventHandler,
         AuditHandler,
+        AppRpcServer,
+        AppRpcHandler,
+        StdioAppRpcServer,
         ChatWebSocket
     ],
     exports: [
@@ -53,6 +59,9 @@ import { createAgentGatewayProviders } from './provider';
         ToolsHandler,
         EventHandler,
         AuditHandler,
+        AppRpcServer,
+        AppRpcHandler,
+        StdioAppRpcServer,
         ChatWebSocket
     ]
 })

@@ -1,5 +1,6 @@
 import { ApplicationEvent } from '@tsdi/core';
 import { ModelResponse } from '../model/ModelResponse';
+import { StreamChunkType } from '../model/StreamChunk';
 import { AgentMessage } from './AgentMessage';
 import { ScheduledAgentTask } from '../scheduler/ScheduledAgentTask';
 import { AgentMemoryRecord } from '../memory/MemoryStore';
@@ -154,7 +155,7 @@ export class AgentStreamChunkEvent extends ApplicationEvent {
     constructor(
         source: Object,
         readonly sessionId: string,
-        readonly type: 'text' | 'reasoning' | 'tool_call' | 'done',
+        readonly type: StreamChunkType,
         readonly content?: string,
         readonly toolCalls?: any[],
         readonly usage?: any

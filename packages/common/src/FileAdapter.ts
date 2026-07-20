@@ -130,6 +130,22 @@ export abstract class FileAdapter {
      * @returns parsed JSON object.
      */
     abstract readJSONSync<T = any>(path: string): T;
+
+    /**
+     * Resolve file or directory metadata when the adapter supports it.
+     * Default implementation returns null so callers can degrade gracefully.
+     */
+    async stat<T extends IStats = IStats>(path: string): Promise<T | null> {
+        return null;
+    }
+
+    /**
+     * List directory entries when the adapter supports it.
+     * Default implementation returns an empty list so callers can degrade gracefully.
+     */
+    async list(path: string): Promise<FileDirectoryEntry[]> {
+        return [];
+    }
 }
 
 
@@ -166,6 +182,12 @@ export interface FileStats<T extends IStats> {
     filename: string;
     stats: T;
     encodingExt?: string;
+}
+
+export interface FileDirectoryEntry {
+    name: string;
+    path: string;
+    kind: 'file' | 'directory' | 'other';
 }
 export interface FindOptions {
     root?: string | string[];

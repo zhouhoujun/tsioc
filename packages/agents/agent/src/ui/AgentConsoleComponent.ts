@@ -9,10 +9,11 @@ import { AgentScheduler } from '../scheduler/AgentScheduler';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { SessionStore } from '../memory/SessionStore';
 import { ToolApprovalManager } from '../tools/ToolApprovalManager';
-import { AgentConsoleUiDelegate } from './AgentConsoleUiDelegate';
+import { AgentConsoleUiDelegate, SavedModelProfileChoice } from './AgentConsoleUiDelegate';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleApprovalRequest, AgentConsoleSelectOption, AgentConsoleSessionMeta, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
+import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 @Component({
     selector: 'agent-console',
     template: `
@@ -49,7 +50,8 @@ export class AgentConsoleComponent implements OnDestroy {
         @Optional() private toolRegistry?: ToolRegistry | null,
         @Optional() @Inject(AgentConsoleUiDelegate) private uiDelegate?: AgentConsoleUiDelegate | null,
         @Optional() private sessionStore?: SessionStore | null,
-        @Optional() private approvalManager?: ToolApprovalManager | null
+        @Optional() private approvalManager?: ToolApprovalManager | null,
+        @Optional() private workspaceMentionsProvider?: AgentConsoleWorkspaceMentionsProvider | null
     ) {
         this.state.setTitle(this.options.ui?.title ?? defaultAgentOptions.ui!.title!);
         this.state.setProvider(this.options.model?.provider ?? '');
@@ -57,6 +59,7 @@ export class AgentConsoleComponent implements OnDestroy {
         this.state.setModelProfile(this.resolveInitialModelProfile());
         this.state.setTheme(mergeAgentConsoleTheme(this.options.ui?.theme));
         this.state.setConsoleOptions(this.options.ui?.console);
+        this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
     }
 
     protected resolveInitialModelProfile(): string {
@@ -501,16 +504,16 @@ export class AgentConsoleComponent implements OnDestroy {
         };
     }
 
-    protected enrichPromptWithMentions(input: string): string {
+    protected async enrichPromptWithMentions(input: string): Promise<string> {
         const text = String(input || '');
-        const matches = text.match(/(^|\s)@([a-zA-Z0-9_.-]+)/g) || [];
+        const matches = text.match(/(^|\s)@([^\s@]+)/g) || [];
         const mentions = Array.from(new Set(matches.map(item => item.trim())));
         if (!mentions.length) {
             return text;
         }
         const toolMap = new Map((this.state.tools || []).map(tool => [tool.name, tool]));
         const contextLines: string[] = [];
-        mentions.forEach(mention => {
+        for (const mention of mentions) {
             const name = mention.slice(1);
             switch (name) {
                 case 'workspace':
@@ -529,11 +532,13 @@ export class AgentConsoleComponent implements OnDestroy {
                     const tool = toolMap.get(name);
                     if (tool) {
                         contextLines.push(`Tool ${tool.name}: toolset=${tool.toolset || 'default'}, active=${tool.active === false ? 'no' : 'yes'}`);
+                        break;
                     }
+                    contextLines.push(...(await this.workspaceMentionsProvider?.resolveContext(this.state.workspace, name) || []));
                     break;
                 }
             }
-        });
+        }
         if (!contextLines.length) {
             return text;
         }
@@ -544,6 +549,7 @@ export class AgentConsoleComponent implements OnDestroy {
             text
         ].join('\n');
     }
+
 
     protected async handleCommand(value: string): Promise<boolean> {
         const parsed = this.parseSlashCommandLine(value);
@@ -777,8 +783,79 @@ export class AgentConsoleComponent implements OnDestroy {
         'openai-compatible': undefined, anthropic: 'https://api.anthropic.com'
     };
 
+    protected buildDefaultModelConfigName(provider: string, flashModel: string, strongModel: string): string {
+        const flash = String(flashModel || '').trim();
+        const strong = String(strongModel || '').trim();
+        const suffix = flash && strong && flash !== strong
+            ? `${flash}__${strong}`
+            : (flash || strong || 'profile');
+        return `${String(provider || 'model').trim()}__${suffix}`
+            .replace(/[^a-zA-Z0-9._-]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+    }
+
+    protected buildSavedModelProfileOptions(savedProfiles: SavedModelProfileChoice[]): AgentConsoleSelectOption[] {
+        const options = savedProfiles.map(profile => ({
+            label: profile.active ? `${profile.name} (current)` : profile.name,
+            value: `saved:${profile.name}`,
+            description: `${profile.provider} / ${profile.flashModel} / ${profile.strongModel}`,
+            detail: [
+                `Name: ${profile.name}`,
+                `Provider: ${profile.provider}`,
+                `Flash: ${profile.flashModel}`,
+                `Strong: ${profile.strongModel}`,
+                `Base URL: ${profile.baseUrl || '(default)'}`,
+                profile.active ? 'Status: current' : 'Status: saved'
+            ].join('\n')
+        }));
+        options.push({
+            label: 'Edit current config',
+            value: '__edit_current__',
+            description: 'Modify the active model configuration',
+            detail: 'Update the provider, models, base URL, or API key for the current active config.'
+        });
+        options.push({
+            label: 'Create new config',
+            value: '__create_new__',
+            description: 'Create and save another model configuration',
+            detail: 'Set up a separate named model config and store its API key for later switching.'
+        });
+        return options;
+    }
+
+    protected async resolveModelSwitchAction(savedProfiles: SavedModelProfileChoice[]): Promise<string> {
+        if (!this.uiDelegate) {
+            return '__edit_current__';
+        }
+        const options = this.buildSavedModelProfileOptions(savedProfiles);
+        const currentIndex = Math.max(0, options.findIndex(option => option.value === `saved:${savedProfiles.find(item => item.active)?.name}`));
+        return await this.uiDelegate.select('Model configs', options, currentIndex) || '';
+    }
+
     protected async switchModel(): Promise<void> {
         if (!this.uiDelegate) { return; }
+        const savedProfiles = await this.uiDelegate.listModelProfiles();
+        const switchAction = await this.resolveModelSwitchAction(savedProfiles || []);
+        if (!switchAction) {
+            return;
+        }
+        if (switchAction.startsWith('saved:')) {
+            const profileName = switchAction.slice('saved:'.length);
+            const profile = (savedProfiles || []).find(item => item.name === profileName);
+            if (!profile) {
+                return;
+            }
+            await this.uiDelegate.applyModelProfile({
+                configName: profile.name,
+                provider: profile.provider,
+                flashModel: profile.flashModel,
+                strongModel: profile.strongModel,
+                baseUrl: profile.baseUrl
+            });
+            return;
+        }
+
+        const creatingNewConfig = switchAction === '__create_new__';
         const currProv = this.state.provider;
         const currModel = this.state.model;
         let provider = currProv;
@@ -827,13 +904,26 @@ export class AgentConsoleComponent implements OnDestroy {
             if (this.isCancelPromptValue(input)) { return; }
             if (input) { baseUrl = input; }
         }
-        const existingApiKey = currProv === provider ? this.options.model?.apiKey : undefined;
-        const keyLabel = existingApiKey ? '******' : '(required)';
-        const keyInput = await this.uiDelegate.prompt('API key for ' + provider + ' [' + keyLabel + ']:', true);
-        if (this.isCancelPromptValue(keyInput)) { return; }
-        const apiKey = keyInput || existingApiKey;
-        if (!apiKey) { return; }
-        await this.uiDelegate.applyModelProfile({ provider, flashModel, strongModel, baseUrl, apiKey });
+        let configName: string | undefined;
+        let apiKey: string | undefined;
+        if (creatingNewConfig) {
+            const defaultConfigName = this.buildDefaultModelConfigName(provider, flashModel, strongModel);
+            const configNameInput = await this.uiDelegate.prompt('Config name [' + defaultConfigName + ']:');
+            if (this.isCancelPromptValue(configNameInput)) { return; }
+            configName = (configNameInput || defaultConfigName).trim();
+            if (!configName) { return; }
+            const keyInput = await this.uiDelegate.prompt('API key for ' + provider + ' [required]:', true);
+            if (this.isCancelPromptValue(keyInput)) { return; }
+            apiKey = String(keyInput || '').trim();
+            if (!apiKey) { return; }
+        } else {
+            const existingApiKey = currProv === provider ? this.options.model?.apiKey : undefined;
+            const keyLabel = existingApiKey ? '******' : '(optional)';
+            const keyInput = await this.uiDelegate.prompt('API key for ' + provider + ' [' + keyLabel + ']:', true);
+            if (this.isCancelPromptValue(keyInput)) { return; }
+            apiKey = String(keyInput || '').trim() || existingApiKey;
+        }
+        await this.uiDelegate.applyModelProfile({ configName, provider, flashModel, strongModel, baseUrl, apiKey });
     }
 
     protected async handleMenuSelection(value: string): Promise<void> {
@@ -866,7 +956,7 @@ export class AgentConsoleComponent implements OnDestroy {
             return;
         }
         const draft = this.draftLines.join('\n');
-        const prompt = this.enrichPromptWithMentions(draft);
+        const prompt = await this.enrichPromptWithMentions(draft);
         this.draftLines = [];
         this.multilineMode = false;
         this.state.pushInputHistory(draft);
@@ -941,7 +1031,7 @@ export class AgentConsoleComponent implements OnDestroy {
             this.draftLines.push(value);
             return;
         }
-        const prompt = this.enrichPromptWithMentions(value);
+        const prompt = await this.enrichPromptWithMentions(value);
         this.clearStreamingMessageState();
         const userMessage: AgentMessage = {
             id: `user-${Date.now()}`,
@@ -976,8 +1066,6 @@ export class AgentConsoleComponent implements OnDestroy {
                         } else if (chunk.type === 'reasoning' && chunk.content) {
                             this.state.setStatus('reasoning');
                             this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
-                        } else if (chunk.type === 'tool_call') {
-                            this.state.pushActivity('tool', `Tool call: ${chunk.content || '...'}`);
                         } else if (chunk.type === 'done' && chunk.usage) {
                             this.state.setTokenUsage(chunk.usage);
                         }

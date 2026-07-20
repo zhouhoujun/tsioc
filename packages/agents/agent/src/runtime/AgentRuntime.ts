@@ -4,6 +4,7 @@ import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { AgentMessage } from './AgentMessage';
 import { AgentTurnResult } from './AgentTurnResult';
 import { AgentTurnInput } from './AgentTurnInput';
+import { StreamChunk } from '../model/StreamChunk';
 
 @Abstract()
 export abstract class AgentRuntime {
@@ -16,7 +17,7 @@ export abstract class AgentRuntime {
 
     abstract processTurn(input: AgentTurnInput): Promise<AgentTurnResult>;
 
-    abstract runStreamingTurn(sessionId: string, input: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string }>;
+    abstract runStreamingTurn(sessionId: string, input: string): AsyncGenerator<StreamChunk>;
 
     abstract putMemory(sessionId: string, key: string, value: string, scope?: AgentMemoryRecord['scope']): Promise<AgentMemoryRecord>;
 

@@ -5,6 +5,8 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { spawn } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
+import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { AiCliAdapter, AiCliName, AiCliRequest, AiCliResult, AgentAiCliOptions } from './types';
 
 const CLI_COMMANDS: Record<AiCliName, { cmd: string; args: string[]; jsonFlag: string; modelFlag: string; toolsFlag: string; sessionFlag: string; systemPromptFlag: string; maxTurnsFlag: string; skipPermsFlag: string }> = {
@@ -98,16 +100,15 @@ export class AiCliTool implements AgentTool {
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const prompt = this.requireString(input?.prompt, 'ai_cli prompt');
         const cli = this.requireCli(input?.cli);
+        const sandbox = resolveSandboxPolicy(this.toolsOptions ?? undefined);
+        const cliCommand = CLI_COMMANDS[cli].cmd;
 
-        const aiCliOpts = (this.toolsOptions as any)?.aiCli as AgentAiCliOptions | undefined;
-        const workspaceRoot = this.toolsOptions?.file?.rootDir;
+        const aiCliOpts = this.toolsOptions?.aiCli as AgentAiCliOptions | undefined;
 
         const request: AiCliRequest = {
             prompt,
             cli,
-            workingDirectory: typeof input?.working_directory === 'string'
-                ? input.working_directory
-                : workspaceRoot,
+            workingDirectory: await this.resolveWorkingDirectory(input?.working_directory),
             timeoutMs: typeof input?.timeout_ms === 'number'
                 ? input.timeout_ms
                 : aiCliOpts?.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS,
@@ -135,6 +136,7 @@ export class AiCliTool implements AgentTool {
         if (this.adapter) {
             result = await this.adapter.execute(request);
         } else {
+            assertSandboxCommand(cliCommand, sandbox, this.name);
             result = await this.executeSubprocess(request, cli);
         }
 
@@ -152,8 +154,7 @@ export class AiCliTool implements AgentTool {
         const config = CLI_COMMANDS[cli];
         const timeout = request.timeoutMs ?? DEFAULT_TIMEOUT_MS;
         const args = this.buildArgs(request, config);
-
-        const env = { ...process.env, ...(request.env ?? {}) };
+        const env = buildSandboxEnv({ ...process.env, ...(request.env ?? {}) }, resolveSandboxPolicy(this.toolsOptions ?? undefined));
 
         return new Promise((resolve) => {
             const child = spawn(config.cmd, args, {
@@ -299,6 +300,16 @@ export class AiCliTool implements AgentTool {
         }
 
         return env;
+    }
+
+    private async resolveWorkingDirectory(workingDirectory: unknown): Promise<string | undefined> {
+        const policy = resolveFilePolicy(this.toolsOptions ?? undefined);
+        if (typeof workingDirectory !== 'string' || !workingDirectory.trim()) {
+            return policy.rootDir;
+        }
+        const resolved = resolveWorkspacePath(workingDirectory, policy.rootDir);
+        await assertNoSymlinkInWorkspacePath(resolved, policy.rootDir);
+        return resolved;
     }
 
     private discoverContextFiles(workingDirectory: string): string[] {

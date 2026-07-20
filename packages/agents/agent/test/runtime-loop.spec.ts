@@ -90,6 +90,71 @@ class ToolLoopModelAdapter extends EchoModelAdapter {
     }
 }
 
+class BlankAfterToolErrorModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-1', name: 'echo', input: { value: 'from-tool' } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: '',
+            stopReason: 'end'
+        };
+    }
+}
+
+class BlankResponseModelAdapter extends EchoModelAdapter {
+    async complete(): Promise<any> {
+        return {
+            message: '',
+            stopReason: 'end'
+        };
+    }
+}
+
+class BlankThenAnswerModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                message: '',
+                stopReason: 'end'
+            };
+        }
+        return {
+            message: 'Recovered answer',
+            stopReason: 'end'
+        };
+    }
+}
+
+class BlankThenFollowUpRecoveryModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count <= 2) {
+            return {
+                message: '',
+                stopReason: 'end'
+            };
+        }
+        return {
+            message: 'Recovered from follow-up context',
+            stopReason: 'end'
+        };
+    }
+}
+
 class StreamingToolLoopModelAdapter extends EchoModelAdapter {
     private count = 0;
     private releaseSecondChunk?: () => void;
@@ -113,6 +178,23 @@ class StreamingToolLoopModelAdapter extends EchoModelAdapter {
             this.releaseSecondChunk = resolve;
         });
         yield { type: 'text', content: 'finished' };
+        yield { type: 'done' };
+    }
+}
+
+class DoneChunkToolLoopModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async *stream(): AsyncGenerator<any> {
+        this.count++;
+        if (this.count === 1) {
+            yield {
+                type: 'done',
+                toolCalls: [{ id: 'tool-1', name: 'echo', input: { value: 'from-tool' } }]
+            };
+            return;
+        }
+        yield { type: 'text', content: 'tool-finished' };
         yield { type: 'done' };
     }
 }
@@ -763,6 +845,58 @@ export class RuntimeLoopTest {
         expect(app.events.some(event => event instanceof AgentMemoryRetrievalFailedEvent)).toEqual(false);
     }
 
+    @Test('rewrites short follow-up answers after clarification into shared model context')
+    async rewritesClarificationFollowUpIntoModelRequest() {
+        const model = new CapturingModelAdapter();
+        const sessions = new InMemorySessionStore();
+        await sessions.append('s1', { id: 'u1', role: 'user', content: 'Check deployment status', createdAt: 1 } as any);
+        await sessions.append('s1', { id: 'a1', role: 'assistant', content: 'Which region should I check?', createdAt: 2 } as any);
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            sessions,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'us-east-1');
+
+        const contents = model.requests[0].messages.map((message: any) => message.content);
+        expect(contents).toContain('Check deployment status');
+        expect(contents).toContain('Which region should I check?');
+        expect(contents[contents.length - 1]).toContain('[Follow-up Context]');
+        expect(contents[contents.length - 1]).toContain('Previous user request: Check deployment status');
+        expect(contents[contents.length - 1]).toContain('Assistant clarification: Which region should I check?');
+        expect(contents[contents.length - 1]).toContain('User follow-up answer: us-east-1');
+    }
+
+    @Test('recovers empty replies by compacting rewritten follow-up context into a focused retry')
+    async recoversEmptyRepliesFromClarificationFollowUp() {
+        const model = new BlankThenFollowUpRecoveryModelAdapter();
+        const sessions = new InMemorySessionStore();
+        await sessions.append('s1', { id: 'u1', role: 'user', content: '查看今天的天气', createdAt: 1 } as any);
+        await sessions.append('s1', { id: 'a1', role: 'assistant', content: '请告诉我你要查询哪个城市/地区的今天天气。', createdAt: 2 } as any);
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            sessions,
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', '成都');
+
+        expect(result.message.content).toEqual('Recovered from follow-up context');
+        expect(model.requests.length).toEqual(3);
+        expect(model.requests[0].messages[model.requests[0].messages.length - 1].content).toContain('[Follow-up Context]');
+        expect(model.requests[2].messages.filter((message: any) => message.role === 'user').length).toEqual(1);
+        expect(model.requests[2].messages[model.requests[2].messages.length - 1].content).toContain('User follow-up answer: 成都');
+    }
+
     @Test('publishes memory retrieval lifecycle events on success')
     async publishesMemoryRetrievalLifecycleEventsOnSuccess() {
         const model = new CapturingModelAdapter();
@@ -1072,6 +1206,38 @@ export class RuntimeLoopTest {
         expect(messages[messages.length - 1].content).toEqual('tool-finished');
     }
 
+    @Test('streaming turn promotes done chunk tool calls into the shared tool loop')
+    async streamingTurnPromotesDoneChunkToolCalls() {
+        const runtime = new DefaultAgentRuntime(
+            new DoneChunkToolLoopModelAdapter(),
+            new EchoToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const stream = runtime.runStreamingTurn('s1', 'hello');
+        const first = await stream.next();
+        expect(first.value?.type).toEqual('tool_call');
+        expect(first.value?.content).toEqual('echo');
+
+        const second = await stream.next();
+        expect(second.value?.type).toEqual('text');
+        expect(second.value?.content).toEqual('tool-finished');
+
+        const done = await stream.next();
+        expect(done.value?.type).toEqual('done');
+
+        const completed = await stream.next();
+        expect(completed.done).toEqual(true);
+
+        const messages = await runtime.getMessages('s1');
+        expect(messages.some(message => message.role === 'tool')).toEqual(true);
+        expect(messages[messages.length - 1].content).toEqual('tool-finished');
+    }
+
     @Test('stores tool error result and continues turn')
     async storesToolErrorResultAndContinuesTurn() {
         const runtime = new DefaultAgentRuntime(
@@ -1093,6 +1259,55 @@ export class RuntimeLoopTest {
         expect(toolMessages.length).toBeGreaterThan(0);
         expect(toolMessages[0].content).toContain('tool failed');
         expect(toolMessages[0].metadata?.error).toEqual('tool failed');
+    }
+
+    @Test('synthesizes assistant fallback when tool fails and model returns blank')
+    async synthesizesAssistantFallbackWhenToolFailsAndModelReturnsBlank() {
+        const runtime = new DefaultAgentRuntime(
+            new BlankAfterToolErrorModelAdapter(),
+            new FailingToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'weather please');
+        expect(result.message.content).toContain(`I couldn't complete the request because a required tool failed`);
+        expect(result.message.content).toContain('tool failed');
+    }
+
+    @Test('synthesizes assistant fallback when model returns blank without tool errors')
+    async synthesizesAssistantFallbackWhenModelReturnsBlankWithoutToolErrors() {
+        const runtime = new DefaultAgentRuntime(
+            new BlankResponseModelAdapter(),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        expect(result.message.content).toContain(`I couldn't complete the request because the model returned an empty response.`);
+    }
+
+    @Test('retries once when model returns blank response')
+    async retriesOnceWhenModelReturnsBlankResponse() {
+        const runtime = new DefaultAgentRuntime(
+            new BlankThenAnswerModelAdapter(),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+        expect(result.message.content).toEqual('Recovered answer');
     }
 
     @Test('stores each tool result independently after tool failure')

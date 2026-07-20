@@ -5,6 +5,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { ProcessRegistry } from './ProcessRegistry';
 
 const DEFAULT_MAX_OUTPUT_CHARS = 16 * 1024;
@@ -40,10 +41,19 @@ export class ProcessStartTool implements AgentTool {
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
         const command = this.requireCommand(input?.command);
+        const sandbox = resolveSandboxPolicy(this.options);
+        assertSandboxCommand(command, sandbox, this.name);
         this.processes.assertSessionCapacity(context.sessionId, this.resolveMaxProcessesPerSession());
         const cwd = await this.resolveCwd(input?.workdir);
         const maxOutputChars = this.resolveMaxOutputChars(input?.maxOutputChars);
-        const record = this.processes.start(context.sessionId, randomUUID(), command, cwd, maxOutputChars);
+        const record = this.processes.start(
+            context.sessionId,
+            randomUUID(),
+            command,
+            cwd,
+            maxOutputChars,
+            buildSandboxEnv(process.env, sandbox)
+        );
         return {
             process: record
         };

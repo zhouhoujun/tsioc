@@ -40,7 +40,8 @@ export function resolveAgentConsoleInputSuggestions(
     input: string,
     cursor: number,
     commands: string[] = [],
-    tools: AgentConsoleToolItem[] = []
+    tools: AgentConsoleToolItem[] = [],
+    workspaceSuggestions: AgentConsoleSelectOption[] = []
 ): AgentConsoleSelectOption[] {
     const active = getAgentConsoleInputTokenRange(input, cursor);
     if (!active?.token) {
@@ -55,13 +56,24 @@ export function resolveAgentConsoleInputSuggestions(
         }));
     }
     if (active.token.startsWith('@')) {
-        const mentions = getAgentConsoleMentionCandidates(tools);
-        const matches = mentions.filter(item => item.startsWith(active.token));
-        const options = (matches.length ? matches : mentions).filter(Boolean);
-        return options.map(item => ({
+        const mentions = getAgentConsoleMentionCandidates(tools).map(item => ({
             label: item,
             value: item
         }));
+        const mentionMatches = mentions.filter(item => item.value.startsWith(active.token));
+        const options = active.token === '@'
+            ? [...mentions, ...workspaceSuggestions]
+            : [...mentionMatches, ...workspaceSuggestions];
+        const deduped: AgentConsoleSelectOption[] = [];
+        const seen = new Set<string>();
+        options.forEach(option => {
+            if (!option?.value || seen.has(option.value)) {
+                return;
+            }
+            seen.add(option.value);
+            deduped.push(option);
+        });
+        return deduped;
     }
     return [];
 }

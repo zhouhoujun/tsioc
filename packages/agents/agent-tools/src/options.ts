@@ -1,4 +1,5 @@
 import { AgentMcpOptions } from '../mcp/types';
+import { AgentAiCliOptions } from '../ai-cli/types';
 
 export interface WebSearchResult {
     title: string;
@@ -31,6 +32,16 @@ export interface AgentToolsTerminalOptions {
     maxTimeoutMs?: number;
 }
 
+export interface AgentToolsSandboxOptions {
+    enabled?: boolean;
+    maxCommandLength?: number;
+    allowedCommands?: string[];
+    blockedCommands?: string[];
+    inheritEnv?: boolean;
+    allowedEnv?: string[];
+    blockedEnv?: string[];
+}
+
 export interface AgentToolsProcessOptions {
     maxProcessesPerSession?: number;
     maxOutputChars?: number;
@@ -44,6 +55,15 @@ export interface AgentToolsHttpOptions {
 
 export interface AgentToolsPdfOptions {
     adapter?: import('../media').PdfReadAdapter;
+}
+
+export interface AgentToolsWeatherOptions {
+    adapter?: import('../utility').WeatherAdapter;
+    fetch?: typeof fetch;
+    timeoutMs?: number;
+    geocodingBaseUrl?: string;
+    forecastBaseUrl?: string;
+    userAgent?: string;
 }
 
 export interface AgentToolsScheduleOptions {
@@ -173,7 +193,10 @@ export interface AgentToolsOptions {
     http?: AgentToolsHttpOptions;
     terminal?: AgentToolsTerminalOptions;
     process?: AgentToolsProcessOptions;
+    sandbox?: AgentToolsSandboxOptions;
+    aiCli?: AgentAiCliOptions;
     pdf?: AgentToolsPdfOptions;
+    weather?: AgentToolsWeatherOptions;
     schedule?: AgentToolsScheduleOptions;
     roots?: string[];
     mcp?: AgentMcpOptions;
@@ -196,6 +219,18 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
     http: {
         timeoutMs: 15000,
         maxResponseChars: 12000
+    },
+    sandbox: {
+        enabled: true,
+        maxCommandLength: 4000,
+        inheritEnv: true,
+        blockedEnv: []
+    },
+    weather: {
+        timeoutMs: 15000,
+        geocodingBaseUrl: 'https://geocoding-api.open-meteo.com/v1',
+        forecastBaseUrl: 'https://api.open-meteo.com/v1',
+        userAgent: 'tsdi-agent/6'
     },
     registration: {
         preset: 'default',
@@ -220,11 +255,22 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
             ...(defaultAgentToolsOptions.http ?? {}),
             ...(options?.http ?? {})
         },
+        weather: {
+            ...(defaultAgentToolsOptions.weather ?? {}),
+            ...(options?.weather ?? {})
+        },
         terminal: {
             ...(options?.terminal ?? {})
         },
         process: {
             ...(options?.process ?? {})
+        },
+        sandbox: {
+            ...(defaultAgentToolsOptions.sandbox ?? {}),
+            ...(options?.sandbox ?? {})
+        },
+        aiCli: {
+            ...(options?.aiCli ?? {})
         },
         pdf: {
             ...(options?.pdf ?? {})

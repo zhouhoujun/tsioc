@@ -6,6 +6,7 @@ import { SessionHandler } from '../api/SessionHandler';
 import { MemoryHandler } from '../api/MemoryHandler';
 import { ToolsHandler } from '../api/ToolsHandler';
 import { EventHandler } from '../api/EventHandler';
+import { AppRpcHandler } from '../api/AppRpcHandler';
 import { ChatWebSocket } from '../ws/ChatWebSocket';
 import { GATEWAY_CONFIG } from '../tokens';
 import { GatewayConfig, defaultGatewayConfig } from '../contracts/GatewayConfig';
@@ -25,6 +26,7 @@ export class GatewayBootstrap {
         private sessions: SessionHandler,
         private memory: MemoryHandler,
         private tools: ToolsHandler,
+        @Optional() private rpc?: AppRpcHandler | null,
         @Optional() private events?: EventHandler | null,
         @Optional() private chatWs?: ChatWebSocket | null,
         @Inject(GATEWAY_CONFIG, { nullable: true }) private config: GatewayConfig = defaultGatewayConfig
@@ -39,6 +41,7 @@ export class GatewayBootstrap {
             ...this.sessions.getRoutes(),
             ...this.memory.getRoutes(),
             ...this.tools.getRoutes(),
+            ...(this.rpc?.getRoutes() ?? []),
             ...(this.events?.getRoutes() ?? []),
             ...(this.chatWs?.getRoutes() ?? [])
         ];

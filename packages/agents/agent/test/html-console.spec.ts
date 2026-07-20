@@ -129,6 +129,29 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).toContain('world');
     }
 
+    @Test('filters tool transcript rows from the main messages panel')
+    async filtersToolTranscriptRowsFromMainMessagesPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: '查看成都天气', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: '', createdAt: 2, metadata: { toolCalls: [{ id: 'tc1', name: 'weather' }] } } as any,
+            { id: 't1', role: 'tool', content: '{"location":"Chengdu"}', createdAt: 3 } as any,
+            { id: 'a2', role: 'assistant', content: '成都当前天气：晴', createdAt: 4 } as any
+        ]);
+        await ref.render();
+        await Promise.resolve();
+
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
+        const renderedLines = Array.from(messagesRoot.querySelectorAll('label'))
+            .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap'));
+
+        expect(renderedLines.length).toEqual(2);
+        expect(messagesRoot.textContent).toContain('查看成都天气');
+        expect(messagesRoot.textContent).toContain('成都当前天气：晴');
+        expect(messagesRoot.textContent).not.toContain('{"location":"Chengdu"}');
+    }
+
     @After()
     async clean() {
         await this.ctx?.close();

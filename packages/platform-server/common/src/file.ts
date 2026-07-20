@@ -1,8 +1,8 @@
 import { Injectable, isArray, isNil, isString, TypeException } from '@tsdi/ioc';
-import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, FileAdapter, FileStats, FindOptions, ForbiddenException, InternalServerException, IReadable, IStats, NotFoundException, Encodings } from '@tsdi/common';
+import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, FileAdapter, FileDirectoryEntry, FileStats, FindOptions, ForbiddenException, InternalServerException, IReadable, IStats, NotFoundException, Encodings } from '@tsdi/common';
 import { isAbsolute, resolve, join, normalize, extname, basename, parse, sep } from 'node:path';
 import { existsSync, createReadStream, Stats, readFileSync } from 'node:fs';
-import { stat, readFile } from 'node:fs/promises';
+import { stat, readFile, readdir } from 'node:fs/promises';
 
 
 
@@ -155,6 +155,39 @@ export class NodeFileAdapter extends FileAdapter {
         const content = this.readTextSync(path);
         return JSON.parse(content);
     }
+
+    override async stat<T extends IStats = IStats>(path: string): Promise<T | null> {
+        try {
+            return await stat(path) as T;
+        } catch {
+            return null;
+        }
+    }
+
+    override async list(path: string): Promise<FileDirectoryEntry[]> {
+        try {
+            const entries = await readdir(path, { withFileTypes: true });
+            return entries
+                .slice()
+                .sort((left, right) => {
+                    if (left.isDirectory() !== right.isDirectory()) {
+                        return left.isDirectory() ? -1 : 1;
+                    }
+                    return left.name.localeCompare(right.name);
+                })
+                .map(entry => ({
+                    name: entry.name,
+                    path: this.join(path, entry.name),
+                    kind: entry.isDirectory()
+                        ? 'directory'
+                        : entry.isFile()
+                            ? 'file'
+                            : 'other'
+                }));
+        } catch {
+            return [];
+        }
+    }
 }
 
 
@@ -171,4 +204,3 @@ const indexFiles = ['index.html', 'index.htm', 'index.php', 'default.html', 'def
 const winAbsPath = /^[a-zA-Z]+:\//;
 const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
 const INDEX_REGEXP = /index(\.\w+)*$/;
-

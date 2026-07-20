@@ -4,6 +4,8 @@ import { promises as fs } from 'fs';
 import { spawnSync } from 'child_process';
 import { AgentToolsOptions } from '../src/options';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
+import { assertNoSymlinkInWorkspacePath, resolveFilePolicy, resolveWorkspacePath } from '../files/path-policy';
+import { assertSandboxCommand, buildSandboxEnv, resolveSandboxPolicy } from '../src/sandbox-policy';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const MAX_OUTPUT_CHARS = 16000;
@@ -54,7 +56,12 @@ export class GitOperationsTool implements AgentTool {
     };
     toolset = 'git';
     source = 'local';
-    execution = { readOnly: false, sideEffect: true, requiresSequential: true };
+    execution = {
+        readOnly: false,
+        sideEffect: true,
+        requiresSequential: true,
+        authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
+    };
 
     constructor(
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
@@ -69,6 +76,7 @@ export class GitOperationsTool implements AgentTool {
 
         const workdir = await this.resolveWorkdir(input?.workdir);
         this.assertGitRepo(workdir);
+        assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
         const args = this.buildArgs(action, input);
         const output = this.execGit(args, workdir, action);
@@ -91,15 +99,18 @@ export class GitOperationsTool implements AgentTool {
     }
 
     private async resolveWorkdir(workdir: unknown): Promise<string> {
+        const policy = resolveFilePolicy(this.options);
         if (typeof workdir === 'string' && workdir.trim()) {
+            const cwd = resolveWorkspacePath(workdir, policy.rootDir);
+            await assertNoSymlinkInWorkspacePath(cwd, policy.rootDir);
             try {
-                await fs.stat(workdir);
+                await fs.stat(cwd);
             } catch {
                 throw new Error(`Git workdir '${workdir}' does not exist.`);
             }
-            return workdir;
+            return cwd;
         }
-        return this.options?.file?.rootDir ?? process.cwd();
+        return policy.rootDir;
     }
 
     private assertGitRepo(workdir: string): void {
@@ -246,7 +257,8 @@ export class GitOperationsTool implements AgentTool {
             timeout: DEFAULT_TIMEOUT_MS,
             maxBuffer: MAX_OUTPUT_CHARS,
             encoding: 'utf8',
-            stdio: 'pipe'
+            stdio: 'pipe',
+            env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options))
         });
         const stdout = (result.stdout ?? '').slice(0, MAX_OUTPUT_CHARS);
         const stderr = (result.stderr ?? '').slice(0, MAX_OUTPUT_CHARS);

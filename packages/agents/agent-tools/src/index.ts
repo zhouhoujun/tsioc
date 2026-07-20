@@ -4,6 +4,9 @@ export * from './tokens';
 export * from './provider';
 export * from './agent-tools.module';
 export * from './env-loader';
+export * from './nested-agent-runner';
+export * from './sandbox-policy';
+export * from './weather-adapter';
 
 export * from '../files';
 export * from '../web';

@@ -1,4 +1,4 @@
-import { AgentConsoleSessionChoice, AgentConsoleUiDelegate, ModelProfile } from '@tsdi/agent';
+import { AgentConsoleSessionChoice, AgentConsoleUiDelegate, ModelProfile, SavedModelProfileChoice } from '@tsdi/agent';
 
 export type ShowSelectMenuFn = (
     title: string,
@@ -22,6 +22,7 @@ export type ListSessionsFn = () => Promise<AgentConsoleSessionChoice[]>;
 export type SwitchSessionFn = (sessionId?: string) => Promise<void>;
 
 export interface ModelProfileAdapter {
+    list?(): Promise<SavedModelProfileChoice[]>;
     apply(profile: ModelProfile): Promise<void>;
 }
 
@@ -107,6 +108,13 @@ export class TerminalConsoleUiDelegate extends AgentConsoleUiDelegate {
         if (this.modelAdapter) {
             await this.modelAdapter.apply(profile);
         }
+    }
+
+    override async listModelProfiles(): Promise<SavedModelProfileChoice[]> {
+        if (!this.modelAdapter?.list) {
+            return [];
+        }
+        return this.modelAdapter.list();
     }
 
     quit(): void {

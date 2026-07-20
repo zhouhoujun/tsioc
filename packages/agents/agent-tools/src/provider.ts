@@ -85,6 +85,9 @@ import {
     DefaultDataExportAdapter,
     DefaultApprovalAdapter
 } from './default-adapters';
+import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter } from './nested-agent-runner';
+import { OpenMeteoWeatherAdapter } from './weather-adapter';
+import { WeatherAdapter } from '../utility/weather.tool';
 
 const toolItems = {
     read_file: ReadFileTool,
@@ -534,6 +537,10 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
             provide: 'AGENT_TOOLS_PDF_READ_ADAPTER',
             useValue: merged.pdf?.adapter ?? null
         },
+        {
+            provide: WeatherAdapter,
+            useValue: merged.weather?.adapter ?? new OpenMeteoWeatherAdapter(merged.weather)
+        },
         ...(merged.mcp?.servers?.length ? provideMcpTools(merged.mcp) : []),
         DefaultBackupAdapter,
         DefaultKnowledgeAdapter,
@@ -544,6 +551,8 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         DefaultIntentVerifierAdapter,
         DefaultDataExportAdapter,
         DefaultApprovalAdapter,
+        DelegatingSpawnAgentAdapter,
+        DelegatingLlmTaskAdapter,
         provideResolvedAgentTools(),
         provideResolvedAgentToolBundles(),
         ...withAgentTools(...extraTools)

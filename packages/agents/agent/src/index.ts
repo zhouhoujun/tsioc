@@ -3,6 +3,7 @@ export * from './tokens';
 export * from './provider';
 export * from './agent.module';
 export * from './orm.module';
+export * from './AgentWorkspacePath';
 
 export * from './model/ModelAdapter';
 export * from './model/ModelRequest';
@@ -80,6 +81,7 @@ export * from './channels/PubSubAgentChannel';
 export * from './ui/AgentConsoleComponent';
 export * from './ui/AgentConsoleSessionState';
 export * from './ui/AgentConsoleSuggestions';
+export * from './ui/AgentConsoleWorkspaceMentions';
 export * from './ui/AgentConsoleMessageRenderers';
 export * from './ui/AgentConsoleEventBridge';
 export * from './ui/AgentConsoleUiDelegate';

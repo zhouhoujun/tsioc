@@ -90,6 +90,20 @@ interface SSEDelta {
 
 interface SSEChoice {
     delta: SSEDelta;
+    message?: {
+        tool_calls?: Array<{
+            id?: string;
+            type?: string;
+            function?: {
+                name?: string;
+                arguments?: string;
+            };
+        }>;
+        function_call?: {
+            name?: string;
+            arguments?: string;
+        };
+    };
     finish_reason?: string | null;
 }
 
@@ -251,7 +265,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     emitted.push({ type: 'reasoning', content: reasoningDelta });
                 }
 
-                const toolCallDeltas = choice.delta?.tool_calls;
+                const toolCallDeltas = this.extractStreamToolCallDeltas(choice);
                 if (toolCallDeltas) {
                     for (const tc of toolCallDeltas) {
                         const existing = accumulatedToolCalls.get(tc.index) ?? { args: '' };
@@ -616,6 +630,87 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 .join('');
         }
         return '';
+    }
+
+    protected extractStreamToolCallDeltas(choice?: SSEChoice | null): Array<{
+        index: number;
+        id?: string;
+        type?: string;
+        function?: {
+            name?: string;
+            arguments?: string;
+        };
+    }> {
+        if (!choice) {
+            return [];
+        }
+
+        const directToolCalls = choice.delta?.tool_calls;
+        if (Array.isArray(directToolCalls) && directToolCalls.length) {
+            return directToolCalls.map((toolCall, index) => ({
+                index: typeof toolCall.index === 'number' ? toolCall.index : index,
+                id: toolCall.id,
+                type: toolCall.type,
+                function: toolCall.function
+            }));
+        }
+
+        const legacyFunctionCall = (choice.delta as any)?.function_call ?? choice.message?.function_call;
+        if (legacyFunctionCall?.name || legacyFunctionCall?.arguments) {
+            return [{
+                index: 0,
+                function: {
+                    name: legacyFunctionCall.name,
+                    arguments: legacyFunctionCall.arguments
+                }
+            }];
+        }
+
+        const messageToolCalls = choice.message?.tool_calls;
+        if (Array.isArray(messageToolCalls) && messageToolCalls.length) {
+            return messageToolCalls.map((toolCall, index) => ({
+                index,
+                id: toolCall.id,
+                type: toolCall.type,
+                function: toolCall.function
+            }));
+        }
+
+        if (Array.isArray(choice.delta?.content)) {
+            const contentToolCalls = choice.delta.content
+                .map((part: any, index: number) => {
+                    if (!part || typeof part !== 'object') {
+                        return null;
+                    }
+                    if (Array.isArray(part.tool_calls) && part.tool_calls.length) {
+                        return part.tool_calls.map((toolCall: any, nestedIndex: number) => ({
+                            index: typeof toolCall.index === 'number' ? toolCall.index : nestedIndex,
+                            id: toolCall.id,
+                            type: toolCall.type,
+                            function: toolCall.function
+                        }));
+                    }
+                    if (part.type === 'tool_call' || part.type === 'tool_calls' || part.function) {
+                        return [{
+                            index,
+                            id: part.id,
+                            type: part.type,
+                            function: part.function ?? {
+                                name: part.name,
+                                arguments: part.arguments
+                            }
+                        }];
+                    }
+                    return null;
+                })
+                .filter(Boolean)
+                .flat() as Array<{ index: number; id?: string; type?: string; function?: { name?: string; arguments?: string } }>;
+            if (contentToolCalls.length) {
+                return contentToolCalls;
+            }
+        }
+
+        return [];
     }
 
     protected createTimeoutContext(): { signal?: AbortSignal, cleanup(): void } {

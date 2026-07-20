@@ -232,6 +232,12 @@ export class EventHandler {
         ];
     }
 
+    getHistory(sessionId: string): { events: GatewayEventRecord[]; } {
+        return {
+            events: this.history.filter(event => event.sessionId === sessionId)
+        };
+    }
+
     private async ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): Promise<boolean> {
         const principalId = getRequestPrincipalId(req);
         if (await this.owners.isOwner(sessionId, principalId)) {

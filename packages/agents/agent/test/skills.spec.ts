@@ -53,6 +53,10 @@ export class AgentExtensionHooksTest {
             const runtime = ctx.get(AgentRuntime);
             await runtime.runTurn('s1', 'hello');
             const system = model.requests[0].messages[0].content;
+            expect(system).toContain('autonomous task agent');
+            expect(system).toContain('break the work into smaller steps');
+            expect(system).toContain('spawn_agent');
+            expect(system).toContain('continue the task directly');
             expect(system).toContain('## Injected Section');
             expect(system).toContain('custom prompt section');
         } finally {

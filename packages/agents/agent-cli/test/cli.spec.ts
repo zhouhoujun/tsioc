@@ -2,6 +2,7 @@ import expect = require('expect');
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
 import {
     TuiRenderer,
@@ -37,6 +38,7 @@ import {
     AgentConsoleUiDelegate,
     ModelProfile
 } from '@tsdi/agent';
+import { NestedAgentRunner } from '@tsdi/agent-tools';
 import { runAgentApplication } from '../src/run-command';
 import {
     createAgentCli,
@@ -49,6 +51,10 @@ import {
     parseSlashCommandLine,
     buildChatSessionId,
     pickRestoredSessionId,
+    resolveInteractiveWorkspacePath,
+    resolveLaunchWorkspace,
+    withAdapterProviders,
+    runAgentRpcStdio,
     writeProviderProfile,
     writeSettingsModelProfile
 } from '../src';
@@ -150,9 +156,37 @@ export class AgentCliTest {
         const commandNames = cli.commands.map(cmd => cmd.name());
         expect(commandNames.includes('run')).toBe(true);
         expect(commandNames.includes('chat')).toBe(true);
+        expect(commandNames.includes('rpc-stdio')).toBe(true);
         const hasToolsCmd = commandNames.some(name => name.startsWith('tools'));
         expect(hasToolsCmd).toBe(true);
         expect(cli.args.length).toBe(0);
+    }
+
+    @Test('runs shared rpc stdio server through cli entrypoint')
+    async runsSharedRpcStdioServerThroughCliEntrypoint() {
+        const input = new PassThrough();
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        const running = runAgentRpcStdio({
+            provider: 'echo',
+            model: 'echo'
+        }, {
+            input,
+            output
+        });
+
+        input.write('{"jsonrpc":"2.0","id":1,"method":"app.ping"}\n');
+        input.end();
+        await running;
+
+        const response = JSON.parse(buffer.trim());
+        expect(response.jsonrpc).toBe('2.0');
+        expect(response.id).toBe(1);
+        expect(response.result.ok).toBe(true);
     }
 
     @Test('package main and bin entries point to runnable files')
@@ -183,6 +217,27 @@ export class AgentCliTest {
             model: 'echo'
         });
         expect(output).toContain('Echo: hello agent');
+    }
+
+    @Test('nested agent runner executes delegated turn')
+    async nestedAgentRunnerExecutesDelegatedTurn() {
+        const root = await this.createRoot();
+        const adapterProvider = withAdapterProviders({
+            root,
+            provider: 'echo',
+            model: 'echo',
+            session: 'parent-session'
+        }).find((provider: any) => provider.provide === NestedAgentRunner);
+        const adapter = adapterProvider?.useValue as NestedAgentRunner;
+
+        const result = await adapter.run({
+            prompt: 'Summarize delegated work with delegated context.'
+        });
+
+        expect(result.content).toContain('Summarize delegated work');
+        expect(result.content).toContain('delegated context');
+        expect(result.turnCount).toBe(1);
+        expect(result.model).toBe('echo');
     }
 
     @Test('resolves tui renderer for interactive chat application context')
@@ -283,6 +338,12 @@ export class AgentCliTest {
         const resolved = resolveCliConfig({ root, workspace: '/custom/workspace' });
         expect(resolved.workspace).toBe('/custom/workspace');
         expect(resolved.tools.file?.rootDir).toBe('/custom/workspace');
+    }
+
+    @Test('interactive ui workspace defaults to current working directory')
+    interactiveUiWorkspaceDefaultsToCurrentWorkingDirectory() {
+        expect(resolveInteractiveWorkspacePath({}, '/resolved/workspace')).toBe(resolveLaunchWorkspace());
+        expect(resolveInteractiveWorkspacePath({ workspace: '/custom/workspace' }, '/resolved/workspace')).toBe('/custom/workspace');
     }
 
     @Test('writes default workspace settings and provider profile')

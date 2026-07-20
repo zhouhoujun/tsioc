@@ -26,12 +26,12 @@ export class ProcessRegistry {
         }
     }
 
-    start(sessionId: string, id: string, command: string, cwd: string, maxOutputChars: number): ManagedProcessRecord {
+    start(sessionId: string, id: string, command: string, cwd: string, maxOutputChars: number, env?: NodeJS.ProcessEnv): ManagedProcessRecord {
         const child = spawn(command, {
             cwd,
             shell: true,
             detached: process.platform !== 'win32',
-            env: process.env
+            env: env ?? process.env
         });
         const record: ManagedProcessRecord = {
             id,

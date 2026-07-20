@@ -1,9 +1,13 @@
 import expect = require('expect');
+import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
 import { HttpAuthService, JWTService } from '@tsdi/security';
 import { GatewayServer } from '../src/gateway/GatewayServer';
 import { RouteMatcher } from '../src/gateway/RouteMatcher';
 import { ChatWebSocket } from '../src/ws/ChatWebSocket';
+import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
+import { StdioAppRpcServer } from '../src/app-rpc/StdioAppRpcServer';
+import { AppRpcHandler } from '../src/api/AppRpcHandler';
 import { RateLimiter } from '../src/auth/RateLimiter';
 import { AuthMiddleware, getRequestPrincipalId, setRequestAuth } from '../src/auth/AuthMiddleware';
 import { PairingStore } from '../src/auth/PairingStore';
@@ -885,6 +889,74 @@ export class ChatWebSocketTest {
         expect(frame.type).toEqual('error');
         expect(frame.error).toEqual('session queue limit reached');
     }
+
+    @Test('routes json-rpc websocket messages through shared app rpc server')
+    async routesJsonRpcMessagesThroughSharedAppRpcServer() {
+        const writes: string[] = [];
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('s1', 'user-1');
+        const ws = new ChatWebSocket({} as any, owners, {
+            enqueue: async (_sessionId: string, task: () => Promise<void>) => task(),
+            remove: () => undefined
+        } as any, {
+            async *streamPayload(payload: any) {
+                yield {
+                    jsonrpc: '2.0',
+                    method: 'run.turn_stream.chunk',
+                    params: {
+                        requestId: payload.id,
+                        sessionId: payload.params.sessionId,
+                        chunkType: 'text',
+                        content: 'hel'
+                    }
+                };
+                yield {
+                    jsonrpc: '2.0',
+                    id: payload.id,
+                    result: {
+                        sessionId: payload.params.sessionId,
+                        message: { content: 'hello' }
+                    }
+                };
+            }
+        } as any);
+        const socket = {
+            write: (buffer: Buffer) => {
+                const payloadLength = buffer[1] & 0x7f;
+                const offset = payloadLength < 126 ? 2 : 4;
+                writes.push(buffer.subarray(offset).toString('utf8'));
+                return true;
+            }
+        } as any;
+
+        await (ws as any).handleMessage(socket, JSON.stringify({
+            jsonrpc: '2.0',
+            id: 7,
+            method: 'run.turn_stream',
+            params: { input: 'hello' }
+        }), 's1', 'user-1');
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        expect(JSON.parse(writes[0])).toEqual({
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId: 7,
+                sessionId: 's1',
+                chunkType: 'text',
+                content: 'hel'
+            }
+        });
+        expect(JSON.parse(writes[1])).toEqual({
+            jsonrpc: '2.0',
+            id: 7,
+            result: {
+                sessionId: 's1',
+                message: { content: 'hello' }
+            }
+        });
+    }
 }
 
 @Suite('AuditHandler')
@@ -1085,5 +1157,409 @@ export class PairingStoreTest {
 
         expect(store.validate(code.code)).toBe(true);
         expect(store.validate(code.code)).toBe(false);
+    }
+}
+
+@Suite('AppRpcServer')
+export class AppRpcServerTest {
+    @Test('runs turns through shared json-rpc session flow')
+    async runsTurnsThroughJsonRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async runTurn(sessionId: string, input: string) {
+                await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
+                await store.append(sessionId, { id: 'a1', role: 'assistant', content: `done:${input}`, createdAt: 2 } as any);
+                return { output: `done:${input}` };
+            },
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory(sessionId: string, key: string, value: string) {
+                const record = { id: `${sessionId}:${key}`, sessionId, key, value, scope: 'session', createdAt: Date.now() } as any;
+                await memory.put(record);
+                return record;
+            },
+            async searchMemory(sessionId: string, query: string) {
+                return memory.search(query, sessionId);
+            }
+        } as any;
+        const tools = {
+            getToolDefinitions() {
+                return [{ name: 'echo', description: 'Echo tool' }];
+            },
+            async activateTool() {
+                return true;
+            },
+            async invoke(name: string, input: any, sessionId: string) {
+                return { name, input, sessionId };
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, tools, owners, sessions, events);
+
+        const runResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'run.turn',
+            params: { sessionId: 'rpc-s1', input: 'hello' }
+        }, { principalId: 'user-1' });
+        expect((runResponse as any).result.sessionId).toEqual('rpc-s1');
+        expect((runResponse as any).result.message.content).toEqual('done:hello');
+
+        const memoryResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'memory.put',
+            params: { sessionId: 'rpc-s1', key: 'city', value: 'chengdu' }
+        }, { principalId: 'user-1' });
+        expect((memoryResponse as any).result.key).toEqual('city');
+
+        const listResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'session.list',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((listResponse as any).result.length).toEqual(1);
+        expect((listResponse as any).result[0].id).toEqual('rpc-s1');
+
+        const toolResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'tools.invoke',
+            params: { sessionId: 'rpc-s1', name: 'echo', input: { value: 'x' } }
+        }, { principalId: 'user-1' });
+        expect((toolResponse as any).result.output).toEqual({ name: 'echo', input: { value: 'x' }, sessionId: 'rpc-s1' });
+    }
+
+    @Test('rejects foreign session access through json-rpc')
+    async rejectsForeignSessionAccess() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await owners.create('rpc-locked', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages() {
+                return [];
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'session.messages',
+            params: { sessionId: 'rpc-locked' }
+        }, { principalId: 'user-2' });
+        expect((response as any).error.code).toEqual(-32003);
+        expect((response as any).error.message).toEqual('Forbidden');
+    }
+
+    @Test('supports json-rpc batch requests and notifications')
+    async supportsBatchRequestsAndNotifications() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async runTurn(sessionId: string, input: string) {
+                await store.append(sessionId, { id: `${sessionId}-u`, role: 'user', content: input, createdAt: 1 } as any);
+                await store.append(sessionId, { id: `${sessionId}-a`, role: 'assistant', content: `ok:${input}`, createdAt: 2 } as any);
+                return { output: `ok:${input}` };
+            },
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const response = await rpc.handlePayload([{
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'app.ping'
+        }, {
+            jsonrpc: '2.0',
+            method: 'session.create',
+            params: { sessionId: 'notify-only' }
+        }, {
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'run.turn',
+            params: { sessionId: 'rpc-batch', input: 'hello' }
+        }], { principalId: 'user-1' });
+
+        expect(response).toBeTruthy();
+        expect(Array.isArray(response)).toEqual(true);
+        expect((response as any[]).length).toEqual(2);
+        expect((response as any[])[0].id).toEqual(1);
+        expect((response as any[])[1].id).toEqual(2);
+        expect(await owners.getOwner('notify-only')).toEqual('user-1');
+    }
+
+    @Test('streams shared turn chunks and final response')
+    async streamsSharedTurnChunksAndFinalResponse() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async *runStreamingTurn(sessionId: string, input: string) {
+                await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
+                yield { type: 'text', content: 'hel' };
+                yield { type: 'text', content: 'lo' };
+                await store.append(sessionId, { id: 'a1', role: 'assistant', content: 'hello', createdAt: 2 } as any);
+                yield { type: 'done' };
+            },
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+
+        const frames: any[] = [];
+        for await (const frame of rpc.streamPayload({
+            jsonrpc: '2.0',
+            id: 11,
+            method: 'run.turn_stream',
+            params: { sessionId: 'rpc-stream', input: 'hello' }
+        }, { principalId: 'user-1' })) {
+            frames.push(frame);
+        }
+
+        expect(frames).toEqual([{
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId: 11,
+                sessionId: 'rpc-stream',
+                chunkType: 'text',
+                content: 'hel',
+                usage: undefined
+            }
+        }, {
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId: 11,
+                sessionId: 'rpc-stream',
+                chunkType: 'text',
+                content: 'lo',
+                usage: undefined
+            }
+        }, {
+            jsonrpc: '2.0',
+            id: 11,
+            result: {
+                sessionId: 'rpc-stream',
+                message: { id: 'a1', role: 'assistant', content: 'hello', createdAt: 2 }
+            }
+        }]);
+    }
+}
+
+@Suite('AppRpcHandler')
+export class AppRpcHandlerTest {
+    @Test('formats invalid rpc requests as json-rpc errors')
+    async formatsInvalidRpcRequests() {
+        const handler = new AppRpcHandler({
+            async handlePayload() {
+                throw new Error('boom');
+            }
+        } as any);
+        const route = handler.getRoutes()[0];
+        let body = '';
+        let status = 0;
+        const res = {
+            writeHead: (code: number) => {
+                status = code;
+                return res;
+            },
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler({} as any, res, {}, { id: 7 }, { principalId: 'user-1' });
+        expect(status).toEqual(200);
+        expect(JSON.parse(body)).toEqual({
+            jsonrpc: '2.0',
+            id: 7,
+            error: {
+                code: -32603,
+                message: 'boom'
+            }
+        });
+    }
+}
+
+@Suite('StdioAppRpcServer')
+export class StdioAppRpcServerTest {
+    @Test('streams json-rpc responses over jsonl stdio transport')
+    async streamsJsonRpcResponsesOverJsonlTransport() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async runTurn(sessionId: string, input: string) {
+                await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
+                await store.append(sessionId, { id: 'a1', role: 'assistant', content: `stdio:${input}`, createdAt: 2 } as any);
+                return { output: `stdio:${input}` };
+            },
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const stdio = new StdioAppRpcServer(rpc);
+        const input = new PassThrough();
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        stdio.start({ input, output, context: { principalId: 'user-1' } });
+        input.write('{"jsonrpc":"2.0","id":1,"method":"app.ping"}\n');
+        input.write('[{"jsonrpc":"2.0","method":"session.create","params":{"sessionId":"rpc-stdio"}},{"jsonrpc":"2.0","id":2,"method":"session.list","params":{}}]\n');
+        const waitForLines = async (expected: number) => {
+            const started = Date.now();
+            while (Date.now() - started < 250) {
+                if (buffer.trim().split('\n').filter(Boolean).length >= expected) {
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 5));
+            }
+        };
+        await waitForLines(2);
+        stdio.stop({ input });
+
+        const responses = buffer.trim().split('\n').map(line => JSON.parse(line));
+        expect(responses.length).toEqual(2);
+        expect(responses[0].id).toEqual(1);
+        expect(responses[0].result.ok).toEqual(true);
+        expect(Array.isArray(responses[1])).toEqual(true);
+        expect(responses[1][0].id).toEqual(2);
+        expect(responses[1][0].result[0].id).toEqual('rpc-stdio');
+    }
+
+    @Test('streams run turn chunks over stdio jsonl transport')
+    async streamsRunTurnChunksOverStdioJsonlTransport() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async *runStreamingTurn(sessionId: string, input: string) {
+                await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
+                yield { type: 'text', content: 'hel' };
+                await store.append(sessionId, { id: 'a1', role: 'assistant', content: 'hello', createdAt: 2 } as any);
+                yield { type: 'done' };
+            },
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events);
+        const stdio = new StdioAppRpcServer(rpc);
+        const input = new PassThrough();
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        stdio.start({ input, output, context: { principalId: 'user-1' } });
+        input.write('{"jsonrpc":"2.0","id":9,"method":"run.turn_stream","params":{"sessionId":"rpc-stdio-stream","input":"hello"}}\n');
+        const waitForLines = async (expected: number) => {
+            const started = Date.now();
+            while (Date.now() - started < 250) {
+                if (buffer.trim().split('\n').filter(Boolean).length >= expected) {
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 5));
+            }
+        };
+        await waitForLines(2);
+        stdio.stop({ input });
+
+        const responses = buffer.trim().split('\n').map(line => JSON.parse(line));
+        expect(responses).toEqual([{
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId: 9,
+                sessionId: 'rpc-stdio-stream',
+                chunkType: 'text',
+                content: 'hel'
+            }
+        }, {
+            jsonrpc: '2.0',
+            id: 9,
+            result: {
+                sessionId: 'rpc-stdio-stream',
+                message: { id: 'a1', role: 'assistant', content: 'hello', createdAt: 2 }
+            }
+        }]);
+    }
+
+    @Test('returns parse errors for invalid stdio jsonl frames')
+    async returnsParseErrorsForInvalidFrames() {
+        const stdio = new StdioAppRpcServer({
+            async handlePayload() {
+                return null;
+            }
+        } as any);
+        const input = new PassThrough();
+        const output = new PassThrough();
+        let buffer = '';
+        output.on('data', chunk => {
+            buffer += String(chunk);
+        });
+
+        stdio.start({ input, output });
+        input.write('{bad json}\n');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        stdio.stop({ input });
+
+        const response = JSON.parse(buffer.trim());
+        expect(response.error.code).toEqual(-32700);
     }
 }

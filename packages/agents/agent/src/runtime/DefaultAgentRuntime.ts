@@ -10,6 +10,7 @@ import { AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedE
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
+import { StreamChunk } from '../model/StreamChunk';
 import { ToolRegistry } from '../tools/ToolRegistry';
 import { ToolLoopDetector } from '../tools/ToolLoopDetector';
 import { ApprovalDecision, DefaultApprovalStrategy, ToolApprovalManager } from '../tools/ToolApprovalManager';
@@ -36,6 +37,9 @@ interface ToolInvocationResult {
     receipt: AgentToolExecutionReceipt;
     error?: Error;
 }
+
+const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
+const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 
 @Injectable()
 export class DefaultAgentRuntime extends AgentRuntime {
@@ -151,7 +155,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    async *runStreamingTurn(sessionId: string, input: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string; usage?: Record<string, any> }> {
+    async *runStreamingTurn(sessionId: string, input: string): AsyncGenerator<StreamChunk> {
         await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
         const userMessage = this.createMessage('user', input);
         await this.sessions.append(sessionId, userMessage);
@@ -198,11 +202,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
         loopDetector.reset();
         let round = 0;
         const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
+        let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
             const request = await this.buildModelRequest(sessionId, query, currentUserMessageId);
-            const response = await this.modelAdapter.complete(request);
+            let response = await this.modelAdapter.complete(request);
             await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+            if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
+                emptyResponseRetried = true;
+                response = await this.modelAdapter.complete(this.buildEmptyResponseRetryRequest(request));
+                await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+            }
+            if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
+                response = await this.modelAdapter.complete(this.buildFollowUpRecoveryRequest(request));
+                await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
+            }
 
             const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools);
             if (handled.message) {
@@ -219,19 +233,27 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const finalResponse = await this.modelAdapter.complete(finalRequest);
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, finalResponse));
 
-        const finalMessage = this.createMessage('assistant', finalResponse.message ?? '', undefined, undefined, finalResponse.metadata);
+        const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
         return { sessionId, message: finalMessage };
     }
 
-    private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string }, AgentTurnResult, void> {
+    private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string): AsyncGenerator<StreamChunk, AgentTurnResult, void> {
         const loopDetector = new ToolLoopDetector();
         loopDetector.reset();
         let round = 0;
         const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
+        let emptyResponseRetried = false;
 
         while (round <= maxRounds) {
             const request = await this.buildModelRequest(sessionId, query, currentUserMessageId);
-            const response = yield* this.collectStreamingResponse(sessionId, request);
+            let response = yield* this.collectStreamingResponse(sessionId, request);
+            if (!emptyResponseRetried && this.shouldRetryEmptyResponse(response)) {
+                emptyResponseRetried = true;
+                response = yield* this.collectStreamingResponse(sessionId, this.buildEmptyResponseRetryRequest(request));
+            }
+            if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
+                response = yield* this.collectStreamingResponse(sessionId, this.buildFollowUpRecoveryRequest(request));
+            }
 
             const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools);
             if (handled.message) {
@@ -248,13 +270,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId);
         const finalResponse = yield* this.collectStreamingResponse(sessionId, finalRequest);
 
-        const finalMessage = this.createMessage('assistant', finalResponse.message ?? '', undefined, undefined, finalResponse.metadata);
+        const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
         return { sessionId, message: finalMessage };
     }
 
     private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string): Promise<ModelRequest> {
         const state = await this.sessions.get(sessionId);
         let messages = this.getRecentMessages(state.messages, currentUserMessageId);
+        messages = this.rewriteClarificationFollowUp(messages, currentUserMessageId);
         messages = this.contextManager.pruneHistory(messages);
 
         const memory = this.contextManager.trimMemory(
@@ -285,6 +308,101 @@ export class DefaultAgentRuntime extends AgentRuntime {
         };
     }
 
+    private rewriteClarificationFollowUp(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {
+        const currentIndex = messages.findIndex(message => message.id === currentUserMessageId);
+        if (currentIndex < 1) {
+            return messages;
+        }
+        const currentUserMessage = messages[currentIndex];
+        if (currentUserMessage.role !== 'user' || !this.isShortClarificationAnswer(currentUserMessage.content)) {
+            return messages;
+        }
+        if (String(currentUserMessage.content || '').includes('[Follow-up Context]')) {
+            return messages;
+        }
+        const previousAssistantIndex = this.findPreviousMessageIndex(messages, currentIndex - 1, 'assistant');
+        if (previousAssistantIndex < 0) {
+            return messages;
+        }
+        const previousAssistant = messages[previousAssistantIndex];
+        if (!this.isClarificationAssistantMessage(previousAssistant.content)) {
+            return messages;
+        }
+        const previousUserIndex = this.findPreviousMessageIndex(messages, previousAssistantIndex - 1, 'user');
+        if (previousUserIndex < 0) {
+            return messages;
+        }
+        const previousUser = messages[previousUserIndex];
+        const rewritten = this.buildClarificationFollowUpContent(
+            previousUser.content,
+            previousAssistant.content,
+            currentUserMessage.content
+        );
+        return messages.map((message, index) => index === currentIndex
+            ? { ...message, content: rewritten }
+            : message);
+    }
+
+    private findPreviousMessageIndex(messages: AgentMessage[], startIndex: number, role: AgentMessage['role']): number {
+        for (let index = startIndex; index >= 0; index--) {
+            const message = messages[index];
+            if (message?.role !== role) {
+                continue;
+            }
+            if (message?.metadata?.streaming || message?.metadata?.slashCommand) {
+                continue;
+            }
+            return index;
+        }
+        return -1;
+    }
+
+    private isShortClarificationAnswer(content: string): boolean {
+        const text = String(content || '').trim();
+        if (!text || text.startsWith('/') || text.includes('\n') || text.includes('@')) {
+            return false;
+        }
+        if (text.length > 80) {
+            return false;
+        }
+        return !(/[.?!。？！]/.test(text) && text.length > 32);
+    }
+
+    private isClarificationAssistantMessage(content: string): boolean {
+        const text = String(content || '').trim();
+        if (!text) {
+            return false;
+        }
+        if (text.includes('?') || text.includes('？')) {
+            return true;
+        }
+        return /(please tell me|tell me|please provide|provide|which one|what is|what are|where is|where are|who is|who are|when is|when are|how many|i still need|i need|missing|clarify|confirmation|confirm|请告诉我|告诉我|请发我|请提供|请补充|还需要|需要你|缺少|确认一下|补充一下)/i.test(text);
+    }
+
+    private buildClarificationFollowUpContent(previousUser: string, previousAssistant: string, currentAnswer: string): string {
+        return [
+            '[Follow-up Context]',
+            `Previous user request: ${String(previousUser || '').trim()}`,
+            `Assistant clarification: ${String(previousAssistant || '').trim()}`,
+            `User follow-up answer: ${String(currentAnswer || '').trim()}`,
+            '',
+            'Continue the original task directly using the follow-up answer above.'
+        ].join('\n');
+    }
+
+    private findLatestFollowUpContextUserMessage(messages: AgentMessage[]): AgentMessage | undefined {
+        for (let index = messages.length - 1; index >= 0; index--) {
+            const message = messages[index];
+            if (message?.role !== 'user') {
+                continue;
+            }
+            if (String(message.content || '').includes('[Follow-up Context]')) {
+                return message;
+            }
+        }
+        return undefined;
+    }
+
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
         return this.toolRegistry.getCallableToolDefinitions(sessionId);
     }
@@ -292,21 +410,26 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private async *collectStreamingResponse(
         sessionId: string,
         request: ModelRequest
-    ): AsyncGenerator<{ type: 'text' | 'reasoning' | 'tool_call' | 'done'; content?: string; usage?: Record<string, any> }, ModelResponse, void> {
+    ): AsyncGenerator<StreamChunk, ModelResponse, void> {
         let message = '';
         let reasoningContent = '';
         let toolCalls: AgentToolCall[] = [];
         let usage: Record<string, any> | undefined;
         let metadata: Record<string, any> = {};
+        const seenToolCalls = new Set<string>();
 
         for await (const chunk of this.modelAdapter.stream(request)) {
-            if (chunk.type !== 'done' || chunk.usage) {
+            const freshToolCalls = this.collectFreshStreamingToolCalls(seenToolCalls, chunk.toolCalls);
+
+            if (chunk.type !== 'done' || chunk.usage || freshToolCalls.length) {
                 await this.app.publishEvent(new AgentStreamChunkEvent(
                     this,
                     sessionId,
-                    chunk.type,
-                    chunk.content,
-                    chunk.toolCalls,
+                    chunk.type === 'done' && freshToolCalls.length ? 'tool_call' : chunk.type,
+                    chunk.type === 'tool_call' || (chunk.type === 'done' && freshToolCalls.length)
+                        ? this.describeStreamingToolCalls(freshToolCalls)
+                        : chunk.content,
+                    freshToolCalls.length ? freshToolCalls : chunk.toolCalls,
                     chunk.usage
                 ));
             }
@@ -317,8 +440,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (chunk.type === 'reasoning') {
                 reasoningContent += chunk.content ?? '';
             }
-            if (chunk.type === 'tool_call' && chunk.toolCalls?.length) {
-                toolCalls = toolCalls.concat(chunk.toolCalls);
+            if (freshToolCalls.length) {
+                toolCalls = toolCalls.concat(freshToolCalls);
             }
             if (chunk.usage) {
                 usage = chunk.usage as Record<string, any>;
@@ -327,8 +450,23 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 metadata = { ...metadata, ...chunk.metadata };
             }
 
+            if (chunk.type === 'done' && freshToolCalls.length) {
+                yield {
+                    type: 'tool_call',
+                    content: this.describeStreamingToolCalls(freshToolCalls),
+                    toolCalls: freshToolCalls
+                };
+            }
+
             if (chunk.type !== 'done' || chunk.usage) {
-                yield { type: chunk.type, content: chunk.content, usage: chunk.usage as Record<string, any> | undefined };
+                yield {
+                    type: chunk.type,
+                    content: chunk.type === 'tool_call'
+                        ? this.describeStreamingToolCalls(freshToolCalls)
+                        : chunk.content,
+                    toolCalls: chunk.type === 'tool_call' ? freshToolCalls : undefined,
+                    usage: chunk.usage as Record<string, any> | undefined
+                };
             }
         }
 
@@ -343,6 +481,31 @@ export class DefaultAgentRuntime extends AgentRuntime {
         };
         await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
         return response;
+    }
+
+    private collectFreshStreamingToolCalls(
+        seen: Set<string>,
+        incoming?: AgentToolCall[]
+    ): AgentToolCall[] {
+        if (!incoming?.length) {
+            return [];
+        }
+
+        const fresh: AgentToolCall[] = [];
+        for (const toolCall of incoming) {
+            const id = String(toolCall.id || '').trim() || `tool-${toolCall.name}-${fresh.length}`;
+            if (seen.has(id)) {
+                continue;
+            }
+            seen.add(id);
+            const normalized = { ...toolCall, id };
+            fresh.push(normalized);
+        }
+        return fresh;
+    }
+
+    private describeStreamingToolCalls(toolCalls: AgentToolCall[]): string {
+        return toolCalls.map(toolCall => toolCall.name).filter(Boolean).join(', ');
     }
 
     private async handleModelResponse(
@@ -367,7 +530,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
 
         return {
-            message: this.createMessage('assistant', response.message ?? '', undefined, undefined, response.metadata)
+            message: await this.createAssistantMessageFromResponse(sessionId, response)
         };
     }
 
@@ -651,6 +814,72 @@ export class DefaultAgentRuntime extends AgentRuntime {
             result.toolCall.id,
             result.metadata
         ));
+    }
+
+    private async createAssistantMessageFromResponse(sessionId: string, response: ModelResponse): Promise<AgentMessage> {
+        const content = await this.resolveAssistantResponseText(sessionId, response);
+        return this.createMessage('assistant', content, undefined, undefined, response.metadata);
+    }
+
+    private shouldRetryEmptyResponse(response: ModelResponse): boolean {
+        return !response.toolCalls?.length && !String(response.message ?? '').trim();
+    }
+
+    private buildEmptyResponseRetryRequest(request: ModelRequest): ModelRequest {
+        return {
+            ...request,
+            messages: [
+                this.createMessage('system', EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT),
+                ...request.messages
+            ]
+        };
+    }
+
+    private shouldRecoverEmptyFollowUpResponse(request: ModelRequest, response: ModelResponse): boolean {
+        return this.shouldRetryEmptyResponse(response)
+            && !!this.findLatestFollowUpContextUserMessage(request.messages);
+    }
+
+    private buildFollowUpRecoveryRequest(request: ModelRequest): ModelRequest {
+        const latestFollowUpUser = this.findLatestFollowUpContextUserMessage(request.messages);
+        if (!latestFollowUpUser) {
+            return this.buildEmptyResponseRetryRequest(request);
+        }
+        const systemMessages = request.messages.filter(message => message.role === 'system');
+        return {
+            ...request,
+            messages: [
+                ...systemMessages,
+                this.createMessage('system', FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT),
+                { ...latestFollowUpUser }
+            ]
+        };
+    }
+
+    private async resolveAssistantResponseText(sessionId: string, response: ModelResponse): Promise<string> {
+        const explicitMessage = String(response.message ?? '');
+        if (explicitMessage.trim()) {
+            return explicitMessage;
+        }
+        const toolError = await this.findRecentToolError(sessionId);
+        if (toolError) {
+            return `I couldn't complete the request because a required tool failed: ${toolError}`;
+        }
+        return 'I couldn\'t complete the request because the model returned an empty response.';
+    }
+
+    private async findRecentToolError(sessionId: string): Promise<string | undefined> {
+        const messages = (await this.sessions.get(sessionId)).messages;
+        for (let index = messages.length - 1; index >= 0; index--) {
+            const message = messages[index];
+            if (message.role === 'user') {
+                break;
+            }
+            if (message.role === 'tool' && typeof message.metadata?.error === 'string' && message.metadata.error.trim()) {
+                return message.metadata.error.trim();
+            }
+        }
+        return undefined;
     }
 
     private createBaseReceipt(

@@ -4,6 +4,7 @@ import { AgentModule } from '../agent.module';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
+import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
 import {
     AgentConsoleActivityPanelComponent,
     AgentConsoleBrandPanelComponent,
@@ -58,7 +59,8 @@ import {
     ],
     providers: [
         AgentConsoleSessionState,
-        AgentConsoleEventBridge
+        AgentConsoleEventBridge,
+        AgentConsoleWorkspaceMentionsProvider
     ],
     exports: [
         AgentConsoleComponent,
@@ -82,7 +84,8 @@ import {
         AgentConsoleActivityPanelComponent,
         AgentConsoleSelectPanelComponent,
         AgentConsoleSessionState,
-        AgentConsoleEventBridge
+        AgentConsoleEventBridge,
+        AgentConsoleWorkspaceMentionsProvider
     ]
 })
 export class AgentUiModule {
