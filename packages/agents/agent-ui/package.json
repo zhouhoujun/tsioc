@@ -1,0 +1,40 @@
+{
+  "name": "@tsdi/agent-ui",
+  "version": "6.0.31",
+  "description": "UI package for @tsdi/agent, including console UI and shared config helpers.",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
+  },
+  "keywords": [
+    "agents",
+    "ui",
+    "console",
+    "tui",
+    "rpc",
+    "tsdi"
+  ],
+  "author": "houjun",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/zhouhoujun/tsioc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouhoujun/tsioc.git"
+  },
+  "homepage": "https://github.com/zhouhoujun/tsioc#readme",
+  "dependencies": {
+    "@tsdi/agent": "6.0.31",
+    "@tsdi/common": "6.0.31",
+    "@tsdi/components": "6.0.0-beta7",
+    "@tsdi/components/console": "6.0.0-beta7",
+    "@tsdi/core": "6.0.31",
+    "@tsdi/ioc": "6.0.31"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
+}
