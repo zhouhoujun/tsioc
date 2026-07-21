@@ -1,6 +1,4 @@
 import { AgentModelOptions } from './model/ModelProviderOptions';
-import { AgentConsoleThemeInput, defaultAgentConsoleTheme } from './ui/AgentConsoleTheme';
-import { AgentConsoleOptions, defaultAgentConsoleOptions } from './ui/AgentConsoleSessionState';
 
 export interface AgentSessionOptions {
     summaryThreshold?: number;
@@ -39,8 +37,8 @@ export interface AgentSchedulerOptions {
 
 export interface AgentUIOptions {
     title?: string;
-    theme?: AgentConsoleThemeInput;
-    console?: AgentConsoleOptions;
+    theme?: Record<string, any>;
+    console?: Record<string, any>;
 }
 
 export interface AgentBootstrapTurnOptions {
@@ -89,9 +87,7 @@ export const defaultAgentOptions: AgentOptions = {
         defaultRetryBackoffMultiplier: 2
     },
     ui: {
-        title: 'tsdi-agent',
-        theme: defaultAgentConsoleTheme,
-        console: defaultAgentConsoleOptions
+        title: 'tsdi-agent'
     },
     model: {
         provider: 'deepseek',

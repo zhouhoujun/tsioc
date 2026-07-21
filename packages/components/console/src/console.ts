@@ -18,7 +18,6 @@ import {
     TemplateCompilerOptions,
     TemplateParser
 } from '@tsdi/components';
-
 export class ConsoleCssStyleDeclaration implements RCssStyleDeclaration {
     protected styles: Record<string, string> = {};
 

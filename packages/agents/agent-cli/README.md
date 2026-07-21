@@ -3,11 +3,11 @@
 This directory is published to `npm`. The source lives in the
 [main repo](https://github.com/zhouhoujun/tsioc).
 
-`@tsdi/agent-cli` provides the command-line entrypoint for `@tsdi/agent`, including one-shot prompts, interactive chat, first-run model setup, and in-session model switching.
+`@tsdi/agent-cli` provides the command-line entrypoint for `@tsdi/agent`. It exposes one-shot commands, the stdio RPC bridge used by Agent UI, and a thin `chat` launcher that boots Agent UI TUI without owning TUI state in CLI.
 
 ## Recommended usage: fast model + strong model
 
-The main goal of `@tsdi/agent-cli` is not just picking a provider once, but establishing a practical day-to-day model split:
+The main goal of `@tsdi/agent-cli` is to establish a practical day-to-day model split:
 
 - `fast`: for normal chat, tool calls, lightweight code edits, and quick feedback
 - `strong`: for complex reasoning, long-context analysis, difficult debugging, and high-stakes generation
@@ -19,8 +19,8 @@ Recommended default pairing:
 
 Benefits:
 
-- chat stays responsive by default
-- complex tasks can switch to the stronger model quickly via `/model`
+- normal requests stay fast by default
+- complex tasks can route to the stronger model through agent configuration
 - the setup stays easy to migrate later to OpenAI or custom compatible providers
 
 ## Install
@@ -41,13 +41,13 @@ Running `tsdi-agent` with no arguments defaults to:
 tsdi-agent chat
 ```
 
-## First-run model setup
+## Model setup
 
-When chat starts, the CLI first checks the default workspace config:
+The CLI reads the default workspace config before executing commands:
 
-- If a provider / model is already configured, chat starts directly.
-- If a matching provider API key environment variable is already available, chat also starts directly.
-- The interactive setup flow is shown only when no global model config is available.
+- If a provider / model is already configured, commands use it directly.
+- If a matching provider API key environment variable is available, it is resolved automatically.
+- TUI interaction is owned by Agent UI instead of CLI-side state handling.
 
 First-run setup supports four provider types:
 
@@ -231,43 +231,30 @@ Behavior of this example:
 ## Common commands
 
 - `tsdi-agent run "your prompt"`: execute a single prompt
-- `tsdi-agent chat`: start an interactive session
+- `tsdi-agent chat`: start Agent UI in TUI mode
 - `tsdi-agent tools list`: inspect resolved tool configuration
+- `tsdi-agent rpc-stdio`: expose the agent through JSON-RPC 2.0 JSONL over stdio for Agent UI or other clients
 
-## Built-in chat commands
+## UI integration
 
-- `/model`: switch provider / model and persist it to the default workspace config
-- `/tools`: focus the on-screen tool list, then use `up/down`, `pgup/pgdn`, `home/end`, `y`, and `esc`
-- `/help`: show command help
-- `/multiline`: toggle multiline input
-- `/send`: send the buffered draft
-- `/cancel`: clear the buffered draft
-- `/sessions`: focus the on-screen session list, then use `up/down`, `pgup/pgdn`, `home/end`, `enter`, `y`, and `esc`
-- `/messages`: focus the on-screen message list, then use `up/down`, `pgup/pgdn`, `home/end`, `enter`, `y`, and `esc`; in detail view, use `left/right` to pan long lines
-- `/session [id]`: switch to an existing session, or choose one interactively when `id` is omitted
-- `/new [id]`: create and switch to a new session, with an optional custom id
-- `/approvals`: list pending approval requests
-- `/approve [id]`: approve a pending request, or choose one interactively when `id` is omitted
-- `/deny [id]`: deny a pending request, or choose one interactively when `id` is omitted
-- `/copy [last|screen|input|selected]`: copy text through OSC52 clipboard, defaulting to the latest assistant message
-- `/quit`, `/exit`: leave the session
+- CLI no longer owns TUI state, terminal input state, or UI interaction flow.
+- Interactive UI should connect through `tsdi-agent rpc-stdio`.
+- `tsdi-agent chat` is only a startup entry that boots Agent UI.
+- Agent UI is expected to manage session switching, approvals, input behavior, cursor behavior, and terminal rendering.
 
 ## Notes
 
 - custom OpenAI-compatible uses `provider: "openai-compatible"` with a custom `baseUrl`
 - custom Anthropic-compatible uses `provider: "anthropic"` with a custom `baseUrl`
-- the model chosen during first-run setup or `/model` is persisted into the `model` section of `settings.json`
-- API key prompts in chat are masked
-- sensitive local actions such as `terminal`, `write_file`, and `delete_file` now require explicit approval in chat
-- the chat loop now stays on the terminal's primary screen by default so native scrollback and the terminal scrollbar remain available; set `TSDI_AGENT_ALT_SCREEN=1` to opt into the alternate-screen buffer
-- the custom transcript scrollbar stays disabled, and mouse capture is only enabled for interactive selection menus
+- model configuration is read from the `model` section of `settings.json`
+- sensitive local actions such as `terminal`, `write_file`, and `delete_file` still require explicit approval at the agent layer
 
 ## Adaptive model configuration guidance
 
 If your target behavior is “fast by default, strong when needed”, the recommended flow is:
 
-1. Set `deepseek-v4-flash` as the default model on first launch
-2. Switch to `deepseek-v4-pro` with `/model` when the task becomes complex
+1. Set `deepseek-v4-flash` as the default model in `settings.json`
+2. Set `deepseek-v4-pro` as the `strong` profile in `settings.json`
 3. If you want this to become automatic, configure the following in `@tsdi/agent`:
    - a `fast` profile
    - a `strong` profile
@@ -275,5 +262,5 @@ If your target behavior is “fast by default, strong when needed”, the recomm
 
 In short:
 
-- `agent-cli` is optimized for quick setup and in-session switching
+- `agent-cli` is optimized for explicit command execution and RPC exposure
 - `@tsdi/agent` is where automatic complexity-based routing is configured

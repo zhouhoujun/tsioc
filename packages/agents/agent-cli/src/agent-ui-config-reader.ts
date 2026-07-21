@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { AgentUiConfigReader, AgentUiResolvedConfig } from '@tsdi/agent';
+import { AgentUiConfigReader, AgentUiResolvedConfig } from '@tsdi/agent-ui';
 import {
     AgentCliOptions,
     ensureAgentWorkspaceConfig,

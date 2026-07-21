@@ -4,42 +4,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
-import {
-    TuiRenderer,
-    applyTerminalInputChunk,
-    buildMentionCandidates,
-    enrichPromptWithMentions,
-    extractMentions,
-    formatClockTime,
-    getActiveInputToken,
-    applySuggestionToInput,
-    findSelectMenuOptionIndexFromRenderedLines,
-    moveSuggestionSelection,
-    normalizeSuggestionState,
-    renderActivityLine,
-    composeTerminalChatScreen,
-    renderDraftLine,
-    buildMentionContextLines,
-    renderMessagePreview,
-    renderSelectMenu,
-    renderToolDetail,
-    renderToolRunLine,
-    resolveUniqueCommandPrefix,
-    resolveInputSuggestions,
-    shouldAcceptSuggestionOnEnter,
-    resolveConsoleRawKeypressSuppressionKey,
-    shouldRouteConsoleDraftNavigation,
-    shouldSuppressConsoleDuplicatedKeypress,
-    sortToolRuns
-} from '@tsdi/components/console';
-import { ComponentFactory } from '@tsdi/components';
-import {
-    AgentConsoleComponent,
-    AgentConsoleUiDelegate,
-    ModelProfile
-} from '@tsdi/agent';
+import { MemoryStore, SessionStore } from '@tsdi/agent';
 import { NestedAgentRunner } from '@tsdi/agent-tools';
-import { runAgentApplication } from '../src/run-command';
 import {
     createAgentCli,
     ensureAgentWorkspaceConfig,
@@ -48,11 +14,7 @@ import {
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
     runAgentPrompt,
-    parseSlashCommandLine,
-    buildChatSessionId,
-    pickRestoredSessionId,
-    resolveInteractiveWorkspacePath,
-    resolveLaunchWorkspace,
+    runAgentRpcApplication,
     withAdapterProviders,
     runAgentRpcStdio,
     writeProviderProfile,
@@ -150,7 +112,7 @@ export class AgentCliTest {
         }
     }
 
-    @Test('creates cli commands with run and chat subcommands')
+    @Test('creates cli commands with run, chat and rpc-stdio subcommands')
     createsCliCommands() {
         const cli = createAgentCli();
         const commandNames = cli.commands.map(cmd => cmd.name());
@@ -160,6 +122,50 @@ export class AgentCliTest {
         const hasToolsCmd = commandNames.some(name => name.startsWith('tools'));
         expect(hasToolsCmd).toBe(true);
         expect(cli.args.length).toBe(0);
+    }
+
+    @Test('uses persistent session and memory stores across cli app restarts')
+    async usesPersistentStoresAcrossCliRestarts() {
+        const root = await this.createRoot();
+        const first = await runAgentRpcApplication({
+            root,
+            provider: 'echo',
+            model: 'echo'
+        });
+
+        try {
+            const sessions = first.get(SessionStore) as SessionStore;
+            const memory = first.get(MemoryStore) as MemoryStore;
+            await sessions.append('persisted-session', { id: '1', role: 'user', content: 'hello', createdAt: 1 } as any);
+            await memory.put({
+                id: 'mem-1',
+                key: 'agent-ui.console.input-history',
+                value: JSON.stringify(['hello']),
+                scope: 'global',
+                metadata: { workspace: '/tmp/workspace', principalId: 'local-system', kind: 'console-input-history' },
+                createdAt: 1,
+                updatedAt: 1
+            } as any);
+        } finally {
+            await first.close();
+        }
+
+        const second = await runAgentRpcApplication({
+            root,
+            provider: 'echo',
+            model: 'echo'
+        });
+
+        try {
+            const sessions = second.get(SessionStore) as SessionStore;
+            const memory = second.get(MemoryStore) as MemoryStore;
+            const state = await sessions.get('persisted-session');
+            const records = await memory.getAll('persisted-session');
+            expect(state.messages.map((message: any) => message.content)).toEqual(['hello']);
+            expect(records.some((record: any) => record.key === 'agent-ui.console.input-history')).toBe(true);
+        } finally {
+            await second.close();
+        }
     }
 
     @Test('runs shared rpc stdio server through cli entrypoint')
@@ -240,86 +246,6 @@ export class AgentCliTest {
         expect(result.model).toBe('echo');
     }
 
-    @Test('resolves tui renderer for interactive chat application context')
-    async resolvesTuiRendererForInteractiveChat() {
-        const root = await this.createRoot();
-        writeSettingsModelProfile(root, {
-            provider: 'deepseek',
-            model: 'deepseek-v4-flash',
-            apiKey: 'test-key',
-            baseUrl: 'https://api.deepseek.com',
-            timeoutMs: 120000
-        });
-        const ctx = await runAgentApplication({ root }, {});
-        try {
-            expect(ctx.get(TuiRenderer)).toBeTruthy();
-            expect(ctx.get(TuiRenderer).constructor.name).toBe('TuiRenderer');
-        } finally {
-            await ctx.close();
-        }
-    }
-
-    @Test('injects console ui delegate into agent console component for slash commands')
-    async injectsConsoleUiDelegateIntoAgentConsoleComponent() {
-        const root = await this.createRoot();
-        writeSettingsModelProfile(root, {
-            provider: 'deepseek',
-            model: 'deepseek-v4-flash',
-            apiKey: 'test-key',
-            baseUrl: 'https://api.deepseek.com',
-            timeoutMs: 120000
-        });
-        class DelegateStub extends AgentConsoleUiDelegate {
-            selected = 0;
-            quitCalled = 0;
-
-            async select(): Promise<string | undefined> {
-                this.selected += 1;
-                return undefined;
-            }
-
-            async prompt(): Promise<string | undefined> {
-                return undefined;
-            }
-
-            notify(): void {
-                return;
-            }
-
-            async copyText(): Promise<boolean> {
-                return true;
-            }
-
-            async applyModelProfile(_profile: ModelProfile): Promise<void> {
-                return;
-            }
-
-            quit(): void {
-                this.quitCalled += 1;
-            }
-        }
-        const delegate = new DelegateStub();
-        const ctx = await runAgentApplication({ root }, {}, [{
-            provide: AgentConsoleUiDelegate,
-            useValue: delegate
-        }]);
-        try {
-            const factory = ctx.get(ComponentFactory);
-            const ref = factory.create(AgentConsoleComponent, { injector: ctx });
-            await ref.render();
-
-            ref.instance.input = '/help';
-            await ref.instance.submit();
-            ref.instance.input = '/exit';
-            await ref.instance.submit();
-
-            expect(delegate.selected).toBe(1);
-            expect(delegate.quitCalled).toBe(1);
-        } finally {
-            await ctx.close();
-        }
-    }
-
     @Test('accepts tool item names without treating them as groups')
     async acceptsToolItemNamesWithoutTreatingThemAsGroups() {
         const root = await this.createRoot();
@@ -338,12 +264,6 @@ export class AgentCliTest {
         const resolved = resolveCliConfig({ root, workspace: '/custom/workspace' });
         expect(resolved.workspace).toBe('/custom/workspace');
         expect(resolved.tools.file?.rootDir).toBe('/custom/workspace');
-    }
-
-    @Test('interactive ui workspace defaults to current working directory')
-    interactiveUiWorkspaceDefaultsToCurrentWorkingDirectory() {
-        expect(resolveInteractiveWorkspacePath({}, '/resolved/workspace')).toBe(resolveLaunchWorkspace());
-        expect(resolveInteractiveWorkspacePath({ workspace: '/custom/workspace' }, '/resolved/workspace')).toBe('/custom/workspace');
     }
 
     @Test('writes default workspace settings and provider profile')
@@ -564,377 +484,4 @@ export class AgentCliTest {
         expect(modelConfig.apiKey).toBe('real-key');
     }
 
-    @Test('formats activity and tool run lines with timestamps')
-    formatsActivityAndToolRunLines() {
-        const time = new Date(2026, 0, 2, 3, 4, 5).getTime();
-        expect(formatClockTime(time)).toBe('03:04:05');
-        expect(renderActivityLine({
-            kind: 'tool',
-            message: 'Running read_file',
-            createdAt: time
-        })).toBe('03:04:05 [tool] Running read_file');
-        expect(renderToolRunLine({
-            name: 'read_file',
-            status: 'success',
-            durationMs: 42,
-            message: 'Completed',
-            updatedAt: time
-        })).toBe('03:04:05 [ok ] read_file 42ms Completed');
-    }
-
-    @Test('renders select menu with numbered options')
-    rendersSelectMenuWithNumberedOptions() {
-        expect(renderSelectMenu('Model providers', [
-            { label: 'DeepSeek', value: 'deepseek', detail: 'DeepSeek provider' },
-            { label: 'OpenAI', value: 'openai', detail: 'OpenAI provider' }
-        ], 1)).toEqual([
-            'Model providers',
-            '',
-            '  1. DeepSeek',
-            '› 2. OpenAI',
-            '',
-            '1-9 select   up/down move   enter confirm   q cancel'
-        ]);
-    }
-
-    @Test('resolves rendered select menu row to option index')
-    resolvesRenderedSelectMenuRowToOptionIndex() {
-        const rendered = [
-            'tsdi-agent',
-            'status idle',
-            'workspace /tmp/demo',
-            '',
-            '┌──────────────────────────┐',
-            '│ Model providers         │',
-            '│ Choose 2 of 2           │',
-            '│  1. DeepSeek            │',
-            '│ › 2. OpenAI             │',
-            '│ Preview                 │',
-            '│ openai                  │',
-            '└──────────────────────────┘'
-        ];
-
-        expect(findSelectMenuOptionIndexFromRenderedLines(rendered, 'Model providers', 2, 8)).toBe(0);
-        expect(findSelectMenuOptionIndexFromRenderedLines(rendered, 'Model providers', 2, 9)).toBe(1);
-        expect(findSelectMenuOptionIndexFromRenderedLines(rendered, 'Model providers', 2, 10)).toBe(-1);
-    }
-
-    @Test('sorts tool runs by status and recency')
-    sortsToolRunsByStatusAndRecency() {
-        const sorted = sortToolRuns([
-            { name: 'c', status: 'success', message: 'done', updatedAt: 1 },
-            { name: 'a', status: 'running', message: 'running', updatedAt: 2 },
-            { name: 'b', status: 'error', message: 'failed', updatedAt: 3 },
-            { name: 'd', status: 'running', message: 'running', updatedAt: 4 }
-        ] as any);
-
-        expect(sorted.map(item => item.name)).toEqual(['d', 'a', 'b', 'c']);
-    }
-
-    @Test('renders message preview and tool detail blocks')
-    rendersMessagePreviewAndToolDetail() {
-        expect(renderMessagePreview('assistant', 'line1\nline2', 32)).toEqual([
-            'assistant> line1',
-            '... line2'
-        ]);
-
-        expect(renderToolDetail({
-            name: 'read_file',
-            status: 'running',
-            updatedAt: new Date(2026, 0, 2, 3, 4, 5).getTime(),
-            executionMode: 'sequential',
-            attemptCount: 1,
-            inputSummary: '{"path":"a.txt"}',
-            message: 'Running'
-        } as any)).toEqual([
-            'Name: read_file',
-            'Status: running',
-            'Updated: 03:04:05',
-            'Mode: sequential',
-            'Attempts: 1',
-            'Input: {"path":"a.txt"}'
-        ]);
-    }
-
-    @Test('resolves slash and mention suggestions')
-    resolvesSlashAndMentionSuggestions() {
-        const mentions = buildMentionCandidates(['read_file', 'write_file']);
-        expect(getActiveInputToken('/mo')).toBe('/mo');
-        expect(resolveUniqueCommandPrefix('/m', ['/help', '/model', '/tools'])).toBe('/model');
-        expect(resolveUniqueCommandPrefix('/mo', ['/help', '/model', '/tools'])).toBe('/model');
-        expect(resolveUniqueCommandPrefix('/m', ['/model', '/multiline', '/tools'])).toBe('/m');
-        expect(resolveUniqueCommandPrefix('/x', ['/help', '/model', '/tools'])).toBe('/x');
-        expect(resolveInputSuggestions('/mo', ['/model', '/tools'], mentions)).toEqual([
-            { group: 'Commands', label: '/model', value: '/model' }
-        ]);
-        expect(resolveInputSuggestions('/mes', ['/messages', '/model'], mentions)).toEqual([
-            { group: 'Commands', label: '/messages', value: '/messages' }
-        ]);
-        expect(getActiveInputToken('check @wr')).toBe('@wr');
-        expect(resolveInputSuggestions('check @wr', ['/model'], mentions)).toEqual([
-            { group: 'Mentions', label: '@write_file', value: '@write_file' }
-        ]);
-    }
-
-    @Test('extracts and enriches mention context in prompt')
-    extractsAndEnrichesMentionContextInPrompt() {
-        const mentions = extractMentions('check @workspace and @read_file with @model');
-        expect(mentions).toEqual(['@workspace', '@read_file', '@model']);
-
-        const lines = buildMentionContextLines(mentions, {
-            workspace: '/tmp/workspace',
-            sessionId: 's1',
-            provider: 'deepseek',
-            model: 'deepseek-v4-flash',
-            tools: [{ name: 'read_file', toolset: 'filesystem', active: true }]
-        });
-        expect(lines).toEqual([
-            'Workspace: /tmp/workspace',
-            'Tool read_file: toolset=filesystem, active=yes',
-            'Model: deepseek / deepseek-v4-flash'
-        ]);
-
-        expect(enrichPromptWithMentions('check @workspace', {
-            workspace: '/tmp/workspace',
-            sessionId: 's1',
-            provider: 'deepseek',
-            model: 'deepseek-v4-flash',
-            tools: []
-        })).toContain('[Mention Context]');
-    }
-
-    @Test('moves and applies suggestion selection')
-    movesAndAppliesSuggestionSelection() {
-        const state = normalizeSuggestionState([
-            { group: 'Commands', label: '/help', value: '/help' },
-            { group: 'Commands', label: '/model', value: '/model' },
-            { group: 'Commands', label: '/tools', value: '/tools' }
-        ], 0);
-        const moved = moveSuggestionSelection(state, 1);
-        expect(moved.selectedIndex).toBe(1);
-        expect(moveSuggestionSelection(state, -1).selectedIndex).toBe(2);
-        expect(applySuggestionToInput('/mo', '/model')).toBe('/model ');
-        expect(applySuggestionToInput('check @wo', '@workspace')).toBe('check @workspace ');
-        expect(shouldAcceptSuggestionOnEnter('/mo', moved)).toBe(false);
-        expect(shouldAcceptSuggestionOnEnter('check @wo', normalizeSuggestionState([
-            { group: 'Mentions', label: '@workspace', value: '@workspace' }
-        ], 0))).toBe(true);
-        expect(renderDraftLine('run @workspace with @read_file')).toBe('run [@workspace] with [@read_file]');
-    }
-
-    @Test('parses slash commands with arguments and builds safe session ids')
-    parsesSlashCommandsWithArgumentsAndBuildsSafeSessionIds() {
-        expect(parseSlashCommandLine('/session bugfix-thread')).toEqual({
-            raw: '/session bugfix-thread',
-            command: '/session',
-            args: 'bugfix-thread'
-        });
-        expect(parseSlashCommandLine('plain text')).toEqual({
-            raw: 'plain text',
-            command: 'plain text',
-            args: ''
-        });
-        expect(buildChatSessionId('feature branch #1')).toBe('feature-branch-1');
-        expect(buildChatSessionId('')).toMatch(/^chat-\d{8}-\d{6}$/);
-    }
-
-    @Test('routes draft navigation keys to input editing only in editable prompt states')
-    routesDraftNavigationKeys() {
-        expect(shouldRouteConsoleDraftNavigation({
-            hasBlockingSelectMenu: false,
-            hasSessionFocus: false,
-            hasMessageFocus: false,
-            hasMessageDetailFocus: false,
-            inputLocked: false,
-            modalPromptActive: false,
-            hasActiveTextPrompt: false
-        })).toBe(true);
-
-        expect(shouldRouteConsoleDraftNavigation({
-            hasBlockingSelectMenu: false,
-            hasSessionFocus: false,
-            hasMessageFocus: false,
-            hasMessageDetailFocus: false,
-            inputLocked: true,
-            modalPromptActive: true,
-            hasActiveTextPrompt: true
-        })).toBe(true);
-
-        expect(shouldRouteConsoleDraftNavigation({
-            hasBlockingSelectMenu: true,
-            hasSessionFocus: false,
-            hasMessageFocus: false,
-            hasMessageDetailFocus: false,
-            inputLocked: false,
-            modalPromptActive: false,
-            hasActiveTextPrompt: false
-        })).toBe(false);
-
-        expect(shouldRouteConsoleDraftNavigation({
-            hasBlockingSelectMenu: false,
-            hasSessionFocus: true,
-            hasMessageFocus: false,
-            hasMessageDetailFocus: false,
-            inputLocked: false,
-            modalPromptActive: false,
-            hasActiveTextPrompt: false
-        })).toBe(false);
-    }
-
-    @Test('restores the most recent non-empty session when preferred session is empty')
-    restoresMostRecentNonEmptySession() {
-        expect(pickRestoredSessionId('default', [
-            { id: 'default', updatedAt: 10, messageCount: 0 },
-            { id: 'chat-old', updatedAt: 20, messageCount: 2 },
-            { id: 'chat-new', updatedAt: 30, messageCount: 4 }
-        ])).toBe('chat-new');
-
-        expect(pickRestoredSessionId('default', [
-            { id: 'default', updatedAt: 10, messageCount: 0 },
-            { id: 'chat-old', updatedAt: 20, messageCount: 2 }
-        ], true)).toBe('default');
-
-        expect(pickRestoredSessionId('default', [
-            { id: 'default', updatedAt: 10, messageCount: 3 },
-            { id: 'chat-new', updatedAt: 30, messageCount: 4 }
-        ])).toBe('default');
-    }
-
-    @Test('applies terminal draft chunks without leaking control characters')
-    appliesTerminalDraftChunks() {
-        expect(applyTerminalInputChunk('', 0, 'hello')).toEqual({
-            value: 'hello',
-            cursor: 5
-        });
-        expect(applyTerminalInputChunk('hello', 5, '\u001b[D')).toEqual({
-            value: 'hello',
-            cursor: 4
-        });
-        expect(applyTerminalInputChunk('hello', 4, '!')).toEqual({
-            value: 'hell!o',
-            cursor: 5
-        });
-        expect(applyTerminalInputChunk('hell!o', 5, '\u007f')).toEqual({
-            value: 'hello',
-            cursor: 4
-        });
-        expect(applyTerminalInputChunk('hello', 5, '\u0001\u0015')).toEqual({
-            value: 'hello',
-            cursor: 5
-        });
-        expect(applyTerminalInputChunk('hello', 5, '\u001b[<64;46;20M')).toEqual({
-            value: 'hello',
-            cursor: 5
-        });
-    }
-
-    @Test('composes terminal chat screen without empty focus rows')
-    composesTerminalChatScreenWithoutEmptyFocusRows() {
-        const layout = composeTerminalChatScreen({
-            headerLine: 'provider / model  |  idle  |  0 tasks  |  idle',
-            subHeaderLine: 'session default  |  /tmp/workspace',
-            conversationLines: [],
-            latestActivity: '',
-            latestToolRun: '',
-            focusedTool: '',
-            toolsSummary: '',
-            workingLines: ['Tokens: 0 | Prompt: 0 | Completion: 0'],
-            inputLines: ['Input', 'you> hello|'],
-            selectLines: [],
-            statusLines: ['State: idle']
-        });
-
-        expect(layout.lines.some(line => /^focus\s+/.test(line))).toBe(false);
-        expect(layout.lines.some(line => /^tool\s+Focused:/.test(line))).toBe(false);
-    }
-
-    @Test('composes terminal chat screen with select panel below input')
-    composesTerminalChatScreenWithSelectPanelBelowInput() {
-        const layout = composeTerminalChatScreen({
-            headerLine: 'provider / model  |  idle  |  0 tasks  |  idle',
-            subHeaderLine: 'session default  |  /tmp/workspace',
-            conversationLines: ['agent> hi'],
-            workingLines: ['Tokens: 0 | Prompt: 0 | Completion: 0'],
-            inputLines: ['Input', 'you> /mo|'],
-            selectLines: ['Select', '› 1. /model'],
-            statusLines: ['State: idle']
-        });
-
-        const inputIndex = layout.lines.findIndex(line => line === 'you> /mo|');
-        const selectIndex = layout.lines.findIndex(line => line === 'Select');
-        expect(inputIndex).toBeGreaterThan(-1);
-        expect(selectIndex).toBeGreaterThan(inputIndex);
-        expect(layout.selectMenuScreenRow).toBe(selectIndex + 1);
-    }
-
-    @Test('suppresses duplicated keypress events after raw control handling')
-    suppressesDuplicatedKeypressEvents() {
-        const now = Date.now();
-        expect(shouldSuppressConsoleDuplicatedKeypress({
-            lastRawKey: 'down',
-            lastRawAt: now,
-            now: now + 10,
-            keyName: 'down'
-        })).toBe(true);
-
-        expect(shouldSuppressConsoleDuplicatedKeypress({
-            lastRawKey: 'digit',
-            lastRawAt: now,
-            now: now + 10,
-            text: '2'
-        })).toBe(true);
-
-        expect(shouldSuppressConsoleDuplicatedKeypress({
-            lastRawKey: 'q',
-            lastRawAt: now,
-            now: now + 10,
-            keyName: 'q',
-            text: 'q'
-        })).toBe(true);
-
-        expect(shouldSuppressConsoleDuplicatedKeypress({
-            lastRawKey: 'down',
-            lastRawAt: now,
-            now: now + 60,
-            keyName: 'down'
-        })).toBe(false);
-    }
-
-    @Test('resolves raw keypress suppression keys for menu and submit chunks')
-    resolvesRawKeypressSuppressionKeys() {
-        expect(resolveConsoleRawKeypressSuppressionKey({
-            rawText: '/help\r',
-            submitTriggered: true
-        })).toBe('return');
-
-        expect(resolveConsoleRawKeypressSuppressionKey({
-            rawText: '2',
-            menuKey: '2'
-        })).toBe('digit');
-
-        expect(resolveConsoleRawKeypressSuppressionKey({
-            rawText: 'q',
-            menuKey: 'q'
-        })).toBe('q');
-
-        expect(resolveConsoleRawKeypressSuppressionKey({
-            rawText: '\u001b[B',
-            controlKey: 'down'
-        })).toBe('down');
-    }
-
-    @Test('keeps suggestion rows separate from select panel rows')
-    keepsSuggestionRowsSeparateFromSelectPanelRows() {
-        const layout = composeTerminalChatScreen({
-            headerLine: 'provider / model  |  idle  |  0 tasks  |  idle',
-            subHeaderLine: 'session default  |  /tmp/workspace',
-            conversationLines: ['agent> hi'],
-            workingLines: [],
-            inputLines: ['Input', 'you> /mo|'],
-            selectLines: [],
-            statusLines: ['State: idle']
-        });
-
-        expect(layout.selectMenuScreenRow).toBe(-1);
-    }
 }

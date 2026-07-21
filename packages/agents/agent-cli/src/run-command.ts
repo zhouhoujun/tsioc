@@ -1,7 +1,7 @@
 import { Application } from '@tsdi/core';
 import { randomUUID } from 'crypto';
-import { AgentRuntime, AGENT_OPTIONS, AGENT_PROMPT_SECTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentUiConfigService, AgentUiModule } from '@tsdi/agent';
-import { TuiTemplateModule } from '@tsdi/components/console';
+import { AgentRuntime, AGENT_OPTIONS, AGENT_PROMPT_SECTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
+import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { provideTools, NestedAgentRunner, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentAppServerModule, StdioAppRpcServer } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
@@ -13,7 +13,7 @@ function createConfigService(options: AgentCliOptions): AgentUiConfigService {
     return new AgentUiConfigService(new CliAgentUiConfigReader(), options);
 }
 
-function resolveModelAdapter(config: AgentUiConfigService, options: AgentCliOptions): any {
+export function resolveModelAdapter(config: AgentUiConfigService, options: AgentCliOptions): any {
     const resolved = config.resolve(options);
     const modelConfig = resolved.model;
 
@@ -143,9 +143,10 @@ export function withAdapterProviders(baseOptions: AgentCliOptions = {}): any[] {
 export async function runAgentApplication(options: AgentCliOptions, agentOptions: any, extraProviders: any[] = []): Promise<any> {
     const config = createConfigService(options);
     const resolved = config.resolve();
-    return Application.run(AgentUiModule, {
-        deps: [TuiTemplateModule, ServerCommonModule],
+    return Application.run(AgentModule, {
+        deps: [ServerCommonModule],
         providers: [
+            ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
             ...withAdapterProviders(options),
             resolveModelAdapter(config, options),
@@ -162,6 +163,7 @@ export async function runAgentRpcApplication(options: AgentCliOptions, agentOpti
     return Application.run(AgentAppServerModule, {
         deps: [ServerCommonModule],
         providers: [
+            ...provideAgentOrmStorage(resolved.root),
             ...provideTools(resolved.tools),
             ...withAdapterProviders(options),
             resolveModelAdapter(config, options),

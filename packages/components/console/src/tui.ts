@@ -27,6 +27,7 @@ import {
     resolveConsolePlaceholderDisplayValue,
     resolveConsoleSelectWindow
 } from './input';
+import { provideConsoleTerminalLifecycle } from './terminal';
 import { TuiInputComponent, TuiTextareaComponent, TuiSelectComponent, LabelComponent } from './components';
 
 const ANSI_RESET = '\x1b[0m';
@@ -949,7 +950,16 @@ export class TuiTemplateCompiler extends AbstractTemplateCompiler {
         { provide: TemplateParser, useExisting: ConsoleTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: TuiTemplateCompiler, deps: [ConsoleTemplateParser, ConsoleRenderer, CONSOLE_TEMPLATE], asDefault: true }
     ],
-    exports: [TuiRenderer, ConsoleRenderer, ConsoleTemplateParser, TuiTemplateCompiler, TuiInputComponent, TuiTextareaComponent, TuiSelectComponent, LabelComponent]
+    exports: [
+        TuiRenderer,
+        ConsoleRenderer,
+        ConsoleTemplateParser,
+        TuiTemplateCompiler,
+        TuiInputComponent,
+        TuiTextareaComponent,
+        TuiSelectComponent,
+        LabelComponent
+    ]
 })
 export class TuiTemplateModule {
     static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<TuiTemplateModule> {
@@ -957,5 +967,33 @@ export class TuiTemplateModule {
             module: TuiTemplateModule,
             providers: [{ provide: CONSOLE_TEMPLATE, useValue: options }]
         };
+    }
+}
+
+@Module({
+    providedIn: 'root',
+    imports: [TuiTemplateModule],
+    providers: [
+        ...provideConsoleTerminalLifecycle()
+    ],
+    exports: [
+        TuiTemplateModule,
+        TuiRenderer,
+        ConsoleRenderer,
+        ConsoleTemplateParser,
+        TuiTemplateCompiler,
+        TuiInputComponent,
+        TuiTextareaComponent,
+        TuiSelectComponent,
+        LabelComponent
+    ]
+})
+export class TuiConsoleModule {
+    static withOptions(options: TemplateCompilerOptions): any {
+        return {
+            module: TuiConsoleModule,
+            providers: [],
+            imports: [TuiTemplateModule.withOptions(options)]
+        } as any;
     }
 }

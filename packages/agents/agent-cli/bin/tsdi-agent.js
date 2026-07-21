@@ -3,7 +3,6 @@ require('ts-node/register/transpile-only');
 require('tsconfig-paths/register');
 
 const { createAgentCli } = require('../src/cli.ts');
-
 const argv = process.argv.length <= 2
     ? [...process.argv, 'chat']
     : process.argv;

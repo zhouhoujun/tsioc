@@ -1,4 +1,10 @@
-import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
+import { importProvidersFrom, Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { createHash } from 'crypto';
+import { LoggerModule } from '@tsdi/logger';
+import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
 import { AgentAuditLogEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity } from './memory/entities';
 
@@ -21,6 +27,41 @@ export class AgentOrmModule {
             providers: createAgentOrmProviders(options)
         }
     }
+
+    static withStorageRoot(root: string, fileName = 'agent.db'): ModuleWithProviders<AgentOrmModule> {
+        const location = resolveAgentOrmStorageLocation(root, fileName);
+        return AgentOrmModule.withConnection({
+            type: 'sqljs' as any,
+            location,
+            autoSave: true,
+            autoLoadEntities: false as any,
+            synchronize: true
+        } as TypeormOptions);
+    }
+}
+
+export function provideAgentOrmStorage(root: string, fileName = 'agent.db'): Provider[] {
+    const location = resolveAgentOrmStorageLocation(root, fileName);
+    return provideAgentOrm({
+        type: 'sqljs' as any,
+        location,
+        autoSave: true,
+        autoLoadEntities: false as any,
+        synchronize: true
+    } as TypeormOptions);
+}
+
+function resolveAgentOrmStorageLocation(root: string, fileName: string): string {
+    const resolvedRoot = path.resolve(root);
+    try {
+        fs.mkdirSync(resolvedRoot, { recursive: true });
+        fs.accessSync(resolvedRoot, fs.constants.W_OK);
+        return path.join(resolvedRoot, fileName);
+    } catch {
+        const fallbackRoot = path.join(os.tmpdir(), '.tsdi-agent', createHash('sha1').update(resolvedRoot).digest('hex'));
+        fs.mkdirSync(fallbackRoot, { recursive: true });
+        return path.join(fallbackRoot, fileName);
+    }
 }
 
 
@@ -31,10 +72,14 @@ function createAgentOrmProviders(options: TypeormOptions): Provider[] {
 }
 
 export function provideAgentOrm(options: TypeormOptions): Provider[] {
-    return createAgentOrmProviders({
+    return [
+        importProvidersFrom(LoggerModule),
+        { provide: ModuleLoader, useValue: new DefaultModuleLoader() },
+        ...createAgentOrmProviders({
         type: 'sqljs' as any,
         autoLoadEntities: false as any,
         synchronize: true,
         ...options
-    });
+    })
+    ];
 }

@@ -5,8 +5,10 @@ import {
     resolveConsoleOptionLabelColumnWidth,
     shouldSkipConsoleHistoryEntry
 } from './input';
+import { Runner, Shutdown } from '@tsdi/core';
+import { Abstract, Inject, Injectable, Injector, Optional, Provider, token } from '@tsdi/ioc';
 import { getDisplayWidth, sliceByDisplayWidth } from './display-width';
-import { RNode } from '@tsdi/components';
+import { RNode, Renderer } from '@tsdi/components';
 import { ConsoleNode } from './console';
 
 const CHAT_COMMANDS = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
@@ -219,6 +221,299 @@ export interface TuiTerminalSurfaceOptions {
     stablePrefixRows?: number | ((lines: string[]) => number);
     stableRegionId?: string | string[];
     scheduler?: (task: () => void) => void;
+}
+
+export interface ConsoleTerminalInputLike {
+    isTTY?: boolean;
+    readable?: boolean;
+    on(event: 'data', listener: (chunk: Buffer | string) => void): void;
+    off?(event: 'data', listener: (chunk: Buffer | string) => void): void;
+    removeListener?(event: 'data', listener: (chunk: Buffer | string) => void): void;
+    read?(): Buffer | string | null;
+    resume?(): void;
+    pause?(): void;
+    setRawMode?(enabled: boolean): void;
+}
+
+export interface ConsoleTerminalInputControllerOptions {
+    input?: ConsoleTerminalInputLike;
+    decoder?: TerminalInputSequenceDecoder;
+    pollIntervalMs?: number;
+    onChunk: (
+        decoded: TerminalInputSequenceResult,
+        chunk: Buffer | string
+    ) => void | Promise<void>;
+}
+
+@Abstract()
+export abstract class ConsoleTerminalInputLifecycle {
+    abstract start(): void;
+    abstract stop(): void;
+}
+
+@Abstract()
+export abstract class ConsoleTerminalInputHandler {
+    abstract handleTerminalInput(
+        decoded: TerminalInputSequenceResult,
+        chunk: Buffer | string
+    ): void | Promise<void>;
+}
+
+@Abstract()
+export abstract class ConsoleTerminalSurfaceLifecycle {
+    abstract getTerminalRoot(): RNode | RNode[] | undefined;
+    shouldPlaceTerminalCursor?(): boolean;
+    resolveTerminalCursorMode?(): 'prompt' | 'bottom';
+}
+
+@Abstract()
+export abstract class ConsoleTerminalSurfaceAccessor {
+    abstract getLastRenderedLines(): string[];
+    abstract getLastRenderedText(stripAnsi: (value: string) => string): string;
+}
+
+export class ConsoleTerminalInputController {
+    protected readonly input: ConsoleTerminalInputLike;
+    protected readonly decoder: TerminalInputSequenceDecoder;
+    protected readonly pollIntervalMs: number;
+    protected started = false;
+    protected resumed = false;
+    protected dataHandler?: (chunk: Buffer | string) => void;
+    protected pollTimer?: NodeJS.Timeout;
+
+    constructor(protected options: ConsoleTerminalInputControllerOptions) {
+        this.input = options.input || (globalThis as any).process?.stdin;
+        this.decoder = options.decoder || new TerminalInputSequenceDecoder();
+        this.pollIntervalMs = Math.max(10, Math.floor(options.pollIntervalMs || 20));
+    }
+
+    start(): void {
+        if (this.started || !this.input?.on) {
+            return;
+        }
+        this.started = true;
+        this.dataHandler = (chunk: Buffer | string) => {
+            void this.options.onChunk(this.decoder.decode(chunk), chunk);
+        };
+        this.input.on('data', this.dataHandler);
+        this.input.setRawMode?.(true);
+        this.input.resume?.();
+        this.resumed = true;
+        if (this.input.read) {
+            this.pollTimer = setInterval(() => {
+                if (!this.started || this.input.readable === false) {
+                    return;
+                }
+                while (true) {
+                    const chunk = this.input.read?.();
+                    if (chunk == null) {
+                        break;
+                    }
+                    this.dataHandler?.(chunk);
+                }
+            }, this.pollIntervalMs);
+            this.pollTimer.unref?.();
+        }
+    }
+
+    stop(): void {
+        if (!this.started) {
+            return;
+        }
+        this.started = false;
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+        if (this.dataHandler) {
+            if (this.input.off) {
+                this.input.off('data', this.dataHandler);
+            } else {
+                this.input.removeListener?.('data', this.dataHandler);
+            }
+            this.dataHandler = undefined;
+        }
+        this.input.setRawMode?.(false);
+        if (this.resumed) {
+            this.input.pause?.();
+            this.resumed = false;
+        }
+        this.decoder.reset();
+    }
+}
+
+@Injectable()
+export class ConsoleTerminalInputLifecycleService extends ConsoleTerminalInputLifecycle {
+    protected readonly controller: ConsoleTerminalInputController;
+
+    constructor(
+        private injector: Injector
+    ) {
+        super();
+        this.controller = new ConsoleTerminalInputController({
+            onChunk: (decoded, chunk) => {
+                if (this.injector.destroyed) {
+                    return;
+                }
+                return this.injector.get(ConsoleTerminalInputHandler, null)?.handleTerminalInput?.(decoded, chunk);
+            }
+        });
+    }
+
+    start(): void {
+        if (!this.injector.get(ConsoleTerminalInputHandler, null)) {
+            return;
+        }
+        this.controller.start();
+    }
+
+    stop(): void {
+        this.controller.stop();
+    }
+}
+
+@Injectable()
+export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfaceAccessor {
+    protected surface: TuiTerminalSurface | null = null;
+    protected root?: RNode | RNode[];
+    protected readonly output = (globalThis as any).process?.stdout;
+    protected readonly useAlternateScreen = shouldUseAlternateScreen();
+    protected attachTimer?: NodeJS.Timeout;
+
+    constructor(
+        private injector: Injector
+    ) {
+        super();
+    }
+
+    startRendering(): void {
+        if (!this.injector.get(ConsoleTerminalSurfaceLifecycle, null)) {
+            return;
+        }
+        this.prepare();
+        this.attach();
+    }
+
+    stopRendering(): void {
+        this.cleanup({
+            preserveScreen: true,
+            retainedLines: this.surface?.lastRenderedLines || []
+        });
+    }
+
+    getLastRenderedLines(): string[] {
+        return this.surface?.lastRenderedLines || [];
+    }
+
+    getLastRenderedText(stripAnsiValue: (value: string) => string): string {
+        return this.getLastRenderedLines().map(line => stripAnsiValue(line)).join('\n').trim();
+    }
+
+    protected prepare(): void {
+        if (!this.output?.isTTY) {
+            return;
+        }
+        if (this.useAlternateScreen) {
+            this.output.write('\x1b[?1049h');
+        }
+        this.output.write(buildClearScreenSequence(false));
+    }
+
+    protected attach(): void {
+        const lifecycle = this.injector.get(ConsoleTerminalSurfaceLifecycle, null);
+        if (!lifecycle) {
+            return;
+        }
+        const root = lifecycle?.getTerminalRoot?.();
+        if (!root) {
+            this.scheduleAttachRetry();
+            return;
+        }
+        const renderer = this.injector.get(Renderer, null) as TuiTerminalSurfaceRenderer | null;
+        if (!renderer || typeof renderer.renderToTuiLayout !== 'function') {
+            return;
+        }
+        this.root = root;
+        this.surface?.destroy();
+        this.surface = new TuiTerminalSurface({
+            renderer,
+            root,
+            width: () => resolveTerminalSize(this.output || {}).columns,
+            output: this.output,
+            placeCursor: () => lifecycle?.shouldPlaceTerminalCursor?.() ?? false,
+            cursorMode: () => lifecycle?.resolveTerminalCursorMode?.() ?? 'prompt'
+        });
+        this.surface.render();
+    }
+
+    protected cleanup(options: { preserveScreen?: boolean; clearScrollback?: boolean; retainedLines?: string[] } = {}): void {
+        if (this.attachTimer) {
+            clearTimeout(this.attachTimer);
+            this.attachTimer = undefined;
+        }
+        if (this.output?.isTTY) {
+            this.output.write(buildTerminalCleanupSequence({
+                reset: '\x1b[0m',
+                alternateScreen: this.useAlternateScreen,
+                preserveScreen: options.preserveScreen,
+                clearScrollback: options.clearScrollback,
+                retainedLines: options.retainedLines,
+                paintedLineCount: this.surface?.lastRenderedLines.length || 0,
+                terminalRows: this.output.rows || 0,
+                currentRow: !this.useAlternateScreen && options.preserveScreen
+                    ? this.surface?.lastTerminalRow || 0
+                    : undefined
+            }));
+        }
+        this.surface?.destroy();
+        this.surface = null;
+        this.root = undefined;
+    }
+
+    protected scheduleAttachRetry(): void {
+        if (this.attachTimer) {
+            return;
+        }
+        this.attachTimer = setTimeout(() => {
+            this.attachTimer = undefined;
+            this.attach();
+        }, 10);
+        this.attachTimer.unref?.();
+    }
+}
+
+@Injectable()
+export class ConsoleTerminalApplicationLifecycleService {
+    constructor(
+        private input: ConsoleTerminalInputLifecycleService,
+        private surface: ConsoleTerminalSurfaceLifecycleService
+    ) {
+    }
+
+    @Runner()
+    start(): void {
+        this.input.start();
+        this.surface.startRendering();
+    }
+
+    @Shutdown()
+    stop(): void {
+        this.surface.stopRendering();
+        this.input.stop();
+    }
+
+    onDestroy(): void {
+        this.stop();
+    }
+}
+
+export function provideConsoleTerminalLifecycle(): Provider[] {
+    return [
+        ConsoleTerminalInputLifecycleService,
+        ConsoleTerminalSurfaceLifecycleService,
+        ConsoleTerminalApplicationLifecycleService,
+        { provide: ConsoleTerminalSurfaceAccessor, useExisting: ConsoleTerminalSurfaceLifecycleService }
+    ];
 }
 
 export class TuiTerminalSurface {

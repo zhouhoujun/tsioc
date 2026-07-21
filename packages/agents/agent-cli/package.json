@@ -8,8 +8,8 @@
   },
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "chat": "node ./bin/tsdi-agent.js",
     "test": "ts-node -r tsconfig-paths/register unit.ts",
-    "chat": "ts-node -r tsconfig-paths/register src/cli.ts chat",
     "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"
   },
   "keywords": [
@@ -33,6 +33,7 @@
     "@tsdi/agent-channels": "6.0.31",
     "@tsdi/agent-gateway": "6.0.31",
     "@tsdi/agent-tools": "6.0.31",
+    "@tsdi/agent-ui": "6.0.31",
     "@tsdi/components/console": "6.0.0-beta7",
     "@tsdi/core": "6.0.31",
     "@tsdi/ioc": "6.0.31",

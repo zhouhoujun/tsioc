@@ -3,7 +3,7 @@
 这个目录用于发布 `npm` 包，源码位于
 [主仓库](https://github.com/zhouhoujun/tsioc)。
 
-`@tsdi/agent-cli` 提供 `@tsdi/agent` 的命令行入口，支持单次 prompt 执行、交互式 chat、模型配置初始化，以及会话内模型切换。
+`@tsdi/agent-cli` 提供 `@tsdi/agent` 的命令行入口。它负责单次命令执行、供 Agent UI 使用的 stdio RPC bridge，以及一个不在 CLI 内持有 TUI 状态的薄 `chat` 启动入口。
 
 ## 推荐使用方式：快速模型 + 强模型
 
@@ -19,8 +19,8 @@
 
 这样做的好处是：
 
-- 日常 chat 默认保持响应速度
-- 复杂任务时可通过 `/model` 快速切到强模型
+- 普通请求默认保持快速响应
+- 复杂任务可通过 agent 配置路由到强模型
 - 配置语义清晰，后续替换到 OpenAI 或自定义兼容 provider 时也容易迁移
 
 ## 安装
@@ -41,13 +41,13 @@ tsdi-agent
 tsdi-agent chat
 ```
 
-## 首次模型配置
+## 模型配置
 
-启动 `chat` 时，CLI 会先检查默认工作区配置：
+CLI 在执行命令前会读取默认工作区配置：
 
-- 如果已经存在 provider / model 配置，则直接进入 chat。
-- 如果对应 provider 的 API Key 环境变量可用，也会直接进入 chat。
-- 只有在全局配置缺失时，才会进入首次模型配置流程。
+- 如果已经存在 provider / model 配置，则直接使用。
+- 如果对应 provider 的 API Key 环境变量可用，也会自动解析。
+- TUI 交互由 Agent UI 负责，不再由 CLI 侧状态机负责。
 
 首次配置支持以下 4 类 provider：
 
@@ -231,43 +231,30 @@ tsdi-agent chat
 ## 常用命令
 
 - `tsdi-agent run "your prompt"`：执行单次 prompt
-- `tsdi-agent chat`：启动交互式会话
+- `tsdi-agent chat`：以 TUI 模式启动 Agent UI
 - `tsdi-agent tools list`：查看解析后的工具配置
+- `tsdi-agent rpc-stdio`：通过 stdio 暴露 JSON-RPC 2.0 JSONL 接口，供 Agent UI 或其他客户端接入
 
-## Chat 内置命令
+## UI 集成
 
-- `/model`：切换 provider / model，并更新默认工作区配置
-- `/tools`：查看当前可用工具
-- `/help`：查看命令帮助
-- `/multiline`：切换多行输入
-- `/send`：发送多行草稿
-- `/cancel`：取消多行草稿
-- `/sessions`：聚焦界面上的会话列表，可直接用上下键、`PgUp/PgDn`、`Home/End`、回车、`y`、`Esc`
-- `/messages`：聚焦界面上的消息列表，可直接用上下键、`PgUp/PgDn`、`Home/End`、回车、`y`、`Esc`；进入详情后可用左右键横向查看长行
-- `/session [id]`：切换到指定会话；不传 `id` 时进入交互选择
-- `/new [id]`：创建并切换到一个新会话；可选自定义 `id`
-- `/approvals`：查看待处理审批
-- `/approve [id]`：批准待处理审批；不传 `id` 时进入交互选择
-- `/deny [id]`：拒绝待处理审批；不传 `id` 时进入交互选择
-- `/copy [last|screen|input|selected]`：通过 OSC52 复制文本，默认复制最近一条 assistant 回复
-- `/quit`、`/exit`：退出会话
+- CLI 不再管理 TUI 状态、终端输入状态或 UI 交互流程。
+- 交互式 UI 应通过 `tsdi-agent rpc-stdio` 接入。
+- `tsdi-agent chat` 只是启动 Agent UI 的入口。
+- 会话切换、审批、输入行为、光标行为和终端渲染应统一由 Agent UI 负责。
 
 ## 备注
 
 - 自定义兼容 OpenAI 使用 `provider: "openai-compatible"` 和自定义 `baseUrl`
 - 自定义兼容 Anthropic 使用 `provider: "anthropic"` 和自定义 `baseUrl`
-- 用户在首次配置或 `/model` 中选择的当前模型会直接写入 `settings.json` 的 `model` 节点
-- Chat 中输入 API key 时会自动掩码显示
-- `terminal`、`write_file`、`delete_file` 等敏感本地操作现在会在 Chat 内显式请求审批
-- Chat 现在默认运行在终端主屏幕，保留原生 scrollback 和终端滚动条；如需切回全屏 buffer，可设置 `TSDI_AGENT_ALT_SCREEN=1`
-- 自定义 transcript 滚动条保持关闭；mouse capture 只会在交互式选择菜单打开时临时启用
+- 模型配置从 `settings.json` 的 `model` 节点读取
+- `terminal`、`write_file`、`delete_file` 等敏感本地操作仍会在 agent 层要求显式审批
 
 ## 自适应模型配置建议
 
 如果你的目标是“默认快，复杂时强”，建议按下面的方式使用：
 
-1. 首次启动 `tsdi-agent` 时，把默认模型配置成 `deepseek-v4-flash`
-2. 遇到复杂任务时，通过 `/model` 切换到 `deepseek-v4-pro`
+1. 在 `settings.json` 里把默认模型配置成 `deepseek-v4-flash`
+2. 在 `settings.json` 里把 `deepseek-v4-pro` 配成 `strong` profile
 3. 如果要进一步自动化，再在 `@tsdi/agent` 里配置：
    - `fast` profile
    - `strong` profile
@@ -275,5 +262,5 @@ tsdi-agent chat
 
 也就是说：
 
-- `agent-cli` 更偏向“快速初始化 + 会话内切换”
+- `agent-cli` 更偏向“显式命令执行 + RPC 暴露”
 - `@tsdi/agent` 更偏向“基于复杂度的自动路由”

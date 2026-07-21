@@ -1311,6 +1311,235 @@ export class AppRpcServerTest {
         expect(await owners.getOwner('notify-only')).toEqual('user-1');
     }
 
+    @Test('returns shared app state through json-rpc')
+    async returnsSharedAppState() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {
+                ui: {
+                    title: 'Console',
+                    console: {
+                        workspace: '/tmp/workspace'
+                    }
+                },
+                model: {
+                    provider: 'deepseek',
+                    model: 'deepseek-v4-flash',
+                    defaultProfile: 'flash'
+                },
+                bootstrapTurn: {
+                    sessionId: 'rpc-init'
+                }
+            } as any
+        );
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 7,
+            method: 'app.state'
+        }, { principalId: 'user-1' });
+
+        expect((response as any).result).toEqual({
+            sessionId: 'rpc-init',
+            workspace: '/tmp/workspace',
+            title: 'Console',
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            modelProfile: 'flash',
+            createdAt: expect.any(Number),
+            updatedAt: expect.any(Number)
+        });
+        expect(await owners.getOwner('rpc-init')).toEqual('user-1');
+    }
+
+    @Test('lists and activates model profiles through json-rpc')
+    async listsAndActivatesModelProfiles() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {
+                model: {
+                    provider: 'deepseek',
+                    model: 'deepseek-v4-flash',
+                    defaultProfile: 'flash',
+                    profiles: {
+                        flash: { provider: 'deepseek', model: 'deepseek-v4-flash' },
+                        strong: { provider: 'deepseek', model: 'deepseek-v4-pro', reasoning: true }
+                    }
+                },
+                bootstrapTurn: {
+                    sessionId: 'rpc-model'
+                }
+            } as any
+        );
+
+        const listed = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 8,
+            method: 'model.list'
+        }, { principalId: 'user-1' });
+
+        expect((listed as any).result).toEqual([
+            {
+                name: 'flash',
+                selected: true,
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                baseUrl: '',
+                reasoning: undefined,
+                thinkingBudget: undefined
+            },
+            {
+                name: 'strong',
+                selected: false,
+                provider: 'deepseek',
+                model: 'deepseek-v4-pro',
+                baseUrl: '',
+                reasoning: true,
+                thinkingBudget: undefined
+            }
+        ]);
+
+        const activated = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 9,
+            method: 'model.activate',
+            params: {
+                sessionId: 'rpc-model',
+                name: 'strong'
+            }
+        }, { principalId: 'user-1' });
+
+        expect((activated as any).result).toEqual({
+            sessionId: 'rpc-model',
+            modelProfile: 'strong',
+            provider: 'deepseek',
+            model: 'deepseek-v4-pro'
+        });
+    }
+
+    @Test('stores console input history per workspace through json-rpc')
+    async storesConsoleInputHistoryPerWorkspace() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {
+                bootstrapTurn: {
+                    sessionId: 'rpc-history'
+                }
+            } as any
+        );
+
+        await rpc.handle({
+            jsonrpc: '2.0',
+            id: 10,
+            method: 'app.inputHistory.put',
+            params: {
+                sessionId: 'rpc-history',
+                workspace: '/tmp/workspace-a',
+                entries: ['first', '/help', 'second']
+            }
+        }, { principalId: 'user-1' });
+
+        await rpc.handle({
+            jsonrpc: '2.0',
+            id: 11,
+            method: 'app.inputHistory.put',
+            params: {
+                sessionId: 'rpc-history',
+                workspace: '/tmp/workspace-b',
+                entries: ['other']
+            }
+        }, { principalId: 'user-1' });
+
+        const workspaceA = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 12,
+            method: 'app.inputHistory.get',
+            params: {
+                sessionId: 'rpc-history',
+                workspace: '/tmp/workspace-a'
+            }
+        }, { principalId: 'user-1' });
+
+        const workspaceB = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 13,
+            method: 'app.inputHistory.get',
+            params: {
+                sessionId: 'rpc-history',
+                workspace: '/tmp/workspace-b'
+            }
+        }, { principalId: 'user-1' });
+
+        expect((workspaceA as any).result).toEqual(['first', '/help', 'second']);
+        expect((workspaceB as any).result).toEqual(['other']);
+    }
+
     @Test('streams shared turn chunks and final response')
     async streamsSharedTurnChunksAndFinalResponse() {
         const store = new InMemorySessionStore();

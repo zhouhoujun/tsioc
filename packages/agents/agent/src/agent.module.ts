@@ -16,8 +16,10 @@ import { AGENT_PROMPT_SECTIONS } from './tokens';
 import { EchoTool, MemoryPutTool, MemorySearchTool, TimeTool } from './tools/BuiltinTools';
 import { SessionStore } from './memory/SessionStore';
 import { InMemorySessionStore } from './memory/InMemorySessionStore';
+import { DefaultSessionStore } from './memory/DefaultSessionStore';
 import { MemoryStore } from './memory/MemoryStore';
 import { InMemoryMemoryStore } from './memory/InMemoryMemoryStore';
+import { DefaultMemoryStore } from './memory/DefaultMemoryStore';
 import { SessionSummarizer } from './memory/SessionSummarizer';
 import { SimpleSessionSummarizer } from './memory/SimpleSessionSummarizer';
 import { ExperienceDistiller } from './memory/ExperienceDistiller';
@@ -80,8 +82,12 @@ import { createAgentProviders } from './provider';
         TimeTool,
         MemoryPutTool,
         MemorySearchTool,
-        { provide: SessionStore, useClass: InMemorySessionStore },
-        { provide: MemoryStore, useClass: InMemoryMemoryStore },
+        InMemorySessionStore,
+        DefaultSessionStore,
+        { provide: SessionStore, useExisting: DefaultSessionStore },
+        InMemoryMemoryStore,
+        DefaultMemoryStore,
+        { provide: MemoryStore, useExisting: DefaultMemoryStore },
         DefaultAgentMemoryRetriever,
         { provide: AgentMemoryRetriever, useExisting: DefaultAgentMemoryRetriever, asDefault: true },
         { provide: SessionSummarizer, useClass: SimpleSessionSummarizer },
@@ -104,7 +110,9 @@ import { createAgentProviders } from './provider';
     exports: [
         DefaultAgentRuntime,
         LocalToolRegistry,
+        DefaultSessionStore,
         InMemorySessionStore,
+        DefaultMemoryStore,
         InMemoryMemoryStore,
         IntervalAgentScheduler,
         AgentServer,

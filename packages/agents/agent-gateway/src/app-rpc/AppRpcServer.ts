@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import { Injectable } from '@tsdi/ioc';
-import { AgentRuntime, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
+import { Inject, Injectable } from '@tsdi/ioc';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, defaultAgentOptions, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler } from '../api/EventHandler';
@@ -8,6 +8,8 @@ import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRp
 
 @Injectable()
 export class AppRpcServer {
+    protected static readonly CONSOLE_INPUT_HISTORY_KEY = 'agent-ui.console.input-history';
+
     constructor(
         private runtime: AgentRuntime,
         private sessions: SessionStore,
@@ -15,7 +17,8 @@ export class AppRpcServer {
         private tools: ToolRegistry,
         private owners: SessionOwnerStore,
         private sessionHandler: SessionHandler,
-        private events: EventHandler
+        private events: EventHandler,
+        @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions
     ) {
     }
 
@@ -121,6 +124,9 @@ export class AppRpcServer {
                     methods: [
                         'app.ping',
                         'app.capabilities',
+                        'app.state',
+                        'app.inputHistory.get',
+                        'app.inputHistory.put',
                         'session.create',
                         'session.list',
                         'session.messages',
@@ -130,6 +136,8 @@ export class AppRpcServer {
                         'tools.list',
                         'tools.activate',
                         'tools.invoke',
+                        'model.list',
+                        'model.activate',
                         'memory.list',
                         'memory.put',
                         'memory.search',
@@ -137,6 +145,12 @@ export class AppRpcServer {
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
+            case 'app.state':
+                return this.getAppState(params, context);
+            case 'app.inputHistory.get':
+                return this.getInputHistory(params, context);
+            case 'app.inputHistory.put':
+                return this.putInputHistory(params, context);
             case 'session.create':
                 return this.createSession(params, context);
             case 'session.list':
@@ -153,6 +167,10 @@ export class AppRpcServer {
                 return this.activateTool(params, context);
             case 'tools.invoke':
                 return this.invokeTool(params, context);
+            case 'model.list':
+                return this.listModelProfiles();
+            case 'model.activate':
+                return this.activateModelProfile(params, context);
             case 'memory.list':
                 return this.listMemory(params, context);
             case 'memory.put':
@@ -178,6 +196,69 @@ export class AppRpcServer {
             createdAt: state.createdAt,
             updatedAt: state.updatedAt
         };
+    }
+
+    private async getAppState(params: any, context: AppRpcRequestContext): Promise<any> {
+        const uiConsole = this.options.ui?.console as Record<string, any> | undefined;
+        const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
+            ? params.sessionId.trim()
+            : this.options.bootstrapTurn?.sessionId || 'default';
+        await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+        this.sessionHandler.track(sessionId);
+        const state = await this.sessions.get(sessionId);
+
+        return {
+            sessionId,
+            workspace: String(uiConsole?.workspace || ''),
+            title: this.options.ui?.title || defaultAgentOptions.ui?.title || '',
+            provider: this.options.model?.provider || '',
+            model: this.options.model?.model || '',
+            modelProfile: this.resolveModelProfile(),
+            createdAt: state.createdAt,
+            updatedAt: state.updatedAt
+        };
+    }
+
+    private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {
+        const workspace = this.requireString(params?.workspace, 'app.inputHistory.get workspace');
+        const sessionId = this.optionalSessionId(params);
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+            this.sessionHandler.track(sessionId);
+        }
+        const principalId = this.resolveHistoryPrincipalId(context);
+        const record = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId);
+        return record ? this.normalizeInputHistoryEntries(this.parseInputHistoryEntries(record.value)) : [];
+    }
+
+    private async putInputHistory(params: any, context: AppRpcRequestContext): Promise<{ workspace: string; entries: string[] }> {
+        const workspace = this.requireString(params?.workspace, 'app.inputHistory.put workspace');
+        const sessionId = this.optionalSessionId(params);
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+            this.sessionHandler.track(sessionId);
+        }
+        const principalId = this.resolveHistoryPrincipalId(context);
+        const entries = this.normalizeInputHistoryEntries(params?.entries);
+        const existing = this.findConsoleInputHistoryRecord(await this.memory.getAll(sessionId), workspace, principalId);
+        const id = this.createConsoleInputHistoryRecordId(workspace, principalId);
+        await this.memory.delete(id, undefined, 'global');
+        await this.memory.put({
+            id,
+            key: AppRpcServer.CONSOLE_INPUT_HISTORY_KEY,
+            value: JSON.stringify(entries),
+            scope: 'global',
+            namespace: 'agent-ui',
+            category: 'workspace',
+            metadata: {
+                workspace,
+                principalId,
+                kind: 'console-input-history'
+            },
+            createdAt: existing?.createdAt || Date.now(),
+            updatedAt: Date.now()
+        });
+        return { workspace, entries };
     }
 
     private async listSessions(context: AppRpcRequestContext): Promise<any[]> {
@@ -283,6 +364,45 @@ export class AppRpcServer {
         return { sessionId, name, output };
     }
 
+    private listModelProfiles(): any[] {
+        const profiles = this.options.model?.profiles || {};
+        const current = String(this.options.model?.defaultProfile || '').trim();
+        return Object.entries(profiles)
+            .filter(([, profile]) => !!profile)
+            .map(([name, profile]) => ({
+                name,
+                selected: current === name,
+                provider: profile?.provider || this.options.model?.provider || '',
+                model: profile?.model || this.options.model?.model || '',
+                baseUrl: profile?.baseUrl || this.options.model?.baseUrl || '',
+                reasoning: profile?.reasoning,
+                thinkingBudget: profile?.thinkingBudget
+            }))
+            .sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    private async activateModelProfile(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.optionalSessionId(params);
+        if (sessionId) {
+            await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
+            this.sessionHandler.track(sessionId);
+        }
+        const name = this.requireString(params?.name, 'model.activate name');
+        const profiles = this.options.model?.profiles || {};
+        const profile = profiles[name];
+        if (!profile) {
+            throw new AppRpcError(-32602, `Invalid params: unknown model profile '${name}'`);
+        }
+        this.options.model = this.options.model || {};
+        this.options.model.defaultProfile = name;
+        return {
+            sessionId: sessionId || null,
+            modelProfile: name,
+            provider: profile.provider || this.options.model.provider || '',
+            model: profile.model || this.options.model.model || ''
+        };
+    }
+
     private async listMemory(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = this.optionalSessionId(params);
         if (sessionId) {
@@ -358,6 +478,68 @@ export class AppRpcServer {
             throw new AppRpcError(-32602, `Invalid params: ${field} must be a non-empty string`);
         }
         return value.trim();
+    }
+
+    private resolveModelProfile(): string {
+        const model = this.options.model;
+        if (model?.defaultProfile === 'strong') {
+            return 'strong';
+        }
+        if (model?.defaultProfile === 'flash' || model?.defaultProfile === 'fast') {
+            return 'flash';
+        }
+        if (model?.thinkingBudget || model?.reasoning) {
+            return 'strong';
+        }
+        return '';
+    }
+
+    private resolveHistoryPrincipalId(context: AppRpcRequestContext): string {
+        return String(context?.principalId || '').trim() || 'anonymous';
+    }
+
+    private createConsoleInputHistoryRecordId(workspace: string, principalId: string): string {
+        return `agent-ui:console-input-history:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}`;
+    }
+
+    private findConsoleInputHistoryRecord(records: any[], workspace: string, principalId: string): any | undefined {
+        return (records || [])
+            .filter(record => record?.scope === 'global'
+                && record?.key === AppRpcServer.CONSOLE_INPUT_HISTORY_KEY
+                && record?.metadata?.workspace === workspace
+                && String(record?.metadata?.principalId || '').trim() === principalId)
+            .sort((left, right) => (right?.updatedAt || right?.createdAt || 0) - (left?.updatedAt || left?.createdAt || 0))[0];
+    }
+
+    private parseInputHistoryEntries(value: unknown): any[] {
+        if (Array.isArray(value)) {
+            return value;
+        }
+        if (typeof value !== 'string') {
+            return Array.isArray((value as any)?.entries) ? (value as any).entries : [];
+        }
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed)
+                ? parsed
+                : Array.isArray(parsed?.entries)
+                    ? parsed.entries
+                    : [];
+        } catch {
+            return [];
+        }
+    }
+
+    private normalizeInputHistoryEntries(value: unknown): string[] {
+        const entries: any[] = Array.isArray(value)
+            ? value
+            : Array.isArray((value as any)?.entries)
+                ? (value as any).entries
+                : [];
+        return Array.from(new Set(entries
+            .map((entry: any) => String(entry || '').trim())
+            .filter(Boolean)))
+            .slice(0, 200);
     }
 
     private createErrorResponse(id: string | number | null | undefined, error: AppRpcError): AppRpcResponse {
