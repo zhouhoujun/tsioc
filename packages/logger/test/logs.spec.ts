@@ -1,6 +1,7 @@
 import { Injectable, Inject, Autowired, Container, Injector, createInjector, InjectUtil } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LoggerModule, InjectLog, Logger, provideLogger } from '../src';
+import { ConsoleLog } from '../src/manager';
 import { DebugLog1Aspect } from './debugLog';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
@@ -152,6 +153,11 @@ describe('logging test', () => {
         } finally {
             direct.destroy();
         }
+    });
+
+    it('console logger defaults to info level', () => {
+        const logger = new ConsoleLog('test');
+        expect(logger.level).toEqual('info');
     });
 
     after(() => {

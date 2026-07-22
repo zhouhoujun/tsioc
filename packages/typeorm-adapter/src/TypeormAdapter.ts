@@ -30,7 +30,7 @@ export class TypeormAdapter {
      */
     @Startup()
     protected async startup(): Promise<void> {
-        this.logger.info('startup db connections');
+        this.logger.debug('startup db connections');
         const connections = this.injector.get(CONNECTIONS);
         const injector = this.injector;
 
@@ -317,7 +317,7 @@ export class TypeormAdapter {
     }
 
     protected async disconnect(): Promise<void> {
-        this.logger?.info('close db connections');
+        this.logger?.debug('close db connections');
         await Promise.all(Array.from(this.sources.values()).map(async c => {
             if (c && c.isInitialized) {
                 await c.destroy()

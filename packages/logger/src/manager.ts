@@ -146,7 +146,7 @@ export class ConsoleLog implements Logger {
     readonly category: string;
     formatHeader = true;
 
-    constructor(name?: string, public level: Level = 'debug', private headerFormater?: HeaderFormater | null) {
+    constructor(name?: string, public level: Level = 'info', private headerFormater?: HeaderFormater | null) {
         this.category = name || 'default';
     }
 
