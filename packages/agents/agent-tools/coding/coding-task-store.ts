@@ -38,6 +38,7 @@ export interface CodingTaskRecord {
         completedActions: number;
         failedActionId?: string;
         output?: any;
+        diff?: any;
         error?: string;
     };
     metadata?: Record<string, any>;

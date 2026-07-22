@@ -1801,6 +1801,39 @@ export class AgentToolsPackageTest {
         expect(result.task.result.error).toContain('edit failed');
     }
 
+    @Test('coding task captures git diff summary after successful workspace edits')
+    async codingTaskCapturesGitDiffAfterWorkspaceEdits() {
+        const calls: string[] = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push(action.tool);
+                if (action.tool === 'git_operations') {
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: 'diff --git a/a.ts b/a.ts\n+patched' },
+                        summary: 'diff available'
+                    };
+                }
+                return { tool: action.tool, output: { ok: true }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Patch fallback flow and add tests',
+            actions: [
+                { id: 'action-1', title: 'Patch fallback', tool: 'edit_file', input: { path: 'a.ts', oldString: 'a', newString: 'b' } }
+            ]
+        }, createSessionContext());
+
+        expect(calls).toEqual(['edit_file', 'git_operations']);
+        expect(result.task.status).toEqual('completed');
+        expect(result.task.result?.diff?.summary).toEqual('diff available');
+        expect(result.task.result?.diff?.output).toEqual({ stdout: 'diff --git a/a.ts b/a.ts\n+patched' });
+    }
+
     @Test('http fetch performs get requests applies timeout signal and truncates large responses')
     async httpFetchPerformsGetRequestsAppliesTimeoutSignalAndTruncatesLargeResponses() {
         let calledUrl = '';

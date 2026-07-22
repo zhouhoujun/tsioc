@@ -367,6 +367,27 @@ export class BuiltinToolsTest {
         expect(registry.getToolDefinition('heavy_tool', 's2')?.inputSchema).toEqual(undefined);
     }
 
+    @Test('local tool registry exposes deferred schemas through callable definitions before activation')
+    localToolRegistryExposesDeferredCallableDefinitions() {
+        const registry = new LocalToolRegistry([
+            new RegistryDiscoveryTool(),
+            new MetadataDefinitionTool()
+        ], new InMemoryMemoryStore());
+
+        const lightweight = registry.getToolDefinition('metadata_tool', 's1');
+        const callable = registry.getCallableToolDefinitions('s1').find(tool => tool.name === 'metadata_tool');
+
+        expect(lightweight?.inputSchema).toEqual(undefined);
+        expect(callable?.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+                value: { type: 'string' }
+            },
+            required: ['value']
+        });
+        expect(callable?.activation).toEqual({ kind: 'deferred', scope: 'session', activated: false });
+    }
+
     @Test('local tool registry preserves provenance and activation metadata on lightweight and activated definitions')
     async localToolRegistryPreservesMetadataAcrossActivationStates() {
         const registry = new LocalToolRegistry([

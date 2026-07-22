@@ -25,6 +25,18 @@ interface PlannedTaskDraft {
 
 @Injectable()
 export class CodingTaskTool implements AgentTool {
+    private static readonly READ_ONLY_GIT_ACTIONS = new Set(['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote']);
+    private static readonly WORKSPACE_MUTATION_TOOLS = new Set([
+        'write_file',
+        'edit_file',
+        'mkdir',
+        'copy_file',
+        'move_file',
+        'delete_file',
+        'terminal',
+        'process.start',
+        'ai_cli'
+    ]);
     name = 'coding_task';
     description = 'Plan and execute session-scoped coding tasks using workspace tools with complexity-aware model routing.';
     inputSchema = {
@@ -192,6 +204,8 @@ export class CodingTaskTool implements AgentTool {
             this.store.patch(sessionId, working.id, { actions: working.actions });
         }
 
+        const diff = await this.captureWorkspaceDiffIfNeeded(working.actions, context);
+
         const finalStatus = failedActionId ? 'failed' : 'completed';
         const saved = this.store.patch(sessionId, working.id, {
             status: finalStatus,
@@ -200,6 +214,7 @@ export class CodingTaskTool implements AgentTool {
                 completedActions,
                 failedActionId,
                 output: this.summarizeResultPayload(lastOutput),
+                ...(diff ? { diff } : {}),
                 error: failedActionId ? working.actions.find(item => item.id === failedActionId)?.error : undefined
             }
         });
@@ -372,19 +387,23 @@ export class CodingTaskTool implements AgentTool {
 
     private buildHeuristicActions(goal: string): CodingTaskActionRecord[] {
         const query = this.extractSearchQuery(goal);
-        return query ? [{
-            id: 'action-1',
-            title: 'Search workspace for relevant code',
-            tool: 'content_search',
-            input: { query },
-            status: 'pending'
-        }] : [{
+        const actions: CodingTaskActionRecord[] = [{
             id: 'action-1',
             title: 'Inspect workspace root',
             tool: 'list_dir',
             input: { path: '.', limit: 50 },
             status: 'pending'
         }];
+        if (query) {
+            actions.push({
+                id: 'action-2',
+                title: 'Search workspace for relevant code',
+                tool: 'content_search',
+                input: { query },
+                status: 'pending'
+            });
+        }
+        return actions;
     }
 
     private extractSearchQuery(goal: string): string {
@@ -485,5 +504,49 @@ export class CodingTaskTool implements AgentTool {
             throw new Error(`Invalid ${field}: must be a non-empty string.`);
         }
         return value.trim();
+    }
+
+    private async captureWorkspaceDiffIfNeeded(
+        actions: CodingTaskActionRecord[],
+        context: AgentToolContext
+    ): Promise<{ summary: string; output: any; } | undefined> {
+        const runner = this.requireRunner();
+        const supported = new Set(runner.getSupportedTools());
+        if (!supported.has('git_operations')) {
+            return undefined;
+        }
+        const mutated = actions.some(action => action.status === 'completed' && this.didMutateWorkspace(action));
+        if (!mutated) {
+            return undefined;
+        }
+        try {
+            const diff = await runner.run({
+                id: 'action-diff',
+                title: 'Inspect workspace diff',
+                tool: 'git_operations',
+                input: { action: 'diff' },
+                status: 'pending'
+            }, {
+                sessionId: context.sessionId,
+                principalId: context.principalId
+            });
+            return {
+                summary: diff.summary,
+                output: this.summarizeResultPayload(diff.output)
+            };
+        } catch {
+            return undefined;
+        }
+    }
+
+    private didMutateWorkspace(action: CodingTaskActionRecord): boolean {
+        if (CodingTaskTool.WORKSPACE_MUTATION_TOOLS.has(action.tool)) {
+            return true;
+        }
+        if (action.tool !== 'git_operations') {
+            return false;
+        }
+        const gitAction = typeof action.input?.action === 'string' ? action.input.action.trim() : '';
+        return !!gitAction && !CodingTaskTool.READ_ONLY_GIT_ACTIONS.has(gitAction);
     }
 }

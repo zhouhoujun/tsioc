@@ -286,7 +286,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (this.promptBuilder) {
             const systemPrompt = await this.promptBuilder.build({
                 sessionId,
-                tools: this.getToolDefinitions(sessionId).map(t => ({ name: t.name, description: t.description })),
+                tools: this.getToolDefinitions(sessionId).map(t => ({
+                    name: t.name,
+                    description: t.description,
+                    activation: t.activation
+                })),
                 memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
                 dateTime: new Date().toISOString()
             });
@@ -657,6 +661,26 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, reason, { sessionId, reason });
         }
 
+        const definition = callableTools.find(tool => tool.name === toolCall.name) ?? this.toolRegistry.getToolDefinition(toolCall.name, sessionId);
+        if (!definition) {
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...baseReceipt,
+                status: 'error',
+                durationMs: 0,
+                error: `Tool "${toolCall.name}" definition was not found.`
+            }, `Tool "${toolCall.name}" definition was not found.`);
+        }
+
+        const activationError = await this.ensureToolActivation(sessionId, definition);
+        if (activationError) {
+            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                ...baseReceipt,
+                status: 'error',
+                durationMs: 0,
+                error: activationError.message
+            }, activationError.message);
+        }
+
         if (this.toolApprovalManager) {
             const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId);
             if (approval.decision === ApprovalDecision.DENIED || approval.decision === ApprovalDecision.TIMEOUT) {
@@ -675,15 +699,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, baseReceipt));
 
         if (this.toolExecutionCoordinator) {
-            const definition = callableTools.find(tool => tool.name === toolCall.name) ?? this.toolRegistry.getToolDefinition(toolCall.name, sessionId);
-            if (!definition) {
-                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
-                    ...baseReceipt,
-                    status: 'error',
-                    durationMs: 0,
-                    error: `Tool "${toolCall.name}" definition was not found.`
-                }, `Tool "${toolCall.name}" definition was not found.`);
-            }
             const outcome = await this.toolExecutionCoordinator.execute({
                 sessionId,
                 principalId: this.activePrincipalId,
@@ -751,6 +766,32 @@ export class DefaultAgentRuntime extends AgentRuntime {
             };
             await this.app.publishEvent(new AgentToolFailedEvent(this, sessionId, toolCall.name, err, failedReceipt));
             return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, failedReceipt, err.message);
+        }
+    }
+
+    private async ensureToolActivation(sessionId: string, definition: AgentToolDefinition): Promise<Error | undefined> {
+        if (definition.activation?.kind !== 'deferred' || definition.activation?.scope !== 'session') {
+            return undefined;
+        }
+        const active = this.toolRegistry && typeof this.toolRegistry.isToolActive === 'function'
+            ? await this.toolRegistry.isToolActive(sessionId, definition.name)
+            : definition.activation?.activated === true;
+        if (active) {
+            return undefined;
+        }
+        if (!this.toolRegistry || typeof this.toolRegistry.activateTool !== 'function') {
+            return new Error(`Tool "${definition.name}" requires session activation, but no activation flow is available.`);
+        }
+        try {
+            const activated = await this.toolRegistry.activateTool(sessionId, definition.name);
+            if (!activated && !(await this.toolRegistry.isToolActive(sessionId, definition.name))) {
+                return new Error(`Tool "${definition.name}" could not be activated for this session.`);
+            }
+            return undefined;
+        } catch (error) {
+            return error instanceof Error
+                ? error
+                : new Error(`Tool "${definition.name}" could not be activated for this session.`);
         }
     }
 

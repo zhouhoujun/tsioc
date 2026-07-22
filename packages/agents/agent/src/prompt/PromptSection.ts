@@ -15,7 +15,7 @@ export abstract class PromptSection {
 
 export interface PromptSectionContext {
     sessionId: string;
-    tools: Array<{ name: string; description: string }>;
+    tools: Array<{ name: string; description: string; activation?: { kind?: string; scope?: string; activated?: boolean } }>;
     memory: string;
     dateTime: string;
     platform?: string;

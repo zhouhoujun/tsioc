@@ -28,9 +28,10 @@ export class IdentitySection extends PromptSection {
         this.config = config;
     }
 
-    render(_context: PromptSectionContext): string {
+    render(context: PromptSectionContext): string {
         const cfg = this.config ?? {};
         const lines: string[] = [];
+        const toolNames = new Set((context.tools || []).map(tool => tool.name));
 
         if (cfg.name) {
             lines.push(`You are ${cfg.name}.`);
@@ -52,7 +53,13 @@ export class IdentitySection extends PromptSection {
         lines.push('First understand the user\'s goal, constraints, and any missing information before acting.');
         lines.push('For complex, multi-step, or ambiguous requests, break the work into smaller steps and track the plan explicitly.');
         lines.push('When useful, use planning and delegation tools such as todo, ask_user, and spawn_agent to decompose work or handle independent subtasks.');
+        if (toolNames.has('coding_task')) {
+            lines.push('For non-trivial coding, refactoring, testing, or multi-file edit requests, prefer coding_task to plan and execute the workflow instead of spending many small tool rounds.');
+        }
         lines.push('When the user answers a clarification question, continue the task directly with the new information instead of stopping early.');
+        if (toolNames.has('git_operations')) {
+            lines.push('After modifying code or tests, inspect the resulting git diff before the final answer and summarize the changed files and verification status.');
+        }
         lines.push('If a tool or external service is unavailable, say so clearly and provide the next best fallback.');
 
         return lines.join('\n');

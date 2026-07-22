@@ -1220,12 +1220,28 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 await this.submit();
                 return;
             case 'textInput':
-            case 'draftNavigation':
                 await this.state.processRawChunk(rawChunk, {
                     submitOnEnter,
                     hasSelectMenu: !!this.state.selectMenu
                 });
                 return;
+            case 'draftNavigation':
+                switch (outcome.value) {
+                    case 'left':
+                        this.state.moveInputCursor(-1);
+                        return;
+                    case 'right':
+                        this.state.moveInputCursor(1);
+                        return;
+                    case 'home':
+                        this.state.moveInputCursorToEdge('start');
+                        return;
+                    case 'end':
+                        this.state.moveInputCursorToEdge('end');
+                        return;
+                    default:
+                        return;
+                }
             case 'altNewline':
                 await this.state.processRawChunk('\n', {
                     submitOnEnter: false,

@@ -90,25 +90,48 @@ export class AgentCliTest {
     @Test('defaults workspace to launch git root')
     async defaultsWorkspaceToLaunchGitRoot() {
         const home = await this.createRoot();
+        const launchDir = path.join(home, 'projects', 'agent-cli');
+        fs.mkdirSync(path.join(home, 'projects', '.git'), { recursive: true });
+        fs.mkdirSync(launchDir, { recursive: true });
         const originalHome = process.env.HOME;
+        const originalCwd = process.cwd();
         process.env.HOME = home;
+        process.chdir(launchDir);
         try {
             const resolved = resolveCliConfig({});
-            let expectedWorkspace = process.cwd();
-            while (!fs.existsSync(path.join(expectedWorkspace, '.git'))) {
-                const parent = path.dirname(expectedWorkspace);
-                if (parent === expectedWorkspace) {
-                    expectedWorkspace = process.cwd();
-                    break;
-                }
-                expectedWorkspace = parent;
-            }
             expect(resolved.root).toBe(path.resolve(home, '.tsdi-agent'));
             expect(resolved.settingsPath).toBe(path.resolve(home, '.tsdi-agent', 'settings.json'));
-            expect(resolved.workspace).toBe(expectedWorkspace);
-            expect(resolved.tools.file?.rootDir).toBe(expectedWorkspace);
+            expect(resolved.workspace).toBe(path.join(home, 'projects'));
+            expect(resolved.tools.file?.rootDir).toBe(path.join(home, 'projects'));
         } finally {
             process.env.HOME = originalHome;
+            process.chdir(originalCwd);
+        }
+    }
+
+    @Test('falls back to launch directory when no git root exists')
+    async fallsBackToLaunchDirectoryWhenNoGitRootExists() {
+        const home = await this.createRoot();
+        const launchDir = path.join(home, 'plain', 'agent-cli');
+        fs.mkdirSync(launchDir, { recursive: true });
+        const originalHome = process.env.HOME;
+        const originalCwd = process.cwd();
+        const originalExistsSync = fs.existsSync;
+        process.env.HOME = home;
+        process.chdir(launchDir);
+        (fs as any).existsSync = (target: string) => String(target).endsWith(`${path.sep}.git`)
+            ? false
+            : originalExistsSync(target);
+        try {
+            const resolved = resolveCliConfig({});
+            expect(resolved.root).toBe(path.resolve(home, '.tsdi-agent'));
+            expect(resolved.settingsPath).toBe(path.resolve(home, '.tsdi-agent', 'settings.json'));
+            expect(resolved.workspace).toBe(launchDir);
+            expect(resolved.tools.file?.rootDir).toBe(launchDir);
+        } finally {
+            (fs as any).existsSync = originalExistsSync;
+            process.env.HOME = originalHome;
+            process.chdir(originalCwd);
         }
     }
 

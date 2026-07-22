@@ -794,6 +794,14 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    moveInputCursor(delta: number): void {
+        this.setInputCursor(this.inputCursor + delta);
+    }
+
+    moveInputCursorToEdge(position: 'start' | 'end'): void {
+        this.setInputCursor(position === 'start' ? 0 : this.input.length);
+    }
+
     setInputFocused(focused: boolean): void {
         this.inputFocused = !!focused;
         this.notify();

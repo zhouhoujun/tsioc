@@ -273,8 +273,8 @@ class DeferredRuntimeTool implements AgentTool {
         },
         required: ['value']
     };
-    toolset = 'custom';
-    source = 'test';
+    toolset = 'filesystem';
+    source = 'local';
     execution = { readOnly: true };
     invocations = 0;
 
@@ -1407,7 +1407,7 @@ export class RuntimeLoopTest {
         }
     }
 
-    @Test('runtime sends only callable tools before activation and full schema after activation')
+    @Test('runtime sends deferred tool schemas to the model before activation')
     async runtimeSendsDeferredToolDefinitions() {
         const model = new CapturingModelAdapter();
         const registry = new LocalToolRegistry([
@@ -1426,8 +1426,20 @@ export class RuntimeLoopTest {
         );
 
         await runtime.runTurn('s1', 'hello');
-        expect(model.requests[0].tools.map((tool: any) => tool.name)).toEqual(['tool_search', 'tool_inspect']);
-        expect(model.requests[0].tools.find((tool: any) => tool.name === 'heavy_tool')).toEqual(undefined);
+        expect(model.requests[0].tools.map((tool: any) => tool.name)).toEqual(['tool_search', 'tool_inspect', 'heavy_tool']);
+        expect(model.requests[0].tools.find((tool: any) => tool.name === 'heavy_tool')?.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+                value: { type: 'string' },
+                enabled: { type: 'boolean' }
+            },
+            required: ['value']
+        });
+        expect(model.requests[0].tools.find((tool: any) => tool.name === 'heavy_tool')?.activation).toEqual({
+            kind: 'deferred',
+            scope: 'session',
+            activated: false
+        });
         expect(model.requests[0].tools.find((tool: any) => tool.name === 'tool_search')?.inputSchema).toEqual({
             type: 'object',
             properties: {
@@ -1477,11 +1489,23 @@ export class RuntimeLoopTest {
             },
             required: ['value']
         });
-        expect(model.requests[1].tools.find((tool: any) => tool.name === 'heavy_tool')?.inputSchema).toEqual(undefined);
+        expect(model.requests[1].tools.find((tool: any) => tool.name === 'heavy_tool')?.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+                value: { type: 'string' },
+                enabled: { type: 'boolean' }
+            },
+            required: ['value']
+        });
+        expect(model.requests[1].tools.find((tool: any) => tool.name === 'heavy_tool')?.activation).toEqual({
+            kind: 'deferred',
+            scope: 'session',
+            activated: false
+        });
     }
 
-    @Test('runtime skips inactive deferred tool calls before invoking registry and allows them after activation')
-    async runtimeRequiresActivationForDeferredToolInvocation() {
+    @Test('runtime auto-activates deferred tools before invocation')
+    async runtimeAutoActivatesDeferredToolInvocation() {
         const app = new FakeApp();
         const deferredTool = new DeferredRuntimeTool();
         const registry = new LocalToolRegistry([
@@ -1500,31 +1524,11 @@ export class RuntimeLoopTest {
         );
 
         const result = await runtime.runTurn('s1', 'hello');
-        expect(result.message).toBeDefined();
-        expect(deferredTool.invocations).toEqual(0);
-        const blockedMessages = await runtime.getMessages('s1');
-        const toolMessages = blockedMessages.filter(m => m.role === 'tool');
-        expect(toolMessages.length).toBeGreaterThan(0);
-        expect(toolMessages[0].metadata?.receipt?.status).toEqual('skipped');
-        const errorMsg = toolMessages[0].metadata?.error ?? '';
-        expect(errorMsg).toContain('heavy_tool');
-        expect(errorMsg).toContain('not available');
-        expect(app.events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'heavy_tool')).toEqual(true);
-        expect(app.events.some(event => event instanceof AgentToolInvokedEvent && event.toolName === 'heavy_tool')).toEqual(false);
-
-        await registry.activateTool('s1', 'heavy_tool');
-        const activatedRuntime = new DefaultAgentRuntime(
-            new DeferredInvokeModelAdapter(),
-            registry,
-            new InMemorySessionStore(),
-            new InMemoryMemoryStore(),
-            new SimpleSessionSummarizer(),
-            defaultAgentOptions,
-            new FakeApp() as any
-        );
-        const result2 = await activatedRuntime.runTurn('s1', 'hello');
-        expect(result2.message.content).toEqual('activated');
+        expect(result.message.content).toEqual('activated');
         expect(deferredTool.invocations).toEqual(1);
+        expect(await registry.isToolActive('s1', 'heavy_tool')).toEqual(true);
+        expect(app.events.some(event => event instanceof AgentToolInvokedEvent && event.toolName === 'heavy_tool')).toEqual(true);
+        expect(app.events.some(event => event instanceof AgentToolSkippedEvent && event.toolName === 'heavy_tool')).toEqual(false);
     }
 
     @Test('runtime skips tool calls not exposed in the current model request')

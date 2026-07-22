@@ -64,6 +64,30 @@ export class AgentExtensionHooksTest {
         }
     }
 
+    @Test('prompt sections advise coding task execution and diff review when tools are available')
+    async promptSectionsAdviseCodingTaskAndDiffReview() {
+        const { IdentitySection, ToolsSection } = require('../src/prompt/SystemPromptBuilder');
+        const identity = new IdentitySection();
+        const tools = new ToolsSection();
+        const context = {
+            sessionId: 's1',
+            tools: [
+                { name: 'coding_task', description: 'coordinate coding tasks' },
+                { name: 'git_operations', description: 'inspect git state' }
+            ],
+            memory: '',
+            dateTime: new Date().toISOString()
+        };
+
+        const identityPrompt = identity.render(context as any);
+        const toolsPrompt = tools.render(context as any);
+
+        expect(identityPrompt).toContain('prefer coding_task');
+        expect(identityPrompt).toContain('inspect the resulting git diff');
+        expect(toolsPrompt).toContain('prefer `coding_task`');
+        expect(toolsPrompt).toContain('use `git_operations` with `action: "diff"`');
+    }
+
     @Test('turn interceptors can short-circuit turns through IoC providers')
     async turnInterceptorsCanShortCircuitTurns() {
         class CapturingModelAdapter extends EchoModelAdapter {

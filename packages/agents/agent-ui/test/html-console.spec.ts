@@ -135,6 +135,34 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).toContain('world');
     }
 
+    @Test('input panel syncs textarea cursor after history navigation')
+    async inputPanelSyncsTextareaCursorAfterHistoryNavigation() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
+        const inputRoot = inputPanel.hostView.rootNodes[0] as any;
+        const inputField = inputRoot.querySelector('.agent-input') as HTMLTextAreaElement | null;
+
+        ref.instance.sessionState.pushInputHistory('first command');
+        ref.instance.sessionState.pushInputHistory('second command');
+        ref.instance.sessionState.setInput('draft', 0);
+        await Promise.resolve();
+
+        let prevented = false;
+        await inputPanel.instance.onKeydown({
+            key: 'ArrowUp',
+            target: inputField,
+            preventDefault() {
+                prevented = true;
+            }
+        } as any);
+
+        expect(prevented).toEqual(true);
+        expect(ref.instance.sessionState.input).toEqual('second command');
+        expect(inputField?.value).toEqual('second command');
+        expect(inputField?.selectionStart).toEqual('second command'.length);
+        expect(inputField?.selectionEnd).toEqual('second command'.length);
+    }
+
     @Test('filters tool transcript rows from the main messages panel')
     async filtersToolTranscriptRowsFromMainMessagesPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;

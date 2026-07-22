@@ -1330,6 +1330,38 @@ export class AgentConsoleComponentTest {
         expect(component.input).toEqual('first');
     }
 
+    @Test('terminal input moves cursor with left and right arrows without inserting escape text')
+    async terminalInputMovesCursorWithoutInsertingEscapeText() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+
+        await component.onInit();
+        component.sessionState.pushInputHistory('first');
+        component.sessionState.pushInputHistory('second');
+
+        await (component as any).handleTerminalInput(
+            { text: '\u001b[A', controlKey: 'up', partial: false },
+            '\u001b[A'
+        );
+        expect(component.input).toEqual('second');
+        expect(component.inputCursor).toEqual('second'.length);
+
+        await (component as any).handleTerminalInput(
+            { text: '\u001b[D', controlKey: 'left', partial: false },
+            '\u001b[D'
+        );
+        expect(component.input).toEqual('second');
+        expect(component.inputCursor).toEqual('second'.length - 1);
+
+        await (component as any).handleTerminalInput(
+            { text: '\u001b[C', controlKey: 'right', partial: false },
+            '\u001b[C'
+        );
+        expect(component.input).toEqual('second');
+        expect(component.inputCursor).toEqual('second'.length);
+    }
+
     @Test('input panel closes normal select menus with q and escape')
     async inputPanelClosesNormalSelectMenusWithQAndEscape() {
         const state = new AgentConsoleSessionState();

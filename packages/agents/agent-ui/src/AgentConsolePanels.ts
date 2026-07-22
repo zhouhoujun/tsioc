@@ -335,6 +335,21 @@ export class AgentConsoleInputPanelComponent {
         await (this.submitAction || this.state?.submitAction)?.();
     }
 
+    protected syncTextareaState(target?: HTMLTextAreaElement | null): void {
+        if (!target || !this.state) {
+            return;
+        }
+        const value = this.state.input || '';
+        const cursor = this.state.inputCursor ?? value.length;
+        if (target.value !== value) {
+            target.value = value;
+        }
+        if (typeof target.setSelectionRange === 'function') {
+            target.setSelectionRange(cursor, cursor);
+        }
+        target.focus?.();
+    }
+
     onInput(event: Event): void {
         const target = event?.target as HTMLTextAreaElement | null;
         const value = String(target?.value || '');
@@ -380,6 +395,7 @@ export class AgentConsoleInputPanelComponent {
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
             const handled = this.state?.navigateInputHistory(event.key === 'ArrowUp' ? -1 : 1);
             if (handled) {
+                this.syncTextareaState(event.target as HTMLTextAreaElement | null);
                 event.preventDefault?.();
                 return;
             }

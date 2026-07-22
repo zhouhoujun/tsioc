@@ -16,14 +16,28 @@ export class ToolsSection extends PromptSection {
         if (!tools.length) return '';
 
         const lines: string[] = ['## Available Tools'];
+        const toolNames = new Set(tools.map(tool => tool.name));
         for (const tool of tools) {
             lines.push(`- ${tool.name}: ${tool.description}`);
         }
+        const hasDeferredSessionTools = tools.some(tool => tool.activation?.kind === 'deferred' && tool.activation?.scope === 'session');
         lines.push('');
         lines.push('To use a tool, respond with a JSON tool call in the format:');
         lines.push('{"tool": "<name>", "args": {...}}');
+        if (hasDeferredSessionTools) {
+            lines.push('');
+            lines.push('Session-scoped deferred tools are available for this turn.');
+            lines.push('Invoke them directly when needed; the host will activate them for the current session.');
+        }
+        if (toolNames.has('coding_task')) {
+            lines.push('');
+            lines.push('For substantial coding or test-writing tasks, prefer `coding_task` so discovery, edits, and verification happen within one coordinated tool run.');
+        }
+        if (toolNames.has('git_operations')) {
+            lines.push('');
+            lines.push('When you finish code changes, use `git_operations` with `action: "diff"` to inspect the resulting patch before your final answer.');
+        }
 
-        const toolNames = new Set(tools.map(tool => tool.name));
         if (toolNames.has('weather') && toolNames.has('location')) {
             lines.push('');
             lines.push('When the user asks about current local weather without naming a city or region, do not ask for the city first.');

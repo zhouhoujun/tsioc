@@ -36,7 +36,9 @@ export class LocalToolRegistry extends ToolRegistry {
         if (!sessionId) {
             return this.getToolDefinitions(sessionId).filter(definition => this.isAlwaysActiveDefinition(definition));
         }
-        return this.getToolDefinitions(sessionId).filter(definition => this.shouldExposeFullDefinition(definition, sessionId));
+        return this.getTools()
+            .map(tool => this.toCallableDefinition(tool, sessionId))
+            .filter(definition => this.isCallableDefinition(definition, sessionId));
     }
 
     async activateTool(sessionId: string, name: string): Promise<boolean> {
@@ -94,6 +96,22 @@ export class LocalToolRegistry extends ToolRegistry {
             activation: resolvedActivation,
             provenance: definition.provenance
         };
+    }
+
+    private toCallableDefinition(tool: AgentTool, sessionId: string): AgentToolDefinition {
+        const definition = super.toDefinition(tool, sessionId);
+        const resolvedActivation = this.resolveActivation(definition, sessionId);
+        return resolvedActivation ? { ...definition, activation: resolvedActivation } : definition;
+    }
+
+    private isCallableDefinition(definition: AgentToolDefinition, sessionId: string): boolean {
+        if (this.isAlwaysActiveDefinition(definition)) {
+            return true;
+        }
+        if (definition.activation?.kind === 'deferred' && definition.activation?.scope === 'session') {
+            return true;
+        }
+        return this.hasActivation(sessionId, definition.name);
     }
 
     private shouldExposeFullDefinition(definition: AgentToolDefinition, sessionId: string): boolean {
