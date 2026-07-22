@@ -53,6 +53,11 @@ export class HtmlConsoleTest {
             { id: 'chat-2', current: false, messageCount: 1, updatedAt: 1 } as any
         ]);
         ref.instance.sessionState.setTasksCount(1);
+        ref.instance.sessionState.setTokenUsage({
+            promptTokens: 120,
+            completionTokens: 80,
+            totalTokens: 200
+        });
         await ref.render();
         await Promise.resolve();
         const root = ref.hostView.rootNodes[0] as any;
@@ -73,6 +78,7 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).not.toContain('**assistant**');
         expect(messagesRoot.textContent).not.toContain('```');
         expect(messagesRoot.textContent).not.toContain('agent>');
+        expect(root.textContent).toContain('Total tokens: 200');
         const messageItems = Array.from(messagesRoot.querySelectorAll('label'))
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')) as HTMLElement[];
         expect(messageItems.length).toEqual(3);

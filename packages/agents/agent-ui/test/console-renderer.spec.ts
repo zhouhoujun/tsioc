@@ -42,6 +42,11 @@ export class AgentConsoleRendererTest {
             { id: 'chat-2', current: false, messageCount: 1, updatedAt: 1 } as any
         ]);
         ref.instance.sessionState.setTasksCount(1);
+        ref.instance.sessionState.setTokenUsage({
+            promptTokens: 120,
+            completionTokens: 80,
+            totalTokens: 200
+        });
         await ref.render();
         await Promise.resolve();
         const renderer = this.ctx.get(ConsoleRenderer);
@@ -54,6 +59,7 @@ export class AgentConsoleRendererTest {
 
         expect(root.tagName).toEqual('div');
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
+        expect(lines.some(line => line.includes('Total tokens: 200'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => line.includes('●') && line.includes('world'))).toBe(true);

@@ -65,11 +65,14 @@ export class AgentConsoleBrandPanelComponent {
     }
 
     get brandLines(): string[] {
+        const workspace = this.state.workspace
+            ? `${this.state.workspace} · Total tokens: ${this.state.tokenUsage.totalTokens}`
+            : `Total tokens: ${this.state.tokenUsage.totalTokens}`;
         return buildTerminalBrandBlock(
             this.state.consoleOptions.brandWidth,
             this.state.title,
             this.state.model,
-            this.state.workspace
+            workspace
         );
     }
 }
