@@ -8,6 +8,7 @@ export * from './formats/json';
 export * from './formats/date';
 export * from './formats/time';
 export * from './formats/bytes';
+export * from './formats/number-format';
 
 //parses
 export * from './parses/bool';

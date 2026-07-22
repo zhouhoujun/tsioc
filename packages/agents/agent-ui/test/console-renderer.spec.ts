@@ -44,8 +44,8 @@ export class AgentConsoleRendererTest {
         ref.instance.sessionState.setTasksCount(1);
         ref.instance.sessionState.setTokenUsage({
             promptTokens: 120,
-            completionTokens: 80,
-            totalTokens: 200
+            completionTokens: 1080,
+            totalTokens: 1200
         });
         await ref.render();
         await Promise.resolve();
@@ -71,7 +71,7 @@ export class AgentConsoleRendererTest {
         expect(ref.hostView.query(AgentConsoleToolRunsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleMessagesPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleActivityPanelComponent)).toBeTruthy();
-        expect(inputLines.some(line => line.includes('200 tokens'))).toBe(true);
+        expect(inputLines.some(line => line.includes('deepseek-v4-flash · 1.2K tokens'))).toBe(true);
     }
 
     @Test('renders shared reply statuses in messages panel')

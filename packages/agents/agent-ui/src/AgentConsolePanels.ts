@@ -1,4 +1,5 @@
 import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
+import { formatCompactNumber } from '@tsdi/core';
 import {
     buildTerminalBrandBlock,
     BrDirective,
@@ -241,10 +242,7 @@ export class AgentConsoleStatusPanelComponent {
                     @keydown="onKeydown($event)"></textarea>
             </div>
         </div>
-        <div class="input-meta">
-            <label class="input-hint" v-show="showHint" v-style="hintStyle">{{hintLabel}}</label>
-            <label class="input-tokens" v-style="hintStyle">{{tokenUsageLabel}}</label>
-        </div>
+        <label class="input-meta" v-style="hintStyle">{{metaLabel}}</label>
     </div>
     `
 })
@@ -325,12 +323,12 @@ export class AgentConsoleInputPanelComponent {
         return this.state?.inputHintLabel || '';
     }
 
-    get showHint(): boolean {
-        return !!this.hintLabel;
+    get tokenUsageLabel(): string {
+        return `${formatCompactNumber(this.state?.tokenUsage?.totalTokens ?? 0)} tokens`;
     }
 
-    get tokenUsageLabel(): string {
-        return `${this.state?.tokenUsage?.totalTokens ?? 0} tokens`;
+    get metaLabel(): string {
+        return [this.hintLabel, this.tokenUsageLabel].filter(Boolean).join(' · ');
     }
 
     async submit(): Promise<void> {
