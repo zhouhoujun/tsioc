@@ -12,6 +12,13 @@ export interface AgentContextOptions {
     maxMemoryRecords?: number;
     /** Max chars per tool result before truncation */
     maxToolResultChars?: number;
+    /**
+     * Number of messages at which LLM-based context compaction is triggered.
+     * When message count exceeds this threshold, old messages are compressed
+     * into a summary instead of being dropped. Set to 0 or undefined to disable.
+     * Must be greater than session.recentMessages to avoid compacting recent context.
+     */
+    compactionThreshold?: number;
 }
 
 export interface AgentToolOptions {
@@ -70,7 +77,8 @@ export const defaultAgentOptions: AgentOptions = {
     context: {
         maxHistoryTokens: 32000,
         maxMemoryRecords: 50,
-        maxToolResultChars: 8000
+        maxToolResultChars: 8000,
+        compactionThreshold: 20
     },
     tools: {
         parallelExecution: false,

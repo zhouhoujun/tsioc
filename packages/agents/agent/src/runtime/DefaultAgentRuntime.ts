@@ -68,6 +68,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             maxMemoryRecords: this.options.context?.maxMemoryRecords,
             maxToolResults: this.options.context?.maxToolResultChars
         });
+        if (this.summarizer && this.options.context?.compactionThreshold) {
+            this.contextManager.setSummarizer(this.summarizer, this.options.context.compactionThreshold);
+        }
         this.toolApprovalManager = this.resolveApprovalManager(this.approvalManagerInput);
         if (!this.toolExecutionCoordinator) {
             this.toolExecutionCoordinator = new ToolExecutionCoordinator(
@@ -277,7 +280,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const state = await this.sessions.get(sessionId);
         let messages = this.getRecentMessages(state.messages, currentUserMessageId);
         messages = this.rewriteClarificationFollowUp(messages, currentUserMessageId);
-        messages = this.contextManager.pruneHistory(messages);
+        if (this.contextManager.shouldCompact(messages)) {
+            messages = await this.contextManager.compactHistory(messages);
+        } else {
+            messages = this.contextManager.pruneHistory(messages);
+        }
 
         const memory = this.contextManager.trimMemory(
             await this.getRelevantMemory(query, sessionId)
