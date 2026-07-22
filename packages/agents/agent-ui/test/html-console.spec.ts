@@ -62,23 +62,23 @@ export class HtmlConsoleTest {
         await Promise.resolve();
         const root = ref.hostView.rootNodes[0] as any;
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
-        const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
-        const selectPanel = ref.hostView.query(AgentConsoleSelectPanelComponent) as ComponentRef<AgentConsoleSelectPanelComponent> | null;
         const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
+        const messagesRoot = messagesPanel.hostView.rootNodes[0] as any;
         const inputRoot = inputPanel.hostView.rootNodes[0] as any;
+        const selectPanel = ref.hostView.query(AgentConsoleSelectPanelComponent) as ComponentRef<AgentConsoleSelectPanelComponent> | null;
         expect(inputRoot.querySelector('.input-shell')).toBeTruthy();
         expect(inputRoot.querySelector('.input-shell')?.getAttribute('style')).toContain('background');
         expect(inputRoot.querySelector('.input-entry')?.getAttribute('style')).toContain('color');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('placeholder')).toContain('Ask code or files');
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('style')).toContain('color');
         expect(inputRoot.querySelector('.input-hint')?.textContent).toContain('deepseek-v4-flash');
+        expect(inputRoot.textContent).toContain('200 tokens');
         expect(messagesRoot.textContent).toContain('› hello');
         expect(messagesRoot.textContent).toContain('assistant');
         expect(messagesRoot.textContent).toContain(longMessage);
         expect(messagesRoot.textContent).not.toContain('**assistant**');
         expect(messagesRoot.textContent).not.toContain('```');
         expect(messagesRoot.textContent).not.toContain('agent>');
-        expect(root.textContent).toContain('· 200 tokens');
         const messageItems = Array.from(messagesRoot.querySelectorAll('label'))
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')) as HTMLElement[];
         expect(messageItems.length).toEqual(3);

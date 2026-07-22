@@ -52,14 +52,15 @@ export class AgentConsoleRendererTest {
         const renderer = this.ctx.get(ConsoleRenderer);
         const root = ref.hostView.rootNodes[0] as ConsoleElement;
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
         const lines = renderer.renderToLines(root);
         const sessionsPanel = ref.hostView.query(AgentConsoleSessionsPanelComponent) as ComponentRef<AgentConsoleSessionsPanelComponent>;
         const sessionLines = renderer.renderToLines(sessionsPanel.hostView.rootNodes[0]);
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+        const inputLines = renderer.renderToLines(inputPanel.hostView.rootNodes[0]);
 
         expect(root.tagName).toEqual('div');
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
-        expect(lines.some(line => line.includes('· 200 tokens'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => line.includes('●') && line.includes('world'))).toBe(true);
@@ -70,6 +71,7 @@ export class AgentConsoleRendererTest {
         expect(ref.hostView.query(AgentConsoleToolRunsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleMessagesPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleActivityPanelComponent)).toBeTruthy();
+        expect(inputLines.some(line => line.includes('200 tokens'))).toBe(true);
     }
 
     @Test('renders shared reply statuses in messages panel')
