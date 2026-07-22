@@ -9,6 +9,7 @@ import { AgentScheduler, InMemoryMemoryStore, InMemorySessionStore, ScheduledAge
 import { SpawnAgentTool, SpawnAgentAdapter } from '../agent/spawn-agent.tool';
 import { VisionAdapter } from '../media/vision-analyze.tool';
 import { ImageGenerationAdapter } from '../media/image-generate.tool';
+import { LocationAdapter, LocationTool } from '../utility/location.tool';
 import { WeatherAdapter } from '../utility/weather.tool';
 import { LlmTaskAdapter } from '../llm/llm-task.tool';
 import { PipelineAdapter } from '../pipeline/pipeline.tool';
@@ -80,13 +81,14 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
+import { CodingTaskStore, CodingTaskTool, WorkspaceActionRunner } from '../coding';
 import { provideTools, resolveAgentToolBundles, resolveAgentToolNames, AGENT_TOOL_GROUPS, withProjectAgentTools, withProcessAgentTools } from '../src/provider';
 import { AgentToolsModule } from '../src/agent-tools.module';
 import { resolveAgentRootSettings } from '../src/settings';
 import { buildSandboxEnv, extractCommandName, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter } from '@tsdi/agent';
-import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
+import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, IpWhoIsLocationAdapter, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
 import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool } from '../browser';
 import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as ExportedSessionsListTool, SessionsHistoryTool as ExportedSessionsHistoryTool } from '../sessions';
@@ -100,6 +102,7 @@ const ExportedMemory: any = ExportedMemoryModule;
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
 import { ToolInspectTool as ExportedToolInspectTool, ToolSearchTool as ExportedToolSearchTool } from '../registry';
 import { ProjectIntelTool as ExportedProjectIntelTool } from '../project';
+import { CodingTaskTool as ExportedCodingTaskTool } from '../coding';
 import { ImageInfoTool, PdfReadTool } from '../media';
 import { provideSkills, LocalSkillRegistry, ListSkillTool, loadAgentSkillsFromRoots, loadBuiltinSkills, getBuiltinSkills, resetBuiltinSkillsCache, copyBuiltinSkillAssets } from '../skills';
 import { LocalMcpClientRegistry } from '../mcp';
@@ -1088,6 +1091,7 @@ export class AgentToolsPackageTest {
         expect(ExportedToolSearchTool).toEqual(ToolSearchTool);
         expect(ExportedToolInspectTool).toEqual(ToolInspectTool);
         expect(ExportedProjectIntelTool).toEqual(ProjectIntelTool);
+        expect(ExportedCodingTaskTool).toEqual(CodingTaskTool);
         expect(ListSkillTool).toBeTruthy();
     }
 
@@ -1095,29 +1099,32 @@ export class AgentToolsPackageTest {
     provideToolsExposeGroupedRegistrationsAndDefaults() {
         expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
+        expect(AGENT_TOOL_GROUPS.utility).toEqual(['calculator', 'location', 'weather']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
         expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read', 'vision_analyze', 'image_generate']);
         expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search']);
         expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
         expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
         expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
-        expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel']);
+        expect(AGENT_TOOL_GROUPS.project).toEqual(['project_intel', 'coding_task']);
         expect(resolveAgentToolNames()).toContain('read_file');
         expect(resolveAgentToolNames()).toContain('list_dir');
         expect(resolveAgentToolNames()).toContain('stat');
         expect(resolveAgentToolNames()).toContain('ask_user');
         expect(resolveAgentToolNames()).toContain('project_intel');
+        expect(resolveAgentToolNames()).toContain('coding_task');
+        expect(resolveAgentToolNames()).toContain('location');
         expect(resolveAgentToolNames()).not.toContain('browser_open');
         expect(resolveAgentToolNames()).not.toContain('text_browser');
         expect(resolveAgentToolNames()).not.toContain('sessions_current');
         expect(resolveAgentToolNames()).not.toContain('sessions_list');
         expect(resolveAgentToolNames()).not.toContain('sessions_history');
         expect(resolveAgentToolNames()).not.toContain('memory.purge');
-        expect(resolveAgentToolNames()).not.toContain('write_file');
-        expect(resolveAgentToolNames()).not.toContain('mkdir');
-        expect(resolveAgentToolNames()).not.toContain('copy_file');
-        expect(resolveAgentToolNames()).not.toContain('move_file');
-        expect(resolveAgentToolNames()).not.toContain('delete_file');
+        expect(resolveAgentToolNames()).toContain('write_file');
+        expect(resolveAgentToolNames()).toContain('mkdir');
+        expect(resolveAgentToolNames()).toContain('copy_file');
+        expect(resolveAgentToolNames()).toContain('move_file');
+        expect(resolveAgentToolNames()).toContain('delete_file');
         expect(resolveAgentToolNames()).not.toContain('process.start');
         expect(resolveAgentToolNames()).not.toContain('http_fetch');
         expect(resolveAgentToolNames({ registration: { preset: 'all' } })).toContain('terminal');
@@ -1161,8 +1168,8 @@ export class AgentToolsPackageTest {
         expect(filesystem?.providerId).toEqual('@tsdi/agent-tools');
         expect(filesystem?.activation).toEqual({ kind: 'deferred', scope: 'session' });
         expect(filesystemWrite?.tools).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
-        expect(filesystemWrite?.defaultEnabled).toEqual(false);
-        expect(filesystemWrite?.enabled).toEqual(false);
+        expect(filesystemWrite?.defaultEnabled).toEqual(true);
+        expect(filesystemWrite?.enabled).toEqual(true);
         expect(filesystemWrite?.activation).toEqual({ kind: 'deferred', scope: 'session' });
         expect(browser?.tools).toEqual(['browser_open', 'text_browser']);
         expect(browser?.defaultEnabled).toEqual(false);
@@ -1175,7 +1182,7 @@ export class AgentToolsPackageTest {
         expect(planning?.tools).toEqual(['todo', 'ask_user', 'escalate']);
         expect(planning?.defaultEnabled).toEqual(true);
         expect(planning?.enabled).toEqual(true);
-        expect(project?.tools).toEqual(['project_intel']);
+        expect(project?.tools).toEqual(['project_intel', 'coding_task']);
         expect(project?.defaultEnabled).toEqual(true);
         expect(project?.enabled).toEqual(true);
         expect(terminal?.defaultEnabled).toEqual(false);
@@ -1723,6 +1730,75 @@ export class AgentToolsPackageTest {
             actionError = err as Error;
         }
         expect(actionError?.message).toContain('action');
+    }
+
+    @Test('coding task plans with complexity-aware llm output and persists task state')
+    async codingTaskPlansWithComplexityAwareLlmOutputAndPersistsTaskState() {
+        const llm = new LlmTaskTool(new MockAdapter(async () => ({
+            content: JSON.stringify({
+                title: 'Fix weather auto-location',
+                summary: 'Inspect fallback flow before editing.',
+                steps: ['Inspect location lookup', 'Patch fallback flow'],
+                successCriteria: ['Current city resolves automatically'],
+                actions: [
+                    { title: 'Search weather flow', tool: 'content_search', input: { query: 'weather' } }
+                ]
+            }),
+            model: 'fast-model'
+        })) as any);
+
+        const runner = {
+            getSupportedTools: () => ['content_search', 'edit_file'],
+            run: async () => ({ tool: 'content_search', output: { matches: [] }, summary: 'returned matches' })
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, llm);
+        const result = await tool.invoke({
+            action: 'plan',
+            goal: 'Fix current city weather auto detection'
+        }, createSessionContext());
+
+        expect(result.planned).toEqual(true);
+        expect(result.modelSelection.strategy).toEqual('llm');
+        expect(result.modelSelection.model).toEqual('fast-model');
+        expect(result.task.planning.complexity).toEqual('simple');
+        expect(result.task.actions[0].tool).toEqual('content_search');
+
+        const listed = await tool.invoke({ action: 'list' }, createSessionContext());
+        expect(listed.total).toEqual(1);
+    }
+
+    @Test('coding task runs sequential actions and records failures')
+    async codingTaskRunsSequentialActionsAndRecordsFailures() {
+        const calls: string[] = [];
+        const runner = {
+            getSupportedTools: () => ['content_search', 'edit_file'],
+            run: async (action: any) => {
+                calls.push(action.id);
+                if (action.id === 'action-2') {
+                    throw new Error('edit failed');
+                }
+                return { tool: action.tool, output: { ok: true }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Apply weather location fix',
+            actions: [
+                { id: 'action-1', title: 'Search current logic', tool: 'content_search', input: { query: 'location' } },
+                { id: 'action-2', title: 'Patch fallback', tool: 'edit_file', input: { path: 'a.ts', oldString: 'a', newString: 'b' } }
+            ]
+        }, createSessionContext());
+
+        expect(calls).toEqual(['action-1', 'action-2']);
+        expect(result.completedActions).toEqual(1);
+        expect(result.failedActionId).toEqual('action-2');
+        expect(result.task.status).toEqual('failed');
+        expect(result.task.actions[0].status).toEqual('completed');
+        expect(result.task.actions[1].status).toEqual('failed');
+        expect(result.task.result.error).toContain('edit failed');
     }
 
     @Test('http fetch performs get requests applies timeout signal and truncates large responses')
@@ -2908,6 +2984,108 @@ export class AgentToolsPackageTest {
         expect(result.description).toEqual('sunny');
     }
 
+    @Test('location tool requires adapter and returns structured data')
+    async locationToolRequiresAdapterAndReturnsStructuredData() {
+        let adapter: Error | undefined;
+        try {
+            await new LocationTool(null!).invoke({}, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter).toBeDefined();
+
+        const tool = new LocationTool(new MockAdapter(async () => ({
+            label: 'Chengdu, Sichuan, China',
+            org: 'China Telecom',
+            city: 'Chengdu',
+            region: 'Sichuan',
+            country: 'China',
+            latitude: 30.67,
+            longitude: 104.06
+        })) as any);
+        const result = await tool.invoke({}, createSessionContext());
+        expect(result.label).toEqual('Chengdu, Sichuan, China');
+        expect(result.city).toEqual('Chengdu');
+        expect(result.country).toEqual('China');
+        expect(result.org).toEqual('China Telecom');
+    }
+
+    @Test('default ip location adapter resolves current location')
+    async defaultIpLocationAdapterResolvesCurrentLocation() {
+        const calls: string[] = [];
+        const adapter = new IpWhoIsLocationAdapter({
+            fetch: async (input: any) => {
+                const url = String(input);
+                calls.push(url);
+                return createJsonResponse({
+                    ip: '1.1.1.1',
+                    city: 'Chengdu',
+                    region: 'Sichuan',
+                    country: 'China',
+                    loc: '30.67,104.06',
+                    org: 'AS4134 Chinanet',
+                    postal: '610000',
+                    timezone: 'Asia/Shanghai'
+                });
+            }
+        });
+
+        const current = await adapter.getCurrentLocation();
+
+        expect(calls).toEqual(['https://ipinfo.io/json']);
+        expect(current.label).toEqual('Chengdu, Sichuan, China');
+        expect(current.city).toEqual('Chengdu');
+        expect(current.latitude).toEqual(30.67);
+        expect(current.longitude).toEqual(104.06);
+        expect(current.org).toEqual('AS4134 Chinanet');
+        expect(current.timezone).toEqual('Asia/Shanghai');
+    }
+
+    @Test('default ip location adapter falls back to timezone when network lookups fail')
+    async defaultIpLocationAdapterFallsBackToTimezoneWhenNetworkLookupsFail() {
+        const adapter = new IpWhoIsLocationAdapter({
+            fetch: async () => {
+                throw new Error('network blocked');
+            }
+        }, {
+            timezone: 'Asia/Shanghai',
+            locale: 'zh-CN'
+        } as any);
+
+        const current = await adapter.getCurrentLocation();
+
+        expect(current.label).toEqual('Shanghai, 中国');
+        expect(current.city).toEqual('Shanghai');
+        expect(current.countryCode).toEqual('CN');
+        expect(current.timezone).toEqual('Asia/Shanghai');
+    }
+
+    @Test('weather tool falls back to current location when no location is provided')
+    async weatherToolFallsBackToCurrentLocationWhenNoLocationIsProvided() {
+        const weather = new MockAdapter(async (location: string) => ({
+            location,
+            temperature: 26,
+            feelsLike: 28,
+            humidity: 70,
+            description: 'cloudy',
+            windSpeed: 4,
+            units: 'metric'
+        }));
+        const location = new MockAdapter(async () => ({
+            label: 'Chengdu, Sichuan, China',
+            city: 'Chengdu',
+            region: 'Sichuan',
+            country: 'China'
+        }));
+        const tool = new WeatherTool(weather as any, location as any);
+
+        const result = await tool.invoke({ units: 'metric' }, createSessionContext());
+
+        expect(result.location).toEqual('Chengdu, Sichuan, China');
+        expect(result.locationSource).toEqual('current');
+        expect(result.temperature).toEqual(26);
+    }
+
     @Test('shared weather adapter fails clearly without configured service')
     async sharedWeatherAdapterFailsClearlyWithoutConfiguredService() {
         const adapter = new UnavailableWeatherAdapter();
@@ -3046,6 +3224,39 @@ export class AgentToolsPackageTest {
             expect(result.location).toEqual('Chengdu, Sichuan, China');
             expect(result.description).toEqual('Partly cloudy');
             expect(result.temperature).toEqual(30);
+        } finally {
+            await app.close();
+        }
+    }
+
+    @Test('provideTools wires default location adapter from shared options')
+    async provideToolsWiresDefaultLocationAdapterFromSharedOptions() {
+        const fetch = async () => createJsonResponse({
+            ip: '1.1.1.1',
+            city: 'Chengdu',
+            region: 'Sichuan',
+            country: 'China',
+            loc: '30.67,104.06',
+            org: 'AS4134 Chinanet',
+            timezone: 'Asia/Shanghai'
+        });
+        const app = await Application.run(AgentModule, {
+            deps: [AgentToolsModule],
+            providers: [...provideTools({
+                location: {
+                    fetch
+                }
+            }), ...withToolTestAdapters(), {
+                provide: LocationAdapter,
+                useValue: new IpWhoIsLocationAdapter({ fetch })
+            }]
+        });
+        try {
+            const tool = app.get(LocationTool);
+            const result = await tool.invoke({}, createSessionContext());
+            expect(result.label).toEqual('Chengdu, Sichuan, China');
+            expect(result.timezone).toEqual('Asia/Shanghai');
+            expect(result.org).toEqual('AS4134 Chinanet');
         } finally {
             await app.close();
         }
@@ -3300,6 +3511,7 @@ export class AgentToolsPackageTest {
         expect(names).toContain('knowledge_search');
         expect(names).toContain('knowledge_store');
         expect(names).toContain('git_operations');
+        expect(names).toContain('location');
         expect(names).toContain('weather');
         expect(names).not.toContain('session_search');
         expect(names).toContain('cron_manage');
@@ -3740,6 +3952,7 @@ export class AgentToolsPackageTest {
 /** Helper to register mock adapters for tools that require them in DI tests. */
 function withToolTestAdapters(): any[] {
     const mockSpawn = { spawn: async () => ({ output: '', turnCount: 0, toolCalls: 0 }) };
+    const mockLocation = { getCurrentLocation: async () => ({ label: 'Current location' }) };
     const mockWeather = { getCurrentWeather: async () => ({}), getForecast: async () => ({}) };
     const mockLlm = { execute: async () => ({ content: '' }) };
     const mockPipeline = { list: async () => [], define: async () => ({}), execute: async () => ({}), get: async () => null, delete: async () => true };
@@ -3747,6 +3960,7 @@ function withToolTestAdapters(): any[] {
     const mockImageGen = { generate: async () => ({ url: '' }) };
     return [
         { provide: SpawnAgentAdapter, useValue: mockSpawn },
+        { provide: LocationAdapter, useValue: mockLocation },
         { provide: WeatherAdapter, useValue: mockWeather },
         { provide: LlmTaskAdapter, useValue: mockLlm },
         { provide: PipelineAdapter, useValue: mockPipeline },
@@ -3771,6 +3985,7 @@ class MockAdapter {
     async search(...args: any[]): Promise<any> { return this.fn(...args); }
     async store(...args: any[]): Promise<any> { return this.fn(...args); }
     async spawn(...args: any[]): Promise<any> { return this.fn(...args); }
+    async getCurrentLocation(...args: any[]): Promise<any> { return this.fn(...args); }
     async getCurrentWeather(...args: any[]): Promise<any> { return this.fn(...args); }
     async getForecast(...args: any[]): Promise<any> { return this.fn(...args); }
     async analyze(...args: any[]): Promise<any> { return this.fn(...args); }

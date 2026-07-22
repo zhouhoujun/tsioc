@@ -1,6 +1,7 @@
 import { Provider, ProvdierOf, toProviders, Injector } from '@tsdi/ioc';
 import { AgentCapabilityBundle, AgentTool, withAgentTools } from '@tsdi/agent';
 import { AGENT_TOOL_BUNDLES, AGENT_TOOLS } from '@tsdi/agent';
+import { ApplicationArguments } from '@tsdi/core';
 import { AgentToolGroup, AgentToolItem, AgentToolsOptions, mergeAgentToolsOptions } from './options';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { ReadFileTool } from '../files/read-file.tool';
@@ -15,6 +16,7 @@ import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
+import { LocationAdapter, LocationTool } from '../utility/location.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { BrowserOpenTool } from '../browser/browser-open.tool';
@@ -44,6 +46,7 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
+import { CodingTaskStore, CodingTaskTool, ToolRegistryWorkspaceActionRunner, WorkspaceActionRunner } from '../coding';
 import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
@@ -86,6 +89,7 @@ import {
     DefaultApprovalAdapter
 } from './default-adapters';
 import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter } from './nested-agent-runner';
+import { IpWhoIsLocationAdapter } from './location-adapter';
 import { OpenMeteoWeatherAdapter } from './weather-adapter';
 import { WeatherAdapter } from '../utility/weather.tool';
 
@@ -102,6 +106,7 @@ const toolItems = {
     glob_search: GlobSearchTool,
     content_search: ContentSearchTool,
     calculator: CalculatorTool,
+    location: LocationTool,
     web_search: WebSearchTool,
     web_extract: WebExtractTool,
     browser_open: BrowserOpenTool,
@@ -125,6 +130,7 @@ const toolItems = {
     'memory.purge': MemoryPurgeTool,
     'memory.delete': MemoryDeleteTool,
     project_intel: ProjectIntelTool,
+    coding_task: CodingTaskTool,
     image_info: ImageInfoTool,
     pdf_read: PdfReadTool,
     tool_search: ToolSearchTool,
@@ -164,7 +170,7 @@ const toolItems = {
 const toolGroups = {
     filesystem: ['read_file', 'list_dir', 'stat', 'glob_search', 'content_search'],
     filesystem_write: ['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file'],
-    utility: ['calculator', 'weather'],
+    utility: ['calculator', 'location', 'weather'],
     web: ['web_search', 'web_extract'],
     browser: ['browser_open', 'text_browser'],
     sessions: ['sessions_current', 'sessions_list', 'sessions_history', 'session_search'],
@@ -172,7 +178,7 @@ const toolGroups = {
     process: ['process.start', 'process.poll', 'process.kill'],
     scheduling: ['schedule'],
     memory: ['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete'],
-    project: ['project_intel'],
+    project: ['project_intel', 'coding_task'],
     media: ['image_info', 'pdf_read', 'vision_analyze', 'image_generate'],
     registry: ['tool_search', 'tool_inspect'],
     http: ['http_fetch', 'http_request'],
@@ -198,7 +204,7 @@ const toolGroups = {
     ai_cli: ['ai_cli']
 } as const satisfies Record<AgentToolGroup, AgentToolItem[]>;
 
-const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry', 'agent', 'knowledge', 'git', 'cron', 'llm', 'canvas', 'approval', 'pipeline', 'kanban', 'backup', 'model_routing', 'poll', 'ai_cli'];
+const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'filesystem_write', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry', 'agent', 'knowledge', 'git', 'cron', 'llm', 'canvas', 'approval', 'pipeline', 'kanban', 'backup', 'model_routing', 'poll', 'ai_cli'];
 const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
 const allToolProviders = Array.from(new Set(Object.values(toolItems)));
 const bundleDescriptions: Record<AgentToolGroup, string> = {
@@ -212,7 +218,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     process: 'Background process lifecycle tools.',
     scheduling: 'Prompt scheduling and recurring task tools.',
     memory: 'Session and global memory management tools.',
-    project: 'Project summarization and risk/handoff intelligence tools.',
+    project: 'Project summarization, coding task orchestration, and handoff intelligence tools.',
     media: 'Image and document inspection tools.',
     registry: 'Tool discovery and activation tools.',
     http: 'HTTP fetch and request tools.',
@@ -505,6 +511,10 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        CodingTaskStore,
+        ToolRegistryWorkspaceActionRunner,
+        { provide: WorkspaceActionRunner, useExisting: ToolRegistryWorkspaceActionRunner },
+        CodingTaskTool,
         ImageInfoTool,
         PdfReadTool,
         VisionAnalyzeTool,
@@ -514,6 +524,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         KnowledgeSearchTool,
         KnowledgeStoreTool,
         GitOperationsTool,
+        LocationTool,
         WeatherTool,
         SendMessageTool,
         AudioTranscribeTool,
@@ -536,6 +547,14 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         {
             provide: 'AGENT_TOOLS_PDF_READ_ADAPTER',
             useValue: merged.pdf?.adapter ?? null
+        },
+        {
+            provider(injector) {
+                return [{
+                    provide: LocationAdapter,
+                    useValue: merged.location?.adapter ?? new IpWhoIsLocationAdapter(merged.location, injector.get(ApplicationArguments, null))
+                }];
+            }
         },
         {
             provide: WeatherAdapter,

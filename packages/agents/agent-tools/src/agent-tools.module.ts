@@ -1,4 +1,5 @@
 import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { ApplicationArguments } from '@tsdi/core';
 import { AgentModule } from '@tsdi/agent';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
 import { AgentToolsOptions, defaultAgentToolsOptions, mergeAgentToolsOptions } from './options';
@@ -14,7 +15,9 @@ import {
     DefaultApprovalAdapter
 } from './default-adapters';
 import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter } from './nested-agent-runner';
+import { IpWhoIsLocationAdapter } from './location-adapter';
 import { OpenMeteoWeatherAdapter } from './weather-adapter';
+import { LocationAdapter, LocationTool } from '../utility/location.tool';
 import { WeatherAdapter } from '../utility/weather.tool';
 import { ReadFileTool } from '../files/read-file.tool';
 import { WriteFileTool } from '../files/write-file.tool';
@@ -57,6 +60,7 @@ import { HttpRequestTool } from '../http/http-request.tool';
 import { ToolSearchTool } from '../registry/tool-search.tool';
 import { ToolInspectTool } from '../registry/tool-inspect.tool';
 import { ProjectIntelTool } from '../project/project-intel.tool';
+import { CodingTaskStore, CodingTaskTool, ToolRegistryWorkspaceActionRunner, WorkspaceActionRunner } from '../coding';
 import { ImageInfoTool } from '../media/image-info.tool';
 import { PdfReadTool } from '../media/pdf-read.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
@@ -111,6 +115,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         GlobSearchTool,
         ContentSearchTool,
         CalculatorTool,
+        LocationTool,
         WebSearchTool,
         WebExtractTool,
         BrowserOpenTool,
@@ -140,6 +145,10 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        CodingTaskStore,
+        ToolRegistryWorkspaceActionRunner,
+        { provide: WorkspaceActionRunner, useExisting: ToolRegistryWorkspaceActionRunner },
+        CodingTaskTool,
         ImageInfoTool,
         PdfReadTool,
         VisionAnalyzeTool,
@@ -178,6 +187,12 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         {
             provider(injector) {
                 const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
+                return [{ provide: LocationAdapter, useValue: options?.location?.adapter ?? new IpWhoIsLocationAdapter(options?.location, injector.get(ApplicationArguments, null)) }];
+            }
+        },
+        {
+            provider(injector) {
+                const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
                 return [{ provide: WeatherAdapter, useValue: options?.weather?.adapter ?? new OpenMeteoWeatherAdapter(options?.weather) }];
             }
         },
@@ -208,6 +223,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         GlobSearchTool,
         ContentSearchTool,
         CalculatorTool,
+        LocationTool,
         WebSearchTool,
         WebExtractTool,
         BrowserOpenTool,
@@ -236,6 +252,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ToolSearchTool,
         ToolInspectTool,
         ProjectIntelTool,
+        CodingTaskTool,
         ImageInfoTool,
         PdfReadTool,
         VisionAnalyzeTool,

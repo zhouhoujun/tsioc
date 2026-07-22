@@ -1,5 +1,6 @@
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
+import { LocationAdapter, LocationResult } from './location.tool';
 
 @Abstract()
 export abstract class WeatherAdapter {
@@ -33,13 +34,13 @@ export interface WeatherForecastResult {
 @Injectable()
 export class WeatherTool implements AgentTool {
     name = 'weather';
-    description = 'Get current weather and optional forecast for a location. Uses a configured weather service adapter.';
+    description = 'Get current weather and optional forecast for a location. If location is omitted, it uses the current local location automatically. For requests like "今天天气怎么样", call this tool without asking for a city first.';
     inputSchema = {
         type: 'object',
         properties: {
             location: {
                 type: 'string',
-                description: 'City name or location (e.g., "Beijing", "New York", "London").'
+                description: 'City name or location (e.g., "Beijing", "New York", "London"). If omitted, the current local location is used.'
             },
             forecast: {
                 type: 'boolean',
@@ -54,20 +55,22 @@ export class WeatherTool implements AgentTool {
                 enum: ['metric', 'imperial'],
                 description: 'Temperature units (default: metric).'
             }
-        },
-        required: ['location']
+        }
     };
     toolset = 'utility';
     source = 'local';
     execution = { readOnly: true };
 
     constructor(
-        private adapter: WeatherAdapter
+        private adapter: WeatherAdapter,
+        @Optional() @Inject(LocationAdapter)
+        private locationAdapter?: LocationAdapter | null
     ) {
     }
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
-        const location = this.requireString(input?.location, 'weather location');
+        const requestedLocation = this.optionalString(input?.location);
+        const location = requestedLocation ?? await this.resolveCurrentLocation();
         const units = input?.units === 'imperial' ? 'imperial' : 'metric';
         const includeForecast = input?.forecast === true;
 
@@ -88,14 +91,39 @@ export class WeatherTool implements AgentTool {
             windSpeed: current.windSpeed,
             pressure: current.pressure,
             units: current.units,
+            locationSource: requestedLocation ? 'input' : 'current',
             forecast: forecast ? { days: forecast.days } : undefined
         };
     }
 
-    private requireString(value: unknown, field: string): string {
+    private optionalString(value: unknown): string | undefined {
         if (typeof value !== 'string' || !value.trim()) {
-            throw new Error(`Invalid ${field}: must be a non-empty string.`);
+            return undefined;
         }
         return value.trim();
+    }
+
+    private async resolveCurrentLocation(): Promise<string> {
+        if (!this.locationAdapter) {
+            throw new Error('Invalid weather location: must provide a location when no current location adapter is configured.');
+        }
+        const current = await this.locationAdapter.getCurrentLocation();
+        const label = this.buildLocationLabel(current);
+        if (!label) {
+            throw new Error('Unable to resolve current location for weather lookup.');
+        }
+        return label;
+    }
+
+    private buildLocationLabel(location: LocationResult): string | undefined {
+        const explicit = this.optionalString(location.label);
+        if (explicit) {
+            return explicit;
+        }
+        const fallback = [location.city, location.region, location.country]
+            .map(value => this.optionalString(value))
+            .filter(Boolean)
+            .join(', ');
+        return fallback || undefined;
     }
 }

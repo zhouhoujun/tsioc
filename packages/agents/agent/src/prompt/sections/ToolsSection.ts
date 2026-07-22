@@ -23,6 +23,17 @@ export class ToolsSection extends PromptSection {
         lines.push('To use a tool, respond with a JSON tool call in the format:');
         lines.push('{"tool": "<name>", "args": {...}}');
 
+        const toolNames = new Set(tools.map(tool => tool.name));
+        if (toolNames.has('weather') && toolNames.has('location')) {
+            lines.push('');
+            lines.push('When the user asks about current local weather without naming a city or region, do not ask for the city first.');
+            lines.push('Use `weather` without a location, or use `location` first and then `weather` if needed.');
+        }
+
+        lines.push('');
+        lines.push('For multi-step requests, break the work into explicit subtasks before calling tools.');
+        lines.push('Prefer small sequential tool steps over one opaque action.');
+
         return lines.join('\n');
     }
 }

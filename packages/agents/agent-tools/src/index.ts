@@ -6,6 +6,7 @@ export * from './agent-tools.module';
 export * from './env-loader';
 export * from './nested-agent-runner';
 export * from './sandbox-policy';
+export * from './location-adapter';
 export * from './weather-adapter';
 
 export * from '../files';
@@ -21,6 +22,7 @@ export * from '../scheduling';
 export * from '../terminal';
 export * from '../memory';
 export * from '../project';
+export * from '../coding';
 export * from '../process';
 export * from '../media';
 export * from '../mcp';

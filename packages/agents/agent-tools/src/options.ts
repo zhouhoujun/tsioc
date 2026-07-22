@@ -66,6 +66,14 @@ export interface AgentToolsWeatherOptions {
     userAgent?: string;
 }
 
+export interface AgentToolsLocationOptions {
+    adapter?: import('../utility').LocationAdapter;
+    fetch?: typeof fetch;
+    timeoutMs?: number;
+    lookupUrl?: string;
+    userAgent?: string;
+}
+
 export interface AgentToolsScheduleOptions {
     maxTasksPerSession?: number;
     maxPromptLength?: number;
@@ -146,6 +154,7 @@ export type AgentToolItem =
     | 'memory.purge'
     | 'memory.delete'
     | 'project_intel'
+    | 'coding_task'
     | 'tool_search'
     | 'tool_inspect'
     | 'http_fetch'
@@ -160,6 +169,7 @@ export type AgentToolItem =
     | 'knowledge_search'
     | 'knowledge_store'
     | 'git_operations'
+    | 'location'
     | 'weather'
     | 'session_search'
     | 'send_message'
@@ -196,6 +206,7 @@ export interface AgentToolsOptions {
     sandbox?: AgentToolsSandboxOptions;
     aiCli?: AgentAiCliOptions;
     pdf?: AgentToolsPdfOptions;
+    location?: AgentToolsLocationOptions;
     weather?: AgentToolsWeatherOptions;
     schedule?: AgentToolsScheduleOptions;
     roots?: string[];
@@ -219,6 +230,11 @@ export const defaultAgentToolsOptions: AgentToolsOptions = {
     http: {
         timeoutMs: 15000,
         maxResponseChars: 12000
+    },
+    location: {
+        timeoutMs: 15000,
+        lookupUrl: 'https://ipinfo.io/json',
+        userAgent: 'tsdi-agent/6'
     },
     sandbox: {
         enabled: true,
@@ -254,6 +270,10 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         http: {
             ...(defaultAgentToolsOptions.http ?? {}),
             ...(options?.http ?? {})
+        },
+        location: {
+            ...(defaultAgentToolsOptions.location ?? {}),
+            ...(options?.location ?? {})
         },
         weather: {
             ...(defaultAgentToolsOptions.weather ?? {}),
