@@ -707,7 +707,7 @@ export class AgentConsoleComponentTest {
         component.input = 'hello panel';
         await component.submit();
 
-        expect(component.messages[1].content).toEqual('Echo: hello panel');
+        expect(component.messages[component.messages.length - 1].content).toEqual('Echo: hello panel');
         expect(component.input).toEqual('');
         expect(component.highlightedToolRun).toEqual(undefined);
     }
@@ -1571,6 +1571,96 @@ export class AgentConsoleComponentTest {
         expect(state.tokenUsage.promptTokens).toEqual(9);
         expect(state.tokenUsage.completionTokens).toEqual(5);
         expect(state.tokenUsage.totalTokens).toEqual(14);
+    }
+
+    @Test('working usage restores from loaded session messages')
+    async workingUsageRestoresFromLoadedSessionMessages() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.messagesBySession.set('persisted-usage', [
+            { id: '1', role: 'user', content: 'hello', createdAt: 1 } as any,
+            {
+                id: '2',
+                role: 'assistant',
+                content: 'world',
+                createdAt: 2,
+                metadata: {
+                    usage: {
+                        prompt_tokens: 18,
+                        completion_tokens: 6,
+                        total_tokens: 24
+                    }
+                }
+            } as any
+        ]);
+        const { component, state } = createConsoleParts(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService
+        );
+        component.configure({ sessionId: 'persisted-usage' });
+
+        await component.onInit();
+
+        expect(state.tokenUsage.promptTokens).toEqual(18);
+        expect(state.tokenUsage.completionTokens).toEqual(6);
+        expect(state.tokenUsage.totalTokens).toEqual(24);
+    }
+
+    @Test('working usage updates from app rpc done message metadata')
+    async workingUsageUpdatesFromAppRpcDoneMessageMetadata() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.messagesBySession.set('rpc-done-usage', [
+            { id: '1', role: 'user', content: 'hello', createdAt: 1 } as any,
+            { id: '2', role: 'assistant', content: 'hello', createdAt: 2 } as any
+        ]);
+        appRpc.streamChunks = [
+            { type: 'text', content: 'hel' },
+            {
+                type: 'done',
+                message: {
+                    id: '3',
+                    role: 'assistant',
+                    content: 'hello',
+                    createdAt: 3,
+                    metadata: {
+                        usage: {
+                            prompt_tokens: 15,
+                            completion_tokens: 4,
+                            total_tokens: 19
+                        }
+                    }
+                }
+            }
+        ];
+        const { component, state } = createConsoleParts(
+            runtime,
+            scheduler,
+            new ToolRegistryStub(),
+            undefined,
+            undefined,
+            undefined,
+            sessionService,
+            appRpc
+        );
+        component.configure({ sessionId: 'rpc-done-usage' });
+        await component.onInit();
+
+        component.input = 'hello';
+        await component.submit();
+
+        expect(state.tokenUsage.promptTokens).toEqual(15);
+        expect(state.tokenUsage.completionTokens).toEqual(4);
+        expect(state.tokenUsage.totalTokens).toEqual(19);
+        expect(state.messages[state.messages.length - 1]?.metadata?.streaming).toBe(false);
     }
 
     @Test('configured model label is preserved after model completion events')

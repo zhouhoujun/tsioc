@@ -508,6 +508,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
         await this.bootstrapStateFromAppRpc();
+        await this.openSession(this.state.sessionId);
         if (!this.inputHistoryStore) {
             this.inputHistoryStore = new AgentConsoleInputHistoryStore(this.appRpc || null, null);
         }
@@ -925,7 +926,17 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     if (chunk.type === 'text' && chunk.content) {
                         asstMsg.content += chunk.content;
                         this.scheduleStreamingAssistantMessageFlush(asstMsg);
-                    } else if (chunk.type === 'reasoning' && chunk.content) { this.state.setStatus('reasoning'); }
+                    } else if (chunk.type === 'reasoning' && chunk.content) {
+                        this.state.setStatus('reasoning');
+                    } else if (chunk.type === 'done' && chunk.message) {
+                        asstMsg.content = chunk.message.content || asstMsg.content;
+                        asstMsg.metadata = {
+                            ...(chunk.message.metadata || {}),
+                            streaming: false
+                        };
+                        this.replaceStreamingAssistantMessage(asstMsg);
+                        this.state.setTokenUsage(chunk.message.metadata?.usage);
+                    }
                 }
             } else {
                 const result = await this.executeTurn(prompt);
@@ -1010,6 +1021,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                         } else if (chunk.type === 'reasoning' && chunk.content) {
                             this.state.setStatus('reasoning');
                             this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
+                        } else if (chunk.type === 'done' && chunk.message) {
+                            assistantMessage.content = chunk.message.content || assistantMessage.content;
+                            assistantMessage.metadata = {
+                                ...(chunk.message.metadata || {}),
+                                streaming: false
+                            };
+                            this.replaceStreamingAssistantMessage(assistantMessage);
+                            this.state.setTokenUsage(chunk.message.metadata?.usage);
                         }
                     }
                 } finally {
@@ -1121,6 +1140,26 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             };
             this.state.setMessages(current);
         }
+    }
+
+    protected replaceStreamingAssistantMessage(message: AgentMessage): void {
+        if (this.destroyed) {
+            return;
+        }
+        const current = this.state.messages.slice();
+        const last = current[current.length - 1];
+        if (last?.role !== 'assistant') {
+            return;
+        }
+        current[current.length - 1] = {
+            ...last,
+            ...message,
+            metadata: {
+                ...(last.metadata || {}),
+                ...(message.metadata || {})
+            }
+        };
+        this.state.setMessages(current);
     }
 
     protected clearStreamingMessageState(): void {

@@ -448,6 +448,7 @@ export class AgentConsoleSessionState {
 
     setMessages(messages: AgentMessage[]): void {
         this.messages = messages;
+        this.tokenUsage = this.resolveTokenUsageFromMessages(messages);
         const displayMessages = this.displayMessages;
         if (!displayMessages.length) {
             this.selectedMessageId = '';
@@ -1449,6 +1450,33 @@ export class AgentConsoleSessionState {
             }
         }
         return undefined;
+    }
+
+    protected resolveTokenUsageFromMessages(messages: AgentMessage[]): AgentConsoleTokenUsage {
+        for (let index = messages.length - 1; index >= 0; index -= 1) {
+            const usage = messages[index]?.metadata?.usage;
+            if (!usage || typeof usage !== 'object') {
+                continue;
+            }
+            const promptTokens = this.resolveUsageNumber(usage, ['promptTokens', 'prompt_tokens', 'input_tokens']);
+            const completionTokens = this.resolveUsageNumber(usage, ['completionTokens', 'completion_tokens', 'output_tokens']);
+            const totalTokens = this.resolveUsageNumber(usage, ['totalTokens', 'total_tokens'])
+                ?? (promptTokens != null || completionTokens != null
+                    ? (promptTokens || 0) + (completionTokens || 0)
+                    : undefined);
+
+            return {
+                promptTokens: promptTokens || 0,
+                completionTokens: completionTokens || 0,
+                totalTokens: totalTokens || 0
+            };
+        }
+
+        return {
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0
+        };
     }
 
     protected expandTabs(value: string): string {
