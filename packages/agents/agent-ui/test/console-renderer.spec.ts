@@ -59,7 +59,7 @@ export class AgentConsoleRendererTest {
 
         expect(root.tagName).toEqual('div');
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
-        expect(lines.some(line => line.includes('Total tokens: 200'))).toBe(true);
+        expect(lines.some(line => line.includes('· 200 tokens'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
         expect(messageLines.some(line => line.includes('●') && line.includes('world'))).toBe(true);

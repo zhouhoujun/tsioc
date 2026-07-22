@@ -4,11 +4,13 @@ import {
     BrDirective,
     DivDirective,
     formatConsoleIndexedOptionLabel,
+    getDisplayWidth,
     LabelComponent,
     resolveConsoleListWindow,
     SpanDirective,
     TuiSelectComponent,
     TuiTextareaComponent,
+    shortenTerminalPath,
     resolveConsoleEnterAction,
     resolveConsoleSelectWindow
 } from '@tsdi/components/console';
@@ -51,6 +53,37 @@ function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: Agent
     return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
 }
 
+function fitTerminalTextFromEnd(value: string, width: number): string {
+    const text = String(value || '').trim();
+    if (!text || width <= 0) {
+        return '';
+    }
+    if (getDisplayWidth(text) <= width) {
+        return text;
+    }
+    if (width <= 1) {
+        return text.slice(0, 1);
+    }
+    const limit = width - 1;
+    const chars: string[] = [];
+    let used = 0;
+    for (let index = text.length; index > 0;) {
+        const codePoint = text.codePointAt(index - 1);
+        if (codePoint == null) {
+            break;
+        }
+        const char = String.fromCodePoint(codePoint);
+        const charWidth = getDisplayWidth(char);
+        if (used + charWidth > limit) {
+            break;
+        }
+        chars.push(char);
+        used += charWidth;
+        index -= char.length;
+    }
+    return `…${chars.reverse().join('')}`;
+}
+
 @Component({
     selector: 'agent-console-brand-panel',
     imports: CONSOLE_BASE_IMPORTS,
@@ -65,14 +98,22 @@ export class AgentConsoleBrandPanelComponent {
     }
 
     get brandLines(): string[] {
-        const workspace = this.state.workspace
-            ? `${this.state.workspace} · Total tokens: ${this.state.tokenUsage.totalTokens}`
-            : `Total tokens: ${this.state.tokenUsage.totalTokens}`;
+        const tokenSuffix = `${this.state.tokenUsage.totalTokens} tokens`;
+        const workspace = shortenTerminalPath(this.state.workspace);
+        const maxInnerWidth = Math.max(1, this.state.consoleOptions.brandWidth - 2);
+        const modelWidth = getDisplayWidth(String(this.state.model || '').trim());
+        const workspaceBudget = this.state.workspace
+            ? Math.max(1, maxInnerWidth - modelWidth - 3 - getDisplayWidth(tokenSuffix) - 3)
+            : Math.max(1, maxInnerWidth - modelWidth - 3);
+        const fittedWorkspace = this.state.workspace ? fitTerminalTextFromEnd(workspace, workspaceBudget) : '';
+        const footerWorkspace = fittedWorkspace
+            ? `${fittedWorkspace} · ${tokenSuffix}`
+            : tokenSuffix;
         return buildTerminalBrandBlock(
             this.state.consoleOptions.brandWidth,
             this.state.title,
             this.state.model,
-            workspace
+            footerWorkspace
         );
     }
 }

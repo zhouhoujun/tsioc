@@ -78,7 +78,7 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).not.toContain('**assistant**');
         expect(messagesRoot.textContent).not.toContain('```');
         expect(messagesRoot.textContent).not.toContain('agent>');
-        expect(root.textContent).toContain('Total tokens: 200');
+        expect(root.textContent).toContain('· 200 tokens');
         const messageItems = Array.from(messagesRoot.querySelectorAll('label'))
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')) as HTMLElement[];
         expect(messageItems.length).toEqual(3);
