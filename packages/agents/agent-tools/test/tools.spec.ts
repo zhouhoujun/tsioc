@@ -3980,6 +3980,108 @@ export class AgentToolsPackageTest {
     groupToolRegistrationIncludesAiCliGroup() {
         expect(AGENT_TOOL_GROUPS.ai_cli).toEqual(['ai_cli']);
     }
+
+    @Test('git operations validates worktree action inputs')
+    async gitOperationsValidatesWorktreeActionInputs() {
+        const workspace = process.cwd();
+        const tool = new GitOperationsTool({ file: { rootDir: workspace } } as any);
+
+        let noPath: Error | undefined;
+        try {
+            await tool.invoke({ action: 'worktree_create' }, createSessionContext());
+        } catch (err) {
+            noPath = err as Error;
+        }
+        expect(noPath?.message).toContain('path');
+
+        let noMergePath: Error | undefined;
+        try {
+            await tool.invoke({ action: 'worktree_merge' }, createSessionContext());
+        } catch (err) {
+            noMergePath = err as Error;
+        }
+        expect(noMergePath?.message).toContain('path');
+
+        let noCleanupPath: Error | undefined;
+        try {
+            await tool.invoke({ action: 'worktree_cleanup' }, createSessionContext());
+        } catch (err) {
+            noCleanupPath = err as Error;
+        }
+        expect(noCleanupPath?.message).toContain('path');
+    }
+
+    @Test('coding task worktree mode sets up worktree and maps paths')
+    async codingTaskWorktreeModeSetsUpWorktreeAndMapsPaths() {
+        let callIndex = 0;
+        const calls: Array<{ tool: string; input: any }> = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                callIndex++;
+                if (action.tool === 'edit_file') {
+                    return { tool: 'edit_file', output: { ok: true }, summary: 'ok' };
+                }
+                return { tool: 'git_operations', output: { stdout: 'ok' }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Patch error handling',
+            useWorktree: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit handler', tool: 'edit_file', input: { path: 'src/handler.ts', oldString: 'old', newString: 'new' } },
+                { id: 'check-diff', title: 'Check diff', tool: 'git_operations', input: { action: 'diff' } }
+            ]
+        }, createSessionContext());
+
+        expect(result.ran).toEqual(true);
+        expect(calls.length).toBeGreaterThanOrEqual(5);
+
+        const gitCalls = calls.filter(c => c.tool === 'git_operations');
+        expect(gitCalls.some(c => c.input.action === 'branch_create')).toEqual(true);
+        expect(gitCalls.some(c => c.input.action === 'worktree_create')).toEqual(true);
+        expect(gitCalls.some(c => c.input.action === 'worktree_merge')).toEqual(true);
+        expect(gitCalls.some(c => c.input.action === 'worktree_cleanup')).toEqual(true);
+
+        const editCall = calls.find(c => c.tool === 'edit_file');
+        expect(editCall?.input.path).toContain('.worktrees/');
+        expect(editCall?.input.path).toContain('src/handler.ts');
+    }
+
+    @Test('coding task without worktree mode does not create worktree')
+    async codingTaskWithoutWorktreeModeDoesNotCreateWorktree() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'edit_file') {
+                    return { tool: 'edit_file', output: { ok: true }, summary: 'ok' };
+                }
+                return { tool: 'git_operations', output: { stdout: 'diff --git a/a.ts b/a.ts' }, summary: 'diff' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Simple edit',
+            actions: [
+                { id: 'edit-1', title: 'Edit', tool: 'edit_file', input: { path: 'a.ts', oldString: 'x', newString: 'y' } }
+            ]
+        }, createSessionContext());
+
+        expect(result.ran).toEqual(true);
+        const worktreeCalls = calls.filter(c =>
+            c.tool === 'git_operations' &&
+            ['worktree_create', 'worktree_merge', 'worktree_cleanup'].includes(c.input.action)
+        );
+        expect(worktreeCalls.length).toEqual(0);
+    }
 }
 
 /** Helper to register mock adapters for tools that require them in DI tests. */

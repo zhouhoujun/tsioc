@@ -13,7 +13,7 @@ const MAX_OUTPUT_CHARS = 16000;
 @Injectable()
 export class GitOperationsTool implements AgentTool {
     name = 'git_operations';
-    description = 'Perform Git operations: status, log, diff, branch, commit, push, pull, stash, checkout, and more.';
+    description = 'Perform Git operations: status, log, diff, branch, commit, push, pull, stash, checkout, worktree, and more.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -26,7 +26,8 @@ export class GitOperationsTool implements AgentTool {
                     'stash', 'stash_pop', 'stash_list',
                     'merge', 'rebase', 'tag', 'remote',
                     'add', 'reset', 'revert', 'cherry_pick',
-                    'log_graph'
+                    'log_graph',
+                    'worktree_create', 'worktree_merge', 'worktree_cleanup', 'worktree_list'
                 ],
                 description: 'Git operation to perform.'
             },
@@ -50,6 +51,14 @@ export class GitOperationsTool implements AgentTool {
             maxCount: {
                 type: 'number',
                 description: 'Max log entries (default: 10, for log/log_graph actions).'
+            },
+            force: {
+                type: 'boolean',
+                description: 'Force flag (for worktree_cleanup, branch_delete).'
+            },
+            branch: {
+                type: 'string',
+                description: 'Branch name for worktree_create (default: derived from path).'
             }
         },
         required: ['action']
@@ -71,7 +80,7 @@ export class GitOperationsTool implements AgentTool {
 
     async invoke(input: any, _context: AgentToolContext): Promise<any> {
         const action = this.requireAction(input?.action);
-        const readOnlyActions = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote'];
+        const readOnlyActions = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote', 'worktree_list'];
         const isReadOnly = readOnlyActions.includes(action);
 
         const workdir = await this.resolveWorkdir(input?.workdir);
@@ -126,6 +135,8 @@ export class GitOperationsTool implements AgentTool {
         const message = typeof input?.message === 'string' ? input.message : undefined;
         const maxCount = typeof input?.maxCount === 'number' ? Math.min(Math.max(1, input.maxCount), 100) : undefined;
         const extraArgs = Array.isArray(input?.args) ? input.args.filter((a: any) => typeof a === 'string') : [];
+        const branch = typeof input?.branch === 'string' && input.branch.trim() ? input.branch.trim() : undefined;
+        const force = input?.force === true;
 
         switch (action) {
             case 'commit':
@@ -229,6 +240,37 @@ export class GitOperationsTool implements AgentTool {
                 }
                 args.push(path);
                 break;
+            case 'worktree_create':
+                args[0] = 'worktree';
+                if (!path) {
+                    throw new Error('git_operations worktree_create requires a path (worktree directory).');
+                }
+                args.push('add', path);
+                if (branch) {
+                    args.push(branch);
+                }
+                break;
+            case 'worktree_merge':
+                if (!path) {
+                    throw new Error('git_operations worktree_merge requires a path (branch name to merge).');
+                }
+                args[0] = 'merge';
+                args.push(path, '--no-edit');
+                break;
+            case 'worktree_cleanup':
+                args[0] = 'worktree';
+                if (!path) {
+                    throw new Error('git_operations worktree_cleanup requires a path (worktree directory).');
+                }
+                args.push('remove', path);
+                if (force) {
+                    args.push('--force');
+                }
+                break;
+            case 'worktree_list':
+                args[0] = 'worktree';
+                args.push('list');
+                break;
         }
 
         args.push(...extraArgs);
@@ -236,7 +278,8 @@ export class GitOperationsTool implements AgentTool {
     }
 
     private execGit(args: string[], cwd: string, action: string): { stdout: string; stderr: string; exitCode: number } {
-        const isReadOnly = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote'].includes(action);
+        const readOnlyActions = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote', 'worktree_list'];
+        const isReadOnly = readOnlyActions.includes(action);
         const result = this.runGit(args, cwd);
         if (result.exitCode === 0) {
             return {

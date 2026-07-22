@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { LlmTaskTool } from '../llm/llm-task.tool';
@@ -67,7 +68,11 @@ export class CodingTaskTool implements AgentTool {
                     required: ['tool', 'input']
                 }
             },
-            persist: { type: 'boolean' }
+            persist: { type: 'boolean' },
+            useWorktree: {
+                type: 'boolean',
+                description: 'Run the task in an isolated git worktree. Creates a branch, sets up a worktree directory, merges back on completion.'
+            }
         },
         required: ['action']
     };
@@ -173,6 +178,8 @@ export class CodingTaskTool implements AgentTool {
             this.store.save(sessionId, task);
         }
 
+        const worktree = await this.setupWorktreeIfNeeded(input, task, runner, context);
+
         const working = this.store.patch(sessionId, task.id, {
             status: 'running',
             actions: task.actions.map(action => ({ ...action, status: 'pending', error: undefined, result: undefined }))
@@ -182,49 +189,58 @@ export class CodingTaskTool implements AgentTool {
         let failedActionId: string | undefined;
         let lastOutput: any;
 
-        for (const action of working.actions) {
-            const startedAt = Date.now();
-            action.status = 'running';
-            action.startedAt = startedAt;
-            this.store.patch(sessionId, working.id, { actions: working.actions });
-            try {
-                const result = await runner.run(action, { sessionId, principalId: context.principalId });
-                action.status = 'completed';
-                action.completedAt = Date.now();
-                action.result = { summary: result.summary, output: result.output };
-                completedActions += 1;
-                lastOutput = result.output;
-            } catch (err) {
-                failedActionId = action.id;
-                action.status = 'failed';
-                action.completedAt = Date.now();
-                action.error = err instanceof Error ? err.message : String(err);
-                break;
+        try {
+            for (const rawAction of working.actions) {
+                const action = worktree ? this.mapActionToWorktree(rawAction, worktree) : rawAction;
+                const startedAt = Date.now();
+                action.status = 'running';
+                action.startedAt = startedAt;
+                this.store.patch(sessionId, working.id, { actions: working.actions });
+                try {
+                    const result = await runner.run(action, { sessionId, principalId: context.principalId });
+                    rawAction.status = 'completed';
+                    rawAction.completedAt = Date.now();
+                    rawAction.result = { summary: result.summary, output: result.output };
+                    completedActions += 1;
+                    lastOutput = result.output;
+                } catch (err) {
+                    failedActionId = rawAction.id;
+                    rawAction.status = 'failed';
+                    rawAction.completedAt = Date.now();
+                    rawAction.error = err instanceof Error ? err.message : String(err);
+                    break;
+                }
+                this.store.patch(sessionId, working.id, { actions: working.actions });
             }
-            this.store.patch(sessionId, working.id, { actions: working.actions });
-        }
 
-        const diff = await this.captureWorkspaceDiffIfNeeded(working.actions, context);
+            const diff = worktree
+                ? await this.captureWorktreeDiff(worktree, runner, context)
+                : await this.captureWorkspaceDiffIfNeeded(working.actions, context);
 
-        const finalStatus = failedActionId ? 'failed' : 'completed';
-        const saved = this.store.patch(sessionId, working.id, {
-            status: finalStatus,
-            actions: working.actions,
-            result: {
+            const finalStatus = failedActionId ? 'failed' : 'completed';
+            const saved = this.store.patch(sessionId, working.id, {
+                status: finalStatus,
+                actions: working.actions,
+                result: {
+                    completedActions,
+                    failedActionId,
+                    output: this.summarizeResultPayload(lastOutput),
+                    ...(diff ? { diff } : {}),
+                    error: failedActionId ? working.actions.find(item => item.id === failedActionId)?.error : undefined
+                }
+            });
+
+            return {
+                ran: true,
+                task: saved,
                 completedActions,
-                failedActionId,
-                output: this.summarizeResultPayload(lastOutput),
-                ...(diff ? { diff } : {}),
-                error: failedActionId ? working.actions.find(item => item.id === failedActionId)?.error : undefined
+                failedActionId
+            };
+        } finally {
+            if (worktree) {
+                await this.teardownWorktree(worktree, runner, context);
             }
-        });
-
-        return {
-            ran: true,
-            task: saved,
-            completedActions,
-            failedActionId
-        };
+        }
     }
 
     private async handleGet(input: any, context: AgentToolContext): Promise<any> {
@@ -548,5 +564,139 @@ export class CodingTaskTool implements AgentTool {
         }
         const gitAction = typeof action.input?.action === 'string' ? action.input.action.trim() : '';
         return !!gitAction && !CodingTaskTool.READ_ONLY_GIT_ACTIONS.has(gitAction);
+    }
+
+    private async setupWorktreeIfNeeded(
+        input: any,
+        task: CodingTaskRecord,
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext
+    ): Promise<{ path: string; branch: string; relativePath: string } | null> {
+        if (!input?.useWorktree) {
+            return null;
+        }
+        const supported = new Set(runner.getSupportedTools());
+        if (!supported.has('git_operations')) {
+            return null;
+        }
+
+        const taskSuffix = task.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 12);
+        const worktreeBranch = `coding-task/${taskSuffix}`;
+        const worktreeDir = `.worktrees/${taskSuffix}`;
+
+        try {
+            await runner.run({
+                id: 'worktree-branch',
+                title: 'Create worktree branch',
+                tool: 'git_operations',
+                input: { action: 'branch_create', path: worktreeBranch },
+                status: 'pending'
+            }, { sessionId: context.sessionId, principalId: context.principalId });
+
+            await runner.run({
+                id: 'worktree-create',
+                title: 'Create git worktree',
+                tool: 'git_operations',
+                input: { action: 'worktree_create', path: worktreeDir, branch: worktreeBranch },
+                status: 'pending'
+            }, { sessionId: context.sessionId, principalId: context.principalId });
+
+            return { path: worktreeDir, branch: worktreeBranch, relativePath: worktreeDir };
+        } catch {
+            return null;
+        }
+    }
+
+    private async teardownWorktree(
+        worktree: { path: string; branch: string },
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext
+    ): Promise<void> {
+        const { branch, path: worktreePath } = worktree;
+        const runCtx = { sessionId: context.sessionId, principalId: context.principalId };
+
+        try {
+            await runner.run({
+                id: 'worktree-merge',
+                title: 'Merge worktree branch',
+                tool: 'git_operations',
+                input: { action: 'worktree_merge', path: branch },
+                status: 'pending'
+            }, runCtx);
+        } catch {
+            // merge may fail if conflicts exist
+        }
+
+        try {
+            await runner.run({
+                id: 'worktree-remove',
+                title: 'Remove worktree directory',
+                tool: 'git_operations',
+                input: { action: 'worktree_cleanup', path: worktreePath, force: true },
+                status: 'pending'
+            }, runCtx);
+        } catch {
+            // best-effort cleanup
+        }
+
+        try {
+            await runner.run({
+                id: 'worktree-branch-delete',
+                title: 'Delete worktree branch',
+                tool: 'git_operations',
+                input: { action: 'branch_delete', path: branch },
+                status: 'pending'
+            }, runCtx);
+        } catch {
+            // best-effort cleanup
+        }
+    }
+
+    private mapActionToWorktree(
+        action: CodingTaskActionRecord,
+        worktree: { relativePath: string }
+    ): CodingTaskActionRecord {
+        const FILE_TOOLS = new Set(['read_file', 'write_file', 'edit_file', 'list_dir', 'stat', 'mkdir', 'delete_file', 'move_file', 'copy_file']);
+        const WORKDIR_TOOLS = new Set(['terminal', 'git_operations', 'ai_cli']);
+        const input = { ...action.input };
+
+        if (FILE_TOOLS.has(action.tool) && typeof input.path === 'string') {
+            input.path = path.posix.join(worktree.relativePath, input.path);
+        }
+        if (WORKDIR_TOOLS.has(action.tool) && !input.workdir) {
+            input.workdir = worktree.relativePath;
+        }
+        if (action.tool === 'glob_search') {
+            if (typeof input.pattern === 'string') {
+                input.pattern = path.posix.join(worktree.relativePath, input.pattern);
+            }
+            if (typeof input.glob === 'string') {
+                input.glob = path.posix.join(worktree.relativePath, input.glob);
+            }
+        }
+
+        return { ...action, input };
+    }
+
+    private async captureWorktreeDiff(
+        worktree: { relativePath: string },
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext
+    ): Promise<{ summary: string; output: any; } | undefined> {
+        try {
+            const diff = await runner.run({
+                id: 'worktree-diff',
+                title: 'Inspect worktree diff',
+                tool: 'git_operations',
+                input: { action: 'diff', workdir: worktree.relativePath },
+                status: 'pending'
+            }, { sessionId: context.sessionId, principalId: context.principalId });
+            return {
+                summary: diff.summary,
+                output: this.summarizeResultPayload(diff.output)
+            };
+        } catch {
+            return undefined;
+        }
     }
 }
