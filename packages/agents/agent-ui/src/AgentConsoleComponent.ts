@@ -1,5 +1,6 @@
 import { ApplicationContext } from '@tsdi/core';
 import { Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
+import { FileAdapter } from '@tsdi/common';
 import {
     clampConsoleTextCursor,
     ConsoleTerminalInputHandler,
@@ -507,6 +508,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
         this.bridge.bindState(this.sessionState);
         this.bridge.subscribe();
+        this.ensureWorkspaceMentionResolver();
         await this.bootstrapStateFromAppRpc();
         await this.openSession(this.state.sessionId);
         if (!this.inputHistoryStore) {
@@ -526,6 +528,24 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.resolveApprovalAction = undefined;
         void this.persistInputHistory();
         this.dispose();
+    }
+
+    protected ensureWorkspaceMentionResolver(): void {
+        const injected = this.workspaceMentionsProvider
+            || this.app?.get(AgentConsoleWorkspaceMentionsProvider, null) as AgentConsoleWorkspaceMentionsProvider | null
+            || undefined;
+        const injectedFileAdapter = injected ? ((injected as any).fileAdapter as FileAdapter | undefined) : undefined;
+        if (injected && injectedFileAdapter) {
+            this.workspaceMentionsProvider = injected;
+        } else {
+            const fileAdapter = this.app?.get(FileAdapter, null) as FileAdapter | null;
+            if (fileAdapter) {
+                this.workspaceMentionsProvider = new AgentConsoleWorkspaceMentionsProvider(fileAdapter);
+            } else {
+                this.workspaceMentionsProvider = injected;
+            }
+        }
+        this.state.setWorkspaceMentionResolver(this.workspaceMentionsProvider || undefined);
     }
 
     protected parseSlashCommandLine(input: string): { raw: string; command: string; args: string } {

@@ -193,6 +193,11 @@ class EventMulticasterStub {
 class ApplicationContextStub {
     readonly eventMulticaster = new EventMulticasterStub();
     closeCalls = 0;
+    registry = new Map<any, any>();
+
+    get(token: any, defaultValue?: any): any {
+        return this.registry.has(token) ? this.registry.get(token) : defaultValue;
+    }
 
     async close(): Promise<void> {
         this.closeCalls += 1;
@@ -348,7 +353,10 @@ function createConsoleParts(
         sessions as any,
         approvalManager as any,
         workspaceMentionsProvider as any,
-        inputHistoryStore as any
+        inputHistoryStore as any,
+        undefined,
+        undefined,
+        app as any
     );
     return { state, bridge, component, sessionService: sessions };
 }
@@ -805,6 +813,38 @@ export class AgentConsoleComponentTest {
             state.setInput('check @int', 'check @int'.length);
             await waitForSuggestionMenu(state);
             expect(state.selectMenu?.options.map(option => option.value)).toContain('@docs/guides/intro.md');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('component resolves workspace mention suggestions from app file adapter fallback')
+    async componentResolvesWorkspaceMentionSuggestionsFromAppFileAdapter() {
+        const workspace = createWorkspaceFixture();
+        try {
+            const runtime = new RuntimeStub();
+            const scheduler = new SchedulerStub();
+            const app = new ApplicationContextStub();
+            app.registry.set(FileAdapter, new TestFileAdapter());
+            const { component } = createConsoleParts(
+                runtime,
+                scheduler,
+                new ToolRegistryStub(),
+                app
+            );
+            component.configure({
+                sessionId: 'chat-app-workspace-mentions',
+                provider: 'deepseek',
+                model: 'deepseek-v4-flash',
+                workspace
+            });
+
+            await component.onInit();
+
+            component.sessionState.setInput('check @src/in', 'check @src/in'.length);
+            await waitForSuggestionMenu(component.sessionState);
+
+            expect(component.selectMenu?.options.map(option => option.value)).toContain('@src/index.ts');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
