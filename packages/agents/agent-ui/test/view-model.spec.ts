@@ -621,8 +621,11 @@ function createWorkspaceFixture(): string {
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-mentions-'));
     fs.mkdirSync(path.join(workspace, 'src'), { recursive: true });
     fs.mkdirSync(path.join(workspace, 'docs', 'guides'), { recursive: true });
+    fs.mkdirSync(path.join(workspace, 'dist'), { recursive: true });
     fs.writeFileSync(path.join(workspace, 'src', 'index.ts'), 'export const demo = 1;\n', 'utf8');
+    fs.writeFileSync(path.join(workspace, 'src', 'feature.ts'), 'export const feature = () => "ok";\n', 'utf8');
     fs.writeFileSync(path.join(workspace, 'docs', 'guides', 'intro.md'), '# Intro\nworkspace mention test\n', 'utf8');
+    fs.writeFileSync(path.join(workspace, 'dist', 'bundle.js'), 'console.log("compiled");\n', 'utf8');
     return workspace;
 }
 
@@ -1260,14 +1263,17 @@ export class AgentConsoleComponentTest {
             });
             await component.onInit();
 
-            component.input = 'check @src/index.ts and @docs/';
+            component.input = 'check @src/ and @docs/';
             await component.submit();
 
             expect(runtime.calls[0]).toContain('[Mention Context]');
             expect(runtime.calls[0]).toContain('File src/index.ts:');
             expect(runtime.calls[0]).toContain('export const demo = 1;');
+            expect(runtime.calls[0]).toContain('File src/feature.ts:');
+            expect(runtime.calls[0]).toContain('export const feature = () => "ok";');
             expect(runtime.calls[0]).toContain('Directory docs:');
             expect(runtime.calls[0]).toContain('guides/');
+            expect(runtime.calls[0]).not.toContain('dist/bundle.js');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
