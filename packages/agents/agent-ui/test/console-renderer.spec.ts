@@ -14,6 +14,7 @@ import {
     AgentConsoleReviewPanelComponent,
     AgentConsoleSessionsPanelComponent,
     AgentConsoleStatusPanelComponent,
+    AgentConsoleJobsPanelComponent,
     AgentConsoleTasksPanelComponent,
     AgentConsoleToolRunsPanelComponent,
     AgentConsoleToolsPanelComponent,
@@ -325,6 +326,33 @@ export class AgentConsoleRendererTest {
         expect(taskLines.some(line => line.includes('checkpoints 1 total'))).toBe(true);
         expect(taskLines.some(line => line.includes('1.'))).toBe(true);
         expect(taskLines.some(line => line.includes('Edit handlers'))).toBe(true);
+    }
+
+    @Test('renders scheduled jobs panel with task details')
+    async renderScheduledJobsPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setScheduledTasks([{
+            id: 'job-1',
+            sessionId: 'console',
+            prompt: 'later',
+            scheduleType: 'once',
+            runAt: Date.now() + 1000,
+            nextRunAt: Date.now() + 1000,
+            runCount: 0,
+            failureCount: 0
+        } as any]);
+        ref.instance.sessionState.setSelectedScheduledTaskId('job-1');
+        ref.instance.sessionState.setJobsFocused(true);
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const jobsPanel = ref.hostView.query(AgentConsoleJobsPanelComponent) as ComponentRef<AgentConsoleJobsPanelComponent>;
+        const jobLines = renderer.renderToLines(jobsPanel.hostView.rootNodes[0]);
+
+        expect(jobLines.some(line => line.includes('jobs 1'))).toBe(true);
+        expect(jobLines.some(line => line.includes('later'))).toBe(true);
+        expect(jobLines.some(line => line.includes('pause/resume'))).toBe(true);
+        expect(jobLines.some(line => line.includes('session console'))).toBe(true);
     }
 
     @Test('renders agent console panels when created from module context for tui chat')

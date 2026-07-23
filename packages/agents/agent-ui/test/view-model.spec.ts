@@ -140,6 +140,10 @@ class FailingRuntimeStub extends RuntimeStub {
 
 class SchedulerStub {
     tasks: any[] = [];
+    paused: string[] = [];
+    resumed: string[] = [];
+    cancelled: string[] = [];
+    recovered: string[] = [];
 
     async schedule(task: any): Promise<any> {
         this.tasks.push(task);
@@ -148,6 +152,41 @@ class SchedulerStub {
 
     getTasks(): any[] {
         return this.tasks;
+    }
+
+    async pause(taskId: string): Promise<any> {
+        this.paused.push(taskId);
+        const task = this.tasks.find(item => item.id === taskId);
+        if (!task) {
+            return undefined;
+        }
+        Object.assign(task, { paused: true, running: false, updatedAt: Date.now() });
+        return { ...task };
+    }
+
+    async resume(taskId: string): Promise<any> {
+        this.resumed.push(taskId);
+        const task = this.tasks.find(item => item.id === taskId);
+        if (!task) {
+            return undefined;
+        }
+        Object.assign(task, { paused: false, running: false, updatedAt: Date.now() });
+        return { ...task };
+    }
+
+    async cancel(taskId: string): Promise<void> {
+        this.cancelled.push(taskId);
+        this.tasks = this.tasks.map(task => task.id === taskId ? { ...task, cancelled: true, updatedAt: Date.now() } : task);
+    }
+
+    async recover(taskId: string): Promise<any> {
+        this.recovered.push(taskId);
+        const task = this.tasks.find(item => item.id === taskId);
+        if (!task) {
+            return undefined;
+        }
+        Object.assign(task, { paused: false, running: false, cancelled: false, manualRecoveryRequired: false, updatedAt: Date.now() });
+        return { ...task };
     }
 }
 
@@ -673,6 +712,38 @@ export class AgentConsoleComponentTest {
         expect(scheduler.tasks[0].prompt).toEqual('later');
         expect(scheduler.tasks[0].sessionId).toEqual('console');
         expect(typeof scheduler.tasks[0].runAt).toEqual('number');
+    }
+
+    @Test('jobs command opens scheduler dashboard and toggles pause resume')
+    async jobsCommandOpensSchedulerDashboardAndTogglesPauseResume() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        scheduler.tasks = [{
+            id: 'job-1',
+            sessionId: 'console',
+            prompt: 'later',
+            scheduleType: 'once',
+            runAt: Date.now() + 1000,
+            nextRunAt: Date.now() + 1000,
+            runCount: 0,
+            failureCount: 0
+        }];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        await component.onInit();
+
+        component.input = '/jobs';
+        await component.submit();
+
+        expect(component.sessionState.jobsFocused).toEqual(true);
+        expect(component.sessionState.selectedScheduledTaskId).toEqual('job-1');
+
+        await component.sessionState.handleFocusKey('enter');
+        expect(scheduler.paused).toEqual(['job-1']);
+        expect(component.sessionState.selectedScheduledTask?.paused).toEqual(true);
+
+        await component.sessionState.handleFocusKey('enter');
+        expect(scheduler.resumed).toEqual(['job-1']);
+        expect(component.sessionState.selectedScheduledTask?.paused).toEqual(false);
     }
 
     @Test('configure updates model metadata and tools')

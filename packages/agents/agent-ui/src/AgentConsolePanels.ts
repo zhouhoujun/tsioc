@@ -26,6 +26,7 @@ import {
     AgentConsoleToolItem,
     AgentConsoleToolRun
 } from './AgentConsoleSessionState';
+import { ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -912,6 +913,141 @@ export class AgentConsoleTasksPanelComponent {
         }
         const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
         return checkpoints.some((entry: any) => entry?.status === 'available');
+    }
+}
+
+@Component({
+    selector: 'agent-console-jobs-panel',
+    imports: CONSOLE_BASE_IMPORTS,
+    template: `
+    <div class="console-panel console-jobs-panel" v-style="shellStyle">
+        <label v-style="accentStyle">{{jobsSummaryLabel}}</label>
+        <label v-style="metaStyle" v-show="jobsHintLabel">{{jobsHintLabel}}</label>
+        <label v-style="listStyle" v-show="jobListLabel">{{jobListLabel}}</label>
+        <label v-style="detailStyle" v-show="selectedJobDetailLabel">{{selectedJobDetailLabel}}</label>
+    </div>
+    `
+})
+export class AgentConsoleJobsPanelComponent {
+    constructor(private state: AgentConsoleSessionState) {
+    }
+
+    @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
+
+    protected get activeTheme(): AgentConsoleTheme {
+        return this.state?.theme || this.theme || defaultAgentConsoleTheme;
+    }
+
+    protected get activeThemeStyles(): AgentConsoleThemeStyles {
+        return resolvePanelThemeStyles(this.state, this.theme);
+    }
+
+    get jobs(): ScheduledAgentTask[] {
+        return this.state.scheduledTasks;
+    }
+
+    get shellStyle() {
+        return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
+    }
+
+    get accentStyle() {
+        return this.activeThemeStyles.toolsAccent;
+    }
+
+    get metaStyle() {
+        return this.activeThemeStyles.statusLabel;
+    }
+
+    get detailStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get listStyle() {
+        return this.activeThemeStyles.statusValue;
+    }
+
+    get jobItems(): Array<{ id: string; label: string }> {
+        if (!this.shouldShow) {
+            return [];
+        }
+        return this.visibleJobs.map(job => {
+            const summary = [
+                job.scheduleType || 'once',
+                job.paused ? 'paused' : '',
+                job.running ? 'running' : '',
+                job.cancelled ? 'cancelled' : ''
+            ].filter(Boolean).join(' · ');
+            const prompt = this.summarize(job.prompt);
+            return {
+                id: job.id,
+                label: `${this.state.selectedScheduledTaskId === job.id ? '›' : ' '} ${job.id} · ${prompt}${summary ? ` (${summary})` : ''}`
+            };
+        });
+    }
+
+    get jobListLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        if (!this.jobs.length) {
+            return 'no scheduled jobs';
+        }
+        return this.jobItems.map(item => item.label).join('\n');
+    }
+
+    get visibleJobStart(): number {
+        const selectedIndex = Math.max(0, this.jobs.findIndex(item => item.id === this.state.selectedScheduledTaskId));
+        return resolveConsoleListWindow(
+            this.jobs.length,
+            selectedIndex,
+            this.state.consoleOptions.sessionsVisibleItems
+        ).start;
+    }
+
+    get visibleJobs(): ScheduledAgentTask[] {
+        return this.jobs.slice(
+            this.visibleJobStart,
+            this.visibleJobStart + this.state.consoleOptions.sessionsVisibleItems
+        );
+    }
+
+    get jobsSummaryLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        if (!this.jobs.length) {
+            return 'jobs 0';
+        }
+        const selectedIndex = Math.max(0, this.jobs.findIndex(item => item.id === this.state.selectedScheduledTaskId));
+        return `jobs ${this.jobs.length} · ${selectedIndex + 1}/${this.jobs.length}`;
+    }
+
+    get jobsHintLabel(): string {
+        if (!this.shouldShow || !this.state.jobsFocused) {
+            return '';
+        }
+        if (!this.jobs.length) {
+            return 'no scheduled jobs   use schedulePrompt';
+        }
+        return 'up/down move   pg jump   enter toggle pause/resume   x cancel   r recover   y copy   esc';
+    }
+
+    get selectedJobDetailLabel(): string {
+        if (!this.shouldShow || !this.state.selectedScheduledTask) {
+            return '';
+        }
+        return this.state.scheduledTaskDetailLines.join('\n');
+    }
+
+    get shouldShow(): boolean {
+        return this.state.jobsFocused;
+    }
+
+    protected summarize(value: string): string {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        return text.length > this.state.consoleOptions.toolRunSummaryMaxLength
+            ? `${text.slice(0, this.state.consoleOptions.toolRunSummaryMaxLength)}...`
+            : text;
     }
 }
 

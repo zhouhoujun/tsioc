@@ -25,6 +25,7 @@ import { AgentConsoleSessionService } from './AgentConsoleSessionService';
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
         <agent-console-tasks-panel v-show="showTasksPanel"></agent-console-tasks-panel>
+        <agent-console-jobs-panel v-show="showJobsPanel"></agent-console-jobs-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
         <agent-console-message-detail-panel v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
@@ -263,6 +264,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.state.tasksFocused;
     }
 
+    get showJobsPanel(): boolean {
+        return this.state.jobsFocused;
+    }
+
     get showMessageDetailPanel(): boolean {
         return !!this.state.messageDetailOpen;
     }
@@ -471,6 +476,33 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    get toggleSelectedScheduledTaskActionHandler(): (taskId: string) => Promise<void> {
+        return async (taskId: string) => {
+            if (!taskId) {
+                return;
+            }
+            await this.toggleScheduledTask(taskId);
+        };
+    }
+
+    get cancelSelectedScheduledTaskActionHandler(): (taskId: string) => Promise<void> {
+        return async (taskId: string) => {
+            if (!taskId) {
+                return;
+            }
+            await this.cancelScheduledTask(taskId);
+        };
+    }
+
+    get recoverSelectedScheduledTaskActionHandler(): (taskId: string) => Promise<void> {
+        return async (taskId: string) => {
+            if (!taskId) {
+                return;
+            }
+            await this.recoverScheduledTask(taskId);
+        };
+    }
+
     get activateSelectedToolActionHandler(): (toolName: string) => Promise<void> {
         return async (toolName: string) => {
             const name = String(toolName || '').trim();
@@ -545,6 +577,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
         this.state.cancelSelectedTaskAction = this.cancelSelectedTaskActionHandler;
         this.state.rollbackSelectedTaskAction = this.rollbackSelectedTaskActionHandler;
+        this.state.toggleSelectedScheduledTaskAction = this.toggleSelectedScheduledTaskActionHandler;
+        this.state.cancelSelectedScheduledTaskAction = this.cancelSelectedScheduledTaskActionHandler;
+        this.state.recoverSelectedScheduledTaskAction = this.recoverSelectedScheduledTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
         this.bridge.bindState(this.sessionState);
@@ -557,6 +592,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
         await this.restoreInputHistory();
         await this.refreshTools();
+        await this.refreshScheduledTasks();
         this.state.setTasksCount(this.scheduler.getTasks().length);
     }
 
@@ -568,6 +604,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.openSelectedTaskAction = undefined;
         this.state.cancelSelectedTaskAction = undefined;
         this.state.rollbackSelectedTaskAction = undefined;
+        this.state.toggleSelectedScheduledTaskAction = undefined;
+        this.state.cancelSelectedScheduledTaskAction = undefined;
+        this.state.recoverSelectedScheduledTaskAction = undefined;
         this.state.activateSelectedToolAction = undefined;
         this.state.resolveApprovalAction = undefined;
         void this.persistInputHistory();
@@ -736,6 +775,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.batch(() => {
             this.state.setSessionsFocused(false);
             this.state.setTasksFocused(false);
+            this.state.setJobsFocused(false);
             this.state.setToolsFocused(false);
             this.state.setApprovalsFocused(false);
             this.state.setMessagesFocused(false);
@@ -895,6 +935,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setSessionsFocused(false);
             this.state.setToolsFocused(false);
             this.state.setApprovalsFocused(false);
+            this.state.setJobsFocused(false);
             this.state.setMessagesFocused(false);
             this.state.closeMessageDetail();
             this.state.closeReview();
@@ -931,6 +972,131 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
         await this.openCodingTaskReview(resolvedTaskId, result?.task ?? null);
         this.notify(`Rolled back ${resolvedTaskId}.`);
+        return true;
+    }
+
+    protected async refreshScheduledTasks(): Promise<void> {
+        if (!this.scheduler) {
+            return;
+        }
+        this.state.setScheduledTasks(this.scheduler.getTasks());
+        this.state.setTasksCount(this.scheduler.getTasks().length);
+    }
+
+    protected async openScheduledJobsDashboard(taskId?: string): Promise<boolean> {
+        if (!this.scheduler) {
+            this.notify('Scheduler is unavailable.');
+            return true;
+        }
+        const tasks = this.scheduler.getTasks();
+        this.state.batch(() => {
+            this.state.setScheduledTasks(tasks);
+            this.state.setSessionsFocused(false);
+            this.state.setTasksFocused(false);
+            this.state.setToolsFocused(false);
+            this.state.setApprovalsFocused(false);
+            this.state.setMessagesFocused(false);
+            this.state.closeMessageDetail();
+            this.state.closeReview();
+            this.state.setJobsFocused(true);
+            if (taskId) {
+                this.state.setSelectedScheduledTaskId(taskId);
+            }
+            this.state.setNotice('');
+            this.state.setLastError('');
+        });
+        return true;
+    }
+
+    protected async toggleScheduledTask(taskId?: string): Promise<boolean> {
+        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Scheduled task id is required.');
+            return true;
+        }
+        const selected = this.state.selectedScheduledTask;
+        if (!selected || selected.id !== resolvedTaskId) {
+            this.notify(`Scheduled task "${resolvedTaskId}" was not found.`);
+            return true;
+        }
+        if (selected.paused) {
+            return this.resumeScheduledTask(resolvedTaskId);
+        }
+        return this.pauseScheduledTask(resolvedTaskId);
+    }
+
+    protected async pauseScheduledTask(taskId?: string): Promise<boolean> {
+        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Scheduled task id is required.');
+            return true;
+        }
+        if (!this.scheduler.pause) {
+            this.notify('Pause is unavailable on the configured scheduler.');
+            return true;
+        }
+        const task = await this.scheduler.pause(resolvedTaskId);
+        if (!task) {
+            this.notify(`Pause failed for ${resolvedTaskId}.`);
+            return true;
+        }
+        await this.refreshScheduledTasks();
+        this.state.setSelectedScheduledTaskId(resolvedTaskId);
+        this.notify(`Paused ${resolvedTaskId}.`);
+        return true;
+    }
+
+    protected async resumeScheduledTask(taskId?: string): Promise<boolean> {
+        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Scheduled task id is required.');
+            return true;
+        }
+        if (!this.scheduler.resume) {
+            this.notify('Resume is unavailable on the configured scheduler.');
+            return true;
+        }
+        const task = await this.scheduler.resume(resolvedTaskId);
+        if (!task) {
+            this.notify(`Resume failed for ${resolvedTaskId}.`);
+            return true;
+        }
+        await this.refreshScheduledTasks();
+        this.state.setSelectedScheduledTaskId(resolvedTaskId);
+        this.notify(`Resumed ${resolvedTaskId}.`);
+        return true;
+    }
+
+    protected async cancelScheduledTask(taskId?: string): Promise<boolean> {
+        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Scheduled task id is required.');
+            return true;
+        }
+        await this.scheduler.cancel(resolvedTaskId);
+        await this.refreshScheduledTasks();
+        this.notify(`Cancelled ${resolvedTaskId}.`);
+        return true;
+    }
+
+    protected async recoverScheduledTask(taskId?: string): Promise<boolean> {
+        const resolvedTaskId = String(taskId || this.state.selectedScheduledTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Scheduled task id is required.');
+            return true;
+        }
+        if (!this.scheduler.recover) {
+            this.notify('Recover is unavailable on the configured scheduler.');
+            return true;
+        }
+        const task = await this.scheduler.recover(resolvedTaskId);
+        if (!task) {
+            this.notify(`Recover failed for ${resolvedTaskId}.`);
+            return true;
+        }
+        await this.refreshScheduledTasks();
+        this.state.setSelectedScheduledTaskId(resolvedTaskId);
+        this.notify(`Recovered ${resolvedTaskId}.`);
         return true;
     }
 
@@ -981,6 +1147,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/model', value: '/model', description: 'switch model' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
+                    { label: '/jobs', value: '/jobs', description: 'scheduled jobs' },
                     { label: '/tasks', value: '/tasks', description: 'task inspector' },
                     { label: '/review', value: '/review', description: 'coding task review' },
                     { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
@@ -1020,6 +1187,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.closeReview();
                 this.state.setToolsFocused(true);
                 return true;
+            case '/jobs':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.openScheduledJobsDashboard(parsed.args);
             case '/tasks':
                 if (this.isTurnInProgress()) {
                     this.notifyBusyState();
@@ -1398,6 +1571,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         }
 
         await this.refreshTools();
+        await this.refreshScheduledTasks();
         this.state.batch(() => {
             if (this.state.status === 'running' || this.state.status === 'reasoning') {
                 this.state.setStatus('idle');
@@ -1414,7 +1588,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             runAt: Date.now() + delayMs,
             scheduleType: 'once'
         });
-        this.state.setTasksCount(this.scheduler.getTasks().length);
+        await this.refreshScheduledTasks();
     }
 
     dispose(): void {

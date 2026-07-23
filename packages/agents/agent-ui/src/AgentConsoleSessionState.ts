@@ -4,7 +4,7 @@ import {
     processConsoleTextInputChunk,
     shouldSkipConsoleHistoryEntry
 } from '@tsdi/components/console';
-import { AgentMessage, AgentToolDefinition } from '@tsdi/agent';
+import { AgentMessage, AgentToolDefinition, ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleTheme,
     AgentConsoleThemeInput,
@@ -77,6 +77,23 @@ export interface AgentConsoleApprovalRequest {
     inputSummary?: string;
     createdAt: number;
     timeoutMs: number;
+}
+
+export interface AgentConsoleScheduledTaskItem {
+    id: string;
+    sessionId: string;
+    prompt: string;
+    scheduleType?: string | null;
+    paused?: boolean;
+    running?: boolean;
+    cancelled?: boolean;
+    runAt?: number;
+    nextRunAt?: number;
+    lastRunAt?: number;
+    runCount?: number;
+    failureCount?: number;
+    lastError?: string;
+    updatedAt?: number;
 }
 
 export interface AgentConsoleReviewTaskItem {
@@ -241,6 +258,7 @@ export class AgentConsoleSessionState {
     sessionsFocused = false;
     selectedSessionId = '';
     tasksFocused = false;
+    jobsFocused = false;
     tools: AgentConsoleToolItem[] = [];
     toolsFocused = false;
     selectedToolName = '';
@@ -253,6 +271,8 @@ export class AgentConsoleSessionState {
     reviewTaskChoices: AgentConsoleReviewTaskItem[] = [];
     taskRecords: Record<string, any>[] = [];
     selectedReviewTaskId = '';
+    scheduledTasks: ScheduledAgentTask[] = [];
+    selectedScheduledTaskId = '';
     reviewDetailScroll = 0;
     reviewDetailColumnScroll = 0;
     activities: AgentConsoleActivity[] = [];
@@ -284,9 +304,12 @@ export class AgentConsoleSessionState {
     openSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     cancelSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     rollbackSelectedTaskAction?: (taskId: string) => void | Promise<void>;
+    toggleSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
+    cancelSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
+    recoverSelectedScheduledTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/tasks', '/review', '/rollback', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
+    commandHints = ['/help', '/tools', '/jobs', '/tasks', '/review', '/rollback', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -372,6 +395,7 @@ export class AgentConsoleSessionState {
     protected syncDerivedInputFocus(): void {
         this.inputFocused = !this.sessionsFocused
             && !this.tasksFocused
+            && !this.jobsFocused
             && !this.toolsFocused
             && !this.approvalsFocused
             && !this.reviewOpen
@@ -390,6 +414,10 @@ export class AgentConsoleSessionState {
 
     hasTaskFocus(): boolean {
         return !!this.tasksFocused;
+    }
+
+    hasScheduledJobFocus(): boolean {
+        return !!this.jobsFocused;
     }
 
     hasToolFocus(): boolean {
@@ -416,6 +444,7 @@ export class AgentConsoleSessionState {
         return this.hasBlockingSelectMenu()
             || this.hasSessionFocus()
             || this.hasTaskFocus()
+            || this.hasScheduledJobFocus()
             || this.hasToolFocus()
             || this.hasApprovalFocus()
             || this.hasReviewFocus()
@@ -956,6 +985,76 @@ export class AgentConsoleSessionState {
         return this.sessions.find(item => item.id === this.selectedSessionId);
     }
 
+    setScheduledTasks(tasks: ScheduledAgentTask[]): void {
+        this.scheduledTasks = tasks.slice();
+        if (!this.scheduledTasks.length) {
+            this.selectedScheduledTaskId = '';
+        } else if (this.selectedScheduledTaskId && this.scheduledTasks.some(item => item.id === this.selectedScheduledTaskId)) {
+            // Preserve explicit selection when possible.
+        } else {
+            this.selectedScheduledTaskId = this.scheduledTasks[0].id;
+        }
+        this.notify();
+    }
+
+    setJobsFocused(focused: boolean): void {
+        this.jobsFocused = focused;
+        if (focused && !this.selectedScheduledTaskId && this.scheduledTasks.length) {
+            this.selectedScheduledTaskId = this.scheduledTasks[0].id;
+        }
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    setSelectedScheduledTaskId(taskId: string): void {
+        if (!taskId || !this.scheduledTasks.some(item => item.id === taskId)) {
+            return;
+        }
+        this.selectedScheduledTaskId = taskId;
+        this.notify();
+    }
+
+    moveScheduledTaskSelection(delta: number): void {
+        if (!this.scheduledTasks.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.scheduledTasks.findIndex(item => item.id === this.selectedScheduledTaskId));
+        const nextIndex = (currentIndex + delta + this.scheduledTasks.length) % this.scheduledTasks.length;
+        this.selectedScheduledTaskId = this.scheduledTasks[nextIndex].id;
+        this.notify();
+    }
+
+    moveScheduledTaskSelectionPage(delta: number, pageSize?: number): void {
+        if (!this.scheduledTasks.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.scheduledTasks.findIndex(item => item.id === this.selectedScheduledTaskId));
+        const resolvedPageSize = pageSize ?? this.consoleOptions.sessionsVisibleItems;
+        const nextIndex = Math.max(0, Math.min(this.scheduledTasks.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+        this.selectedScheduledTaskId = this.scheduledTasks[nextIndex].id;
+        this.notify();
+    }
+
+    selectFirstScheduledTask(): void {
+        if (!this.scheduledTasks.length) {
+            return;
+        }
+        this.selectedScheduledTaskId = this.scheduledTasks[0].id;
+        this.notify();
+    }
+
+    selectLastScheduledTask(): void {
+        if (!this.scheduledTasks.length) {
+            return;
+        }
+        this.selectedScheduledTaskId = this.scheduledTasks[this.scheduledTasks.length - 1].id;
+        this.notify();
+    }
+
+    get selectedScheduledTask(): ScheduledAgentTask | undefined {
+        return this.scheduledTasks.find(item => item.id === this.selectedScheduledTaskId);
+    }
+
     setTaskRecords(tasks: Record<string, any>[]): void {
         this.taskRecords = tasks.slice();
         this.notify();
@@ -1017,6 +1116,53 @@ export class AgentConsoleSessionState {
 
     get selectedTask(): Record<string, any> | undefined {
         return this.taskRecords.find(item => item?.id === this.selectedReviewTaskId);
+    }
+
+    protected formatScheduledTimestamp(value?: number): string {
+        return typeof value === 'number' && Number.isFinite(value)
+            ? new Date(value).toISOString()
+            : '';
+    }
+
+    protected buildSelectedScheduledTaskCopyText(): string {
+        const selected = this.selectedScheduledTask;
+        if (!selected) {
+            return '';
+        }
+        return [
+            `${selected.id} (${selected.scheduleType || 'once'})`,
+            selected.prompt,
+            selected.paused ? 'paused' : '',
+            selected.running ? 'running' : '',
+            selected.cancelled ? 'cancelled' : '',
+            selected.runAt ? `runAt=${this.formatScheduledTimestamp(selected.runAt)}` : '',
+            selected.nextRunAt ? `nextRunAt=${this.formatScheduledTimestamp(selected.nextRunAt)}` : '',
+            selected.lastRunAt ? `lastRunAt=${this.formatScheduledTimestamp(selected.lastRunAt)}` : '',
+            selected.runCount != null ? `runCount=${selected.runCount}` : '',
+            selected.failureCount != null ? `failureCount=${selected.failureCount}` : '',
+            selected.lastError ? `lastError=${selected.lastError}` : ''
+        ].filter(Boolean).join('\n');
+    }
+
+    get scheduledTaskDetailLines(): string[] {
+        const selected = this.selectedScheduledTask;
+        if (!selected) {
+            return [];
+        }
+        return [
+            `session ${selected.sessionId}`,
+            `schedule ${selected.scheduleType || 'once'}`,
+            `status ${selected.cancelled ? 'cancelled' : selected.running ? 'running' : selected.paused ? 'paused' : 'idle'}`,
+            selected.prompt ? `prompt ${selected.prompt}` : '',
+            selected.runAt ? `runAt ${this.formatScheduledTimestamp(selected.runAt)}` : '',
+            selected.nextRunAt ? `nextRunAt ${this.formatScheduledTimestamp(selected.nextRunAt)}` : '',
+            selected.lastRunAt ? `lastRunAt ${this.formatScheduledTimestamp(selected.lastRunAt)}` : '',
+            selected.runCount != null ? `runCount ${selected.runCount}` : '',
+            selected.failureCount != null ? `failureCount ${selected.failureCount}` : '',
+            selected.manualRecoveryRequired ? 'manual recovery required' : '',
+            selected.alertOnFailure ? 'alert on failure' : '',
+            selected.lastError ? `lastError ${selected.lastError}` : ''
+        ].filter(Boolean);
     }
 
     setToolsFocused(focused: boolean): void {
@@ -1539,6 +1685,10 @@ export class AgentConsoleSessionState {
             this.setTasksFocused(false);
             return true;
         }
+        if (this.jobsFocused) {
+            this.setJobsFocused(false);
+            return true;
+        }
         if (this.toolsFocused) {
             this.setToolsFocused(false);
             return true;
@@ -1902,7 +2052,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.toolsFocused || this.sessionsFocused) {
+        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.jobsFocused || this.toolsFocused || this.sessionsFocused) {
             await this.dismissFocusLayer();
             return true;
         }
@@ -2147,6 +2297,56 @@ export class AgentConsoleSessionState {
                     return false;
             }
         }
+        if (this.jobsFocused) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.buildSelectedScheduledTaskCopyText(), 'scheduled job');
+                    return true;
+                case 'enter':
+                case 'p':
+                    if (this.selectedScheduledTask?.id) {
+                        await this.toggleSelectedScheduledTaskAction?.(this.selectedScheduledTask.id);
+                        return true;
+                    }
+                    return false;
+                case 'x':
+                    if (this.selectedScheduledTask?.id) {
+                        await this.cancelSelectedScheduledTaskAction?.(this.selectedScheduledTask.id);
+                        return true;
+                    }
+                    return false;
+                case 'r':
+                    if (this.selectedScheduledTask?.id) {
+                        await this.recoverSelectedScheduledTaskAction?.(this.selectedScheduledTask.id);
+                        return true;
+                    }
+                    return false;
+                case 'down':
+                    this.moveScheduledTaskSelection(1);
+                    return true;
+                case 'up':
+                    this.moveScheduledTaskSelection(-1);
+                    return true;
+                case 'pageup':
+                    this.moveScheduledTaskSelectionPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.moveScheduledTaskSelectionPage(1);
+                    return true;
+                case 'home':
+                    this.selectFirstScheduledTask();
+                    return true;
+                case 'end':
+                    this.selectLastScheduledTask();
+                    return true;
+                default:
+                    return false;
+            }
+        }
         if (this.toolsFocused) {
             if (this.isDismissKey(normalized)) {
                 await this.dismissFocusLayer();
@@ -2291,7 +2491,7 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'menuBlocked' };
         }
 
-        if (this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasToolFocus() || this.hasSessionFocus()) {
+        if (this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasScheduledJobFocus() || this.hasToolFocus() || this.hasSessionFocus()) {
             const focusKey = this.resolveFocusShortcutKey(rawText, controlKey);
             if (focusKey) {
                 await this.handleFocusKey(focusKey);
