@@ -57,6 +57,11 @@ export interface AgentToolsPdfOptions {
     adapter?: import('../media').PdfReadAdapter;
 }
 
+export interface AgentToolsCaptureOptions {
+    screenshotAdapter?: import('../capture').ScreenshotAdapter;
+    guiAdapter?: import('../capture').GuiControlAdapter;
+}
+
 export interface AgentToolsWeatherOptions {
     adapter?: import('../utility').WeatherAdapter;
     fetch?: typeof fetch;
@@ -181,6 +186,7 @@ export type AgentToolItem =
     | 'data_manage'
     | 'llm_task'
     | 'screenshot'
+    | 'gui_control'
     | 'canvas'
     | 'approval'
     | 'checkpoint'
@@ -206,6 +212,7 @@ export interface AgentToolsOptions {
     sandbox?: AgentToolsSandboxOptions;
     aiCli?: AgentAiCliOptions;
     pdf?: AgentToolsPdfOptions;
+    capture?: AgentToolsCaptureOptions;
     location?: AgentToolsLocationOptions;
     weather?: AgentToolsWeatherOptions;
     schedule?: AgentToolsScheduleOptions;
@@ -294,6 +301,9 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         },
         pdf: {
             ...(options?.pdf ?? {})
+        },
+        capture: {
+            ...(options?.capture ?? {})
         },
         schedule: {
             ...(options?.schedule ?? {})

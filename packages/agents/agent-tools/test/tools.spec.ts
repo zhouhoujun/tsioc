@@ -30,6 +30,7 @@ import { CronManageTool } from '../cron/cron-manage.tool';
 import { DataManageTool } from '../data/data-manage.tool';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import { ScreenshotTool } from '../capture/screenshot.tool';
+import { GuiControlAdapter, GuiControlTool, ScreenshotAdapter } from '../capture';
 import { CanvasTool } from '../canvas/canvas.tool';
 import { ApprovalTool } from '../approval/approval.tool';
 import { CheckpointTool } from '../approval/checkpoint.tool';
@@ -3618,6 +3619,36 @@ export class AgentToolsPackageTest {
         expect(result.width).toEqual(1920);
     }
 
+    @Test('gui control requires adapter and validates actions')
+    async guiControlRequiresAdapterAndValidatesActions() {
+        let adapter: Error | undefined;
+        try {
+            await new GuiControlTool(null!).invoke({ action: 'click', x: 10, y: 20 }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter).toBeDefined();
+
+        const tool = new GuiControlTool(new MockAdapter(async (request: any) => ({
+            ok: true,
+            action: request.action,
+            timestamp: 123,
+            details: request
+        })));
+        const result = await tool.invoke({ action: 'keypress', keys: ['Meta', 'K'] }, createSessionContext());
+        expect(result.ok).toEqual(true);
+        expect(result.action).toEqual('keypress');
+        expect(result.details.keys).toEqual(['Meta', 'K']);
+
+        let validationError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'scroll' }, createSessionContext());
+        } catch (err) {
+            validationError = err as Error;
+        }
+        expect(validationError?.message).toContain('scroll requires dx or dy');
+    }
+
     @Test('canvas requires adapter and supports CRUD')
     async canvasRequiresAdapterAndSupportsCRUD() {
         let adapter: Error | undefined;
@@ -3755,7 +3786,7 @@ export class AgentToolsPackageTest {
     @Test('group tool registration includes all new phase-3 groups')
     groupToolRegistrationIncludesAllNewPhase3Groups() {
         expect(AGENT_TOOL_GROUPS.llm).toEqual(['llm_task']);
-        expect(AGENT_TOOL_GROUPS.capture).toEqual(['screenshot']);
+        expect(AGENT_TOOL_GROUPS.capture).toEqual(['screenshot', 'gui_control']);
         expect(AGENT_TOOL_GROUPS.canvas).toEqual(['canvas']);
         expect(AGENT_TOOL_GROUPS.approval).toEqual(['approval', 'checkpoint']);
         expect(AGENT_TOOL_GROUPS.pipeline).toEqual(['pipeline']);
@@ -4305,6 +4336,8 @@ function withToolTestAdapters(): any[] {
     const mockPipeline = { list: async () => [], define: async () => ({}), execute: async () => ({}), get: async () => null, delete: async () => true };
     const mockVision = { analyze: async () => ({ description: '' }) };
     const mockImageGen = { generate: async () => ({ url: '' }) };
+    const mockScreenshot = { capture: async () => ({ imageUrl: '', format: 'png', width: 1, height: 1 }) };
+    const mockGui = { execute: async (request: any) => ({ ok: true, action: request.action }) };
     return [
         { provide: SpawnAgentAdapter, useValue: mockSpawn },
         { provide: LocationAdapter, useValue: mockLocation },
@@ -4313,6 +4346,8 @@ function withToolTestAdapters(): any[] {
         { provide: PipelineAdapter, useValue: mockPipeline },
         { provide: VisionAdapter, useValue: mockVision },
         { provide: ImageGenerationAdapter, useValue: mockImageGen },
+        { provide: ScreenshotAdapter, useValue: mockScreenshot },
+        { provide: GuiControlAdapter, useValue: mockGui },
     ];
 }
 

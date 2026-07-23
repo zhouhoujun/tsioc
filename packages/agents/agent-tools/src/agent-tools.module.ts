@@ -81,6 +81,7 @@ import { CronManageTool } from '../cron/cron-manage.tool';
 import { DataManageTool } from '../data/data-manage.tool';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import { ScreenshotTool } from '../capture/screenshot.tool';
+import { GuiControlAdapter, GuiControlTool, ScreenshotAdapter } from '../capture';
 import { CanvasTool } from '../canvas/canvas.tool';
 import { ApprovalTool } from '../approval/approval.tool';
 import { CheckpointTool } from '../approval/checkpoint.tool';
@@ -169,6 +170,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         DataManageTool,
         LlmTaskTool,
         ScreenshotTool,
+        GuiControlTool,
         CanvasTool,
         ApprovalTool,
         CheckpointTool,
@@ -182,6 +184,18 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
             provider(injector) {
                 const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
                 return [{ provide: 'AGENT_TOOLS_PDF_READ_ADAPTER', useValue: options?.pdf?.adapter ?? null }];
+            }
+        },
+        {
+            provider(injector) {
+                const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
+                return [{ provide: ScreenshotAdapter, useValue: options?.capture?.screenshotAdapter ?? null }];
+            }
+        },
+        {
+            provider(injector) {
+                const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
+                return [{ provide: GuiControlAdapter, useValue: options?.capture?.guiAdapter ?? null }];
             }
         },
         {
@@ -273,6 +287,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         DataManageTool,
         LlmTaskTool,
         ScreenshotTool,
+        GuiControlTool,
         CanvasTool,
         ApprovalTool,
         CheckpointTool,

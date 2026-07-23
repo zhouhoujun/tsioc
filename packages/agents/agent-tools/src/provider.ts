@@ -67,6 +67,7 @@ import { CronManageTool } from '../cron/cron-manage.tool';
 import { DataManageTool } from '../data/data-manage.tool';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import { ScreenshotTool } from '../capture/screenshot.tool';
+import { GuiControlAdapter, GuiControlTool, ScreenshotAdapter } from '../capture';
 import { CanvasTool } from '../canvas/canvas.tool';
 import { ApprovalTool } from '../approval/approval.tool';
 import { CheckpointTool } from '../approval/checkpoint.tool';
@@ -156,6 +157,7 @@ const toolItems = {
     data_manage: DataManageTool,
     llm_task: LlmTaskTool,
     screenshot: ScreenshotTool,
+    gui_control: GuiControlTool,
     canvas: CanvasTool,
     approval: ApprovalTool,
     checkpoint: CheckpointTool,
@@ -193,7 +195,7 @@ const toolGroups = {
     cron: ['cron_manage'],
     data: ['data_manage'],
     llm: ['llm_task'],
-    capture: ['screenshot'],
+    capture: ['screenshot', 'gui_control'],
     canvas: ['canvas'],
     approval: ['approval', 'checkpoint'],
     pipeline: ['pipeline'],
@@ -233,7 +235,7 @@ const bundleDescriptions: Record<AgentToolGroup, string> = {
     cron: 'Cron job management and scheduling tools.',
     data: 'Session data, memory, and knowledge export/import tools.',
     llm: 'Standalone LLM inference task execution tools.',
-    capture: 'Screen capture and screenshot tools.',
+    capture: 'Screen capture and GUI control tools.',
     canvas: 'Structured visual canvas for planning and design.',
     approval: 'Approval requests and session checkpoint tools.',
     pipeline: 'Multi-step pipeline definition and execution tools.',
@@ -535,6 +537,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         DataManageTool,
         LlmTaskTool,
         ScreenshotTool,
+        GuiControlTool,
         CanvasTool,
         ApprovalTool,
         CheckpointTool,
@@ -547,6 +550,14 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         {
             provide: 'AGENT_TOOLS_PDF_READ_ADAPTER',
             useValue: merged.pdf?.adapter ?? null
+        },
+        {
+            provide: ScreenshotAdapter,
+            useValue: merged.capture?.screenshotAdapter ?? null
+        },
+        {
+            provide: GuiControlAdapter,
+            useValue: merged.capture?.guiAdapter ?? null
         },
         {
             provider(injector) {
