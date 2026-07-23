@@ -670,6 +670,19 @@ export class AgentConsoleComponentTest {
         expect(component.runningTools).toEqual([]);
     }
 
+    @Test('submit streams locally without app rpc')
+    async submitStreamsLocallyWithoutAppRpc() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, undefined, undefined, undefined);
+        component.input = 'hello';
+        await component.submit();
+        expect(runtime.calls).toEqual(['console:hello']);
+        expect(component.messages[1].metadata?.streaming).toEqual(false);
+        expect(component.messages[1].content).toEqual('Echo: hello');
+        expect(component.status).toEqual('idle');
+    }
+
     @Test('submit persists input history through history store')
     async submitPersistsInputHistory() {
         const runtime = new RuntimeStub();
@@ -1450,6 +1463,24 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Cancelled task-1.');
     }
 
+    @Test('tasks focus escape cancels selected running coding task')
+    async tasksFocusEscapeCancelsSelectedRunningCodingTask() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createCancelableTask();
+        appRpc.codingTasks = [reviewTask];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+        await component.sessionState.handleFocusKey('escape');
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.cancel' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.notice).toEqual('Cancelled task-1.');
+    }
+
     @Test('tasks focus does not cancel completed coding task')
     async tasksFocusDoesNotCancelCompletedCodingTask() {
         const runtime = new RuntimeStub();
@@ -1466,6 +1497,29 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.cancel')).toEqual(false);
         expect(component.notice).toEqual('Cancel is unavailable for task-1.');
+    }
+
+    @Test('review focus escape cancels running coding task')
+    async reviewFocusEscapeCancelsRunningCodingTask() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createCancelableTask();
+        appRpc.codingTaskDetails.set('task-1', reviewTask);
+        appRpc.codingTaskDiffs.set('task-1', {
+            summary: '1 worker diff(s) captured',
+            text: 'diff --git a/src/a.ts b/src/a.ts\n+new line',
+            workers: reviewTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review task-1';
+        await component.submit();
+        await component.sessionState.handleFocusKey('Esc');
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.cancel' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.notice).toEqual('Cancelled task-1.');
     }
 
     @Test('review command loads direct task id without opening select menu')

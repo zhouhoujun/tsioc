@@ -2120,6 +2120,10 @@ export class AgentConsoleSessionState {
             return false;
         }
         if (this.reviewOpen) {
+            if ((normalized === 'esc' || normalized === 'escape') && this.canCancelFocusedCodingTask()) {
+                await this.cancelFocusedCodingTask();
+                return true;
+            }
             if (this.isDismissKey(normalized)) {
                 await this.dismissFocusLayer();
                 return true;
@@ -2271,6 +2275,10 @@ export class AgentConsoleSessionState {
             }
         }
         if (this.tasksFocused) {
+            if ((normalized === 'esc' || normalized === 'escape') && this.canCancelFocusedCodingTask()) {
+                await this.cancelFocusedCodingTask();
+                return true;
+            }
             if (this.isDismissKey(normalized)) {
                 await this.dismissFocusLayer();
                 return true;
@@ -2446,6 +2454,19 @@ export class AgentConsoleSessionState {
             }
         }
         return false;
+    }
+
+    protected canCancelFocusedCodingTask(): boolean {
+        const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
+        const status = String(task?.status || '').trim();
+        return !!task?.id && (status === 'planned' || status === 'running');
+    }
+
+    protected async cancelFocusedCodingTask(): Promise<void> {
+        const task = this.reviewOpen ? (this.reviewTask || this.selectedTask) : this.selectedTask;
+        if (task?.id) {
+            await this.cancelSelectedTaskAction?.(task.id);
+        }
     }
 
     async processRawChunk(

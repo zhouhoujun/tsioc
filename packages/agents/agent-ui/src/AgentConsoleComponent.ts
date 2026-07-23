@@ -1434,33 +1434,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setMessages([...this.state.messages, userMsg, asstMsg]);
         });
         try {
-            const stream = this.appRpc?.stream?.('run.turn_stream', { sessionId: this.state.sessionId, input: prompt });
-            if (stream) {
-                for await (const chunk of stream) {
-                    if (chunk.usage) {
-                        this.state.setTokenUsage(chunk.usage);
-                    }
-                    if (chunk.type === 'text' && chunk.content) {
-                        asstMsg.content += chunk.content;
-                        this.scheduleStreamingAssistantMessageFlush(asstMsg);
-                    } else if (chunk.type === 'reasoning' && chunk.content) {
-                        this.state.setStatus('reasoning');
-                    } else if (chunk.type === 'done' && chunk.message) {
-                        asstMsg.content = chunk.message.content || asstMsg.content;
-                        asstMsg.metadata = {
-                            ...(chunk.message.metadata || {}),
-                            streaming: false
-                        };
-                        this.replaceStreamingAssistantMessage(asstMsg);
-                        this.state.setTokenUsage(chunk.message.metadata?.usage);
-                    }
-                }
-            } else {
-                const result = await this.executeTurn(prompt);
-                if (result && 'message' in result) {
-                    asstMsg.content = result.message.content;
-                }
-            }
+            await this.runTurnStream(prompt, asstMsg);
             this.clearStreamingMessageState();
             this.state.batch(() => {
                 this.state.setMessages([...this.state.messages]);
@@ -1525,41 +1499,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         });
 
         try {
-            const stream = this.appRpc?.stream?.('run.turn_stream', { sessionId: this.state.sessionId, input: prompt });
-            if (stream) {
-                try {
-                    for await (const chunk of stream) {
-                        if (chunk.usage) {
-                            this.state.setTokenUsage(chunk.usage);
-                        }
-                        if (chunk.type === 'text' && chunk.content) {
-                            assistantMessage.content += chunk.content;
-                            this.scheduleStreamingAssistantMessageFlush(assistantMessage);
-                        } else if (chunk.type === 'reasoning' && chunk.content) {
-                            this.state.setStatus('reasoning');
-                            this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
-                        } else if (chunk.type === 'done' && chunk.message) {
-                            assistantMessage.content = chunk.message.content || assistantMessage.content;
-                            assistantMessage.metadata = {
-                                ...(chunk.message.metadata || {}),
-                                streaming: false
-                            };
-                            this.replaceStreamingAssistantMessage(assistantMessage);
-                            this.state.setTokenUsage(chunk.message.metadata?.usage);
-                        }
-                    }
-                } finally {
-                    this.clearStreamingMessageState();
-                }
-            } else {
-                const result = await this.executeTurn(prompt);
-                if (result && 'message' in result) {
-                    assistantMessage.content = result.message.content;
-                    this.state.batch(() => {
-                        this.state.setMessages([...this.state.messages]);
-                    });
-                }
-            }
+            await this.runTurnStream(prompt, assistantMessage);
         } catch (error: any) {
             const message = error?.message || String(error || 'Unknown error');
             this.state.batch(() => {
@@ -1578,6 +1518,70 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             }
             this.state.setTasksCount(this.scheduler.getTasks().length);
         });
+    }
+
+    protected async runTurnStream(prompt: string, assistantMessage: AgentMessage): Promise<void> {
+        const stream = this.appRpc?.stream?.('run.turn_stream', { sessionId: this.state.sessionId, input: prompt });
+        if (stream) {
+            try {
+                for await (const chunk of stream) {
+                    this.consumeStreamChunk(chunk, assistantMessage);
+                }
+            } finally {
+                this.clearStreamingMessageState();
+            }
+            return;
+        }
+
+        const runtime: any = this.runtime;
+        if (typeof runtime?.runStreamingTurn === 'function') {
+            for await (const chunk of runtime.runStreamingTurn(this.state.sessionId, prompt)) {
+                this.consumeStreamChunk(chunk, assistantMessage);
+            }
+            assistantMessage.metadata = {
+                ...(assistantMessage.metadata || {}),
+                streaming: false
+            };
+            this.replaceStreamingAssistantMessage(assistantMessage);
+            return;
+        }
+
+        const result = await this.executeTurn(prompt);
+        if (result && 'message' in result) {
+            assistantMessage.content = result.message.content;
+            this.state.batch(() => {
+                this.state.setMessages([...this.state.messages]);
+            });
+        }
+    }
+
+    protected consumeStreamChunk(chunk: any, assistantMessage: AgentMessage): void {
+        if (chunk?.usage) {
+            this.state.setTokenUsage(chunk.usage);
+        }
+        if (chunk?.type === 'text' && chunk.content) {
+            assistantMessage.content += chunk.content;
+            this.scheduleStreamingAssistantMessageFlush(assistantMessage);
+            return;
+        }
+        if (chunk?.type === 'reasoning' && chunk.content) {
+            this.state.setStatus('reasoning');
+            this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
+            return;
+        }
+        if (chunk?.type === 'tool_call') {
+            this.state.pushActivity('tool', `Tool call: ${this.state.summarize(String(chunk.content || ''))}`);
+            return;
+        }
+        if (chunk?.type === 'done' && chunk.message) {
+            assistantMessage.content = chunk.message.content || assistantMessage.content;
+            assistantMessage.metadata = {
+                ...(chunk.message.metadata || {}),
+                streaming: false
+            };
+            this.replaceStreamingAssistantMessage(assistantMessage);
+            this.state.setTokenUsage(chunk.message.metadata?.usage);
+        }
     }
 
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {

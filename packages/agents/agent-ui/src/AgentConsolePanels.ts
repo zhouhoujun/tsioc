@@ -857,12 +857,14 @@ export class AgentConsoleTasksPanelComponent {
         const selected = this.state.selectedTask;
         const actions = ['enter review'];
         if (selected && this.canCancelTask(selected)) {
-            actions.push('x cancel');
+            actions.push('x cancel', 'esc cancel');
+        } else {
+            actions.push('esc');
         }
         if (selected && this.canRollbackTask(selected)) {
             actions.push('b rollback');
         }
-        actions.push('y copy', 'esc');
+        actions.push('y copy');
         return `up/down move   pg jump   ${actions.join('   ')}`;
     }
 
