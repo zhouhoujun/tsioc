@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import { Inject, Injectable } from '@tsdi/ioc';
-import { AGENT_OPTIONS, AgentOptions, AgentRuntime, defaultAgentOptions, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
 import { EventHandler } from '../api/EventHandler';
@@ -18,7 +18,8 @@ export class AppRpcServer {
         private owners: SessionOwnerStore,
         private sessionHandler: SessionHandler,
         private events: EventHandler,
-        @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions
+        @Inject(AGENT_OPTIONS, { defaultValue: defaultAgentOptions }) private options: AgentOptions = defaultAgentOptions,
+        @Optional() private audit?: AuditSink | null
     ) {
     }
 
@@ -141,7 +142,13 @@ export class AppRpcServer {
                         'memory.list',
                         'memory.put',
                         'memory.search',
-                        'events.history'
+                        'events.history',
+                        'audit.list',
+                        'coding_task.list',
+                        'coding_task.get',
+                        'coding_task.diff',
+                        'coding_task.cancel',
+                        'coding_task.rollback'
                     ],
                     streamingMethods: ['run.turn_stream']
                 };
@@ -179,6 +186,18 @@ export class AppRpcServer {
                 return this.searchMemory(params, context);
             case 'events.history':
                 return this.getEventHistory(this.requireSessionId(params), context);
+            case 'audit.list':
+                return this.listAudit(params, context);
+            case 'coding_task.list':
+                return this.listCodingTasks(params, context);
+            case 'coding_task.get':
+                return this.getCodingTask(params, context);
+            case 'coding_task.diff':
+                return this.getCodingTaskDiff(params, context);
+            case 'coding_task.cancel':
+                return this.cancelCodingTask(params, context);
+            case 'coding_task.rollback':
+                return this.rollbackCodingTask(params, context);
             default:
                 throw new AppRpcError(-32601, `Method '${method}' not found`);
         }
@@ -317,7 +336,7 @@ export class AppRpcServer {
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
 
-        for await (const chunk of this.runtime.runStreamingTurn(sessionId, input)) {
+        for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId)) {
             if (chunk.type === 'done') {
                 continue;
             }
@@ -435,6 +454,114 @@ export class AppRpcServer {
     private async getEventHistory(sessionId: string, context: AppRpcRequestContext): Promise<any> {
         await this.ensureSessionAccess(sessionId, context);
         return this.events.getHistory(sessionId);
+    }
+
+    private async listAudit(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const toolName = typeof params?.toolName === 'string' && params.toolName.trim() ? params.toolName.trim() : undefined;
+        const status = typeof params?.status === 'string' && params.status.trim() ? params.status.trim() : undefined;
+        const records = await this.audit?.list(sessionId) ?? [];
+        return {
+            sessionId,
+            records: records.filter(record => {
+                if (toolName && record.toolName !== toolName) {
+                    return false;
+                }
+                if (status && record.status !== status) {
+                    return false;
+                }
+                return true;
+            }).map(record => ({
+                id: record.id,
+                sessionId: record.sessionId,
+                toolName: record.toolName,
+                toolCallId: record.toolCallId,
+                status: record.status,
+                inputSummary: record.inputSummary ?? null,
+                outputSummary: record.outputSummary ?? null,
+                error: record.error ?? null,
+                durationMs: record.durationMs ?? null,
+                attemptCount: record.attemptCount ?? null,
+                principalId: record.principalId ?? null,
+                createdAt: record.createdAt,
+                metadata: record.metadata ?? null
+            }))
+        };
+    }
+
+    private async listCodingTasks(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const output = await this.invokeCodingTask(sessionId, { action: 'list' }, context);
+        return {
+            sessionId,
+            tasks: Array.isArray(output?.tasks) ? output.tasks : [],
+            total: typeof output?.total === 'number' ? output.total : 0
+        };
+    }
+
+    private async getCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        await this.ensureSessionAccess(sessionId, context);
+        const output = await this.invokeCodingTask(sessionId, { action: 'get', task_id: taskId }, context);
+        return {
+            sessionId,
+            task: output?.task ?? null
+        };
+    }
+
+    private async getCodingTaskDiff(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        await this.ensureSessionAccess(sessionId, context);
+        const output = await this.invokeCodingTask(sessionId, { action: 'get', task_id: taskId }, context);
+        const task = output?.task;
+        return {
+            sessionId,
+            taskId,
+            executionMode: task?.result?.executionMode ?? task?.metadata?.executionMode ?? null,
+            diff: task?.result?.diff ?? null,
+            workers: Array.isArray(task?.result?.workers) ? task.result.workers : []
+        };
+    }
+
+    private async rollbackCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        await this.ensureSessionAccess(sessionId, context);
+        const output = await this.invokeCodingTask(sessionId, { action: 'rollback', task_id: taskId }, context);
+        return {
+            sessionId,
+            taskId,
+            task: output?.task ?? null,
+            rolledBack: output?.rolledBack === true
+        };
+    }
+
+    private async cancelCodingTask(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        const taskId = this.requireString(params?.taskId ?? params?.task_id, 'taskId');
+        await this.ensureSessionAccess(sessionId, context);
+        const output = await this.invokeCodingTask(sessionId, { action: 'cancel', task_id: taskId }, context);
+        return {
+            sessionId,
+            taskId,
+            task: output?.task ?? null,
+            cancelled: output?.cancelled === true
+        };
+    }
+
+    private async invokeCodingTask(sessionId: string, input: Record<string, any>, context: AppRpcRequestContext): Promise<any> {
+        const definition = this.tools.getToolDefinition('coding_task', sessionId);
+        if (!definition) {
+            throw new AppRpcError(-32004, 'coding_task tool is not available');
+        }
+        if (definition.activation?.kind === 'deferred' && definition.activation?.scope === 'session') {
+            await this.tools.activateTool(sessionId, 'coding_task');
+        }
+        return this.tools.invoke('coding_task', input, sessionId, context.principalId);
     }
 
     private async ensureSessionAccess(

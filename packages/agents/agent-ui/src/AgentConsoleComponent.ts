@@ -24,9 +24,11 @@ import { AgentConsoleSessionService } from './AgentConsoleSessionService';
         <agent-console-brand-panel></agent-console-brand-panel>
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
+        <agent-console-tasks-panel v-show="showTasksPanel"></agent-console-tasks-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
         <agent-console-message-detail-panel v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
+        <agent-console-review-panel v-show="showReviewPanel"></agent-console-review-panel>
         <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
         <agent-console-tools-panel v-show="showToolsPanel"></agent-console-tools-panel>
         <agent-console-working-panel v-show="showWorkingPanel"></agent-console-working-panel>
@@ -139,6 +141,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setSessionsFocused(false);
             this.state.setToolsFocused(false);
             this.state.setApprovalsFocused(false);
+            this.state.clearReview();
             this.state.closeMessageDetail();
             this.state.clearActivities();
             this.state.setLastError('');
@@ -256,8 +259,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return this.state.approvalsFocused;
     }
 
+    get showTasksPanel(): boolean {
+        return this.state.tasksFocused;
+    }
+
     get showMessageDetailPanel(): boolean {
         return !!this.state.messageDetailOpen;
+    }
+
+    get showReviewPanel(): boolean {
+        return !!this.state.reviewOpen;
     }
 
     get showActivityPanel(): boolean {
@@ -433,6 +444,33 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         };
     }
 
+    get openSelectedTaskActionHandler(): (taskId: string) => Promise<void> {
+        return async (taskId: string) => {
+            if (!taskId) {
+                return;
+            }
+            await this.openCodingTaskReview(taskId, this.state.selectedTask || null);
+        };
+    }
+
+    get cancelSelectedTaskActionHandler(): (taskId: string) => Promise<void> {
+        return async (taskId: string) => {
+            if (!taskId) {
+                return;
+            }
+            await this.cancelCodingTask(taskId);
+        };
+    }
+
+    get rollbackSelectedTaskActionHandler(): (taskId: string) => Promise<void> {
+        return async (taskId: string) => {
+            if (!taskId) {
+                return;
+            }
+            await this.rollbackCodingTask(taskId);
+        };
+    }
+
     get activateSelectedToolActionHandler(): (toolName: string) => Promise<void> {
         return async (toolName: string) => {
             const name = String(toolName || '').trim();
@@ -504,6 +542,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.state.submitAction = this.submitActionHandler;
         this.state.copyFocusedTextAction = this.copyFocusedTextActionHandler;
         this.state.activateSelectedSessionAction = this.activateSelectedSessionActionHandler;
+        this.state.openSelectedTaskAction = this.openSelectedTaskActionHandler;
+        this.state.cancelSelectedTaskAction = this.cancelSelectedTaskActionHandler;
+        this.state.rollbackSelectedTaskAction = this.rollbackSelectedTaskActionHandler;
         this.state.activateSelectedToolAction = this.activateSelectedToolActionHandler;
         this.state.resolveApprovalAction = this.resolveApprovalActionHandler;
         this.bridge.bindState(this.sessionState);
@@ -524,6 +565,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         this.clearStreamingMessageState();
         this.state.copyFocusedTextAction = undefined;
         this.state.activateSelectedSessionAction = undefined;
+        this.state.openSelectedTaskAction = undefined;
+        this.state.cancelSelectedTaskAction = undefined;
+        this.state.rollbackSelectedTaskAction = undefined;
         this.state.activateSelectedToolAction = undefined;
         this.state.resolveApprovalAction = undefined;
         void this.persistInputHistory();
@@ -667,6 +711,257 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return String(this.state.workspace || (this.options.ui?.console as any)?.workspace || '').trim();
     }
 
+    protected async openCodingTaskReview(taskId: string, taskRecord?: Record<string, any> | null): Promise<boolean> {
+        const resolvedTaskId = String(taskId || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Review task id is required.');
+            return false;
+        }
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return false;
+        }
+
+        const sessionId = this.state.sessionId;
+        const [loadedTask, diffResult] = await Promise.all([
+            taskRecord ? Promise.resolve(taskRecord) : this.appRpc.request('coding_task.get', { sessionId, taskId: resolvedTaskId }).then(result => result?.task ?? null),
+            this.appRpc.request('coding_task.diff', { sessionId, taskId: resolvedTaskId })
+        ]);
+
+        if (!loadedTask && !diffResult?.diff && !Array.isArray(diffResult?.workers)) {
+            this.notify(`Coding task "${resolvedTaskId}" was not found.`);
+            return false;
+        }
+
+        this.state.batch(() => {
+            this.state.setSessionsFocused(false);
+            this.state.setTasksFocused(false);
+            this.state.setToolsFocused(false);
+            this.state.setApprovalsFocused(false);
+            this.state.setMessagesFocused(false);
+            this.state.closeMessageDetail();
+            this.state.openReview(loadedTask || {
+                id: resolvedTaskId,
+                title: resolvedTaskId,
+                status: 'unknown',
+                metadata: {
+                    executionMode: diffResult?.executionMode ?? null
+                }
+            }, {
+                diff: diffResult?.diff ?? null,
+                workers: Array.isArray(diffResult?.workers) ? diffResult.workers : [],
+                executionMode: diffResult?.executionMode ?? null
+            });
+            this.state.setNotice('');
+            this.state.setLastError('');
+        });
+        return true;
+    }
+
+    protected describeCodingTaskRollback(task: any): string {
+        const rollback = task?.result?.rollback;
+        if (rollback?.available === true) {
+            return rollback.mode ? `rollback ready (${rollback.mode})` : 'rollback ready';
+        }
+        if (rollback?.rolledBackAt) {
+            return rollback.mode ? `rolled back (${rollback.mode})` : 'rolled back';
+        }
+        const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
+        const availableCheckpoint = checkpoints.find((entry: any) => entry?.status === 'available');
+        if (availableCheckpoint) {
+            return availableCheckpoint.mode ? `rollback ready (${availableCheckpoint.mode})` : 'rollback ready';
+        }
+        return 'rollback unavailable';
+    }
+
+    protected describeCodingTaskCheckpointSummary(task: any): string | undefined {
+        const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
+        if (!checkpoints.length) {
+            return undefined;
+        }
+        const available = checkpoints.filter((entry: any) => entry?.status === 'available').length;
+        const applied = checkpoints.filter((entry: any) => entry?.status === 'applied').length;
+        const invalidated = checkpoints.filter((entry: any) => entry?.status === 'invalidated').length;
+        return `${checkpoints.length} total · ${available} available · ${applied} applied · ${invalidated} invalidated`;
+    }
+
+    protected canCancelCodingTask(task: any): boolean {
+        const status = String(task?.status || '').trim();
+        return status === 'planned' || status === 'running';
+    }
+
+    protected canRollbackCodingTask(task: any): boolean {
+        if (!task) {
+            return false;
+        }
+        if (task?.result?.rollback?.available === true) {
+            return true;
+        }
+        const checkpoints = Array.isArray(task?.metadata?.checkpoints) ? task.metadata.checkpoints : [];
+        return checkpoints.some((entry: any) => entry?.status === 'available');
+    }
+
+    protected buildCodingTaskChoice(task: any) {
+        const workers = Array.isArray(task?.result?.workers) ? task.result.workers : [];
+        const rollback = task?.result?.rollback;
+        return {
+            id: task.id,
+            title: String(task.title || task.id),
+            status: task.status,
+            executionMode: task?.result?.executionMode ?? task?.metadata?.executionMode ?? null,
+            workerCount: workers.length,
+            rollbackAvailable: rollback?.available === true,
+            rollbackMode: rollback?.mode,
+            checkpointSummary: this.describeCodingTaskCheckpointSummary(task),
+            updatedAt: task.updatedAt,
+            detail: task?.result?.diff?.summary || task?.planning?.summary || task?.goal
+        };
+    }
+
+    protected buildCodingTaskSelectOption(task: any): AgentConsoleSelectOption {
+        const choice = this.buildCodingTaskChoice(task);
+        return {
+            label: `${choice.id} · ${choice.title}`,
+            value: choice.id,
+            description: [
+                choice.status,
+                choice.executionMode,
+                `${choice.workerCount || 0} worker${choice.workerCount === 1 ? '' : 's'}`,
+                this.describeCodingTaskRollback(task)
+            ].filter(Boolean).join(' · ') || 'review',
+            detail: [
+                `Task: ${choice.id}`,
+                `Title: ${choice.title}`,
+                choice.status ? `Status: ${choice.status}` : '',
+                choice.executionMode ? `Mode: ${choice.executionMode}` : '',
+                `Workers: ${choice.workerCount || 0}`,
+                `Rollback: ${this.describeCodingTaskRollback(task)}`,
+                choice.checkpointSummary ? `Checkpoints: ${choice.checkpointSummary}` : '',
+                task?.result?.diff?.summary ? `Diff: ${task.result.diff.summary}` : '',
+                task?.planning?.summary ? `Plan: ${task.planning.summary}` : '',
+                task?.goal ? `Goal: ${task.goal}` : ''
+            ].filter(Boolean).join('\n')
+        };
+    }
+
+    protected async loadCodingTasks(): Promise<any[]> {
+        if (!this.appRpc) {
+            return [];
+        }
+        const sessionId = this.state.sessionId;
+        const result = await this.appRpc.request('coding_task.list', { sessionId });
+        const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
+        this.state.batch(() => {
+            this.state.setTaskRecords(tasks);
+            this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task)));
+        });
+        return tasks;
+    }
+
+    protected async openCodingTaskReviewSelector(): Promise<boolean> {
+        if (!this.appRpc) {
+            this.notify('Review is unavailable without app RPC.');
+            return true;
+        }
+        const tasks = await this.loadCodingTasks();
+        if (!tasks.length) {
+            this.notify('No coding tasks available.');
+            return true;
+        }
+        const selectedTaskId = await this.select('Coding tasks', tasks.map((task: any) => this.buildCodingTaskSelectOption(task)), 0, this.state.consoleOptions.selectCloseHint);
+        if (!selectedTaskId) {
+            return true;
+        }
+        const selectedTask = tasks.find((task: any) => task.id === selectedTaskId);
+        await this.openCodingTaskReview(selectedTaskId, selectedTask || null);
+        return true;
+    }
+
+    protected async openCodingTaskInspector(taskId?: string): Promise<boolean> {
+        if (!this.appRpc) {
+            this.notify('Task inspector is unavailable without app RPC.');
+            return true;
+        }
+        const tasks = await this.loadCodingTasks();
+        if (!tasks.length) {
+            this.notify('No coding tasks available.');
+            return true;
+        }
+        const resolvedTaskId = String(taskId || '').trim();
+        const selectedTaskId = resolvedTaskId && tasks.some((task: any) => task.id === resolvedTaskId)
+            ? resolvedTaskId
+            : tasks[0].id;
+        this.state.batch(() => {
+            this.state.setSessionsFocused(false);
+            this.state.setToolsFocused(false);
+            this.state.setApprovalsFocused(false);
+            this.state.setMessagesFocused(false);
+            this.state.closeMessageDetail();
+            this.state.closeReview();
+            this.state.setSelectedReviewTaskId(selectedTaskId);
+            this.state.setTasksFocused(true);
+            this.state.setNotice('');
+            this.state.setLastError('');
+        });
+        return true;
+    }
+
+    protected async rollbackCodingTask(taskId?: string): Promise<boolean> {
+        const fallbackTask = this.state.reviewTask || this.state.selectedTask;
+        const resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Rollback task id is required.');
+            return true;
+        }
+        if (!this.appRpc) {
+            this.notify('Rollback is unavailable without app RPC.');
+            return true;
+        }
+        if (fallbackTask && !this.canRollbackCodingTask(fallbackTask)) {
+            this.notify(`Rollback is unavailable for ${resolvedTaskId}.`);
+            return true;
+        }
+
+        const sessionId = this.state.sessionId;
+        const result = await this.appRpc.request('coding_task.rollback', { sessionId, taskId: resolvedTaskId });
+        if (result?.rolledBack !== true) {
+            this.notify(`Rollback failed for ${resolvedTaskId}.`);
+            return true;
+        }
+
+        await this.openCodingTaskReview(resolvedTaskId, result?.task ?? null);
+        this.notify(`Rolled back ${resolvedTaskId}.`);
+        return true;
+    }
+
+    protected async cancelCodingTask(taskId?: string): Promise<boolean> {
+        const resolvedTaskId = String(taskId || this.state.selectedTask?.id || '').trim();
+        if (!resolvedTaskId) {
+            this.notify('Cancel task id is required.');
+            return true;
+        }
+        if (!this.appRpc) {
+            this.notify('Cancel is unavailable without app RPC.');
+            return true;
+        }
+        const targetTask = this.state.selectedTask;
+        if (targetTask && targetTask.id === resolvedTaskId && !this.canCancelCodingTask(targetTask)) {
+            this.notify(`Cancel is unavailable for ${resolvedTaskId}.`);
+            return true;
+        }
+
+        const sessionId = this.state.sessionId;
+        const result = await this.appRpc.request('coding_task.cancel', { sessionId, taskId: resolvedTaskId });
+        if (result?.cancelled !== true) {
+            this.notify(`Cancel failed for ${resolvedTaskId}.`);
+            return true;
+        }
+
+        await this.openCodingTaskInspector(resolvedTaskId);
+        this.notify(`Cancelled ${resolvedTaskId}.`);
+        return true;
+    }
+
 
     protected async handleCommand(value: string): Promise<boolean> {
         const parsed = this.parseSlashCommandLine(value);
@@ -686,6 +981,9 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     { label: '/model', value: '/model', description: 'switch model' },
                     { label: '/sessions', value: '/sessions', description: 'sessions' },
                     { label: '/messages', value: '/messages', description: 'messages' },
+                    { label: '/tasks', value: '/tasks', description: 'task inspector' },
+                    { label: '/review', value: '/review', description: 'coding task review' },
+                    { label: '/rollback', value: '/rollback', description: 'rollback coding task' },
                     { label: '/multiline', value: '/multiline', description: 'multiline' },
                     { label: '/copy', value: '/copy', description: 'copy reply' },
                     { label: '/approvals', value: '/approvals', description: 'approvals' },
@@ -719,8 +1017,31 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setSessionsFocused(false);
                 this.state.setMessagesFocused(false);
                 this.state.closeMessageDetail();
+                this.state.closeReview();
                 this.state.setToolsFocused(true);
                 return true;
+            case '/tasks':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.openCodingTaskInspector(parsed.args);
+            case '/review':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                if (parsed.args) {
+                    await this.openCodingTaskReview(parsed.args);
+                    return true;
+                }
+                return this.openCodingTaskReviewSelector();
+            case '/rollback':
+                if (this.isTurnInProgress()) {
+                    this.notifyBusyState();
+                    return true;
+                }
+                return this.rollbackCodingTask(parsed.args);
             case '/clear':
                 await this.openSession(undefined);
                 this.notify('Started a new session.');
@@ -738,6 +1059,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.setToolsFocused(false);
                 this.state.setMessagesFocused(false);
                 this.state.closeMessageDetail();
+                this.state.closeReview();
                 this.state.setApprovalsFocused(true);
                 return true;
             }
@@ -808,10 +1130,12 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                     this.notify('No sessions available.');
                     return true;
                 }
+                this.state.closeReview();
                 this.state.setMessagesFocused(false);
                 this.state.setSessionsFocused(true);
                 return true;
             case '/messages':
+                this.state.closeReview();
                 this.state.setSessionsFocused(false);
                 this.state.setMessagesFocused(true);
                 return true;

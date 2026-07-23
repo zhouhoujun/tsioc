@@ -17,7 +17,7 @@ export abstract class AgentRuntime {
 
     abstract processTurn(input: AgentTurnInput): Promise<AgentTurnResult>;
 
-    abstract runStreamingTurn(sessionId: string, input: string): AsyncGenerator<StreamChunk>;
+    abstract runStreamingTurn(sessionId: string, input: string, principalId?: string): AsyncGenerator<StreamChunk>;
 
     abstract putMemory(sessionId: string, key: string, value: string, scope?: AgentMemoryRecord['scope']): Promise<AgentMemoryRecord>;
 

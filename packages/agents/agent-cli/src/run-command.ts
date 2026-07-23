@@ -259,7 +259,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
     try {
         await ctx.get(AgentRuntime).start();
         const runtime = ctx.get(AgentRuntime);
-        const stream = runtime.runStreamingTurn(resolved.sessionId, prompt);
+        const stream = runtime.runStreamingTurn(resolved.sessionId, prompt, 'local-system');
         for await (const chunk of stream) {
             if (chunk.type === 'text' && chunk.content) {
                 process.stdout.write(chunk.content);

@@ -26,6 +26,7 @@ export class GitOperationsTool implements AgentTool {
                     'stash', 'stash_pop', 'stash_list',
                     'merge', 'rebase', 'tag', 'remote',
                     'add', 'reset', 'revert', 'cherry_pick',
+                    'apply_patch',
                     'log_graph',
                     'worktree_create', 'worktree_merge', 'worktree_cleanup', 'worktree_list'
                 ],
@@ -59,6 +60,14 @@ export class GitOperationsTool implements AgentTool {
             branch: {
                 type: 'string',
                 description: 'Branch name for worktree_create (default: derived from path).'
+            },
+            patch: {
+                type: 'string',
+                description: 'Patch text for apply_patch.'
+            },
+            reverse: {
+                type: 'boolean',
+                description: 'Reverse the patch when using apply_patch.'
             }
         },
         required: ['action']
@@ -87,8 +96,8 @@ export class GitOperationsTool implements AgentTool {
         this.assertGitRepo(workdir);
         assertSandboxCommand('git', resolveSandboxPolicy(this.options), this.name);
 
-        const args = this.buildArgs(action, input);
-        const output = this.execGit(args, workdir, action);
+        const command = this.buildArgs(action, input);
+        const output = this.execGit(command.args, workdir, action, command.stdin);
 
         return {
             action,
@@ -129,14 +138,17 @@ export class GitOperationsTool implements AgentTool {
         }
     }
 
-    private buildArgs(action: string, input: any): string[] {
+    private buildArgs(action: string, input: any): { args: string[]; stdin?: string } {
         const args: string[] = [action];
         const path = typeof input?.path === 'string' ? input.path : undefined;
         const message = typeof input?.message === 'string' ? input.message : undefined;
         const maxCount = typeof input?.maxCount === 'number' ? Math.min(Math.max(1, input.maxCount), 100) : undefined;
         const extraArgs = Array.isArray(input?.args) ? input.args.filter((a: any) => typeof a === 'string') : [];
         const branch = typeof input?.branch === 'string' && input.branch.trim() ? input.branch.trim() : undefined;
+        const patch = typeof input?.patch === 'string' ? input.patch : undefined;
+        const reverse = input?.reverse === true;
         const force = input?.force === true;
+        let stdin: string | undefined;
 
         switch (action) {
             case 'commit':
@@ -217,6 +229,18 @@ export class GitOperationsTool implements AgentTool {
                 }
                 args.push(path);
                 break;
+            case 'apply_patch':
+                args[0] = 'apply';
+                if (!patch || !patch.trim()) {
+                    throw new Error('git_operations apply_patch requires a patch.');
+                }
+                args.push('--whitespace=nowarn');
+                if (reverse) {
+                    args.push('-R');
+                }
+                args.push('-');
+                stdin = patch;
+                break;
             case 'push':
             case 'pull':
             case 'fetch':
@@ -274,13 +298,13 @@ export class GitOperationsTool implements AgentTool {
         }
 
         args.push(...extraArgs);
-        return args;
+        return { args, stdin };
     }
 
-    private execGit(args: string[], cwd: string, action: string): { stdout: string; stderr: string; exitCode: number } {
+    private execGit(args: string[], cwd: string, action: string, stdin?: string): { stdout: string; stderr: string; exitCode: number } {
         const readOnlyActions = ['status', 'log', 'diff', 'show', 'branch', 'stash_list', 'log_graph', 'remote', 'worktree_list'];
         const isReadOnly = readOnlyActions.includes(action);
-        const result = this.runGit(args, cwd);
+        const result = this.runGit(args, cwd, stdin);
         if (result.exitCode === 0) {
             return {
                 stdout: result.stdout,
@@ -294,13 +318,14 @@ export class GitOperationsTool implements AgentTool {
         throw new Error(`Git ${args[0]} failed: ${result.stderr || 'Unknown error'}`);
     }
 
-    private runGit(args: string[], cwd: string): { stdout: string; stderr: string; exitCode: number } {
+    private runGit(args: string[], cwd: string, stdin?: string): { stdout: string; stderr: string; exitCode: number } {
         const result = spawnSync('git', args, {
             cwd,
             timeout: DEFAULT_TIMEOUT_MS,
             maxBuffer: MAX_OUTPUT_CHARS,
             encoding: 'utf8',
             stdio: 'pipe',
+            input: stdin,
             env: buildSandboxEnv(process.env, resolveSandboxPolicy(this.options))
         });
         const stdout = (result.stdout ?? '').slice(0, MAX_OUTPUT_CHARS);

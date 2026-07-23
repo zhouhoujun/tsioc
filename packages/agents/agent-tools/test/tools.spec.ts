@@ -4052,6 +4052,218 @@ export class AgentToolsPackageTest {
         expect(editCall?.input.path).toContain('src/handler.ts');
     }
 
+    @Test('coding task worktree mode captures rollback checkpoint and can roll back')
+    async codingTaskWorktreeModeCapturesRollbackCheckpointAndCanRollback() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'git_operations' && action.input?.action === 'diff') {
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: 'diff --git a/src/handler.ts b/src/handler.ts\n+patched' },
+                        summary: 'diff available'
+                    };
+                }
+                return { tool: action.tool, output: { ok: true }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const store = new CodingTaskStore();
+        const tool = new CodingTaskTool(store, runner, null as any);
+        const runResult = await tool.invoke({
+            action: 'run',
+            goal: 'Patch error handling',
+            useWorktree: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit handler', tool: 'edit_file', input: { path: 'src/handler.ts', oldString: 'old', newString: 'new' } }
+            ]
+        }, createSessionContext());
+
+        expect(runResult.task.result?.rollback?.available).toEqual(true);
+        expect(runResult.task.metadata?.checkpoints?.length).toEqual(1);
+        expect(runResult.task.metadata?.checkpoints?.[0]?.patches?.[0]?.patch).toContain('diff --git a/src/handler.ts');
+
+        const rollbackResult = await tool.invoke({
+            action: 'rollback',
+            task_id: runResult.task.id
+        }, createSessionContext());
+
+        expect(rollbackResult.rolledBack).toEqual(true);
+        expect(rollbackResult.task.status).toEqual('rolled_back');
+        const rollbackCall = calls.find(call => call.tool === 'git_operations' && call.input?.action === 'apply_patch');
+        expect(rollbackCall?.input?.reverse).toEqual(true);
+        expect(rollbackCall?.input?.patch).toContain('diff --git a/src/handler.ts');
+    }
+
+    @Test('coding task cancel rejects completed tasks')
+    async codingTaskCancelRejectsCompletedTasks() {
+        const store = new CodingTaskStore();
+        const task = {
+            id: 'task-1',
+            title: 'Done',
+            goal: 'Done',
+            status: 'completed' as const,
+            createdAt: 1,
+            updatedAt: 1,
+            planning: {
+                strategy: 'heuristic' as const,
+                complexity: 'simple' as const,
+                steps: [],
+                successCriteria: []
+            },
+            actions: [],
+            result: {
+                executionMode: 'sequential' as const,
+                completedActions: 0
+            }
+        };
+        store.save('s1', task as any);
+        const tool = new CodingTaskTool(store, {
+            getSupportedTools: () => ['git_operations'],
+            run: async (action: any) => ({ tool: action.tool, output: { ok: true }, summary: 'ok' })
+        } as WorkspaceActionRunner, null as any);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({
+                action: 'cancel',
+                task_id: 'task-1'
+            }, createSessionContext({ sessionId: 's1' }));
+        } catch (err) {
+            error = err as Error;
+        }
+
+        expect(error?.message).toContain('cannot be cancelled');
+        expect(store.get('s1', 'task-1')?.status).toEqual('completed');
+    }
+
+    @Test('coding task parallel worktree mode executes actions in isolated workers and records metadata')
+    async codingTaskParallelWorktreeModeExecutesActionsInIsolatedWorkersAndRecordsMetadata() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'git_operations' && action.input?.action === 'diff') {
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: `diff --git a/${action.input.workdir}/file.ts b/${action.input.workdir}/file.ts` },
+                        summary: `diff:${action.input.workdir}`
+                    };
+                }
+                return { tool: action.tool, output: { ok: true, path: action.input?.path }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        const result = await tool.invoke({
+            action: 'run',
+            goal: 'Apply two isolated edits',
+            useWorktree: true,
+            parallel: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } },
+                { id: 'edit-2', title: 'Edit beta', tool: 'edit_file', input: { path: 'src/beta.ts', oldString: 'x', newString: 'y' } }
+            ]
+        }, createSessionContext());
+
+        expect(result.ran).toEqual(true);
+        expect(result.completedActions).toEqual(2);
+        expect(result.failedActionId).toEqual(undefined);
+        expect(result.task.result?.executionMode).toEqual('parallel');
+        expect(result.task.result?.workers?.length).toEqual(2);
+        expect(result.task.result?.diff?.summary).toContain('2 worker diff');
+
+        const workers = result.task.result?.workers || [];
+        expect(workers.every((worker: any) => worker.workerId && worker.branch && worker.worktreePath)).toEqual(true);
+        expect(workers.map((worker: any) => worker.actionIds[0]).sort()).toEqual(['edit-1', 'edit-2']);
+
+        const editCalls = calls.filter(call => call.tool === 'edit_file');
+        expect(editCalls.length).toEqual(2);
+        expect(editCalls[0].input.path).toContain('.worktrees/');
+        expect(editCalls[1].input.path).toContain('.worktrees/');
+        expect(editCalls[0].input.path).not.toEqual(editCalls[1].input.path);
+
+        const gitCalls = calls.filter(call => call.tool === 'git_operations');
+        expect(gitCalls.filter(call => call.input.action === 'branch_create').length).toEqual(2);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_create').length).toEqual(2);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_merge').length).toEqual(2);
+        expect(gitCalls.filter(call => call.input.action === 'worktree_cleanup').length).toEqual(2);
+    }
+
+    @Test('coding task parallel worktree mode captures rollback patches in reverse order')
+    async codingTaskParallelWorktreeModeCapturesRollbackPatchesInReverseOrder() {
+        const calls: Array<{ tool: string; input: any }> = [];
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => {
+                calls.push({ tool: action.tool, input: action.input });
+                if (action.tool === 'git_operations' && action.input?.action === 'diff') {
+                    const workdir = String(action.input.workdir || '');
+                    return {
+                        tool: 'git_operations',
+                        output: { stdout: `diff --git a/${workdir}/file.ts b/${workdir}/file.ts\n+patched ${workdir}` },
+                        summary: `diff:${workdir}`
+                    };
+                }
+                return { tool: action.tool, output: { ok: true }, summary: 'ok' };
+            }
+        } as WorkspaceActionRunner;
+
+        const store = new CodingTaskStore();
+        const tool = new CodingTaskTool(store, runner, null as any);
+        const runResult = await tool.invoke({
+            action: 'run',
+            goal: 'Apply two isolated edits',
+            useWorktree: true,
+            parallel: true,
+            actions: [
+                { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } },
+                { id: 'edit-2', title: 'Edit beta', tool: 'edit_file', input: { path: 'src/beta.ts', oldString: 'x', newString: 'y' } }
+            ]
+        }, createSessionContext());
+
+        expect(runResult.task.result?.rollback?.available).toEqual(true);
+        expect(runResult.task.metadata?.checkpoints?.[0]?.mode).toEqual('parallel_worktree');
+        expect(runResult.task.metadata?.checkpoints?.[0]?.patches?.length).toEqual(2);
+
+        await tool.invoke({
+            action: 'rollback',
+            task_id: runResult.task.id
+        }, createSessionContext());
+
+        const rollbackCalls = calls.filter(call => call.tool === 'git_operations' && call.input?.action === 'apply_patch');
+        expect(rollbackCalls.length).toEqual(2);
+        expect(rollbackCalls[0].input.patch).toEqual(runResult.task.metadata?.checkpoints?.[0]?.patches?.[1]?.patch);
+        expect(rollbackCalls[1].input.patch).toEqual(runResult.task.metadata?.checkpoints?.[0]?.patches?.[0]?.patch);
+    }
+
+    @Test('coding task parallel mode requires worktree isolation')
+    async codingTaskParallelModeRequiresWorktreeIsolation() {
+        const runner = {
+            getSupportedTools: () => ['edit_file', 'git_operations'],
+            run: async (action: any) => ({ tool: action.tool, output: { ok: true }, summary: 'ok' })
+        } as WorkspaceActionRunner;
+
+        const tool = new CodingTaskTool(new CodingTaskStore(), runner, null as any);
+        let error: Error | undefined;
+        try {
+            await tool.invoke({
+                action: 'run',
+                goal: 'Unsafe parallel edit',
+                parallel: true,
+                actions: [
+                    { id: 'edit-1', title: 'Edit alpha', tool: 'edit_file', input: { path: 'src/alpha.ts', oldString: 'a', newString: 'b' } }
+                ]
+            }, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('requires useWorktree');
+    }
+
     @Test('coding task without worktree mode does not create worktree')
     async codingTaskWithoutWorktreeModeDoesNotCreateWorktree() {
         const calls: Array<{ tool: string; input: any }> = [];

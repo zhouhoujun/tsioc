@@ -11,8 +11,10 @@ import {
     AgentConsoleInputPanelComponent,
     AgentConsoleMessageDetailPanelComponent,
     AgentConsoleMessagesPanelComponent,
+    AgentConsoleReviewPanelComponent,
     AgentConsoleSessionsPanelComponent,
     AgentConsoleStatusPanelComponent,
+    AgentConsoleTasksPanelComponent,
     AgentConsoleToolRunsPanelComponent,
     AgentConsoleToolsPanelComponent,
     AgentConsoleWorkingPanelComponent,
@@ -216,6 +218,113 @@ export class AgentConsoleRendererTest {
         expect(detailLines.some(line => line.includes('col 5/9'))).toBe(true);
         expect(detailLines.some(line => line.includes('2|'))).toBe(true);
         expect(detailLines.some(line => line.includes('line7'))).toBe(true);
+    }
+
+    @Test('renders coding task review panel with diff and worker details')
+    async renderCodingTaskReviewPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.openReview({
+            id: 'task-1',
+            title: 'Patch handlers',
+            status: 'completed',
+            result: {
+                rollback: {
+                    available: true,
+                    checkpointId: 'checkpoint-task-1',
+                    mode: 'parallel_worktree'
+                }
+            },
+            metadata: {
+                executionMode: 'parallel',
+                checkpoints: [{
+                    id: 'checkpoint-task-1',
+                    status: 'available'
+                }]
+            }
+        }, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            workers: [{
+                workerId: 'worker-1',
+                actionIds: ['edit-1'],
+                status: 'completed',
+                branch: 'coding-task/task1worker1',
+                worktreePath: '.worktrees/task1worker1'
+            }]
+        });
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const reviewPanel = ref.hostView.query(AgentConsoleReviewPanelComponent) as ComponentRef<AgentConsoleReviewPanelComponent>;
+        const reviewLines = renderer.renderToLines(reviewPanel.hostView.rootNodes[0]);
+
+        expect(reviewLines.some(line => line.includes('task-1'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Patch handlers'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('completed'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('parallel'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('1 worker diff'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Rollback: available'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Checkpoints: 1 total'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('worker-1'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('coding-task/task1worker1'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('diff --git'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('+new line'))).toBe(true);
+    }
+
+    @Test('renders coding task inspector panel with task summary')
+    async renderCodingTaskInspectorPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setTaskRecords([{
+            id: 'task-1',
+            title: 'Patch handlers',
+            status: 'completed',
+            result: {
+                executionMode: 'parallel',
+                workers: [{ workerId: 'worker-1' }],
+                rollback: {
+                    available: true
+                }
+            },
+            metadata: {
+                executionMode: 'parallel',
+                checkpoints: [{ id: 'checkpoint-task-1', status: 'available' }]
+            },
+            planning: {
+                summary: 'Patch handlers summary'
+            },
+            goal: 'Patch handlers goal',
+            actions: [
+                { title: 'Edit handlers', status: 'completed', tool: 'edit_file', workerId: 'worker-1' },
+                { title: 'Review diff', status: 'completed', tool: 'git_operations' }
+            ]
+        } as any]);
+        ref.instance.sessionState.setReviewTasks([{
+            id: 'task-1',
+            title: 'Patch handlers',
+            status: 'completed',
+            executionMode: 'parallel',
+            workerCount: 1,
+            rollbackAvailable: true,
+            checkpointSummary: '1 total · 1 available · 0 applied · 0 invalidated'
+        } as any]);
+        ref.instance.sessionState.setSelectedReviewTaskId('task-1');
+        ref.instance.sessionState.setTasksFocused(true);
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
+        const taskLines = renderer.renderToLines(tasksPanel.hostView.rootNodes[0]);
+
+        expect(taskLines.some(line => line.includes('tasks 1'))).toBe(true);
+        expect(taskLines.some(line => line.includes('Patch handlers'))).toBe(true);
+        expect(taskLines.some(line => line.includes('rollback available'))).toBe(true);
+        expect(taskLines.some(line => line.includes('checkpoints 1 total'))).toBe(true);
+        expect(taskLines.some(line => line.includes('1.'))).toBe(true);
+        expect(taskLines.some(line => line.includes('Edit handlers'))).toBe(true);
     }
 
     @Test('renders agent console panels when created from module context for tui chat')

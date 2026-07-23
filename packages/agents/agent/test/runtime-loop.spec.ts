@@ -467,6 +467,81 @@ class ProtectedToolModelAdapter extends EchoModelAdapter {
     }
 }
 
+class ConcurrentPrincipalToolRegistry extends ToolRegistry {
+    invocations: Array<{ sessionId: string; principalId?: string }> = [];
+    private waiters: Array<() => void> = [];
+
+    getTools() {
+        return [{
+            name: 'capture_principal',
+            description: 'capture principal per session',
+            inputSchema: { type: 'object', properties: { value: { type: 'string' } } },
+            toolset: 'test',
+            source: 'test',
+            execution: { readOnly: true }
+        } as any];
+    }
+
+    getTool(name: string) {
+        return this.getTools().find((tool: any) => tool.name === name) as any;
+    }
+
+    async invoke(_name: string, _input: any, sessionId: string, principalId?: string): Promise<any> {
+        this.invocations.push({ sessionId, principalId });
+        if (this.invocations.length < 2) {
+            await new Promise<void>(resolve => {
+                this.waiters.push(resolve);
+            });
+        } else {
+            const waiters = this.waiters.splice(0);
+            waiters.forEach(resolve => resolve());
+        }
+        return { sessionId, principalId };
+    }
+}
+
+class ConcurrentPrincipalToolModelAdapter extends EchoModelAdapter {
+    async complete(request: any): Promise<any> {
+        const hasToolResult = request.messages.some((message: any) => message.role === 'tool');
+        if (!hasToolResult) {
+            return {
+                toolCalls: [{ id: `tool-${request.sessionId}`, name: 'capture_principal', input: { value: request.sessionId } }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: `done:${request.sessionId}`,
+            stopReason: 'end'
+        };
+    }
+}
+
+class SessionConcurrencyModelAdapter extends EchoModelAdapter {
+    sessionMax = new Map<string, number>();
+    globalMax = 0;
+    private sessionActive = new Map<string, number>();
+    private globalActive = 0;
+
+    async complete(request: any): Promise<any> {
+        const sessionId = String(request.sessionId || '');
+        const nextSessionActive = (this.sessionActive.get(sessionId) ?? 0) + 1;
+        this.sessionActive.set(sessionId, nextSessionActive);
+        this.sessionMax.set(sessionId, Math.max(this.sessionMax.get(sessionId) ?? 0, nextSessionActive));
+        this.globalActive += 1;
+        this.globalMax = Math.max(this.globalMax, this.globalActive);
+        try {
+            await new Promise(resolve => setTimeout(resolve, 25));
+            return {
+                message: `done:${sessionId}`,
+                stopReason: 'end'
+            };
+        } finally {
+            this.sessionActive.set(sessionId, Math.max(0, (this.sessionActive.get(sessionId) ?? 1) - 1));
+            this.globalActive = Math.max(0, this.globalActive - 1);
+        }
+    }
+}
+
 class MultiToolLoopModelAdapter extends EchoModelAdapter {
     private count = 0;
 
@@ -1763,6 +1838,53 @@ export class RuntimeLoopTest {
         const messages = await runtime.getMessages('s1');
         const toolMessage = messages.find(m => m.role === 'tool');
         expect(toolMessage?.metadata?.receipt?.status).toEqual('success');
+    }
+
+    @Test('keeps principal scoped to each concurrent turn')
+    async keepsPrincipalScopedToEachConcurrentTurn() {
+        const registry = new ConcurrentPrincipalToolRegistry();
+        const runtime = new DefaultAgentRuntime(
+            new ConcurrentPrincipalToolModelAdapter(),
+            registry,
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await Promise.all([
+            runtime.runTurn('s1', 'hello', 'user-1'),
+            runtime.runTurn('s2', 'hello', 'user-2')
+        ]);
+
+        expect(registry.invocations.sort((left, right) => left.sessionId.localeCompare(right.sessionId))).toEqual([
+            { sessionId: 's1', principalId: 'user-1' },
+            { sessionId: 's2', principalId: 'user-2' }
+        ]);
+    }
+
+    @Test('serializes turns per session while allowing different sessions to overlap')
+    async serializesTurnsPerSessionWhileAllowingDifferentSessionsToOverlap() {
+        const model = new SessionConcurrencyModelAdapter();
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await Promise.all([
+            runtime.runTurn('s1', 'first'),
+            runtime.runTurn('s1', 'second'),
+            runtime.runTurn('s2', 'third')
+        ]);
+
+        expect(model.sessionMax.get('s1')).toEqual(1);
+        expect(model.globalMax).toBeGreaterThan(1);
     }
 
     @Test('allows local gateway principal for sensitive local-only authorization policy')

@@ -1,9 +1,12 @@
 import { Injectable } from '@tsdi/ioc';
 
-export type CodingTaskStatus = 'planned' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type CodingTaskStatus = 'planned' | 'running' | 'completed' | 'failed' | 'cancelled' | 'rolled_back';
 export type CodingTaskActionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type CodingTaskPlanningStrategy = 'llm' | 'heuristic';
 export type CodingTaskComplexity = 'simple' | 'moderate' | 'complex';
+export type CodingTaskExecutionMode = 'sequential' | 'parallel';
+export type CodingTaskCheckpointMode = 'worktree' | 'parallel_worktree';
+export type CodingTaskCheckpointStatus = 'available' | 'applied' | 'invalidated';
 
 export interface CodingTaskActionRecord {
     id: string;
@@ -11,10 +14,45 @@ export interface CodingTaskActionRecord {
     tool: string;
     input: Record<string, any>;
     status: CodingTaskActionStatus;
+    workerId?: string;
     startedAt?: number;
     completedAt?: number;
     result?: any;
     error?: string;
+}
+
+export interface CodingTaskWorkerRecord {
+    workerId: string;
+    actionIds: string[];
+    status: 'completed' | 'failed';
+    startedAt?: number;
+    completedAt?: number;
+    branch?: string;
+    worktreePath?: string;
+    diff?: any;
+    output?: any;
+    error?: string;
+}
+
+export interface CodingTaskCheckpointPatch {
+    workerId?: string;
+    branch?: string;
+    worktreePath?: string;
+    patch: string;
+}
+
+export interface CodingTaskCheckpointRecord {
+    id: string;
+    label: string;
+    taskId: string;
+    createdAt: number;
+    mode: CodingTaskCheckpointMode;
+    status: CodingTaskCheckpointStatus;
+    branch?: string;
+    worktreePath?: string;
+    patches: CodingTaskCheckpointPatch[];
+    appliedAt?: number;
+    reason?: string;
 }
 
 export interface CodingTaskRecord {
@@ -35,11 +73,20 @@ export interface CodingTaskRecord {
     };
     actions: CodingTaskActionRecord[];
     result?: {
+        executionMode: CodingTaskExecutionMode;
         completedActions: number;
         failedActionId?: string;
         output?: any;
         diff?: any;
+        workers?: CodingTaskWorkerRecord[];
         error?: string;
+        rollback?: {
+            available: boolean;
+            checkpointId?: string;
+            mode?: CodingTaskCheckpointMode;
+            rolledBackAt?: number;
+            reason?: string;
+        };
     };
     metadata?: Record<string, any>;
 }
@@ -88,6 +135,12 @@ export class CodingTaskStore {
         const current = this.get(sessionId, taskId);
         if (!current) {
             throw new Error(`Coding task '${taskId}' not found.`);
+        }
+        if (current.status === 'cancelled') {
+            throw new Error(`Coding task '${taskId}' has already been cancelled.`);
+        }
+        if (current.status === 'completed' || current.status === 'failed' || current.status === 'rolled_back') {
+            throw new Error(`Coding task '${taskId}' is ${current.status} and cannot be cancelled.`);
         }
         current.status = 'cancelled';
         current.updatedAt = Date.now();

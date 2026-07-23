@@ -38,6 +38,10 @@ interface ToolInvocationResult {
     error?: Error;
 }
 
+interface TurnExecutionContext {
+    principalId?: string;
+}
+
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
 const FOLLOW_UP_EMPTY_RESPONSE_RECOVERY_SYSTEM_PROMPT = 'The latest user message already contains follow-up context answering a prior clarification. Continue the original task directly using that follow-up context. Provide a non-empty response, and call tools if needed. Do not repeat the same clarification question.';
 @Injectable()
@@ -45,7 +49,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected contextManager: AgentContextManager;
     protected toolApprovalManager?: ToolApprovalManager;
     protected _stopped = false;
-    protected activePrincipalId?: string;
+    protected sessionTurnQueues = new Map<string, Array<() => void>>();
+    protected sessionTurnDepths = new Map<string, number>();
+    protected sessionTurnsRunning = new Set<string>();
+    protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
     constructor(
         protected modelAdapter: ModelAdapter,
@@ -84,17 +91,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     async runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult> {
-        this.activePrincipalId = principalId;
-        const handler = typeof (this.app as any)?.get === 'function'
-            ? (this.app as any).get(TurnHandler, null) as {
-                injector?: ApplicationContext,
-                handle(input: AgentTurnInput, context: RunContext): Promise<AgentTurnResult>
-            } | null
-            : null;
-        if (!handler) {
-            return this.processTurn({ sessionId, input });
+        const release = await this.acquireSessionTurnLock(sessionId);
+        try {
+            const handler = typeof (this.app as any)?.get === 'function'
+                ? (this.app as any).get(TurnHandler, null) as {
+                    injector?: ApplicationContext,
+                    handle(input: AgentTurnInput, context: RunContext): Promise<AgentTurnResult>
+                } | null
+                : null;
+            if (!handler) {
+                return await this.processTurn({ sessionId, input, principalId });
+            }
+            return await handler.handle({ sessionId, input, principalId }, createRunContext(handler.injector ?? this.app));
+        } finally {
+            release();
         }
-        return handler.handle({ sessionId, input }, createRunContext(handler.injector ?? this.app));
     }
 
     @Runner()
@@ -134,17 +145,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.processTurn(input);
     }
 
-    setPrincipalId(principalId?: string): void {
-        this.activePrincipalId = principalId;
-    }
-
     async processTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
         await this.app.publishEvent(new AgentTurnStartedEvent(this, input.sessionId, input.input));
         const userMessage = this.createMessage('user', input.input);
         await this.sessions.append(input.sessionId, userMessage);
 
         try {
-            const result = await this.completeTurn(input.sessionId, input.input, userMessage.id);
+            const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, {
+                principalId: input.principalId
+            });
             await this.sessions.append(input.sessionId, result.message);
             await this.maybeSummarize(input.sessionId);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
@@ -157,23 +166,28 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    async *runStreamingTurn(sessionId: string, input: string): AsyncGenerator<StreamChunk> {
-        await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
-        const userMessage = this.createMessage('user', input);
-        await this.sessions.append(sessionId, userMessage);
-
+    async *runStreamingTurn(sessionId: string, input: string, principalId?: string): AsyncGenerator<StreamChunk> {
+        const release = await this.acquireSessionTurnLock(sessionId);
         try {
-            const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id);
-            await this.sessions.append(sessionId, result.message);
-            await this.maybeSummarize(sessionId);
-            await this.maybeDistillExperience(sessionId, userMessage, result.message);
-            await this.app.publishEvent(new AgentTurnCompletedEvent(this, sessionId, result.message));
-            await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
-            yield { type: 'done' };
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
-            throw err;
+            await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
+            const userMessage = this.createMessage('user', input);
+            await this.sessions.append(sessionId, userMessage);
+
+            try {
+                const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, { principalId });
+                await this.sessions.append(sessionId, result.message);
+                await this.maybeSummarize(sessionId);
+                await this.maybeDistillExperience(sessionId, userMessage, result.message);
+                await this.app.publishEvent(new AgentTurnCompletedEvent(this, sessionId, result.message));
+                await this.app.publishEvent(new AgentStreamChunkEvent(this, sessionId, 'done'));
+                yield { type: 'done' };
+            } catch (error) {
+                const err = error instanceof Error ? error : new Error(String(error));
+                await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
+                throw err;
+            }
+        } finally {
+            release();
         }
     }
 
@@ -199,7 +213,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return (await this.sessions.get(sessionId)).messages;
     }
 
-    private async completeTurn(sessionId: string, query: string, currentUserMessageId: string): Promise<AgentTurnResult> {
+    private async completeTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): Promise<AgentTurnResult> {
         const loopDetector = new ToolLoopDetector();
         loopDetector.reset();
         let round = 0;
@@ -220,7 +234,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.app.publishEvent(new AgentModelCompletedEvent(this, sessionId, response));
             }
 
-            const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools);
+            const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools, turnContext);
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
@@ -239,7 +253,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return { sessionId, message: finalMessage };
     }
 
-    private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string): AsyncGenerator<StreamChunk, AgentTurnResult, void> {
+    private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): AsyncGenerator<StreamChunk, AgentTurnResult, void> {
         const loopDetector = new ToolLoopDetector();
         loopDetector.reset();
         let round = 0;
@@ -257,7 +271,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 response = yield* this.collectStreamingResponse(sessionId, this.buildFollowUpRecoveryRequest(request));
             }
 
-            const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools);
+            const handled = await this.handleModelResponse(sessionId, response, loopDetector, request.tools, turnContext);
             if (handled.message) {
                 return { sessionId, message: handled.message };
             }
@@ -522,7 +536,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         sessionId: string,
         response: ModelResponse,
         loopDetector: ToolLoopDetector,
-        callableTools: AgentToolDefinition[]
+        callableTools: AgentToolDefinition[],
+        turnContext: TurnExecutionContext
     ): Promise<{ message?: AgentMessage }> {
         if (response.toolCalls?.length) {
             const assistantToolCallMessage = this.createMessage('assistant', response.message ?? '', undefined, undefined, {
@@ -535,7 +550,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             });
             await this.sessions.append(sessionId, assistantToolCallMessage);
 
-            await this.executeTools(sessionId, response.toolCalls, loopDetector, callableTools);
+            await this.executeTools(sessionId, response.toolCalls, loopDetector, callableTools, turnContext);
             return {};
         }
 
@@ -548,14 +563,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
         sessionId: string,
         toolCalls: AgentToolCall[],
         loopDetector: ToolLoopDetector,
-        callableTools: AgentToolDefinition[]
+        callableTools: AgentToolDefinition[],
+        turnContext: TurnExecutionContext
     ): Promise<void> {
         const toolOpts = this.options.tools ?? defaultAgentOptions.tools!;
 
         if (toolOpts.parallelExecution && toolCalls.length > 1 && this.canParallelize(toolCalls, toolOpts.parallelSafeTools ?? [])) {
-            await this.executeToolsParallel(sessionId, toolCalls, loopDetector, callableTools);
+            await this.executeToolsParallel(sessionId, toolCalls, loopDetector, callableTools, turnContext);
         } else {
-            await this.executeToolsSequential(sessionId, toolCalls, loopDetector, callableTools);
+            await this.executeToolsSequential(sessionId, toolCalls, loopDetector, callableTools, turnContext);
         }
     }
 
@@ -586,10 +602,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         sessionId: string,
         toolCalls: AgentToolCall[],
         loopDetector: ToolLoopDetector,
-        callableTools: AgentToolDefinition[]
+        callableTools: AgentToolDefinition[],
+        turnContext: TurnExecutionContext
     ): Promise<void> {
         for (const toolCall of toolCalls) {
-            await this.invokeSingleTool(sessionId, toolCall, loopDetector, 'sequential', callableTools);
+            await this.invokeSingleTool(sessionId, toolCall, loopDetector, 'sequential', callableTools, turnContext);
         }
     }
 
@@ -597,13 +614,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
         sessionId: string,
         toolCalls: AgentToolCall[],
         loopDetector: ToolLoopDetector,
-        callableTools: AgentToolDefinition[]
+        callableTools: AgentToolDefinition[],
+        turnContext: TurnExecutionContext
     ): Promise<void> {
         const maxParallel = this.options.tools?.maxParallelTools ?? defaultAgentOptions.tools!.maxParallelTools!;
         for (let i = 0; i < toolCalls.length; i += maxParallel) {
             const batch = toolCalls.slice(i, i + maxParallel);
             const results = await Promise.allSettled(
-                batch.map(tc => this.performToolInvocation(sessionId, tc, loopDetector, 'parallel', callableTools))
+                batch.map(tc => this.performToolInvocation(sessionId, tc, loopDetector, 'parallel', callableTools, turnContext))
             );
 
             for (const result of results) {
@@ -628,9 +646,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
         loopDetector: ToolLoopDetector,
         executionMode: 'sequential' | 'parallel',
         callableTools: AgentToolDefinition[],
+        turnContext: TurnExecutionContext,
         persistMessage = true
     ): Promise<Error | undefined> {
-        const result = await this.performToolInvocation(sessionId, toolCall, loopDetector, executionMode, callableTools);
+        const result = await this.performToolInvocation(sessionId, toolCall, loopDetector, executionMode, callableTools, turnContext);
         if (persistMessage) {
             await this.finalizeToolInvocation(sessionId, result);
         }
@@ -642,7 +661,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         toolCall: { id: string; name: string; input?: any },
         loopDetector: ToolLoopDetector,
         executionMode: 'sequential' | 'parallel',
-        callableTools: AgentToolDefinition[]
+        callableTools: AgentToolDefinition[],
+        turnContext: TurnExecutionContext
     ): Promise<ToolInvocationResult> {
         const toolCallInput = this.cloneToolInput(toolCall.input);
         const inputSummary = this.summarizeToolInput(toolCallInput);
@@ -708,7 +728,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (this.toolExecutionCoordinator) {
             const outcome = await this.toolExecutionCoordinator.execute({
                 sessionId,
-                principalId: this.activePrincipalId,
+                principalId: turnContext.principalId,
                 toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
                 definition,
                 executionMode,
@@ -741,7 +761,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         const startedAt = Date.now();
         try {
-            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, this.activePrincipalId);
+            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, turnContext.principalId);
             loopDetector.record(toolCall.name, toolCallInput, output);
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
@@ -927,6 +947,51 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
         return undefined;
+    }
+
+    private async acquireSessionTurnLock(sessionId: string): Promise<() => void> {
+        const currentDepth = this.sessionTurnDepths.get(sessionId) ?? 0;
+        if (currentDepth >= DefaultAgentRuntime.MAX_PENDING_SESSION_TURNS) {
+            throw new Error(`Session '${sessionId}' turn queue limit reached.`);
+        }
+        this.sessionTurnDepths.set(sessionId, currentDepth + 1);
+
+        if (this.sessionTurnsRunning.has(sessionId)) {
+            await new Promise<void>(resolve => {
+                const queue = this.sessionTurnQueues.get(sessionId) ?? [];
+                queue.push(resolve);
+                this.sessionTurnQueues.set(sessionId, queue);
+            });
+        } else {
+            this.sessionTurnsRunning.add(sessionId);
+        }
+
+        let released = false;
+
+        return () => {
+            if (released) {
+                return;
+            }
+            released = true;
+
+            const depth = this.sessionTurnDepths.get(sessionId) ?? 1;
+            if (depth <= 1) {
+                this.sessionTurnDepths.delete(sessionId);
+            } else {
+                this.sessionTurnDepths.set(sessionId, depth - 1);
+            }
+
+            const queue = this.sessionTurnQueues.get(sessionId);
+            const next = queue?.shift();
+            if (queue && !queue.length) {
+                this.sessionTurnQueues.delete(sessionId);
+            }
+            if (next) {
+                next();
+                return;
+            }
+            this.sessionTurnsRunning.delete(sessionId);
+        };
     }
 
     private createBaseReceipt(

@@ -5,9 +5,12 @@ import { Injectable, Optional } from '@tsdi/ioc';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import {
     CodingTaskActionRecord,
+    CodingTaskCheckpointRecord,
     CodingTaskComplexity,
+    CodingTaskExecutionMode,
     CodingTaskPlanningStrategy,
     CodingTaskRecord,
+    CodingTaskWorkerRecord,
     CodingTaskStore
 } from './coding-task-store';
 import { WorkspaceActionRunner } from './workspace-action-runner';
@@ -22,6 +25,13 @@ interface PlannedTaskDraft {
     successCriteria: string[];
     actions: CodingTaskActionRecord[];
     fallbackReason?: string;
+}
+
+interface CapturedCodingDiff {
+    summary: string;
+    output: any;
+    text?: string;
+    workers?: any[];
 }
 
 @Injectable()
@@ -45,7 +55,7 @@ export class CodingTaskTool implements AgentTool {
         properties: {
             action: {
                 type: 'string',
-                enum: ['plan', 'create', 'run', 'get', 'list', 'cancel']
+                enum: ['plan', 'create', 'run', 'get', 'list', 'cancel', 'rollback']
             },
             task_id: { type: 'string' },
             goal: { type: 'string' },
@@ -72,6 +82,15 @@ export class CodingTaskTool implements AgentTool {
             useWorktree: {
                 type: 'boolean',
                 description: 'Run the task in an isolated git worktree. Creates a branch, sets up a worktree directory, merges back on completion.'
+            },
+            parallel: {
+                type: 'boolean',
+                description: 'Execute actions in parallel. Requires useWorktree so each worker gets an isolated workspace.'
+            },
+            executionMode: {
+                type: 'string',
+                enum: ['sequential', 'parallel'],
+                description: 'Execution strategy for task actions. Parallel mode requires useWorktree.'
             }
         },
         required: ['action']
@@ -87,6 +106,8 @@ export class CodingTaskTool implements AgentTool {
     private readonly store: CodingTaskStore;
     private readonly runner?: WorkspaceActionRunner | null;
     private readonly llmTool?: LlmTaskTool | null;
+    private static readonly WORKTREE_FILE_TOOLS = new Set(['read_file', 'write_file', 'edit_file', 'list_dir', 'stat', 'mkdir', 'delete_file', 'move_file', 'copy_file']);
+    private static readonly WORKTREE_WORKDIR_TOOLS = new Set(['terminal', 'git_operations', 'ai_cli']);
 
     constructor(
         @Optional() store?: CodingTaskStore | null,
@@ -113,8 +134,10 @@ export class CodingTaskTool implements AgentTool {
                 return { tasks: this.store.list(context.sessionId), total: this.store.list(context.sessionId).length };
             case 'cancel':
                 return { cancelled: true, task: this.store.cancel(context.sessionId, this.requireString(input?.task_id, 'task_id')) };
+            case 'rollback':
+                return this.handleRollback(input, context);
             default:
-                throw new Error('Invalid action. Must be: plan, create, run, get, list, cancel.');
+                throw new Error('Invalid action. Must be: plan, create, run, get, list, cancel, rollback.');
         }
     }
 
@@ -178,74 +201,156 @@ export class CodingTaskTool implements AgentTool {
             this.store.save(sessionId, task);
         }
 
-        const worktree = await this.setupWorktreeIfNeeded(input, task, runner, context);
+        const executionMode = this.resolveExecutionMode(input);
+        if (executionMode === 'parallel' && !input?.useWorktree) {
+            throw new Error('coding_task parallel execution requires useWorktree: true.');
+        }
 
         const working = this.store.patch(sessionId, task.id, {
             status: 'running',
-            actions: task.actions.map(action => ({ ...action, status: 'pending', error: undefined, result: undefined }))
+            actions: task.actions.map(action => ({
+                ...action,
+                status: 'pending',
+                workerId: undefined,
+                error: undefined,
+                result: undefined
+            })),
+            metadata: {
+                ...(task.metadata || {}),
+                executionMode,
+                useWorktree: input?.useWorktree === true
+            }
         });
 
-        let completedActions = 0;
-        let failedActionId: string | undefined;
-        let lastOutput: any;
-
-        try {
-            for (const rawAction of working.actions) {
-                const action = worktree ? this.mapActionToWorktree(rawAction, worktree) : rawAction;
-                const startedAt = Date.now();
-                action.status = 'running';
-                action.startedAt = startedAt;
-                this.store.patch(sessionId, working.id, { actions: working.actions });
-                try {
-                    const result = await runner.run(action, { sessionId, principalId: context.principalId });
-                    rawAction.status = 'completed';
-                    rawAction.completedAt = Date.now();
-                    rawAction.result = { summary: result.summary, output: result.output };
-                    completedActions += 1;
-                    lastOutput = result.output;
-                } catch (err) {
-                    failedActionId = rawAction.id;
-                    rawAction.status = 'failed';
-                    rawAction.completedAt = Date.now();
-                    rawAction.error = err instanceof Error ? err.message : String(err);
-                    break;
-                }
-                this.store.patch(sessionId, working.id, { actions: working.actions });
+        const execution = executionMode === 'parallel'
+            ? await this.executeActionsParallel(working, runner, context)
+            : await this.executeActionsSequential(working, runner, context, input);
+        const checkpoint = this.buildRollbackCheckpoint(working, execution, input);
+        const rollbackSummary = checkpoint
+            ? {
+                available: true,
+                checkpointId: checkpoint.id,
+                mode: checkpoint.mode
             }
-
-            const diff = worktree
-                ? await this.captureWorktreeDiff(worktree, runner, context)
-                : await this.captureWorkspaceDiffIfNeeded(working.actions, context);
-
-            const finalStatus = failedActionId ? 'failed' : 'completed';
-            const saved = this.store.patch(sessionId, working.id, {
-                status: finalStatus,
-                actions: working.actions,
-                result: {
-                    completedActions,
-                    failedActionId,
-                    output: this.summarizeResultPayload(lastOutput),
-                    ...(diff ? { diff } : {}),
-                    error: failedActionId ? working.actions.find(item => item.id === failedActionId)?.error : undefined
-                }
-            });
-
-            return {
-                ran: true,
-                task: saved,
-                completedActions,
-                failedActionId
+            : {
+                available: false,
+                reason: input?.useWorktree === true
+                    ? 'No rollback patch was captured for this worktree task.'
+                    : 'Rollback is only available for coding tasks that run with useWorktree: true.'
             };
-        } finally {
-            if (worktree) {
-                await this.teardownWorktree(worktree, runner, context);
+
+        const finalStatus = execution.failedActionId ? 'failed' : 'completed';
+        const saved = this.store.patch(sessionId, working.id, {
+            status: finalStatus,
+            actions: working.actions,
+            metadata: {
+                ...(working.metadata || {}),
+                ...(checkpoint ? {
+                    checkpoints: [
+                        ...this.getTaskCheckpoints(working),
+                        checkpoint
+                    ]
+                } : {})
+            },
+            result: {
+                executionMode,
+                completedActions: execution.completedActions,
+                failedActionId: execution.failedActionId,
+                output: this.summarizeResultPayload(execution.output),
+                ...(execution.diff ? { diff: execution.diff } : {}),
+                ...(execution.workers.length ? { workers: execution.workers } : {}),
+                error: execution.failedActionId ? working.actions.find(item => item.id === execution.failedActionId)?.error : undefined,
+                rollback: rollbackSummary
             }
-        }
+        });
+
+        return {
+            ran: true,
+            task: saved,
+            completedActions: execution.completedActions,
+            failedActionId: execution.failedActionId
+        };
     }
 
     private async handleGet(input: any, context: AgentToolContext): Promise<any> {
         return {
             task: this.requireTask(context.sessionId, this.requireString(input?.task_id, 'task_id'))
+        };
+    }
+
+    private async handleRollback(input: any, context: AgentToolContext): Promise<any> {
+        const runner = this.requireRunner();
+        const task = this.requireTask(context.sessionId, this.requireString(input?.task_id, 'task_id'));
+        if (task.status === 'running') {
+            throw new Error(`Coding task '${task.id}' is still running and cannot be rolled back.`);
+        }
+        if (task.status === 'rolled_back') {
+            throw new Error(`Coding task '${task.id}' has already been rolled back.`);
+        }
+
+        const checkpoint = this.getLatestAvailableCheckpoint(task);
+        if (!checkpoint) {
+            throw new Error(`Coding task '${task.id}' does not have an available rollback checkpoint.`);
+        }
+
+        const rollbackPatches = checkpoint.patches
+            .filter(item => typeof item.patch === 'string' && item.patch.trim())
+            .slice()
+            .reverse();
+        if (!rollbackPatches.length) {
+            throw new Error(`Coding task '${task.id}' does not have a reversible patch payload.`);
+        }
+
+        for (const [index, patch] of rollbackPatches.entries()) {
+            await runner.run({
+                id: `rollback-${task.id}-${index + 1}`,
+                title: `Rollback ${task.id}`,
+                tool: 'git_operations',
+                input: {
+                    action: 'apply_patch',
+                    patch: patch.patch,
+                    reverse: true
+                },
+                status: 'pending'
+            }, {
+                sessionId: context.sessionId,
+                principalId: context.principalId
+            });
+        }
+
+        const rolledBackAt = Date.now();
+        const checkpoints = this.getTaskCheckpoints(task).map(entry => entry.id === checkpoint.id
+            ? {
+                ...entry,
+                status: 'applied',
+                appliedAt: rolledBackAt
+            }
+            : entry
+        );
+        const saved = this.store.patch(context.sessionId, task.id, {
+            status: 'rolled_back',
+            metadata: {
+                ...(task.metadata || {}),
+                checkpoints
+            },
+            result: {
+                ...(task.result || {
+                    executionMode: task.metadata?.executionMode || 'sequential',
+                    completedActions: 0
+                }),
+                rollback: {
+                    available: false,
+                    checkpointId: checkpoint.id,
+                    mode: checkpoint.mode,
+                    rolledBackAt
+                }
+            }
+        });
+
+        return {
+            rolledBack: true,
+            checkpointId: checkpoint.id,
+            task: saved
         };
     }
 
@@ -500,6 +605,81 @@ export class CodingTaskTool implements AgentTool {
         return { summary: text.slice(0, 397) + '...' };
     }
 
+    private extractGitPatchText(value: any): string | undefined {
+        const stdout = typeof value?.stdout === 'string' ? value.stdout : undefined;
+        if (stdout && stdout.trim()) {
+            return stdout;
+        }
+        return undefined;
+    }
+
+    private buildRollbackCheckpoint(
+        task: CodingTaskRecord,
+        execution: { diff?: CapturedCodingDiff; workers: CodingTaskWorkerRecord[] },
+        input: any
+    ): CodingTaskCheckpointRecord | undefined {
+        if (input?.useWorktree !== true) {
+            return undefined;
+        }
+
+        if (task.metadata?.executionMode === 'parallel') {
+            const patches = execution.workers
+                .filter(worker => worker.status === 'completed' && typeof worker.diff?.text === 'string' && worker.diff.text.trim())
+                .map(worker => ({
+                    workerId: worker.workerId,
+                    branch: worker.branch,
+                    worktreePath: worker.worktreePath,
+                    patch: worker.diff.text
+                }));
+            if (!patches.length) {
+                return undefined;
+            }
+            return {
+                id: `checkpoint-${task.id}`,
+                label: `Auto checkpoint for ${task.title}`,
+                taskId: task.id,
+                createdAt: Date.now(),
+                mode: 'parallel_worktree',
+                status: 'available',
+                patches
+            };
+        }
+
+        const patch = execution.diff?.text;
+        if (!patch || !patch.trim()) {
+            return undefined;
+        }
+        const worker = execution.workers[0];
+        return {
+            id: `checkpoint-${task.id}`,
+            label: `Auto checkpoint for ${task.title}`,
+            taskId: task.id,
+            createdAt: Date.now(),
+            mode: 'worktree',
+            status: 'available',
+            branch: worker?.branch,
+            worktreePath: worker?.worktreePath,
+            patches: [{
+                workerId: worker?.workerId,
+                branch: worker?.branch,
+                worktreePath: worker?.worktreePath,
+                patch
+            }]
+        };
+    }
+
+    private getTaskCheckpoints(task: CodingTaskRecord): CodingTaskCheckpointRecord[] {
+        const checkpoints = task.metadata?.checkpoints;
+        return Array.isArray(checkpoints) ? checkpoints : [];
+    }
+
+    private getLatestAvailableCheckpoint(task: CodingTaskRecord): CodingTaskCheckpointRecord | undefined {
+        const checkpoints = this.getTaskCheckpoints(task)
+            .filter(entry => entry && entry.status === 'available')
+            .sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0));
+        return checkpoints[0];
+    }
+
     private requireTask(sessionId: string, taskId: string): CodingTaskRecord {
         const task = this.store.get(sessionId, taskId);
         if (!task) {
@@ -522,10 +702,213 @@ export class CodingTaskTool implements AgentTool {
         return value.trim();
     }
 
+    private resolveExecutionMode(input: any): CodingTaskExecutionMode {
+        if (typeof input?.executionMode === 'string') {
+            if (input.executionMode === 'parallel' || input.executionMode === 'sequential') {
+                return input.executionMode;
+            }
+            throw new Error('Invalid executionMode: must be "sequential" or "parallel".');
+        }
+        return input?.parallel === true ? 'parallel' : 'sequential';
+    }
+
+    private async executeActionsSequential(
+        task: CodingTaskRecord,
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext,
+        input: any
+    ): Promise<{ completedActions: number; failedActionId?: string; output?: any; diff?: CapturedCodingDiff; workers: CodingTaskWorkerRecord[] }> {
+        const worktree = await this.setupWorktreeIfNeeded(input, task, runner, context);
+        let completedActions = 0;
+        let failedActionId: string | undefined;
+        let lastOutput: any;
+        let diff: CapturedCodingDiff | undefined;
+
+        try {
+            for (const rawAction of task.actions) {
+                const action = worktree ? this.mapActionToWorktree(rawAction, worktree) : rawAction;
+                const startedAt = Date.now();
+                rawAction.status = 'running';
+                rawAction.startedAt = startedAt;
+                if (worktree) {
+                    rawAction.workerId = 'worker-1';
+                }
+                this.store.patch(context.sessionId, task.id, { actions: task.actions });
+                try {
+                    const result = await runner.run(action, { sessionId: context.sessionId, principalId: context.principalId });
+                    rawAction.status = 'completed';
+                    rawAction.completedAt = Date.now();
+                    rawAction.result = { summary: result.summary, output: result.output };
+                    completedActions += 1;
+                    lastOutput = result.output;
+                } catch (err) {
+                    failedActionId = rawAction.id;
+                    rawAction.status = 'failed';
+                    rawAction.completedAt = Date.now();
+                    rawAction.error = err instanceof Error ? err.message : String(err);
+                    break;
+                }
+                this.store.patch(context.sessionId, task.id, { actions: task.actions });
+            }
+
+            diff = worktree
+                ? await this.captureWorktreeDiff(worktree, runner, context)
+                : await this.captureWorkspaceDiffIfNeeded(task.actions, context);
+
+            const workers = worktree ? [{
+                workerId: 'worker-1',
+                actionIds: task.actions.map(action => action.id),
+                status: failedActionId ? 'failed' as const : 'completed' as const,
+                startedAt: task.actions.find(action => action.startedAt)?.startedAt,
+                completedAt: task.actions.filter(action => action.completedAt).slice(-1)[0]?.completedAt,
+                branch: worktree.branch,
+                worktreePath: worktree.relativePath,
+                ...(diff ? { diff } : {}),
+                output: this.summarizeResultPayload(lastOutput),
+                ...(failedActionId ? { error: task.actions.find(action => action.id === failedActionId)?.error } : {})
+            }] : [];
+
+            return {
+                completedActions,
+                failedActionId,
+                output: lastOutput,
+                diff,
+                workers
+            };
+        } finally {
+            if (worktree) {
+                await this.teardownWorktree(worktree, runner, context, !failedActionId);
+            }
+        }
+    }
+
+    private async executeActionsParallel(
+        task: CodingTaskRecord,
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext
+    ): Promise<{ completedActions: number; failedActionId?: string; output?: any; diff?: CapturedCodingDiff; workers: CodingTaskWorkerRecord[] }> {
+        const workerRuns = task.actions.map((rawAction, index) => this.executeParallelWorker(task, rawAction, index, runner, context));
+        const workers = await Promise.all(workerRuns);
+
+        for (const worker of workers) {
+            if (worker.worktree) {
+                await this.teardownWorktree(worker.worktree, runner, context, worker.record.status === 'completed');
+            }
+        }
+
+        const completedActions = workers.filter(worker => worker.record.status === 'completed').length;
+        const failedAction = task.actions.find(action => action.status === 'failed');
+        const failedActionId = failedAction?.id;
+        const aggregatedDiff = this.aggregateParallelDiffs(workers.map(worker => worker.record));
+
+        return {
+            completedActions,
+            failedActionId,
+            output: {
+                workers: workers.map(worker => ({
+                    workerId: worker.record.workerId,
+                    actionIds: worker.record.actionIds,
+                    status: worker.record.status,
+                    output: worker.record.output,
+                    error: worker.record.error
+                }))
+            },
+            diff: aggregatedDiff,
+            workers: workers.map(worker => worker.record)
+        };
+    }
+
+    private async executeParallelWorker(
+        task: CodingTaskRecord,
+        rawAction: CodingTaskActionRecord,
+        index: number,
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext
+    ): Promise<{ record: CodingTaskWorkerRecord; worktree?: { path: string; branch: string; relativePath: string } }> {
+        const workerId = `worker-${index + 1}`;
+        const startedAt = Date.now();
+        rawAction.status = 'running';
+        rawAction.startedAt = startedAt;
+        rawAction.workerId = workerId;
+        this.store.patch(context.sessionId, task.id, { actions: task.actions });
+
+        let worktree: { path: string; branch: string; relativePath: string } | undefined;
+        try {
+            worktree = await this.setupWorktreeForWorker(task, workerId, runner, context);
+            const action = this.mapActionToWorktree(rawAction, worktree);
+            const result = await runner.run(action, { sessionId: context.sessionId, principalId: context.principalId });
+            const completedAt = Date.now();
+            const diff = await this.captureWorktreeDiff(worktree, runner, context);
+            rawAction.status = 'completed';
+            rawAction.completedAt = completedAt;
+            rawAction.result = { summary: result.summary, output: result.output };
+            this.store.patch(context.sessionId, task.id, { actions: task.actions });
+            return {
+                record: {
+                    workerId,
+                    actionIds: [rawAction.id],
+                    status: 'completed',
+                    startedAt,
+                    completedAt,
+                    branch: worktree.branch,
+                    worktreePath: worktree.relativePath,
+                    ...(diff ? { diff } : {}),
+                    output: this.summarizeResultPayload(result.output)
+                },
+                worktree
+            };
+        } catch (err) {
+            const completedAt = Date.now();
+            rawAction.status = 'failed';
+            rawAction.completedAt = completedAt;
+            rawAction.error = err instanceof Error ? err.message : String(err);
+            this.store.patch(context.sessionId, task.id, { actions: task.actions });
+            return {
+                record: {
+                    workerId,
+                    actionIds: [rawAction.id],
+                    status: 'failed',
+                    startedAt,
+                    completedAt,
+                    branch: worktree?.branch,
+                    worktreePath: worktree?.relativePath,
+                    error: rawAction.error
+                },
+                worktree
+            };
+        }
+    }
+
+    private aggregateParallelDiffs(workers: CodingTaskWorkerRecord[]): CapturedCodingDiff | undefined {
+        const diffWorkers = workers.filter(worker => worker.diff);
+        if (!diffWorkers.length) {
+            return undefined;
+        }
+        return {
+            summary: `${diffWorkers.length} worker diff(s) captured`,
+            output: {
+                workers: diffWorkers.map(worker => ({
+                    workerId: worker.workerId,
+                    actionIds: worker.actionIds,
+                    branch: worker.branch,
+                    worktreePath: worker.worktreePath,
+                    diff: worker.diff
+                }))
+            },
+            workers: diffWorkers.map(worker => ({
+                workerId: worker.workerId,
+                actionIds: worker.actionIds,
+                branch: worker.branch,
+                worktreePath: worker.worktreePath,
+                diff: worker.diff
+            }))
+        };
+    }
+
     private async captureWorkspaceDiffIfNeeded(
         actions: CodingTaskActionRecord[],
         context: AgentToolContext
-    ): Promise<{ summary: string; output: any; } | undefined> {
+    ): Promise<CapturedCodingDiff | undefined> {
         const runner = this.requireRunner();
         const supported = new Set(runner.getSupportedTools());
         if (!supported.has('git_operations')) {
@@ -548,7 +931,8 @@ export class CodingTaskTool implements AgentTool {
             });
             return {
                 summary: diff.summary,
-                output: this.summarizeResultPayload(diff.output)
+                output: this.summarizeResultPayload(diff.output),
+                text: this.extractGitPatchText(diff.output)
             };
         } catch {
             return undefined;
@@ -575,12 +959,33 @@ export class CodingTaskTool implements AgentTool {
         if (!input?.useWorktree) {
             return null;
         }
+        return this.createNamedWorktree(task.id, runner, context);
+    }
+
+    private async setupWorktreeForWorker(
+        task: CodingTaskRecord,
+        workerId: string,
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext
+    ): Promise<{ path: string; branch: string; relativePath: string }> {
+        const worktree = await this.createNamedWorktree(`${task.id}-${workerId}`, runner, context);
+        if (!worktree) {
+            throw new Error(`Failed to create worktree for ${workerId}.`);
+        }
+        return worktree;
+    }
+
+    private async createNamedWorktree(
+        rawSuffix: string,
+        runner: WorkspaceActionRunner,
+        context: AgentToolContext
+    ): Promise<{ path: string; branch: string; relativePath: string } | null> {
         const supported = new Set(runner.getSupportedTools());
         if (!supported.has('git_operations')) {
             return null;
         }
 
-        const taskSuffix = task.id.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 12);
+        const taskSuffix = rawSuffix.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 24);
         const worktreeBranch = `coding-task/${taskSuffix}`;
         const worktreeDir = `.worktrees/${taskSuffix}`;
 
@@ -610,21 +1015,24 @@ export class CodingTaskTool implements AgentTool {
     private async teardownWorktree(
         worktree: { path: string; branch: string },
         runner: WorkspaceActionRunner,
-        context: AgentToolContext
+        context: AgentToolContext,
+        merge = true
     ): Promise<void> {
         const { branch, path: worktreePath } = worktree;
         const runCtx = { sessionId: context.sessionId, principalId: context.principalId };
 
-        try {
-            await runner.run({
-                id: 'worktree-merge',
-                title: 'Merge worktree branch',
-                tool: 'git_operations',
-                input: { action: 'worktree_merge', path: branch },
-                status: 'pending'
-            }, runCtx);
-        } catch {
-            // merge may fail if conflicts exist
+        if (merge) {
+            try {
+                await runner.run({
+                    id: 'worktree-merge',
+                    title: 'Merge worktree branch',
+                    tool: 'git_operations',
+                    input: { action: 'worktree_merge', path: branch },
+                    status: 'pending'
+                }, runCtx);
+            } catch {
+                // merge may fail if conflicts exist
+            }
         }
 
         try {
@@ -656,14 +1064,12 @@ export class CodingTaskTool implements AgentTool {
         action: CodingTaskActionRecord,
         worktree: { relativePath: string }
     ): CodingTaskActionRecord {
-        const FILE_TOOLS = new Set(['read_file', 'write_file', 'edit_file', 'list_dir', 'stat', 'mkdir', 'delete_file', 'move_file', 'copy_file']);
-        const WORKDIR_TOOLS = new Set(['terminal', 'git_operations', 'ai_cli']);
         const input = { ...action.input };
 
-        if (FILE_TOOLS.has(action.tool) && typeof input.path === 'string') {
+        if (CodingTaskTool.WORKTREE_FILE_TOOLS.has(action.tool) && typeof input.path === 'string') {
             input.path = path.posix.join(worktree.relativePath, input.path);
         }
-        if (WORKDIR_TOOLS.has(action.tool) && !input.workdir) {
+        if (CodingTaskTool.WORKTREE_WORKDIR_TOOLS.has(action.tool) && !input.workdir) {
             input.workdir = worktree.relativePath;
         }
         if (action.tool === 'glob_search') {
@@ -682,18 +1088,19 @@ export class CodingTaskTool implements AgentTool {
         worktree: { relativePath: string },
         runner: WorkspaceActionRunner,
         context: AgentToolContext
-    ): Promise<{ summary: string; output: any; } | undefined> {
+    ): Promise<CapturedCodingDiff | undefined> {
         try {
             const diff = await runner.run({
                 id: 'worktree-diff',
                 title: 'Inspect worktree diff',
                 tool: 'git_operations',
-                input: { action: 'diff', workdir: worktree.relativePath },
+                input: { action: 'diff', workdir: worktree.relativePath, args: ['--binary'] },
                 status: 'pending'
             }, { sessionId: context.sessionId, principalId: context.principalId });
             return {
                 summary: diff.summary,
-                output: this.summarizeResultPayload(diff.output)
+                output: this.summarizeResultPayload(diff.output),
+                text: this.extractGitPatchText(diff.output)
             };
         } catch {
             return undefined;

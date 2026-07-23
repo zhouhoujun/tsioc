@@ -9,7 +9,7 @@ export class AgentRequestHandler {
     }
 
     async handle(request: AgentRequest): Promise<AgentResponse> {
-        const result = await this.runtime.runTurn(request.sessionId, request.input);
+        const result = await this.runtime.runTurn(request.sessionId, request.input, request.principalId);
         return {
             sessionId: result.sessionId,
             output: result.message.content

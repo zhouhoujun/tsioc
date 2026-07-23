@@ -209,6 +209,9 @@ class AppRpcStub {
     tools?: any[];
     modelProfiles?: any[];
     streamChunks?: any[];
+    codingTasks?: any[];
+    codingTaskDetails = new Map<string, any>();
+    codingTaskDiffs = new Map<string, any>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
 
     async request(method: string, params?: any, context?: any): Promise<any> {
@@ -228,6 +231,61 @@ class AppRpcStub {
                 modelProfile: params?.name,
                 provider: matched?.provider || 'deepseek',
                 model: matched?.model || 'deepseek-v4-flash'
+            };
+        }
+        if (method === 'coding_task.list') {
+            return {
+                sessionId: params?.sessionId || 'console',
+                tasks: this.codingTasks || [],
+                total: (this.codingTasks || []).length
+            };
+        }
+        if (method === 'coding_task.get') {
+            return {
+                sessionId: params?.sessionId || 'console',
+                task: this.codingTaskDetails.get(params?.taskId) || null
+            };
+        }
+        if (method === 'coding_task.diff') {
+            return this.codingTaskDiffs.get(params?.taskId) || {
+                sessionId: params?.sessionId || 'console',
+                taskId: params?.taskId,
+                executionMode: null,
+                diff: null,
+                workers: []
+            };
+        }
+        if (method === 'coding_task.cancel') {
+            const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
+            return {
+                sessionId: params?.sessionId || 'console',
+                taskId: params?.taskId,
+                cancelled: true,
+                task: task ? {
+                    ...task,
+                    status: 'cancelled'
+                } : null
+            };
+        }
+        if (method === 'coding_task.rollback') {
+            const task = this.codingTaskDetails.get(params?.taskId) || (this.codingTasks || []).find(item => item.id === params?.taskId) || null;
+            return {
+                sessionId: params?.sessionId || 'console',
+                taskId: params?.taskId,
+                rolledBack: true,
+                task: task ? {
+                    ...task,
+                    status: 'rolled_back',
+                    result: {
+                        ...(task.result || {}),
+                        rollback: {
+                            available: false,
+                            checkpointId: `checkpoint-${task.id}`,
+                            mode: task.result?.executionMode === 'parallel' ? 'parallel_worktree' : 'worktree',
+                            rolledBackAt: Date.now()
+                        }
+                    }
+                } : null
             };
         }
         return undefined;
@@ -385,6 +443,85 @@ function createConsole(
         agentOptions,
         inputHistoryStore
     ).component;
+}
+
+function createReviewTask() {
+    return {
+        id: 'task-1',
+        title: 'Patch handlers',
+        goal: 'Patch handlers',
+        status: 'completed',
+        createdAt: 1,
+        updatedAt: 2,
+        planning: {
+            strategy: 'heuristic',
+            complexity: 'moderate',
+            steps: ['Edit handlers'],
+            successCriteria: ['Diff captured']
+        },
+        actions: [{
+            id: 'edit-1',
+            title: 'Edit',
+            tool: 'edit_file',
+            input: {},
+            status: 'completed',
+            workerId: 'worker-1'
+        }],
+        result: {
+            executionMode: 'parallel',
+            completedActions: 1,
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            rollback: {
+                available: true,
+                checkpointId: 'checkpoint-task-1',
+                mode: 'parallel_worktree'
+            },
+            workers: [{
+                workerId: 'worker-1',
+                actionIds: ['edit-1'],
+                status: 'completed',
+                branch: 'coding-task/task1worker1',
+                worktreePath: '.worktrees/task1worker1'
+            }]
+        },
+        metadata: {
+            executionMode: 'parallel',
+            useWorktree: true,
+            checkpoints: [{
+                id: 'checkpoint-task-1',
+                label: 'pre-run',
+                taskId: 'task-1',
+                createdAt: 1,
+                mode: 'parallel_worktree',
+                status: 'available',
+                patches: [{
+                    workerId: 'worker-1',
+                    branch: 'coding-task/task1worker1',
+                    worktreePath: '.worktrees/task1worker1',
+                    patch: 'diff --git a/src/a.ts b/src/a.ts\n-old line'
+                }]
+            }]
+        }
+    };
+}
+
+function createCancelableTask() {
+    const task = createReviewTask();
+    return {
+        ...task,
+        status: 'running',
+        result: {
+            ...task.result,
+            rollback: {
+                available: false,
+                checkpointId: undefined,
+                mode: undefined
+            }
+        }
+    };
 }
 
 function createWorkspaceFixture(): string {
@@ -1108,6 +1245,199 @@ export class AgentConsoleComponentTest {
 
         expect(toolRegistry.activations).toEqual([{ sessionId: 'console', name: 'read_file' }]);
         expect(component.notice).toEqual('Activated read_file.');
+    }
+
+    @Test('review command lists coding tasks and opens selected review')
+    async reviewCommandListsCodingTasksAndOpensSelectedReview() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createReviewTask();
+        appRpc.codingTasks = [reviewTask];
+        appRpc.codingTaskDiffs.set('task-1', {
+            sessionId: 'console',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            workers: reviewTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.list')).toEqual(true);
+        expect(component.sessionState.selectMenu?.title).toEqual('Coding tasks');
+        expect(component.sessionState.selectMenu?.options[0]?.label).toContain('task-1');
+        expect(component.sessionState.selectMenu?.options[0]?.label).toContain('Patch handlers');
+
+        await component.sessionState.confirmSelectMenu('task-1');
+        await pending;
+
+        const diffCall = appRpc.calls.find(call => call.method === 'coding_task.diff');
+        expect(diffCall?.params).toEqual({ sessionId: 'console', taskId: 'task-1' });
+        expect(component.sessionState.reviewOpen).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1');
+        expect(component.sessionState.reviewExecutionMode).toEqual('parallel');
+        expect(component.sessionState.reviewWorkers.length).toEqual(1);
+    }
+
+    @Test('tasks command opens inspector with rollback metadata')
+    async tasksCommandOpensInspectorWithRollbackMetadata() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createReviewTask();
+        appRpc.codingTasks = [reviewTask];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.list')).toEqual(true);
+        expect(component.sessionState.tasksFocused).toEqual(true);
+        expect(component.sessionState.selectedTask?.id).toEqual('task-1');
+        expect(component.sessionState.reviewTaskChoices[0]?.checkpointSummary).toContain('1 total');
+        expect(component.sessionState.reviewTaskChoices[0]?.workerCount).toEqual(1);
+    }
+
+    @Test('tasks focus cancel action cancels selected coding task')
+    async tasksFocusCancelActionCancelsSelectedCodingTask() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createCancelableTask();
+        appRpc.codingTasks = [reviewTask];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+        await component.sessionState.handleFocusKey('x');
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.cancel' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.notice).toEqual('Cancelled task-1.');
+    }
+
+    @Test('tasks focus does not cancel completed coding task')
+    async tasksFocusDoesNotCancelCompletedCodingTask() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createReviewTask();
+        appRpc.codingTasks = [reviewTask];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+        await component.sessionState.handleFocusKey('x');
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.cancel')).toEqual(false);
+        expect(component.notice).toEqual('Cancel is unavailable for task-1.');
+    }
+
+    @Test('review command loads direct task id without opening select menu')
+    async reviewCommandLoadsDirectTaskIdWithoutSelectMenu() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createReviewTask();
+        appRpc.codingTaskDetails.set('task-1', reviewTask);
+        appRpc.codingTaskDiffs.set('task-1', {
+            sessionId: 'console',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            workers: reviewTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/review task-1';
+        await component.submit();
+
+        expect(component.sessionState.selectMenu).toEqual(undefined);
+        expect(appRpc.calls.some(call => call.method === 'coding_task.get' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(appRpc.calls.some(call => call.method === 'coding_task.diff' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1');
+        expect(component.sessionState.reviewExecutionMode).toEqual('parallel');
+        expect(component.sessionState.reviewWorkers.length).toEqual(1);
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('diff --git a/src/a.ts b/src/a.ts');
+        expect(component.notice).toEqual('');
+    }
+
+    @Test('rollback command rolls back direct task id and refreshes review')
+    async rollbackCommandRollsBackDirectTaskIdAndRefreshesReview() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createReviewTask();
+        appRpc.codingTaskDetails.set('task-1', reviewTask);
+        appRpc.codingTaskDiffs.set('task-1', {
+            sessionId: 'console',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            workers: reviewTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/rollback task-1';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.rollback' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1');
+        expect(component.sessionState.reviewTask?.status).toEqual('rolled_back');
+        expect(component.notice).toEqual('Rolled back task-1.');
+    }
+
+    @Test('rollback command uses focused review task when no arg is provided')
+    async rollbackCommandUsesFocusedReviewTaskWhenNoArgIsProvided() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const reviewTask = createReviewTask();
+        appRpc.codingTaskDetails.set('task-1', reviewTask);
+        appRpc.codingTaskDiffs.set('task-1', {
+            sessionId: 'console',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            workers: reviewTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+        component.sessionState.openReview(reviewTask as any, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            workers: reviewTask.result.workers
+        });
+
+        component.input = '/rollback';
+        await component.submit();
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.rollback' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.notice).toEqual('Rolled back task-1.');
     }
 
     @Test('model command switches configured named profile')
@@ -1902,6 +2232,39 @@ export class AgentConsoleComponentTest {
 
         state.setApprovalsFocused(false);
         expect(state.approvalsFocused).toEqual(false);
+    }
+
+    @Test('session state supports coding task review focus and scroll')
+    sessionStateSupportsCodingTaskReviewFocusAndScroll() {
+        const state = new AgentConsoleSessionState();
+        const reviewTask = createReviewTask();
+
+        state.openReview(reviewTask as any, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line\n+second line'
+            },
+            workers: reviewTask.result.workers
+        });
+
+        expect(state.reviewOpen).toEqual(true);
+        expect(state.hasReviewFocus()).toEqual(true);
+        expect(state.reviewExecutionMode).toEqual('parallel');
+        expect(state.reviewDetailLines.join('\n')).toContain('worker-1');
+        expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
+        expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
+
+        state.scrollReviewDetail(1);
+        expect(state.reviewDetailScroll).toEqual(0);
+
+        state.scrollReviewDetailColumns(5);
+        expect(state.reviewDetailColumnScroll).toEqual(5);
+
+        state.closeReview();
+        expect(state.reviewOpen).toEqual(false);
+        expect(state.reviewDetailScroll).toEqual(0);
+        expect(state.reviewDetailColumnScroll).toEqual(0);
     }
 
     @Test('session state supports paged session navigation and edges')

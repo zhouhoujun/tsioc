@@ -176,7 +176,7 @@ export class ChatWebSocket {
             }
 
             let streamDone = false;
-            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input)) {
+            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, principalId)) {
                 if (chunk.type === 'done') {
                     streamDone = true;
                     continue;
@@ -255,7 +255,7 @@ export class ChatWebSocket {
             const input = message?.params?.input ?? '';
             const requestSessionId = message?.params?.sessionId ?? sessionId;
             let finalMessage = '';
-            for await (const chunk of this.runtime.runStreamingTurn(requestSessionId, input)) {
+            for await (const chunk of this.runtime.runStreamingTurn(requestSessionId, input, principalId)) {
                 if (chunk.type === 'text') {
                     finalMessage += chunk.content ?? '';
                 }

@@ -1540,14 +1540,250 @@ export class AppRpcServerTest {
         expect((workspaceB as any).result).toEqual(['other']);
     }
 
+    @Test('lists audit records through json-rpc and applies filters')
+    async listsAuditRecordsThroughJsonRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('rpc-audit');
+        await owners.create('rpc-audit', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const audit = {
+            async list(sessionId?: string) {
+                expect(sessionId).toEqual('rpc-audit');
+                return [
+                    { id: 'a1', sessionId: 'rpc-audit', toolName: 'coding_task', toolCallId: 'tc-1', status: 'success', createdAt: 1, metadata: { workerId: 'worker-1' } },
+                    { id: 'a2', sessionId: 'rpc-audit', toolName: 'git_operations', toolCallId: 'tc-2', status: 'error', error: 'merge failed', createdAt: 2 }
+                ];
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, { getToolDefinitions: () => [] } as any, owners, sessions, events, {} as any, audit);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 14,
+            method: 'audit.list',
+            params: {
+                sessionId: 'rpc-audit',
+                toolName: 'coding_task'
+            }
+        }, { principalId: 'user-1' });
+
+        expect((response as any).result).toEqual({
+            sessionId: 'rpc-audit',
+            records: [{
+                id: 'a1',
+                sessionId: 'rpc-audit',
+                toolName: 'coding_task',
+                toolCallId: 'tc-1',
+                status: 'success',
+                inputSummary: null,
+                outputSummary: null,
+                error: null,
+                durationMs: null,
+                attemptCount: null,
+                principalId: null,
+                createdAt: 1,
+                metadata: { workerId: 'worker-1' }
+            }]
+        });
+    }
+
+    @Test('reads coding task review data through json-rpc')
+    async readsCodingTaskReviewDataThroughJsonRpc() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        await store.get('rpc-review');
+        await owners.create('rpc-review', 'user-1');
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const reviewTask = {
+            id: 'task-1',
+            title: 'Patch handlers',
+            status: 'completed',
+            actions: [{ id: 'edit-1', title: 'Edit', tool: 'edit_file', input: {}, status: 'completed', workerId: 'worker-1' }],
+            result: {
+                executionMode: 'parallel',
+                completedActions: 1,
+                diff: { summary: '1 worker diff(s) captured', output: { workers: [] } },
+                workers: [{
+                    workerId: 'worker-1',
+                    actionIds: ['edit-1'],
+                    status: 'completed',
+                    branch: 'coding-task/task1worker1',
+                    worktreePath: '.worktrees/task1worker1'
+                }]
+            },
+            metadata: { executionMode: 'parallel', useWorktree: true }
+        };
+        const tools = {
+            getToolDefinitions() {
+                return [{ name: 'coding_task', description: 'Coding task', activation: { kind: 'always', scope: 'session', activated: true } }];
+            },
+            getToolDefinition(name: string) {
+                return name === 'coding_task'
+                    ? { name: 'coding_task', description: 'Coding task', activation: { kind: 'always', scope: 'session', activated: true } }
+                    : undefined;
+            },
+            async activateTool() {
+                return true;
+            },
+            async invoke(name: string, input: any, sessionId: string) {
+                expect(name).toEqual('coding_task');
+                expect(sessionId).toEqual('rpc-review');
+                if (input.action === 'list') {
+                    return { tasks: [reviewTask], total: 1 };
+                }
+                if (input.action === 'get') {
+                    expect(input.task_id).toEqual('task-1');
+                    return { task: reviewTask };
+                }
+                if (input.action === 'rollback') {
+                    expect(input.task_id).toEqual('task-1');
+                    return {
+                        rolledBack: true,
+                        task: {
+                            ...reviewTask,
+                            status: 'rolled_back',
+                            result: {
+                                ...reviewTask.result,
+                                rollback: {
+                                    available: false,
+                                    checkpointId: 'checkpoint-task-1',
+                                    mode: 'parallel_worktree',
+                                    rolledBackAt: 3
+                                }
+                            }
+                        }
+                    };
+                }
+                if (input.action === 'cancel') {
+                    expect(input.task_id).toEqual('task-1');
+                    return {
+                        cancelled: true,
+                        task: {
+                            ...reviewTask,
+                            status: 'cancelled'
+                        }
+                    };
+                }
+                throw new Error('unexpected action');
+            }
+        } as any;
+        const rpc = new AppRpcServer(runtime, store, memory, tools, owners, new SessionHandler(runtime, store, owners), events);
+
+        const listed = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 15,
+            method: 'coding_task.list',
+            params: { sessionId: 'rpc-review' }
+        }, { principalId: 'user-1' });
+        expect((listed as any).result.total).toEqual(1);
+        expect((listed as any).result.tasks[0].id).toEqual('task-1');
+
+        const fetched = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 16,
+            method: 'coding_task.get',
+            params: { sessionId: 'rpc-review', taskId: 'task-1' }
+        }, { principalId: 'user-1' });
+        expect((fetched as any).result.task.id).toEqual('task-1');
+
+        const diff = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 17,
+            method: 'coding_task.diff',
+            params: { sessionId: 'rpc-review', taskId: 'task-1' }
+        }, { principalId: 'user-1' });
+        expect((diff as any).result).toEqual({
+            sessionId: 'rpc-review',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: { summary: '1 worker diff(s) captured', output: { workers: [] } },
+            workers: [{
+                workerId: 'worker-1',
+                actionIds: ['edit-1'],
+                status: 'completed',
+                branch: 'coding-task/task1worker1',
+                worktreePath: '.worktrees/task1worker1'
+            }]
+        });
+
+        const rolledBack = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 18,
+            method: 'coding_task.rollback',
+            params: { sessionId: 'rpc-review', taskId: 'task-1' }
+        }, { principalId: 'user-1' });
+        expect((rolledBack as any).result).toEqual({
+            sessionId: 'rpc-review',
+            taskId: 'task-1',
+            rolledBack: true,
+            task: {
+                ...reviewTask,
+                status: 'rolled_back',
+                result: {
+                    ...reviewTask.result,
+                    rollback: {
+                        available: false,
+                        checkpointId: 'checkpoint-task-1',
+                        mode: 'parallel_worktree',
+                        rolledBackAt: 3
+                    }
+                }
+            }
+        });
+
+        const cancelled = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 19,
+            method: 'coding_task.cancel',
+            params: { sessionId: 'rpc-review', taskId: 'task-1' }
+        }, { principalId: 'user-1' });
+        expect((cancelled as any).result).toEqual({
+            sessionId: 'rpc-review',
+            taskId: 'task-1',
+            cancelled: true,
+            task: {
+                ...reviewTask,
+                status: 'cancelled'
+            }
+        });
+    }
+
     @Test('streams shared turn chunks and final response')
     async streamsSharedTurnChunksAndFinalResponse() {
         const store = new InMemorySessionStore();
         const memory = new InMemoryMemoryStore();
         const owners = new SessionOwnerStore(store);
         const events = new EventHandler(owners);
+        const streamedPrincipals: string[] = [];
         const runtime = {
-            async *runStreamingTurn(sessionId: string, input: string) {
+            async *runStreamingTurn(sessionId: string, input: string, principalId?: string) {
+                streamedPrincipals.push(principalId || '');
                 await store.append(sessionId, { id: 'u1', role: 'user', content: input, createdAt: 1 } as any);
                 yield { type: 'text', content: 'hel' };
                 yield { type: 'text', content: 'lo' };
@@ -1605,6 +1841,7 @@ export class AppRpcServerTest {
                 message: { id: 'a1', role: 'assistant', content: 'hello', createdAt: 2 }
             }
         }]);
+        expect(streamedPrincipals).toEqual(['user-1']);
     }
 }
 

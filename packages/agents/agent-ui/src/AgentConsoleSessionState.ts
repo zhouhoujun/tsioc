@@ -79,6 +79,30 @@ export interface AgentConsoleApprovalRequest {
     timeoutMs: number;
 }
 
+export interface AgentConsoleReviewTaskItem {
+    id: string;
+    title: string;
+    status?: string;
+    executionMode?: 'sequential' | 'parallel' | null;
+    workerCount?: number;
+    rollbackAvailable?: boolean;
+    rollbackMode?: string;
+    checkpointSummary?: string;
+    updatedAt?: number;
+    detail?: string;
+}
+
+export interface AgentConsoleReviewWorker {
+    workerId: string;
+    actionIds?: string[];
+    status?: string;
+    branch?: string;
+    worktreePath?: string;
+    diff?: any;
+    output?: any;
+    error?: string;
+}
+
 export interface AgentConsoleSessionMeta {
     sessionId?: string;
     provider?: string;
@@ -121,6 +145,8 @@ export interface AgentConsoleOptions {
     toolSelectionPageSize?: number;
     approvalsVisibleItems?: number;
     approvalSelectionPageSize?: number;
+    reviewDetailVisibleLines?: number;
+    reviewDetailPageSize?: number;
     toolRunsVisibleItems?: number;
     selectVisibleOptions?: number;
     storedToolRunsLimit?: number;
@@ -132,6 +158,7 @@ export interface AgentConsoleOptions {
     messagesHint?: string;
     toolsHint?: string;
     approvalsHint?: string;
+    reviewDetailHint?: string;
     messageDetailHint?: string;
     messageDetailClosedHint?: string;
     selectHint?: string;
@@ -160,6 +187,8 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     toolSelectionPageSize: 4,
     approvalsVisibleItems: 4,
     approvalSelectionPageSize: 4,
+    reviewDetailVisibleLines: 8,
+    reviewDetailPageSize: 6,
     toolRunsVisibleItems: 3,
     selectVisibleOptions: 12,
     storedToolRunsLimit: 8,
@@ -171,6 +200,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
+    reviewDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -210,11 +240,21 @@ export class AgentConsoleSessionState {
     sessions: AgentConsoleSessionItem[] = [];
     sessionsFocused = false;
     selectedSessionId = '';
+    tasksFocused = false;
     tools: AgentConsoleToolItem[] = [];
     toolsFocused = false;
     selectedToolName = '';
     approvalsFocused = false;
     selectedApprovalId = '';
+    reviewOpen = false;
+    reviewTask?: Record<string, any> | null;
+    reviewDiff?: any | null;
+    reviewWorkers: AgentConsoleReviewWorker[] = [];
+    reviewTaskChoices: AgentConsoleReviewTaskItem[] = [];
+    taskRecords: Record<string, any>[] = [];
+    selectedReviewTaskId = '';
+    reviewDetailScroll = 0;
+    reviewDetailColumnScroll = 0;
     activities: AgentConsoleActivity[] = [];
     runningTools: string[] = [];
     toolRuns: AgentConsoleToolRun[] = [];
@@ -241,9 +281,12 @@ export class AgentConsoleSessionState {
     selectMenuAction?: (value: string | undefined) => void | Promise<void>;
     copyFocusedTextAction?: (text: string, label: string) => void | Promise<void>;
     activateSelectedSessionAction?: (sessionId: string) => void | Promise<void>;
+    openSelectedTaskAction?: (taskId: string) => void | Promise<void>;
+    cancelSelectedTaskAction?: (taskId: string) => void | Promise<void>;
+    rollbackSelectedTaskAction?: (taskId: string) => void | Promise<void>;
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
-    commandHints = ['/help', '/tools', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
+    commandHints = ['/help', '/tools', '/tasks', '/review', '/rollback', '/model', '/clear', '/multiline', '/send', '/cancel', '/sessions', '/messages', '/session', '/new', '/approvals', '/approve', '/deny', '/copy', '/quit', '/exit'];
 
     protected activeToolSet = new Set<string>();
     protected listeners = new Set<() => void>();
@@ -328,8 +371,10 @@ export class AgentConsoleSessionState {
 
     protected syncDerivedInputFocus(): void {
         this.inputFocused = !this.sessionsFocused
+            && !this.tasksFocused
             && !this.toolsFocused
             && !this.approvalsFocused
+            && !this.reviewOpen
             && !this.messagesFocused
             && !this.messageDetailOpen
             && !(this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu));
@@ -343,12 +388,20 @@ export class AgentConsoleSessionState {
         return !!this.sessionsFocused;
     }
 
+    hasTaskFocus(): boolean {
+        return !!this.tasksFocused;
+    }
+
     hasToolFocus(): boolean {
         return !!this.toolsFocused;
     }
 
     hasApprovalFocus(): boolean {
         return !!this.approvalsFocused;
+    }
+
+    hasReviewFocus(): boolean {
+        return !!this.reviewOpen;
     }
 
     hasMessageFocus(): boolean {
@@ -362,8 +415,10 @@ export class AgentConsoleSessionState {
     isAnyFocusActive(): boolean {
         return this.hasBlockingSelectMenu()
             || this.hasSessionFocus()
+            || this.hasTaskFocus()
             || this.hasToolFocus()
             || this.hasApprovalFocus()
+            || this.hasReviewFocus()
             || this.hasMessageFocus()
             || this.hasMessageDetailFocus();
     }
@@ -386,6 +441,7 @@ export class AgentConsoleSessionState {
     shouldRouteDraftNavigation(hasActiveTextPrompt: boolean): boolean {
         return !this.hasToolFocus()
             && !this.hasApprovalFocus()
+            && !this.hasReviewFocus()
             && !this.hasBlockingSelectMenu()
             && !this.hasSessionFocus()
             && !this.hasMessageFocus()
@@ -900,6 +956,69 @@ export class AgentConsoleSessionState {
         return this.sessions.find(item => item.id === this.selectedSessionId);
     }
 
+    setTaskRecords(tasks: Record<string, any>[]): void {
+        this.taskRecords = tasks.slice();
+        this.notify();
+    }
+
+    setTasksFocused(focused: boolean): void {
+        this.tasksFocused = focused;
+        if (focused && !this.selectedReviewTaskId && this.reviewTaskChoices.length) {
+            this.selectedReviewTaskId = this.reviewTaskChoices[0].id;
+        }
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    setSelectedReviewTaskId(taskId: string): void {
+        if (!taskId || !this.reviewTaskChoices.some(item => item.id === taskId)) {
+            return;
+        }
+        this.selectedReviewTaskId = taskId;
+        this.notify();
+    }
+
+    moveTaskSelection(delta: number): void {
+        if (!this.reviewTaskChoices.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.reviewTaskChoices.findIndex(item => item.id === this.selectedReviewTaskId));
+        const nextIndex = (currentIndex + delta + this.reviewTaskChoices.length) % this.reviewTaskChoices.length;
+        this.selectedReviewTaskId = this.reviewTaskChoices[nextIndex].id;
+        this.notify();
+    }
+
+    moveTaskSelectionPage(delta: number, pageSize?: number): void {
+        if (!this.reviewTaskChoices.length) {
+            return;
+        }
+        const currentIndex = Math.max(0, this.reviewTaskChoices.findIndex(item => item.id === this.selectedReviewTaskId));
+        const resolvedPageSize = pageSize ?? this.consoleOptions.sessionSelectionPageSize;
+        const nextIndex = Math.max(0, Math.min(this.reviewTaskChoices.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+        this.selectedReviewTaskId = this.reviewTaskChoices[nextIndex].id;
+        this.notify();
+    }
+
+    selectFirstTask(): void {
+        if (!this.reviewTaskChoices.length) {
+            return;
+        }
+        this.selectedReviewTaskId = this.reviewTaskChoices[0].id;
+        this.notify();
+    }
+
+    selectLastTask(): void {
+        if (!this.reviewTaskChoices.length) {
+            return;
+        }
+        this.selectedReviewTaskId = this.reviewTaskChoices[this.reviewTaskChoices.length - 1].id;
+        this.notify();
+    }
+
+    get selectedTask(): Record<string, any> | undefined {
+        return this.taskRecords.find(item => item?.id === this.selectedReviewTaskId);
+    }
+
     setToolsFocused(focused: boolean): void {
         this.toolsFocused = focused;
         if (focused && !this.selectedToolName && this.tools.length) {
@@ -1014,6 +1133,207 @@ export class AgentConsoleSessionState {
 
     get selectedApproval(): AgentConsoleApprovalRequest | undefined {
         return this.pendingApprovals.find(item => item.id === this.selectedApprovalId);
+    }
+
+    setReviewTasks(tasks: AgentConsoleReviewTaskItem[]): void {
+        this.reviewTaskChoices = tasks.slice();
+        if (!this.reviewTaskChoices.length) {
+            this.selectedReviewTaskId = '';
+        } else if (this.selectedReviewTaskId && this.reviewTaskChoices.some(item => item.id === this.selectedReviewTaskId)) {
+            // Preserve explicit review selection when possible.
+        } else {
+            this.selectedReviewTaskId = this.reviewTaskChoices[0].id;
+        }
+        this.notify();
+    }
+
+    openReview(
+        task?: Record<string, any> | null,
+        payload?: {
+            diff?: any;
+            workers?: AgentConsoleReviewWorker[];
+            executionMode?: 'sequential' | 'parallel' | null;
+        }
+    ): void {
+        if (task !== undefined) {
+            this.reviewTask = task || null;
+        }
+        if (payload) {
+            this.reviewDiff = payload.diff ?? null;
+            this.reviewWorkers = Array.isArray(payload.workers) ? payload.workers.slice() : [];
+        }
+        const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
+        if (selectedTaskId) {
+            this.selectedReviewTaskId = selectedTaskId;
+            const executionMode = payload?.executionMode ?? this.reviewExecutionMode;
+            const existingIndex = this.reviewTaskChoices.findIndex(item => item.id === selectedTaskId);
+            const nextItem: AgentConsoleReviewTaskItem = {
+                id: selectedTaskId,
+                title: String(this.reviewTask?.title || selectedTaskId),
+                status: this.reviewTask?.status,
+                executionMode,
+                updatedAt: this.reviewTask?.updatedAt,
+                detail: typeof this.reviewDiff?.summary === 'string' ? this.reviewDiff.summary : undefined
+            };
+            if (existingIndex >= 0) {
+                this.reviewTaskChoices = this.reviewTaskChoices.map(item => item.id === selectedTaskId ? {
+                    ...item,
+                    ...nextItem
+                } : item);
+            } else {
+                this.reviewTaskChoices = [nextItem, ...this.reviewTaskChoices];
+            }
+        }
+        if (!this.reviewTask && !this.reviewDiff && !this.reviewWorkers.length) {
+            return;
+        }
+        this.reviewOpen = true;
+        this.reviewDetailScroll = 0;
+        this.reviewDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    closeReview(): void {
+        if (!this.reviewOpen && this.reviewDetailScroll === 0 && this.reviewDetailColumnScroll === 0) {
+            return;
+        }
+        this.reviewOpen = false;
+        this.reviewDetailScroll = 0;
+        this.reviewDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    clearReview(): void {
+        this.reviewTask = null;
+        this.reviewDiff = null;
+        this.reviewWorkers = [];
+        this.reviewTaskChoices = [];
+        this.taskRecords = [];
+        this.selectedReviewTaskId = '';
+        this.reviewOpen = false;
+        this.reviewDetailScroll = 0;
+        this.reviewDetailColumnScroll = 0;
+        this.syncDerivedInputFocus();
+        this.notify();
+    }
+
+    get reviewExecutionMode(): 'sequential' | 'parallel' | null {
+        const mode = this.reviewTask?.result?.executionMode
+            ?? this.reviewTask?.metadata?.executionMode
+            ?? null;
+        return mode === 'parallel' || mode === 'sequential' ? mode : null;
+    }
+
+    get reviewDetailLines(): string[] {
+        const lines: string[] = [];
+        const summary = this.reviewDiff?.summary ?? this.reviewTask?.result?.diff?.summary;
+        if (summary) {
+            lines.push(`Summary: ${summary}`);
+        }
+
+        const rollback = this.reviewTask?.result?.rollback;
+        if (rollback) {
+            const rollbackParts = [
+                rollback.available === true ? 'available' : 'unavailable',
+                rollback.mode ? `mode ${rollback.mode}` : '',
+                rollback.checkpointId ? `checkpoint ${rollback.checkpointId}` : '',
+                rollback.rolledBackAt ? `applied ${new Date(rollback.rolledBackAt).toISOString()}` : '',
+                rollback.reason ? rollback.reason : ''
+            ].filter(Boolean);
+            if (rollbackParts.length) {
+                lines.push(`Rollback: ${rollbackParts.join(' · ')}`);
+            }
+        }
+
+        const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
+            ? this.reviewTask?.metadata?.checkpoints
+            : [];
+        if (checkpoints.length) {
+            const available = checkpoints.filter((entry: any) => entry?.status === 'available').length;
+            const applied = checkpoints.filter((entry: any) => entry?.status === 'applied').length;
+            const invalidated = checkpoints.filter((entry: any) => entry?.status === 'invalidated').length;
+            lines.push(`Checkpoints: ${checkpoints.length} total · ${available} available · ${applied} applied · ${invalidated} invalidated`);
+        }
+
+        if (this.reviewWorkers.length) {
+            lines.push(`Workers: ${this.reviewWorkers.length}`);
+            for (const worker of this.reviewWorkers) {
+                const workerMeta = [
+                    worker.status ? `status ${worker.status}` : '',
+                    worker.branch ? `branch ${worker.branch}` : '',
+                    worker.worktreePath ? `worktree ${worker.worktreePath}` : '',
+                    worker.actionIds?.length ? `actions ${worker.actionIds.join(', ')}` : ''
+                ].filter(Boolean).join(' · ');
+                lines.push(`[${worker.workerId}] ${workerMeta || 'no metadata'}`);
+                if (worker.error) {
+                    lines.push(`  error ${worker.error}`);
+                }
+            }
+        }
+
+        const aggregateDiffText = this.stringifyReviewContent(this.reviewDiff);
+        if (aggregateDiffText) {
+            lines.push('Aggregate Diff');
+            lines.push(...aggregateDiffText.split('\n'));
+        } else if (!lines.length) {
+            lines.push('No diff captured.');
+        }
+
+        return lines.map(line => this.expandTabs(line));
+    }
+
+    get reviewDetailMaxColumn(): number {
+        return this.reviewDetailLines.reduce((max, line) => Math.max(max, line.length), 0);
+    }
+
+    scrollReviewDetail(delta: number): void {
+        if (!this.reviewOpen) {
+            return;
+        }
+        const lines = this.reviewDetailLines;
+        const maxScroll = Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines);
+        this.reviewDetailScroll = Math.max(0, Math.min(maxScroll, this.reviewDetailScroll + delta));
+        this.notify();
+    }
+
+    scrollReviewDetailPage(delta: number, pageSize?: number): void {
+        if (!this.reviewOpen) {
+            return;
+        }
+        const resolvedPageSize = pageSize ?? this.consoleOptions.reviewDetailPageSize;
+        this.scrollReviewDetail(delta * Math.max(1, resolvedPageSize));
+    }
+
+    scrollReviewDetailToEdge(position: 'start' | 'end'): void {
+        if (!this.reviewOpen) {
+            return;
+        }
+        const lines = this.reviewDetailLines;
+        this.reviewDetailScroll = position === 'start'
+            ? 0
+            : Math.max(0, lines.length - this.consoleOptions.reviewDetailVisibleLines);
+        this.notify();
+    }
+
+    scrollReviewDetailColumns(delta: number): void {
+        if (!this.reviewOpen) {
+            return;
+        }
+        const maxScroll = Math.max(0, this.reviewDetailMaxColumn - 1);
+        this.reviewDetailColumnScroll = Math.max(0, Math.min(maxScroll, this.reviewDetailColumnScroll + delta));
+        this.notify();
+    }
+
+    scrollReviewDetailColumnsToEdge(position: 'start' | 'end'): void {
+        if (!this.reviewOpen) {
+            return;
+        }
+        this.reviewDetailColumnScroll = position === 'start'
+            ? 0
+            : Math.max(0, this.reviewDetailMaxColumn - 1);
+        this.notify();
     }
 
     setNotice(message: string): void {
@@ -1199,6 +1519,10 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
+        if (this.reviewOpen) {
+            this.closeReview();
+            return true;
+        }
         if (this.messageDetailOpen) {
             this.closeMessageDetail();
             return true;
@@ -1209,6 +1533,10 @@ export class AgentConsoleSessionState {
         }
         if (this.approvalsFocused) {
             this.setApprovalsFocused(false);
+            return true;
+        }
+        if (this.tasksFocused) {
+            this.setTasksFocused(false);
             return true;
         }
         if (this.toolsFocused) {
@@ -1491,6 +1819,35 @@ export class AgentConsoleSessionState {
         return String(value || '').replace(/\t/g, '    ');
     }
 
+    protected stringifyReviewContent(value: any): string {
+        if (value == null) {
+            return '';
+        }
+        if (typeof value === 'string') {
+            return value.trim();
+        }
+        if (typeof value?.text === 'string') {
+            return value.text.trim();
+        }
+        if (typeof value?.diff === 'string') {
+            return value.diff.trim();
+        }
+        if (typeof value?.output === 'string') {
+            return value.output.trim();
+        }
+        if (typeof value?.output?.text === 'string') {
+            return value.output.text.trim();
+        }
+        if (typeof value?.output?.diff === 'string') {
+            return value.output.diff.trim();
+        }
+        try {
+            return JSON.stringify(value, null, 2);
+        } catch {
+            return String(value);
+        }
+    }
+
     protected buildSelectedApprovalCopyText(): string {
         const selected = this.selectedApproval;
         if (!selected) {
@@ -1500,6 +1857,32 @@ export class AgentConsoleSessionState {
             `${selected.toolName} (${selected.id})`,
             selected.reason,
             selected.inputSummary || selected.summary
+        ].filter(Boolean).join('\n');
+    }
+
+    protected buildSelectedReviewCopyText(): string {
+        const header = [
+            this.reviewTask?.title || this.selectedReviewTaskId || 'review',
+            this.reviewTask?.id ? `(${this.reviewTask.id})` : '',
+            this.reviewTask?.status ? `status=${this.reviewTask.status}` : '',
+            this.reviewExecutionMode ? `mode=${this.reviewExecutionMode}` : ''
+        ].filter(Boolean).join(' ');
+        return [header, ...this.reviewDetailLines].filter(Boolean).join('\n');
+    }
+
+    protected buildSelectedTaskCopyText(): string {
+        const selected = this.selectedTask;
+        if (!selected) {
+            return '';
+        }
+        const workerCount = Array.isArray(selected?.result?.workers) ? selected.result.workers.length : 0;
+        return [
+            `${selected.title || selected.id} (${selected.id})`,
+            selected.status ? `status=${selected.status}` : '',
+            selected?.result?.executionMode || selected?.metadata?.executionMode ? `mode=${selected?.result?.executionMode || selected?.metadata?.executionMode}` : '',
+            `workers=${workerCount}`,
+            typeof selected?.planning?.summary === 'string' ? selected.planning.summary : '',
+            typeof selected?.goal === 'string' ? selected.goal : ''
         ].filter(Boolean).join('\n');
     }
 
@@ -1519,7 +1902,7 @@ export class AgentConsoleSessionState {
             await this.cancelSelectMenu();
             return true;
         }
-        if (this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.toolsFocused || this.sessionsFocused) {
+        if (this.reviewOpen || this.messageDetailOpen || this.messagesFocused || this.approvalsFocused || this.tasksFocused || this.toolsFocused || this.sessionsFocused) {
             await this.dismissFocusLayer();
             return true;
         }
@@ -1562,6 +1945,43 @@ export class AgentConsoleSessionState {
         const normalized = String(key || '').trim().toLowerCase();
         if (!normalized) {
             return false;
+        }
+        if (this.reviewOpen) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.buildSelectedReviewCopyText(), 'review');
+                    return true;
+                case 'down':
+                    this.scrollReviewDetail(1);
+                    return true;
+                case 'up':
+                    this.scrollReviewDetail(-1);
+                    return true;
+                case 'left':
+                    this.scrollReviewDetailColumns(-4);
+                    return true;
+                case 'right':
+                    this.scrollReviewDetailColumns(4);
+                    return true;
+                case 'pageup':
+                    this.scrollReviewDetailPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.scrollReviewDetailPage(1);
+                    return true;
+                case 'home':
+                    this.scrollReviewDetailToEdge('start');
+                    return true;
+                case 'end':
+                    this.scrollReviewDetailToEdge('end');
+                    return true;
+                default:
+                    return false;
+            }
         }
         if (this.messageDetailOpen) {
             if (this.isDismissKey(normalized)) {
@@ -1672,6 +2092,56 @@ export class AgentConsoleSessionState {
                     return true;
                 case 'end':
                     this.selectLastApproval();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        if (this.tasksFocused) {
+            if (this.isDismissKey(normalized)) {
+                await this.dismissFocusLayer();
+                return true;
+            }
+            switch (normalized) {
+                case 'copy':
+                    await this.copyFocusedTextAction?.(this.buildSelectedTaskCopyText(), 'selected task');
+                    return true;
+                case 'enter':
+                case 'r':
+                    if (this.selectedTask?.id) {
+                        await this.openSelectedTaskAction?.(this.selectedTask.id);
+                        return true;
+                    }
+                    return false;
+                case 'x':
+                    if (this.selectedTask?.id) {
+                        await this.cancelSelectedTaskAction?.(this.selectedTask.id);
+                        return true;
+                    }
+                    return false;
+                case 'b':
+                    if (this.selectedTask?.id) {
+                        await this.rollbackSelectedTaskAction?.(this.selectedTask.id);
+                        return true;
+                    }
+                    return false;
+                case 'down':
+                    this.moveTaskSelection(1);
+                    return true;
+                case 'up':
+                    this.moveTaskSelection(-1);
+                    return true;
+                case 'pageup':
+                    this.moveTaskSelectionPage(-1);
+                    return true;
+                case 'pagedown':
+                    this.moveTaskSelectionPage(1);
+                    return true;
+                case 'home':
+                    this.selectFirstTask();
+                    return true;
+                case 'end':
+                    this.selectLastTask();
                     return true;
                 default:
                     return false;
@@ -1821,7 +2291,7 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'menuBlocked' };
         }
 
-        if (this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasToolFocus() || this.hasSessionFocus()) {
+        if (this.hasReviewFocus() || this.hasMessageDetailFocus() || this.hasMessageFocus() || this.hasApprovalFocus() || this.hasToolFocus() || this.hasSessionFocus()) {
             const focusKey = this.resolveFocusShortcutKey(rawText, controlKey);
             if (focusKey) {
                 await this.handleFocusKey(focusKey);
