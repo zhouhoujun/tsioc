@@ -10,6 +10,7 @@ export interface StreamChunk {
         promptTokens?: number;
         completionTokens?: number;
         totalTokens?: number;
+        cachedPromptTokens?: number;
     };
     metadata?: Record<string, any>;
 }

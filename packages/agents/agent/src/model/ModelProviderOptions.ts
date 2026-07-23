@@ -12,6 +12,7 @@ export interface AgentModelConfig {
     headers?: Record<string, string>;
     thinkingBudget?: number;
     reasoning?: boolean;
+    promptCache?: boolean;
 }
 
 export interface AgentModelRouteWhen {

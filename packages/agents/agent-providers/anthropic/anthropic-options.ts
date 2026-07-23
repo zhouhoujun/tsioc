@@ -8,6 +8,8 @@ export interface AnthropicProviderOptions {
     maxTokens?: number;
     /** Anthropic specific: budget for extended thinking in tokens */
     thinkingBudget?: number;
+    /** Enable Anthropic ephemeral prompt caching for stable system context. */
+    promptCache?: boolean;
     headers?: Record<string, string>;
 }
 

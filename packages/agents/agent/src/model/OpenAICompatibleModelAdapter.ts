@@ -3,7 +3,7 @@ import { AgentMessage } from '../runtime/AgentMessage';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
-import { AgentToolCall, ModelResponse } from './ModelResponse';
+import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
 import { AgentModelOptions } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
@@ -175,7 +175,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     model: this.resolveModel(),
                     finishReason,
                     reasoningContent,
-                    usage: body.usage
+                    usage: this.normalizeUsage(body.usage),
+                    providerUsage: body.usage
                 }
             };
         } finally {
@@ -246,7 +247,11 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                 const choice = event.choices?.[0];
                 if (!choice) {
                     if (event.usage) {
-                        return [{ type: 'done', usage: event.usage as any }];
+                        return [{
+                            type: 'done',
+                            usage: this.normalizeUsage(event.usage),
+                            metadata: { providerUsage: event.usage }
+                        }];
                     }
                     return [];
                 }
@@ -290,11 +295,12 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     emitted.push({
                         type: 'done',
                         toolCalls: toolCalls.length ? toolCalls : undefined,
-                        usage: event.usage as any,
+                        usage: this.normalizeUsage(event.usage),
                         metadata: {
                             finishReason: choice.finish_reason,
                             provider: this.options.provider,
-                            model: this.resolveModel()
+                            model: this.resolveModel(),
+                            providerUsage: event.usage
                         }
                     });
                 }
@@ -409,6 +415,18 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             ...this.createRequest(request, toolNameMap),
             stream: true,
             stream_options: { include_usage: true }
+        };
+    }
+
+    private normalizeUsage(usage?: OpenAIChatCompletionResponse['usage']): ModelTokenUsage | undefined {
+        if (!usage) {
+            return undefined;
+        }
+        return {
+            promptTokens: usage.prompt_tokens,
+            completionTokens: usage.completion_tokens,
+            totalTokens: usage.total_tokens,
+            cachedPromptTokens: usage.prompt_tokens_details?.cached_tokens
         };
     }
 

@@ -44,7 +44,12 @@ export class ModelProviderTest {
                             },
                             finish_reason: 'tool_calls'
                         }],
-                        usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }
+                        usage: {
+                            prompt_tokens: 3,
+                            completion_tokens: 2,
+                            total_tokens: 5,
+                            prompt_tokens_details: { cached_tokens: 1 }
+                        }
                     };
                 }
             };
@@ -78,6 +83,8 @@ export class ModelProviderTest {
         expect(body.tools[0].function.name).toEqual('echo');
         expect(result.toolCalls?.[0].input.value).toEqual('ok');
         expect(result.metadata?.reasoningContent).toEqual('internal');
+        expect((result.metadata?.usage as any).promptTokens).toEqual(3);
+        expect((result.metadata?.usage as any).cachedPromptTokens).toEqual(1);
     }
 
     @Test('provideAgent works with model config')
@@ -126,7 +133,7 @@ export class ModelProviderTest {
                             model: 'claude-sonnet-4-20250514',
                             stop_reason: 'end_turn',
                             stop_sequence: null,
-                            usage: { input_tokens: 10, output_tokens: 20 }
+                            usage: { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 4, cache_creation_input_tokens: 6 }
                         };
                     }
                 };
@@ -155,7 +162,8 @@ export class ModelProviderTest {
                     model: 'claude-sonnet-4-20250514',
                     baseUrl: 'https://anthropic.example',
                     apiKey: 'anthropic-key',
-                    thinkingBudget: 2048
+                    thinkingBudget: 2048,
+                    promptCache: true
                 }
             },
             complexityRouting: {
@@ -165,7 +173,7 @@ export class ModelProviderTest {
 
         const result = await adapter.complete({
             sessionId: 's1',
-            summary: '',
+            summary: 'stable project context',
             memory: [],
             tools: [],
             messages: [{
@@ -179,7 +187,10 @@ export class ModelProviderTest {
         expect(calls[0].url).toEqual('https://anthropic.example/v1/messages');
         expect(calls[0].body.model).toEqual('claude-sonnet-4-20250514');
         expect(calls[0].body.thinking.budget_tokens).toEqual(2048);
+        expect(Array.isArray(calls[0].body.system)).toEqual(true);
+        expect(calls[0].body.system[0].cache_control.type).toEqual('ephemeral');
         expect(result.metadata?.provider).toEqual('anthropic');
+        expect((result.metadata?.usage as any).cachedPromptTokens).toEqual(4);
         expect(result.metadata?.routing?.complexity).toEqual('complex');
         expect(result.metadata?.routing?.profile).toEqual('claude');
     }
@@ -409,7 +420,7 @@ export class ModelProviderTest {
             const chunks = [
                 'data: {"choices":[{"delta":{"content":[{"type":"text","text":"hello "}]},"finish_reason":null}]}\n\n',
                 'data: {"choices":[{"delta":{"text":"world","reasoning":"thinking"},"finish_reason":null}]}\n\n',
-                'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}\n\n',
+                'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5,"prompt_tokens_details":{"cached_tokens":1}}}\n\n',
                 'data: [DONE]\n\n'
             ];
             return {
@@ -444,7 +455,7 @@ export class ModelProviderTest {
 
         expect(received.filter(item => item.type === 'text').map(item => item.content).join('')).toBe('hello world');
         expect(received.filter(item => item.type === 'reasoning').map(item => item.content).join('')).toBe('thinking');
-        expect(received.some(item => item.type === 'done' && item.usage?.total_tokens === 5)).toBe(true);
+        expect(received.some(item => item.type === 'done' && item.usage?.totalTokens === 5 && item.usage?.cachedPromptTokens === 1)).toBe(true);
     }
 
     @Test('parses openai-compatible streaming tool calls from choice message payload')

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Optional, Module, ModuleWithProviders } from '@tsdi/ioc';
-import { ModelAdapter, ModelRequest, ModelResponse, AgentToolCall } from '@tsdi/agent';
+import { ModelAdapter, ModelRequest, ModelResponse, AgentToolCall, ModelTokenUsage } from '@tsdi/agent';
 import { ApplicationArguments } from '@tsdi/core';
 import { ANTHROPIC_PROVIDER_OPTIONS } from './anthropic-tokens';
 import { AnthropicProviderOptions, defaultAnthropicProviderOptions } from './anthropic-options';
@@ -17,6 +17,7 @@ interface AnthropicContentBlock {
     input?: any;
     content?: string;
     tool_use_id?: string;
+    cache_control?: { type: 'ephemeral' };
 }
 
 interface AnthropicToolDef {
@@ -28,7 +29,7 @@ interface AnthropicToolDef {
 interface AnthropicRequest {
     model: string;
     max_tokens: number;
-    system?: string;
+    system?: string | Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }>;
     messages: AnthropicMessage[];
     tools?: AnthropicToolDef[];
     temperature?: number;
@@ -166,7 +167,10 @@ export class AnthropicProvider extends ModelAdapter {
         };
 
         if (systemParts.length) {
-            body.system = systemParts.join('\n\n');
+            const text = systemParts.join('\n\n');
+            body.system = this.options.promptCache
+                ? [{ type: 'text', text, cache_control: { type: 'ephemeral' } }]
+                : text;
         }
 
         if (tools?.length) {
@@ -203,8 +207,23 @@ export class AnthropicProvider extends ModelAdapter {
                 model: data.model,
                 finishReason: data.stop_reason ?? undefined,
                 reasoningContent,
-                usage: data.usage ?? {}
+                usage: this.normalizeUsage(data.usage),
+                providerUsage: data.usage ?? {}
             }
+        };
+    }
+
+    private normalizeUsage(usage?: AnthropicResponse['usage']): ModelTokenUsage | undefined {
+        if (!usage) {
+            return undefined;
+        }
+        const promptTokens = usage.input_tokens;
+        const completionTokens = usage.output_tokens;
+        return {
+            promptTokens,
+            completionTokens,
+            totalTokens: promptTokens + completionTokens,
+            cachedPromptTokens: usage.cache_read_input_tokens
         };
     }
 

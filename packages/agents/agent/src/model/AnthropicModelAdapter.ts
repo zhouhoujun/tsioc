@@ -1,7 +1,7 @@
 import { AgentMessage } from '../runtime/AgentMessage';
 import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
-import { AgentToolCall, ModelResponse } from './ModelResponse';
+import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
 import { AgentModelOptions } from './ModelProviderOptions';
 
@@ -265,17 +265,14 @@ export class AnthropicModelAdapter extends ModelAdapter {
                             yield {
                                 type: 'done',
                                 toolCalls: toolCalls.length ? toolCalls : undefined,
-                                usage: usage ? {
-                                    promptTokens: usage.input_tokens,
-                                    completionTokens: usage.output_tokens,
-                                    totalTokens: usage.input_tokens + usage.output_tokens
-                                } : undefined,
+                                usage: this.normalizeUsage(usage),
                                 metadata: {
                                     provider: 'anthropic',
                                     model: this.resolveModel(),
                                     finishReason: currentStopReason ?? undefined,
                                     reasoningContent: thinkingText || undefined,
-                                    usage
+                                    usage: this.normalizeUsage(usage),
+                                    providerUsage: usage
                                 }
                             };
                             break;
@@ -319,7 +316,10 @@ export class AnthropicModelAdapter extends ModelAdapter {
         };
 
         if (systemParts.length) {
-            body.system = systemParts.join('\n\n');
+            const text = systemParts.join('\n\n');
+            body.system = this.options.promptCache
+                ? [{ type: 'text', text, cache_control: { type: 'ephemeral' } }]
+                : text;
         }
 
         if (request.tools.length) {
@@ -421,8 +421,23 @@ export class AnthropicModelAdapter extends ModelAdapter {
                 provider: 'anthropic',
                 model: data.model,
                 finishReason: data.stop_reason ?? undefined,
-                usage: data.usage
+                usage: this.normalizeUsage(data.usage),
+                providerUsage: data.usage
             }
+        };
+    }
+
+    private normalizeUsage(usage?: AnthropicUsage): ModelTokenUsage | undefined {
+        if (!usage) {
+            return undefined;
+        }
+        const promptTokens = usage.input_tokens;
+        const completionTokens = usage.output_tokens;
+        return {
+            promptTokens,
+            completionTokens,
+            totalTokens: promptTokens + completionTokens,
+            cachedPromptTokens: usage.cache_read_input_tokens
         };
     }
 
