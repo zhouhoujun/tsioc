@@ -4,6 +4,7 @@ export interface AgentToolContext {
     sessionId: string;
     memory: MemoryStore;
     principalId?: string;
+    workspace?: string;
 }
 
 export interface AgentToolRetryPolicy {

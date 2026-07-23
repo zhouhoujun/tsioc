@@ -12,6 +12,7 @@ import { AuditSink, AgentAuditRecord } from './AuditSink';
 export interface ToolExecutionRequest {
     sessionId: string;
     principalId?: string;
+    workspace?: string;
     toolCall: { id: string; name: string; input?: any };
     definition: AgentToolDefinition;
     executionMode: 'sequential' | 'parallel';
@@ -145,7 +146,13 @@ export class ToolExecutionCoordinator {
     }
 
     private async invokeWithTimeout(request: ToolExecutionRequest, timeoutMs?: number): Promise<unknown> {
-        const invokePromise = this.toolRegistry.invoke(request.toolCall.name, request.toolCall.input, request.sessionId, request.principalId);
+        const invokePromise = this.toolRegistry.invoke(
+            request.toolCall.name,
+            request.toolCall.input,
+            request.sessionId,
+            request.principalId,
+            request.workspace
+        );
         if (!timeoutMs || timeoutMs <= 0) {
             return invokePromise;
         }

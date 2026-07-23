@@ -3,6 +3,7 @@ import { ToolRegistry } from './ToolRegistry';
 import { AgentTool, AgentToolDefinition } from './AgentTool';
 import { AGENT_TOOLS } from '../tokens';
 import { MemoryStore } from '../memory/MemoryStore';
+import { SessionStore } from '../memory/SessionStore';
 import { ToolActivationStore } from './ToolActivationStore';
 import { InMemoryToolActivationStore } from './InMemoryToolActivationStore';
 
@@ -18,6 +19,7 @@ export class LocalToolRegistry extends ToolRegistry {
     constructor(
         @Inject(AGENT_TOOLS, { defaultValue: [] }) private tools: AgentTool[],
         private memory: MemoryStore,
+        @Optional() private sessionStore?: SessionStore | null,
         @Optional() @Inject(ToolActivationStore) activationStore?: ToolActivationStore | null
     ) {
         super();
@@ -60,7 +62,7 @@ export class LocalToolRegistry extends ToolRegistry {
             || this.hasActivation(sessionId, name);
     }
 
-    async invoke(name: string, input: any, sessionId: string, principalId?: string): Promise<any> {
+    async invoke(name: string, input: any, sessionId: string, principalId?: string, workspace?: string): Promise<any> {
         const tool = this.getTool(name);
         if (!tool) {
             throw new Error(`Tool '${name}' not found`);
@@ -68,10 +70,12 @@ export class LocalToolRegistry extends ToolRegistry {
         if (!(await this.isToolActive(sessionId, name))) {
             throw new Error(`Tool '${name}' is not activated for this session. Activate it through the host or approval flow before invoking it.`);
         }
+        const resolvedWorkspace = String(workspace || (this.sessionStore ? (await this.sessionStore.get(sessionId)).workspace : '') || '').trim() || undefined;
         return tool.invoke(input, {
             sessionId,
             memory: this.memory,
-            principalId
+            principalId,
+            workspace: resolvedWorkspace
         });
     }
 

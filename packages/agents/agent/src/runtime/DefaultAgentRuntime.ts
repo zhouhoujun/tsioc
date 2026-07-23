@@ -40,6 +40,7 @@ interface ToolInvocationResult {
 
 interface TurnExecutionContext {
     principalId?: string;
+    workspace?: string;
 }
 
 const EMPTY_RESPONSE_RETRY_SYSTEM_PROMPT = 'Your previous reply was empty. Use the existing conversation context and provide a non-empty helpful answer. If the latest user message already answers a prior clarification, continue the original task directly and call tools if needed. If you still need information, ask one concise follow-up question.';
@@ -154,7 +155,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, {
-                principalId: input.principalId
+                principalId: input.principalId,
+                workspace: await this.resolveSessionWorkspace(input.sessionId)
             });
             await this.sessions.append(input.sessionId, result.message);
             await this.maybeSummarize(input.sessionId);
@@ -177,7 +179,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.sessions.append(sessionId, userMessage);
 
             try {
-                const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, { principalId });
+                const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, {
+                    principalId,
+                    workspace: await this.resolveSessionWorkspace(sessionId)
+                });
                 await this.sessions.append(sessionId, result.message);
                 await this.maybeSummarize(sessionId);
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
@@ -204,6 +209,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return;
         }
         await this.sessions.setWorkspace(sessionId, workspace);
+    }
+
+    protected async resolveSessionWorkspace(sessionId: string): Promise<string | undefined> {
+        const state = await this.sessions.get(sessionId);
+        return String(state.workspace || '').trim() || undefined;
     }
 
     protected resolveWorkspace(): string | undefined {
@@ -750,6 +760,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const outcome = await this.toolExecutionCoordinator.execute({
                 sessionId,
                 principalId: turnContext.principalId,
+                workspace: turnContext.workspace,
                 toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
                 definition,
                 executionMode,
@@ -782,7 +793,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         const startedAt = Date.now();
         try {
-            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, turnContext.principalId);
+            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, turnContext.principalId, turnContext.workspace);
             loopDetector.record(toolCall.name, toolCallInput, output);
             const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);

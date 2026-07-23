@@ -9,6 +9,8 @@ export interface CodeExecutionRequest {
     language: string;
     code: string;
     timeoutMs?: number;
+    workspace?: string;
+    workdir?: string;
 }
 
 export interface CodeExecutionResult {
@@ -16,4 +18,6 @@ export interface CodeExecutionResult {
     stderr: string;
     exitCode: number;
     error?: string;
+    cwd?: string;
+    workspace?: string;
 }

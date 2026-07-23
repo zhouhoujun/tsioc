@@ -2947,6 +2947,25 @@ export class AgentToolsPackageTest {
         expect(result.stdout).toContain('hello');
         expect(result.exitCode).toEqual(0);
 
+        const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'execute-code-'));
+        try {
+            await fs.mkdir(path.join(workspace, 'subdir'));
+            const tsRuntime = new LocalCodeExecutionAdapter({
+                file: { rootDir: workspace }
+            });
+            const tsResult = await tsRuntime.execute({
+                language: 'typescript',
+                code: 'const value: number = 2 + 3; console.log(value);',
+                workdir: 'subdir',
+                timeoutMs: 5000
+            });
+            expect(tsResult.stdout).toContain('5');
+            expect(tsResult.exitCode).toEqual(0);
+            expect(tsResult.cwd).toEqual(path.join(workspace, 'subdir'));
+        } finally {
+            await fs.rm(workspace, { recursive: true, force: true });
+        }
+
         let langError: Error | undefined;
         try {
             await tool.invoke({ code: 'x' }, createSessionContext());
