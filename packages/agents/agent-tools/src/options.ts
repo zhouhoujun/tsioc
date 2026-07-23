@@ -139,6 +139,7 @@ export type AgentToolItem =
     | 'stat'
     | 'glob_search'
     | 'content_search'
+    | 'watch_files'
     | 'calculator'
     | 'web_search'
     | 'web_extract'

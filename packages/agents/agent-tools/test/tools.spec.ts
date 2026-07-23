@@ -53,6 +53,7 @@ import { ListDirTool } from '../files/list-dir.tool';
 import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
+import { WatchFilesTool } from '../files/watch-files.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
 import { BrowserOpenTool } from '../browser/browser-open.tool';
@@ -98,7 +99,7 @@ import { ScheduleTool as ExportedScheduleTool } from '../scheduling';
 import { TerminalTool as ExportedTerminalTool } from '../terminal';
 import { ProcessStartTool as ExportedProcessStartTool, ProcessPollTool as ExportedProcessPollTool, ProcessKillTool as ExportedProcessKillTool } from '../process';
 import { ImageInfoTool as ExportedImageInfoTool, PdfReadTool as ExportedPdfReadTool } from '../media';
-import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool, MkdirTool as ExportedMkdirTool, CopyFileTool as ExportedCopyFileTool, MoveFileTool as ExportedMoveFileTool, DeleteFileTool as ExportedDeleteFileTool, ListDirTool as ExportedListDirTool, StatTool as ExportedStatTool } from '../files';
+import { WriteFileTool as ExportedWriteFileTool, EditFileTool as ExportedEditFileTool, MkdirTool as ExportedMkdirTool, CopyFileTool as ExportedCopyFileTool, MoveFileTool as ExportedMoveFileTool, DeleteFileTool as ExportedDeleteFileTool, ListDirTool as ExportedListDirTool, StatTool as ExportedStatTool, WatchFilesTool as ExportedWatchFilesTool } from '../files';
 import * as ExportedMemoryModule from '../memory';
 const ExportedMemory: any = ExportedMemoryModule;
 import { HttpFetchTool as ExportedHttpFetchTool, HttpRequestTool as ExportedHttpRequestTool } from '../http';
@@ -676,6 +677,32 @@ export class AgentToolsPackageTest {
         expect(outsideError?.message).toContain('workspace root');
     }
 
+    @Test('watch files records changes for workspace paths')
+    async watchFilesRecordsChangesForWorkspacePaths() {
+        const workspace = await this.createWorkspace();
+        const tool = new WatchFilesTool({ file: { rootDir: workspace } } as any);
+
+        const started = await tool.invoke({ action: 'start', path: 'src/alpha.txt' }, createSessionContext());
+        expect(started.active).toEqual(true);
+
+        try {
+            await fs.writeFile(path.join(workspace, 'src', 'alpha.txt'), 'alpha updated', 'utf8');
+            await new Promise(resolve => setTimeout(resolve, 150));
+            const polled = await tool.invoke({ action: 'poll', watch_id: started.watchId }, createSessionContext());
+            expect(polled.events.length).toBeGreaterThan(0);
+        } finally {
+            await tool.invoke({ action: 'stop', watch_id: started.watchId }, createSessionContext()).catch(() => void 0);
+        }
+
+        let outsideError: Error | undefined;
+        try {
+            await tool.invoke({ action: 'start', path: '../outside.txt' }, createSessionContext());
+        } catch (err) {
+            outsideError = err as Error;
+        }
+        expect(outsideError?.message).toContain('outside');
+    }
+
     @Test('filesystem tools reject symlink paths in workspace')
     async filesystemToolsRejectSymlinkPathsInWorkspace() {
         const workspace = await this.createWorkspace();
@@ -1080,6 +1107,7 @@ export class AgentToolsPackageTest {
         expect(ExportedDeleteFileTool).toEqual(DeleteFileTool);
         expect(ExportedListDirTool).toEqual(ListDirTool);
         expect(ExportedStatTool).toEqual(StatTool);
+        expect(ExportedWatchFilesTool).toEqual(WatchFilesTool);
         expect(ExportedMemory.MemoryListTool).toEqual(MemoryListTool);
         expect(ExportedMemory.MemoryPutTool).toEqual(MemoryPutTool);
         expect(ExportedMemory.MemorySearchTool).toEqual(MemorySearchTool);
@@ -1099,7 +1127,7 @@ export class AgentToolsPackageTest {
 
     @Test('provider tools expose grouped registrations and defaults')
     provideToolsExposeGroupedRegistrationsAndDefaults() {
-        expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search']);
+        expect(AGENT_TOOL_GROUPS.filesystem).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search', 'watch_files']);
         expect(AGENT_TOOL_GROUPS.filesystem_write).toEqual(['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file']);
         expect(AGENT_TOOL_GROUPS.utility).toEqual(['calculator', 'location', 'weather']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser']);
@@ -1162,7 +1190,7 @@ export class AgentToolsPackageTest {
         const planning = bundles.find(bundle => bundle.name === 'planning');
         const project = bundles.find(bundle => bundle.name === 'project');
         const terminal = bundles.find(bundle => bundle.name === 'terminal');
-        expect(filesystem?.tools).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search']);
+        expect(filesystem?.tools).toEqual(['read_file', 'list_dir', 'stat', 'glob_search', 'content_search', 'watch_files']);
         expect(filesystem?.defaultEnabled).toEqual(true);
         expect(filesystem?.deferredActivation).toEqual(true);
         expect(filesystem?.enabled).toEqual(true);

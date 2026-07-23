@@ -10,3 +10,4 @@ export * from './list-dir.tool';
 export * from './stat.tool';
 export * from './glob-search.tool';
 export * from './content-search.tool';
+export * from './watch-files.tool';

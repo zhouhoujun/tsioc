@@ -15,6 +15,7 @@ import { ListDirTool } from '../files/list-dir.tool';
 import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
+import { WatchFilesTool } from '../files/watch-files.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { LocationAdapter, LocationTool } from '../utility/location.tool';
 import { WebSearchTool } from '../web/web-search.tool';
@@ -106,6 +107,7 @@ const toolItems = {
     stat: StatTool,
     glob_search: GlobSearchTool,
     content_search: ContentSearchTool,
+    watch_files: WatchFilesTool,
     calculator: CalculatorTool,
     location: LocationTool,
     web_search: WebSearchTool,
@@ -170,7 +172,7 @@ const toolItems = {
 } as const satisfies Record<AgentToolItem, ProvdierOf<AgentTool>>;
 
 const toolGroups = {
-    filesystem: ['read_file', 'list_dir', 'stat', 'glob_search', 'content_search'],
+    filesystem: ['read_file', 'list_dir', 'stat', 'glob_search', 'content_search', 'watch_files'],
     filesystem_write: ['write_file', 'edit_file', 'mkdir', 'copy_file', 'move_file', 'delete_file'],
     utility: ['calculator', 'location', 'weather'],
     web: ['web_search', 'web_extract'],
@@ -210,7 +212,7 @@ const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'filesystem_write', '
 const allToolGroups = Object.keys(toolGroups) as AgentToolGroup[];
 const allToolProviders = Array.from(new Set(Object.values(toolItems)));
 const bundleDescriptions: Record<AgentToolGroup, string> = {
-    filesystem: 'Workspace file reading and search tools.',
+    filesystem: 'Workspace file reading, search, and change monitoring tools.',
     filesystem_write: 'Workspace file mutation tools.',
     utility: 'General-purpose calculation and utility helpers.',
     web: 'Web search and extraction tools.',
@@ -482,6 +484,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         StatTool,
         GlobSearchTool,
         ContentSearchTool,
+        WatchFilesTool,
         CalculatorTool,
         WebSearchTool,
         WebExtractTool,

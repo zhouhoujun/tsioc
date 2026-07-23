@@ -30,6 +30,7 @@ import { ListDirTool } from '../files/list-dir.tool';
 import { StatTool } from '../files/stat.tool';
 import { GlobSearchTool } from '../files/glob-search.tool';
 import { ContentSearchTool } from '../files/content-search.tool';
+import { WatchFilesTool } from '../files/watch-files.tool';
 import { CalculatorTool } from '../utility/calculator.tool';
 import { WebSearchTool } from '../web/web-search.tool';
 import { WebExtractTool } from '../web/web-extract.tool';
@@ -115,6 +116,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         StatTool,
         GlobSearchTool,
         ContentSearchTool,
+        WatchFilesTool,
         CalculatorTool,
         LocationTool,
         WebSearchTool,
@@ -242,6 +244,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         StatTool,
         GlobSearchTool,
         ContentSearchTool,
+        WatchFilesTool,
         CalculatorTool,
         LocationTool,
         WebSearchTool,
