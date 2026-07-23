@@ -1,4 +1,5 @@
 import { MemoryStore } from '../memory/MemoryStore';
+import { SandboxPolicy } from '../harness/SandboxExecutor';
 
 export interface AgentToolContext {
     sessionId: string;
@@ -35,6 +36,15 @@ export interface AgentToolExecutionHints {
     rateLimit?: AgentToolRateLimitPolicy;
     redactOutput?: boolean;
     auditEnabled?: boolean;
+    sandbox?: SandboxPolicy;
+    isolationLevel?: 'none' | 'process' | 'container';
+    resourceLimits?: {
+        cpuTimeMs?: number;
+        memoryBytes?: number;
+        wallTimeMs?: number;
+        maxProcesses?: number;
+        maxFsWrites?: number;
+    };
 }
 
 export type AgentToolOrigin = 'builtin' | 'skill' | 'mcp';

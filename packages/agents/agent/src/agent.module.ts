@@ -43,6 +43,7 @@ import { AuditSink } from './harness/AuditSink';
 import { InMemoryAuditSink } from './harness/InMemoryAuditSink';
 import { TypeOrmAuditSink } from './harness/TypeOrmAuditSink';
 import { DefaultAuditSink } from './harness/DefaultAuditSink';
+import { SandboxExecutor, NodeChildProcessSandboxExecutor } from './harness/SandboxExecutor';
 import { createAgentProviders } from './provider';
 
 @Module({
@@ -67,6 +68,8 @@ import { createAgentProviders } from './provider';
         TypeOrmAuditSink,
         DefaultAuditSink,
         { provide: AuditSink, useExisting: DefaultAuditSink },
+        NodeChildProcessSandboxExecutor,
+        { provide: SandboxExecutor, useExisting: NodeChildProcessSandboxExecutor, asDefault: true },
         ToolExecutionCoordinator,
         SystemPromptBuilder,
         ToolApprovalManager,

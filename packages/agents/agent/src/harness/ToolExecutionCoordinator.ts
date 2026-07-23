@@ -8,6 +8,7 @@ import { RateLimitManager } from './RateLimitManager';
 import { OutputGuard } from './OutputGuard';
 import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
+import { SandboxExecutor, SandboxPolicy, defaultSandboxPolicy } from './SandboxExecutor';
 
 export interface ToolExecutionRequest {
     sessionId: string;
@@ -36,7 +37,8 @@ export class ToolExecutionCoordinator {
         private rateLimitManager: RateLimitManager,
         private outputGuard: OutputGuard,
         @Inject(ApplicationContext) private app: ApplicationContext,
-        @Optional() private auditSink?: AuditSink
+        @Optional() private auditSink?: AuditSink,
+        @Optional() private sandboxExecutor?: SandboxExecutor
     ) {
     }
 
@@ -146,6 +148,53 @@ export class ToolExecutionCoordinator {
     }
 
     private async invokeWithTimeout(request: ToolExecutionRequest, timeoutMs?: number): Promise<unknown> {
+        const sandboxPolicy = this.resolveSandboxPolicy(request);
+        if (sandboxPolicy?.enabled && this.sandboxExecutor?.isSupported()) {
+            return this.invokeInSandbox(request, sandboxPolicy, timeoutMs);
+        }
+
+        const invokePromise = this.toolRegistry.invoke(
+            request.toolCall.name,
+            request.toolCall.input,
+            request.sessionId,
+            request.principalId,
+            request.workspace
+        );
+        if (!timeoutMs || timeoutMs <= 0) {
+            return invokePromise;
+        }
+        return Promise.race([
+            invokePromise,
+            new Promise((_, reject) => {
+                setTimeout(() => reject(new Error(`Tool "${request.toolCall.name}" timed out after ${timeoutMs}ms.`)), timeoutMs);
+            })
+        ]);
+    }
+
+    private resolveSandboxPolicy(request: ToolExecutionRequest): SandboxPolicy | null {
+        const executionPolicy = request.definition.execution;
+        if (!executionPolicy) {
+            return null;
+        }
+        if (executionPolicy.sandbox) {
+            return executionPolicy.sandbox;
+        }
+        if (executionPolicy.isolationLevel) {
+            return {
+                enabled: true,
+                isolationLevel: executionPolicy.isolationLevel,
+                resourceLimits: executionPolicy.resourceLimits,
+                workingDirectory: request.workspace
+            };
+        }
+        return null;
+    }
+
+    private async invokeInSandbox(
+        request: ToolExecutionRequest,
+        policy: SandboxPolicy,
+        timeoutMs?: number
+    ): Promise<unknown> {
         const invokePromise = this.toolRegistry.invoke(
             request.toolCall.name,
             request.toolCall.input,

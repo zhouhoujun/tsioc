@@ -674,3 +674,76 @@ function withToolTestAdapters(): any[] {
         { provide: PipelineAdapter, useValue: mockPipeline },
     ];
 }
+
+import { NodeChildProcessSandboxExecutor, NoopSandboxExecutor, restrictedSandboxPolicy, createSandboxPolicy } from '../src/harness/SandboxExecutor';
+
+@Suite('Sandbox executor')
+export class SandboxExecutorTest {
+    @Test('NodeChildProcessSandboxExecutor is supported')
+    nodeChildProcessSandboxIsSupported() {
+        const executor = new NodeChildProcessSandboxExecutor();
+        expect(executor.isSupported()).toEqual(true);
+    }
+
+    @Test('NoopSandboxExecutor is supported')
+    noopSandboxIsSupported() {
+        const executor = new NoopSandboxExecutor();
+        expect(executor.isSupported()).toEqual(true);
+    }
+
+    @Test('restrictedSandboxPolicy has correct defaults')
+    restrictedPolicyDefaults() {
+        expect(restrictedSandboxPolicy.enabled).toEqual(true);
+        expect(restrictedSandboxPolicy.isolationLevel).toEqual('process');
+        expect(restrictedSandboxPolicy.resourceLimits?.wallTimeMs).toEqual(60000);
+        expect(restrictedSandboxPolicy.resourceLimits?.memoryBytes).toEqual(256 * 1024 * 1024);
+        expect(restrictedSandboxPolicy.networkAccess).toEqual('none');
+    }
+
+    @Test('createSandboxPolicy merges overrides')
+    createSandboxPolicyMerges() {
+        const policy = createSandboxPolicy({
+            enabled: true,
+            isolationLevel: 'container',
+            networkAccess: 'outbound'
+        });
+        expect(policy.enabled).toEqual(true);
+        expect(policy.isolationLevel).toEqual('container');
+        expect(policy.networkAccess).toEqual('outbound');
+    }
+
+    @Test('NodeChildProcessSandboxExecutor executes command')
+    async nodeChildProcessExecutesCommand() {
+        const executor = new NodeChildProcessSandboxExecutor();
+        const result = await executor.execute('echo', ['hello'], {
+            policy: { enabled: true, isolationLevel: 'process', workingDirectory: '/tmp' }
+        });
+        expect(result.exitCode).toEqual(0);
+        expect(result.stdout.trim()).toEqual('hello');
+        expect(result.wallTimeMs).toBeGreaterThanOrEqual(0);
+    }
+
+    @Test('NodeChildProcessSandboxExecutor handles non-zero exit code')
+    async nodeChildProcessHandlesNonZeroExit() {
+        const executor = new NodeChildProcessSandboxExecutor();
+        const result = await executor.execute('ls', ['/nonexistent_path_12345'], {
+            policy: { enabled: true, isolationLevel: 'process', workingDirectory: '/tmp' }
+        });
+        expect(result.exitCode).not.toEqual(0);
+        expect(result.stderr).toContain('No such file');
+    }
+
+    @Test('NodeChildProcessSandboxExecutor respects wall time limit')
+    async nodeChildProcessRespectsWallTimeLimit() {
+        const executor = new NodeChildProcessSandboxExecutor();
+        const result = await executor.execute('sleep', ['10'], {
+            policy: {
+                enabled: true,
+                isolationLevel: 'process',
+                resourceLimits: { wallTimeMs: 100 }
+            },
+            timeoutMs: 100
+        });
+        expect(result.killedByLimits).toEqual(true);
+    }
+}

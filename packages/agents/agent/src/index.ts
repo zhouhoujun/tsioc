@@ -43,6 +43,7 @@ export * from './harness/InMemoryAuditSink';
 export * from './harness/TypeOrmAuditSink';
 export * from './harness/DefaultAuditSink';
 export * from './harness/ToolExecutionCoordinator';
+export * from './harness/SandboxExecutor';
 export * from './prompt/SystemPromptBuilder';
 export * from './prompt/PromptSection';
 export * from './prompt/sections/IdentitySection';
