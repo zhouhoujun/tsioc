@@ -6,3 +6,10 @@ export interface SessionInfo {
     summary?: string;
     workspace?: string;
 }
+
+export interface SessionProjectGroup {
+    workspace: string;
+    sessionCount: number;
+    lastActiveAt: number;
+    sessions: SessionInfo[];
+}

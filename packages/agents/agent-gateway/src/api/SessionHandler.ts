@@ -3,12 +3,12 @@ import { Injectable } from '@tsdi/ioc';
 import { AgentRuntime, SessionStore, AgentTurnStartedEvent, AgentTurnCompletedEvent, AgentStreamChunkEvent } from '@tsdi/agent';
 import { EventHandler } from '@tsdi/core';
 import { GatewayRoute, RouteHandler } from '../contracts/GatewayRoute';
-import { SessionInfo } from '../contracts/SessionInfo';
+import { SessionInfo, SessionProjectGroup } from '../contracts/SessionInfo';
 import { getRequestPrincipalId } from '../auth/AuthMiddleware';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 
 /**
- * Session management API — GET /api/sessions, GET /api/sessions/:id/messages, DELETE /api/sessions/:id.
+ * Session management API — GET /api/sessions, GET /api/sessions/projects, GET /api/sessions/:id/messages, DELETE /api/sessions/:id.
  * Mirrors zeroclaw-gateway's session management endpoints.
  */
 @Injectable()
@@ -44,34 +44,15 @@ export class SessionHandler {
 
     getRoutes(): GatewayRoute[] {
         const listSessions: RouteHandler = async (req, res) => {
-            const principalId = getRequestPrincipalId(req);
-            const infos: SessionInfo[] = [];
-            const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
-            for (const id of await this.owners.listOwned(ids, principalId)) {
-                const state = await this.sessions.get(id);
-                infos.push({
-                    id,
-                    createdAt: state.createdAt ?? 0,
-                    lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
-                    messageCount: state.messages.length,
-                    summary: state.summary,
-                    workspace: state.workspace
-                });
-            }
-            infos.sort((left, right) => {
-                const leftWorkspace = String(left.workspace || '').trim();
-                const rightWorkspace = String(right.workspace || '').trim();
-                if (leftWorkspace !== rightWorkspace) {
-                    return leftWorkspace.localeCompare(rightWorkspace);
-                }
-                const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
-                if (activityDelta !== 0) {
-                    return activityDelta;
-                }
-                return left.id.localeCompare(right.id);
-            });
+            const infos = await this.listSessionInfos(getRequestPrincipalId(req));
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(infos));
+        };
+
+        const listProjects: RouteHandler = async (req, res) => {
+            const groups = this.groupSessionInfos(await this.listSessionInfos(getRequestPrincipalId(req)));
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+                .end(JSON.stringify(groups));
         };
 
         const getMessages: RouteHandler = async (req, res, params) => {
@@ -124,10 +105,73 @@ export class SessionHandler {
 
         return [
             { method: 'GET', path: '/api/sessions', handler: listSessions },
+            { method: 'GET', path: '/api/sessions/projects', handler: listProjects },
             { method: 'GET', path: '/api/sessions/running', handler: runningSessions },
             { method: 'GET', path: '/api/sessions/:id/messages', handler: getMessages },
             { method: 'DELETE', path: '/api/sessions/:id', handler: deleteSession }
         ];
+    }
+
+    async listSessionInfos(principalId?: string): Promise<SessionInfo[]> {
+        const infos: SessionInfo[] = [];
+        const ids = Array.from(new Set([...(await this.sessions.listSessionIds()), ...this.sessionIds]));
+        for (const id of await this.owners.listOwned(ids, principalId)) {
+            const state = await this.sessions.get(id);
+            infos.push({
+                id,
+                createdAt: state.createdAt ?? 0,
+                lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
+                messageCount: state.messages.length,
+                summary: state.summary,
+                workspace: state.workspace
+            });
+        }
+        return infos.sort((left, right) => {
+            const leftWorkspace = String(left.workspace || '').trim();
+            const rightWorkspace = String(right.workspace || '').trim();
+            if (leftWorkspace !== rightWorkspace) {
+                return leftWorkspace.localeCompare(rightWorkspace);
+            }
+            const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return left.id.localeCompare(right.id);
+        });
+    }
+
+    groupSessionInfos(infos: SessionInfo[]): SessionProjectGroup[] {
+        const buckets = new Map<string, SessionInfo[]>();
+        for (const info of infos) {
+            const workspace = String(info.workspace || '').trim();
+            const bucket = buckets.get(workspace) ?? [];
+            bucket.push(info);
+            buckets.set(workspace, bucket);
+        }
+
+        return Array.from(buckets.entries())
+            .map(([workspace, sessions]) => ({
+                workspace,
+                sessions: sessions.slice().sort((left, right) => {
+                    const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+                    if (activityDelta !== 0) {
+                        return activityDelta;
+                    }
+                    return left.id.localeCompare(right.id);
+                }),
+                sessionCount: sessions.length,
+                lastActiveAt: Math.max(...sessions.map(session => session.lastActiveAt ?? 0), 0)
+            }))
+            .sort((left, right) => {
+                if (left.workspace !== right.workspace) {
+                    return left.workspace.localeCompare(right.workspace);
+                }
+                const activityDelta = right.lastActiveAt - left.lastActiveAt;
+                if (activityDelta !== 0) {
+                    return activityDelta;
+                }
+                return left.workspace.localeCompare(right.workspace);
+            });
     }
 
     private async ensureAccess(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): Promise<boolean> {

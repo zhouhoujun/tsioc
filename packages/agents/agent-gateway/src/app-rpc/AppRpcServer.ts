@@ -130,6 +130,7 @@ export class AppRpcServer {
                         'app.inputHistory.put',
                         'session.create',
                         'session.list',
+                        'session.list_projects',
                         'session.messages',
                         'session.delete',
                         'run.turn',
@@ -162,6 +163,8 @@ export class AppRpcServer {
                 return this.createSession(params, context);
             case 'session.list':
                 return this.listSessions(context);
+            case 'session.list_projects':
+                return this.listSessionProjects(context);
             case 'session.messages':
                 return this.getSessionMessages(this.requireSessionId(params), context);
             case 'session.delete':
@@ -284,34 +287,11 @@ export class AppRpcServer {
     }
 
     private async listSessions(context: AppRpcRequestContext): Promise<any[]> {
-        const allIds = await this.sessions.listSessionIds();
-        const ids = context.principalId
-            ? await this.owners.listOwned(allIds, context.principalId)
-            : allIds;
-        const items = await Promise.all(ids.map(async sessionId => {
-            const state = await this.sessions.get(sessionId);
-            return {
-                id: sessionId,
-                createdAt: state.createdAt ?? 0,
-                lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
-                messageCount: state.messages.length,
-                summary: state.summary,
-                workspace: state.workspace
-            };
-        }));
-        items.sort((left, right) => {
-            const leftWorkspace = String(left.workspace || '').trim();
-            const rightWorkspace = String(right.workspace || '').trim();
-            if (leftWorkspace !== rightWorkspace) {
-                return leftWorkspace.localeCompare(rightWorkspace);
-            }
-            const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
-            if (activityDelta !== 0) {
-                return activityDelta;
-            }
-            return left.id.localeCompare(right.id);
-        });
-        return items;
+        return this.sessionHandler.listSessionInfos(context.principalId);
+    }
+
+    private async listSessionProjects(context: AppRpcRequestContext): Promise<any[]> {
+        return this.sessionHandler.groupSessionInfos(await this.sessionHandler.listSessionInfos(context.principalId));
     }
 
     private async getSessionMessages(sessionId: string, context: AppRpcRequestContext): Promise<any> {

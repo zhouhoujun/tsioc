@@ -2451,6 +2451,40 @@ export class AgentConsoleComponentTest {
         expect(sessions[0].current).toEqual(true);
     }
 
+    @Test('session service groups sessions by workspace')
+    async sessionServiceGroupsSessionsByWorkspace() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-b'
+        });
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '/tmp/project-a'
+        });
+        store.sessions.set('chat-c', {
+            sessionId: 'chat-c',
+            messages: [],
+            createdAt: 3,
+            updatedAt: 3,
+            workspace: '/tmp/project-a'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const projects = await service.listProjectSessions('chat-c');
+
+        expect(projects.map(project => project.workspace)).toEqual(['/tmp/project-a', '/tmp/project-b']);
+        expect(projects[0].sessionCount).toEqual(2);
+        expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-c', 'chat-a']);
+        expect(projects[0].sessions[0].current).toEqual(true);
+    }
+
     @Test('session state supports focused message list navigation')
     sessionStateSupportsFocusedMessageListNavigation() {
         const state = new AgentConsoleSessionState();

@@ -303,6 +303,44 @@ export class SessionHandlerTest {
         expect(data[0].lastActiveAt).toBeTruthy();
     }
 
+    @Test('lists owned sessions grouped by workspace')
+    async listsOwnedSessionsGroupedByWorkspace() {
+        const store = new InMemorySessionStore();
+        const owners = new SessionOwnerStore(store);
+        await store.append('s1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.setWorkspace('s1', '/tmp/project-a');
+        await store.append('s2', { id: '2', role: 'user', content: 'two', createdAt: 2 });
+        await store.setWorkspace('s2', '/tmp/project-a');
+        await store.append('s3', { id: '3', role: 'user', content: 'three', createdAt: 3 });
+        await store.setWorkspace('s3', '/tmp/project-b');
+        await owners.create('s1', 'user-1');
+        await owners.create('s2', 'user-1');
+        await owners.create('s3', 'user-2');
+        const handler = new SessionHandler({ getMessages: async () => [] } as any, store, owners);
+        handler.track('s1');
+        handler.track('s2');
+        handler.track('s3');
+
+        const route = handler.getRoutes().find(route => route.path === '/api/sessions/projects' && route.method === 'GET')!;
+        let body = '';
+        const req = {} as any;
+        setRequestAuth(req, { token: 'token-1', principalId: 'user-1' });
+        const res = {
+            writeHead: () => res,
+            end: (value?: string) => {
+                body = value ?? '';
+                return res;
+            }
+        } as any;
+
+        await route.handler(req, res, {} as any);
+        const data = JSON.parse(body);
+        expect(data.length).toEqual(1);
+        expect(data[0].workspace).toEqual('/tmp/project-a');
+        expect(data[0].sessionCount).toEqual(2);
+        expect(data[0].sessions.map((session: any) => session.id).sort()).toEqual(['s1', 's2']);
+    }
+
     @Test('rejects deleting another principals session')
     async rejectsDeletingForeignSession() {
         const store = new InMemorySessionStore();
@@ -1225,6 +1263,16 @@ export class AppRpcServerTest {
         }, { principalId: 'user-1' });
         expect((listResponse as any).result.length).toEqual(1);
         expect((listResponse as any).result[0].id).toEqual('rpc-s1');
+
+        await store.setWorkspace('rpc-s1', '/tmp/project-rpc');
+        const projectResponse = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'session.list_projects',
+            params: {}
+        }, { principalId: 'user-1' });
+        expect((projectResponse as any).result[0].workspace).toEqual('/tmp/project-rpc');
+        expect((projectResponse as any).result[0].sessions[0].id).toEqual('rpc-s1');
 
         const toolResponse = await rpc.handle({
             jsonrpc: '2.0',
