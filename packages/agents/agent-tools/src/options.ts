@@ -42,6 +42,10 @@ export interface AgentToolsSandboxOptions {
     blockedEnv?: string[];
 }
 
+export interface AgentToolsCodeExecutionOptions {
+    adapter?: import('../code-execution').CodeExecutionAdapter;
+}
+
 export interface AgentToolsProcessOptions {
     maxProcessesPerSession?: number;
     maxOutputChars?: number;
@@ -210,6 +214,7 @@ export interface AgentToolsOptions {
     terminal?: AgentToolsTerminalOptions;
     process?: AgentToolsProcessOptions;
     sandbox?: AgentToolsSandboxOptions;
+    codeExecution?: AgentToolsCodeExecutionOptions;
     aiCli?: AgentAiCliOptions;
     pdf?: AgentToolsPdfOptions;
     capture?: AgentToolsCaptureOptions;
@@ -291,6 +296,9 @@ export function mergeAgentToolsOptions(options?: AgentToolsOptions): AgentToolsO
         },
         process: {
             ...(options?.process ?? {})
+        },
+        codeExecution: {
+            ...(options?.codeExecution ?? {})
         },
         sandbox: {
             ...(defaultAgentToolsOptions.sandbox ?? {}),

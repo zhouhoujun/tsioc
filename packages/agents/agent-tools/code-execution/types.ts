@@ -17,4 +17,3 @@ export interface CodeExecutionResult {
     exitCode: number;
     error?: string;
 }
-

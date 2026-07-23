@@ -66,7 +66,7 @@ import { PdfReadTool } from '../media/pdf-read.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
 import { ImageGenerateTool } from '../media/image-generate.tool';
 import { SpawnAgentTool } from '../agent/spawn-agent.tool';
-import { ExecuteCodeTool } from '../code-execution/execute-code.tool';
+import { CodeExecutionAdapter, ExecuteCodeTool, LocalCodeExecutionAdapter } from '../code-execution';
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
 import { GitOperationsTool } from '../git/git-operations.tool';
@@ -180,6 +180,12 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         ModelRoutingTool,
         PollTool,
         AiCliTool,
+        {
+            provider(injector) {
+                const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);
+                return [{ provide: CodeExecutionAdapter, useValue: options?.codeExecution?.adapter ?? new LocalCodeExecutionAdapter(options) }];
+            }
+        },
         {
             provider(injector) {
                 const options = injector.get(AGENT_TOOLS_OPTIONS, defaultAgentToolsOptions as any);

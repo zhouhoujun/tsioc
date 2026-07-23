@@ -5,13 +5,13 @@ import { CodeExecutionAdapter } from './types';
 @Injectable()
 export class ExecuteCodeTool implements AgentTool {
     name = 'execute_code';
-    description = 'Execute code in a sandboxed environment. Supports Python, JavaScript, TypeScript, Go, Rust, and other languages depending on the configured execution backend.';
+    description = 'Execute code in a sandboxed environment. Supports Python and shell-style runtimes by default; other languages depend on the configured execution backend.';
     inputSchema = {
         type: 'object',
         properties: {
             language: {
                 type: 'string',
-                description: 'Programming language (python, javascript, typescript, go, rust, bash, etc.).'
+                description: 'Programming language (python, python3, py, bash, sh, etc.).'
             },
             code: {
                 type: 'string',

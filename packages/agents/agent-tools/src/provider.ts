@@ -52,7 +52,7 @@ import { PdfReadTool } from '../media/pdf-read.tool';
 import { VisionAnalyzeTool } from '../media/vision-analyze.tool';
 import { ImageGenerateTool } from '../media/image-generate.tool';
 import { SpawnAgentTool } from '../agent/spawn-agent.tool';
-import { ExecuteCodeTool } from '../code-execution/execute-code.tool';
+import { CodeExecutionAdapter, ExecuteCodeTool, LocalCodeExecutionAdapter } from '../code-execution';
 import { KnowledgeSearchTool } from '../knowledge/knowledge-search.tool';
 import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
 import { GitOperationsTool } from '../git/git-operations.tool';
@@ -547,6 +547,10 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         ModelRoutingTool,
         PollTool,
         AiCliTool,
+        {
+            provide: CodeExecutionAdapter,
+            useValue: merged.codeExecution?.adapter ?? new LocalCodeExecutionAdapter(merged)
+        },
         {
             provide: 'AGENT_TOOLS_PDF_READ_ADAPTER',
             useValue: merged.pdf?.adapter ?? null

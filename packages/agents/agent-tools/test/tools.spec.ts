@@ -31,6 +31,7 @@ import { DataManageTool } from '../data/data-manage.tool';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import { ScreenshotTool } from '../capture/screenshot.tool';
 import { GuiControlAdapter, GuiControlTool, ScreenshotAdapter } from '../capture';
+import { LocalCodeExecutionAdapter } from '../code-execution';
 import { CanvasTool } from '../canvas/canvas.tool';
 import { ApprovalTool } from '../approval/approval.tool';
 import { CheckpointTool } from '../approval/checkpoint.tool';
@@ -2897,10 +2898,25 @@ export class AgentToolsPackageTest {
         }
         expect(adapter).toBeDefined();
 
-        const tool = new ExecuteCodeTool(new MockAdapter(async () => ({ stdout: 'hello\n', stderr: '', exitCode: 0 })));
+        const runtime = new LocalCodeExecutionAdapter({
+            file: { rootDir: process.cwd() },
+            sandbox: { blockedCommands: ['python3'] }
+        });
+        let blocked: Error | undefined;
+        try {
+            await runtime.execute({ language: 'python', code: 'print("hello")', timeoutMs: 5000 });
+        } catch (err) {
+            blocked = err as Error;
+        }
+        expect(blocked?.message).toContain('blocked by sandbox policy');
+
+        const localRuntime = new LocalCodeExecutionAdapter({
+            file: { rootDir: process.cwd() }
+        });
+        const tool = new ExecuteCodeTool(localRuntime);
         const result = await tool.invoke({ language: 'python', code: 'print("hello")', timeoutMs: 5000 }, createSessionContext());
         expect(result.language).toEqual('python');
-        expect(result.stdout).toEqual('hello\n');
+        expect(result.stdout).toContain('hello');
         expect(result.exitCode).toEqual(0);
 
         let langError: Error | undefined;
