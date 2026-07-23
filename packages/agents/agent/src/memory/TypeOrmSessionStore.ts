@@ -23,6 +23,7 @@ export class TypeOrmSessionStore extends SessionStore {
             sessionId,
             summary: session.summary,
             ownerPrincipalId: session.ownerPrincipalId ?? undefined,
+            workspace: session.workspace ?? undefined,
             createdAt: Number(session.createdAt),
             updatedAt: Number(session.updatedAt),
             messages: messages.map(message => ({
@@ -96,6 +97,20 @@ export class TypeOrmSessionStore extends SessionStore {
             session = repo.create({ sessionId, ownerPrincipalId, createdAt: now, updatedAt: now });
         } else {
             session.ownerPrincipalId = ownerPrincipalId ?? null;
+            session.updatedAt = now;
+        }
+        await repo.save(session);
+    }
+
+    async setWorkspace(sessionId: string, workspace?: string): Promise<void> {
+        const repo = this.adapter.getRepository(AgentSessionEntity);
+        let session = await repo.findOne({ where: { sessionId } as any });
+        const now = Date.now();
+        const normalizedWorkspace = String(workspace || '').trim() || null;
+        if (!session) {
+            session = repo.create({ sessionId, workspace: normalizedWorkspace, createdAt: now, updatedAt: now });
+        } else {
+            session.workspace = normalizedWorkspace;
             session.updatedAt = now;
         }
         await repo.save(session);

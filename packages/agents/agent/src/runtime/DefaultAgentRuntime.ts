@@ -93,6 +93,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     async runTurn(sessionId: string, input: string, principalId?: string): Promise<AgentTurnResult> {
         const release = await this.acquireSessionTurnLock(sessionId);
         try {
+            await this.ensureSessionWorkspace(sessionId);
             const handler = typeof (this.app as any)?.get === 'function'
                 ? (this.app as any).get(TurnHandler, null) as {
                     injector?: ApplicationContext,
@@ -146,6 +147,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     async processTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
+        await this.ensureSessionWorkspace(input.sessionId);
         await this.app.publishEvent(new AgentTurnStartedEvent(this, input.sessionId, input.input));
         const userMessage = this.createMessage('user', input.input);
         await this.sessions.append(input.sessionId, userMessage);
@@ -169,6 +171,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     async *runStreamingTurn(sessionId: string, input: string, principalId?: string): AsyncGenerator<StreamChunk> {
         const release = await this.acquireSessionTurnLock(sessionId);
         try {
+            await this.ensureSessionWorkspace(sessionId);
             await this.app.publishEvent(new AgentTurnStartedEvent(this, sessionId, input));
             const userMessage = this.createMessage('user', input);
             await this.sessions.append(sessionId, userMessage);
@@ -189,6 +192,24 @@ export class DefaultAgentRuntime extends AgentRuntime {
         } finally {
             release();
         }
+    }
+
+    protected async ensureSessionWorkspace(sessionId: string): Promise<void> {
+        const workspace = this.resolveWorkspace();
+        if (!workspace) {
+            return;
+        }
+        const state = await this.sessions.get(sessionId);
+        if (state.workspace === workspace) {
+            return;
+        }
+        await this.sessions.setWorkspace(sessionId, workspace);
+    }
+
+    protected resolveWorkspace(): string | undefined {
+        const consoleOptions = this.options.ui?.console as Record<string, any> | undefined;
+        const workspace = String(consoleOptions?.workspace || '').trim();
+        return workspace || undefined;
     }
 
     async putMemory(sessionId: string, key: string, value: string, scope: 'session' | 'global' = 'session'): Promise<AgentMemoryRecord> {

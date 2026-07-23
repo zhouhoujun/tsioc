@@ -209,11 +209,13 @@ export class AppRpcServer {
             : `rpc-${randomUUID()}`;
         await this.ensureSessionAccess(requested, context, { createIfMissing: true });
         this.sessionHandler.track(requested);
+        await this.setSessionWorkspace(requested);
         const state = await this.sessions.get(requested);
         return {
             sessionId: requested,
             createdAt: state.createdAt,
-            updatedAt: state.updatedAt
+            updatedAt: state.updatedAt,
+            workspace: state.workspace
         };
     }
 
@@ -224,6 +226,7 @@ export class AppRpcServer {
             : this.options.bootstrapTurn?.sessionId || 'default';
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
+        await this.setSessionWorkspace(sessionId);
         const state = await this.sessions.get(sessionId);
 
         return {
@@ -292,10 +295,22 @@ export class AppRpcServer {
                 createdAt: state.createdAt ?? 0,
                 lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
                 messageCount: state.messages.length,
-                summary: state.summary
+                summary: state.summary,
+                workspace: state.workspace
             };
         }));
-        items.sort((left, right) => (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0));
+        items.sort((left, right) => {
+            const leftWorkspace = String(left.workspace || '').trim();
+            const rightWorkspace = String(right.workspace || '').trim();
+            if (leftWorkspace !== rightWorkspace) {
+                return leftWorkspace.localeCompare(rightWorkspace);
+            }
+            const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return left.id.localeCompare(right.id);
+        });
         return items;
     }
 
@@ -318,6 +333,7 @@ export class AppRpcServer {
             : `rpc-${randomUUID()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
+        await this.setSessionWorkspace(sessionId);
         const turn = await this.runtime.runTurn(sessionId, input, context.principalId);
         const messages = await this.runtime.getMessages(sessionId);
         return {
@@ -335,6 +351,7 @@ export class AppRpcServer {
             : `rpc-${randomUUID()}`;
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
+        await this.setSessionWorkspace(sessionId);
 
         for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId)) {
             if (chunk.type === 'done') {
@@ -588,6 +605,24 @@ export class AppRpcServer {
         if (owner !== context.principalId) {
             throw new AppRpcError(-32003, 'Forbidden', { sessionId });
         }
+    }
+
+    private async setSessionWorkspace(sessionId: string): Promise<void> {
+        const workspace = this.resolveWorkspace();
+        if (!workspace) {
+            return;
+        }
+        const state = await this.sessions.get(sessionId);
+        if (state.workspace === workspace) {
+            return;
+        }
+        await this.sessions.setWorkspace(sessionId, workspace);
+    }
+
+    private resolveWorkspace(): string | undefined {
+        const uiConsole = this.options.ui?.console as Record<string, any> | undefined;
+        const workspace = String(uiConsole?.workspace || '').trim();
+        return workspace || undefined;
     }
 
     private requireSessionId(params: any): string {

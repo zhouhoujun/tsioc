@@ -14,6 +14,9 @@ export class AgentSessionEntity {
     @Column({ type: 'text', nullable: true })
     ownerPrincipalId!: string | null;
 
+    @Column({ type: 'text', nullable: true })
+    workspace!: string | null;
+
     @Column({ type: 'bigint' })
     createdAt!: number;
 

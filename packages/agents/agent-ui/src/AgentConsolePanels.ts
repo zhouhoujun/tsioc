@@ -1,5 +1,6 @@
 import { Attribute, Component, AfterViewInit, OnDestroy } from '@tsdi/components';
 import { formatCompactNumber } from '@tsdi/core';
+import * as path from 'path';
 import {
     buildTerminalBrandBlock,
     BrDirective,
@@ -683,9 +684,11 @@ export class AgentConsoleSessionsPanelComponent {
             const selected = this.state.selectedSessionId === session.id;
             const marker = selected ? '›' : ' ';
             const count = session.messageCount != null ? ` (${session.messageCount})` : '';
+            const workspace = this.workspaceLabel(session.workspace);
+            const workspacePrefix = workspace ? `[${workspace}] ` : '';
             return {
                 id: session.id,
-                label: `${marker} ${session.id}${current}${count}`,
+                label: `${marker} ${workspacePrefix}${session.id}${current}${count}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
                     : this.activeThemeStyles.statusValue
@@ -738,6 +741,14 @@ export class AgentConsoleSessionsPanelComponent {
 
     sessionStyleAt(index: number): Record<string, string> {
         return this.sessionAt(index)?.style || {};
+    }
+
+    protected workspaceLabel(workspace?: string): string {
+        const text = String(workspace || '').trim();
+        if (!text) {
+            return '';
+        }
+        return path.basename(text) || text;
     }
 }
 

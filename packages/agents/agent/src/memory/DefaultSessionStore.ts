@@ -42,6 +42,10 @@ export class DefaultSessionStore extends SessionStore {
         await this.resolveStore().setOwner(sessionId, ownerPrincipalId);
     }
 
+    async setWorkspace(sessionId: string, workspace?: string): Promise<void> {
+        await this.resolveStore().setWorkspace(sessionId, workspace);
+    }
+
     async delete(sessionId: string): Promise<void> {
         await this.resolveStore().delete(sessionId);
     }

@@ -19,6 +19,7 @@ export class InMemorySessionStore extends SessionStore {
             messages: state.messages.slice(),
             summary: state.summary,
             ownerPrincipalId: state.ownerPrincipalId,
+            workspace: state.workspace,
             createdAt: state.createdAt,
             updatedAt: state.updatedAt
         };
@@ -60,6 +61,15 @@ export class InMemorySessionStore extends SessionStore {
             return;
         }
         state.ownerPrincipalId = ownerPrincipalId;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+    }
+
+    async setWorkspace(sessionId: string, workspace?: string): Promise<void> {
+        const normalizedWorkspace = String(workspace || '').trim();
+        const state = await this.get(sessionId);
+        state.workspace = normalizedWorkspace || undefined;
         state.updatedAt = Date.now();
         state.createdAt ??= state.updatedAt;
         this.sessions.set(sessionId, state);

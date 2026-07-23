@@ -10,6 +10,7 @@ export abstract class SessionStore {
     abstract append(sessionId: string, message: AgentMessage): Promise<AgentState>;
     abstract setSummary(sessionId: string, summary: string): Promise<void>;
     abstract setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void>;
+    abstract setWorkspace(sessionId: string, workspace?: string): Promise<void>;
     abstract delete(sessionId: string): void | Promise<void>;
     abstract clear(): void | Promise<void>;
 }

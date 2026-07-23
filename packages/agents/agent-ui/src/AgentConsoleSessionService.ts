@@ -9,6 +9,7 @@ export interface AgentConsoleSessionChoice {
     lastActiveAt?: number;
     messageCount?: number;
     summary?: string;
+    workspace?: string;
 }
 
 @Injectable()
@@ -26,7 +27,8 @@ export class AgentConsoleSessionService {
             return {
                 id: created?.sessionId || sessionId || this.createSessionId(),
                 createdAt: created?.createdAt,
-                lastActiveAt: created?.updatedAt
+                lastActiveAt: created?.updatedAt,
+                workspace: created?.workspace
             };
         }
         const resolvedId = String(sessionId || '').trim() || this.createSessionId();
@@ -46,16 +48,16 @@ export class AgentConsoleSessionService {
                     createdAt: item?.createdAt,
                     lastActiveAt: item?.lastActiveAt,
                     messageCount: item?.messageCount,
-                    summary: item?.summary
+                    summary: item?.summary,
+                    workspace: item?.workspace
                 })).filter(item => !!item.id)
                 : [];
-            return this.withCurrent(items, currentSessionId);
+            return this.withCurrent(this.sortSessionChoices(items), currentSessionId);
         }
         if (this.sessionStore) {
             const ids = await this.sessionStore.listSessionIds();
             const sessions = await Promise.all(ids.map(async id => this.toChoice(id, await this.sessionStore!.get(id))));
-            sessions.sort((left, right) => (right.lastActiveAt || 0) - (left.lastActiveAt || 0));
-            return this.withCurrent(sessions, currentSessionId);
+            return this.withCurrent(this.sortSessionChoices(sessions), currentSessionId);
         }
         return currentSessionId ? [{ id: currentSessionId, current: true }] : [];
     }
@@ -97,14 +99,30 @@ export class AgentConsoleSessionService {
         }));
     }
 
-    protected toChoice(sessionId: string, state?: { createdAt?: number; updatedAt?: number; messages?: AgentMessage[]; summary?: string }): AgentConsoleSessionChoice {
+    protected toChoice(sessionId: string, state?: { createdAt?: number; updatedAt?: number; messages?: AgentMessage[]; summary?: string; workspace?: string }): AgentConsoleSessionChoice {
         return {
             id: sessionId,
             createdAt: state?.createdAt,
             lastActiveAt: state?.updatedAt ?? state?.createdAt,
             messageCount: state?.messages?.length || 0,
-            summary: state?.summary
+            summary: state?.summary,
+            workspace: state?.workspace
         };
+    }
+
+    protected sortSessionChoices(sessions: AgentConsoleSessionChoice[]): AgentConsoleSessionChoice[] {
+        return sessions.slice().sort((left, right) => {
+            const leftWorkspace = String(left.workspace || '').trim();
+            const rightWorkspace = String(right.workspace || '').trim();
+            if (leftWorkspace !== rightWorkspace) {
+                return leftWorkspace.localeCompare(rightWorkspace);
+            }
+            const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return left.id.localeCompare(right.id);
+        });
     }
 
     protected createSessionId(): string {

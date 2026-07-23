@@ -35,6 +35,7 @@ export interface AgentConsoleToolItem {
 export interface AgentConsoleSessionItem {
     id: string;
     current: boolean;
+    workspace?: string;
     updatedAt?: number;
     messageCount?: number;
 }
@@ -983,6 +984,28 @@ export class AgentConsoleSessionState {
 
     get selectedSession(): AgentConsoleSessionItem | undefined {
         return this.sessions.find(item => item.id === this.selectedSessionId);
+    }
+
+    protected formatSessionWorkspaceLabel(workspace?: string): string {
+        const text = String(workspace || '').trim();
+        if (!text) {
+            return '';
+        }
+        const segments = text.split(/[\\/]/).filter(Boolean);
+        return segments[segments.length - 1] || text;
+    }
+
+    protected buildSelectedSessionCopyText(): string {
+        const selected = this.selectedSession;
+        if (!selected) {
+            return '';
+        }
+        return [
+            selected.id,
+            selected.workspace ? `workspace=${selected.workspace}` : '',
+            selected.messageCount != null ? `messageCount=${selected.messageCount}` : '',
+            selected.updatedAt != null ? `updatedAt=${new Date(selected.updatedAt).toISOString()}` : ''
+        ].filter(Boolean).join('\n');
     }
 
     setScheduledTasks(tasks: ScheduledAgentTask[]): void {
@@ -2392,7 +2415,7 @@ export class AgentConsoleSessionState {
             }
             switch (normalized) {
                 case 'copy':
-                    await this.copyFocusedTextAction?.(this.selectedSession?.id || '', 'session id');
+                    await this.copyFocusedTextAction?.(this.buildSelectedSessionCopyText(), 'session');
                     return true;
                 case 'down':
                     this.moveSessionSelection(1);

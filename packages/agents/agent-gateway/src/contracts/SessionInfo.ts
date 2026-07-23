@@ -4,4 +4,5 @@ export interface SessionInfo {
     lastActiveAt: number;
     messageCount: number;
     summary?: string;
+    workspace?: string;
 }

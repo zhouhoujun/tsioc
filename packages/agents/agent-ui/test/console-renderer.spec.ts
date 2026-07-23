@@ -41,8 +41,8 @@ export class AgentConsoleRendererTest {
             { id: 'a1', role: 'assistant', content: 'world', createdAt: 2 } as any
         ]);
         ref.instance.sessionState.setSessions([
-            { id: 'default', current: true, messageCount: 2, updatedAt: 2 } as any,
-            { id: 'chat-2', current: false, messageCount: 1, updatedAt: 1 } as any
+            { id: 'default', current: true, messageCount: 2, updatedAt: 2, workspace: '/tmp/workspace-a' } as any,
+            { id: 'chat-2', current: false, messageCount: 1, updatedAt: 1, workspace: '/tmp/workspace-b' } as any
         ]);
         ref.instance.sessionState.setTasksCount(1);
         ref.instance.sessionState.setTokenUsage({
@@ -681,7 +681,8 @@ export class AgentConsoleRendererTest {
             id: `chat-${index + 1}`,
             current: index === 0,
             messageCount: index + 1,
-            updatedAt: index + 1
+            updatedAt: index + 1,
+            workspace: '/tmp/project-a'
         })) as any);
         ref.instance.sessionState.setSessionsFocused(true);
         ref.instance.sessionState.setSelectedSessionId('chat-9');
@@ -693,8 +694,9 @@ export class AgentConsoleRendererTest {
         const sessionLines = renderer.renderToLines(sessionsPanel.hostView.rootNodes[0]);
 
         expect(sessionLines.some(line => line.includes('sessions 10 · 9/10'))).toBe(true);
-        expect(sessionLines.some(line => line.includes('› chat-9'))).toBe(true);
-        expect(sessionLines.some(line => line.includes('chat-10'))).toBe(true);
+        expect(sessionLines.some(line => line.includes('› [project-a] chat-9'))).toBe(true);
+        expect(sessionLines.some(line => line.includes('[project-a] chat-10'))).toBe(true);
+        expect(sessionLines.some(line => line.includes('[project-a] chat-8'))).toBe(true);
         expect(sessionLines.some(line => line.includes('chat-2'))).toBe(false);
     }
 

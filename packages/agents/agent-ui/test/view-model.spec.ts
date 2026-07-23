@@ -378,6 +378,60 @@ class SessionServiceStub extends AgentConsoleSessionService {
     }
 }
 
+class WorkspaceSessionStoreStub {
+    sessions = new Map<string, any>();
+
+    async get(sessionId: string): Promise<any> {
+        return this.sessions.get(sessionId) || {
+            sessionId,
+            messages: [],
+            createdAt: 0,
+            updatedAt: 0
+        };
+    }
+
+    async has(sessionId: string): Promise<boolean> {
+        return this.sessions.has(sessionId);
+    }
+
+    async listSessionIds(): Promise<string[]> {
+        return Array.from(this.sessions.keys());
+    }
+
+    async append(sessionId: string, message: any): Promise<any> {
+        const state = await this.get(sessionId);
+        state.messages = [...(state.messages || []), message];
+        this.sessions.set(sessionId, state);
+        return state;
+    }
+
+    async setSummary(sessionId: string, summary: string): Promise<void> {
+        const state = await this.get(sessionId);
+        state.summary = summary;
+        this.sessions.set(sessionId, state);
+    }
+
+    async setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void> {
+        const state = await this.get(sessionId);
+        state.ownerPrincipalId = ownerPrincipalId;
+        this.sessions.set(sessionId, state);
+    }
+
+    async setWorkspace(sessionId: string, workspace?: string): Promise<void> {
+        const state = await this.get(sessionId);
+        state.workspace = workspace;
+        this.sessions.set(sessionId, state);
+    }
+
+    async delete(sessionId: string): Promise<void> {
+        this.sessions.delete(sessionId);
+    }
+
+    async clear(): Promise<void> {
+        this.sessions.clear();
+    }
+}
+
 class ApprovalManagerStub {
     pending: AgentConsoleApprovalRequest[] = [];
     approved: string[] = [];
@@ -2362,6 +2416,39 @@ export class AgentConsoleComponentTest {
 
         state.selectFirstSession();
         expect(state.selectedSession?.id).toEqual('chat-1');
+    }
+
+    @Test('session service sorts sessions by workspace then activity')
+    async sessionServiceSortsSessionsByWorkspace() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-b'
+        });
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '/tmp/project-a'
+        });
+        store.sessions.set('chat-c', {
+            sessionId: 'chat-c',
+            messages: [],
+            createdAt: 3,
+            updatedAt: 3,
+            workspace: '/tmp/project-a'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const sessions = await service.listSessions('chat-c');
+
+        expect(sessions.map(item => item.id)).toEqual(['chat-c', 'chat-a', 'chat-b']);
+        expect(sessions[0].workspace).toEqual('/tmp/project-a');
+        expect(sessions[0].current).toEqual(true);
     }
 
     @Test('session state supports focused message list navigation')

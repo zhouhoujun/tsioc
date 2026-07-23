@@ -54,9 +54,22 @@ export class SessionHandler {
                     createdAt: state.createdAt ?? 0,
                     lastActiveAt: state.updatedAt ?? state.createdAt ?? 0,
                     messageCount: state.messages.length,
-                    summary: state.summary
+                    summary: state.summary,
+                    workspace: state.workspace
                 });
             }
+            infos.sort((left, right) => {
+                const leftWorkspace = String(left.workspace || '').trim();
+                const rightWorkspace = String(right.workspace || '').trim();
+                if (leftWorkspace !== rightWorkspace) {
+                    return leftWorkspace.localeCompare(rightWorkspace);
+                }
+                const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+                if (activityDelta !== 0) {
+                    return activityDelta;
+                }
+                return left.id.localeCompare(right.id);
+            });
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify(infos));
         };
