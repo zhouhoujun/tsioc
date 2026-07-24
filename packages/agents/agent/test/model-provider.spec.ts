@@ -643,4 +643,63 @@ export class ModelProviderTest {
 
         expect(received.filter(item => item.type === 'text').map(item => item.content).join('')).toBe('hello');
     }
+
+    @Test('falls back to non-streaming completion when streaming request fails before first chunk')
+    async fallsBackToNonStreamingCompletionWhenStreamingFailsEarly() {
+        this.originalFetch = (globalThis as any).fetch;
+        let callCount = 0;
+        (globalThis as any).fetch = async (_url: string, options?: any) => {
+            callCount += 1;
+            const body = JSON.parse(String(options?.body || '{}'));
+            if (body.stream === true) {
+                throw new Error('fetch failed');
+            }
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        choices: [{
+                            message: {
+                                role: 'assistant',
+                                content: 'fallback weather reply'
+                            },
+                            finish_reason: 'stop'
+                        }],
+                        usage: {
+                            prompt_tokens: 4,
+                            completion_tokens: 3,
+                            total_tokens: 7
+                        }
+                    };
+                }
+            };
+        };
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'test-key',
+            timeoutMs: 1000
+        });
+
+        const received: Array<{ type: string; content?: string; usage?: any; metadata?: any }> = [];
+        for await (const chunk of adapter.stream({
+            sessionId: 's1',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: '成都天气', createdAt: 1 }],
+            tools: []
+        })) {
+            received.push(chunk);
+        }
+
+        expect(callCount).toEqual(2);
+        expect(received[0]?.type).toEqual('text');
+        expect(received[0]?.content).toEqual('fallback weather reply');
+        expect(received[0]?.metadata?.fallback).toEqual('non_stream');
+        expect(received[1]?.type).toEqual('done');
+        expect(received[1]?.usage?.totalTokens).toEqual(7);
+        expect(received[1]?.metadata?.fallback).toEqual('non_stream');
+    }
 }

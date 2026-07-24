@@ -191,9 +191,10 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
         }
         const toolNames = this.createToolNameMaps(request.tools);
 
-        const { signal, cleanup } = this.createTimeoutContext();
+        const { signal, cleanup, markActivity, getAbortReason } = this.createStreamingTimeoutContext();
         const url = this.resolveUrl('/chat/completions');
         const reqBody = this.createStreamRequest(request, toolNames.forward);
+        let emittedAnyChunk = false;
 
         try {
             let response: Response;
@@ -210,7 +211,7 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     signal
                 });
             } catch (error: any) {
-                throw new Error(`Model streaming request failed: ${error?.message || String(error)} (${url})`);
+                throw new Error(this.resolveStreamingFailureMessage(url, error, getAbortReason()));
             }
 
             if (!response.ok) {
@@ -334,17 +335,34 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
 
                 for (const line of lines) {
                     const chunks = await processSsePayload(line.startsWith('data: ') ? line.slice(6) : '');
+                    if (chunks.length) {
+                        markActivity();
+                    }
                     for (const chunk of chunks) {
+                        emittedAnyChunk = true;
                         yield chunk;
                     }
                 }
             }
 
             if (buffer.trim()) {
-                for (const chunk of await flushBuffer(buffer)) {
+                const bufferedChunks = await flushBuffer(buffer);
+                if (bufferedChunks.length) {
+                    markActivity();
+                }
+                for (const chunk of bufferedChunks) {
+                    emittedAnyChunk = true;
                     yield chunk;
                 }
             }
+        } catch (error: any) {
+            if (!emittedAnyChunk && this.shouldFallbackToNonStreaming(error, getAbortReason())) {
+                for await (const chunk of this.fallbackToNonStreamingCompletion(request)) {
+                    yield chunk;
+                }
+                return;
+            }
+            throw new Error(this.resolveStreamingFailureMessage(url, error, getAbortReason()));
         } finally {
             cleanup();
         }
@@ -747,6 +765,126 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             signal: controller.signal,
             cleanup() {
                 clearTimeout(handle);
+            }
+        };
+    }
+
+    protected createStreamingTimeoutContext(): {
+        signal?: AbortSignal;
+        cleanup(): void;
+        markActivity(): void;
+        getAbortReason(): string | undefined;
+    } {
+        const timeout = this.options.timeoutMs;
+        if (!timeout || timeout <= 0) {
+            return {
+                cleanup() {
+                    return;
+                },
+                markActivity() {
+                    return;
+                },
+                getAbortReason() {
+                    return undefined;
+                }
+            };
+        }
+
+        const controller = new AbortController();
+        let abortReason: string | undefined;
+        let stallHandle: ReturnType<typeof setTimeout> | undefined;
+        const stallTimeout = Math.min(timeout, 15000);
+        const totalHandle = setTimeout(() => {
+            abortReason = `Model stream timed out after ${timeout}ms.`;
+            controller.abort();
+        }, timeout);
+        const armStallTimer = () => {
+            if (stallHandle) {
+                clearTimeout(stallHandle);
+            }
+            stallHandle = setTimeout(() => {
+                abortReason = `Model stream stalled after ${stallTimeout}ms without output.`;
+                controller.abort();
+            }, stallTimeout);
+        };
+
+        armStallTimer();
+        return {
+            signal: controller.signal,
+            cleanup() {
+                clearTimeout(totalHandle);
+                if (stallHandle) {
+                    clearTimeout(stallHandle);
+                }
+            },
+            markActivity() {
+                armStallTimer();
+            },
+            getAbortReason() {
+                return abortReason;
+            }
+        };
+    }
+
+    protected resolveStreamingFailureMessage(
+        url: string,
+        error: unknown,
+        abortReason?: string
+    ): string {
+        if (abortReason) {
+            return `${abortReason} (${url})`;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.startsWith('Model streaming request failed')) {
+            return message;
+        }
+        return `Model streaming request failed: ${message} (${url})`;
+    }
+
+    protected shouldFallbackToNonStreaming(error: unknown, abortReason?: string): boolean {
+        if (abortReason) {
+            return true;
+        }
+        const message = String(error instanceof Error ? error.message : error || '').toLowerCase();
+        return message.includes('fetch failed')
+            || message.includes('network')
+            || message.includes('streaming request failed')
+            || message.includes('aborted')
+            || message.includes('timeout');
+    }
+
+    protected async *fallbackToNonStreamingCompletion(request: ModelRequest): AsyncGenerator<StreamChunk> {
+        const completed = await this.complete(request);
+        const reasoning = String(completed.metadata?.reasoningContent || '').trim();
+        if (reasoning) {
+            yield {
+                type: 'reasoning',
+                content: reasoning,
+                metadata: {
+                    provider: completed.metadata?.provider,
+                    model: completed.metadata?.model,
+                    fallback: 'non_stream'
+                }
+            };
+        }
+        if (completed.message) {
+            yield {
+                type: 'text',
+                content: completed.message,
+                metadata: {
+                    provider: completed.metadata?.provider,
+                    model: completed.metadata?.model,
+                    fallback: 'non_stream'
+                }
+            };
+        }
+        yield {
+            type: 'done',
+            toolCalls: completed.toolCalls,
+            usage: completed.metadata?.usage,
+            metadata: {
+                ...completed.metadata,
+                fallback: 'non_stream'
             }
         };
     }

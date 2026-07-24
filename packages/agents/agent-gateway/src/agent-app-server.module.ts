@@ -44,6 +44,9 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
                         method,
                         params
                     }, context)) {
+                        if ('error' in message) {
+                            throw new Error(message.error?.message || 'App RPC stream failed');
+                        }
                         if ('method' in message && message.method === 'run.turn_stream.chunk') {
                             yield {
                                 type: message.params?.chunkType,

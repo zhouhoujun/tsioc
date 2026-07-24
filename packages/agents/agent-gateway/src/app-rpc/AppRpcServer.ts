@@ -227,9 +227,10 @@ export class AppRpcServer {
 
     private async getAppState(params: any, context: AppRpcRequestContext): Promise<any> {
         const uiConsole = this.options.ui?.console as Record<string, any> | undefined;
+        const workspace = String(uiConsole?.workspace || '');
         const sessionId = typeof params?.sessionId === 'string' && params.sessionId.trim()
             ? params.sessionId.trim()
-            : this.options.bootstrapTurn?.sessionId || 'default';
+            : await this.resolveAppStateSessionId(workspace, context);
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
@@ -237,7 +238,7 @@ export class AppRpcServer {
 
         return {
             sessionId,
-            workspace: String(uiConsole?.workspace || ''),
+            workspace,
             title: this.options.ui?.title || defaultAgentOptions.ui?.title || '',
             provider: this.options.model?.provider || '',
             model: this.options.model?.model || '',
@@ -245,6 +246,39 @@ export class AppRpcServer {
             createdAt: state.createdAt,
             updatedAt: state.updatedAt
         };
+    }
+
+    private async resolveAppStateSessionId(workspace: string, context: AppRpcRequestContext): Promise<string> {
+        const workspaceSessions = await this.findWorkspaceSessions(workspace, context.principalId);
+        if (workspaceSessions.length) {
+            return workspaceSessions[0].id;
+        }
+        const bootstrapSessionId = String(this.options.bootstrapTurn?.sessionId || '').trim();
+        if (bootstrapSessionId) {
+            return bootstrapSessionId;
+        }
+        return `chat-${randomUUID()}`;
+    }
+
+    private async findWorkspaceSessions(workspace: string, principalId?: string): Promise<Array<{ id: string; lastActiveAt?: number }>> {
+        const normalizedWorkspace = String(workspace || '').trim();
+        const infos = await this.sessionHandler.listSessionInfos(principalId);
+        const filtered = normalizedWorkspace
+            ? infos.filter(info => String(info.workspace || '').trim() === normalizedWorkspace)
+            : infos;
+        return filtered
+            .slice()
+            .sort((left, right) => {
+                const activityDelta = (right.lastActiveAt ?? 0) - (left.lastActiveAt ?? 0);
+                if (activityDelta !== 0) {
+                    return activityDelta;
+                }
+                return left.id.localeCompare(right.id);
+            })
+            .map(info => ({
+                id: info.id,
+                lastActiveAt: info.lastActiveAt
+            }));
     }
 
     private async getInputHistory(params: any, context: AppRpcRequestContext): Promise<string[]> {
@@ -431,7 +465,8 @@ export class AppRpcServer {
                 label: event.label,
                 status: event.status,
                 content: event.content,
-                ...(event.toolName ? { toolName: event.toolName } : {})
+                ...(event.toolName ? { toolName: event.toolName } : {}),
+                ...(event.toolCallId ? { toolCallId: event.toolCallId } : {})
             }
         };
     }
@@ -442,6 +477,7 @@ export class AppRpcServer {
         status: 'running' | 'success' | 'failed' | 'error';
         content: string;
         toolName?: string;
+        toolCallId?: string;
     } | null {
         const data = record.data || {};
         switch (record.type) {
@@ -458,6 +494,7 @@ export class AppRpcServer {
                     label: 'tool',
                     status: 'running',
                     toolName: String(data.toolName || ''),
+                    toolCallId: String(data?.receipt?.toolCallId || ''),
                     content: this.describeToolInvocationEvent(data)
                 };
             case 'tool_completed':
@@ -466,6 +503,7 @@ export class AppRpcServer {
                     label: 'tool',
                     status: 'success',
                     toolName: String(data.toolName || ''),
+                    toolCallId: String(data?.receipt?.toolCallId || ''),
                     content: this.describeToolCompletedEvent(data)
                 };
             case 'tool_failed':
@@ -474,6 +512,7 @@ export class AppRpcServer {
                     label: 'tool',
                     status: 'error',
                     toolName: String(data.toolName || ''),
+                    toolCallId: String(data?.receipt?.toolCallId || ''),
                     content: `${data.toolName || 'tool'} failed${data.error ? `: ${data.error}` : ''}`
                 };
             case 'tool_skipped':
@@ -482,6 +521,7 @@ export class AppRpcServer {
                     label: 'tool',
                     status: 'failed',
                     toolName: String(data.toolName || ''),
+                    toolCallId: String(data?.receipt?.toolCallId || ''),
                     content: `${data.toolName || 'tool'} skipped${data.reason ? `: ${data.reason}` : ''}`
                 };
             case 'error':
@@ -498,14 +538,94 @@ export class AppRpcServer {
 
     private describeToolInvocationEvent(data: any): string {
         const toolName = String(data?.toolName || 'tool');
-        const summary = String(data?.inputSummary || '').trim();
+        const summary = this.summarizeToolEventDetail(toolName, data?.receipt?.inputSummary ?? data?.inputSummary, 'input');
         return summary ? `${toolName} · ${summary}` : toolName;
     }
 
     private describeToolCompletedEvent(data: any): string {
         const toolName = String(data?.toolName || 'tool');
-        const outputSummary = String(data?.receipt?.outputSummary || '').trim();
+        const outputSummary = this.summarizeToolEventDetail(toolName, data?.receipt?.outputSummary, 'output');
         return outputSummary ? `${toolName} · ${outputSummary}` : `${toolName} completed`;
+    }
+
+    private summarizeToolEventDetail(toolName: string, summary: unknown, phase: 'input' | 'output'): string {
+        const text = String(summary || '').trim();
+        if (!text || text === '{}' || text === '[]') {
+            return '';
+        }
+        const payload = this.parseToolSummary(text);
+        if (!payload) {
+            return text;
+        }
+
+        const pathSummary = this.pickPathSummary(payload);
+        if (pathSummary) {
+            if (toolName === 'read_file' && phase === 'output' && payload.truncated === true) {
+                return `${pathSummary} (truncated)`;
+            }
+            return pathSummary;
+        }
+
+        if (toolName === 'location') {
+            const label = this.pickString(payload.label)
+                || [this.pickString(payload.city), this.pickString(payload.region), this.pickString(payload.countryCode) || this.pickString(payload.country)]
+                    .filter(Boolean)
+                    .join(', ');
+            return label || '';
+        }
+
+        if (toolName === 'weather') {
+            const location = this.pickString(payload.location) || this.pickString(payload.label);
+            const temperature = typeof payload.temperature === 'number' ? payload.temperature : undefined;
+            const description = this.pickString(payload.description);
+            const unit = payload.units === 'imperial' ? 'F' : 'C';
+            return [location, temperature !== undefined ? `${temperature}°${unit}` : '', description].filter(Boolean).join(' ');
+        }
+
+        const url = this.pickString(payload.url) || this.pickString(payload.href);
+        if (url) {
+            return url;
+        }
+
+        const location = this.pickString(payload.location) || this.pickString(payload.label) || this.pickString(payload.name);
+        if (location) {
+            return location;
+        }
+
+        return text;
+    }
+
+    private parseToolSummary(text: string): Record<string, any> | undefined {
+        try {
+            const payload = JSON.parse(text);
+            return payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private pickPathSummary(payload: Record<string, any>): string {
+        const single = this.pickString(payload.path)
+            || this.pickString(payload.file)
+            || this.pickString(payload.filePath)
+            || this.pickString(payload.dir)
+            || this.pickString(payload.directory)
+            || this.pickString(payload.from)
+            || this.pickString(payload.to);
+        if (single) {
+            return single;
+        }
+        if (Array.isArray(payload.paths)) {
+            const values = payload.paths.map((value: unknown) => this.pickString(value)).filter(Boolean);
+            if (values.length) {
+                return values.join(', ');
+            }
+        }
+        return '';
+    }
+
+    private pickString(value: unknown): string {
+        return typeof value === 'string' && value.trim() ? value.trim() : '';
     }
 
     private async activateTool(params: any, context: AppRpcRequestContext): Promise<any> {

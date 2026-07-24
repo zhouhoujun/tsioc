@@ -15,11 +15,6 @@ export interface AgentConsoleWorkspaceMentionResolver {
 const WORKSPACE_SUGGESTION_LIMIT = 12;
 const WORKSPACE_SCAN_LIMIT = 2000;
 const WORKSPACE_SCAN_DEPTH = 6;
-const WORKSPACE_DIRECTORY_PREVIEW_LIMIT = 20;
-const WORKSPACE_FILE_PREVIEW_CHARS = 4096;
-const WORKSPACE_DIRECTORY_FILE_PREVIEW_LIMIT = 8;
-const WORKSPACE_DIRECTORY_FILE_PREVIEW_CHARS = 2048;
-const WORKSPACE_DIRECTORY_TOTAL_PREVIEW_CHARS = 12000;
 const WORKSPACE_IGNORED_DIRECTORIES = new Set([
     '.git',
     'node_modules',
@@ -28,27 +23,6 @@ const WORKSPACE_IGNORED_DIRECTORIES = new Set([
     'coverage',
     '.next',
     '.turbo'
-]);
-const WORKSPACE_TEXT_FILE_EXTENSIONS = new Set([
-    '',
-    '.cjs',
-    '.css',
-    '.cts',
-    '.html',
-    '.js',
-    '.json',
-    '.jsx',
-    '.md',
-    '.mjs',
-    '.mts',
-    '.scss',
-    '.ts',
-    '.tsx',
-    '.txt',
-    '.vue',
-    '.xml',
-    '.yaml',
-    '.yml'
 ]);
 
 interface WorkspaceTarget {
@@ -127,31 +101,14 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         }
         if (stats.isDirectory()) {
             const entries = await this.readDirectoryEntries(target.absolutePath);
-            const preview = entries
-                .slice(0, WORKSPACE_DIRECTORY_PREVIEW_LIMIT)
-                .map(entry => `${entry.name}${entry.kind === 'directory' ? '/' : ''}`);
-            const hasMore = entries.length > WORKSPACE_DIRECTORY_PREVIEW_LIMIT;
-            const filePreviews = await this.readDirectoryFilePreviews(target.absolutePath, target.relativePath || '.');
+            const basePath = target.relativePath ? `${target.relativePath}/` : '';
             return [
-                `Directory ${target.relativePath || '.'}:`,
-                preview.length
-                    ? `${preview.join(', ')}${hasMore ? ', ...' : ''}`
-                    : '(empty)',
-                ...filePreviews
+                `${target.relativePath || '.'}/`,
+                ...(entries.slice(0, 20).map(entry => `${basePath}${entry.name}${entry.kind === 'directory' ? '/' : ''}`))
             ];
         }
         if (stats.isFile()) {
-            try {
-                const content = await this.fileAdapter.readText(target.absolutePath);
-                const preview = this.truncateTextLines(String(content || '').slice(0, WORKSPACE_FILE_PREVIEW_CHARS));
-                const suffix = String(content || '').length > WORKSPACE_FILE_PREVIEW_CHARS ? '\n...[truncated]' : '';
-                return [
-                    `File ${target.relativePath}:`,
-                    `${preview}${suffix}`
-                ];
-            } catch {
-                return [`File ${target.relativePath}: content preview unavailable.`];
-            }
+            return [target.relativePath];
         }
         return [];
     }
@@ -210,74 +167,6 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
                 }
                 return left.name.localeCompare(right.name);
             });
-    }
-
-    protected async readDirectoryFilePreviews(directoryPath: string, relativePath: string): Promise<string[]> {
-        const files = await this.collectPreviewFiles(directoryPath, relativePath);
-        if (!files.length) {
-            return [];
-        }
-        const lines: string[] = ['Directory file previews:'];
-        let totalChars = 0;
-        for (const file of files) {
-            if (totalChars >= WORKSPACE_DIRECTORY_TOTAL_PREVIEW_CHARS) {
-                lines.push('...[truncated]');
-                break;
-            }
-            try {
-                const content = String(await this.fileAdapter!.readText(file.absolutePath) || '');
-                const remainingChars = Math.max(0, WORKSPACE_DIRECTORY_TOTAL_PREVIEW_CHARS - totalChars);
-                const maxChars = Math.min(WORKSPACE_DIRECTORY_FILE_PREVIEW_CHARS, remainingChars);
-                const preview = this.truncateTextLines(content.slice(0, maxChars), 60);
-                const suffix = content.length > maxChars ? '\n...[truncated]' : '';
-                lines.push(`File ${file.relativePath}:`);
-                lines.push(`${preview}${suffix}`);
-                totalChars += Math.min(content.length, maxChars);
-            } catch {
-                lines.push(`File ${file.relativePath}: content preview unavailable.`);
-            }
-        }
-        return lines;
-    }
-
-    protected async collectPreviewFiles(
-        directoryPath: string,
-        relativePath: string,
-        depth = 0,
-        files: WorkspaceTarget[] = []
-    ): Promise<WorkspaceTarget[]> {
-        if (!this.fileAdapter || files.length >= WORKSPACE_DIRECTORY_FILE_PREVIEW_LIMIT || depth > WORKSPACE_SCAN_DEPTH) {
-            return files;
-        }
-        const entries = await this.readDirectoryEntries(directoryPath);
-        for (const entry of entries) {
-            if (files.length >= WORKSPACE_DIRECTORY_FILE_PREVIEW_LIMIT) {
-                break;
-            }
-            const entryRelativePath = relativePath === '.'
-                ? entry.name
-                : `${relativePath}/${entry.name}`;
-            if (entry.kind === 'directory') {
-                if (!WORKSPACE_IGNORED_DIRECTORIES.has(entry.name)) {
-                    await this.collectPreviewFiles(entry.path, entryRelativePath, depth + 1, files);
-                }
-                continue;
-            }
-            if (entry.kind === 'file' && this.isPreviewTextFile(entry.name)) {
-                files.push({
-                    absolutePath: entry.path,
-                    relativePath: entryRelativePath
-                });
-            }
-        }
-        return files;
-    }
-
-    protected isPreviewTextFile(fileName: string): boolean {
-        if (!this.fileAdapter) {
-            return false;
-        }
-        return WORKSPACE_TEXT_FILE_EXTENSIONS.has(this.fileAdapter.extname(fileName).toLowerCase());
     }
 
     protected buildSuggestionValue(basePath: string, entry: FileDirectoryEntry): string {
@@ -460,11 +349,4 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         return suggestions;
     }
 
-    protected truncateTextLines(text: string, maxLines = 80): string {
-        const lines = text.replace(/\r/g, '').split('\n');
-        if (lines.length <= maxLines) {
-            return lines.join('\n');
-        }
-        return `${lines.slice(0, maxLines).join('\n')}\n...[truncated]`;
-    }
 }

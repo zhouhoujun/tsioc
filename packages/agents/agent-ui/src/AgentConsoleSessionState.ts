@@ -237,7 +237,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
         failed: '失败',
         error: '错误'
     },
-    messageStatusSymbol: '●'
+    messageStatusSymbol: ''
 };
 
 @Injectable()
@@ -299,6 +299,7 @@ export class AgentConsoleSessionState {
     inputHistoryDraft = '';
     inputLocked = false;
     modalPromptActive = false;
+    activeTurnEventScope = '';
     lastError = '';
     notice = '';
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
@@ -563,6 +564,27 @@ export class AgentConsoleSessionState {
         this.setMessages([...this.messages, message]);
     }
 
+    beginTurnEventScope(scope?: string): string {
+        this.activeTurnEventScope = String(scope || '').trim() || `turn-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+        return this.activeTurnEventScope;
+    }
+
+    clearTurnEventScope(scope?: string): void {
+        const resolvedScope = String(scope || '').trim();
+        if (!resolvedScope || this.activeTurnEventScope === resolvedScope) {
+            this.activeTurnEventScope = '';
+        }
+    }
+
+    qualifyUiEventKey(key: string): string {
+        const resolvedKey = String(key || '').trim();
+        if (!resolvedKey) {
+            return '';
+        }
+        const scope = String(this.activeTurnEventScope || '').trim();
+        return scope ? `${scope}:${resolvedKey}` : resolvedKey;
+    }
+
     withoutUiEventMessages(messages: AgentMessage[] = this.messages): AgentMessage[] {
         return messages.filter(message => message?.metadata?.uiKind !== 'event');
     }
@@ -610,12 +632,16 @@ export class AgentConsoleSessionState {
         const existingIndex = next.findIndex(message => message?.metadata?.uiKind === 'event' && message?.metadata?.uiEventKey === eventKey);
         if (existingIndex >= 0) {
             const existing = next[existingIndex];
-            next[existingIndex] = this.createUiEventMessage(text, {
+            const nextMessage = this.createUiEventMessage(text, {
                 ...options,
                 eventKey,
                 id: existing.id,
                 createdAt: existing.createdAt
             });
+            if (this.isSameUiEventMessage(existing, nextMessage)) {
+                return;
+            }
+            next[existingIndex] = nextMessage;
         } else {
             next.push(this.createUiEventMessage(text, {
                 ...options,
@@ -628,14 +654,25 @@ export class AgentConsoleSessionState {
     appendAssistantErrorMessage(message: string): void {
         const text = String(message || '').trim();
         const currentMessages = this.messages.slice();
+        while (currentMessages.length) {
+            const lastMessage = currentMessages[currentMessages.length - 1];
+            if (lastMessage?.role === 'assistant' && !String(lastMessage.content || '').trim()) {
+                currentMessages.pop();
+                continue;
+            }
+            break;
+        }
         const lastMessage = currentMessages[currentMessages.length - 1];
-        if (lastMessage?.role === 'assistant' && !String(lastMessage.content || '').trim()) {
-            currentMessages.pop();
+        const nextContent = text ? `Error: ${text}` : 'Error';
+        if (lastMessage?.role === 'assistant'
+            && lastMessage?.metadata?.error
+            && String(lastMessage.content || '').trim() === nextContent) {
+            return;
         }
         currentMessages.push({
             id: `assistant-error-${Date.now()}`,
             role: 'assistant',
-            content: text ? `Error: ${text}` : 'Error',
+            content: nextContent,
             createdAt: Date.now(),
             metadata: {
                 error: true
@@ -668,6 +705,20 @@ export class AgentConsoleSessionState {
                 status: options.status || 'running'
             }
         };
+    }
+
+    protected isSameUiEventMessage(left: AgentMessage | undefined, right: AgentMessage | undefined): boolean {
+        if (!left || !right) {
+            return false;
+        }
+        const leftMetadata = left.metadata || {};
+        const rightMetadata = right.metadata || {};
+        return String(left.content || '').trim() === String(right.content || '').trim()
+            && leftMetadata.uiKind === rightMetadata.uiKind
+            && leftMetadata.uiEventType === rightMetadata.uiEventType
+            && leftMetadata.uiEventLabel === rightMetadata.uiEventLabel
+            && leftMetadata.uiEventKey === rightMetadata.uiEventKey
+            && leftMetadata.status === rightMetadata.status;
     }
 
     setMessagesFocused(focused: boolean): void {
@@ -819,6 +870,11 @@ export class AgentConsoleSessionState {
         if (String(message.role || '').toLowerCase() === 'assistant'
             && Array.isArray(message.metadata?.toolCalls)
             && message.metadata.toolCalls.length
+            && !String(message.content || '').trim()) {
+            return false;
+        }
+        if (String(message.role || '').toLowerCase() === 'assistant'
+            && message.metadata?.streaming === true
             && !String(message.content || '').trim()) {
             return false;
         }
@@ -1860,9 +1916,17 @@ export class AgentConsoleSessionState {
     }
 
     protected shouldSubmitConfirmedSelectMenuValue(menu: AgentConsoleSelectMenu | undefined, value?: string): boolean {
-        return !!menu
-            && String(value || '').startsWith('/')
-            && !!this.submitAction;
+        if (!menu || !this.submitAction) {
+            return false;
+        }
+        const resolved = String(value || '').trim();
+        if (!resolved) {
+            return false;
+        }
+        if (resolved.startsWith('/')) {
+            return true;
+        }
+        return isAgentConsoleSuggestionMenu(menu) && resolved.startsWith('@');
     }
 
     async confirmSelectMenu(value?: string): Promise<string | undefined> {
@@ -1887,8 +1951,13 @@ export class AgentConsoleSessionState {
         const resolved = await this.confirmSelectMenu(value);
         const submitted = this.shouldSubmitConfirmedSelectMenuValue(menu, resolved);
         if (submitted && resolved) {
-            const valueWithSpace = resolved + ' ';
-            this.setInput(valueWithSpace, valueWithSpace.length);
+            if (isAgentConsoleSuggestionMenu(menu)) {
+                const next = applyAgentConsoleSuggestion(this.input, this.inputCursor, resolved);
+                this.setInput(next.value, next.cursor);
+            } else {
+                const valueWithSpace = resolved + ' ';
+                this.setInput(valueWithSpace, valueWithSpace.length);
+            }
             await this.submitAction?.();
         }
         return {
@@ -2021,12 +2090,17 @@ export class AgentConsoleSessionState {
     }
 
     pushActivity(kind: AgentConsoleActivity['kind'], message: string): void {
+        const normalizedMessage = String(message || '').trim();
+        const lastActivity = this.activities[this.activities.length - 1];
+        if (normalizedMessage && lastActivity?.kind === kind && lastActivity.message === normalizedMessage) {
+            return;
+        }
         this.activities = [
             ...this.activities.slice(-(this.consoleOptions.activityHistoryLimit - 1)),
             {
                 id: `${kind}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
                 kind,
-                message,
+                message: normalizedMessage,
                 createdAt: Date.now()
             }
         ];

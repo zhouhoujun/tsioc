@@ -21,6 +21,7 @@ export * from './runtime/AgentContext';
 export * from './runtime/AgentEvents';
 export * from './runtime/AgentTurnInput';
 export * from './runtime/AgentTurnResult';
+export * from './tools/ToolSummary';
 export * from './runtime/TurnHandler';
 export * from './runtime/AgentRuntime';
 export * from './runtime/DefaultAgentRuntime';

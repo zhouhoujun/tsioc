@@ -24,6 +24,7 @@ import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
 import { AgentContextManager } from '../context/AgentContextManager';
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
+import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AgentScheduler } from '../scheduler/AgentScheduler';
 import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
 import { ToolSchemaValidator } from '../harness/ToolSchemaValidator';
@@ -696,7 +697,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         turnContext: TurnExecutionContext
     ): Promise<ToolInvocationResult> {
         const toolCallInput = this.cloneToolInput(toolCall.input);
-        const inputSummary = this.summarizeToolInput(toolCallInput);
+        const inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
         const baseReceipt = this.createBaseReceipt(toolCall, executionMode, inputSummary);
         const callableToolNames = new Set(callableTools.map(tool => tool.name));
         if (!callableToolNames.has(toolCall.name)) {
@@ -889,26 +890,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    private summarizeToolInput(input: any): string | undefined {
-        const text = typeof input === 'string' ? input : this.safeSerialize(input);
-        if (!text) {
-            return undefined;
-        }
-        return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
+    private summarizeToolInput(toolName: string, input: any): string | undefined {
+        return summarizeToolDisplayText(toolName, input, 'input');
     }
 
     private summarizeToolOutput(toolName: string, output: any): string | undefined {
-        if (toolName === 'read_file' && output && typeof output === 'object' && !Array.isArray(output)) {
-            return this.safeSerialize({
-                path: output.path,
-                truncated: output.truncated === true
-            });
-        }
-        const text = typeof output === 'string' ? output : this.safeSerialize(output);
-        if (!text) {
-            return undefined;
-        }
-        return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
+        return summarizeToolDisplayText(toolName, output, 'output');
     }
 
     private async finalizeToolInvocation(sessionId: string, result: ToolInvocationResult): Promise<void> {

@@ -56,15 +56,17 @@ export class AgentConsoleEventBridge {
 
         bind(AgentTurnStartedEvent, (event: AgentTurnStartedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.setStatus('running');
-            this.state.pushActivity('turn', 'Turn started');
-            if (!this.appRpc) {
-                this.state.upsertUiEventMessage('turn-start', 'Analyzing request', {
-                    eventType: 'turn_started',
-                    label: 'state',
-                    status: 'running'
-                });
-            }
+            this.state.batch(() => {
+                this.state.setStatus('running');
+                this.state.pushActivity('turn', 'Turn started');
+                if (!this.appRpc) {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey('turn-start'), 'Analyzing request', {
+                        eventType: 'turn_started',
+                        label: 'state',
+                        status: 'running'
+                    });
+                }
+            });
         });
 
         bind(AgentStreamChunkEvent, (event: AgentStreamChunkEvent) => {
@@ -81,147 +83,163 @@ export class AgentConsoleEventBridge {
 
         bind(AgentToolInvokedEvent, (event: AgentToolInvokedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.setRunningTool(event.toolName);
-            this.state.upsertToolRun({
-                name: event.toolName,
-                status: 'running',
-                message: 'Running',
-                inputSummary: event.inputSummary || event.receipt?.inputSummary,
-                attemptCount: event.receipt?.attemptCount,
-                executionMode: event.receipt?.executionMode,
-                receiptId: event.receipt?.receiptId,
-                toolCallId: event.receipt?.toolCallId,
-                updatedAt: Date.now()
-            });
-            this.state.pushActivity('tool', `Running ${event.toolName}`);
-            if (!this.appRpc) {
-                this.state.appendUiEventMessage(this.describeToolTimelineEvent(event.toolName, event.inputSummary || event.receipt?.inputSummary), {
-                    eventType: 'tool_invoked',
-                    label: 'tool',
-                    status: 'running'
+            this.state.batch(() => {
+                this.state.setRunningTool(event.toolName);
+                this.state.upsertToolRun({
+                    name: event.toolName,
+                    status: 'running',
+                    message: 'Running',
+                    inputSummary: event.inputSummary || event.receipt?.inputSummary,
+                    attemptCount: event.receipt?.attemptCount,
+                    executionMode: event.receipt?.executionMode,
+                    receiptId: event.receipt?.receiptId,
+                    toolCallId: event.receipt?.toolCallId,
+                    updatedAt: Date.now()
                 });
-            }
+                this.state.pushActivity('tool', `Running ${event.toolName}`);
+                if (!this.appRpc) {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.inputSummary || event.inputSummary), {
+                        eventType: 'tool_invoked',
+                        label: 'tool',
+                        status: 'running'
+                    });
+                }
+            });
         });
 
         bind(AgentToolCompletedEvent, async (event: AgentToolCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.clearRunningTool(event.toolName);
-            if (event.toolName === 'todo') {
-                this.state.setPlanTodos(this.normalizePlanTodos(event.output));
-            }
-            this.state.upsertToolRun({
-                name: event.toolName,
-                status: 'success',
-                durationMs: event.receipt?.durationMs,
-                message: event.receipt?.durationMs != null
-                    ? `Completed in ${event.receipt.durationMs}ms`
-                    : 'Completed',
-                inputSummary: event.receipt?.inputSummary,
-                outputSummary: event.receipt?.outputSummary,
-                attemptCount: event.receipt?.attemptCount,
-                executionMode: event.receipt?.executionMode,
-                receiptId: event.receipt?.receiptId,
-                toolCallId: event.receipt?.toolCallId,
-                updatedAt: Date.now()
-            });
-            this.state.pushActivity('tool', `Completed ${event.toolName}`);
-            if (!this.appRpc) {
-                this.state.appendUiEventMessage(this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary, 'completed'), {
-                    eventType: 'tool_completed',
-                    label: 'tool',
-                    status: 'success'
+            this.state.batch(() => {
+                this.state.clearRunningTool(event.toolName);
+                if (event.toolName === 'todo') {
+                    this.state.setPlanTodos(this.normalizePlanTodos(event.output));
+                }
+                this.state.upsertToolRun({
+                    name: event.toolName,
+                    status: 'success',
+                    durationMs: event.receipt?.durationMs,
+                    message: event.receipt?.durationMs != null
+                        ? `Completed in ${event.receipt.durationMs}ms`
+                        : 'Completed',
+                    inputSummary: event.receipt?.inputSummary,
+                    outputSummary: event.receipt?.outputSummary,
+                    attemptCount: event.receipt?.attemptCount,
+                    executionMode: event.receipt?.executionMode,
+                    receiptId: event.receipt?.receiptId,
+                    toolCallId: event.receipt?.toolCallId,
+                    updatedAt: Date.now()
                 });
-            }
+                this.state.pushActivity('tool', `Completed ${event.toolName}`);
+                if (!this.appRpc) {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary), {
+                        eventType: 'tool_completed',
+                        label: 'tool',
+                        status: 'success'
+                    });
+                }
+            });
             await this.refreshTools();
         });
 
         bind(AgentToolFailedEvent, (event: AgentToolFailedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.clearRunningTool(event.toolName);
-            this.state.setLastError(event.error.message);
-            this.state.upsertToolRun({
-                name: event.toolName,
-                status: 'error',
-                durationMs: event.receipt?.durationMs,
-                message: event.error.message,
-                inputSummary: event.receipt?.inputSummary,
-                outputSummary: event.receipt?.outputSummary,
-                error: event.receipt?.error || event.error.message,
-                attemptCount: event.receipt?.attemptCount,
-                executionMode: event.receipt?.executionMode,
-                receiptId: event.receipt?.receiptId,
-                toolCallId: event.receipt?.toolCallId,
-                updatedAt: Date.now()
-            });
-            this.state.pushActivity('error', `${event.toolName}: ${event.error.message}`);
-            if (!this.appRpc) {
-                this.state.appendUiEventMessage(`${event.toolName} failed: ${event.error.message}`, {
-                    eventType: 'tool_failed',
-                    label: 'tool',
-                    status: 'error'
+            this.state.batch(() => {
+                this.state.clearRunningTool(event.toolName);
+                this.state.setLastError(event.error.message);
+                this.state.upsertToolRun({
+                    name: event.toolName,
+                    status: 'error',
+                    durationMs: event.receipt?.durationMs,
+                    message: event.error.message,
+                    inputSummary: event.receipt?.inputSummary,
+                    outputSummary: event.receipt?.outputSummary,
+                    error: event.receipt?.error || event.error.message,
+                    attemptCount: event.receipt?.attemptCount,
+                    executionMode: event.receipt?.executionMode,
+                    receiptId: event.receipt?.receiptId,
+                    toolCallId: event.receipt?.toolCallId,
+                    updatedAt: Date.now()
                 });
-            }
-            this.state.appendAssistantErrorMessage(`${event.toolName}: ${event.error.message}`);
+                this.state.pushActivity('error', `${event.toolName}: ${event.error.message}`);
+                if (!this.appRpc) {
+                    this.state.upsertUiEventMessage(this.state.qualifyUiEventKey(this.resolveToolEventKey(event.toolName, event.receipt?.toolCallId)), `${event.toolName} failed: ${event.error.message}`, {
+                        eventType: 'tool_failed',
+                        label: 'tool',
+                        status: 'error'
+                    });
+                }
+                this.state.appendAssistantErrorMessage(`${event.toolName}: ${event.error.message}`);
+            });
         });
 
         bind(AgentModelCompletedEvent, (event: AgentModelCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            if (event.response.metadata?.provider && !this.state.provider) {
-                this.state.setProvider(String(event.response.metadata.provider));
-            }
-            if (event.response.metadata?.model && !this.state.model) {
-                this.state.setModel(String(event.response.metadata.model));
-            }
-            this.state.setTokenUsage(event.response.metadata?.usage);
-            this.state.pushActivity('model', `Model: ${this.state.provider || 'unknown'} / ${this.state.model || 'unknown'}`);
+            this.state.batch(() => {
+                if (event.response.metadata?.provider && !this.state.provider) {
+                    this.state.setProvider(String(event.response.metadata.provider));
+                }
+                if (event.response.metadata?.model && !this.state.model) {
+                    this.state.setModel(String(event.response.metadata.model));
+                }
+                this.state.setTokenUsage(event.response.metadata?.usage);
+                this.state.pushActivity('model', `Model: ${this.state.provider || 'unknown'} / ${this.state.model || 'unknown'}`);
+            });
         });
 
         bind(AgentApprovalRequestedEvent, (event: AgentApprovalRequestedEvent) => {
             if (event.request.sessionId !== this.state.sessionId) return;
-            this.state.upsertPendingApproval({
-                id: event.request.id,
-                toolName: event.request.toolName,
-                sessionId: event.request.sessionId,
-                reason: event.request.reason,
-                summary: event.request.summary,
-                hasInput: event.request.hasInput,
-                inputSummary: event.request.inputSummary,
-                createdAt: Date.now(),
-                timeoutMs: event.request.timeoutMs
+            this.state.batch(() => {
+                this.state.upsertPendingApproval({
+                    id: event.request.id,
+                    toolName: event.request.toolName,
+                    sessionId: event.request.sessionId,
+                    reason: event.request.reason,
+                    summary: event.request.summary,
+                    hasInput: event.request.hasInput,
+                    inputSummary: event.request.inputSummary,
+                    createdAt: Date.now(),
+                    timeoutMs: event.request.timeoutMs
+                });
+                this.state.pushActivity('tool', `Approval required for ${event.request.toolName}`);
             });
-            this.state.pushActivity('tool', `Approval required for ${event.request.toolName}`);
         });
 
         bind(AgentApprovalCompletedEvent, (event: AgentApprovalCompletedEvent) => {
             if (event.request.sessionId !== this.state.sessionId) return;
-            this.state.removePendingApproval(event.request.id);
-            this.state.pushActivity(
-                'tool',
-                `${event.approved ? 'Approved' : 'Denied'} ${event.request.toolName}`
-            );
+            this.state.batch(() => {
+                this.state.removePendingApproval(event.request.id);
+                this.state.pushActivity(
+                    'tool',
+                    `${event.approved ? 'Approved' : 'Denied'} ${event.request.toolName}`
+                );
+            });
         });
 
         bind(AgentApprovalFailedEvent, (event: AgentApprovalFailedEvent) => {
             if (event.request.sessionId !== this.state.sessionId) return;
-            this.state.removePendingApproval(event.request.id);
-            this.state.setLastError(event.error.message);
-            this.state.pushActivity('error', `${event.request.toolName}: ${event.error.message}`);
-            this.state.appendAssistantErrorMessage(`${event.request.toolName}: ${event.error.message}`);
+            this.state.batch(() => {
+                this.state.removePendingApproval(event.request.id);
+                this.state.setLastError(event.error.message);
+                this.state.pushActivity('error', `${event.request.toolName}: ${event.error.message}`);
+                this.state.appendAssistantErrorMessage(`${event.request.toolName}: ${event.error.message}`);
+            });
         });
 
         bind(AgentErrorEvent, (event: AgentErrorEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
-            this.state.setStatus('error');
-            this.state.setLastError(event.error.message);
-            this.state.pushActivity('error', event.error.message);
-            if (!this.appRpc) {
-                this.state.appendUiEventMessage(event.error.message, {
-                    eventType: 'error',
-                    label: 'error',
-                    status: 'error'
-                });
-            }
-            this.state.appendAssistantErrorMessage(event.error.message);
+            this.state.batch(() => {
+                this.state.setStatus('error');
+                this.state.setLastError(event.error.message);
+                this.state.pushActivity('error', event.error.message);
+                if (!this.appRpc) {
+                    this.state.appendUiEventMessage(event.error.message, {
+                        eventType: 'error',
+                        label: 'error',
+                        status: 'error'
+                    });
+                }
+                this.state.appendAssistantErrorMessage(event.error.message);
+            });
         });
 
         this.subscribed = true;
@@ -284,11 +302,92 @@ export class AgentConsoleEventBridge {
         }
     }
 
-    protected describeToolTimelineEvent(toolName: string, summary?: string, suffix = ''): string {
-        const resolvedSummary = String(summary || '').trim();
-        if (suffix) {
-            return resolvedSummary ? `${toolName} ${suffix} · ${resolvedSummary}` : `${toolName} ${suffix}`;
-        }
+    protected describeToolTimelineEvent(toolName: string, summary?: string): string {
+        const resolvedSummary = this.summarizeToolEventDetail(toolName, summary);
         return resolvedSummary ? `${toolName} · ${resolvedSummary}` : toolName;
+    }
+
+    protected summarizeToolEventDetail(toolName: string, summary?: string): string {
+        const text = String(summary || '').trim();
+        if (!text || text === '{}' || text === '[]') {
+            return '';
+        }
+        const payload = this.parseToolSummary(text);
+        if (!payload) {
+            return text;
+        }
+
+        const pathSummary = this.pickPathSummary(payload);
+        if (pathSummary) {
+            if (toolName === 'read_file' && payload.truncated === true) {
+                return `${pathSummary} (truncated)`;
+            }
+            return pathSummary;
+        }
+
+        if (toolName === 'location') {
+            const label = this.pickString(payload.label)
+                || [this.pickString(payload.city), this.pickString(payload.region), this.pickString(payload.countryCode) || this.pickString(payload.country)]
+                    .filter(Boolean)
+                    .join(', ');
+            return label || '';
+        }
+
+        if (toolName === 'weather') {
+            const location = this.pickString(payload.location) || this.pickString(payload.label);
+            const temperature = typeof payload.temperature === 'number' ? payload.temperature : undefined;
+            const description = this.pickString(payload.description);
+            const unit = payload.units === 'imperial' ? 'F' : 'C';
+            return [location, temperature !== undefined ? `${temperature}°${unit}` : '', description].filter(Boolean).join(' ');
+        }
+
+        const url = this.pickString(payload.url) || this.pickString(payload.href);
+        if (url) {
+            return url;
+        }
+
+        const location = this.pickString(payload.location) || this.pickString(payload.label) || this.pickString(payload.name);
+        if (location) {
+            return location;
+        }
+
+        return text;
+    }
+
+    protected parseToolSummary(text: string): Record<string, any> | undefined {
+        try {
+            const payload = JSON.parse(text);
+            return payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    protected pickPathSummary(payload: Record<string, any>): string {
+        const single = this.pickString(payload.path)
+            || this.pickString(payload.file)
+            || this.pickString(payload.filePath)
+            || this.pickString(payload.dir)
+            || this.pickString(payload.directory)
+            || this.pickString(payload.from)
+            || this.pickString(payload.to);
+        if (single) {
+            return single;
+        }
+        if (Array.isArray(payload.paths)) {
+            const values = payload.paths.map((value: unknown) => this.pickString(value)).filter(Boolean);
+            if (values.length) {
+                return values.join(', ');
+            }
+        }
+        return '';
+    }
+
+    protected pickString(value: unknown): string {
+        return typeof value === 'string' && value.trim() ? value.trim() : '';
+    }
+
+    protected resolveToolEventKey(toolName: string, toolCallId?: string): string {
+        return toolCallId ? `tool:${toolCallId}` : `tool:${toolName}`;
     }
 }

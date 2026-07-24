@@ -66,7 +66,7 @@ export class AgentConsoleRendererTest {
         expect(lines.some(line => line.toLowerCase().includes('tsdi-agent'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleStatusPanelComponent)).toBeTruthy();
         expect(messageLines.some(line => line.includes('›') && line.includes('hello'))).toBe(true);
-        expect(messageLines.some(line => line.includes('●') && line.includes('world'))).toBe(true);
+        expect(messageLines.some(line => line.includes('•') && line.includes('world'))).toBe(true);
         expect(ref.hostView.query(AgentConsoleSessionsPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleInputPanelComponent)).toBeTruthy();
         expect(ref.hostView.query(AgentConsoleWorkingPanelComponent)).toBeTruthy();
@@ -103,8 +103,8 @@ export class AgentConsoleRendererTest {
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
-        expect(messageLines.some(line => line.includes('●') && line.includes('streaming response'))).toBe(true);
-        expect(messageLines.some(line => line.includes('●') && line.includes('Error: broken'))).toBe(true);
+        expect(messageLines.some(line => line.includes('•') && line.includes('streaming response'))).toBe(true);
+        expect(messageLines.some(line => line.includes('!') && line.includes('Error: broken'))).toBe(true);
     }
 
     @Test('renders working line with token usage while running')

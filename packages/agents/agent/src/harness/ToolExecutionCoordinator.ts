@@ -7,6 +7,7 @@ import { ToolSchemaValidator } from './ToolSchemaValidator';
 import { RateLimitManager } from './RateLimitManager';
 import { OutputGuard } from './OutputGuard';
 import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent } from '../runtime/AgentEvents';
+import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
 import { SandboxExecutor, SandboxPolicy, defaultSandboxPolicy } from './SandboxExecutor';
 
@@ -240,22 +241,7 @@ export class ToolExecutionCoordinator {
     }
 
     private summarize(toolName: string, value: unknown): string | undefined {
-        if (value === undefined) {
-            return undefined;
-        }
-        if (toolName === 'read_file' && value && typeof value === 'object' && !Array.isArray(value)) {
-            const payload = value as Record<string, any>;
-            return JSON.stringify({
-                path: payload.path,
-                truncated: payload.truncated === true
-            });
-        }
-        try {
-            const text = typeof value === 'string' ? value : JSON.stringify(value);
-            return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
-        } catch {
-            return '[unserializable]';
-        }
+        return summarizeToolDisplayText(toolName, value, 'output');
     }
 
     private async publishAudit(record: AgentAuditRecord): Promise<void> {

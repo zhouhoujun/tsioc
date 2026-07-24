@@ -3183,6 +3183,69 @@ export class AgentToolsPackageTest {
         expect(result.temperature).toEqual(26);
     }
 
+    @Test('weather tool passes current coordinates directly to adapter when available')
+    async weatherToolPassesCurrentCoordinatesDirectlyToAdapterWhenAvailable() {
+        const calls: any[] = [];
+        const weather = new MockAdapter(async (location: any) => {
+            calls.push(location);
+            return {
+                location: location.label,
+                temperature: 27,
+                feelsLike: 29,
+                humidity: 65,
+                description: 'sunny',
+                windSpeed: 3,
+                units: 'metric'
+            };
+        });
+        const location = new MockAdapter(async () => ({
+            label: 'Chengdu, Sichuan, China',
+            city: 'Chengdu',
+            region: 'Sichuan',
+            country: 'China',
+            latitude: 30.67,
+            longitude: 104.06
+        }));
+        const tool = new WeatherTool(weather as any, location as any);
+
+        const result = await tool.invoke({ units: 'metric' }, createSessionContext());
+
+        expect(calls).toHaveLength(1);
+        expect(calls[0]).toMatchObject({
+            label: 'Chengdu, Sichuan, China',
+            latitude: 30.67,
+            longitude: 104.06
+        });
+        expect(result.location).toEqual('Chengdu, Sichuan, China');
+        expect(result.locationSource).toEqual('current');
+        expect(result.temperature).toEqual(27);
+    }
+
+    @Test('weather tool reports resolved current location when weather lookup fails')
+    async weatherToolReportsResolvedCurrentLocationWhenLookupFails() {
+        const weather = new MockAdapter(async () => {
+            throw new Error('fetch failed');
+        });
+        const location = new MockAdapter(async () => ({
+            label: 'Chengdu, Sichuan, China',
+            city: 'Chengdu',
+            region: 'Sichuan',
+            country: 'China',
+            latitude: 30.67,
+            longitude: 104.06
+        }));
+        const tool = new WeatherTool(weather as any, location as any);
+
+        let error: Error | undefined;
+        try {
+            await tool.invoke({}, createSessionContext());
+        } catch (err) {
+            error = err as Error;
+        }
+
+        expect(error?.message).toContain(`Current location 'Chengdu, Sichuan, China' failed: fetch failed`);
+    }
+
     @Test('shared weather adapter fails clearly without configured service')
     async sharedWeatherAdapterFailsClearlyWithoutConfiguredService() {
         const adapter = new UnavailableWeatherAdapter();
@@ -3282,6 +3345,85 @@ export class AgentToolsPackageTest {
         expect(calls.some(url => url.includes('language=zh'))).toBe(true);
         expect(current.location).toEqual('Chengdu, Sichuan, China');
         expect(current.temperature).toEqual(30);
+    }
+
+    @Test('default open-meteo weather adapter falls back from composite location labels to city queries')
+    async defaultOpenMeteoWeatherAdapterFallsBackFromCompositeLocationLabels() {
+        const calls: string[] = [];
+        const adapter = new OpenMeteoWeatherAdapter({
+            fetch: async (input: any) => {
+                const url = String(input);
+                calls.push(url);
+                const parsed = new URL(url);
+                const pathname = parsed.pathname;
+                const name = parsed.searchParams.get('name');
+                if (pathname.endsWith('/search') && name === 'Chengdu, Sichuan, China') {
+                    return createJsonResponse({ results: [] });
+                }
+                if (pathname.endsWith('/search') && name === 'Chengdu, China') {
+                    return createJsonResponse({ results: [] });
+                }
+                if (pathname.endsWith('/search') && name === 'Chengdu') {
+                    return createJsonResponse({
+                        results: [{ name: 'Chengdu', admin1: 'Sichuan', country: 'China', latitude: 30.67, longitude: 104.06 }]
+                    });
+                }
+                return createJsonResponse({
+                    current: {
+                        temperature_2m: 29,
+                        apparent_temperature: 31,
+                        relative_humidity_2m: 68,
+                        pressure_msl: 1006,
+                        wind_speed_10m: 6,
+                        weather_code: 1
+                    }
+                });
+            }
+        });
+
+        const current = await adapter.getCurrentWeather('Chengdu, Sichuan, China');
+
+        expect(calls.some(url => url.includes('name=Chengdu%2C+Sichuan%2C+China'))).toBe(true);
+        expect(calls.some(url => url.includes('name=Chengdu'))).toBe(true);
+        expect(current.location).toEqual('Chengdu, Sichuan, China');
+        expect(current.temperature).toEqual(29);
+    }
+
+    @Test('default open-meteo weather adapter uses direct coordinates without geocoding')
+    async defaultOpenMeteoWeatherAdapterUsesDirectCoordinatesWithoutGeocoding() {
+        const calls: string[] = [];
+        const adapter = new OpenMeteoWeatherAdapter({
+            fetch: async (input: any) => {
+                const url = String(input);
+                calls.push(url);
+                return createJsonResponse({
+                    current: {
+                        temperature_2m: 28,
+                        apparent_temperature: 30,
+                        relative_humidity_2m: 66,
+                        pressure_msl: 1007,
+                        wind_speed_10m: 5,
+                        weather_code: 1
+                    }
+                });
+            }
+        });
+
+        const current = await adapter.getCurrentWeather({
+            label: 'Chengdu, Sichuan, China',
+            city: 'Chengdu',
+            region: 'Sichuan',
+            country: 'China',
+            latitude: 30.67,
+            longitude: 104.06
+        });
+
+        expect(calls).toHaveLength(1);
+        expect(calls[0]).toContain('latitude=30.67');
+        expect(calls[0]).toContain('longitude=104.06');
+        expect(calls[0].includes('/search?')).toEqual(false);
+        expect(current.location).toEqual('Chengdu, Sichuan, China');
+        expect(current.temperature).toEqual(28);
     }
 
     @Test('provideTools wires default weather adapter from shared options')

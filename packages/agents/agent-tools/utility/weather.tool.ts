@@ -2,10 +2,12 @@ import { AgentTool, AgentToolContext } from '@tsdi/agent';
 import { Abstract, Inject, Injectable, Optional } from '@tsdi/ioc';
 import { LocationAdapter, LocationResult } from './location.tool';
 
+export type WeatherLookup = string | LocationResult;
+
 @Abstract()
 export abstract class WeatherAdapter {
-    abstract getCurrentWeather(location: string, units?: 'metric' | 'imperial'): Promise<WeatherResult>;
-    abstract getForecast(location: string, days?: number, units?: 'metric' | 'imperial'): Promise<WeatherForecastResult>;
+    abstract getCurrentWeather(location: WeatherLookup, units?: 'metric' | 'imperial'): Promise<WeatherResult>;
+    abstract getForecast(location: WeatherLookup, days?: number, units?: 'metric' | 'imperial'): Promise<WeatherForecastResult>;
 }
 
 export interface WeatherResult {
@@ -73,13 +75,21 @@ export class WeatherTool implements AgentTool {
         const location = requestedLocation ?? await this.resolveCurrentLocation();
         const units = input?.units === 'imperial' ? 'imperial' : 'metric';
         const includeForecast = input?.forecast === true;
-
-        const current = await this.adapter.getCurrentWeather(location, units);
+        let current: WeatherResult;
+        try {
+            current = await this.adapter.getCurrentWeather(location, units);
+        } catch (error) {
+            throw this.rewriteWeatherLookupError(error, location, requestedLocation ? 'input' : 'current');
+        }
         let forecast: WeatherForecastResult | undefined;
 
         if (includeForecast && typeof this.adapter.getForecast === 'function') {
             const days = typeof input?.days === 'number' ? Math.min(Math.max(1, input.days), 7) : 3;
-            forecast = await this.adapter.getForecast(location, days, units);
+            try {
+                forecast = await this.adapter.getForecast(location, days, units);
+            } catch (error) {
+                throw this.rewriteWeatherLookupError(error, location, requestedLocation ? 'input' : 'current');
+            }
         }
 
         return {
@@ -103,11 +113,15 @@ export class WeatherTool implements AgentTool {
         return value.trim();
     }
 
-    private async resolveCurrentLocation(): Promise<string> {
+    private async resolveCurrentLocation(): Promise<WeatherLookup> {
         if (!this.locationAdapter) {
             throw new Error('Invalid weather location: must provide a location when no current location adapter is configured.');
         }
         const current = await this.locationAdapter.getCurrentLocation();
+        if (typeof current?.latitude === 'number' && Number.isFinite(current.latitude)
+            && typeof current?.longitude === 'number' && Number.isFinite(current.longitude)) {
+            return current;
+        }
         const label = this.buildLocationLabel(current);
         if (!label) {
             throw new Error('Unable to resolve current location for weather lookup.');
@@ -125,5 +139,24 @@ export class WeatherTool implements AgentTool {
             .filter(Boolean)
             .join(', ');
         return fallback || undefined;
+    }
+
+    private describeLookup(location: WeatherLookup): string | undefined {
+        if (typeof location === 'string') {
+            return this.optionalString(location);
+        }
+        return this.buildLocationLabel(location);
+    }
+
+    private rewriteWeatherLookupError(error: unknown, location: WeatherLookup, source: 'input' | 'current'): Error {
+        const resolvedLocation = this.describeLookup(location);
+        const message = error instanceof Error ? error.message : String(error || 'Unknown error');
+        if (!resolvedLocation) {
+            return error instanceof Error ? error : new Error(message);
+        }
+        const prefix = source === 'current'
+            ? `Current location '${resolvedLocation}'`
+            : `Weather lookup for '${resolvedLocation}'`;
+        return new Error(`${prefix} failed: ${message}`);
     }
 }

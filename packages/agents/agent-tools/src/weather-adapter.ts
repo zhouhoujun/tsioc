@@ -1,5 +1,5 @@
 import { AgentToolsWeatherOptions } from './options';
-import { WeatherAdapter, WeatherForecastResult, WeatherResult } from '../utility/weather.tool';
+import { WeatherAdapter, WeatherForecastResult, WeatherLookup, WeatherResult } from '../utility/weather.tool';
 
 interface OpenMeteoGeocodingResult {
     results?: Array<{
@@ -44,7 +44,7 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
         this.userAgent = String(options.userAgent || 'tsdi-agent/6').trim();
     }
 
-    override async getCurrentWeather(location: string, units: 'metric' | 'imperial' = 'metric'): Promise<WeatherResult> {
+    override async getCurrentWeather(location: WeatherLookup, units: 'metric' | 'imperial' = 'metric'): Promise<WeatherResult> {
         const resolved = await this.resolveLocation(location);
         const query = new URLSearchParams({
             latitude: String(resolved.latitude),
@@ -56,7 +56,7 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
         const payload = await this.requestJson<OpenMeteoForecastResult>(`${this.forecastBaseUrl}/forecast?${query.toString()}`);
         const current = payload?.current;
         if (!current || typeof current.temperature_2m !== 'number') {
-            throw new Error(`Weather service did not return current weather for '${location}'.`);
+            throw new Error(`Weather service did not return current weather for '${this.describeLookup(location)}'.`);
         }
         return {
             location: resolved.label,
@@ -70,7 +70,7 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
         };
     }
 
-    override async getForecast(location: string, days = 3, units: 'metric' | 'imperial' = 'metric'): Promise<WeatherForecastResult> {
+    override async getForecast(location: WeatherLookup, days = 3, units: 'metric' | 'imperial' = 'metric'): Promise<WeatherForecastResult> {
         const resolved = await this.resolveLocation(location);
         const query = new URLSearchParams({
             latitude: String(resolved.latitude),
@@ -87,7 +87,7 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
         const lows = daily?.temperature_2m_min ?? [];
         const codes = daily?.weather_code ?? [];
         if (!dates.length) {
-            throw new Error(`Weather service did not return forecast data for '${location}'.`);
+            throw new Error(`Weather service did not return forecast data for '${this.describeLookup(location)}'.`);
         }
         return {
             location: resolved.label,
@@ -101,8 +101,12 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
         };
     }
 
-    protected async resolveLocation(location: string): Promise<{ label: string; latitude: number; longitude: number }> {
-        const normalized = String(location || '').trim();
+    protected async resolveLocation(location: WeatherLookup): Promise<{ label: string; latitude: number; longitude: number }> {
+        const direct = this.normalizeDirectLocation(location);
+        if (direct) {
+            return direct;
+        }
+        const normalized = this.describeLookup(location);
         for (const query of this.buildLocationSearchQueries(normalized)) {
             const payload = await this.requestJson<OpenMeteoGeocodingResult>(`${this.geocodingBaseUrl}/search?${query.toString()}`);
             const result = payload?.results?.[0];
@@ -110,12 +114,32 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
                 continue;
             }
             return {
-                label: [result.name, result.admin1, result.country].filter(Boolean).join(', ') || location,
+                label: [result.name, result.admin1, result.country].filter(Boolean).join(', ') || normalized,
                 latitude: result.latitude,
                 longitude: result.longitude
             };
         }
-        throw new Error(`Unable to find weather location '${location}'.`);
+        throw new Error(`Unable to find weather location '${normalized}'.`);
+    }
+
+    protected normalizeDirectLocation(location: WeatherLookup): { label: string; latitude: number; longitude: number } | undefined {
+        if (!location || typeof location !== 'object' || Array.isArray(location)) {
+            return undefined;
+        }
+        const latitude = typeof location.latitude === 'number' && Number.isFinite(location.latitude)
+            ? location.latitude
+            : undefined;
+        const longitude = typeof location.longitude === 'number' && Number.isFinite(location.longitude)
+            ? location.longitude
+            : undefined;
+        if (latitude === undefined || longitude === undefined) {
+            return undefined;
+        }
+        return {
+            label: this.buildLocationLabel(location) || `${latitude}, ${longitude}`,
+            latitude,
+            longitude
+        };
     }
 
     protected buildLocationSearchQueries(location: string): URLSearchParams[] {
@@ -131,28 +155,73 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
             queries.push(query);
         };
 
-        add({
-            name: location,
-            count: '1',
-            format: 'json'
-        });
-
-        add({
-            name: location,
-            count: '10',
-            format: 'json'
-        });
-
-        for (const language of this.inferLocationSearchLanguages(location)) {
+        for (const term of this.buildLocationSearchTerms(location)) {
             add({
-                name: location,
-                count: '10',
-                format: 'json',
-                language
+                name: term,
+                count: '1',
+                format: 'json'
             });
+
+            add({
+                name: term,
+                count: '10',
+                format: 'json'
+            });
+
+            for (const language of this.inferLocationSearchLanguages(term)) {
+                add({
+                    name: term,
+                    count: '10',
+                    format: 'json',
+                    language
+                });
+            }
         }
 
         return queries;
+    }
+
+    protected buildLocationSearchTerms(location: string): string[] {
+        const terms: string[] = [];
+        const seen = new Set<string>();
+        const add = (value: string) => {
+            const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+            if (!normalized || seen.has(normalized)) {
+                return;
+            }
+            seen.add(normalized);
+            terms.push(normalized);
+        };
+
+        add(location);
+
+        const segments = String(location || '')
+            .split(',')
+            .map(segment => segment.replace(/\s+/g, ' ').trim())
+            .filter(Boolean);
+        if (!segments.length) {
+            return terms;
+        }
+
+        const city = segments[0];
+        const region = segments.length > 1 ? segments[1] : '';
+        const country = segments.length > 1 ? segments[segments.length - 1] : '';
+
+        add(city);
+
+        if (city && country && city !== country) {
+            add(`${city}, ${country}`);
+        }
+
+        if (city && region && region !== city && region !== country) {
+            add(`${city}, ${region}`);
+        }
+
+        if (segments.length > 2) {
+            add(segments.slice(0, segments.length - 1).join(', '));
+        }
+
+        return terms;
     }
 
     protected inferLocationSearchLanguages(location: string): string[] {
@@ -212,6 +281,30 @@ export class OpenMeteoWeatherAdapter extends WeatherAdapter {
 
     protected optionalNumber(value: unknown): number | undefined {
         return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+    }
+
+    protected describeLookup(location: WeatherLookup): string {
+        if (typeof location === 'string') {
+            return location.trim();
+        }
+        return this.buildLocationLabel(location);
+    }
+
+    protected buildLocationLabel(location: Partial<{ label?: string; city?: string; region?: string; country?: string; countryCode?: string }>): string {
+        const explicit = this.optionalString(location?.label);
+        if (explicit) {
+            return explicit;
+        }
+        const parts = [
+            this.optionalString(location?.city),
+            this.optionalString(location?.region),
+            this.optionalString(location?.country) || this.optionalString(location?.countryCode)
+        ].filter(Boolean);
+        return parts.join(', ').trim();
+    }
+
+    protected optionalString(value: unknown): string | undefined {
+        return typeof value === 'string' && value.trim() ? value.trim() : undefined;
     }
 }
 

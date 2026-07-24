@@ -1,4 +1,4 @@
-import { AgentMessage } from '@tsdi/agent';
+import { AgentMessage, summarizeToolDisplayText } from '@tsdi/agent';
 import {
     AgentConsoleMarkdownLine,
     AgentConsoleMarkdownToken,
@@ -72,46 +72,76 @@ interface AgentConsoleResolvedMessageRenderer {
     continuationLead: (rowSelected: boolean) => string;
 }
 
+function resolveMessageRoleLabel(templateKind: AgentConsoleMessageTemplateKind): string {
+    switch (templateKind) {
+        case 'user':
+            return '› ';
+        case 'assistant':
+            return '• ';
+        case 'tool':
+            return '◦ ';
+        case 'error':
+            return '! ';
+        default:
+            return '· ';
+    }
+}
+
+function resolveMessageRoleStyle(theme: AgentConsoleTheme, templateKind: AgentConsoleMessageTemplateKind): Record<string, string> {
+    switch (templateKind) {
+        case 'user':
+            return styleTextToObject(theme.statusValue);
+        case 'assistant':
+            return styleTextToObject(theme.toolsAccent);
+        case 'tool':
+            return styleTextToObject(theme.toolsAccent);
+        case 'error':
+            return styleTextToObject(theme.statusErrorValue);
+        default:
+            return styleTextToObject(theme.statusLabel);
+    }
+}
+
 const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
     {
         templateKind: 'error',
-        roleLabel: 'error',
-        roleStyle: theme => styleTextToObject(theme.statusErrorValue),
+        roleLabel: resolveMessageRoleLabel('error'),
+        roleStyle: theme => resolveMessageRoleStyle(theme, 'error'),
         itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
-        lead: rowSelected => rowSelected ? '› ' : '',
-        continuationLead: rowSelected => rowSelected ? '  ' : ''
+        lead: () => '',
+        continuationLead: () => ''
     },
     {
         templateKind: 'tool',
-        roleLabel: 'tool',
-        roleStyle: theme => styleTextToObject(theme.toolsAccent),
+        roleLabel: resolveMessageRoleLabel('tool'),
+        roleStyle: theme => resolveMessageRoleStyle(theme, 'tool'),
         itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
-        lead: rowSelected => rowSelected ? '› ' : '',
-        continuationLead: rowSelected => rowSelected ? '  ' : ''
+        lead: () => '',
+        continuationLead: () => ''
     },
     {
         templateKind: 'assistant',
-        roleLabel: 'agent',
-        roleStyle: theme => styleTextToObject(theme.toolsAccent),
+        roleLabel: resolveMessageRoleLabel('assistant'),
+        roleStyle: theme => resolveMessageRoleStyle(theme, 'assistant'),
         itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
-        lead: rowSelected => rowSelected ? '› ' : '',
-        continuationLead: rowSelected => rowSelected ? '  ' : ''
+        lead: () => '',
+        continuationLead: () => ''
     },
     {
         templateKind: 'user',
-        roleLabel: 'you',
-        roleStyle: theme => styleTextToObject(theme.statusValue),
+        roleLabel: resolveMessageRoleLabel('user'),
+        roleStyle: theme => resolveMessageRoleStyle(theme, 'user'),
         itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesUser),
-        lead: () => '› ',
-        continuationLead: () => '  '
+        lead: () => '',
+        continuationLead: () => ''
     },
     {
         templateKind: 'system',
-        roleLabel: 'system',
-        roleStyle: theme => styleTextToObject(theme.statusLabel),
+        roleLabel: resolveMessageRoleLabel('system'),
+        roleStyle: theme => resolveMessageRoleStyle(theme, 'system'),
         itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
-        lead: rowSelected => rowSelected ? '› ' : '',
-        continuationLead: rowSelected => rowSelected ? '  ' : ''
+        lead: () => '',
+        continuationLead: () => ''
     }
 ];
 
@@ -138,10 +168,11 @@ export function renderAgentConsoleMessageItem(
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
+    const displayContent = resolveMessageDisplayContent(message, templateKind);
     const markdownLines = message?.metadata?.streaming
-        ? renderAgentConsolePlainTextLines(message?.content || '', { compactBlankLines: true })
-        : renderAgentConsoleMarkdownLines(message?.content || '', { compactBlankLines: true });
-    const fallbackLine = renderer.roleLabel === 'agent'
+        ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
+        : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
+    const fallbackLine = templateKind === 'assistant'
         ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
         : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
     const sourceLines = markdownLines.length ? markdownLines : [fallbackLine as AgentConsoleMarkdownLine];
@@ -339,6 +370,15 @@ function resolveMessageRenderer(templateKind: AgentConsoleMessageTemplateKind): 
         || agentConsoleMessageRenderers[agentConsoleMessageRenderers.length - 1];
 }
 
+function resolveMessageDisplayContent(message: AgentMessage, templateKind: AgentConsoleMessageTemplateKind): string {
+    const content = String(message?.content || '');
+    if (templateKind !== 'tool') {
+        return content;
+    }
+    const toolName = String(message?.metadata?.receipt?.toolName || message?.name || '').trim();
+    return summarizeToolDisplayText(toolName, content, 'output') || content;
+}
+
 function resolveMessageRowStyle(
     theme: AgentConsoleTheme,
     rowSelected: boolean,
@@ -412,8 +452,14 @@ function resolveAgentConsoleMessageRoleLabel(message: AgentMessage | undefined, 
     if (uiKind !== 'event') {
         return fallback;
     }
-    const label = String(message?.metadata?.uiEventLabel || message?.metadata?.uiEventType || '').trim();
-    return label || fallback;
+    const eventType = String(message?.metadata?.uiEventType || '').trim();
+    if (/^tool_|^reasoning$/.test(eventType)) {
+        return resolveMessageRoleLabel('tool');
+    }
+    if (eventType === 'error') {
+        return resolveMessageRoleLabel('error');
+    }
+    return resolveMessageRoleLabel('system');
 }
 
 function resolveRenderedLineToneStyle(
@@ -474,9 +520,9 @@ function resolveAgentConsoleMessageStatusStyle(
     }
 }
 
-function formatAgentConsoleMessageStatus(status?: AgentConsoleMessageStatus, symbol = '●'): string {
+function formatAgentConsoleMessageStatus(status?: AgentConsoleMessageStatus, symbol = ''): string {
     if (!status) {
-        return '  ';
+        return '';
     }
-    return `${symbol} `;
+    return symbol ? `${symbol} ` : '';
 }

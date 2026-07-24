@@ -701,15 +701,15 @@ export class AgentConsoleComponentTest {
         expect(component.status).toEqual('idle');
     }
 
-    @Test('submit renders rpc stream events as separate timeline messages')
+    @Test('submit renders rpc stream events as compact timeline messages')
     async submitRendersRpcStreamEventsAsSeparateTimelineMessages() {
         const runtime = new RuntimeStub();
         const scheduler = new SchedulerStub();
         const appRpc = new AppRpcStub();
         appRpc.streamChunks = [
             { type: 'event', eventType: 'turn_started', label: 'state', status: 'running', content: 'Analyzing request' },
-            { type: 'event', eventType: 'tool_invoked', label: 'tool', status: 'running', content: 'read_file · {"path":"src/index.ts"}' },
-            { type: 'event', eventType: 'tool_completed', label: 'tool', status: 'success', content: 'read_file completed · {"path":"src/index.ts","truncated":false}' },
+            { type: 'event', eventType: 'tool_invoked', label: 'tool', status: 'running', toolName: 'read_file', toolCallId: 'c1', content: 'read_file · src/index.ts' },
+            { type: 'event', eventType: 'tool_completed', label: 'tool', status: 'success', toolName: 'read_file', toolCallId: 'c1', content: 'read_file · src/index.ts' },
             { type: 'text', content: 'Patched handler' },
             {
                 type: 'done',
@@ -733,10 +733,73 @@ export class AgentConsoleComponentTest {
         const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
         expect(eventMessages.map(message => message.content)).toEqual([
             'Analyzing request',
-            'read_file · {"path":"src/index.ts"}',
-            'read_file completed · {"path":"src/index.ts","truncated":false}'
+            'read_file · src/index.ts'
         ]);
-        expect(component.sessionState.displayMessages[component.sessionState.displayMessages.length - 1]?.content).toEqual('Patched handler');
+        expect(component.sessionState.displayMessages.some(message => message.content === 'Patched handler')).toEqual(true);
+    }
+
+    @Test('submit keeps previous task ui events in the transcript')
+    async submitKeepsPreviousTaskUiEventsInTranscript() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        component.sessionState.upsertUiEventMessage('turn-start', 'Analyzing request', {
+            eventType: 'turn_started',
+            label: 'state',
+            status: 'running'
+        });
+        component.sessionState.upsertUiEventMessage('tool:weather', 'weather · Chengdu, Sichuan, CN 41.3°C Mainly clear', {
+            eventType: 'tool_completed',
+            label: 'tool',
+            status: 'success'
+        });
+
+        component.input = 'next task';
+        await component.submit();
+
+        const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
+        expect(eventMessages.map(message => message.content)).toContain('Analyzing request');
+        expect(eventMessages.map(message => message.content)).toContain('weather · Chengdu, Sichuan, CN 41.3°C Mainly clear');
+    }
+
+    @Test('submit scopes repeated stream event keys per turn')
+    async submitScopesRepeatedStreamEventKeysPerTurn() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.streamChunks = [
+            { type: 'event', eventType: 'turn_started', label: 'state', status: 'running', content: 'Analyzing request' },
+            { type: 'event', eventType: 'tool_completed', label: 'tool', status: 'success', toolName: 'read_file', toolCallId: 'c1', content: 'read_file · src/index.ts' },
+            { type: 'text', content: 'Patched handler' },
+            {
+                type: 'done',
+                message: {
+                    id: 'done-1',
+                    role: 'assistant',
+                    content: 'Patched handler',
+                    createdAt: 2,
+                    metadata: {
+                        usage: { promptTokens: 3, completionTokens: 4, totalTokens: 7 }
+                    }
+                }
+            }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = 'fix it';
+        await component.submit();
+        component.input = 'fix it again';
+        await component.submit();
+
+        const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
+        expect(eventMessages.map(message => message.content)).toEqual([
+            'Analyzing request',
+            'read_file · src/index.ts',
+            'Analyzing request',
+            'read_file · src/index.ts'
+        ]);
+        expect(new Set(eventMessages.map(message => message.metadata?.uiEventKey)).size).toEqual(4);
     }
 
     @Test('submit persists input history through history store')
@@ -1190,6 +1253,7 @@ export class AgentConsoleComponentTest {
         };
 
         state.setCommandHints(['/help']);
+        state.setTools([{ name: 'read_file', active: false } as any]);
         state.setInput('/he');
         expect(state.selectMenu?.title).toEqual('Suggestions');
 
@@ -1204,6 +1268,12 @@ export class AgentConsoleComponentTest {
         expect(submitted.confirmedSelection).toEqual(false);
         expect(submitted.submitted).toEqual(true);
         expect(submitCount).toEqual(2);
+
+        state.setInput('check @re');
+        const mentioned = await state.processRawChunk('\r', { submitOnEnter: true, hasSelectMenu: true });
+        expect(mentioned.confirmedSelection).toEqual(true);
+        expect(mentioned.submitted).toEqual(true);
+        expect(submitCount).toEqual(3);
 
         state.setInput('hello');
         await state.processRawChunk('\r', { submitOnEnter: false, ctrlKey: true });
@@ -1320,13 +1390,14 @@ export class AgentConsoleComponentTest {
             await component.submit();
 
             expect(runtime.calls[0]).toContain('[Mention Context]');
-            expect(runtime.calls[0]).toContain('File src/index.ts:');
-            expect(runtime.calls[0]).toContain('export const demo = 1;');
-            expect(runtime.calls[0]).toContain('File src/feature.ts:');
-            expect(runtime.calls[0]).toContain('export const feature = () => "ok";');
-            expect(runtime.calls[0]).toContain('Directory docs:');
-            expect(runtime.calls[0]).toContain('guides/');
+            expect(runtime.calls[0]).toContain('src/');
+            expect(runtime.calls[0]).toContain('src/index.ts');
+            expect(runtime.calls[0]).toContain('src/feature.ts');
+            expect(runtime.calls[0]).toContain('docs/');
+            expect(runtime.calls[0]).toContain('docs/guides/');
             expect(runtime.calls[0]).not.toContain('dist/bundle.js');
+            expect(runtime.calls[0]).not.toContain('export const demo = 1;');
+            expect(runtime.calls[0]).not.toContain('export const feature = () => "ok";');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
@@ -1783,8 +1854,8 @@ export class AgentConsoleComponentTest {
         expect(state.messages.length).toEqual(0);
     }
 
-    @Test('input panel submits on plain enter and keeps ctrl-enter for newline')
-    async inputPanelSubmitsOnPlainEnterAndKeepsCtrlEnterForNewline() {
+    @Test('input panel submits on enter variants and keeps ctrl-enter for newline')
+    async inputPanelSubmitsOnEnterVariantsAndKeepsCtrlEnterForNewline() {
         let submitCount = 0;
         const panel = new AgentConsoleInputPanelComponent();
         panel.submitAction = async () => {
@@ -1795,8 +1866,10 @@ export class AgentConsoleComponentTest {
         await panel.onKeydown({ key: 'Enter', ctrlKey: true, preventDefault() {} } as KeyboardEvent);
         await panel.onKeydown({ key: 'Enter', altKey: true, preventDefault() {} } as KeyboardEvent);
         await panel.onKeydown({ key: 'Enter', preventDefault() {} } as KeyboardEvent);
+        await panel.onKeydown({ key: 'enter', preventDefault() {} } as KeyboardEvent);
+        await panel.onKeydown({ key: '', code: 'NumpadEnter', preventDefault() {} } as KeyboardEvent);
 
-        expect(submitCount).toEqual(1);
+        expect(submitCount).toEqual(3);
     }
 
     @Test('input panel routes suggestion keys through shared session state')
@@ -2493,8 +2566,9 @@ export class AgentConsoleComponentTest {
         expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
 
+        const maxReviewScroll = Math.max(0, state.reviewDetailLines.length - state.consoleOptions.reviewDetailVisibleLines);
         state.scrollReviewDetail(1);
-        expect(state.reviewDetailScroll).toEqual(0);
+        expect(state.reviewDetailScroll).toEqual(Math.min(1, maxReviewScroll));
 
         state.scrollReviewDetailColumns(5);
         expect(state.reviewDetailColumnScroll).toEqual(5);
@@ -2651,12 +2725,13 @@ export class AgentConsoleComponentTest {
         expect(state.selectedMessageId).toEqual('m1');
     }
 
-    @Test('session state hides tool messages and blank assistant tool-call placeholders from visible navigation')
+    @Test('session state hides tool messages and blank assistant placeholders from visible navigation')
     sessionStateHidesToolMessagesFromVisibleNavigation() {
         const state = new AgentConsoleSessionState();
         state.setMessages([
             { id: 'u1', role: 'user', content: '查天气', createdAt: 1 } as any,
             { id: 'a1', role: 'assistant', content: '', createdAt: 2, metadata: { toolCalls: [{ id: 'tc1', name: 'weather' }] } } as any,
+            { id: 'a-stream', role: 'assistant', content: '', createdAt: 2, metadata: { streaming: true } } as any,
             { id: 't1', role: 'tool', content: '{"location":"成都"}', createdAt: 3 } as any,
             { id: 'a2', role: 'assistant', content: '成都当前天气：晴', createdAt: 4 } as any
         ]);
@@ -2667,6 +2742,35 @@ export class AgentConsoleComponentTest {
         state.setMessagesFocused(true);
         state.moveMessageSelection(-1);
         expect(state.selectedMessage?.id).toEqual('u1');
+    }
+
+    @Test('session state dedupes identical ui event upserts')
+    sessionStateDedupesIdenticalUiEventUpserts() {
+        const state = new AgentConsoleSessionState();
+        let notifications = 0;
+        state.subscribe(() => {
+            notifications++;
+        });
+
+        state.upsertUiEventMessage('turn-start', 'Analyzing request', {
+            eventType: 'turn_started',
+            label: 'state',
+            status: 'running'
+        });
+        state.upsertUiEventMessage('turn-start', 'Analyzing request', {
+            eventType: 'turn_started',
+            label: 'state',
+            status: 'running'
+        });
+        state.upsertUiEventMessage('turn-start', 'Working', {
+            eventType: 'turn_started',
+            label: 'state',
+            status: 'running'
+        });
+
+        expect(state.displayMessages.length).toEqual(1);
+        expect(state.displayMessages[0].content).toEqual('Working');
+        expect(notifications).toEqual(2);
     }
 
     @Test('session state supports message detail open and scroll')

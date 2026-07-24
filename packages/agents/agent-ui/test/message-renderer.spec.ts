@@ -28,12 +28,12 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[0].lines[0].content).toEqual('hello');
         expect(items[0].lines[0].status?.trim()).toEqual('');
         expect(items[1].lines[0].content).toEqual('world');
-        expect(items[1].lines[0].status?.trim()).toEqual('●');
+        expect(items[1].lines[0].status?.trim()).toEqual('');
         expect(items[1].lines[0].statusKind).toEqual('success');
         expect(items[1].lines[0].statusLabel).toEqual('成功');
-        expect(items[1].lines[0].role).toEqual('› agent');
+        expect(items[1].lines[0].role).toEqual('• ');
         expect(items[3].lines[0].tokens[0]?.style.color).toBeTruthy();
-        expect(items[3].lines[0].status?.trim()).toEqual('●');
+        expect(items[3].lines[0].status?.trim()).toEqual('');
         expect(items[3].lines[0].statusKind).toEqual('error');
     }
 
@@ -46,6 +46,27 @@ export class AgentConsoleMessageRendererDispatchTest {
             createdAt: 1,
             metadata: { error: true }
         } as any)).toEqual('error');
+    }
+
+    @Test('summarizes tool json content without rendering raw json')
+    renderToolSummaryContent() {
+        const items = renderAgentConsoleMessageItems([
+            {
+                id: 't1',
+                role: 'tool',
+                name: 'read_file',
+                content: '{"path":"src/index.ts","truncated":false}',
+                createdAt: 1,
+                metadata: {
+                    receipt: {
+                        toolName: 'read_file'
+                    }
+                }
+            }
+        ] as any);
+
+        expect(items[0].lines[0].content).toEqual('src/index.ts');
+        expect(items[0].lines[0].content.includes('{')).toEqual(false);
     }
 
     @Test('keeps streaming assistant content as plain text until completion')
@@ -61,7 +82,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         ] as any);
 
         expect(items[0].lines[0].content).toEqual('**bold**');
-        expect(items[0].lines[0].status?.trim()).toEqual('●');
+        expect(items[0].lines[0].status?.trim()).toEqual('');
         expect(items[0].lines[0].statusKind).toEqual('running');
         expect(items[0].lines[0].statusStyle?.color).toBeTruthy();
         expect(items[0].lines.some(line => line.content.includes('```ts'))).toBe(true);

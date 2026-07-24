@@ -132,9 +132,6 @@ export class AgentConsoleStatusPanelComponent {
         if (this.notice) {
             lines.push(this.notice);
         }
-        if (this.state.lastError) {
-            lines.push(`Error: ${this.lastErrorLabel}`);
-        }
         if (this.state.pendingApprovals.length) {
             const requests = this.state.pendingApprovals;
             const first = requests[0];
@@ -184,7 +181,7 @@ export class AgentConsoleStatusPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return !!this.notice || !!this.state.lastError || !!this.state.pendingApprovals.length;
+        return !!this.notice || !!this.state.pendingApprovals.length;
     }
 
     statusLineAt(index: number): string {
@@ -237,6 +234,7 @@ export class AgentConsoleStatusPanelComponent {
                     cursorPos="{{inputCursor}}"
                     focused="{{inputFocused}}"
                     showCursor="false"
+                    cursorStyle="color: #7ee787;"
                     cursorTarget="input"
                     continuationPrompt="  "
                     @input="onInput($event)"
@@ -380,9 +378,18 @@ export class AgentConsoleInputPanelComponent {
         this.state?.setInputFocused(false);
     }
 
+    protected isEnterKey(event: KeyboardEvent): boolean {
+        const key = String(event?.key || '').trim().toLowerCase();
+        const code = String(event?.code || '').trim().toLowerCase();
+        return key === 'enter'
+            || key === 'return'
+            || code === 'enter'
+            || code.endsWith('enter');
+    }
+
     async onKeydown(event: KeyboardEvent): Promise<void> {
         if (this.state?.selectMenu) {
-            if (String(event.key || '').trim().toLowerCase() === 'enter') {
+            if (this.isEnterKey(event)) {
                 event.preventDefault?.();
                 await this.state.processRawChunk('\r', {
                     submitOnEnter: true,
@@ -405,7 +412,7 @@ export class AgentConsoleInputPanelComponent {
                 return;
             }
         }
-        if (event.key === 'Enter') {
+        if (this.isEnterKey(event)) {
             const enterAction = resolveConsoleEnterAction({
                 ctrlKey: event.ctrlKey,
                 altKey: event.altKey,

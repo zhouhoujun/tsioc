@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { Abstract, Injectable, Optional } from '@tsdi/ioc';
 import { SpawnAgentAdapter, SpawnAgentInput, SpawnAgentResult } from '../agent/spawn-agent.tool';
 import { LlmTaskAdapter, LlmTaskRequest, LlmTaskResult } from '../llm/llm-task.tool';
-import { WeatherAdapter, WeatherForecastResult, WeatherResult } from '../utility/weather.tool';
+import { WeatherAdapter, WeatherForecastResult, WeatherLookup, WeatherResult } from '../utility/weather.tool';
 
 export interface NestedAgentRunRequest {
     prompt: string;
@@ -103,11 +103,11 @@ export class DelegatingLlmTaskAdapter extends LlmTaskAdapter {
 
 @Injectable({ provide: WeatherAdapter })
 export class UnavailableWeatherAdapter extends WeatherAdapter {
-    override async getCurrentWeather(_location: string, _units?: 'metric' | 'imperial'): Promise<WeatherResult> {
+    override async getCurrentWeather(_location: WeatherLookup, _units?: 'metric' | 'imperial'): Promise<WeatherResult> {
         throw new Error('Weather service adapter is not configured.');
     }
 
-    override async getForecast(_location: string, _days?: number, _units?: 'metric' | 'imperial'): Promise<WeatherForecastResult> {
+    override async getForecast(_location: WeatherLookup, _days?: number, _units?: 'metric' | 'imperial'): Promise<WeatherForecastResult> {
         throw new Error('Weather service adapter is not configured.');
     }
 }

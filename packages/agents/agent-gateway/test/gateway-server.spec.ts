@@ -1422,6 +1422,125 @@ export class AppRpcServerTest {
         expect(await owners.getOwner('rpc-init')).toEqual('user-1');
     }
 
+    @Test('returns most recent workspace session through shared app state')
+    async returnsMostRecentWorkspaceSessionThroughSharedAppState() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {
+                ui: {
+                    title: 'Console',
+                    console: {
+                        workspace: '/tmp/workspace'
+                    }
+                },
+                model: {
+                    provider: 'deepseek',
+                    model: 'deepseek-v4-flash',
+                    defaultProfile: 'flash'
+                }
+            } as any
+        );
+
+        await owners.create('workspace-old', 'user-1');
+        await store.setWorkspace('workspace-old', '/tmp/workspace');
+        await store.append('workspace-old', { id: 'm1', role: 'user', content: 'old', createdAt: 1 } as any);
+
+        await new Promise(resolve => setTimeout(resolve, 5));
+
+        await owners.create('other-workspace-newer', 'user-1');
+        await store.setWorkspace('other-workspace-newer', '/tmp/other');
+        await store.append('other-workspace-newer', { id: 'm2', role: 'user', content: 'other', createdAt: 2 } as any);
+
+        await new Promise(resolve => setTimeout(resolve, 5));
+
+        await owners.create('workspace-latest', 'user-1');
+        await store.setWorkspace('workspace-latest', '/tmp/workspace');
+        await store.append('workspace-latest', { id: 'm3', role: 'user', content: 'latest', createdAt: 3 } as any);
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 8,
+            method: 'app.state'
+        }, { principalId: 'user-1' });
+
+        expect((response as any).result.sessionId).toEqual('workspace-latest');
+        expect((response as any).result.workspace).toEqual('/tmp/workspace');
+    }
+
+    @Test('creates fresh chat session id when workspace has no prior session')
+    async createsFreshChatSessionIdWhenWorkspaceHasNoPriorSession() {
+        const store = new InMemorySessionStore();
+        const memory = new InMemoryMemoryStore();
+        const owners = new SessionOwnerStore(store);
+        const events = new EventHandler(owners);
+        const runtime = {
+            async getMessages(sessionId: string) {
+                return (await store.get(sessionId)).messages;
+            },
+            async putMemory() {
+                return null;
+            },
+            async searchMemory() {
+                return [];
+            }
+        } as any;
+        const sessions = new SessionHandler(runtime, store, owners);
+        const rpc = new AppRpcServer(
+            runtime,
+            store,
+            memory,
+            { getToolDefinitions: () => [] } as any,
+            owners,
+            sessions,
+            events,
+            {
+                ui: {
+                    title: 'Console',
+                    console: {
+                        workspace: '/tmp/workspace'
+                    }
+                },
+                model: {
+                    provider: 'deepseek',
+                    model: 'deepseek-v4-flash'
+                }
+            } as any
+        );
+
+        const response = await rpc.handle({
+            jsonrpc: '2.0',
+            id: 9,
+            method: 'app.state'
+        }, { principalId: 'user-1' });
+
+        const sessionId = String((response as any).result.sessionId || '');
+        expect(sessionId.startsWith('chat-')).toEqual(true);
+        expect(sessionId).not.toEqual('default');
+        expect(await owners.getOwner(sessionId)).toEqual('user-1');
+    }
+
     @Test('lists and activates model profiles through json-rpc')
     async listsAndActivatesModelProfiles() {
         const store = new InMemorySessionStore();

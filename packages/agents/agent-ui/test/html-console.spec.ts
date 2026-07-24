@@ -73,7 +73,8 @@ export class HtmlConsoleTest {
         expect(inputRoot.querySelector('.agent-input')?.getAttribute('style')).toContain('color');
         expect(inputRoot.querySelector('.input-meta')?.textContent).toContain('deepseek-v4-flash');
         expect(inputRoot.textContent).toContain('deepseek-v4-flash · 1.2K tokens');
-        expect(messagesRoot.textContent).toContain('› you');
+        expect(messagesRoot.textContent).toContain('›');
+        expect(messagesRoot.textContent).toContain('hello');
         expect(messagesRoot.textContent).toContain('assistant');
         expect(messagesRoot.textContent).toContain(longMessage);
         expect(messagesRoot.textContent).not.toContain('**assistant**');
@@ -131,7 +132,8 @@ export class HtmlConsoleTest {
 
         expect(Array.from(messagesRoot.querySelectorAll('label'))
             .filter((item: any) => (item.getAttribute('style') || '').includes('overflow-wrap')).length).toEqual(2);
-        expect(messagesRoot.textContent).toContain('› you');
+        expect(messagesRoot.textContent).toContain('›');
+        expect(messagesRoot.textContent).toContain('world');
         expect(messagesRoot.textContent).toContain('world');
     }
 

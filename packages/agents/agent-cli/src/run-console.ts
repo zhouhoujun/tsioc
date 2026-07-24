@@ -23,11 +23,20 @@ export function createDefaultAgentCliConsoleUi(): AgentCliUiTarget {
     };
 }
 
+function resolveExplicitChatSessionId(options: AgentCliOptions = {}, agentOptions: any = {}): string | undefined {
+    const bootstrapSessionId = String(agentOptions?.bootstrapTurn?.sessionId || '').trim();
+    if (bootstrapSessionId) {
+        return bootstrapSessionId;
+    }
+    const explicitSessionId = String(options.session || '').trim();
+    return explicitSessionId || undefined;
+}
+
 function buildConsoleAgentOptions(config: AgentUiConfigService, options: AgentCliOptions, agentOptions: any = {}): any {
     const resolved = config.resolve(options);
     const modelConfig = resolved.model;
-
-    return mergeAgentOptions({
+    const sessionId = resolveExplicitChatSessionId(options, agentOptions);
+    const merged = mergeAgentOptions({
         ...agentOptions,
         model: {
             provider: modelConfig.provider,
@@ -50,7 +59,7 @@ function buildConsoleAgentOptions(config: AgentUiConfigService, options: AgentCl
         },
         bootstrapTurn: {
             ...(agentOptions?.bootstrapTurn || {}),
-            sessionId: agentOptions?.bootstrapTurn?.sessionId || resolved.sessionId
+            sessionId
         },
         ui: {
             ...(agentOptions?.ui || {}),
@@ -60,6 +69,10 @@ function buildConsoleAgentOptions(config: AgentUiConfigService, options: AgentCl
             }
         }
     });
+    if (!sessionId && merged.bootstrapTurn) {
+        delete merged.bootstrapTurn.sessionId;
+    }
+    return merged;
 }
 
 export async function runAgentConsole(

@@ -60,6 +60,25 @@ class EchoToolRegistry extends ToolRegistry {
     }
 }
 
+class LocationToolRegistry extends ToolRegistry {
+    getTools() {
+        return [{ name: 'location', description: 'current location' } as any];
+    }
+    getTool() {
+        return this.getTools()[0] as any;
+    }
+    async invoke(): Promise<any> {
+        return {
+            label: 'Chengdu, Sichuan, CN',
+            city: 'Chengdu',
+            region: 'Sichuan',
+            countryCode: 'CN',
+            latitude: 30.6667,
+            longitude: 104.0667
+        };
+    }
+}
+
 class RuntimeStub {
     calls: string[] = [];
 
@@ -85,6 +104,24 @@ class ToolLoopModelAdapter extends EchoModelAdapter {
         }
         return {
             message: 'tool-finished',
+            stopReason: 'end'
+        };
+    }
+}
+
+class LocationToolLoopModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-location', name: 'location', input: {} }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
             stopReason: 'end'
         };
     }
@@ -1667,6 +1704,29 @@ export class RuntimeLoopTest {
         expect(completedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
         expect(completedEvent?.receipt?.status).toEqual('success');
         expect(completedEvent?.receipt?.executionMode).toEqual('sequential');
+    }
+
+    @Test('stores concise location tool output summary instead of json')
+    async storesConciseLocationToolOutputSummaryInsteadOfJson() {
+        const runtime = new DefaultAgentRuntime(
+            new LocationToolLoopModelAdapter(),
+            new LocationToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'where am i');
+
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(message => message.role === 'tool');
+        const receipt = toolMessage?.metadata?.receipt;
+
+        expect(receipt?.toolName).toEqual('location');
+        expect(receipt?.outputSummary).toEqual('Chengdu, Sichuan, CN');
+        expect(receipt?.outputSummary?.includes('{')).toEqual(false);
     }
 
     @Test('stores failed tool execution receipt metadata and events')
