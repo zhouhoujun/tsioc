@@ -133,6 +133,7 @@ export function renderAgentConsoleMessageItem(
     const rowSelected = !!(selected && context.messagesFocused);
     const itemStyle = renderer.itemStyle(theme, rowSelected);
     const inlineRowStyle = resolveInlineRowStyle(itemStyle);
+    const roleLabel = resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
     const statusKind = resolveAgentConsoleMessageStatus(message, templateKind);
     const statusLabel = resolveAgentConsoleMessageStatusLabel(statusKind, context.statusLabels);
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
@@ -150,6 +151,7 @@ export function renderAgentConsoleMessageItem(
         const rendered = buildRenderedLine(
             line,
             isFirst ? renderer.lead(rowSelected) : renderer.continuationLead(rowSelected),
+            roleLabel,
             renderer,
             theme,
             rowSelected,
@@ -176,7 +178,7 @@ export function renderAgentConsoleMessageItem(
     });
 
     return {
-        kind: renderer.roleLabel,
+        kind: roleLabel,
         templateKind,
         selected,
         statusKind,
@@ -241,6 +243,12 @@ export function resolveAgentConsoleMessageStatus(
 ): AgentConsoleMessageStatus | undefined {
     if (!message || templateKind === 'user') {
         return undefined;
+    }
+    if (message?.metadata?.uiKind === 'event') {
+        const status = String(message.metadata.status || '').trim();
+        if (status === 'running' || status === 'success' || status === 'failed' || status === 'error') {
+            return status as AgentConsoleMessageStatus;
+        }
     }
     if (message?.metadata?.streaming) {
         return 'running';
@@ -350,6 +358,7 @@ function resolveMessageRowStyle(
 function buildRenderedLine(
     line: AgentConsoleMarkdownLine,
     roleLead: string,
+    roleLabel: string,
     renderer: AgentConsoleResolvedMessageRenderer,
     theme: AgentConsoleTheme,
     rowSelected: boolean,
@@ -384,7 +393,7 @@ function buildRenderedLine(
         statusLabel,
         status,
         statusStyle,
-        role: roleLead,
+        role: roleLead ? `${roleLead}${roleLabel}` : roleLabel,
         roleStyle: rowSelected ? {} : { ...inlineRowStyle, ...renderer.roleStyle(theme) },
         prefix: line.prefix || '',
         prefixStyle: {
@@ -396,6 +405,15 @@ function buildRenderedLine(
         lineStyle,
         tone: line.tone
     };
+}
+
+function resolveAgentConsoleMessageRoleLabel(message: AgentMessage | undefined, fallback: string): string {
+    const uiKind = String(message?.metadata?.uiKind || '').trim();
+    if (uiKind !== 'event') {
+        return fallback;
+    }
+    const label = String(message?.metadata?.uiEventLabel || message?.metadata?.uiEventType || '').trim();
+    return label || fallback;
 }
 
 function resolveRenderedLineToneStyle(

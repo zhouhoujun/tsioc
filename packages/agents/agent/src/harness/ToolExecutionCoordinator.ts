@@ -73,7 +73,7 @@ export class ToolExecutionCoordinator {
                     ...baseReceipt,
                     status: 'success',
                     durationMs: Math.max(0, Date.now() - startedAt),
-                    outputSummary: this.summarize(redactedOutput),
+                    outputSummary: this.summarize(definition.name, redactedOutput),
                     attemptCount: attempt
                 };
                 await this.publishAudit({
@@ -239,9 +239,16 @@ export class ToolExecutionCoordinator {
         }
     }
 
-    private summarize(value: unknown): string | undefined {
+    private summarize(toolName: string, value: unknown): string | undefined {
         if (value === undefined) {
             return undefined;
+        }
+        if (toolName === 'read_file' && value && typeof value === 'object' && !Array.isArray(value)) {
+            const payload = value as Record<string, any>;
+            return JSON.stringify({
+                path: payload.path,
+                truncated: payload.truncated === true
+            });
         }
         try {
             const text = typeof value === 'string' ? value : JSON.stringify(value);

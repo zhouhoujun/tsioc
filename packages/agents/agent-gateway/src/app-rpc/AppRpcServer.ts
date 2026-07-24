@@ -3,7 +3,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { AGENT_OPTIONS, AgentOptions, AgentRuntime, AuditSink, defaultAgentOptions, MemoryStore, SessionStore, ToolRegistry } from '@tsdi/agent';
 import { SessionOwnerStore } from '../auth/SessionOwnerStore';
 import { SessionHandler } from '../api/SessionHandler';
-import { EventHandler } from '../api/EventHandler';
+import { EventHandler, GatewayEventRecord } from '../api/EventHandler';
 import { AppRpcError, AppRpcRequest, AppRpcRequestContext, AppRpcResponse, AppRpcTransportMessage } from '../contracts/AppRpc';
 
 @Injectable()
@@ -145,6 +145,7 @@ export class AppRpcServer {
                         'memory.search',
                         'events.history',
                         'audit.list',
+                        'todo.get',
                         'coding_task.list',
                         'coding_task.get',
                         'coding_task.diff',
@@ -191,6 +192,8 @@ export class AppRpcServer {
                 return this.getEventHistory(this.requireSessionId(params), context);
             case 'audit.list':
                 return this.listAudit(params, context);
+            case 'todo.get':
+                return this.getTodoPlan(params, context);
             case 'coding_task.list':
                 return this.listCodingTasks(params, context);
             case 'coding_task.get':
@@ -332,22 +335,49 @@ export class AppRpcServer {
         await this.ensureSessionAccess(sessionId, context, { createIfMissing: true });
         this.sessionHandler.track(sessionId);
         await this.setSessionWorkspace(sessionId);
-
-        for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId)) {
-            if (chunk.type === 'done') {
-                continue;
+        yield {
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId: request.id ?? null,
+                sessionId,
+                chunkType: 'event',
+                eventType: 'turn_started',
+                label: 'state',
+                status: 'running',
+                content: 'Analyzing request'
             }
-            yield {
-                jsonrpc: '2.0',
-                method: 'run.turn_stream.chunk',
-                params: {
-                    requestId: request.id ?? null,
-                    sessionId,
-                    chunkType: chunk.type,
-                    content: chunk.content,
-                    ...(chunk.usage !== undefined ? { usage: chunk.usage } : {})
+        };
+
+        const pendingEvents: GatewayEventRecord[] = [];
+        const unsubscribe = this.events.subscribe(sessionId, record => {
+            if (record.type !== 'turn_started') {
+                pendingEvents.push(record);
+            }
+        });
+
+        try {
+            for await (const chunk of this.runtime.runStreamingTurn(sessionId, input, context.principalId)) {
+                yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
+                if (chunk.type === 'done') {
+                    continue;
                 }
-            };
+                yield {
+                    jsonrpc: '2.0',
+                    method: 'run.turn_stream.chunk',
+                    params: {
+                        requestId: request.id ?? null,
+                        sessionId,
+                        chunkType: chunk.type,
+                        content: chunk.content,
+                        ...(chunk.toolCalls !== undefined ? { toolCalls: chunk.toolCalls } : {}),
+                        ...(chunk.usage !== undefined ? { usage: chunk.usage } : {})
+                    }
+                };
+            }
+            yield* this.flushPendingStreamEvents(request.id ?? null, sessionId, pendingEvents);
+        } finally {
+            unsubscribe();
         }
 
         if (request.id === undefined) {
@@ -362,6 +392,120 @@ export class AppRpcServer {
                 message: messages[messages.length - 1] ?? null
             }
         };
+    }
+
+    private async *flushPendingStreamEvents(
+        requestId: string | number | null,
+        sessionId: string,
+        pendingEvents: GatewayEventRecord[]
+    ): AsyncGenerator<AppRpcTransportMessage, void, void> {
+        while (pendingEvents.length) {
+            const record = pendingEvents.shift();
+            if (!record) {
+                continue;
+            }
+            const payload = this.toStreamEventChunk(requestId, sessionId, record);
+            if (payload) {
+                yield payload;
+            }
+        }
+    }
+
+    private toStreamEventChunk(
+        requestId: string | number | null,
+        sessionId: string,
+        record: GatewayEventRecord
+    ): AppRpcTransportMessage | null {
+        const event = this.describeStreamEvent(record);
+        if (!event) {
+            return null;
+        }
+        return {
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId,
+                sessionId,
+                chunkType: 'event',
+                eventType: event.eventType,
+                label: event.label,
+                status: event.status,
+                content: event.content,
+                ...(event.toolName ? { toolName: event.toolName } : {})
+            }
+        };
+    }
+
+    private describeStreamEvent(record: GatewayEventRecord): {
+        eventType: string;
+        label: string;
+        status: 'running' | 'success' | 'failed' | 'error';
+        content: string;
+        toolName?: string;
+    } | null {
+        const data = record.data || {};
+        switch (record.type) {
+            case 'turn_started':
+                return {
+                    eventType: 'turn_started',
+                    label: 'state',
+                    status: 'running',
+                    content: 'Analyzing request'
+                };
+            case 'tool_invoked':
+                return {
+                    eventType: 'tool_invoked',
+                    label: 'tool',
+                    status: 'running',
+                    toolName: String(data.toolName || ''),
+                    content: this.describeToolInvocationEvent(data)
+                };
+            case 'tool_completed':
+                return {
+                    eventType: 'tool_completed',
+                    label: 'tool',
+                    status: 'success',
+                    toolName: String(data.toolName || ''),
+                    content: this.describeToolCompletedEvent(data)
+                };
+            case 'tool_failed':
+                return {
+                    eventType: 'tool_failed',
+                    label: 'tool',
+                    status: 'error',
+                    toolName: String(data.toolName || ''),
+                    content: `${data.toolName || 'tool'} failed${data.error ? `: ${data.error}` : ''}`
+                };
+            case 'tool_skipped':
+                return {
+                    eventType: 'tool_skipped',
+                    label: 'tool',
+                    status: 'failed',
+                    toolName: String(data.toolName || ''),
+                    content: `${data.toolName || 'tool'} skipped${data.reason ? `: ${data.reason}` : ''}`
+                };
+            case 'error':
+                return {
+                    eventType: 'error',
+                    label: 'error',
+                    status: 'error',
+                    content: String(data.error || 'Unknown error')
+                };
+            default:
+                return null;
+        }
+    }
+
+    private describeToolInvocationEvent(data: any): string {
+        const toolName = String(data?.toolName || 'tool');
+        const summary = String(data?.inputSummary || '').trim();
+        return summary ? `${toolName} · ${summary}` : toolName;
+    }
+
+    private describeToolCompletedEvent(data: any): string {
+        const toolName = String(data?.toolName || 'tool');
+        const outputSummary = String(data?.receipt?.outputSummary || '').trim();
+        return outputSummary ? `${toolName} · ${outputSummary}` : `${toolName} completed`;
     }
 
     private async activateTool(params: any, context: AppRpcRequestContext): Promise<any> {
@@ -521,6 +665,23 @@ export class AppRpcServer {
             executionMode: task?.result?.executionMode ?? task?.metadata?.executionMode ?? null,
             diff: task?.result?.diff ?? null,
             workers: Array.isArray(task?.result?.workers) ? task.result.workers : []
+        };
+    }
+
+    private async getTodoPlan(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = this.requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const output = await this.tools.invoke('todo', undefined, sessionId, context.principalId);
+        return {
+            sessionId,
+            todos: Array.isArray(output?.todos) ? output.todos : [],
+            summary: output?.summary ?? {
+                total: 0,
+                pending: 0,
+                in_progress: 0,
+                completed: 0,
+                cancelled: 0
+            }
         };
     }
 

@@ -149,10 +149,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setNotice('');
             this.state.setInput('', 0);
         });
-        this.state.setMessages(await this.loadSessionMessages(target.id));
-        await this.refreshTools();
-        await this.refreshPendingApprovals();
-        await this.refreshSessions();
+        const [messages] = await Promise.all([
+            this.loadSessionMessages(target.id),
+            this.refreshTools(),
+            this.refreshPendingApprovals(),
+            this.refreshSessions(),
+            this.refreshTodoPlan()
+        ]);
+        this.state.setMessages(messages);
     }
 
     protected async selectApprovalRequest(
@@ -261,7 +265,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get showTasksPanel(): boolean {
-        return this.state.tasksFocused;
+        return this.state.tasksFocused || this.state.planTodos.length > 0;
     }
 
     get showJobsPanel(): boolean {
@@ -1426,12 +1430,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             metadata: { streaming: true }
         };
         this.state.batch(() => {
+            const baseMessages = this.state.withoutUiEventMessages();
             this.state.setInput('');
             this.state.setStatus('running');
             this.state.setLastError('');
             this.state.clearActivities();
             this.state.pushActivity('turn', 'User: ' + this.state.summarize(draft));
-            this.state.setMessages([...this.state.messages, userMsg, asstMsg]);
+            this.state.setMessages([...baseMessages, userMsg, asstMsg]);
         });
         try {
             await this.runTurnStream(prompt, asstMsg);
@@ -1490,12 +1495,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             metadata: { streaming: true }
         };
         this.state.batch(() => {
+            const baseMessages = this.state.withoutUiEventMessages();
             this.state.setInput('');
             this.state.setStatus('running');
             this.state.setLastError('');
             this.state.clearActivities();
             this.state.pushActivity('turn', `User: ${this.state.summarize(value)}`);
-            this.state.setMessages([...this.state.messages, userMessage, assistantMessage]);
+            this.state.setMessages([...baseMessages, userMessage, assistantMessage]);
         });
 
         try {
@@ -1508,16 +1514,15 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 this.state.pushActivity('error', message);
                 this.state.appendAssistantErrorMessage(message);
             });
+        } finally {
+            this.state.batch(() => {
+                if (this.state.status === 'running' || this.state.status === 'reasoning') {
+                    this.state.setStatus('idle');
+                }
+                this.state.setTasksCount(this.scheduler.getTasks().length);
+            });
+            void this.refreshTurnArtifacts();
         }
-
-        await this.refreshTools();
-        await this.refreshScheduledTasks();
-        this.state.batch(() => {
-            if (this.state.status === 'running' || this.state.status === 'reasoning') {
-                this.state.setStatus('idle');
-            }
-            this.state.setTasksCount(this.scheduler.getTasks().length);
-        });
     }
 
     protected async runTurnStream(prompt: string, assistantMessage: AgentMessage): Promise<void> {
@@ -1559,6 +1564,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (chunk?.usage) {
             this.state.setTokenUsage(chunk.usage);
         }
+        if (chunk?.type === 'event') {
+            this.consumeStreamEventChunk(chunk);
+            return;
+        }
         if (chunk?.type === 'text' && chunk.content) {
             assistantMessage.content += chunk.content;
             this.scheduleStreamingAssistantMessageFlush(assistantMessage);
@@ -1567,10 +1576,23 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (chunk?.type === 'reasoning' && chunk.content) {
             this.state.setStatus('reasoning');
             this.state.pushActivity('model', `Reasoning: ${this.state.summarize(chunk.content)}`);
+            this.state.upsertUiEventMessage('reasoning', 'Reasoning about implementation', {
+                eventType: 'reasoning',
+                label: 'think',
+                status: 'running'
+            });
             return;
         }
         if (chunk?.type === 'tool_call') {
             this.state.pushActivity('tool', `Tool call: ${this.state.summarize(String(chunk.content || ''))}`);
+            this.state.appendUiEventMessage(`Preparing tool call${chunk.content ? ` · ${chunk.content}` : ''}`, {
+                eventType: 'tool_call',
+                label: 'plan',
+                status: 'running'
+            });
+            if (String(chunk.content || '').includes('todo')) {
+                void this.refreshTodoPlan();
+            }
             return;
         }
         if (chunk?.type === 'done' && chunk.message) {
@@ -1582,6 +1604,34 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.replaceStreamingAssistantMessage(assistantMessage);
             this.state.setTokenUsage(chunk.message.metadata?.usage);
         }
+    }
+
+    protected consumeStreamEventChunk(chunk: any): void {
+        const content = String(chunk?.content || '').trim();
+        if (!content) {
+            return;
+        }
+        const eventType = String(chunk?.eventType || 'state').trim() || 'state';
+        const label = String(chunk?.label || this.resolveStreamEventLabel(eventType)).trim() || 'state';
+        const status = this.normalizeUiEventStatus(chunk?.status);
+        const eventKey = eventType === 'turn_started'
+            ? 'turn-start'
+            : eventType === 'reasoning'
+                ? 'reasoning'
+                : undefined;
+        if (eventKey) {
+            this.state.upsertUiEventMessage(eventKey, content, {
+                eventType,
+                label,
+                status
+            });
+            return;
+        }
+        this.state.appendUiEventMessage(content, {
+            eventType,
+            label,
+            status
+        });
     }
 
     async schedulePrompt(prompt: string, delayMs: number): Promise<void> {
@@ -1650,13 +1700,14 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         const current = this.state.messages.slice();
-        const last = current[current.length - 1];
-        if (last?.role === 'assistant') {
-            current[current.length - 1] = {
-                ...(message || last),
+        const targetIndex = this.findStreamingAssistantMessageIndex(current, message);
+        if (targetIndex >= 0) {
+            const currentMessage = current[targetIndex];
+            current[targetIndex] = {
+                ...(message || currentMessage),
                 content: this.streamMessageText,
                 metadata: {
-                    ...(message?.metadata || last.metadata || {}),
+                    ...(message?.metadata || currentMessage.metadata || {}),
                     streaming: true
                 }
             };
@@ -1669,18 +1720,24 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return;
         }
         const current = this.state.messages.slice();
-        const last = current[current.length - 1];
-        if (last?.role !== 'assistant') {
+        const targetIndex = this.findStreamingAssistantMessageIndex(current, message);
+        if (targetIndex < 0) {
             return;
         }
-        current[current.length - 1] = {
-            ...last,
+        const currentMessage = current[targetIndex];
+        const replacement = {
+            ...currentMessage,
             ...message,
             metadata: {
-                ...(last.metadata || {}),
+                ...(currentMessage.metadata || {}),
                 ...(message.metadata || {})
             }
         };
+        current[targetIndex] = replacement;
+        if (replacement.metadata?.streaming !== true && targetIndex !== current.length - 1) {
+            current.splice(targetIndex, 1);
+            current.push(replacement);
+        }
         this.state.setMessages(current);
     }
 
@@ -1694,6 +1751,85 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async loadSessionMessages(sessionId = this.state.sessionId): Promise<AgentMessage[]> {
         return this.sessionService?.loadMessages(sessionId) || this.runtime.getMessages(sessionId);
+    }
+
+    protected async refreshTurnArtifacts(): Promise<void> {
+        await Promise.allSettled([
+            this.refreshTools(),
+            this.refreshScheduledTasks(),
+            this.refreshTodoPlan(),
+            this.loadCodingTasks()
+        ]);
+    }
+
+    protected async refreshTodoPlan(): Promise<void> {
+        if (!this.appRpc) {
+            return;
+        }
+        const result = await this.appRpc.request('todo.get', { sessionId: this.state.sessionId });
+        const todos = Array.isArray(result?.todos)
+            ? result.todos.map((item: any) => ({
+                id: String(item?.id || '').trim(),
+                content: String(item?.content || '').trim(),
+                status: this.normalizeTodoStatus(item?.status)
+            })).filter((item: any) => !!item.id && !!item.content)
+            : [];
+        this.state.setPlanTodos(todos);
+    }
+
+    protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
+        switch (String(status || '').trim()) {
+            case 'in_progress':
+            case 'completed':
+            case 'cancelled':
+                return status as 'in_progress' | 'completed' | 'cancelled';
+            default:
+                return 'pending';
+        }
+    }
+
+    protected normalizeUiEventStatus(status: unknown): 'running' | 'success' | 'failed' | 'error' {
+        switch (String(status || '').trim()) {
+            case 'success':
+            case 'failed':
+            case 'error':
+                return status as 'success' | 'failed' | 'error';
+            default:
+                return 'running';
+        }
+    }
+
+    protected resolveStreamEventLabel(eventType: string): string {
+        switch (eventType) {
+            case 'reasoning':
+                return 'think';
+            case 'tool_invoked':
+            case 'tool_completed':
+            case 'tool_failed':
+            case 'tool_skipped':
+                return 'tool';
+            case 'error':
+                return 'error';
+            default:
+                return 'state';
+        }
+    }
+
+    protected findStreamingAssistantMessageIndex(messages: AgentMessage[], message?: AgentMessage): number {
+        const messageId = String(message?.id || '').trim();
+        if (messageId) {
+            const explicitIndex = messages.findIndex(item => item.id === messageId);
+            if (explicitIndex >= 0) {
+                return explicitIndex;
+            }
+        }
+        for (let index = messages.length - 1; index >= 0; index--) {
+            const current = messages[index];
+            if (current?.role === 'assistant' && current?.metadata?.streaming) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     async handleTerminalInput(

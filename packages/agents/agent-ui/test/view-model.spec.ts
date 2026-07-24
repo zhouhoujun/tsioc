@@ -248,6 +248,7 @@ class AppRpcStub {
     tools?: any[];
     modelProfiles?: any[];
     streamChunks?: any[];
+    todoPlan?: any[];
     codingTasks?: any[];
     codingTaskDetails = new Map<string, any>();
     codingTaskDiffs = new Map<string, any>();
@@ -270,6 +271,20 @@ class AppRpcStub {
                 modelProfile: params?.name,
                 provider: matched?.provider || 'deepseek',
                 model: matched?.model || 'deepseek-v4-flash'
+            };
+        }
+        if (method === 'todo.get') {
+            const todos = this.todoPlan || [];
+            return {
+                sessionId: params?.sessionId || 'console',
+                todos,
+                summary: {
+                    total: todos.length,
+                    pending: todos.filter(item => item.status === 'pending').length,
+                    in_progress: todos.filter(item => item.status === 'in_progress').length,
+                    completed: todos.filter(item => item.status === 'completed').length,
+                    cancelled: todos.filter(item => item.status === 'cancelled').length
+                }
             };
         }
         if (method === 'coding_task.list') {
@@ -684,6 +699,44 @@ export class AgentConsoleComponentTest {
         expect(component.messages[1].metadata?.streaming).toEqual(false);
         expect(component.messages[1].content).toEqual('Echo: hello');
         expect(component.status).toEqual('idle');
+    }
+
+    @Test('submit renders rpc stream events as separate timeline messages')
+    async submitRendersRpcStreamEventsAsSeparateTimelineMessages() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        appRpc.streamChunks = [
+            { type: 'event', eventType: 'turn_started', label: 'state', status: 'running', content: 'Analyzing request' },
+            { type: 'event', eventType: 'tool_invoked', label: 'tool', status: 'running', content: 'read_file · {"path":"src/index.ts"}' },
+            { type: 'event', eventType: 'tool_completed', label: 'tool', status: 'success', content: 'read_file completed · {"path":"src/index.ts","truncated":false}' },
+            { type: 'text', content: 'Patched handler' },
+            {
+                type: 'done',
+                message: {
+                    id: 'done-1',
+                    role: 'assistant',
+                    content: 'Patched handler',
+                    createdAt: 2,
+                    metadata: {
+                        usage: { promptTokens: 3, completionTokens: 4, totalTokens: 7 }
+                    }
+                }
+            }
+        ];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = 'fix it';
+        await component.submit();
+
+        const eventMessages = component.sessionState.displayMessages.filter(message => message.metadata?.uiKind === 'event');
+        expect(eventMessages.map(message => message.content)).toEqual([
+            'Analyzing request',
+            'read_file · {"path":"src/index.ts"}',
+            'read_file completed · {"path":"src/index.ts","truncated":false}'
+        ]);
+        expect(component.sessionState.displayMessages[component.sessionState.displayMessages.length - 1]?.content).toEqual('Patched handler');
     }
 
     @Test('submit persists input history through history store')

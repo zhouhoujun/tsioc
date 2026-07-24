@@ -32,6 +32,7 @@ export class ToolsSection extends PromptSection {
         if (toolNames.has('coding_task')) {
             lines.push('');
             lines.push('For substantial coding or test-writing tasks, prefer `coding_task` so discovery, edits, and verification happen within one coordinated tool run.');
+            lines.push('If the user asked for an actual code change, default to executing the change with tools instead of replying with instructions alone.');
         }
         if (toolNames.has('git_operations')) {
             lines.push('');

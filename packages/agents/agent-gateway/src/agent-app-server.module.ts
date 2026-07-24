@@ -48,7 +48,11 @@ import { AGENT_CONSOLE_APP_RPC } from '@tsdi/agent';
                             yield {
                                 type: message.params?.chunkType,
                                 content: message.params?.content,
-                                usage: message.params?.usage
+                                usage: message.params?.usage,
+                                eventType: message.params?.eventType,
+                                label: message.params?.label,
+                                status: message.params?.status,
+                                toolName: message.params?.toolName
                             };
                             continue;
                         }

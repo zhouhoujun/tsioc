@@ -10,7 +10,7 @@ import { SessionOwnerStore } from '../auth/SessionOwnerStore';
  * SSE (Server-Sent Events) endpoint — GET /api/events.
  * Mirrors zeroclaw-gateway's SSE event stream.
  */
-interface GatewayEventRecord {
+export interface GatewayEventRecord {
     id: string;
     type: string;
     sessionId?: string;
@@ -23,6 +23,7 @@ const MAX_EVENT_HISTORY = 200;
 @Injectable()
 export class EventHandler {
     private clients = new Map<string, Set<http.ServerResponse>>();
+    private listeners = new Map<string, Set<(record: GatewayEventRecord) => void>>();
     private history: GatewayEventRecord[] = [];
 
     constructor(private owners: SessionOwnerStore) {
@@ -151,6 +152,22 @@ export class EventHandler {
         }
     }
 
+    subscribe(sessionId: string, listener: (record: GatewayEventRecord) => void): () => void {
+        const listeners = this.listeners.get(sessionId) ?? new Set<(record: GatewayEventRecord) => void>();
+        listeners.add(listener);
+        this.listeners.set(sessionId, listeners);
+        return () => {
+            const current = this.listeners.get(sessionId);
+            if (!current) {
+                return;
+            }
+            current.delete(listener);
+            if (!current.size) {
+                this.listeners.delete(sessionId);
+            }
+        };
+    }
+
     private publish(type: string, data: any): void {
         const record: GatewayEventRecord = {
             id: `${Date.now()}-${Math.random()}`,
@@ -165,6 +182,13 @@ export class EventHandler {
         }
         if (record.sessionId) {
             this.broadcast(record.sessionId, type, record);
+            this.listeners.get(record.sessionId)?.forEach(listener => {
+                try {
+                    listener(record);
+                } catch {
+                    return;
+                }
+            });
         }
     }
 

@@ -31,7 +31,7 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(items[1].lines[0].status?.trim()).toEqual('●');
         expect(items[1].lines[0].statusKind).toEqual('success');
         expect(items[1].lines[0].statusLabel).toEqual('成功');
-        expect(items[1].lines[0].role).toEqual('› ');
+        expect(items[1].lines[0].role).toEqual('› agent');
         expect(items[3].lines[0].tokens[0]?.style.color).toBeTruthy();
         expect(items[3].lines[0].status?.trim()).toEqual('●');
         expect(items[3].lines[0].statusKind).toEqual('error');

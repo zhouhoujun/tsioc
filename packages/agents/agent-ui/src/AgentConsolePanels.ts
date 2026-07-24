@@ -16,6 +16,7 @@ import {
 } from '@tsdi/components/console';
 import {
     AgentConsoleActivity,
+    AgentConsolePlanTodoItem,
     AgentConsoleApprovalRequest,
     AgentConsoleReviewWorker,
     AgentConsoleReviewTaskItem,
@@ -782,6 +783,10 @@ export class AgentConsoleTasksPanelComponent {
         return this.state.reviewTaskChoices;
     }
 
+    get planTodos(): AgentConsolePlanTodoItem[] {
+        return this.state.planTodos;
+    }
+
     get shellStyle() {
         return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
     }
@@ -819,11 +824,22 @@ export class AgentConsoleTasksPanelComponent {
         });
     }
 
-    get taskListLabel(): string {
-        if (!this.shouldShow || !this.taskItems.length) {
+    get planListLabel(): string {
+        if (!this.shouldShow || !this.planTodos.length) {
             return '';
         }
-        return this.taskItems.map(item => item.label).join('\n');
+        return this.planTodos.map((todo, index) => `${index + 1}. [${this.todoStatusMark(todo.status)}] ${todo.content}`).join('\n');
+    }
+
+    get taskListLabel(): string {
+        if (!this.shouldShow) {
+            return '';
+        }
+        const sections = [
+            this.planListLabel,
+            this.taskItems.length ? this.taskItems.map(item => item.label).join('\n') : ''
+        ].filter(Boolean);
+        return sections.join('\n');
     }
 
     get visibleTaskStart(): number {
@@ -843,7 +859,14 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get tasksSummaryLabel(): string {
-        if (!this.shouldShow || !this.tasks.length) {
+        if (!this.shouldShow) {
+            return '';
+        }
+        if (this.planTodos.length) {
+            const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
+            return `plan ${this.planTodos.length} · active ${activeCount}`;
+        }
+        if (!this.tasks.length) {
             return '';
         }
         const selectedIndex = Math.max(0, this.tasks.findIndex(item => item.id === this.state.selectedReviewTaskId));
@@ -869,7 +892,13 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get selectedTaskDetailLabel(): string {
-        if (!this.shouldShow || !this.state.selectedTask) {
+        if (!this.shouldShow) {
+            return '';
+        }
+        if (this.planTodos.length && !this.state.selectedTask) {
+            return '';
+        }
+        if (!this.state.selectedTask) {
             return '';
         }
         const task = this.state.selectedTask;
@@ -909,7 +938,20 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return this.state.tasksFocused;
+        return this.state.tasksFocused || this.state.planTodos.length > 0;
+    }
+
+    protected todoStatusMark(status: AgentConsolePlanTodoItem['status']): string {
+        switch (status) {
+            case 'completed':
+                return 'x';
+            case 'cancelled':
+                return '-';
+            case 'in_progress':
+                return '>';
+            default:
+                return ' ';
+        }
     }
 
     protected canCancelTask(task: any): boolean {

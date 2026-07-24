@@ -802,7 +802,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 ...baseReceipt,
                 status: 'success',
                 durationMs: Math.max(0, Date.now() - startedAt),
-                outputSummary: this.summarizeToolOutput(output)
+                outputSummary: this.summarizeToolOutput(toolCall.name, output)
             };
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
             return {
@@ -897,7 +897,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return text.length > 200 ? `${text.slice(0, 200)}...[truncated]` : text;
     }
 
-    private summarizeToolOutput(output: any): string | undefined {
+    private summarizeToolOutput(toolName: string, output: any): string | undefined {
+        if (toolName === 'read_file' && output && typeof output === 'object' && !Array.isArray(output)) {
+            return this.safeSerialize({
+                path: output.path,
+                truncated: output.truncated === true
+            });
+        }
         const text = typeof output === 'string' ? output : this.safeSerialize(output);
         if (!text) {
             return undefined;

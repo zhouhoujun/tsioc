@@ -1867,6 +1867,18 @@ export class AppRpcServerTest {
             params: {
                 requestId: 11,
                 sessionId: 'rpc-stream',
+                chunkType: 'event',
+                eventType: 'turn_started',
+                label: 'state',
+                status: 'running',
+                content: 'Analyzing request'
+            }
+        }, {
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId: 11,
+                sessionId: 'rpc-stream',
                 chunkType: 'text',
                 content: 'hel',
                 usage: undefined
@@ -2036,6 +2048,18 @@ export class StdioAppRpcServerTest {
 
         const responses = buffer.trim().split('\n').map(line => JSON.parse(line));
         expect(responses).toEqual([{
+            jsonrpc: '2.0',
+            method: 'run.turn_stream.chunk',
+            params: {
+                requestId: 9,
+                sessionId: 'rpc-stdio-stream',
+                chunkType: 'event',
+                eventType: 'turn_started',
+                label: 'state',
+                status: 'running',
+                content: 'Analyzing request'
+            }
+        }, {
             jsonrpc: '2.0',
             method: 'run.turn_stream.chunk',
             params: {

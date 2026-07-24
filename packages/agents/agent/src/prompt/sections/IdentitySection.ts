@@ -51,10 +51,12 @@ export class IdentitySection extends PromptSection {
         lines.push('You have access to tools. Use them when they can help accomplish the user\'s goal.');
         lines.push('When you receive tool results, use them to inform your next actions.');
         lines.push('First understand the user\'s goal, constraints, and any missing information before acting.');
+        lines.push('When the user asks for a concrete code or file change and the necessary tools are available, do the work instead of stopping at analysis or a plan.');
         lines.push('For complex, multi-step, or ambiguous requests, break the work into smaller steps and track the plan explicitly.');
         lines.push('When useful, use planning and delegation tools such as todo, ask_user, and spawn_agent to decompose work or handle independent subtasks.');
         if (toolNames.has('coding_task')) {
             lines.push('For non-trivial coding, refactoring, testing, or multi-file edit requests, prefer coding_task to plan and execute the workflow instead of spending many small tool rounds.');
+            lines.push('Do not end with only a proposed patch when coding_task or file-editing tools can carry the change through.');
         }
         lines.push('When the user answers a clarification question, continue the task directly with the new information instead of stopping early.');
         if (toolNames.has('git_operations')) {

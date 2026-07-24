@@ -58,6 +58,13 @@ export class AgentConsoleEventBridge {
             if (event.sessionId !== this.state.sessionId) return;
             this.state.setStatus('running');
             this.state.pushActivity('turn', 'Turn started');
+            if (!this.appRpc) {
+                this.state.upsertUiEventMessage('turn-start', 'Analyzing request', {
+                    eventType: 'turn_started',
+                    label: 'state',
+                    status: 'running'
+                });
+            }
         });
 
         bind(AgentStreamChunkEvent, (event: AgentStreamChunkEvent) => {
@@ -87,11 +94,21 @@ export class AgentConsoleEventBridge {
                 updatedAt: Date.now()
             });
             this.state.pushActivity('tool', `Running ${event.toolName}`);
+            if (!this.appRpc) {
+                this.state.appendUiEventMessage(this.describeToolTimelineEvent(event.toolName, event.inputSummary || event.receipt?.inputSummary), {
+                    eventType: 'tool_invoked',
+                    label: 'tool',
+                    status: 'running'
+                });
+            }
         });
 
         bind(AgentToolCompletedEvent, async (event: AgentToolCompletedEvent) => {
             if (event.sessionId !== this.state.sessionId) return;
             this.state.clearRunningTool(event.toolName);
+            if (event.toolName === 'todo') {
+                this.state.setPlanTodos(this.normalizePlanTodos(event.output));
+            }
             this.state.upsertToolRun({
                 name: event.toolName,
                 status: 'success',
@@ -108,6 +125,13 @@ export class AgentConsoleEventBridge {
                 updatedAt: Date.now()
             });
             this.state.pushActivity('tool', `Completed ${event.toolName}`);
+            if (!this.appRpc) {
+                this.state.appendUiEventMessage(this.describeToolTimelineEvent(event.toolName, event.receipt?.outputSummary, 'completed'), {
+                    eventType: 'tool_completed',
+                    label: 'tool',
+                    status: 'success'
+                });
+            }
             await this.refreshTools();
         });
 
@@ -130,6 +154,13 @@ export class AgentConsoleEventBridge {
                 updatedAt: Date.now()
             });
             this.state.pushActivity('error', `${event.toolName}: ${event.error.message}`);
+            if (!this.appRpc) {
+                this.state.appendUiEventMessage(`${event.toolName} failed: ${event.error.message}`, {
+                    eventType: 'tool_failed',
+                    label: 'tool',
+                    status: 'error'
+                });
+            }
             this.state.appendAssistantErrorMessage(`${event.toolName}: ${event.error.message}`);
         });
 
@@ -183,6 +214,13 @@ export class AgentConsoleEventBridge {
             this.state.setStatus('error');
             this.state.setLastError(event.error.message);
             this.state.pushActivity('error', event.error.message);
+            if (!this.appRpc) {
+                this.state.appendUiEventMessage(event.error.message, {
+                    eventType: 'error',
+                    label: 'error',
+                    status: 'error'
+                });
+            }
             this.state.appendAssistantErrorMessage(event.error.message);
         });
 
@@ -222,5 +260,35 @@ export class AgentConsoleEventBridge {
         }));
         tools.sort((a, b) => a.name.localeCompare(b.name));
         this.state.setTools(tools);
+    }
+
+    protected normalizePlanTodos(output: any): Array<{ id: string; content: string; status: 'pending' | 'in_progress' | 'completed' | 'cancelled' }> {
+        const todos = Array.isArray(output?.todos) ? output.todos : [];
+        return todos
+            .map((item: any) => ({
+                id: String(item?.id || '').trim(),
+                content: String(item?.content || '').trim(),
+                status: this.normalizeTodoStatus(item?.status)
+            }))
+            .filter((item: { id: string; content: string }) => !!item.id && !!item.content);
+    }
+
+    protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {
+        switch (String(status || '').trim()) {
+            case 'in_progress':
+            case 'completed':
+            case 'cancelled':
+                return status as 'in_progress' | 'completed' | 'cancelled';
+            default:
+                return 'pending';
+        }
+    }
+
+    protected describeToolTimelineEvent(toolName: string, summary?: string, suffix = ''): string {
+        const resolvedSummary = String(summary || '').trim();
+        if (suffix) {
+            return resolvedSummary ? `${toolName} ${suffix} · ${resolvedSummary}` : `${toolName} ${suffix}`;
+        }
+        return resolvedSummary ? `${toolName} · ${resolvedSummary}` : toolName;
     }
 }

@@ -145,6 +145,10 @@ export class ChatWebSocket {
                             chunkType: payload.params?.chunkType,
                             sessionId,
                             content: payload.params?.content,
+                            eventType: payload.params?.eventType,
+                            label: payload.params?.label,
+                            status: payload.params?.status,
+                            toolName: payload.params?.toolName,
                             timestamp: Date.now()
                         });
                         continue;
@@ -186,6 +190,10 @@ export class ChatWebSocket {
                     chunkType: chunk.type,
                     sessionId,
                     content: chunk.content,
+                    eventType: (chunk as any).eventType,
+                    label: (chunk as any).label,
+                    status: (chunk as any).status,
+                    toolName: (chunk as any).toolName,
                     timestamp: Date.now()
                 });
             }
@@ -246,7 +254,8 @@ export class ChatWebSocket {
             'memory.list',
             'memory.put',
             'memory.search',
-            'events.history'
+            'events.history',
+            'todo.get'
         ]).has(method);
     }
 

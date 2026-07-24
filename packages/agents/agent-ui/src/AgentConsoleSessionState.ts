@@ -121,6 +121,12 @@ export interface AgentConsoleReviewWorker {
     error?: string;
 }
 
+export interface AgentConsolePlanTodoItem {
+    id: string;
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+}
+
 export interface AgentConsoleSessionMeta {
     sessionId?: string;
     provider?: string;
@@ -271,6 +277,7 @@ export class AgentConsoleSessionState {
     reviewWorkers: AgentConsoleReviewWorker[] = [];
     reviewTaskChoices: AgentConsoleReviewTaskItem[] = [];
     taskRecords: Record<string, any>[] = [];
+    planTodos: AgentConsolePlanTodoItem[] = [];
     selectedReviewTaskId = '';
     scheduledTasks: ScheduledAgentTask[] = [];
     selectedScheduledTaskId = '';
@@ -556,6 +563,68 @@ export class AgentConsoleSessionState {
         this.setMessages([...this.messages, message]);
     }
 
+    withoutUiEventMessages(messages: AgentMessage[] = this.messages): AgentMessage[] {
+        return messages.filter(message => message?.metadata?.uiKind !== 'event');
+    }
+
+    clearUiEventMessages(): void {
+        const filtered = this.withoutUiEventMessages();
+        if (filtered.length === this.messages.length) {
+            return;
+        }
+        this.setMessages(filtered);
+    }
+
+    appendUiEventMessage(
+        content: string,
+        options: {
+            eventType?: string;
+            label?: string;
+            status?: 'running' | 'success' | 'failed' | 'error';
+            eventKey?: string;
+        } = {}
+    ): void {
+        const text = String(content || '').trim();
+        if (!text) {
+            return;
+        }
+        const next = this.messages.slice();
+        next.push(this.createUiEventMessage(text, options));
+        this.setMessages(next);
+    }
+
+    upsertUiEventMessage(
+        eventKey: string,
+        content: string,
+        options: {
+            eventType?: string;
+            label?: string;
+            status?: 'running' | 'success' | 'failed' | 'error';
+        } = {}
+    ): void {
+        const text = String(content || '').trim();
+        if (!text) {
+            return;
+        }
+        const next = this.messages.slice();
+        const existingIndex = next.findIndex(message => message?.metadata?.uiKind === 'event' && message?.metadata?.uiEventKey === eventKey);
+        if (existingIndex >= 0) {
+            const existing = next[existingIndex];
+            next[existingIndex] = this.createUiEventMessage(text, {
+                ...options,
+                eventKey,
+                id: existing.id,
+                createdAt: existing.createdAt
+            });
+        } else {
+            next.push(this.createUiEventMessage(text, {
+                ...options,
+                eventKey
+            }));
+        }
+        this.setMessages(next);
+    }
+
     appendAssistantErrorMessage(message: string): void {
         const text = String(message || '').trim();
         const currentMessages = this.messages.slice();
@@ -573,6 +642,32 @@ export class AgentConsoleSessionState {
             }
         });
         this.setMessages(currentMessages);
+    }
+
+    protected createUiEventMessage(
+        content: string,
+        options: {
+            id?: string;
+            createdAt?: number;
+            eventType?: string;
+            label?: string;
+            status?: 'running' | 'success' | 'failed' | 'error';
+            eventKey?: string;
+        } = {}
+    ): AgentMessage {
+        return {
+            id: options.id || `ui-event-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+            role: 'assistant',
+            content,
+            createdAt: options.createdAt ?? Date.now(),
+            metadata: {
+                uiKind: 'event',
+                uiEventType: options.eventType || 'state',
+                uiEventLabel: options.label || 'state',
+                uiEventKey: options.eventKey,
+                status: options.status || 'running'
+            }
+        };
     }
 
     setMessagesFocused(focused: boolean): void {
@@ -1080,6 +1175,19 @@ export class AgentConsoleSessionState {
 
     setTaskRecords(tasks: Record<string, any>[]): void {
         this.taskRecords = tasks.slice();
+        this.notify();
+    }
+
+    setPlanTodos(todos: AgentConsolePlanTodoItem[]): void {
+        this.planTodos = todos.slice();
+        this.notify();
+    }
+
+    clearPlanTodos(): void {
+        if (!this.planTodos.length) {
+            return;
+        }
+        this.planTodos = [];
         this.notify();
     }
 
