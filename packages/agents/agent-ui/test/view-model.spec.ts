@@ -3070,4 +3070,28 @@ export class AgentConsoleComponentTest {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
     }
+
+    @Test('processRawChunk with workspace file suggestion does not submit')
+    async processRawChunkWithWorkspaceSuggestionDoesNotSubmit() {
+        const workspace = createWorkspaceFixture();
+        try {
+            const state = new AgentConsoleSessionState();
+            let submitCount = 0;
+            state.submitAction = async () => { submitCount++; };
+            state.setWorkspace(workspace);
+            state.setWorkspaceMentionResolver(createWorkspaceMentionsProvider());
+            state.setInput('check @sr', 'check @sr'.length);
+            await waitForSuggestionMenu(state, 20);
+            expect(state.selectMenu?.title).toEqual('Suggestions');
+            const wsResult = await state.processRawChunk('\r', { submitOnEnter: true, hasSelectMenu: true });
+            expect(wsResult.confirmedSelection).toEqual(true);
+            expect(wsResult.submitted).toEqual(false);
+            expect(state.input).toContain('@src/');
+            expect(state.input).not.toContain('\r');
+            expect(state.input).not.toContain('\n');
+            expect(submitCount).toEqual(0);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
 }

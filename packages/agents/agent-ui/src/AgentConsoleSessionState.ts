@@ -1034,10 +1034,12 @@ export class AgentConsoleSessionState {
     }
 
     moveInputCursor(delta: number): void {
+        this.suppressSuggestionMenu = true;
         this.setInputCursor(this.inputCursor + delta);
     }
 
     moveInputCursorToEdge(position: 'start' | 'end'): void {
+        this.suppressSuggestionMenu = true;
         this.setInputCursor(position === 'start' ? 0 : this.input.length);
     }
 
@@ -2683,10 +2685,9 @@ export class AgentConsoleSessionState {
             submitted = submitted || accepted.submitted;
         } else {
             this.refreshInputSuggestions();
-        }
-
-        if (next.shouldSubmit && this.submitAction) {
-            void this.submitAction();
+            if (next.shouldSubmit && this.submitAction) {
+                void this.submitAction();
+            }
         }
 
         this.notify();
