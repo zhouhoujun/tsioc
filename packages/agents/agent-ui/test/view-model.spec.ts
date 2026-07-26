@@ -2961,4 +2961,113 @@ export class AgentConsoleComponentTest {
     }
 
 
+
+
+    @Test('left arrow after workspace suggestion selection moves cursor correctly')
+    async leftArrowAfterWorkspaceSuggestionMovesCursorCorrectly() {
+        const workspace = createWorkspaceFixture();
+        try {
+            const state = new AgentConsoleSessionState();
+            let submitCalled = false;
+            state.submitAction = async () => {
+                submitCalled = true;
+            };
+            state.setWorkspace(workspace);
+            state.setWorkspaceMentionResolver(createWorkspaceMentionsProvider());
+
+            state.setInput('@sr', 3);
+            await waitForSuggestionMenu(state, 20);
+            expect(state.selectMenu?.title).toEqual('Suggestions');
+            expect(state.selectMenu?.options.find(o => o.value === '@src/')).toBeDefined();
+
+            await state.confirmSelectMenu('@src/');
+            expect(state.input).toEqual('@src/ ');
+            expect(state.selectMenu).toBeUndefined();
+
+            const fullText = '@src/ 写测试用例，';
+            state.setInput(fullText, fullText.length);
+            expect(state.input).toEqual(fullText);
+            expect(state.inputCursor).toEqual(fullText.length); // fullText.length = 12
+
+            // Helper: simulate left arrow
+            const pressLeft = async (s: AgentConsoleSessionState): Promise<boolean> => {
+                const outcome = await s.processDecodedInput(
+                    { text: '\u001b[D', controlKey: 'left', partial: false },
+                    '\u001b[D',
+                    { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false }
+                );
+                if (outcome.handled && outcome.action === 'draftNavigation' && outcome.value === 'left') {
+                    s.moveInputCursor(-1);
+                    return true;
+                }
+                return outcome.handled;
+            };
+
+            // fullText = '@src/ 写测试用例，' (12 chars: @ s r c / space 写 测 试 用 例 ，)
+            // Cursor starts at position 12
+            expect(state.inputCursor).toEqual(12);
+
+            // Move through the 6 Chinese chars (positions 11,10,9,8,7,6)
+            for (let i = 0; i < 6; i++) {
+                const handled = await pressLeft(state);
+                expect(handled).toEqual(true);
+                expect(state.inputCursor).toEqual(11 - i);
+                expect(state.input).not.toContain('[D');
+                expect(state.input).not.toContain('\n');
+                expect(state.input).not.toContain('\r');
+            }
+            expect(state.inputCursor).toEqual(6);
+            expect(submitCalled).toEqual(false);
+
+            // Press left into the space (position 5)
+            await pressLeft(state);
+            expect(state.inputCursor).toEqual(5);
+            expect(submitCalled).toEqual(false);
+
+            // Press left into @src/ (position 4)
+            await pressLeft(state);
+            expect(state.inputCursor).toEqual(4);
+            expect(submitCalled).toEqual(false);
+
+            // Press left through @src/ (positions 3,2,1,0)
+            for (let i = 0; i < 4; i++) {
+                await pressLeft(state);
+                expect(state.input).not.toContain('[D');
+                expect(state.input).not.toContain('\n');
+            }
+            expect(state.inputCursor).toEqual(0);
+            expect(submitCalled).toEqual(false);
+
+            // Left at position 0 should stay at 0
+            await pressLeft(state);
+            expect(state.inputCursor).toEqual(0);
+            expect(state.input).toEqual(fullText);
+            expect(submitCalled).toEqual(false);
+
+            // Press right back through
+            const pressRight = async (s: AgentConsoleSessionState): Promise<boolean> => {
+                const outcome = await s.processDecodedInput(
+                    { text: '\u001b[C', controlKey: 'right', partial: false },
+                    '\u001b[C',
+                    { isClosed: false, onExit: () => {}, hasActiveTextPrompt: false }
+                );
+                if (outcome.handled && outcome.action === 'draftNavigation' && outcome.value === 'right') {
+                    s.moveInputCursor(1);
+                    return true;
+                }
+                return outcome.handled;
+            };
+
+            for (let i = 0; i < 6; i++) {
+                await pressRight(state);
+                expect(state.input).not.toContain('[C');
+                expect(state.input).not.toContain('\n');
+            }
+            expect(state.inputCursor).toEqual(6);
+            expect(submitCalled).toEqual(false);
+
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
 }

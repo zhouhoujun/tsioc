@@ -19,6 +19,7 @@ import {
     AGENT_CONSOLE_SUGGESTIONS_TITLE,
     applyAgentConsoleSuggestion,
     getAgentConsoleInputTokenRange,
+    getAgentConsoleMentionCandidates,
     isAgentConsoleSuggestionMenu,
     resolveAgentConsoleInputSuggestions
 } from './AgentConsoleSuggestions';
@@ -326,6 +327,7 @@ export class AgentConsoleSessionState {
     protected notificationPending = false;
     protected workspaceMentionResolver?: AgentConsoleWorkspaceMentionResolver;
     protected workspaceSuggestionRequestId = 0;
+    protected suppressSuggestionMenu = false;
 
     configure(meta: AgentConsoleSessionMeta): this {
         if (meta.sessionId) {
@@ -1926,7 +1928,13 @@ export class AgentConsoleSessionState {
         if (resolved.startsWith('/')) {
             return true;
         }
-        return isAgentConsoleSuggestionMenu(menu) && resolved.startsWith('@');
+        if (!isAgentConsoleSuggestionMenu(menu) || !resolved.startsWith('@')) {
+            return false;
+        }
+        // Only submit for known mention candidates (@workspace, @model, @tools, @session, @toolName).
+        // Workspace file/directory path suggestions should insert into input without submitting.
+        const mentionCandidates = getAgentConsoleMentionCandidates(this.tools);
+        return mentionCandidates.includes(resolved);
     }
 
     async confirmSelectMenu(value?: string): Promise<string | undefined> {
@@ -2017,6 +2025,10 @@ export class AgentConsoleSessionState {
 
     protected refreshInputSuggestions(): void {
         if (this.selectMenu && !isAgentConsoleSuggestionMenu(this.selectMenu)) {
+            return;
+        }
+        if (this.suppressSuggestionMenu) {
+            this.suppressSuggestionMenu = false;
             return;
         }
         const currentInput = this.input;
@@ -2280,6 +2292,11 @@ export class AgentConsoleSessionState {
         if (keyName === 'return' || keyName === 'tab') {
             void this.acceptSelectMenu();
             return true;
+        }
+        if (keyName === 'left' || keyName === 'right') {
+            this.suppressSuggestionMenu = true;
+            void this.cancelSelectMenu();
+            return false;
         }
         if (keyName === 'escape' || keyName === 'esc' || keyName === 'q') {
             void this.handleEscapeKey();
@@ -2697,10 +2714,6 @@ export class AgentConsoleSessionState {
         const controlKey = decoded.controlKey;
 
         if (decoded.partial) {
-            const raw = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk || '');
-            if (raw === '\u001b') {
-                await this.handleEscapeKey();
-            }
             return { handled: true };
         }
 
@@ -2725,6 +2738,10 @@ export class AgentConsoleSessionState {
             return { handled: true, action: 'focusKey' };
         }
 
+        if (rawText === '\u001b' && !controlKey) {
+            await this.handleEscapeKey();
+            return { handled: true };
+        }
         if (rawText === '\u001b\r' || rawText === '\u001b\n') {
             return { handled: true, action: 'altNewline' };
         }
