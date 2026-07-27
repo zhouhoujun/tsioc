@@ -52,9 +52,19 @@ import {
 
 const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
 const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
+const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
 
 function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
     return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
+}
+
+function resolveSectionFrameStyle(baseStyleText: string | Record<string, string>): Record<string, string> {
+    return {
+        ...(typeof baseStyleText === 'string' ? styleTextToObject(baseStyleText) : baseStyleText),
+        'border-top': '1px solid #30363d',
+        'border-bottom': '1px solid #30363d',
+        padding: '0.35em 0'
+    };
 }
 
 @Component({
@@ -795,7 +805,7 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get shellStyle() {
-        return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
+        return this.shouldShow ? resolveSectionFrameStyle(this.activeThemeStyles.toolsShell) : {};
     }
 
     get accentStyle() {
@@ -834,6 +844,14 @@ export class AgentConsoleTasksPanelComponent {
     get planListLabel(): string {
         if (!this.shouldShow || !this.planTodos.length) {
             return '';
+        }
+        if (!this.state.tasksFocused) {
+            const active = this.planTodos.find(todo => todo.status === 'in_progress')
+                || this.planTodos.find(todo => todo.status === 'pending');
+            if (!active) {
+                return '';
+            }
+            return `current ${this.planTodos.findIndex(todo => todo.id === active.id) + 1}. [${this.todoStatusMark(active.status)}] ${active.content}`;
         }
         return this.planTodos.map((todo, index) => `${index + 1}. [${this.todoStatusMark(todo.status)}] ${todo.content}`).join('\n');
     }
@@ -945,7 +963,7 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get shouldShow(): boolean {
-        return this.state.tasksFocused || this.state.planTodos.length > 0;
+        return this.state.tasksFocused || this.state.hasActivePlanTodos();
     }
 
     protected todoStatusMark(status: AgentConsolePlanTodoItem['status']): string {
@@ -1009,7 +1027,7 @@ export class AgentConsoleJobsPanelComponent {
     }
 
     get shellStyle() {
-        return this.shouldShow ? this.activeThemeStyles.toolsShell : {};
+        return this.shouldShow ? resolveSectionFrameStyle(this.activeThemeStyles.toolsShell) : {};
     }
 
     get accentStyle() {
@@ -1615,12 +1633,15 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
     <div class="console-panel console-messages-panel" v-style="shellStyle" renderRegion="messages">
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
-        <label class="message-line" v-style="line.itemStyle" v-for="line in renderedLines">
-            <span v-style="line.statusStyle">{{line.status}}</span>
-            <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
-            <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
-            <span v-style="line.lineStyle">{{line.content}}</span>
-        </label>
+        <div class="message-row" v-for="line in renderedLines">
+            <label class="message-line" v-style="line.itemStyle">
+                <span v-style="line.statusStyle">{{line.status}}</span>
+                <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
+                <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
+                <span v-style="line.prefixStyle" v-show="line.prefix">{{line.prefix}}</span>
+                <span v-style="line.lineStyle">{{line.content}}</span>
+            </label>
+        </div>
     </div>
     `
 })
@@ -1642,7 +1663,7 @@ export class AgentConsoleMessagesPanelComponent {
 
     get shellStyle() {
         return (this.messageItems.length || this.emptyLabel)
-            ? styleTextToObject(this.activeTheme.messagesShell)
+            ? resolveSectionFrameStyle(this.activeTheme.messagesShell)
             : {};
     }
 
@@ -1713,17 +1734,54 @@ export class AgentConsoleMessagesPanelComponent {
     }
 
     get messageLabels(): string[] {
-        return this.messageItems.flatMap(item => item.lines).map(line =>
+        return this.renderedMessageItems.flatMap(item => item.lines).map(line =>
             `${line.status || ''}${line.role || ''}${line.prefix || ''}${line.content}`
         );
     }
 
     get renderedLines(): AgentConsoleRenderedLine[] {
-        return this.messageItems.flatMap(item => item.lines);
+        return this.renderedMessageItems.flatMap(item => item.lines);
     }
 
     get messagesSummary(): string {
         return this.messageLabels.join(' | ');
+    }
+
+    protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
+        if (this.state.messagesFocused || this.state.messageDetailOpen) {
+            return this.messageItems;
+        }
+        return this.messageItems.map(item => this.truncateMessageItem(item));
+    }
+
+    protected truncateMessageItem(item: AgentConsoleRenderedMessageItem): AgentConsoleRenderedMessageItem {
+        if (item.lines.length <= COLLAPSED_MESSAGE_PREVIEW_LINES) {
+            return item;
+        }
+        const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
+        const hiddenCount = item.lines.length - lines.length + 1;
+        const baseLine = lines[lines.length - 1];
+        const previewText = `… ${hiddenCount} more lines. enter open`;
+        const previewStyle = {
+            ...(baseLine.lineStyle || {}),
+            ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)
+        };
+        lines[lines.length - 1] = {
+            ...baseLine,
+            prefix: '',
+            prefixStyle: {},
+            content: previewText,
+            tokens: [{
+                text: previewText,
+                tone: 'muted',
+                style: previewStyle
+            } as AgentConsoleMarkdownToken as any],
+            lineStyle: previewStyle
+        };
+        return {
+            ...item,
+            lines
+        };
     }
 
     protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {

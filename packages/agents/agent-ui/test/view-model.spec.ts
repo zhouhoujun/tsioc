@@ -932,6 +932,24 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.selectedScheduledTask?.paused).toEqual(false);
     }
 
+    @Test('messages command focuses message panel and enter opens detail view')
+    async messagesCommandFocusesMessagePanelAndEnterOpensDetailView() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub());
+        component.sessionState.setMessages([
+            { id: 'm1', role: 'user', content: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9', createdAt: 1 } as any
+        ]);
+        component.input = '/messages';
+        await component.submit();
+
+        expect(component.sessionState.messagesFocused).toEqual(true);
+        expect(component.sessionState.messageDetailOpen).toEqual(false);
+
+        await component.sessionState.handleFocusKey('enter');
+        expect(component.sessionState.messageDetailOpen).toEqual(true);
+    }
+
     @Test('configure updates model metadata and tools')
     async configureUpdatesModelMetadataAndTools() {
         const runtime = new RuntimeStub();
@@ -2796,6 +2814,23 @@ export class AgentConsoleComponentTest {
         state.closeMessageDetail();
         expect(state.messageDetailOpen).toEqual(false);
         expect(state.messageDetailScroll).toEqual(0);
+    }
+
+    @Test('session state opens message detail on enter when messages are focused')
+    async sessionStateOpensMessageDetailOnEnterWhenMessagesFocused() {
+        const state = new AgentConsoleSessionState();
+        state.setMessages([
+            {
+                id: 'm1',
+                role: 'assistant',
+                content: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8',
+                createdAt: 1
+            } as any
+        ]);
+
+        state.setMessagesFocused(true);
+        expect(await state.handleFocusKey('enter')).toEqual(true);
+        expect(state.messageDetailOpen).toEqual(true);
     }
 
     @Test('session state supports paged message navigation and detail edges')

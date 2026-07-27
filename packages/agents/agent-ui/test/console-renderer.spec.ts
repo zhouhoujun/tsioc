@@ -77,6 +77,84 @@ export class AgentConsoleRendererTest {
         expect(inputLines.some(line => line.includes('deepseek-v4-flash · 1.2K tokens'))).toBe(true);
     }
 
+    @Test('renders message history before plan panel in root output')
+    async renderMessagesBeforePlanPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'design exam system', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: 'Analyzing request', createdAt: 2 } as any
+        ]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'in_progress' },
+            { id: 'p2', content: 'Generate project structure', status: 'pending' }
+        ] as any);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const root = ref.hostView.rootNodes[0] as ConsoleElement;
+        const lines = renderer.renderToLines(root);
+        const messageIndex = lines.findIndex(line => line.includes('design exam system'));
+        const planIndex = lines.findIndex(line => line.includes('plan 2 · active 2'));
+
+        expect(messageIndex).toBeGreaterThanOrEqual(0);
+        expect(planIndex).toBeGreaterThanOrEqual(0);
+        expect(messageIndex).toBeLessThan(planIndex);
+    }
+
+    @Test('hides completed plan panel from root output')
+    async hideCompletedPlanPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'history stays visible', createdAt: 1 } as any
+        ]);
+        ref.instance.sessionState.setPlanTodos([
+            { id: 'p1', content: 'Design architecture', status: 'completed' },
+            { id: 'p2', content: 'Generate project structure', status: 'completed' }
+        ] as any);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const root = ref.hostView.rootNodes[0] as ConsoleElement;
+        const lines = renderer.renderToLines(root);
+
+        expect(lines.some(line => line.includes('history stays visible'))).toBe(true);
+        expect(lines.some(line => line.includes('plan 2'))).toBe(false);
+    }
+
+    @Test('renders message history before jobs panel in root output')
+    async renderMessagesBeforeJobsPanel() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: 'keep chat above jobs', createdAt: 1 } as any
+        ]);
+        ref.instance.sessionState.setScheduledTasks([{
+            id: 'job-1',
+            sessionId: 'console',
+            prompt: 'run nightly scoring',
+            scheduleType: 'once',
+            runAt: Date.now() + 1000,
+            nextRunAt: Date.now() + 1000,
+            runCount: 0,
+            failureCount: 0
+        } as any]);
+        ref.instance.sessionState.setSelectedScheduledTaskId('job-1');
+        ref.instance.sessionState.setJobsFocused(true);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const root = ref.hostView.rootNodes[0] as ConsoleElement;
+        const lines = renderer.renderToLines(root);
+        const messageIndex = lines.findIndex(line => line.includes('keep chat above jobs'));
+        const jobsIndex = lines.findIndex(line => line.includes('jobs 1'));
+
+        expect(messageIndex).toBeGreaterThanOrEqual(0);
+        expect(jobsIndex).toBeGreaterThanOrEqual(0);
+        expect(messageIndex).toBeLessThan(jobsIndex);
+    }
+
     @Test('renders shared reply statuses in messages panel')
     async renderMessageStatuses() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
@@ -105,6 +183,27 @@ export class AgentConsoleRendererTest {
 
         expect(messageLines.some(line => line.includes('•') && line.includes('streaming response'))).toBe(true);
         expect(messageLines.some(line => line.includes('!') && line.includes('Error: broken'))).toBe(true);
+    }
+
+    @Test('truncates oversized unfocused messages in messages panel')
+    async truncateOversizedUnfocusedMessages() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([{
+            id: 'a1',
+            role: 'assistant',
+            content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
+            createdAt: 1
+        } as any]);
+        await ref.render();
+        await Promise.resolve();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
+
+        expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 5 more lines. enter open'))).toBe(true);
+        expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
     }
 
     @Test('renders working line with token usage while running')
@@ -278,54 +377,59 @@ export class AgentConsoleRendererTest {
 
     @Test('renders coding task inspector panel with task summary')
     async renderCodingTaskInspectorPanel() {
-        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setTaskRecords([{
-            id: 'task-1',
-            title: 'Patch handlers',
-            status: 'completed',
-            result: {
+        const ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+            ref.instance.sessionState.setTaskRecords([{
+                id: 'task-1',
+                title: 'Patch handlers',
+                status: 'completed',
+                result: {
+                    executionMode: 'parallel',
+                    workers: [{ workerId: 'worker-1' }],
+                    rollback: {
+                        available: true
+                    }
+                },
+                metadata: {
+                    executionMode: 'parallel',
+                    checkpoints: [{ id: 'checkpoint-task-1', status: 'available' }]
+                },
+                planning: {
+                    summary: 'Patch handlers summary'
+                },
+                goal: 'Patch handlers goal',
+                actions: [
+                    { title: 'Edit handlers', status: 'completed', tool: 'edit_file', workerId: 'worker-1' },
+                    { title: 'Review diff', status: 'completed', tool: 'git_operations' }
+                ]
+            } as any]);
+            ref.instance.sessionState.setReviewTasks([{
+                id: 'task-1',
+                title: 'Patch handlers',
+                status: 'completed',
                 executionMode: 'parallel',
-                workers: [{ workerId: 'worker-1' }],
-                rollback: {
-                    available: true
-                }
-            },
-            metadata: {
-                executionMode: 'parallel',
-                checkpoints: [{ id: 'checkpoint-task-1', status: 'available' }]
-            },
-            planning: {
-                summary: 'Patch handlers summary'
-            },
-            goal: 'Patch handlers goal',
-            actions: [
-                { title: 'Edit handlers', status: 'completed', tool: 'edit_file', workerId: 'worker-1' },
-                { title: 'Review diff', status: 'completed', tool: 'git_operations' }
-            ]
-        } as any]);
-        ref.instance.sessionState.setReviewTasks([{
-            id: 'task-1',
-            title: 'Patch handlers',
-            status: 'completed',
-            executionMode: 'parallel',
-            workerCount: 1,
-            rollbackAvailable: true,
-            checkpointSummary: '1 total · 1 available · 0 applied · 0 invalidated'
-        } as any]);
-        ref.instance.sessionState.setSelectedReviewTaskId('task-1');
-        ref.instance.sessionState.setTasksFocused(true);
-        await ref.render();
+                workerCount: 1,
+                rollbackAvailable: true,
+                checkpointSummary: '1 total · 1 available · 0 applied · 0 invalidated'
+            } as any]);
+            ref.instance.sessionState.setSelectedReviewTaskId('task-1');
+            ref.instance.sessionState.setTasksFocused(true);
+            await ref.render();
+            await Promise.resolve();
 
-        const renderer = this.ctx.get(ConsoleRenderer);
-        const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
-        const taskLines = renderer.renderToLines(tasksPanel.hostView.rootNodes[0]);
-
-        expect(taskLines.some(line => line.includes('tasks 1'))).toBe(true);
-        expect(taskLines.some(line => line.includes('Patch handlers'))).toBe(true);
-        expect(taskLines.some(line => line.includes('rollback available'))).toBe(true);
-        expect(taskLines.some(line => line.includes('checkpoints 1 total'))).toBe(true);
-        expect(taskLines.some(line => line.includes('1.'))).toBe(true);
-        expect(taskLines.some(line => line.includes('Edit handlers'))).toBe(true);
+            const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
+            expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 1')).toBe(true);
+            expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('rollback available')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('checkpoints 1 total')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('1.')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('Edit handlers')).toBe(true);
+        } finally {
+            await ctx.close();
+        }
     }
 
     @Test('renders scheduled jobs panel with task details')
@@ -438,8 +542,8 @@ export class AgentConsoleRendererTest {
         }
     }
 
-    @Test('renders user message row with background styling in tui messages panel')
-    async renderUserMessageBackgroundInTui() {
+    @Test('renders user message row in tui messages panel')
+    async renderUserMessageInTui() {
         const tuiCtx = await Application.run(AgentModule, {
             deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
         });
@@ -462,10 +566,11 @@ export class AgentConsoleRendererTest {
             await new Promise(resolve => setTimeout(resolve, 10));
 
             const lines = renderer.renderToTuiLines(messagesPanel.hostView.rootNodes[0], { width: 24 });
-            const userLine = lines.find((line: string) => line.includes('hello tui')) || '';
+            const visibleLines = lines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, ''));
+            const userLine = visibleLines.find((line: string) => line.includes('hello tui')) || '';
 
             expect(userLine).toContain('hello tui');
-            expect(/\x1b\[[0-9;]*48;/.test(userLine)).toBe(true);
+            expect(lines.some((line: string) => line.includes('\x1b[48;2;27;33;40m'))).toEqual(true);
         } finally {
             await tuiCtx.close();
         }

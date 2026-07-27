@@ -811,7 +811,7 @@ export class TuiRenderer extends ConsoleRenderer {
 
     protected padVisible(value: string, width: number): string {
         const visible = this.stripAnsi(value);
-        if (getDisplayWidth(visible) >= width) {
+        if (getDisplayWidth(visible) > width) {
             return sliceByDisplayWidth(visible, width);
         }
         return `${value}${' '.repeat(width - getDisplayWidth(visible))}`;
