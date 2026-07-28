@@ -8,6 +8,7 @@ import { summarizeToolDisplayText } from '../tools/ToolSummary';
 const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths, 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. Use concise factual phrases. Do not infer or add information not present in the conversation.';
 const SUMMARY_LABELS = ['Goal', 'Decisions', 'Files', 'Errors', 'Open state'] as const;
 type SummaryLabel = typeof SUMMARY_LABELS[number];
+const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
 @Injectable()
 export class LLMSessionSummarizer extends SessionSummarizer {
@@ -114,12 +115,18 @@ export class LLMSessionSummarizer extends SessionSummarizer {
     }
 
     private resolveGoal(messages: AgentMessage[]): string {
-        for (let i = messages.length - 1; i >= 0; i--) {
-            if (messages[i].role === 'user' && messages[i].content.trim()) {
-                return this.truncate(messages[i].content, 280);
-            }
+        const substantiveUsers = messages.filter(message => message.role === 'user' && this.isSubstantiveUserMessage(message.content));
+        if (!substantiveUsers.length) {
+            const fallbackUser = [...messages].reverse().find(message => message.role === 'user' && String(message.content || '').trim());
+            return fallbackUser ? this.truncate(fallbackUser.content, 280) : '';
         }
-        return '';
+
+        const root = substantiveUsers[0];
+        const current = substantiveUsers[substantiveUsers.length - 1];
+        if (!root || !current || root.id === current.id) {
+            return this.truncate(current?.content ?? root?.content ?? '', 280);
+        }
+        return this.truncate(`Root: ${root.content} | Current: ${current.content}`, 280);
     }
 
     private resolveDecisions(messages: AgentMessage[]): string {
@@ -169,6 +176,17 @@ export class LLMSessionSummarizer extends SessionSummarizer {
             return true;
         }
         return /\bfailed\b|\berror\b/i.test(message.content);
+    }
+
+    private isSubstantiveUserMessage(content: string | undefined): boolean {
+        const text = String(content || '').trim();
+        if (!text) {
+            return false;
+        }
+        if (text.startsWith('/')) {
+            return false;
+        }
+        return !FOLLOW_UP_ONLY_MESSAGE_RE.test(text);
     }
 
     private truncate(content: string, maxLength: number): string {

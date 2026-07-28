@@ -193,8 +193,14 @@ export class AgentContextManager {
         const pinnedIds = new Set<string>();
         const anchors: AgentMessage[] = [];
 
+        const firstSubstantiveUser = this.findFirstSubstantiveUserMessage(oldMessages);
+        if (firstSubstantiveUser && !recentIds.has(firstSubstantiveUser.id)) {
+            pinnedIds.add(firstSubstantiveUser.id);
+            anchors.push(firstSubstantiveUser);
+        }
+
         const latestSubstantiveUser = this.findLatestSubstantiveUserMessage(oldMessages);
-        if (latestSubstantiveUser && !recentIds.has(latestSubstantiveUser.id)) {
+        if (latestSubstantiveUser && !recentIds.has(latestSubstantiveUser.id) && !pinnedIds.has(latestSubstantiveUser.id)) {
             pinnedIds.add(latestSubstantiveUser.id);
             anchors.push(latestSubstantiveUser);
         }
@@ -206,6 +212,19 @@ export class AgentContextManager {
         }
 
         return oldMessages.filter(message => pinnedIds.has(message.id));
+    }
+
+    private findFirstSubstantiveUserMessage(messages: AgentMessage[]): AgentMessage | undefined {
+        for (let i = 0; i < messages.length; i++) {
+            const message = messages[i];
+            if (message.role !== 'user') {
+                continue;
+            }
+            if (this.isSubstantiveUserMessage(message.content)) {
+                return message;
+            }
+        }
+        return undefined;
     }
 
     private findLatestSubstantiveUserMessage(messages: AgentMessage[]): AgentMessage | undefined {

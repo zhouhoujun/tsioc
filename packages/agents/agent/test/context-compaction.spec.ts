@@ -158,7 +158,8 @@ export class ContextCompactionTest {
         expect(result.filter(m => m.role === 'system').length).toBeGreaterThanOrEqual(1);
         const recent = result.filter(m => m.id?.startsWith('u') || m.id?.startsWith('a') || m.id?.startsWith('t'));
         expect(recent.length).toBeGreaterThan(0);
-        expect(result.some(m => m.id === 'u0')).toEqual(false);
+        expect(result.some(m => m.id === 'u0')).toEqual(true);
+        expect(result.some(m => m.id === 'a0')).toEqual(false);
     }
 
     @Test('compactHistory preserves the latest substantive user request outside the recent window')
@@ -194,6 +195,41 @@ export class ContextCompactionTest {
         expect(result.some(message => message.id === 'u-goal')).toEqual(true);
         expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
         expect(result.some(message => message.id === 'u-2')).toEqual(false);
+    }
+
+    @Test('compactHistory preserves the root goal together with later substantive follow-up')
+    async compactPreservesRootGoalAndFollowUpGoal() {
+        class RecordingSummarizer extends SessionSummarizer {
+            async summarize(_messages: AgentMessage[]): Promise<string> {
+                return 'Compressed conversation history.';
+            }
+        }
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200 });
+        ctx.setSummarizer(new RecordingSummarizer(), 4);
+        const rootGoal = '设计一个跨平台在线考试系统，并给出数据库表设计、接口设计、权限模型、部署架构和监考流程。'.repeat(4);
+        const followUpGoal = '补充项目主线、项目索引和跨会话聚合策略。'.repeat(6);
+        const longReply = '继续补充系统主线、阶段拆分、任务恢复和跨会话聚合实现细节。'.repeat(8);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u-root', role: 'user', content: rootGoal, createdAt: 2 },
+            { id: 'a-1', role: 'assistant', content: longReply, createdAt: 3 },
+            { id: 'u-2', role: 'user', content: '继续', createdAt: 4 },
+            { id: 'a-2', role: 'assistant', content: longReply, createdAt: 5 },
+            { id: 'u-follow', role: 'user', content: followUpGoal, createdAt: 6 },
+            { id: 'a-3', role: 'assistant', content: longReply, createdAt: 7 },
+            { id: 'u-4', role: 'user', content: '继续', createdAt: 8 },
+            { id: 'a-4', role: 'assistant', content: longReply, createdAt: 9 },
+            { id: 'u-5', role: 'user', content: '继续', createdAt: 10 },
+            { id: 'a-5', role: 'assistant', content: longReply, createdAt: 11 }
+        ];
+
+        const result = await ctx.compactHistory(messages);
+
+        expect(result.some(message => message.id === 'u-root')).toEqual(true);
+        expect(result.some(message => message.id === 'u-follow')).toEqual(true);
+        expect(result.some(message => message.id === 'u-2')).toEqual(false);
+        expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
     }
 
     @Test('compactHistory preserves the latest error context outside the recent window')
@@ -434,6 +470,25 @@ export class ContextCompactionTest {
         expect(result).toContain('Errors:');
         expect(result).toContain('Open state:');
         expect(result).toContain('src/app.ts');
+    }
+
+    @Test('LLMSessionSummarizer fallback keeps root goal instead of follow-up only prompts')
+    async llmFallbackKeepsRootGoalAcrossContinuePrompts() {
+        const summarizer = new LLMSessionSummarizer(null);
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: '设计一个跨平台在线考试系统，并补充数据库表设计、权限模型和部署架构。', createdAt: 1 },
+            { id: '2', role: 'assistant', content: 'I will outline the architecture and then fill in the database schema.', createdAt: 2 },
+            { id: '3', role: 'user', content: '继续', createdAt: 3 },
+            { id: '4', role: 'assistant', content: 'Continuing the design output.', createdAt: 4 },
+            { id: '5', role: 'user', content: '补充项目主线和跨会话聚合策略。', createdAt: 5 }
+        ];
+
+        const result = await summarizer.summarize(messages);
+
+        expect(result).toContain('Goal:');
+        expect(result).toContain('Root: 设计一个跨平台在线考试系统');
+        expect(result).toContain('Current: 补充项目主线和跨会话聚合策略');
+        expect(result).not.toContain('Goal: 继续');
     }
 }
 
