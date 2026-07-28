@@ -1645,6 +1645,7 @@ export class AgentConsoleSessionState {
         if (summary) {
             lines.push(`Summary: ${summary}`);
         }
+        lines.push(...this.buildReviewAssessmentLines());
 
         const rollback = this.reviewTask?.result?.rollback;
         if (rollback) {
@@ -2422,6 +2423,56 @@ export class AgentConsoleSessionState {
     protected resetReviewDetailViewport(): void {
         this.reviewDetailScroll = 0;
         this.reviewDetailColumnScroll = 0;
+    }
+
+    protected buildReviewAssessmentLines(): string[] {
+        const lines: string[] = [];
+        const status = String(this.reviewTask?.status || '').trim().toLowerCase();
+        const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
+            ? this.reviewTask?.metadata?.checkpoints
+            : [];
+        const availableCheckpoints = checkpoints.filter((entry: any) => entry?.status === 'available').length;
+        const invalidatedCheckpoints = checkpoints.filter((entry: any) => entry?.status === 'invalidated').length;
+        const workerFailures = this.reviewWorkers.filter(worker => worker.error || String(worker.status || '').trim().toLowerCase() === 'failed').length;
+        const sections = this.reviewFileSections;
+        const rollback = this.reviewTask?.result?.rollback;
+
+        const reviewState = rollback?.rolledBackAt
+            ? 'rollback applied'
+            : status === 'failed' || status === 'error' || workerFailures > 0
+                ? 'needs attention'
+                : status === 'running' || status === 'planned'
+                    ? 'in progress'
+                    : rollback?.available === true || availableCheckpoints > 0
+                        ? 'ready · rollback available'
+                        : status === 'completed'
+                            ? 'ready'
+                            : 'pending';
+        lines.push(`Review: ${reviewState}`);
+
+        const scopeParts = [
+            sections.length ? `${sections.length} file${sections.length === 1 ? '' : 's'} changed` : '',
+            this.reviewWorkers.length ? `${this.reviewWorkers.length} worker${this.reviewWorkers.length === 1 ? '' : 's'}` : ''
+        ].filter(Boolean);
+        if (scopeParts.length) {
+            lines.push(`Scope: ${scopeParts.join(' · ')}`);
+        }
+
+        const riskParts = [
+            workerFailures > 0 ? `${workerFailures} worker failure${workerFailures === 1 ? '' : 's'}` : '',
+            !rollback?.available && availableCheckpoints === 0 && (status === 'completed' || status === 'failed' || status === 'error')
+                ? 'rollback unavailable'
+                : '',
+            invalidatedCheckpoints > 0 ? `${invalidatedCheckpoints} invalidated checkpoint${invalidatedCheckpoints === 1 ? '' : 's'}` : '',
+            !sections.length && !String(this.reviewDiff?.summary || this.reviewTask?.result?.diff?.summary || '').trim()
+                ? 'no diff captured'
+                : ''
+        ].filter(Boolean);
+        if (riskParts.length) {
+            lines.push(`Risks: ${riskParts.join(' · ')}`);
+        }
+
+        return lines;
     }
 
     protected isFailedTaskChoice(task: AgentConsoleReviewTaskItem | undefined): boolean {

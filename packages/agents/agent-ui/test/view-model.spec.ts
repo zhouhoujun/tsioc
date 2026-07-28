@@ -2646,6 +2646,8 @@ export class AgentConsoleComponentTest {
         expect(state.selectedReviewFileIndex).toEqual(0);
         expect(state.selectedReviewFileSection?.path).toEqual('src/a.ts');
         expect(state.reviewDetailLines.join('\n')).toContain('worker-1');
+        expect(state.reviewDetailLines.join('\n')).toContain('Review: ready · rollback available');
+        expect(state.reviewDetailLines.join('\n')).toContain('Scope: 2 files changed · 1 worker');
         expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
         expect(state.reviewDetailLines.join('\n')).toContain('Files: 2');
@@ -2677,6 +2679,41 @@ export class AgentConsoleComponentTest {
         expect(state.reviewOpen).toEqual(false);
         expect(state.reviewDetailScroll).toEqual(0);
         expect(state.reviewDetailColumnScroll).toEqual(0);
+    }
+
+    @Test('review detail flags risks for failed tasks without rollback')
+    reviewDetailFlagsRisksForFailedTasksWithoutRollback() {
+        const state = new AgentConsoleSessionState();
+        const failedTask = {
+            ...createReviewTask(),
+            status: 'failed',
+            result: {
+                ...createReviewTask().result,
+                rollback: {
+                    available: false
+                },
+                workers: [{
+                    workerId: 'worker-1',
+                    status: 'failed',
+                    error: 'patch rejected'
+                }]
+            },
+            metadata: {
+                checkpoints: []
+            }
+        };
+
+        state.openReview(failedTask as any, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 worker diff(s) captured',
+                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+            },
+            workers: failedTask.result.workers
+        });
+
+        expect(state.reviewDetailLines.join('\n')).toContain('Review: needs attention');
+        expect(state.reviewDetailLines.join('\n')).toContain('Risks: 1 worker failure · rollback unavailable');
     }
 
     @Test('session state supports paged session navigation and edges')
