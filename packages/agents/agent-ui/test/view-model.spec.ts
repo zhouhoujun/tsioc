@@ -2129,10 +2129,6 @@ export class AgentConsoleComponentTest {
 
         await state.dismissFocusLayer();
         expect(state.messageDetailOpen).toEqual(false);
-        expect(state.messagesFocused).toEqual(true);
-        expect(state.inputFocused).toEqual(false);
-
-        await state.dismissFocusLayer();
         expect(state.messagesFocused).toEqual(false);
         expect(state.inputFocused).toEqual(true);
 
@@ -2181,7 +2177,8 @@ export class AgentConsoleComponentTest {
 
         expect(await state.handleFocusKey('Esc')).toEqual(true);
         expect(state.messageDetailOpen).toEqual(false);
-        expect(state.messagesFocused).toEqual(true);
+        expect(state.messagesFocused).toEqual(false);
+        expect(state.inputFocused).toEqual(true);
     }
 
     @Test('focused tool panel activates selected tool on enter')
@@ -2637,17 +2634,41 @@ export class AgentConsoleComponentTest {
                     '+updated line'
                 ].join('\n')
             },
-            workers: reviewTask.result.workers
+            workers: [{
+                workerId: 'worker-1',
+                actionIds: ['edit-1'],
+                status: 'completed',
+                branch: 'coding-task/task1worker1',
+                worktreePath: '.worktrees/task1worker1',
+                diff: {
+                    text: 'diff --git a/src/a.ts b/src/a.ts\n+new line\n+second line'
+                }
+            }, {
+                workerId: 'worker-2',
+                actionIds: ['edit-2'],
+                status: 'completed',
+                branch: 'coding-task/task1worker2',
+                worktreePath: '.worktrees/task1worker2',
+                diff: {
+                    text: 'diff --git a/src/b.ts b/src/b.ts\n-old line\n+updated line'
+                }
+            }]
         });
 
         expect(state.reviewOpen).toEqual(true);
         expect(state.hasReviewFocus()).toEqual(true);
         expect(state.reviewExecutionMode).toEqual('parallel');
+        expect(state.selectedReviewGroup?.key).toEqual('aggregate');
         expect(state.selectedReviewFileIndex).toEqual(0);
         expect(state.selectedReviewFileSection?.path).toEqual('src/a.ts');
         expect(state.reviewDetailLines.join('\n')).toContain('worker-1');
+        expect(state.reviewDetailLines.join('\n')).toContain('worker-2');
         expect(state.reviewDetailLines.join('\n')).toContain('Review: ready · rollback available');
-        expect(state.reviewDetailLines.join('\n')).toContain('Scope: 2 files changed · 1 worker');
+        expect(state.reviewDetailLines.join('\n')).toContain('Scope: 2 files changed · 2 workers');
+        expect(state.reviewDetailLines.join('\n')).toContain('Groups: 3');
+        expect(state.reviewDetailLines.join('\n')).toContain('› [1/3] aggregate · aggregate');
+        expect(state.reviewDetailLines.join('\n')).toContain('[2/3] worker-1 · worker');
+        expect(state.reviewDetailLines.join('\n')).toContain('[3/3] worker-2 · worker');
         expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
         expect(state.reviewDetailLines.join('\n')).toContain('Files: 2');
@@ -2667,6 +2688,25 @@ export class AgentConsoleComponentTest {
         expect(state.reviewDetailLines.join('\n')).toContain('Current File: src/b.ts (+1 -1)');
         expect(state.reviewDetailLines.join('\n')).toContain('diff --git a/src/b.ts b/src/b.ts');
         expect(state.reviewDetailLines.join('\n')).not.toContain('diff --git a/src/a.ts b/src/a.ts');
+
+        await state.handleFocusKey('a');
+        expect(state.selectedReviewPatchFilter).toEqual('additions');
+        expect(state.reviewDetailLines.join('\n')).toContain('Patch Filter: additions');
+        expect(state.reviewDetailLines.join('\n')).toContain('+updated line');
+        expect(state.reviewDetailLines.join('\n')).not.toContain('-old line');
+
+        await state.handleFocusKey('u');
+        expect(state.selectedReviewPatchFilter).toEqual('all');
+        expect(state.reviewDetailLines.join('\n')).toContain('-old line');
+
+        await state.handleFocusKey('.');
+        expect(state.selectedReviewGroup?.workerId).toEqual('worker-1');
+        expect(state.selectedReviewFileIndex).toEqual(0);
+        expect(state.selectedReviewFileSection?.path).toEqual('src/a.ts');
+        expect(state.reviewDetailLines.join('\n')).toContain('Current Group: worker-1 · worker · status completed · 1 file');
+        expect(state.reviewDetailLines.join('\n')).toContain('Worker Branch: coding-task/task1worker1');
+        expect(state.reviewDetailLines.join('\n')).toContain('Current File: src/a.ts (+2 -0)');
+        expect(state.reviewDetailLines.join('\n')).not.toContain('diff --git a/src/b.ts b/src/b.ts');
 
         const maxReviewScroll = Math.max(0, state.reviewDetailLines.length - state.consoleOptions.reviewDetailVisibleLines);
         state.scrollReviewDetail(1);

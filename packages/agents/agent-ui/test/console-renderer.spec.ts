@@ -404,7 +404,10 @@ export class AgentConsoleRendererTest {
                 actionIds: ['edit-1'],
                 status: 'completed',
                 branch: 'coding-task/task1worker1',
-                worktreePath: '.worktrees/task1worker1'
+                worktreePath: '.worktrees/task1worker1',
+                diff: {
+                    text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+                }
             }]
         });
         await ref.render();
@@ -419,14 +422,14 @@ export class AgentConsoleRendererTest {
         expect(reviewLines.some(line => line.includes('completed'))).toBe(true);
         expect(reviewLines.some(line => line.includes('parallel'))).toBe(true);
         expect(reviewLines.some(line => line.includes('1 worker diff'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('group 1/2 aggregate'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Review: ready · rollback available'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Scope: 2 files changed · 1 worker'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Rollback: available'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Checkpoints: 1 total'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('file 1/2 src/a.ts'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('Files: 2'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('› [1/2] src/a.ts (+1 -0)'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('[2/2] src/b.ts (+1 -1)'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Groups: 2'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('› [1/2] aggregate · aggregate'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('[2/2] worker-1 · worker'))).toBe(true);
         expect(reviewLines.some(line => line.includes('diff --git a/src/b.ts b/src/b.ts'))).toBe(false);
     }
 
