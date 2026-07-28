@@ -90,7 +90,7 @@ import { AgentToolsModule } from '../src/agent-tools.module';
 import { resolveAgentRootSettings } from '../src/settings';
 import { buildSandboxEnv, extractCommandName, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { Application } from '@tsdi/core';
-import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter } from '@tsdi/agent';
+import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter, summarizeToolDisplayText } from '@tsdi/agent';
 import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, IpWhoIsLocationAdapter, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
 import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool } from '../browser';
@@ -2999,6 +2999,59 @@ export class AgentToolsPackageTest {
         expect(result.report?.artifacts).toEqual(['diff.patch', 'notes.md']);
     }
 
+    @Test('spawn agent output summary prefers structured report fields')
+    spawnAgentOutputSummaryPrefersStructuredReportFields() {
+        const summary = summarizeToolDisplayText('spawn_agent', {
+            goal: 'analyze project',
+            sessionId: 'spawn-1',
+            turnCount: 2,
+            toolCalls: 3,
+            report: {
+                summary: 'analyzed the project structure',
+                nextSteps: ['update review summary', 'split workers'],
+                artifacts: ['diff.patch']
+            }
+        });
+
+        expect(summary).toContain('analyze project');
+        expect(summary).toContain('analyzed the project structure');
+        expect(summary).toContain('session=spawn-1');
+        expect(summary).toContain('2 turns');
+        expect(summary).toContain('3 tools');
+        expect(summary).toContain('next=update review summary, split workers');
+        expect(summary).toContain('artifacts=diff.patch');
+    }
+
+    @Test('coding task output summary prefers aggregated report fields')
+    codingTaskOutputSummaryPrefersAggregatedReportFields() {
+        const summary = summarizeToolDisplayText('coding_task', {
+            task: {
+                id: 'task-1',
+                title: 'Apply isolated edits',
+                status: 'completed',
+                actions: [{ id: 'edit-1' }, { id: 'edit-2' }],
+                result: {
+                    workers: [{ workerId: 'worker-1' }, { workerId: 'worker-2' }],
+                    report: {
+                        summary: '2 worker diff(s) captured',
+                        nextSteps: ['review diff', 'verify changes'],
+                        risks: ['1 worker failure'],
+                        artifacts: ['diff', 'checkpoint:checkpoint-task-1']
+                    }
+                }
+            }
+        });
+
+        expect(summary).toContain('completed');
+        expect(summary).toContain('Apply isolated edits');
+        expect(summary).toContain('2 actions');
+        expect(summary).toContain('2 workers');
+        expect(summary).toContain('2 worker diff(s) captured');
+        expect(summary).toContain('next=review diff, verify changes');
+        expect(summary).toContain('risks=1 worker failure');
+        expect(summary).toContain('artifacts=diff, checkpoint:checkpoint-task-1');
+    }
+
     @Test('execute code requires adapter and delegates execution')
     async executeCodeRequiresAdapterAndDelegatesExecution() {
         let adapter: Error | undefined;
@@ -4494,10 +4547,16 @@ export class AgentToolsPackageTest {
         expect(result.task.result?.executionMode).toEqual('parallel');
         expect(result.task.result?.workers?.length).toEqual(2);
         expect(result.task.result?.diff?.summary).toContain('2 worker diff');
+        expect(result.task.result?.report?.summary).toContain('2 worker diff');
+        expect(result.task.result?.report?.completed).toEqual(['Edit alpha', 'Edit beta']);
+        expect(result.task.result?.report?.nextSteps).toEqual(['review diff', 'verify changes']);
+        expect(result.task.result?.report?.artifacts).toContain('diff');
+        expect(result.task.result?.report?.artifacts).toContain(`checkpoint:${result.task.result?.rollback?.checkpointId}`);
 
         const workers = result.task.result?.workers || [];
         expect(workers.every((worker: any) => worker.workerId && worker.branch && worker.worktreePath)).toEqual(true);
         expect(workers.map((worker: any) => worker.actionIds[0]).sort()).toEqual(['edit-1', 'edit-2']);
+        expect(workers.every((worker: any) => worker.report?.summary)).toEqual(true);
 
         const editCalls = calls.filter(call => call.tool === 'edit_file');
         expect(editCalls.length).toEqual(2);

@@ -32,6 +32,15 @@ export interface CodingTaskWorkerRecord {
     diff?: any;
     output?: any;
     error?: string;
+    report?: CodingTaskReport;
+}
+
+export interface CodingTaskReport {
+    summary?: string;
+    completed?: string[];
+    nextSteps?: string[];
+    risks?: string[];
+    artifacts?: string[];
 }
 
 export interface CodingTaskCheckpointPatch {
@@ -79,6 +88,7 @@ export interface CodingTaskRecord {
         output?: any;
         diff?: any;
         workers?: CodingTaskWorkerRecord[];
+        report?: CodingTaskReport;
         error?: string;
         rollback?: {
             available: boolean;

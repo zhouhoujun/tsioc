@@ -10,6 +10,7 @@ import {
     CodingTaskExecutionMode,
     CodingTaskPlanningStrategy,
     CodingTaskRecord,
+    CodingTaskReport,
     CodingTaskWorkerRecord,
     CodingTaskStore
 } from './coding-task-store';
@@ -32,6 +33,20 @@ interface CapturedCodingDiff {
     output: any;
     text?: string;
     workers?: any[];
+}
+
+interface CodingTaskExecutionReportContext {
+    executionMode: CodingTaskExecutionMode;
+    completedActions: number;
+    failedActionId?: string;
+    diff?: CapturedCodingDiff;
+    workers: CodingTaskWorkerRecord[];
+    rollback: {
+        available: boolean;
+        checkpointId?: string;
+        mode?: string;
+        reason?: string;
+    };
 }
 
 @Injectable()
@@ -241,6 +256,14 @@ export class CodingTaskTool implements AgentTool {
                     ? 'No rollback patch was captured for this worktree task.'
                     : 'Rollback is only available for coding tasks that run with useWorktree: true.'
             };
+        const report = this.buildExecutionReport(working, {
+            executionMode,
+            completedActions: execution.completedActions,
+            failedActionId: execution.failedActionId,
+            diff: execution.diff,
+            workers: execution.workers,
+            rollback: rollbackSummary
+        });
 
         const finalStatus = execution.failedActionId ? 'failed' : 'completed';
         const saved = this.store.patch(sessionId, working.id, {
@@ -262,6 +285,7 @@ export class CodingTaskTool implements AgentTool {
                 output: this.summarizeResultPayload(execution.output),
                 ...(execution.diff ? { diff: execution.diff } : {}),
                 ...(execution.workers.length ? { workers: execution.workers } : {}),
+                ...(report ? { report } : {}),
                 error: execution.failedActionId ? working.actions.find(item => item.id === execution.failedActionId)?.error : undefined,
                 rollback: rollbackSummary
             }
@@ -771,7 +795,16 @@ export class CodingTaskTool implements AgentTool {
                 worktreePath: worktree.relativePath,
                 ...(diff ? { diff } : {}),
                 output: this.summarizeResultPayload(lastOutput),
-                ...(failedActionId ? { error: task.actions.find(action => action.id === failedActionId)?.error } : {})
+                ...(failedActionId ? { error: task.actions.find(action => action.id === failedActionId)?.error } : {}),
+                report: this.buildWorkerReport(task, {
+                    workerId: 'worker-1',
+                    actionIds: task.actions.map(action => action.id),
+                    status: failedActionId ? 'failed' : 'completed',
+                    diff,
+                    error: failedActionId ? task.actions.find(action => action.id === failedActionId)?.error : undefined,
+                    branch: worktree.branch,
+                    worktreePath: worktree.relativePath
+                })
             }] : [];
 
             return {
@@ -859,7 +892,15 @@ export class CodingTaskTool implements AgentTool {
                     branch: worktree.branch,
                     worktreePath: worktree.relativePath,
                     ...(diff ? { diff } : {}),
-                    output: this.summarizeResultPayload(result.output)
+                    output: this.summarizeResultPayload(result.output),
+                    report: this.buildWorkerReport(task, {
+                        workerId,
+                        actionIds: [rawAction.id],
+                        status: 'completed',
+                        diff,
+                        branch: worktree.branch,
+                        worktreePath: worktree.relativePath
+                    })
                 },
                 worktree
             };
@@ -878,7 +919,15 @@ export class CodingTaskTool implements AgentTool {
                     completedAt,
                     branch: worktree?.branch,
                     worktreePath: worktree?.relativePath,
-                    error: rawAction.error
+                    error: rawAction.error,
+                    report: this.buildWorkerReport(task, {
+                        workerId,
+                        actionIds: [rawAction.id],
+                        status: 'failed',
+                        error: rawAction.error,
+                        branch: worktree?.branch,
+                        worktreePath: worktree?.relativePath
+                    })
                 },
                 worktree
             };
@@ -909,6 +958,142 @@ export class CodingTaskTool implements AgentTool {
                 diff: worker.diff
             }))
         };
+    }
+
+    private buildWorkerReport(
+        task: CodingTaskRecord,
+        worker: {
+            workerId: string;
+            actionIds: string[];
+            status: 'completed' | 'failed';
+            diff?: CapturedCodingDiff;
+            error?: string;
+            branch?: string;
+            worktreePath?: string;
+        }
+    ): CodingTaskReport | undefined {
+        const actions = task.actions.filter(action => worker.actionIds.includes(action.id));
+        const completedTitles = actions
+            .filter(action => action.status === 'completed')
+            .map(action => action.title)
+            .filter((title): title is string => !!title);
+        return this.cleanReport({
+            summary: worker.status === 'failed'
+                ? worker.error || `${worker.workerId} failed`
+                : worker.diff?.summary || `${worker.workerId} completed ${worker.actionIds.length} action${worker.actionIds.length === 1 ? '' : 's'}`,
+            completed: completedTitles.length ? completedTitles : undefined,
+            nextSteps: worker.status === 'failed'
+                ? [
+                    actions[0]?.title ? `inspect ${actions[0].title}` : `inspect ${worker.workerId}`,
+                    'fix the failure and rerun'
+                ]
+                : worker.diff
+                    ? ['review diff', 'verify changes']
+                    : ['verify changes'],
+            risks: worker.error ? [worker.error] : undefined,
+            artifacts: [
+                worker.diff ? 'diff' : '',
+                worker.branch ? `branch:${worker.branch}` : '',
+                worker.worktreePath ? `worktree:${worker.worktreePath}` : ''
+            ].filter((item): item is string => !!item)
+        });
+    }
+
+    private buildExecutionReport(
+        task: CodingTaskRecord,
+        execution: CodingTaskExecutionReportContext
+    ): CodingTaskReport | undefined {
+        const workerReports = execution.workers
+            .map(worker => worker.report)
+            .filter((report): report is CodingTaskReport => !!report);
+        const failedAction = execution.failedActionId
+            ? task.actions.find(action => action.id === execution.failedActionId)
+            : undefined;
+        const completedTitles = task.actions
+            .filter(action => action.status === 'completed')
+            .map(action => action.title)
+            .filter((title): title is string => !!title);
+        const totalActions = task.actions.length;
+
+        return this.mergeReports([
+            {
+                summary: execution.diff?.summary
+                    || (execution.failedActionId
+                        ? `${execution.completedActions}/${totalActions} action${execution.completedActions === 1 ? '' : 's'} completed before failure`
+                        : `${execution.completedActions}/${totalActions} action${execution.completedActions === 1 ? '' : 's'} completed`),
+                completed: completedTitles.length ? completedTitles : undefined,
+                nextSteps: execution.failedActionId
+                    ? [
+                        failedAction?.title ? `fix ${failedAction.title}` : 'fix the failed action',
+                        'rerun the task'
+                    ]
+                    : execution.diff || execution.workers.length
+                        ? ['review diff', 'verify changes']
+                        : ['verify changes'],
+                risks: [
+                    execution.failedActionId && execution.rollback.available === false && execution.rollback.reason ? execution.rollback.reason : '',
+                    failedAction?.error || ''
+                ].filter((item): item is string => !!item),
+                artifacts: [
+                    execution.diff ? 'diff' : '',
+                    execution.rollback.available === true && execution.rollback.checkpointId ? `checkpoint:${execution.rollback.checkpointId}` : ''
+                ].filter((item): item is string => !!item)
+            },
+            ...workerReports
+        ]);
+    }
+
+    private mergeReports(reports: Array<CodingTaskReport | undefined>): CodingTaskReport | undefined {
+        const summary = reports.map(report => report?.summary).find((value): value is string => !!value);
+        const completed = this.mergeUniqueStrings(reports.flatMap(report => report?.completed || []));
+        const nextSteps = this.mergeUniqueStrings(reports.flatMap(report => report?.nextSteps || []));
+        const risks = this.mergeUniqueStrings(reports.flatMap(report => report?.risks || []));
+        const artifacts = this.mergeUniqueStrings(reports.flatMap(report => report?.artifacts || []));
+
+        return this.cleanReport({
+            summary,
+            completed: completed.length ? completed : undefined,
+            nextSteps: nextSteps.length ? nextSteps : undefined,
+            risks: risks.length ? risks : undefined,
+            artifacts: artifacts.length ? artifacts : undefined
+        });
+    }
+
+    private mergeUniqueStrings(values: unknown[]): string[] {
+        const seen = new Set<string>();
+        const result: string[] = [];
+        for (const value of values) {
+            if (typeof value !== 'string') {
+                continue;
+            }
+            const text = value.trim();
+            if (!text || seen.has(text)) {
+                continue;
+            }
+            seen.add(text);
+            result.push(text);
+        }
+        return result;
+    }
+
+    private cleanReport(report: CodingTaskReport): CodingTaskReport | undefined {
+        const cleaned: CodingTaskReport = {};
+        if (typeof report.summary === 'string' && report.summary.trim()) {
+            cleaned.summary = report.summary.trim();
+        }
+        if (Array.isArray(report.completed) && report.completed.length) {
+            cleaned.completed = this.mergeUniqueStrings(report.completed);
+        }
+        if (Array.isArray(report.nextSteps) && report.nextSteps.length) {
+            cleaned.nextSteps = this.mergeUniqueStrings(report.nextSteps);
+        }
+        if (Array.isArray(report.risks) && report.risks.length) {
+            cleaned.risks = this.mergeUniqueStrings(report.risks);
+        }
+        if (Array.isArray(report.artifacts) && report.artifacts.length) {
+            cleaned.artifacts = this.mergeUniqueStrings(report.artifacts);
+        }
+        return cleaned.summary || cleaned.completed?.length || cleaned.nextSteps?.length || cleaned.risks?.length || cleaned.artifacts?.length ? cleaned : undefined;
     }
 
     private async captureWorkspaceDiffIfNeeded(

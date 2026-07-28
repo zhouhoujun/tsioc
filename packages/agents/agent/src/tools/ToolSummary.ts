@@ -53,6 +53,10 @@ function summarizeToolPayload(toolName: string, payload: Record<string, any>, ph
         return summarizeCodingTaskPayload(payload);
     }
 
+    if (toolName === 'spawn_agent') {
+        return summarizeSpawnAgentPayload(payload);
+    }
+
     if (toolName === 'location') {
         return pickString(payload.label)
             || [pickString(payload.city), pickString(payload.region), pickString(payload.countryCode) || pickString(payload.country)]
@@ -192,8 +196,15 @@ function summarizeTodoPayload(payload: Record<string, any>): string | undefined 
 
 function summarizeCodingTaskPayload(payload: Record<string, any>): string | undefined {
     const task = payload.task && typeof payload.task === 'object' ? payload.task : undefined;
+    const taskResult = task?.result && typeof task.result === 'object' ? task.result : undefined;
     const tasks = Array.isArray(payload.tasks) ? payload.tasks : undefined;
-    const workers = Array.isArray(payload.workers) ? payload.workers : undefined;
+    const workers = Array.isArray(payload.workers) ? payload.workers : Array.isArray(taskResult?.workers) ? taskResult.workers : undefined;
+    const report = payload.report && typeof payload.report === 'object'
+        ? payload.report
+        : taskResult?.report && typeof taskResult.report === 'object'
+            ? taskResult.report
+            : undefined;
+    const reportSummary = summarizeReportSnippet(report);
 
     if (tasks) {
         return `${tasks.length} task${tasks.length === 1 ? '' : 's'}`;
@@ -221,19 +232,56 @@ function summarizeCodingTaskPayload(payload: Record<string, any>): string | unde
         if (title) parts.push(title);
         if (actionCount != null) parts.push(`${actionCount} action${actionCount === 1 ? '' : 's'}`);
         if (workers?.length) parts.push(`${workers.length} worker${workers.length === 1 ? '' : 's'}`);
+        if (reportSummary) parts.push(reportSummary);
         return parts.join(' · ');
     }
 
     if (workers?.length) {
-        return `${workers.length} worker${workers.length === 1 ? '' : 's'}`;
+        return [ `${workers.length} worker${workers.length === 1 ? '' : 's'}`, reportSummary || '' ].filter(Boolean).join(' · ');
     }
 
     const title = pickString(payload.title) || pickString(payload.goal) || pickString(payload.task_id);
     if (title) {
-        return title;
+        return reportSummary ? `${title} · ${reportSummary}` : title;
     }
 
-    return 'coding task';
+    return reportSummary || 'coding task';
+}
+
+function summarizeSpawnAgentPayload(payload: Record<string, any>): string | undefined {
+    const report = payload.report && typeof payload.report === 'object' ? payload.report : undefined;
+    const summary = summarizeReportSnippet(report) || pickString(payload.summary) || pickString(payload.output);
+    const goal = pickString(payload.goal);
+    const sessionId = pickString(payload.sessionId);
+    const turnCount = numberOrUndefined(payload.turnCount);
+    const toolCalls = numberOrUndefined(payload.toolCalls);
+
+    const parts = [
+        goal,
+        summary,
+        sessionId ? `session=${sessionId}` : '',
+        turnCount != null ? `${turnCount} turn${turnCount === 1 ? '' : 's'}` : '',
+        toolCalls != null ? `${toolCalls} tool${toolCalls === 1 ? '' : 's'}` : '',
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(' · ') : undefined;
+}
+
+function summarizeReportSnippet(report: Record<string, any> | undefined): string | undefined {
+    if (!report) {
+        return undefined;
+    }
+    const summary = pickString(report.summary);
+    const nextSteps = Array.isArray(report.nextSteps) ? report.nextSteps.map(pickString).filter(Boolean) : [];
+    const risks = Array.isArray(report.risks) ? report.risks.map(pickString).filter(Boolean) : [];
+    const artifacts = Array.isArray(report.artifacts) ? report.artifacts.map(pickString).filter(Boolean) : [];
+    const parts = [
+        summary,
+        nextSteps.length ? `next=${nextSteps.slice(0, 2).join(', ')}` : '',
+        risks.length ? `risks=${risks.slice(0, 2).join(', ')}` : '',
+        artifacts.length ? `artifacts=${artifacts.slice(0, 2).join(', ')}` : ''
+    ].filter(Boolean);
+    return parts.length ? parts.join(' · ') : undefined;
 }
 
 function summarizePathCollection(
