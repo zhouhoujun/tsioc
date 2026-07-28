@@ -1243,6 +1243,10 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
+    hasActivePlanTodos(): boolean {
+        return this.planTodos.some(item => item.status === 'pending' || item.status === 'in_progress');
+    }
+
     clearPlanTodos(): void {
         if (!this.planTodos.length) {
             return;

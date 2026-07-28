@@ -188,6 +188,32 @@ export class HtmlConsoleTest {
         expect(messagesRoot.textContent).not.toContain('{"location":"Chengdu"}');
     }
 
+    @Test('clicking a collapsed message preview toggles message detail')
+    async clickingCollapsedMessagePreviewTogglesMessageDetail() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setMessages([{
+            id: 'a1',
+            role: 'assistant',
+            content: Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join('\n'),
+            createdAt: 1
+        } as any]);
+        await ref.render();
+        await Promise.resolve();
+
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const collapsedLine = messagesPanel.instance.renderedLines.find(line => line.previewCollapsed);
+        expect(collapsedLine?.content).toContain('more lines');
+
+        messagesPanel.instance.onMessageLineClick(collapsedLine);
+        expect(ref.instance.sessionState.messageDetailOpen).toEqual(true);
+        expect(ref.instance.sessionState.selectedMessageId).toEqual('a1');
+        expect(ref.instance.sessionState.inputFocused).toEqual(false);
+
+        messagesPanel.instance.onMessageLineClick(collapsedLine);
+        expect(ref.instance.sessionState.messageDetailOpen).toEqual(false);
+        expect(ref.instance.sessionState.inputFocused).toEqual(true);
+    }
+
     @After()
     async clean() {
         await this.ctx?.close();

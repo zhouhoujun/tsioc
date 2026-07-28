@@ -78,6 +78,22 @@ import { BackupTool } from '../backup/backup.tool';
 import { ModelRoutingTool } from '../model-routing/model-routing.tool';
 import { PollTool } from '../poll/poll.tool';
 import { AiCliTool } from '../ai-cli/ai-cli.tool';
+
+function provideCodingTaskTool(): Provider {
+    return {
+        provider(injector: Injector) {
+            return [{
+                provide: CodingTaskTool,
+                useFactory: () => new CodingTaskTool(
+                    injector.get(CodingTaskStore, null),
+                    injector.get(WorkspaceActionRunner, null),
+                    injector.get(LlmTaskTool, null),
+                    injector
+                )
+            }];
+        }
+    };
+}
 import { provideMcpTools } from '../mcp/provider';
 import {
     DefaultBackupAdapter,
@@ -519,7 +535,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         CodingTaskStore,
         ToolRegistryWorkspaceActionRunner,
         { provide: WorkspaceActionRunner, useExisting: ToolRegistryWorkspaceActionRunner },
-        CodingTaskTool,
+        provideCodingTaskTool(),
         ImageInfoTool,
         PdfReadTool,
         VisionAnalyzeTool,

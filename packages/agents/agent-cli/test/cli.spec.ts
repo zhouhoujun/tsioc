@@ -13,6 +13,7 @@ import {
     resolveCliModelConfig,
     resolveProviderApiKeyEnv,
     resolveProviderProfile,
+    normalizeCliArgv,
     runAgentPrompt,
     runAgentRpcApplication,
     withAdapterProviders,
@@ -145,6 +146,49 @@ export class AgentCliTest {
         const hasToolsCmd = commandNames.some(name => name.startsWith('tools'));
         expect(hasToolsCmd).toBe(true);
         expect(cli.args.length).toBe(0);
+    }
+
+    @Test('normalizes option-only argv to chat command')
+    normalizesOptionOnlyArgvToChatCommand() {
+        const argv = normalizeCliArgv([
+            'node',
+            'tsdi-agent.js',
+            '--workspace',
+            '/tmp/project',
+            '--provider',
+            'echo'
+        ]);
+
+        expect(argv).toEqual([
+            'node',
+            'tsdi-agent.js',
+            'chat',
+            '--workspace',
+            '/tmp/project',
+            '--provider',
+            'echo'
+        ]);
+    }
+
+    @Test('moves explicit subcommands ahead of leading options')
+    movesExplicitSubcommandsAheadOfLeadingOptions() {
+        const argv = normalizeCliArgv([
+            'node',
+            'tsdi-agent.js',
+            '--workspace',
+            '/tmp/project',
+            'run',
+            'hello'
+        ]);
+
+        expect(argv).toEqual([
+            'node',
+            'tsdi-agent.js',
+            'run',
+            '--workspace',
+            '/tmp/project',
+            'hello'
+        ]);
     }
 
     @Test('uses persistent session and memory stores across cli app restarts')

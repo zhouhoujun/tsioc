@@ -7,6 +7,57 @@ import { AgentUiConfigService } from '@tsdi/agent-ui';
 
 const configReader = new CliAgentUiConfigReader();
 const CLI_VERSION = '6.0.31';
+const DEFAULT_COMMAND = 'chat';
+const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'tools', 'rpc-stdio', 'help']);
+const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
+const OPTION_FLAGS_WITH_VALUES = new Set([
+    '--session',
+    '--root',
+    '--workspace',
+    '--tools',
+    '--provider',
+    '--model',
+    '--base-url',
+    '--api-key',
+    '--api-key-env',
+    '--timeout'
+]);
+
+function normalizeCliArgv(argv: string[]): string[] {
+    const tail = argv.slice(2);
+    if (!tail.length) {
+        return [...argv, DEFAULT_COMMAND];
+    }
+
+    const leadingOptions: string[] = [];
+    for (let index = 0; index < tail.length; index++) {
+        const token = tail[index];
+        if (TOP_LEVEL_HELP_FLAGS.has(token)) {
+            return argv;
+        }
+        if (TOP_LEVEL_COMMANDS.has(token)) {
+            if (!leadingOptions.length || index === 0) {
+                return argv;
+            }
+            return [...argv.slice(0, 2), token, ...leadingOptions, ...tail.slice(index + 1)];
+        }
+        if (!token.startsWith('-')) {
+            return argv;
+        }
+
+        leadingOptions.push(token);
+        const flag = token.includes('=') ? token.slice(0, token.indexOf('=')) : token;
+        if (OPTION_FLAGS_WITH_VALUES.has(flag) && !token.includes('=')) {
+            const value = tail[index + 1];
+            if (value !== undefined) {
+                leadingOptions.push(value);
+            }
+            index += 1;
+        }
+    }
+
+    return [...argv.slice(0, 2), DEFAULT_COMMAND, ...tail];
+}
 
 function createAgentCli(): Command {
     const program = new Command();
@@ -99,12 +150,11 @@ function createAgentCli(): Command {
 }
 
 if (require.main === module) {
-    const argv = process.argv.length <= 2
-        ? [...process.argv, 'chat']
-        : process.argv;
+    const argv = normalizeCliArgv(process.argv);
     void createAgentCli().parseAsync(argv);
 }
 
 export {
-    createAgentCli
+    createAgentCli,
+    normalizeCliArgv
 };

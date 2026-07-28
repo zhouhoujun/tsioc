@@ -2473,6 +2473,7 @@ export class AgentConsoleComponentTest {
 
         expect(state.pendingApprovals).toEqual([]);
         expect(state.lastError).toEqual('Approval timeout');
+        expect(state.displayMessages.some(message => String(message.content || '').includes('Approval timeout'))).toEqual(false);
     }
 
     @Test('session state supports focused session list navigation')

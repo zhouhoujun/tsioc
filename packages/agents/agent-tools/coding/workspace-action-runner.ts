@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { ToolRegistry } from '@tsdi/agent';
 import { AGENT_TOOLS_OPTIONS } from '../src/tokens';
 import { AgentToolsOptions } from '../src/options';
@@ -47,7 +47,7 @@ export class ToolRegistryWorkspaceActionRunner extends WorkspaceActionRunner {
     private readonly supportedTools = new Set(DEFAULT_SUPPORTED_TOOLS);
 
     constructor(
-        private readonly tools: ToolRegistry,
+        private readonly injector: Injector,
         @Optional() @Inject(AGENT_TOOLS_OPTIONS, { defaultValue: null })
         private readonly options?: AgentToolsOptions | null
     ) {
@@ -63,16 +63,17 @@ export class ToolRegistryWorkspaceActionRunner extends WorkspaceActionRunner {
             throw new Error(`Coding action tool '${action.tool}' is not supported.`);
         }
 
-        const tool = this.tools.getTool(action.tool);
+        const tools = this.injector.get(ToolRegistry);
+        const tool = tools.getTool(action.tool);
         if (!tool) {
             throw new Error(`Coding action tool '${action.tool}' is not registered.`);
         }
 
-        if (!(await this.tools.isToolActive(context.sessionId, action.tool))) {
-            await this.tools.activateTool(context.sessionId, action.tool);
+        if (!(await tools.isToolActive(context.sessionId, action.tool))) {
+            await tools.activateTool(context.sessionId, action.tool);
         }
 
-        const output = await this.tools.invoke(
+        const output = await tools.invoke(
             action.tool,
             this.normalizeInput(action.tool, action.input),
             context.sessionId,

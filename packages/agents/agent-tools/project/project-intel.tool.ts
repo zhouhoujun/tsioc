@@ -32,7 +32,7 @@ export class ProjectIntelTool implements AgentTool {
             },
             notes: { type: 'array', items: { type: 'string' } }
         },
-        required: ['action', 'task']
+        required: ['task']
     };
     toolset = 'project';
     source = 'local';
@@ -55,6 +55,9 @@ export class ProjectIntelTool implements AgentTool {
     }
 
     private resolveAction(value: unknown): 'summary' | 'risks' | 'handoff' {
+        if (value == null || value === '') {
+            return 'summary';
+        }
         if (value !== 'summary' && value !== 'risks' && value !== 'handoff') {
             throw new Error('Invalid project_intel input: action must be summary, risks, or handoff.');
         }

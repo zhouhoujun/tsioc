@@ -202,8 +202,54 @@ export class AgentConsoleRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 5 more lines. enter open'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 5 more lines. /messages'))).toBe(true);
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
+    }
+
+    @Test('keeps the latest substantive user request visible while showing latest messages when unfocused')
+    async keepsLatestSubstantiveUserRequestVisibleWhileUnfocused() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: '第一段方案', createdAt: 2 } as any,
+            { id: 'u2', role: 'user', content: '继续', createdAt: 3 } as any,
+            { id: 'a2', role: 'assistant', content: '第二段方案', createdAt: 4 } as any,
+            { id: 'u3', role: 'user', content: '继续', createdAt: 5 } as any,
+            { id: 'a3', role: 'assistant', content: '第三段方案', createdAt: 6 } as any
+        ]);
+        await ref.render();
+        await Promise.resolve();
+
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const visibleIds = messagesPanel.instance.visibleMessages.map(message => message.id);
+
+        expect(visibleIds).toEqual(['u1', 'a2', 'u3', 'a3']);
+    }
+
+    @Test('replaces the pinned root request when a newer substantive user request appears')
+    async replacesPinnedRootRequestWhenNewerSubstantiveUserRequestAppears() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4 });
+        ref.instance.sessionState.setMessages([
+            { id: 'u1', role: 'user', content: '设计一个在线考试系统', createdAt: 1 } as any,
+            { id: 'a1', role: 'assistant', content: '第一段方案', createdAt: 2 } as any,
+            { id: 'u2', role: 'user', content: '继续', createdAt: 3 } as any,
+            { id: 'a2', role: 'assistant', content: '第二段方案', createdAt: 4 } as any,
+            { id: 'u3', role: 'user', content: '补充数据库表设计', createdAt: 5 } as any,
+            { id: 'a3', role: 'assistant', content: '第三段方案', createdAt: 6 } as any,
+            { id: 'u4', role: 'user', content: '继续', createdAt: 7 } as any,
+            { id: 'a4', role: 'assistant', content: '第四段方案', createdAt: 8 } as any,
+            { id: 'u5', role: 'user', content: '继续', createdAt: 9 } as any,
+            { id: 'a5', role: 'assistant', content: '第五段方案', createdAt: 10 } as any
+        ]);
+        await ref.render();
+        await Promise.resolve();
+
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const visibleIds = messagesPanel.instance.visibleMessages.map(message => message.id);
+
+        expect(visibleIds).toEqual(['u3', 'a4', 'u5', 'a5']);
     }
 
     @Test('renders working line with token usage while running')

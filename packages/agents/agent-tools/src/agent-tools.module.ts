@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Injector, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { ApplicationArguments } from '@tsdi/core';
 import { AgentModule } from '@tsdi/agent';
 import { AGENT_TOOLS_OPTIONS } from './tokens';
@@ -94,6 +94,22 @@ import { PollTool } from '../poll/poll.tool';
 import { AiCliTool } from '../ai-cli/ai-cli.tool';
 import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './provider';
 
+function provideCodingTaskToolFactory() {
+    return {
+        provider(injector: Injector) {
+            return [{
+                provide: CodingTaskTool,
+                useFactory: () => new CodingTaskTool(
+                    injector.get(CodingTaskStore, null),
+                    injector.get(WorkspaceActionRunner, null),
+                    injector.get(LlmTaskTool, null),
+                    injector
+                )
+            }];
+        }
+    };
+}
+
 @Module({
     imports: [AgentModule],
     providers: [
@@ -151,7 +167,7 @@ import { provideResolvedAgentToolBundles, provideResolvedAgentTools } from './pr
         CodingTaskStore,
         ToolRegistryWorkspaceActionRunner,
         { provide: WorkspaceActionRunner, useExisting: ToolRegistryWorkspaceActionRunner },
-        CodingTaskTool,
+        provideCodingTaskToolFactory(),
         ImageInfoTool,
         PdfReadTool,
         VisionAnalyzeTool,

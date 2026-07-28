@@ -15,12 +15,16 @@ export interface AgentConsoleRenderedToken extends AgentConsoleMarkdownToken {
 }
 
 export interface AgentConsoleRenderedLine {
+    messageId?: string;
+    previewCollapsed?: boolean;
     statusKind?: AgentConsoleMessageStatus;
     statusLabel?: string;
     status?: string;
     statusStyle?: Record<string, string>;
     role?: string;
     roleStyle?: Record<string, string>;
+    meta?: string;
+    metaStyle?: Record<string, string>;
     prefix?: string;
     prefixStyle?: Record<string, string>;
     content: string;
@@ -92,7 +96,10 @@ function resolveMessageRoleStyle(theme: AgentConsoleTheme, templateKind: AgentCo
         case 'user':
             return styleTextToObject(theme.statusValue);
         case 'assistant':
-            return styleTextToObject(theme.toolsAccent);
+            return {
+                ...styleTextToObject(theme.toolsAccent),
+                'font-weight': 'bold'
+            };
         case 'tool':
             return styleTextToObject(theme.toolsAccent);
         case 'error':
@@ -107,7 +114,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         templateKind: 'error',
         roleLabel: resolveMessageRoleLabel('error'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'error'),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'error'),
         lead: () => '',
         continuationLead: () => ''
     },
@@ -115,7 +122,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         templateKind: 'tool',
         roleLabel: resolveMessageRoleLabel('tool'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'tool'),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'tool'),
         lead: () => '',
         continuationLead: () => ''
     },
@@ -123,7 +130,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         templateKind: 'assistant',
         roleLabel: resolveMessageRoleLabel('assistant'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'assistant'),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'assistant'),
         lead: () => '',
         continuationLead: () => ''
     },
@@ -131,7 +138,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         templateKind: 'user',
         roleLabel: resolveMessageRoleLabel('user'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'user'),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesUser),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesUser, 'user'),
         lead: () => '',
         continuationLead: () => ''
     },
@@ -139,7 +146,7 @@ const agentConsoleMessageRenderers: AgentConsoleResolvedMessageRenderer[] = [
         templateKind: 'system',
         roleLabel: resolveMessageRoleLabel('system'),
         roleStyle: theme => resolveMessageRoleStyle(theme, 'system'),
-        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell),
+        itemStyle: (theme, rowSelected) => resolveMessageRowStyle(theme, rowSelected, theme.messagesShell, 'system'),
         lead: () => '',
         continuationLead: () => ''
     }
@@ -169,9 +176,10 @@ export function renderAgentConsoleMessageItem(
     const status = formatAgentConsoleMessageStatus(statusKind, context.statusSymbol);
     const statusStyle = resolveAgentConsoleMessageStatusStyle(theme, statusKind, rowSelected);
     const displayContent = resolveMessageDisplayContent(message, templateKind);
-    const markdownLines = message?.metadata?.streaming
+    const markdownLines = message?.metadata?.streaming || templateKind === 'user'
         ? renderAgentConsolePlainTextLines(displayContent, { compactBlankLines: true })
         : renderAgentConsoleMarkdownLines(displayContent, { compactBlankLines: true });
+    const timelineMeta = resolveTimelineMeta(message, templateKind, statusLabel);
     const fallbackLine = templateKind === 'assistant'
         ? { rawText: '', tokens: [{ text: '…' }] as AgentConsoleMarkdownToken[] }
         : { rawText: '', tokens: [] as AgentConsoleMarkdownToken[] };
@@ -195,8 +203,11 @@ export function renderAgentConsoleMessageItem(
         );
         return {
             ...rendered,
+            messageId: message?.id,
             role: isFirst ? rendered.role : rendered.role ? '  ' : '',
             roleStyle: isFirst ? rendered.roleStyle : {},
+            meta: isFirst ? timelineMeta : '',
+            metaStyle: isFirst ? resolveTimelineMetaStyle(theme, rowSelected, templateKind) : {},
             itemStyle: {
                 ...itemStyle,
                 padding: `${isFirst ? '1em' : '0'} 1ch ${isLast ? '1em' : '0'} 1ch`
@@ -322,6 +333,12 @@ export function resolveAgentConsoleMarkdownPrefixStyle(
     if (line.prefixTone === 'quote') {
         return styleTextToObject(theme.statusLabel);
     }
+    if (line.prefixTone === 'accent') {
+        return {
+            ...styleTextToObject(theme.toolsAccent),
+            'font-weight': 'bold'
+        };
+    }
     if (line.prefixTone === 'heading') {
         return {
             ...styleTextToObject(theme.toolsAccent),
@@ -382,15 +399,22 @@ function resolveMessageDisplayContent(message: AgentMessage, templateKind: Agent
 function resolveMessageRowStyle(
     theme: AgentConsoleTheme,
     rowSelected: boolean,
-    baseStyleText: string
+    baseStyleText: string,
+    templateKind: AgentConsoleMessageTemplateKind
 ): Record<string, string> {
-    const rowStyleText = rowSelected ? theme.messagesSelected : baseStyleText;
+    const rowStyleText = rowSelected
+        ? theme.messagesSelected
+        : templateKind === 'user'
+            ? baseStyleText
+            : '';
     return {
-        padding: '1em 1ch',
+        padding: '0.6em 1ch',
         display: 'block',
         'box-sizing': 'border-box',
         'white-space': 'normal',
         'overflow-wrap': 'anywhere',
+        margin: '0 0 0.25em 0',
+        'border-left': resolveMessageRailColor(templateKind),
         ...(rowStyleText ? styleTextToObject(rowStyleText) : {})
     };
 }
@@ -435,6 +459,8 @@ function buildRenderedLine(
         statusStyle,
         role: roleLead ? `${roleLead}${roleLabel}` : roleLabel,
         roleStyle: rowSelected ? {} : { ...inlineRowStyle, ...renderer.roleStyle(theme) },
+        meta: '',
+        metaStyle: {},
         prefix: line.prefix || '',
         prefixStyle: {
             ...inlineRowStyle,
@@ -462,6 +488,49 @@ function resolveAgentConsoleMessageRoleLabel(message: AgentMessage | undefined, 
     return resolveMessageRoleLabel('system');
 }
 
+function resolveTimelineMeta(
+    message: AgentMessage | undefined,
+    templateKind: AgentConsoleMessageTemplateKind,
+    statusLabel: string
+): string {
+    const parts: string[] = [];
+    const uiKind = String(message?.metadata?.uiKind || '').trim();
+    if (uiKind === 'event') {
+        const label = String(message?.metadata?.label || '').trim();
+        if (label) {
+            parts.push(label);
+        }
+    }
+    if (statusLabel && templateKind !== 'assistant') {
+        parts.push(statusLabel);
+    }
+    return parts.join(' · ');
+}
+
+function resolveTimelineMetaStyle(
+    theme: AgentConsoleTheme,
+    rowSelected: boolean,
+    templateKind: AgentConsoleMessageTemplateKind
+): Record<string, string> {
+    if (rowSelected) {
+        return {};
+    }
+    const base = styleTextToObject(theme.statusLabel);
+    if (templateKind === 'assistant') {
+        return {
+            ...base,
+            ...styleTextToObject(theme.toolsAccent)
+        };
+    }
+    if (templateKind === 'error') {
+        return {
+            ...base,
+            ...styleTextToObject(theme.statusErrorValue)
+        };
+    }
+    return base;
+}
+
 function resolveRenderedLineToneStyle(
     theme: AgentConsoleTheme,
     line: AgentConsoleRenderedLine,
@@ -482,16 +551,23 @@ function resolveRenderedLineTone(line: AgentConsoleRenderedLine): AgentConsoleMa
     return tokenTone || 'default';
 }
 
+function resolveMessageRailColor(templateKind: AgentConsoleMessageTemplateKind): string {
+    switch (templateKind) {
+        case 'assistant':
+            return '2px solid #2f81f7';
+        case 'tool':
+            return '2px solid #79c0ff';
+        case 'error':
+            return '2px solid #f85149';
+        case 'user':
+            return '2px solid #6e7681';
+        default:
+            return '2px solid #30363d';
+    }
+}
+
 function resolveInlineRowStyle(style: Record<string, string>): AgentConsoleInlineRowStyle {
     const inlineStyle: AgentConsoleInlineRowStyle = {};
-    if (style.background) {
-        inlineStyle.background = style.background;
-        inlineStyle['background-color'] = style.background;
-    }
-    if (style['background-color']) {
-        inlineStyle['background-color'] = style['background-color'];
-        inlineStyle.background = style['background-color'];
-    }
     if (style.color) {
         inlineStyle.color = style.color;
     }

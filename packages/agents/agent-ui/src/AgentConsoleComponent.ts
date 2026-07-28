@@ -24,10 +24,10 @@ import { AgentConsoleSessionService } from './AgentConsoleSessionService';
         <agent-console-brand-panel></agent-console-brand-panel>
         <agent-console-status-panel v-show="showStatusPanel"></agent-console-status-panel>
         <agent-console-sessions-panel v-show="showSessionsPanel"></agent-console-sessions-panel>
-        <agent-console-tasks-panel v-show="showTasksPanel"></agent-console-tasks-panel>
-        <agent-console-jobs-panel v-show="showJobsPanel"></agent-console-jobs-panel>
         <agent-console-approvals-panel v-show="showApprovalsPanel"></agent-console-approvals-panel>
         <agent-console-messages-panel></agent-console-messages-panel>
+        <agent-console-tasks-panel v-show="showTasksPanel"></agent-console-tasks-panel>
+        <agent-console-jobs-panel v-show="showJobsPanel"></agent-console-jobs-panel>
         <agent-console-message-detail-panel v-show="showMessageDetailPanel"></agent-console-message-detail-panel>
         <agent-console-review-panel v-show="showReviewPanel"></agent-console-review-panel>
         <agent-console-activity-panel v-show="showActivityPanel"></agent-console-activity-panel>
@@ -267,7 +267,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
     }
 
     get showTasksPanel(): boolean {
-        return this.state.tasksFocused || this.state.planTodos.length > 0;
+        return this.state.tasksFocused || this.state.hasActivePlanTodos();
     }
 
     get showJobsPanel(): boolean {

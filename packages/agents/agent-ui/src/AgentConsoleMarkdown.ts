@@ -27,12 +27,15 @@ export interface AgentConsoleMarkdownRenderOptions {
 }
 
 const INLINE_MARKDOWN_RE = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~|`([^`]+)`|\*([^*]+)\*|_([^_]+)_/g;
+const STANDALONE_STRONG_HEADING_RE = /^\s*(?:\*\*|__)([^*_`][^`]*?)(?:\*\*|__)\s*$/;
+const SHORT_HEADING_RE = /^(\s*)([^:：\n]{1,36})([:：])\s*$/;
 
 export function renderAgentConsoleMarkdownLines(
     content: string,
     options: AgentConsoleMarkdownRenderOptions = {}
 ): AgentConsoleMarkdownLine[] {
-    const sourceLines = String(content || '').replace(/\r/g, '').split('\n');
+    const normalizedContent = normalizeMarkdownStructure(content);
+    const sourceLines = String(normalizedContent || '').replace(/\r/g, '').split('\n');
     const rendered: AgentConsoleMarkdownLine[] = [];
     let inFence = false;
 
@@ -53,6 +56,8 @@ export function renderAgentConsoleMarkdownLines(
         if (inFence) {
             rendered.push({
                 rawText: sourceLine,
+                prefix: sourceLine ? '│ ' : '',
+                prefixTone: 'muted',
                 tokens: sourceLine ? [{ text: sourceLine, tone: 'code' }] : [],
                 tone: 'code',
                 code: true
@@ -80,6 +85,24 @@ function renderAgentConsoleMarkdownTextLine(sourceLine: string): AgentConsoleMar
     let prefixTone: AgentConsoleMarkdownTone | undefined;
     let tone: AgentConsoleMarkdownTone | undefined;
 
+    const strongHeadingMatch = STANDALONE_STRONG_HEADING_RE.exec(line);
+    if (strongHeadingMatch) {
+        return {
+            rawText: original,
+            tokens: tokenizeMarkdownInline(strongHeadingMatch[1].trim(), 'heading'),
+            tone: 'heading'
+        };
+    }
+
+    const shortHeadingMatch = SHORT_HEADING_RE.exec(line);
+    if (shortHeadingMatch) {
+        return {
+            rawText: original,
+            tokens: tokenizeMarkdownInline(shortHeadingMatch[2].trim(), 'heading'),
+            tone: 'heading'
+        };
+    }
+
     const headingMatch = /^(\s*)(#{1,6})\s+(.*)$/.exec(line);
     if (headingMatch) {
         prefix = headingMatch[1];
@@ -96,17 +119,20 @@ function renderAgentConsoleMarkdownTextLine(sourceLine: string): AgentConsoleMar
         } else {
             const taskMatch = /^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
             if (taskMatch) {
-                prefix = `${taskMatch[1]}[${taskMatch[2].toLowerCase() === 'x' ? 'x' : ' '}] `;
+                prefix = `${taskMatch[1]}${taskMatch[2].toLowerCase() === 'x' ? '☑' : '☐'} `;
+                prefixTone = 'accent';
                 line = taskMatch[3];
             } else {
                 const orderedMatch = /^(\s*\d+\.)\s+(.*)$/.exec(line);
                 if (orderedMatch) {
                     prefix = `${orderedMatch[1]} `;
+                    prefixTone = 'accent';
                     line = orderedMatch[2];
                 } else {
                     const bulletMatch = /^(\s*)[-*+]\s+(.*)$/.exec(line);
                     if (bulletMatch) {
-                        prefix = `${bulletMatch[1]}- `;
+                        prefix = `${bulletMatch[1]}• `;
+                        prefixTone = 'accent';
                         line = bulletMatch[2];
                     }
                 }
@@ -208,4 +234,53 @@ function compactMarkdownLines(lines: AgentConsoleMarkdownLine[]): AgentConsoleMa
         normalized.pop();
     }
     return normalized;
+}
+
+function normalizeMarkdownStructure(content: string): string {
+    const sourceLines = String(content || '').replace(/\r/g, '').split('\n');
+    const normalized: string[] = [];
+    let inFence = false;
+
+    sourceLines.forEach(sourceLine => {
+        const trimmed = sourceLine.trim();
+        if (trimmed.startsWith('```')) {
+            inFence = !inFence;
+            normalized.push(sourceLine);
+            return;
+        }
+        if (inFence) {
+            normalized.push(sourceLine);
+            return;
+        }
+
+        normalized.push(...expandInlineStructuredText(sourceLine));
+    });
+
+    return normalized.join('\n');
+}
+
+function expandInlineStructuredText(sourceLine: string): string[] {
+    const original = String(sourceLine || '');
+    if (!original.trim()) {
+        return [original];
+    }
+
+    const numberedMatches = original.match(/\d+\.\s*/g) || [];
+    if (numberedMatches.length < 2) {
+        return [original];
+    }
+
+    let line = original
+        .replace(/\s*[；;]\s*(?=\d+\.\s*)/g, '\n')
+        .replace(/\s*[，,]\s*(?=\d+\.\s*)/g, '\n');
+
+    const firstListIndex = line.search(/\d+\.\s*/);
+    if (firstListIndex > 0) {
+        const prefix = line.slice(0, firstListIndex).trimEnd();
+        if (prefix.length && prefix.length <= 24 && !/[.!?。！？]$/.test(prefix)) {
+            line = `${prefix}\n${line.slice(firstListIndex).trimStart()}`;
+        }
+    }
+
+    return line.split('\n');
 }

@@ -168,7 +168,6 @@ export class AgentConsoleEventBridge {
                         status: 'error'
                     });
                 }
-                this.state.appendAssistantErrorMessage(`${event.toolName}: ${event.error.message}`);
             });
         });
 
@@ -221,7 +220,6 @@ export class AgentConsoleEventBridge {
                 this.state.removePendingApproval(event.request.id);
                 this.state.setLastError(event.error.message);
                 this.state.pushActivity('error', `${event.request.toolName}: ${event.error.message}`);
-                this.state.appendAssistantErrorMessage(`${event.request.toolName}: ${event.error.message}`);
             });
         });
 

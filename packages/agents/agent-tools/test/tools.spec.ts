@@ -1294,6 +1294,38 @@ export class AgentToolsPackageTest {
         }
     }
 
+    @Test('provideTools wires coding task workspace runner through lazy resolution')
+    async provideToolsWiresCodingTaskWorkspaceRunnerThroughLazyResolution() {
+        const workspace = await this.createWorkspace();
+        await fs.writeFile(path.join(workspace, 'README.md'), 'hello', 'utf8');
+        const ctx = await Application.run(AgentModule, {
+            providers: [...provideTools({
+                file: { rootDir: workspace }
+            }), ...withToolTestAdapters()]
+        });
+        try {
+            const tool = ctx.get(CodingTaskTool);
+            const result = await tool.invoke({
+                action: 'run',
+                goal: 'Inspect workspace contents',
+                actions: [
+                    {
+                        id: 'list-root',
+                        title: 'List root directory',
+                        tool: 'list_dir',
+                        input: { path: '.' }
+                    }
+                ]
+            }, createSessionContext({ sessionId: 's1' }));
+
+            expect(result.ran).toEqual(true);
+            expect(result.task?.actions?.[0]?.status).toEqual('completed');
+            expect(result.task?.actions?.[0]?.result?.output?.entries?.some((entry: any) => entry?.name === 'README.md')).toEqual(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('provideTools expose filesystem metadata tools through defaults and module options')
     async provideToolsExposeFilesystemMetadataToolsThroughDefaultsAndModuleOptions() {
         const workspace = await this.createWorkspace();
@@ -1752,6 +1784,12 @@ export class AgentToolsPackageTest {
         }, createSessionContext());
         expect(risks.action).toEqual('risks');
         expect(risks.highlights.length).toBeGreaterThan(0);
+
+        const defaultSummary = await tool.invoke({
+            task: 'Document the architecture handoff'
+        }, createSessionContext());
+        expect(defaultSummary.action).toEqual('summary');
+        expect(defaultSummary.highlights[0]).toContain('Task:');
 
         let actionError: Error | undefined;
         try {

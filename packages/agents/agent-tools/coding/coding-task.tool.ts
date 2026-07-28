@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import { AgentTool, AgentToolContext } from '@tsdi/agent';
-import { Injectable, Optional } from '@tsdi/ioc';
+import { Inject, Injectable, Injector, Optional } from '@tsdi/ioc';
 import { LlmTaskTool } from '../llm/llm-task.tool';
 import {
     CodingTaskActionRecord,
@@ -104,19 +104,22 @@ export class CodingTaskTool implements AgentTool {
         authorization: { requiredPrincipals: ['local-system'], allowLocalAnonymous: true }
     };
     private readonly store: CodingTaskStore;
-    private readonly runner?: WorkspaceActionRunner | null;
+    private runner?: WorkspaceActionRunner | null;
     private readonly llmTool?: LlmTaskTool | null;
+    private readonly injector?: Injector | null;
     private static readonly WORKTREE_FILE_TOOLS = new Set(['read_file', 'write_file', 'edit_file', 'list_dir', 'stat', 'mkdir', 'delete_file', 'move_file', 'copy_file']);
     private static readonly WORKTREE_WORKDIR_TOOLS = new Set(['terminal', 'git_operations', 'ai_cli']);
 
     constructor(
         @Optional() store?: CodingTaskStore | null,
         @Optional() runner?: WorkspaceActionRunner | null,
-        @Optional() llmTool?: LlmTaskTool | null
+        @Optional() llmTool?: LlmTaskTool | null,
+        @Optional() @Inject() injector?: Injector | null
     ) {
         this.store = store ?? new CodingTaskStore();
         this.runner = runner;
         this.llmTool = llmTool;
+        this.injector = injector;
     }
 
     async invoke(input: any, context: AgentToolContext): Promise<any> {
@@ -689,6 +692,9 @@ export class CodingTaskTool implements AgentTool {
     }
 
     private requireRunner(): WorkspaceActionRunner {
+        if (!this.runner && this.injector) {
+            this.runner = this.injector.get(WorkspaceActionRunner, null);
+        }
         if (!this.runner) {
             throw new Error('Workspace action runner is not configured for coding_task.');
         }

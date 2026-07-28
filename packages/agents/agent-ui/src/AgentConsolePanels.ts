@@ -53,6 +53,7 @@ import {
 const CONSOLE_BASE_IMPORTS = [DivDirective, LabelComponent, SpanDirective, BrDirective];
 const CONSOLE_FORM_IMPORTS = [TuiTextareaComponent, TuiSelectComponent, ...CONSOLE_BASE_IMPORTS];
 const COLLAPSED_MESSAGE_PREVIEW_LINES = 8;
+const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
 function resolvePanelThemeStyles(state?: AgentConsoleSessionState, theme?: AgentConsoleTheme): AgentConsoleThemeStyles {
     return state?.themeStyles || resolveAgentConsoleThemeStyles(theme || defaultAgentConsoleTheme);
@@ -1634,7 +1635,7 @@ export class AgentConsoleSystemMessageItemComponent extends AgentConsoleMessageI
         <label class="message-empty" v-style="emptyStyle" v-show="emptyLabel">{{emptyLabel}}</label>
         <label class="message-hint" v-style="titleStyle" v-show="messagesHintLabel">{{messagesHintLabel}}</label>
         <div class="message-row" v-for="line in renderedLines">
-            <label class="message-line" v-style="line.itemStyle">
+            <label class="message-line" v-style="line.itemStyle" @click="onMessageLineClick(line)">
                 <span v-style="line.statusStyle">{{line.status}}</span>
                 <span v-style="line.roleStyle" v-show="line.role">{{line.role}}</span>
                 <span v-style="line.metaStyle" v-show="line.meta">{{line.meta}}</span>
@@ -1681,8 +1682,18 @@ export class AgentConsoleMessagesPanelComponent {
 
     get visibleMessages(): Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }> {
         const messages = this.messages;
+        const visibleCount = this.state.consoleOptions.messagesVisibleItems;
+        if (!this.state.messagesFocused && !this.state.messageDetailOpen && messages.length > visibleCount) {
+            const pinnedIndex = this.resolvePinnedRootMessageIndex(messages);
+            if (pinnedIndex >= 0 && pinnedIndex < messages.length - visibleCount) {
+                return [
+                    messages[pinnedIndex],
+                    ...messages.slice(messages.length - Math.max(visibleCount - 1, 0))
+                ];
+            }
+        }
         const selectedIndex = Math.max(0, messages.findIndex(message => message.id === this.state.selectedMessageId));
-        const window = resolveConsoleListWindow(messages.length, selectedIndex, this.state.consoleOptions.messagesVisibleItems);
+        const window = resolveConsoleListWindow(messages.length, selectedIndex, visibleCount);
         return messages.slice(window.start, window.start + window.count);
     }
 
@@ -1747,6 +1758,23 @@ export class AgentConsoleMessagesPanelComponent {
         return this.messageLabels.join(' | ');
     }
 
+    onMessageLineClick(line?: AgentConsoleRenderedLine): void {
+        const messageId = String(line?.messageId || '').trim();
+        if (!messageId) {
+            return;
+        }
+        const sameMessageSelected = this.state.selectedMessageId === messageId;
+        this.state.setSelectedMessageId(messageId);
+        if (!line?.previewCollapsed) {
+            return;
+        }
+        if (sameMessageSelected && this.state.messageDetailOpen) {
+            this.state.closeMessageDetail();
+            return;
+        }
+        this.state.openMessageDetail();
+    }
+
     protected get renderedMessageItems(): AgentConsoleRenderedMessageItem[] {
         if (this.state.messagesFocused || this.state.messageDetailOpen) {
             return this.messageItems;
@@ -1761,13 +1789,15 @@ export class AgentConsoleMessagesPanelComponent {
         const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
         const hiddenCount = item.lines.length - lines.length + 1;
         const baseLine = lines[lines.length - 1];
-        const previewText = `… ${hiddenCount} more lines. enter open`;
+        const previewText = `… ${hiddenCount} more lines. /messages`;
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
+            cursor: 'pointer',
             ...resolveAgentConsoleMarkdownToneStyle('muted', this.activeTheme, item.templateKind)
         };
         lines[lines.length - 1] = {
             ...baseLine,
+            previewCollapsed: true,
             prefix: '',
             prefixStyle: {},
             content: previewText,
@@ -1782,6 +1812,32 @@ export class AgentConsoleMessagesPanelComponent {
             ...item,
             lines
         };
+    }
+
+    protected resolvePinnedRootMessageIndex(
+        messages: Array<{ id?: string; role?: string; content: string; metadata?: Record<string, any> }>
+    ): number {
+        for (let index = messages.length - 1; index >= 0; index--) {
+            const message = messages[index];
+            if (String(message?.role || '').toLowerCase() !== 'user') {
+                continue;
+            }
+            if (this.isRootRequestCandidate(message?.content)) {
+                return index;
+            }
+        }
+        return messages.findIndex(message => String(message?.role || '').toLowerCase() === 'user');
+    }
+
+    protected isRootRequestCandidate(content: string | undefined): boolean {
+        const text = String(content || '').trim();
+        if (!text) {
+            return false;
+        }
+        if (text.startsWith('/')) {
+            return false;
+        }
+        return !FOLLOW_UP_ONLY_MESSAGE_RE.test(text);
     }
 
     protected resolveMarkdownToneStyle(tone: AgentConsoleMarkdownTone): Record<string, string> {
