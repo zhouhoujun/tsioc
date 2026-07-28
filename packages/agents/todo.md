@@ -330,6 +330,69 @@
 - `M2` 和 `M4` 适合先定协议和数据模型，再做 UI
 - `M5` 适合最后统一收口，避免过早冻结策略
 
+## Backlog 草案
+
+下面这组票可以直接作为 backlog 初稿使用。
+
+状态约定：
+
+- `[ ]` 未开始
+- `[-]` 进行中
+- `[x]` 已完成
+
+### M1 上下文压缩
+
+- `[ ]` `AGENT-M1-ARCH`：定义 compaction strategy，包括触发条件、保留窗口、摘要结构、tool output 保留规则
+- `[ ]` `AGENT-M1-RUNTIME-1`：在 `AgentContextManager` 中实现最近消息窗口与远端摘要窗口分层保留
+- `[ ]` `AGENT-M1-RUNTIME-2`：为 `LLMSessionSummarizer` 增加结构化摘要 schema 与稳定字段约束
+- `[ ]` `AGENT-M1-RUNTIME-3`：为大体积 tool output 引入按类型裁剪与摘要策略
+- `[ ]` `AGENT-M1-TEST`：补长会话 regression 用例，覆盖多轮 `继续`、工具失败、回滚、追问
+- `[ ]` `AGENT-M1-OBS`：补压缩指标采集，包括压缩次数、token 变化、空响应率、重复提问率
+
+### M2 多 Agent 编排
+
+- `[ ]` `AGENT-M2-ARCH`：定义主 agent / worker agent delegation payload 与 result schema
+- `[ ]` `AGENT-M2-RUNTIME-1`：让 `spawn_agent` 输出标准化 summary / diff / artifact / next-step
+- `[ ]` `AGENT-M2-RUNTIME-2`：为主 agent 增加多 worker 结果聚合与失败隔离策略
+- `[ ]` `AGENT-M2-RUNTIME-3`：为并行 worker 增加重试与超时回收机制
+- `[ ]` `AGENT-M2-UI`：在 review / tasks 面板展示 worker 数量、状态、摘要与失败原因
+- `[ ]` `AGENT-M2-TEST`：补并行 delegation 集成测试，覆盖部分失败与重试场景
+
+### M3 Diff Review UI
+
+- `[ ]` `AGENT-M3-ARCH`：定义 review panel 的 diff 数据模型、导航结构与筛选维度
+- `[ ]` `AGENT-M3-UI-1`：支持文件级 diff 导航，不再只停留在摘要文本
+- `[ ]` `AGENT-M3-UI-2`：支持按 worker / 文件 / patch 分组浏览
+- `[ ]` `AGENT-M3-UI-3`：集中展示 review 结论、风险提示与回滚入口
+- `[ ]` `AGENT-M3-UI-4`：增加“仅看新增”“仅看失败任务”“仅看可回滚任务”等过滤能力
+- `[ ]` `AGENT-M3-TEST`：补大 diff 渲染性能与交互回归测试
+
+### M4 项目主线与跨会话组织
+
+- `[ ]` `AGENT-M4-ARCH`：定义 project / session / thread 元数据模型与归类规则
+- `[ ]` `AGENT-M4-STORE`：为 session store 增加 project-level 索引能力
+- `[ ]` `AGENT-M4-UI-1`：在 UI 中支持同项目相关 session 聚合浏览
+- `[ ]` `AGENT-M4-UI-2`：让 summary / todo / review 可以按项目主线聚合展示
+- `[ ]` `AGENT-M4-TEST`：补多主题切换、跨 session 聚合与兼容性测试
+
+### M5 Prompt Cache 与 Sandbox
+
+- `[ ]` `AGENT-M5-ARCH`：定义统一 cache policy 与 sandbox capability matrix
+- `[ ]` `AGENT-M5-RUNTIME-1`：为 runtime 增加统一 prompt cache 配置层
+- `[ ]` `AGENT-M5-RUNTIME-2`：为不同工具类型定义默认 sandbox policy
+- `[ ]` `AGENT-M5-RUNTIME-3`：把 provider 差异映射到统一观测与策略层
+- `[ ]` `AGENT-M5-TEST`：补 terminal / git / ai_cli / process / code execution 兼容矩阵
+
+### 已完成的近期修复
+
+- `[x]` 长消息折叠提示从 `enter open` 改成 `/messages`，避免误导用户在输入框里继续输入
+- `[x]` 折叠消息支持点击直接展开 / 收起 detail
+- `[x]` tool failure / approval failure 不再污染主 assistant transcript
+- `[x]` 无焦点消息列表保留“最近的有效用户主请求”，避免连续 `继续` 把原始需求顶掉
+- `[x]` 针对纯设计 / 方案类请求，prompt 避免不必要地调用 `todo` / `project_intel`
+- `[x]` `project_intel` 在未传 `action` 时默认回退到 `summary`
+- `[x]` `simples/todo.md` 已迁移为 `packages/agents/todo.md`
+
 ## 当前结论
 
 `@tsdi/agents` 已经跨过“只有基础工具能力”的阶段。
