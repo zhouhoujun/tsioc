@@ -24,6 +24,7 @@ export interface DelegatedAgentReport {
 
 export interface NestedAgentRunResult {
     content: string;
+    sessionId?: string;
     turnCount: number;
     toolCalls: number;
     model?: string;
@@ -112,15 +113,20 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
     }
 
     override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+        const sessionId = `spawn-${randomUUID()}`;
         const result = await this.requireRunner().run({
             prompt: buildSubAgentPrompt(input),
-            sessionId: `spawn-${randomUUID()}`,
+            sessionId,
             toolsets: input.toolsets
         });
         return {
             output: result.content,
+            sessionId: result.sessionId ?? sessionId,
             turnCount: result.turnCount,
             toolCalls: result.toolCalls,
+            model: result.model,
+            finishReason: result.finishReason,
+            usage: result.usage,
             report: result.report ?? parseDelegatedAgentReport(result.content)
         };
     }

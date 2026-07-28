@@ -16,8 +16,12 @@ export interface SpawnAgentInput {
 export interface SpawnAgentResult {
     output: string;
     error?: string;
+    sessionId?: string;
     turnCount?: number;
     toolCalls?: number;
+    model?: string;
+    finishReason?: string;
+    usage?: Record<string, any>;
     report?: import('../src/nested-agent-runner').DelegatedAgentReport;
 }
 
@@ -69,8 +73,12 @@ export class SpawnAgentTool implements AgentTool {
             goal,
             output: result.output,
             error: result.error,
+            sessionId: result.sessionId,
             turnCount: result.turnCount,
             toolCalls: result.toolCalls,
+            model: result.model,
+            finishReason: result.finishReason,
+            usage: result.usage,
             report: result.report
         };
     }

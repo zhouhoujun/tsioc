@@ -2917,8 +2917,12 @@ export class AgentToolsPackageTest {
 
         const tool = new SpawnAgentTool(new MockAdapter(async () => ({
             output: 'done',
+            sessionId: 'spawn-1',
             turnCount: 2,
             toolCalls: 3,
+            model: 'mock-model',
+            finishReason: 'stop',
+            usage: { promptTokens: 10 },
             report: {
                 summary: 'done',
                 completed: ['analyze'],
@@ -2930,8 +2934,12 @@ export class AgentToolsPackageTest {
         const result = await tool.invoke({ goal: 'test task', context: 'some context', toolsets: ['filesystem', 'web'], maxTurns: 5 }, createSessionContext());
         expect(result.goal).toEqual('test task');
         expect(result.output).toEqual('done');
+        expect(result.sessionId).toEqual('spawn-1');
         expect(result.turnCount).toEqual(2);
         expect(result.toolCalls).toEqual(3);
+        expect(result.model).toEqual('mock-model');
+        expect(result.finishReason).toEqual('stop');
+        expect(result.usage?.promptTokens).toEqual(10);
         expect(result.report?.summary).toEqual('done');
         expect(result.report?.nextSteps).toEqual(['review']);
         expect(result.report?.artifacts).toEqual(['patch.diff']);
@@ -2947,8 +2955,12 @@ export class AgentToolsPackageTest {
 
     @Test('shared spawn adapter delegates through nested agent runner')
     async sharedSpawnAdapterDelegatesThroughNestedAgentRunner() {
+        let seenSessionId = '';
         const adapter = new DelegatingSpawnAgentAdapter({
-            run: async (request) => ({
+            run: async (request) => {
+                seenSessionId = request.sessionId || '';
+                return {
+                sessionId: request.sessionId,
                 content: [
                     request.prompt,
                     '',
@@ -2958,10 +2970,13 @@ export class AgentToolsPackageTest {
                     'Risks: duplicate analysis, stale context',
                     'Artifacts: diff.patch, notes.md'
                 ].join('\n'),
+                model: 'mock',
+                finishReason: 'end',
+                usage: { promptTokens: 12 },
                 turnCount: 1,
-                toolCalls: 2,
-                model: 'mock'
-            })
+                toolCalls: 2
+                };
+            }
         } as NestedAgentRunner);
 
         const result = await adapter.spawn({
@@ -2972,8 +2987,13 @@ export class AgentToolsPackageTest {
 
         expect(result.output).toContain('analyze project');
         expect(result.output).toContain('focus on risks');
+        expect(result.sessionId).toContain('spawn-');
+        expect(seenSessionId).toEqual(result.sessionId);
         expect(result.turnCount).toBe(1);
         expect(result.toolCalls).toBe(2);
+        expect(result.model).toEqual('mock');
+        expect(result.finishReason).toEqual('end');
+        expect(result.usage?.promptTokens).toEqual(12);
         expect(result.report?.summary).toContain('analyzed the project structure');
         expect(result.report?.nextSteps).toEqual(['update review summary', 'split workers']);
         expect(result.report?.artifacts).toEqual(['diff.patch', 'notes.md']);
