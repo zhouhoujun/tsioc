@@ -1,5 +1,26 @@
 export type AgentModelComplexity = 'simple' | 'moderate' | 'complex';
 
+export type AgentPromptCacheStrategy = 'auto' | 'ephemeral' | 'persistent';
+export type AgentPromptCacheScope = 'system' | 'summary' | 'memory';
+
+export interface AgentPromptCachePolicy {
+    enabled?: boolean;
+    strategy?: AgentPromptCacheStrategy;
+    scopes?: AgentPromptCacheScope[];
+    minContentChars?: number;
+    ttlSeconds?: number;
+}
+
+export interface ResolvedAgentPromptCachePolicy {
+    enabled: boolean;
+    strategy: AgentPromptCacheStrategy;
+    scopes: AgentPromptCacheScope[];
+    minContentChars?: number;
+    ttlSeconds?: number;
+}
+
+export type AgentPromptCacheConfig = boolean | AgentPromptCachePolicy;
+
 export interface AgentModelConfig {
     provider?: string;
     model?: string;
@@ -12,7 +33,7 @@ export interface AgentModelConfig {
     headers?: Record<string, string>;
     thinkingBudget?: number;
     reasoning?: boolean;
-    promptCache?: boolean;
+    promptCache?: AgentPromptCacheConfig;
 }
 
 export interface AgentModelRouteWhen {
@@ -37,5 +58,27 @@ export interface AgentModelOptions extends AgentModelConfig {
     complexityThresholds?: {
         simpleMaxScore?: number;
         moderateMaxScore?: number;
+    };
+}
+
+const DEFAULT_PROMPT_CACHE_SCOPES: AgentPromptCacheScope[] = ['system', 'summary', 'memory'];
+
+export function resolvePromptCachePolicy(config?: AgentPromptCacheConfig): ResolvedAgentPromptCachePolicy {
+    if (typeof config === 'boolean') {
+        return {
+            enabled: config,
+            strategy: 'auto',
+            scopes: DEFAULT_PROMPT_CACHE_SCOPES.slice()
+        };
+    }
+    const normalizedScopes = Array.isArray(config?.scopes) && config!.scopes.length
+        ? Array.from(new Set(config!.scopes))
+        : DEFAULT_PROMPT_CACHE_SCOPES.slice();
+    return {
+        enabled: config?.enabled !== false,
+        strategy: config?.strategy || 'auto',
+        scopes: normalizedScopes,
+        minContentChars: config?.minContentChars,
+        ttlSeconds: config?.ttlSeconds
     };
 }

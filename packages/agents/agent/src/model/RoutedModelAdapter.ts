@@ -234,7 +234,8 @@ export class RoutedModelAdapter extends ModelAdapter {
             maxTokens: source.maxTokens,
             headers: source.headers ? { ...source.headers } : undefined,
             thinkingBudget: source.thinkingBudget,
-            reasoning: source.reasoning
+            reasoning: source.reasoning,
+            promptCache: source.promptCache
         };
     }
 

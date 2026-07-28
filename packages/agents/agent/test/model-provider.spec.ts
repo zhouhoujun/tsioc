@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { After, Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { AgentModule, ModelAdapter, OpenAICompatibleModelAdapter, RoutedModelAdapter, provideAgent } from '../src';
+import { AgentModule, ModelAdapter, OpenAICompatibleModelAdapter, RoutedModelAdapter, provideAgent, resolvePromptCachePolicy } from '../src';
 
 @Suite('Agent model providers')
 export class ModelProviderTest {
@@ -115,6 +115,27 @@ export class ModelProviderTest {
         expect(result.providers?.length).toBeGreaterThan(0);
     }
 
+    @Test('resolves prompt cache policy from legacy and structured config')
+    resolvesPromptCachePolicy() {
+        expect(resolvePromptCachePolicy(true)).toEqual({
+            enabled: true,
+            strategy: 'auto',
+            scopes: ['system', 'summary', 'memory']
+        });
+        expect(resolvePromptCachePolicy({
+            enabled: true,
+            strategy: 'ephemeral',
+            scopes: ['system'],
+            minContentChars: 120
+        })).toEqual({
+            enabled: true,
+            strategy: 'ephemeral',
+            scopes: ['system'],
+            minContentChars: 120,
+            ttlSeconds: undefined
+        });
+    }
+
     @Test('routes complex prompts to claude profile')
     async routesComplexPromptsToClaude() {
         const calls: Array<{ url: string; body: any }> = [];
@@ -193,6 +214,71 @@ export class ModelProviderTest {
         expect((result.metadata?.usage as any).cachedPromptTokens).toEqual(4);
         expect(result.metadata?.routing?.complexity).toEqual('complex');
         expect(result.metadata?.routing?.profile).toEqual('claude');
+    }
+
+    @Test('supports structured prompt cache policy on anthropic routes')
+    async supportsStructuredPromptCachePolicyOnAnthropicRoutes() {
+        const calls: Array<{ url: string; body: any }> = [];
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            calls.push({ url, body: JSON.parse(init.body) });
+            return {
+                ok: true,
+                async json() {
+                    return {
+                        id: 'msg_1',
+                        type: 'message',
+                        role: 'assistant',
+                        content: [{ type: 'text', text: 'claude answer' }],
+                        model: 'claude-sonnet-4-20250514',
+                        stop_reason: 'end_turn',
+                        stop_sequence: null,
+                        usage: { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 2 }
+                    };
+                }
+            };
+        };
+
+        const adapter = new RoutedModelAdapter({
+            provider: 'deepseek',
+            model: 'deepseek-v4-flash',
+            baseUrl: 'https://deepseek.example',
+            apiKey: 'deepseek-key',
+            profiles: {
+                claude: {
+                    provider: 'claude',
+                    model: 'claude-sonnet-4-20250514',
+                    baseUrl: 'https://anthropic.example',
+                    apiKey: 'anthropic-key',
+                    promptCache: {
+                        enabled: true,
+                        strategy: 'ephemeral',
+                        scopes: ['system'],
+                        minContentChars: 10
+                    }
+                }
+            },
+            complexityRouting: {
+                complex: 'claude'
+            }
+        });
+
+        await adapter.complete({
+            sessionId: 's1',
+            summary: 'stable project context',
+            memory: [],
+            tools: [],
+            messages: [{
+                id: 'u1',
+                role: 'user',
+                content: '请分析这个多阶段分布式系统的架构权衡、根因排查路径以及迁移方案，并给出详细的推理步骤。',
+                createdAt: 1
+            }]
+        });
+
+        expect(calls[0].url).toEqual('https://anthropic.example/v1/messages');
+        expect(Array.isArray(calls[0].body.system)).toEqual(true);
+        expect(calls[0].body.system[0].cache_control.type).toEqual('ephemeral');
     }
 
     @Test('routes keyword matched prompts to hermes openai compatible provider')

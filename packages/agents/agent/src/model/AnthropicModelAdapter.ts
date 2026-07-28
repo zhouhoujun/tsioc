@@ -4,6 +4,7 @@ import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
 import { AgentModelOptions } from './ModelProviderOptions';
+import { resolvePromptCachePolicy } from './PromptCachePolicy';
 
 interface AnthropicContentBlock {
     type: 'text' | 'tool_use' | 'tool_result';
@@ -293,6 +294,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
     private buildBody(request: ModelRequest): AnthropicRequestBody {
         const systemParts: string[] = [];
+        const promptCache = resolvePromptCachePolicy(this.options.promptCache);
         if (request.summary) {
             systemParts.push(`Session summary:\n${request.summary}`);
         }
@@ -317,7 +319,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
         if (systemParts.length) {
             const text = systemParts.join('\n\n');
-            body.system = this.options.promptCache
+            body.system = this.shouldCacheSystemPrompt(text, promptCache)
                 ? [{ type: 'text', text, cache_control: { type: 'ephemeral' } }]
                 : text;
         }
@@ -339,6 +341,26 @@ export class AnthropicModelAdapter extends ModelAdapter {
         }
 
         return body;
+    }
+
+    private shouldCacheSystemPrompt(
+        text: string,
+        policy = resolvePromptCachePolicy(this.options.promptCache)
+    ): boolean {
+        if (!policy.enabled) {
+            return false;
+        }
+        if (!policy.scopes.some(scope => scope === 'system' || scope === 'summary' || scope === 'memory')) {
+            return false;
+        }
+        const normalized = String(text || '').trim();
+        if (!normalized) {
+            return false;
+        }
+        if (policy.minContentChars && normalized.length < policy.minContentChars) {
+            return false;
+        }
+        return true;
     }
 
     // ── message mapping ────────────────────────────────────────────────
