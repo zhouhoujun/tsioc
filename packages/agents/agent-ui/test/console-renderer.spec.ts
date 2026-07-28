@@ -442,6 +442,7 @@ export class AgentConsoleRendererTest {
             const ref = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
             ref.instance.sessionState.setTaskRecords([{
                 id: 'task-1',
+                sourceSessionId: 'chat-b',
                 title: 'Patch handlers',
                 status: 'completed',
                 result: {
@@ -464,9 +465,15 @@ export class AgentConsoleRendererTest {
                     { title: 'Review diff', status: 'completed', tool: 'git_operations' }
                 ]
             } as any]);
+            ref.instance.sessionState.setProjectContext({
+                projectLabel: 'exam-system',
+                projectSummary: 'latest project summary',
+                projectSessionCount: 2
+            });
             ref.instance.sessionState.setReviewTasks([{
                 id: 'task-1',
                 title: 'Patch handlers',
+                sourceSessionId: 'chat-b',
                 status: 'completed',
                 executionMode: 'parallel',
                 workerCount: 1,
@@ -481,6 +488,8 @@ export class AgentConsoleRendererTest {
             const tasksPanel = ref.hostView.query(AgentConsoleTasksPanelComponent) as ComponentRef<AgentConsoleTasksPanelComponent>;
             expect(tasksPanel.instance.tasksSummaryLabel.includes('tasks 1')).toBe(true);
             expect(tasksPanel.instance.taskListLabel.includes('Patch handlers')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('summary latest project summary')).toBe(true);
+            expect(tasksPanel.instance.selectedTaskDetailLabel.includes('session chat-b')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('rollback available')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('checkpoints 1 total')).toBe(true);
             expect(tasksPanel.instance.selectedTaskDetailLabel.includes('1.')).toBe(true);

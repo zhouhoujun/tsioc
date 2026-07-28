@@ -250,7 +250,9 @@ class AppRpcStub {
     modelProfiles?: any[];
     streamChunks?: any[];
     todoPlan?: any[];
+    todoPlanBySession = new Map<string, any[]>();
     codingTasks?: any[];
+    codingTasksBySession = new Map<string, any[]>();
     codingTaskDetails = new Map<string, any>();
     codingTaskDiffs = new Map<string, any>();
     calls: Array<{ method: string; params?: any; context?: any }> = [];
@@ -275,7 +277,7 @@ class AppRpcStub {
             };
         }
         if (method === 'todo.get') {
-            const todos = this.todoPlan || [];
+            const todos = this.todoPlanBySession.get(params?.sessionId) || this.todoPlan || [];
             return {
                 sessionId: params?.sessionId || 'console',
                 todos,
@@ -289,10 +291,11 @@ class AppRpcStub {
             };
         }
         if (method === 'coding_task.list') {
+            const tasks = this.codingTasksBySession.get(params?.sessionId) || this.codingTasks || [];
             return {
                 sessionId: params?.sessionId || 'console',
-                tasks: this.codingTasks || [],
-                total: (this.codingTasks || []).length
+                tasks,
+                total: tasks.length
             };
         }
         if (method === 'coding_task.get') {
@@ -3038,6 +3041,92 @@ export class AgentConsoleComponentTest {
             { id: 'chat-c', projectKey: 'workspace:/tmp/project-c', projectLabel: '/tmp/project-c' }
         ]);
         expect(component.sessionState.sessionsFocused).toEqual(true);
+    }
+
+    @Test('openSession aggregates project summary, todo, and coding tasks across related sessions')
+    async openSessionAggregatesProjectArtifactsAcrossSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [{
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            label: 'exam-system',
+            workspace: '/tmp/project-a',
+            sessionCount: 2,
+            lastActiveAt: 20,
+            sessions: [
+                { id: 'chat-b', workspace: '/tmp/project-b', summary: 'latest project summary', messageCount: 3, lastActiveAt: 20 },
+                { id: 'chat-a', workspace: '/tmp/project-a', summary: 'older summary', messageCount: 2, lastActiveAt: 10 }
+            ]
+        }];
+        const appRpc = new AppRpcStub();
+        appRpc.todoPlanBySession.set('chat-a', [{ id: 'todo-a', content: 'done item', status: 'completed' }]);
+        appRpc.todoPlanBySession.set('chat-b', [{ id: 'todo-b', content: 'active item', status: 'in_progress' }]);
+        appRpc.codingTasksBySession.set('chat-a', [{ id: 'task-a', title: 'Task A', updatedAt: 10, status: 'completed' }]);
+        appRpc.codingTasksBySession.set('chat-b', [{ id: 'task-b', title: 'Task B', updatedAt: 20, status: 'running' }]);
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+        await (component as any).openSession('chat-a');
+
+        expect(component.sessionState.projectLabel).toEqual('exam-system');
+        expect(component.sessionState.projectSummary).toEqual('latest project summary');
+        expect(component.sessionState.planTodos.map(item => item.id)).toEqual(['todo-b']);
+        expect(component.sessionState.planTodoSourceSessionId).toEqual('chat-b');
+        expect(component.sessionState.reviewTaskChoices.map(item => ({
+            id: item.id,
+            sourceSessionId: item.sourceSessionId
+        }))).toEqual([
+            { id: 'task-b', sourceSessionId: 'chat-b' },
+            { id: 'task-a', sourceSessionId: 'chat-a' }
+        ]);
+    }
+
+    @Test('review requests use the source session for aggregated project tasks')
+    async reviewRequestsUseTheSourceSessionForAggregatedProjectTasks() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [{
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            label: 'exam-system',
+            workspace: '/tmp/project-a',
+            sessionCount: 2,
+            lastActiveAt: 20,
+            sessions: [
+                { id: 'chat-a', workspace: '/tmp/project-a', messageCount: 2, lastActiveAt: 10 },
+                { id: 'chat-b', workspace: '/tmp/project-b', messageCount: 3, lastActiveAt: 20 }
+            ]
+        }];
+        const appRpc = new AppRpcStub();
+        appRpc.codingTasksBySession.set('chat-a', []);
+        appRpc.codingTasksBySession.set('chat-b', [{
+            id: 'task-b',
+            title: 'Task B',
+            updatedAt: 20,
+            status: 'running'
+        }]);
+        appRpc.codingTaskDetails.set('task-b', {
+            id: 'task-b',
+            title: 'Task B',
+            sourceSessionId: 'chat-b',
+            status: 'running'
+        });
+        appRpc.codingTaskDiffs.set('task-b', {
+            sessionId: 'chat-b',
+            taskId: 'task-b',
+            executionMode: 'parallel',
+            diff: { summary: 'Aggregated diff' },
+            workers: []
+        });
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService, appRpc);
+        await (component as any).openSession('chat-a');
+        await (component as any).openCodingTaskReview('task-b');
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.diff' && call.params?.sessionId === 'chat-b' && call.params?.taskId === 'task-b')).toEqual(true);
+        expect(component.sessionState.reviewTask?.sourceSessionId).toEqual('chat-b');
     }
 
     @Test('session state supports focused message list navigation')

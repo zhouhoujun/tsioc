@@ -114,6 +114,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         const groupedSessions = this.flattenProjectSessions(groups);
         if (groupedSessions.length) {
             this.state.setSessions(groupedSessions);
+            this.refreshProjectContext();
             return;
         }
         const sessions = await this.sessionService.listSessions(this.state.sessionId);
@@ -126,9 +127,11 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             workspace: item.workspace,
             updatedAt: item.lastActiveAt,
             messageCount: item.messageCount,
+            summary: item.summary,
             projectId: item.projectId,
             projectLabel: item.projectId || item.workspace
         })));
+        this.refreshProjectContext();
     }
 
     protected flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]): Array<{
@@ -137,6 +140,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         workspace?: string;
         updatedAt?: number;
         messageCount?: number;
+        summary?: string;
         projectKey?: string;
         projectId?: string;
         projectLabel?: string;
@@ -153,12 +157,73 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
                 workspace: item.workspace || group.workspace,
                 updatedAt: item.lastActiveAt,
                 messageCount: item.messageCount,
+                summary: item.summary,
                 projectKey,
                 projectId,
                 projectLabel,
                 projectSessionCount: group.sessionCount
             }));
         });
+    }
+
+    protected refreshProjectContext(): void {
+        const projectSessions = this.resolveCurrentProjectSessions();
+        if (!projectSessions.length) {
+            this.state.setProjectContext();
+            return;
+        }
+        const anchor = projectSessions.find(item => item.id === this.state.sessionId)
+            || projectSessions.find(item => item.current)
+            || projectSessions[0];
+        const summary = projectSessions
+            .map(item => String(item.summary || '').trim())
+            .find(Boolean) || '';
+        this.state.setProjectContext({
+            projectKey: anchor?.projectKey,
+            projectLabel: anchor?.projectLabel || anchor?.projectId || anchor?.workspace || anchor?.id,
+            projectSummary: summary,
+            projectSessionCount: anchor?.projectSessionCount || projectSessions.length
+        });
+    }
+
+    protected resolveCurrentProjectSessions(): Array<{
+        id: string;
+        current: boolean;
+        workspace?: string;
+        updatedAt?: number;
+        messageCount?: number;
+        summary?: string;
+        projectKey?: string;
+        projectId?: string;
+        projectLabel?: string;
+        projectSessionCount?: number;
+    }> {
+        const anchor = this.state.sessions.find(item => item.id === this.state.sessionId)
+            || this.state.sessions.find(item => item.current)
+            || this.state.sessions[0];
+        if (!anchor) {
+            return [];
+        }
+        const projectKey = String(anchor.projectKey || '').trim();
+        if (projectKey) {
+            return this.state.sessions.filter(item => String(item.projectKey || '').trim() === projectKey);
+        }
+        const workspace = String(anchor.workspace || '').trim();
+        if (workspace) {
+            return this.state.sessions.filter(item => String(item.workspace || '').trim() === workspace);
+        }
+        return [anchor];
+    }
+
+    protected resolveCurrentProjectSessionIds(): string[] {
+        const sessions = this.resolveCurrentProjectSessions();
+        const ids = sessions.map(item => String(item.id || '').trim()).filter(Boolean);
+        return ids.length ? ids : [this.state.sessionId];
+    }
+
+    protected resolveCodingTaskSessionId(task?: Record<string, any> | null): string {
+        const sessionId = String(task?.sourceSessionId || task?.sessionId || '').trim();
+        return sessionId || this.state.sessionId;
     }
 
     protected async refreshPendingApprovals(): Promise<void> {
@@ -192,12 +257,13 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.setNotice('');
             this.state.setInput('', 0);
         });
+        await this.refreshSessions();
         const [messages] = await Promise.all([
             this.loadSessionMessages(target.id),
             this.refreshTools(),
             this.refreshPendingApprovals(),
-            this.refreshSessions(),
-            this.refreshTodoPlan()
+            this.refreshTodoPlan(),
+            this.loadCodingTasks()
         ]);
         this.state.setMessages(messages);
     }
@@ -798,9 +864,10 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return false;
         }
 
-        const sessionId = this.state.sessionId;
+        const resolvedTask = taskRecord ?? this.state.taskRecords.find(task => task?.id === resolvedTaskId) ?? null;
+        const sessionId = this.resolveCodingTaskSessionId(resolvedTask);
         const [loadedTask, diffResult] = await Promise.all([
-            taskRecord ? Promise.resolve(taskRecord) : this.appRpc.request('coding_task.get', { sessionId, taskId: resolvedTaskId }).then(result => result?.task ?? null),
+            resolvedTask ? Promise.resolve(resolvedTask) : this.appRpc.request('coding_task.get', { sessionId, taskId: resolvedTaskId }).then(result => result?.task ?? null),
             this.appRpc.request('coding_task.diff', { sessionId, taskId: resolvedTaskId })
         ]);
 
@@ -820,6 +887,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             this.state.openReview(loadedTask || {
                 id: resolvedTaskId,
                 title: resolvedTaskId,
+                sourceSessionId: sessionId,
                 status: 'unknown',
                 metadata: {
                     executionMode: diffResult?.executionMode ?? null
@@ -884,6 +952,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         return {
             id: task.id,
             title: String(task.title || task.id),
+            sourceSessionId: String(task?.sourceSessionId || task?.sessionId || '').trim() || undefined,
             status: task.status,
             executionMode: task?.result?.executionMode ?? task?.metadata?.executionMode ?? null,
             workerCount: workers.length,
@@ -901,6 +970,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             label: `${choice.id} · ${choice.title}`,
             value: choice.id,
             description: [
+                choice.sourceSessionId ? `session ${choice.sourceSessionId}` : '',
                 choice.status,
                 choice.executionMode,
                 `${choice.workerCount || 0} worker${choice.workerCount === 1 ? '' : 's'}`,
@@ -909,6 +979,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             detail: [
                 `Task: ${choice.id}`,
                 `Title: ${choice.title}`,
+                choice.sourceSessionId ? `Session: ${choice.sourceSessionId}` : '',
                 choice.status ? `Status: ${choice.status}` : '',
                 choice.executionMode ? `Mode: ${choice.executionMode}` : '',
                 `Workers: ${choice.workerCount || 0}`,
@@ -925,9 +996,22 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.appRpc) {
             return [];
         }
-        const sessionId = this.state.sessionId;
-        const result = await this.appRpc.request('coding_task.list', { sessionId });
-        const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
+        const sessionIds = this.resolveCurrentProjectSessionIds();
+        const responses = await Promise.all(sessionIds.map(async sessionId => {
+            const result = await this.appRpc!.request('coding_task.list', { sessionId });
+            const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
+            return tasks.map((task: any) => ({
+                ...task,
+                sourceSessionId: sessionId
+            }));
+        }));
+        const tasks = responses.flat().sort((left, right) => {
+            const activityDelta = Number(right?.updatedAt || 0) - Number(left?.updatedAt || 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return String(left?.id || '').localeCompare(String(right?.id || ''));
+        });
         this.state.batch(() => {
             this.state.setTaskRecords(tasks);
             this.state.setReviewTasks(tasks.map((task: any) => this.buildCodingTaskChoice(task)));
@@ -1000,7 +1084,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
 
-        const sessionId = this.state.sessionId;
+        const sessionId = this.resolveCodingTaskSessionId(fallbackTask);
         const result = await this.appRpc.request('coding_task.rollback', { sessionId, taskId: resolvedTaskId });
         if (result?.rolledBack !== true) {
             this.notify(`Rollback failed for ${resolvedTaskId}.`);
@@ -1153,7 +1237,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             return true;
         }
 
-        const sessionId = this.state.sessionId;
+        const sessionId = this.resolveCodingTaskSessionId(targetTask);
         const result = await this.appRpc.request('coding_task.cancel', { sessionId, taskId: resolvedTaskId });
         if (result?.cancelled !== true) {
             this.notify(`Cancel failed for ${resolvedTaskId}.`);
@@ -1954,15 +2038,25 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.appRpc) {
             return;
         }
-        const result = await this.appRpc.request('todo.get', { sessionId: this.state.sessionId });
-        const todos = Array.isArray(result?.todos)
-            ? result.todos.map((item: any) => ({
-                id: String(item?.id || '').trim(),
-                content: String(item?.content || '').trim(),
-                status: this.normalizeTodoStatus(item?.status)
-            })).filter((item: any) => !!item.id && !!item.content)
-            : [];
-        this.state.setPlanTodos(todos);
+        const sessionIds = this.resolveCurrentProjectSessionIds();
+        const results = await Promise.all(sessionIds.map(async sessionId => ({
+            sessionId,
+            result: await this.appRpc!.request('todo.get', { sessionId })
+        })));
+        const normalized = results.map(entry => ({
+            sessionId: entry.sessionId,
+            todos: Array.isArray(entry.result?.todos)
+                ? entry.result.todos.map((item: any) => ({
+                    id: String(item?.id || '').trim(),
+                    content: String(item?.content || '').trim(),
+                    status: this.normalizeTodoStatus(item?.status)
+                })).filter((item: any) => !!item.id && !!item.content)
+                : []
+        }));
+        const selected = normalized.find(entry => entry.todos.some((todo: { status: string }) => todo.status === 'pending' || todo.status === 'in_progress'))
+            || normalized.find(entry => entry.todos.length)
+            || { sessionId: this.state.sessionId, todos: [] };
+        this.state.setPlanTodos(selected.todos, selected.sessionId);
     }
 
     protected normalizeTodoStatus(status: unknown): 'pending' | 'in_progress' | 'completed' | 'cancelled' {

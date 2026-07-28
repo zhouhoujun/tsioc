@@ -848,8 +848,10 @@ export class AgentConsoleTasksPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
+        const showSourceSession = new Set(this.tasks.map(task => String(task.sourceSessionId || '').trim()).filter(Boolean)).size > 1;
         return this.visibleTasks.map(task => {
             const meta = [
+                showSourceSession && task.sourceSessionId ? `session ${task.sourceSessionId}` : '',
                 task.status || '',
                 task.executionMode || '',
                 typeof task.workerCount === 'number' ? `${task.workerCount}w` : ''
@@ -865,15 +867,20 @@ export class AgentConsoleTasksPanelComponent {
         if (!this.shouldShow || !this.planTodos.length) {
             return '';
         }
+        const sourceSessionId = String(this.state.planTodoSourceSessionId || '').trim();
+        const sourcePrefix = sourceSessionId && sourceSessionId !== this.state.sessionId
+            ? `session ${sourceSessionId} · `
+            : '';
         if (!this.state.tasksFocused) {
             const active = this.planTodos.find(todo => todo.status === 'in_progress')
                 || this.planTodos.find(todo => todo.status === 'pending');
             if (!active) {
                 return '';
             }
-            return `current ${this.planTodos.findIndex(todo => todo.id === active.id) + 1}. [${this.todoStatusMark(active.status)}] ${active.content}`;
+            return `${sourcePrefix}current ${this.planTodos.findIndex(todo => todo.id === active.id) + 1}. [${this.todoStatusMark(active.status)}] ${active.content}`;
         }
-        return this.planTodos.map((todo, index) => `${index + 1}. [${this.todoStatusMark(todo.status)}] ${todo.content}`).join('\n');
+        const lines = this.planTodos.map((todo, index) => `${index + 1}. [${this.todoStatusMark(todo.status)}] ${todo.content}`);
+        return sourcePrefix ? [`${sourcePrefix.trimEnd()}`, ...lines].join('\n') : lines.join('\n');
     }
 
     get taskListLabel(): string {
@@ -907,21 +914,25 @@ export class AgentConsoleTasksPanelComponent {
         if (!this.shouldShow) {
             return '';
         }
+        const projectLabel = String(this.state.projectLabel || '').trim();
+        const projectSuffix = projectLabel ? ` · project ${projectLabel}` : '';
         if (this.planTodos.length) {
             const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
-            return `plan ${this.planTodos.length} · active ${activeCount}`;
+            return `plan ${this.planTodos.length} · active ${activeCount}${projectSuffix}`;
         }
         const totalCount = this.state.reviewTaskChoices.length;
         const filteredCount = this.tasks.length;
+        const sessionCount = new Set(this.state.reviewTaskChoices.map(task => String(task.sourceSessionId || '').trim()).filter(Boolean)).size;
         if (!totalCount) {
             return '';
         }
         const filterLabel = this.taskFilterLabel;
         if (!filteredCount) {
-            return `tasks 0/${totalCount} · ${filterLabel}`;
+            return `tasks 0/${totalCount} · ${filterLabel}${projectSuffix}`;
         }
         const selectedIndex = Math.max(0, this.tasks.findIndex(item => item.id === this.state.selectedReviewTaskId));
-        return `tasks ${filteredCount}/${totalCount} · ${filterLabel} · ${selectedIndex + 1}/${filteredCount}`;
+        const sourceSuffix = sessionCount > 1 ? ` · sessions ${sessionCount}` : '';
+        return `tasks ${filteredCount}/${totalCount} · ${filterLabel} · ${selectedIndex + 1}/${filteredCount}${sourceSuffix}${projectSuffix}`;
     }
 
     get tasksHintLabel(): string {
@@ -948,7 +959,7 @@ export class AgentConsoleTasksPanelComponent {
             return '';
         }
         if (this.planTodos.length && !this.state.selectedTask) {
-            return '';
+            return this.state.projectSummary ? `summary ${this.state.projectSummary}` : '';
         }
         if (!this.state.selectedTask) {
             if (this.state.reviewTaskChoices.length && !this.tasks.length) {
@@ -968,7 +979,9 @@ export class AgentConsoleTasksPanelComponent {
                 ? `applied${rollback?.mode ? ` (${rollback.mode})` : ''}`
                 : 'unavailable';
         const parts = [
+            this.state.projectSummary ? `summary ${this.state.projectSummary}` : '',
             `title ${task.title || task.id}`,
+            task?.sourceSessionId ? `session ${task.sourceSessionId}` : '',
             task.status ? `status ${task.status}` : '',
             task?.result?.executionMode || task?.metadata?.executionMode ? `mode ${task?.result?.executionMode || task?.metadata?.executionMode}` : '',
             task?.planning?.summary ? `plan ${task.planning.summary}` : '',
@@ -2178,6 +2191,8 @@ export class AgentConsoleReviewPanelComponent {
         const title = String(this.reviewTask?.title || this.state.selectedReviewTaskId || 'review');
         const taskId = String(this.reviewTask?.id || this.state.selectedReviewTaskId || '').trim();
         const status = this.reviewTask?.status || 'unknown';
+        const sourceSessionId = String((this.reviewTask as any)?.sourceSessionId || '').trim();
+        const projectLabel = String(this.state.projectLabel || '').trim();
         const executionMode = this.state.reviewExecutionMode || 'n/a';
         const total = this.contentLines.length;
         const start = Math.min(total, this.state.reviewDetailScroll + 1);
@@ -2195,7 +2210,7 @@ export class AgentConsoleReviewPanelComponent {
         const fileSummary = fileCount
             ? `file ${Math.min(fileCount, this.state.selectedReviewFileIndex + 1)}/${fileCount} ${selectedFile?.path || '-'}`
             : 'file -';
-        return `review ${taskId || '-'} ${title}  |  ${status}  |  ${executionMode}  |  workers ${workerCount}  |  ${groupSummary}  |  ${fileSummary}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+        return `review ${taskId || '-'} ${title}${sourceSessionId ? `  |  session ${sourceSessionId}` : ''}${projectLabel ? `  |  project ${projectLabel}` : ''}  |  ${status}  |  ${executionMode}  |  workers ${workerCount}  |  ${groupSummary}  |  ${fileSummary}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
     }
 
     get reviewHintLabel(): string {

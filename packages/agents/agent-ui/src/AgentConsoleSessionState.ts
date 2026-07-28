@@ -39,6 +39,7 @@ export interface AgentConsoleSessionItem {
     workspace?: string;
     updatedAt?: number;
     messageCount?: number;
+    summary?: string;
     projectKey?: string;
     projectId?: string;
     projectLabel?: string;
@@ -105,6 +106,7 @@ export interface AgentConsoleScheduledTaskItem {
 export interface AgentConsoleReviewTaskItem {
     id: string;
     title: string;
+    sourceSessionId?: string;
     status?: string;
     executionMode?: 'sequential' | 'parallel' | null;
     workerCount?: number;
@@ -289,6 +291,10 @@ export class AgentConsoleSessionState {
     model = '';
     modelProfile = '';
     workspace = '';
+    projectKey = '';
+    projectLabel = '';
+    projectSummary = '';
+    projectSessionCount = 0;
     tasksCount = 0;
     sessions: AgentConsoleSessionItem[] = [];
     sessionsFocused = false;
@@ -307,6 +313,7 @@ export class AgentConsoleSessionState {
     reviewTaskChoices: AgentConsoleReviewTaskItem[] = [];
     taskRecords: Record<string, any>[] = [];
     planTodos: AgentConsolePlanTodoItem[] = [];
+    planTodoSourceSessionId = '';
     selectedReviewTaskId = '';
     selectedTaskFilter: AgentConsoleTaskFilter = 'all';
     selectedReviewGroupIndex = 0;
@@ -399,6 +406,19 @@ export class AgentConsoleSessionState {
     setWorkspace(workspace: string): void {
         this.workspace = workspace;
         this.refreshInputSuggestions();
+        this.notify();
+    }
+
+    setProjectContext(context?: {
+        projectKey?: string;
+        projectLabel?: string;
+        projectSummary?: string;
+        projectSessionCount?: number;
+    }): void {
+        this.projectKey = String(context?.projectKey || '').trim();
+        this.projectLabel = String(context?.projectLabel || '').trim();
+        this.projectSummary = String(context?.projectSummary || '').trim();
+        this.projectSessionCount = Math.max(0, Number(context?.projectSessionCount || 0));
         this.notify();
     }
 
@@ -1270,8 +1290,9 @@ export class AgentConsoleSessionState {
         this.notify();
     }
 
-    setPlanTodos(todos: AgentConsolePlanTodoItem[]): void {
+    setPlanTodos(todos: AgentConsolePlanTodoItem[], sourceSessionId?: string): void {
         this.planTodos = todos.slice();
+        this.planTodoSourceSessionId = String(sourceSessionId || '').trim();
         this.notify();
     }
 
@@ -1284,6 +1305,7 @@ export class AgentConsoleSessionState {
             return;
         }
         this.planTodos = [];
+        this.planTodoSourceSessionId = '';
         this.notify();
     }
 
