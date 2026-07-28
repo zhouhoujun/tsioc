@@ -13,6 +13,8 @@ const DEFAULT_BUDGET: ContextBudget = {
     maxMemoryRecords: 50,
     maxToolResults: 8000
 };
+const DEFAULT_RECENT_MESSAGE_WINDOW = 6;
+const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
 
 @Injectable()
 export class AgentContextManager {
@@ -52,7 +54,7 @@ export class AgentContextManager {
         const recentMessages: AgentMessage[] = [];
         const oldMessages: AgentMessage[] = [];
 
-        const recentCount = 6;
+        const recentCount = DEFAULT_RECENT_MESSAGE_WINDOW;
         for (const msg of messages) {
             if (msg.role === 'system') {
                 systemMessages.push(msg);
@@ -75,6 +77,7 @@ export class AgentContextManager {
         }
 
         try {
+            const preservedAnchors = this.resolveCompactionAnchors(oldMessages, recentMessages);
             const summary = await this.summarizer.summarize(oldMessages);
             if (!summary?.trim()) {
                 return this.pruneHistory(messages);
@@ -87,7 +90,7 @@ export class AgentContextManager {
                 createdAt: Date.now()
             };
 
-            const compacted = [...systemMessages, summaryMessage, ...recentMessages];
+            const compacted = [...systemMessages, summaryMessage, ...preservedAnchors, ...recentMessages];
             if (this.estimateMessages(compacted) <= this.budget.maxHistoryTokens) {
                 return compacted;
             }
@@ -170,5 +173,82 @@ export class AgentContextManager {
     trimMemory<T extends { value?: string }>(records: T[]): T[] {
         if (records.length <= this.budget.maxMemoryRecords) return records;
         return records.slice(-this.budget.maxMemoryRecords);
+    }
+
+    private resolveCompactionAnchors(oldMessages: AgentMessage[], recentMessages: AgentMessage[]): AgentMessage[] {
+        const recentIds = new Set(recentMessages.map(message => message.id));
+        const pinnedIds = new Set<string>();
+        const anchors: AgentMessage[] = [];
+
+        const latestSubstantiveUser = this.findLatestSubstantiveUserMessage(oldMessages);
+        if (latestSubstantiveUser && !recentIds.has(latestSubstantiveUser.id)) {
+            pinnedIds.add(latestSubstantiveUser.id);
+            anchors.push(latestSubstantiveUser);
+        }
+
+        const latestErrorContext = this.findLatestErrorContextMessage(oldMessages, pinnedIds);
+        if (latestErrorContext && !recentIds.has(latestErrorContext.id) && !pinnedIds.has(latestErrorContext.id)) {
+            pinnedIds.add(latestErrorContext.id);
+            anchors.push(latestErrorContext);
+        }
+
+        return oldMessages.filter(message => pinnedIds.has(message.id));
+    }
+
+    private findLatestSubstantiveUserMessage(messages: AgentMessage[]): AgentMessage | undefined {
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const message = messages[i];
+            if (message.role !== 'user') {
+                continue;
+            }
+            if (this.isSubstantiveUserMessage(message.content)) {
+                return message;
+            }
+        }
+        return undefined;
+    }
+
+    private findLatestErrorContextMessage(messages: AgentMessage[], excludedIds?: Set<string>): AgentMessage | undefined {
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const message = messages[i];
+            if (excludedIds?.has(message.id)) {
+                continue;
+            }
+            if (this.isErrorContextMessage(message)) {
+                return message;
+            }
+        }
+        return undefined;
+    }
+
+    private isSubstantiveUserMessage(content: string | undefined): boolean {
+        const text = String(content || '').trim();
+        if (!text) {
+            return false;
+        }
+        if (text.startsWith('/')) {
+            return false;
+        }
+        return !FOLLOW_UP_ONLY_MESSAGE_RE.test(text);
+    }
+
+    private isErrorContextMessage(message: AgentMessage): boolean {
+        const error = String(message.metadata?.error || message.metadata?.receipt?.error || '').trim();
+        const receiptStatus = String(message.metadata?.receipt?.status || '').trim().toLowerCase();
+        const content = String(message.content || '').trim();
+
+        if (error) {
+            return true;
+        }
+        if (receiptStatus === 'error') {
+            return true;
+        }
+        if (message.role === 'tool' && /"error"\s*:/.test(content)) {
+            return true;
+        }
+        if (message.role !== 'user' && /\bfailed\b|\berror\b/i.test(content)) {
+            return true;
+        }
+        return false;
     }
 }

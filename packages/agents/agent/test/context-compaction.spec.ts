@@ -153,6 +153,87 @@ export class ContextCompactionTest {
         expect(result.some(m => m.id === 'u0')).toEqual(false);
     }
 
+    @Test('compactHistory preserves the latest substantive user request outside the recent window')
+    async compactPreservesLatestSubstantiveUserRequest() {
+        class RecordingSummarizer extends SessionSummarizer {
+            async summarize(_messages: AgentMessage[]): Promise<string> {
+                return 'Compressed conversation history.';
+            }
+        }
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        ctx.setSummarizer(new RecordingSummarizer(), 4);
+        const longGoal = '设计一个跨平台在线考试系统，并给出数据库表设计、接口设计、权限模型、部署架构和监考流程。'.repeat(6);
+        const longReply = '这里继续补充系统设计细节，包括模块拆分、调用链路、边界条件、失败恢复和可观测性方案。'.repeat(5);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u-goal', role: 'user', content: longGoal, createdAt: 2 },
+            { id: 'a-1', role: 'assistant', content: longReply, createdAt: 3 },
+            { id: 'u-2', role: 'user', content: '继续', createdAt: 4 },
+            { id: 'a-2', role: 'assistant', content: longReply, createdAt: 5 },
+            { id: 'u-3', role: 'user', content: '继续', createdAt: 6 },
+            { id: 'a-3', role: 'assistant', content: longReply, createdAt: 7 },
+            { id: 'u-4', role: 'user', content: '继续', createdAt: 8 },
+            { id: 'a-4', role: 'assistant', content: longReply, createdAt: 9 },
+            { id: 'u-5', role: 'user', content: '继续', createdAt: 10 },
+            { id: 'a-5', role: 'assistant', content: longReply, createdAt: 11 },
+            { id: 'u-6', role: 'user', content: '继续', createdAt: 12 },
+            { id: 'a-6', role: 'assistant', content: longReply, createdAt: 13 }
+        ];
+
+        const result = await ctx.compactHistory(messages);
+
+        expect(result.some(message => message.id === 'u-goal')).toEqual(true);
+        expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
+        expect(result.some(message => message.id === 'u-2')).toEqual(false);
+    }
+
+    @Test('compactHistory preserves the latest error context outside the recent window')
+    async compactPreservesLatestErrorContext() {
+        class RecordingSummarizer extends SessionSummarizer {
+            async summarize(_messages: AgentMessage[]): Promise<string> {
+                return 'Compressed conversation history.';
+            }
+        }
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000 });
+        ctx.setSummarizer(new RecordingSummarizer(), 4);
+        const longGoal = '修复 agent 长消息上下文丢失问题，并确保多轮继续后仍能保留任务目标、失败原因和后续待办。'.repeat(5);
+        const longReply = '继续补充修复方案，包含消息折叠、压缩策略、错误保留和会话主线恢复逻辑。'.repeat(5);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u-goal', role: 'user', content: longGoal, createdAt: 2 },
+            { id: 'a-1', role: 'assistant', content: longReply, createdAt: 3 },
+            {
+                id: 't-error',
+                role: 'tool',
+                name: 'project_intel',
+                toolCallId: 'tc-error',
+                content: '{"error":"Tool \\"project_intel\\" input validation failed: $.action is required"}',
+                createdAt: 4,
+                metadata: {
+                    error: 'Tool "project_intel" input validation failed: $.action is required',
+                    receipt: { status: 'error', error: 'Tool "project_intel" input validation failed: $.action is required' }
+                }
+            },
+            { id: 'u-2', role: 'user', content: '继续', createdAt: 5 },
+            { id: 'a-2', role: 'assistant', content: longReply, createdAt: 6 },
+            { id: 'u-3', role: 'user', content: '继续', createdAt: 7 },
+            { id: 'a-3', role: 'assistant', content: longReply, createdAt: 8 },
+            { id: 'u-4', role: 'user', content: '继续', createdAt: 9 },
+            { id: 'a-4', role: 'assistant', content: longReply, createdAt: 10 },
+            { id: 'u-5', role: 'user', content: '继续', createdAt: 11 },
+            { id: 'a-5', role: 'assistant', content: longReply, createdAt: 12 },
+            { id: 'u-6', role: 'user', content: '继续', createdAt: 13 },
+            { id: 'a-6', role: 'assistant', content: longReply, createdAt: 14 }
+        ];
+
+        const result = await ctx.compactHistory(messages);
+
+        expect(result.some(message => message.id === 't-error')).toEqual(true);
+        expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
+    }
+
     @Test('compactHistory falls back to pruneHistory when summarizer fails')
     async compactFallsBackOnError() {
         class FailingSummarizer extends SessionSummarizer {
