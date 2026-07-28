@@ -2756,6 +2756,44 @@ export class AgentConsoleComponentTest {
         expect(state.reviewDetailLines.join('\n')).toContain('Risks: 1 worker failure · rollback unavailable');
     }
 
+    @Test('review detail keeps large diffs scoped to the selected file')
+    reviewDetailKeepsLargeDiffsScopedToSelectedFile() {
+        const state = new AgentConsoleSessionState();
+        const fileCount = 24;
+        const diffLines: string[] = [];
+        for (let index = 0; index < fileCount; index++) {
+            diffLines.push(`diff --git a/src/file-${index}.ts b/src/file-${index}.ts`);
+            diffLines.push(`--- a/src/file-${index}.ts`);
+            diffLines.push(`+++ b/src/file-${index}.ts`);
+            diffLines.push('@@ -1,1 +1,2 @@');
+            diffLines.push(`-old line ${index}`);
+            diffLines.push(`+new line ${index}`);
+            diffLines.push(`+extra line ${index}`);
+        }
+
+        state.openReview(createReviewTask() as any, {
+            executionMode: 'parallel',
+            diff: {
+                summary: `${fileCount} file diff(s) captured`,
+                text: diffLines.join('\n')
+            },
+            workers: []
+        });
+
+        const lines = state.reviewDetailLines;
+        expect(lines.join('\n')).toContain(`Files: ${fileCount}`);
+        expect(lines.join('\n')).toContain('Current File: src/file-0.ts (+2 -1)');
+        expect(lines.join('\n')).toContain('diff --git a/src/file-0.ts b/src/file-0.ts');
+        expect(lines.join('\n')).not.toContain('diff --git a/src/file-23.ts b/src/file-23.ts');
+        expect(lines.length).toBeLessThan(50);
+
+        state.setSelectedReviewFileIndex(fileCount - 1);
+        const tailLines = state.reviewDetailLines.join('\n');
+        expect(tailLines).toContain('Current File: src/file-23.ts (+2 -1)');
+        expect(tailLines).toContain('diff --git a/src/file-23.ts b/src/file-23.ts');
+        expect(tailLines).not.toContain('diff --git a/src/file-0.ts b/src/file-0.ts');
+    }
+
     @Test('session state supports paged session navigation and edges')
     sessionStateSupportsPagedSessionNavigationAndEdges() {
         const state = new AgentConsoleSessionState();
