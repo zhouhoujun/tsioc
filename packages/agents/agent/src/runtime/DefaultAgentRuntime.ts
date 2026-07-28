@@ -75,7 +75,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         this.contextManager = (this.injectedContextManager ?? new AgentContextManager()).configure({
             maxHistoryTokens: this.options.context?.maxHistoryTokens,
             maxMemoryRecords: this.options.context?.maxMemoryRecords,
-            maxToolResults: this.options.context?.maxToolResultChars
+            maxToolResults: this.options.context?.maxToolResultChars,
+            compactionMinTokens: this.options.context?.compactionMinTokens
         });
         if (this.summarizer && this.options.context?.compactionThreshold) {
             this.contextManager.setSummarizer(this.summarizer, this.options.context.compactionThreshold);

@@ -88,10 +88,18 @@ export class ContextCompactionTest {
         expect(ctx.shouldCompact(this.makeMessages(49))).toEqual(false);
     }
 
+    @Test('shouldCompact returns false when message threshold is met but token footprint is still small')
+    async shouldCompactDefersSmallHistory() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 1000 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 5);
+        expect(ctx.shouldCompact(this.makeMessages(10))).toEqual(false);
+    }
+
     @Test('shouldCompact returns true when messages exceed threshold')
     async shouldCompactAboveThreshold() {
         const ctx = new AgentContextManager();
-        ctx.configure({ maxHistoryTokens: 32000 });
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 100 });
         ctx.setSummarizer(new SimpleSessionSummarizer(), 5);
         expect(ctx.shouldCompact(this.makeMessages(10))).toEqual(true);
         expect(ctx.shouldCompact(this.makeMessages(5))).toEqual(true);
@@ -139,7 +147,7 @@ export class ContextCompactionTest {
         }
         const summarizer = new RecordingSummarizer();
         const ctx = new AgentContextManager();
-        ctx.configure({ maxHistoryTokens: 32000 });
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200 });
         ctx.setSummarizer(summarizer, 3);
         const messages = this.makeToolMessages(8);
 
@@ -161,7 +169,7 @@ export class ContextCompactionTest {
             }
         }
         const ctx = new AgentContextManager();
-        ctx.configure({ maxHistoryTokens: 32000 });
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200 });
         ctx.setSummarizer(new RecordingSummarizer(), 4);
         const longGoal = '设计一个跨平台在线考试系统，并给出数据库表设计、接口设计、权限模型、部署架构和监考流程。'.repeat(6);
         const longReply = '这里继续补充系统设计细节，包括模块拆分、调用链路、边界条件、失败恢复和可观测性方案。'.repeat(5);
@@ -196,7 +204,7 @@ export class ContextCompactionTest {
             }
         }
         const ctx = new AgentContextManager();
-        ctx.configure({ maxHistoryTokens: 32000 });
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200 });
         ctx.setSummarizer(new RecordingSummarizer(), 4);
         const longGoal = '修复 agent 长消息上下文丢失问题，并确保多轮继续后仍能保留任务目标、失败原因和后续待办。'.repeat(5);
         const longReply = '继续补充修复方案，包含消息折叠、压缩策略、错误保留和会话主线恢复逻辑。'.repeat(5);

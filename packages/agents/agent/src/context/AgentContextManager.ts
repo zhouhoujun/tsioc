@@ -7,12 +7,14 @@ export interface ContextBudget {
     maxHistoryTokens: number;
     maxMemoryRecords: number;
     maxToolResults: number;
+    compactionMinTokens: number;
 }
 
 const DEFAULT_BUDGET: ContextBudget = {
     maxHistoryTokens: 32000,
     maxMemoryRecords: 50,
-    maxToolResults: 8000
+    maxToolResults: 8000,
+    compactionMinTokens: 1200
 };
 const DEFAULT_RECENT_MESSAGE_WINDOW = 6;
 const FOLLOW_UP_ONLY_MESSAGE_RE = /^(?:继续|继续吧|继续下去|接着|接着说|接着来|然后呢|再来|下一步|下一部分|后面呢|展开|详细点|详细一点|再详细点|补充一下|继续输出|继续生成|more|continue|go on|keep going|carry on|next|proceed)(?:[\s.!?~。！？、]*)$/i;
@@ -43,7 +45,17 @@ export class AgentContextManager {
     }
 
     shouldCompact(messages: AgentMessage[]): boolean {
-        return this.compactionThreshold > 0 && messages.length >= this.compactionThreshold;
+        if (this.compactionThreshold <= 0 || messages.length < this.compactionThreshold) {
+            return false;
+        }
+
+        const estimatedTokens = this.estimateMessages(messages);
+        if (estimatedTokens >= this.budget.maxHistoryTokens) {
+            return true;
+        }
+
+        const tokenThreshold = Math.min(this.budget.compactionMinTokens, this.budget.maxHistoryTokens);
+        return estimatedTokens >= tokenThreshold;
     }
 
     async compactHistory(messages: AgentMessage[]): Promise<AgentMessage[]> {
