@@ -2145,7 +2145,12 @@ export class AgentConsoleReviewPanelComponent {
         const column = this.state.reviewDetailColumnScroll + 1;
         const totalColumns = Math.max(1, this.state.reviewDetailMaxColumn);
         const workerCount = this.reviewWorkers.length;
-        return `review ${taskId || '-'} ${title}  |  ${status}  |  ${executionMode}  |  workers ${workerCount}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
+        const selectedFile = this.state.selectedReviewFileSection;
+        const fileCount = this.state.reviewFileSections.length;
+        const fileSummary = fileCount
+            ? `file ${Math.min(fileCount, this.state.selectedReviewFileIndex + 1)}/${fileCount} ${selectedFile?.path || '-'}`
+            : 'file -';
+        return `review ${taskId || '-'} ${title}  |  ${status}  |  ${executionMode}  |  workers ${workerCount}  |  ${fileSummary}  |  lines ${start}-${end} / ${total}  |  col ${column}/${totalColumns}`;
     }
 
     get reviewHintLabel(): string {

@@ -391,7 +391,13 @@ export class AgentConsoleRendererTest {
             executionMode: 'parallel',
             diff: {
                 summary: '1 worker diff(s) captured',
-                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line'
+                text: [
+                    'diff --git a/src/a.ts b/src/a.ts',
+                    '+new line',
+                    'diff --git a/src/b.ts b/src/b.ts',
+                    '-old line',
+                    '+updated line'
+                ].join('\n')
             },
             workers: [{
                 workerId: 'worker-1',
@@ -415,11 +421,12 @@ export class AgentConsoleRendererTest {
         expect(reviewLines.some(line => line.includes('1 worker diff'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Rollback: available'))).toBe(true);
         expect(reviewLines.some(line => line.includes('Checkpoints: 1 total'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('worker-1'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('coding-task/task1worker1'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('Files: 1'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('File: src/a.ts (+1 -0)'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('file 1/2 src/a.ts'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Files: 2'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('› [1/2] src/a.ts (+1 -0)'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('[2/2] src/b.ts (+1 -1)'))).toBe(true);
         expect(reviewLines.some(line => line.includes('diff --git a/src/a.ts b/src/a.ts'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('diff --git a/src/b.ts b/src/b.ts'))).toBe(false);
     }
 
     @Test('renders coding task inspector panel with task summary')

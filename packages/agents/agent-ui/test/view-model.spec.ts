@@ -2564,8 +2564,8 @@ export class AgentConsoleComponentTest {
         expect(state.approvalsFocused).toEqual(false);
     }
 
-    @Test('session state supports coding task review focus and scroll')
-    sessionStateSupportsCodingTaskReviewFocusAndScroll() {
+    @Test('session state supports coding task review focus, file navigation, and scroll')
+    async sessionStateSupportsCodingTaskReviewFocusFileNavigationAndScroll() {
         const state = new AgentConsoleSessionState();
         const reviewTask = createReviewTask();
 
@@ -2573,7 +2573,14 @@ export class AgentConsoleComponentTest {
             executionMode: 'parallel',
             diff: {
                 summary: '1 worker diff(s) captured',
-                text: 'diff --git a/src/a.ts b/src/a.ts\n+new line\n+second line'
+                text: [
+                    'diff --git a/src/a.ts b/src/a.ts',
+                    '+new line',
+                    '+second line',
+                    'diff --git a/src/b.ts b/src/b.ts',
+                    '-old line',
+                    '+updated line'
+                ].join('\n')
             },
             workers: reviewTask.result.workers
         });
@@ -2581,11 +2588,28 @@ export class AgentConsoleComponentTest {
         expect(state.reviewOpen).toEqual(true);
         expect(state.hasReviewFocus()).toEqual(true);
         expect(state.reviewExecutionMode).toEqual('parallel');
+        expect(state.selectedReviewFileIndex).toEqual(0);
+        expect(state.selectedReviewFileSection?.path).toEqual('src/a.ts');
         expect(state.reviewDetailLines.join('\n')).toContain('worker-1');
         expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
-        expect(state.reviewDetailLines.join('\n')).toContain('Files: 1');
-        expect(state.reviewDetailLines.join('\n')).toContain('File: src/a.ts (+2 -0)');
+        expect(state.reviewDetailLines.join('\n')).toContain('Files: 2');
+        expect(state.reviewDetailLines.join('\n')).toContain('› [1/2] src/a.ts (+2 -0)');
+        expect(state.reviewDetailLines.join('\n')).toContain('  [2/2] src/b.ts (+1 -1)');
+        expect(state.reviewDetailLines.join('\n')).toContain('Current File: src/a.ts (+2 -0)');
+        expect(state.reviewDetailLines.join('\n')).toContain('diff --git a/src/a.ts b/src/a.ts');
+        expect(state.reviewDetailLines.join('\n')).not.toContain('diff --git a/src/b.ts b/src/b.ts');
+
+        state.scrollReviewDetail(1);
+        expect(state.reviewDetailScroll).toEqual(1);
+
+        await state.handleFocusKey(']');
+        expect(state.selectedReviewFileIndex).toEqual(1);
+        expect(state.selectedReviewFileSection?.path).toEqual('src/b.ts');
+        expect(state.reviewDetailScroll).toEqual(0);
+        expect(state.reviewDetailLines.join('\n')).toContain('Current File: src/b.ts (+1 -1)');
+        expect(state.reviewDetailLines.join('\n')).toContain('diff --git a/src/b.ts b/src/b.ts');
+        expect(state.reviewDetailLines.join('\n')).not.toContain('diff --git a/src/a.ts b/src/a.ts');
 
         const maxReviewScroll = Math.max(0, state.reviewDetailLines.length - state.consoleOptions.reviewDetailVisibleLines);
         state.scrollReviewDetail(1);

@@ -122,6 +122,13 @@ export interface AgentConsoleReviewWorker {
     error?: string;
 }
 
+export interface AgentConsoleReviewDiffSection {
+    path: string;
+    additions: number;
+    deletions: number;
+    lines: string[];
+}
+
 export interface AgentConsolePlanTodoItem {
     id: string;
     content: string;
@@ -225,7 +232,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
-    reviewDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
+    reviewDetailHint: '[ ] file   up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -280,6 +287,7 @@ export class AgentConsoleSessionState {
     taskRecords: Record<string, any>[] = [];
     planTodos: AgentConsolePlanTodoItem[] = [];
     selectedReviewTaskId = '';
+    selectedReviewFileIndex = 0;
     scheduledTasks: ScheduledAgentTask[] = [];
     selectedScheduledTaskId = '';
     reviewDetailScroll = 0;
@@ -1496,6 +1504,7 @@ export class AgentConsoleSessionState {
             executionMode?: 'sequential' | 'parallel' | null;
         }
     ): void {
+        const preferredFilePath = this.selectedReviewFileSection?.path;
         if (task !== undefined) {
             this.reviewTask = task || null;
         }
@@ -1528,9 +1537,9 @@ export class AgentConsoleSessionState {
         if (!this.reviewTask && !this.reviewDiff && !this.reviewWorkers.length) {
             return;
         }
+        this.syncReviewFileSelection(preferredFilePath);
         this.reviewOpen = true;
-        this.reviewDetailScroll = 0;
-        this.reviewDetailColumnScroll = 0;
+        this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
         this.notify();
     }
@@ -1540,8 +1549,7 @@ export class AgentConsoleSessionState {
             return;
         }
         this.reviewOpen = false;
-        this.reviewDetailScroll = 0;
-        this.reviewDetailColumnScroll = 0;
+        this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
         this.notify();
     }
@@ -1553,9 +1561,9 @@ export class AgentConsoleSessionState {
         this.reviewTaskChoices = [];
         this.taskRecords = [];
         this.selectedReviewTaskId = '';
+        this.selectedReviewFileIndex = 0;
         this.reviewOpen = false;
-        this.reviewDetailScroll = 0;
-        this.reviewDetailColumnScroll = 0;
+        this.resetReviewDetailViewport();
         this.syncDerivedInputFocus();
         this.notify();
     }
@@ -1567,8 +1575,50 @@ export class AgentConsoleSessionState {
         return mode === 'parallel' || mode === 'sequential' ? mode : null;
     }
 
+    get reviewFileSections(): AgentConsoleReviewDiffSection[] {
+        return this.parseUnifiedDiffSections(this.stringifyReviewContent(this.reviewDiff));
+    }
+
+    get selectedReviewFileSection(): AgentConsoleReviewDiffSection | undefined {
+        const sections = this.reviewFileSections;
+        if (!sections.length) {
+            return undefined;
+        }
+        const nextIndex = Math.max(0, Math.min(sections.length - 1, this.selectedReviewFileIndex));
+        return sections[nextIndex];
+    }
+
+    setSelectedReviewFileIndex(index: number): void {
+        const sections = this.reviewFileSections;
+        if (!sections.length) {
+            return;
+        }
+        const nextIndex = Math.max(0, Math.min(sections.length - 1, index));
+        if (nextIndex === this.selectedReviewFileIndex) {
+            return;
+        }
+        this.selectedReviewFileIndex = nextIndex;
+        this.resetReviewDetailViewport();
+        this.notify();
+    }
+
+    moveReviewFileSelection(delta: number): void {
+        const sections = this.reviewFileSections;
+        if (!sections.length) {
+            return;
+        }
+        const nextIndex = (this.selectedReviewFileIndex + delta + sections.length) % sections.length;
+        if (nextIndex === this.selectedReviewFileIndex) {
+            return;
+        }
+        this.selectedReviewFileIndex = nextIndex;
+        this.resetReviewDetailViewport();
+        this.notify();
+    }
+
     get reviewDetailLines(): string[] {
         const lines: string[] = [];
+        const workerLines: string[] = [];
         const summary = this.reviewDiff?.summary ?? this.reviewTask?.result?.diff?.summary;
         if (summary) {
             lines.push(`Summary: ${summary}`);
@@ -1599,7 +1649,7 @@ export class AgentConsoleSessionState {
         }
 
         if (this.reviewWorkers.length) {
-            lines.push(`Workers: ${this.reviewWorkers.length}`);
+            workerLines.push(`Workers: ${this.reviewWorkers.length}`);
             for (const worker of this.reviewWorkers) {
                 const workerMeta = [
                     worker.status ? `status ${worker.status}` : '',
@@ -1607,17 +1657,17 @@ export class AgentConsoleSessionState {
                     worker.worktreePath ? `worktree ${worker.worktreePath}` : '',
                     worker.actionIds?.length ? `actions ${worker.actionIds.join(', ')}` : ''
                 ].filter(Boolean).join(' · ');
-                lines.push(`[${worker.workerId}] ${workerMeta || 'no metadata'}`);
+                workerLines.push(`[${worker.workerId}] ${workerMeta || 'no metadata'}`);
                 if (worker.error) {
-                    lines.push(`  error ${worker.error}`);
+                    workerLines.push(`  error ${worker.error}`);
                 }
                 const workerDiffText = this.stringifyReviewContent(worker.diff ?? worker.output);
                 if (workerDiffText) {
                     const workerSections = this.parseUnifiedDiffSections(workerDiffText);
                     if (workerSections.length) {
-                        lines.push(`  files ${workerSections.length}`);
+                        workerLines.push(`  files ${workerSections.length}`);
                         for (const section of workerSections) {
-                            lines.push(`  file ${section.path} (+${section.additions} -${section.deletions})`);
+                            workerLines.push(`  file ${section.path} (+${section.additions} -${section.deletions})`);
                         }
                     }
                 }
@@ -1626,18 +1676,30 @@ export class AgentConsoleSessionState {
 
         const aggregateDiffText = this.stringifyReviewContent(this.reviewDiff);
         if (aggregateDiffText) {
-            const sections = this.parseUnifiedDiffSections(aggregateDiffText);
+            const sections = this.reviewFileSections;
             if (sections.length) {
+                const selectedSection = this.selectedReviewFileSection || sections[0];
                 lines.push(`Files: ${sections.length}`);
-                for (const section of sections) {
-                    lines.push(`File: ${section.path} (+${section.additions} -${section.deletions})`);
-                    lines.push(...section.lines);
+                for (let index = 0; index < sections.length; index++) {
+                    const section = sections[index];
+                    const marker = index === this.selectedReviewFileIndex ? '›' : ' ';
+                    lines.push(`${marker} [${index + 1}/${sections.length}] ${section.path} (+${section.additions} -${section.deletions})`);
+                }
+                if (selectedSection) {
+                    lines.push(`Current File: ${selectedSection.path} (+${selectedSection.additions} -${selectedSection.deletions})`);
+                    lines.push(...selectedSection.lines);
                 }
             } else {
                 lines.push('Aggregate Diff');
                 lines.push(...aggregateDiffText.split('\n'));
             }
-        } else if (!lines.length) {
+        }
+
+        if (workerLines.length) {
+            lines.push(...workerLines);
+        }
+
+        if (!aggregateDiffText && !lines.length) {
             lines.push('No diff captured.');
         }
 
@@ -2240,15 +2302,15 @@ export class AgentConsoleSessionState {
         }
     }
 
-    protected parseUnifiedDiffSections(diffText: string): Array<{ path: string; additions: number; deletions: number; lines: string[] }> {
+    protected parseUnifiedDiffSections(diffText: string): AgentConsoleReviewDiffSection[] {
         const text = String(diffText || '').trim();
         if (!text) {
             return [];
         }
 
         const sourceLines = text.split('\n');
-        const sections: Array<{ path: string; additions: number; deletions: number; lines: string[] }> = [];
-        let current: { path: string; additions: number; deletions: number; lines: string[] } | undefined;
+        const sections: AgentConsoleReviewDiffSection[] = [];
+        let current: AgentConsoleReviewDiffSection | undefined;
 
         const pushCurrent = () => {
             if (current?.lines.length) {
@@ -2329,9 +2391,28 @@ export class AgentConsoleSessionState {
             this.reviewTask?.title || this.selectedReviewTaskId || 'review',
             this.reviewTask?.id ? `(${this.reviewTask.id})` : '',
             this.reviewTask?.status ? `status=${this.reviewTask.status}` : '',
-            this.reviewExecutionMode ? `mode=${this.reviewExecutionMode}` : ''
+            this.reviewExecutionMode ? `mode=${this.reviewExecutionMode}` : '',
+            this.selectedReviewFileSection?.path ? `file=${this.selectedReviewFileSection.path}` : ''
         ].filter(Boolean).join(' ');
         return [header, ...this.reviewDetailLines].filter(Boolean).join('\n');
+    }
+
+    protected resetReviewDetailViewport(): void {
+        this.reviewDetailScroll = 0;
+        this.reviewDetailColumnScroll = 0;
+    }
+
+    protected syncReviewFileSelection(preferredPath?: string): void {
+        const sections = this.reviewFileSections;
+        if (!sections.length) {
+            this.selectedReviewFileIndex = 0;
+            return;
+        }
+        const preferredIndex = preferredPath
+            ? sections.findIndex(section => section.path === preferredPath)
+            : -1;
+        const currentIndex = Math.max(0, Math.min(sections.length - 1, this.selectedReviewFileIndex));
+        this.selectedReviewFileIndex = preferredIndex >= 0 ? preferredIndex : currentIndex;
     }
 
     protected buildSelectedTaskCopyText(): string {
@@ -2427,6 +2508,12 @@ export class AgentConsoleSessionState {
             switch (normalized) {
                 case 'copy':
                     await this.copyFocusedTextAction?.(this.buildSelectedReviewCopyText(), 'review');
+                    return true;
+                case '[':
+                    this.moveReviewFileSelection(-1);
+                    return true;
+                case ']':
+                    this.moveReviewFileSelection(1);
                     return true;
                 case 'down':
                     this.scrollReviewDetail(1);
