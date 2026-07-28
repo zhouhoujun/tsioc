@@ -2915,12 +2915,26 @@ export class AgentToolsPackageTest {
         }
         expect(adapter).toBeDefined();
 
-        const tool = new SpawnAgentTool(new MockAdapter(async () => ({ output: 'done', turnCount: 2, toolCalls: 3 })));
+        const tool = new SpawnAgentTool(new MockAdapter(async () => ({
+            output: 'done',
+            turnCount: 2,
+            toolCalls: 3,
+            report: {
+                summary: 'done',
+                completed: ['analyze'],
+                nextSteps: ['review'],
+                risks: ['none'],
+                artifacts: ['patch.diff']
+            }
+        })));
         const result = await tool.invoke({ goal: 'test task', context: 'some context', toolsets: ['filesystem', 'web'], maxTurns: 5 }, createSessionContext());
         expect(result.goal).toEqual('test task');
         expect(result.output).toEqual('done');
         expect(result.turnCount).toEqual(2);
         expect(result.toolCalls).toEqual(3);
+        expect(result.report?.summary).toEqual('done');
+        expect(result.report?.nextSteps).toEqual(['review']);
+        expect(result.report?.artifacts).toEqual(['patch.diff']);
 
         let goalError: Error | undefined;
         try {
@@ -2935,7 +2949,15 @@ export class AgentToolsPackageTest {
     async sharedSpawnAdapterDelegatesThroughNestedAgentRunner() {
         const adapter = new DelegatingSpawnAgentAdapter({
             run: async (request) => ({
-                content: request.prompt,
+                content: [
+                    request.prompt,
+                    '',
+                    'Summary: analyzed the project structure',
+                    'Completed: mapped files, identified risks',
+                    'Next steps: update review summary, split workers',
+                    'Risks: duplicate analysis, stale context',
+                    'Artifacts: diff.patch, notes.md'
+                ].join('\n'),
                 turnCount: 1,
                 toolCalls: 2,
                 model: 'mock'
@@ -2952,6 +2974,9 @@ export class AgentToolsPackageTest {
         expect(result.output).toContain('focus on risks');
         expect(result.turnCount).toBe(1);
         expect(result.toolCalls).toBe(2);
+        expect(result.report?.summary).toContain('analyzed the project structure');
+        expect(result.report?.nextSteps).toEqual(['update review summary', 'split workers']);
+        expect(result.report?.artifacts).toEqual(['diff.patch', 'notes.md']);
     }
 
     @Test('execute code requires adapter and delegates execution')

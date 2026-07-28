@@ -18,12 +18,13 @@ export interface SpawnAgentResult {
     error?: string;
     turnCount?: number;
     toolCalls?: number;
+    report?: import('../src/nested-agent-runner').DelegatedAgentReport;
 }
 
 @Injectable()
 export class SpawnAgentTool implements AgentTool {
     name = 'spawn_agent';
-    description = 'Spawn a sub-agent with an isolated context to accomplish a specific goal. The sub-agent can use its own tools and session.';
+    description = 'Spawn a sub-agent with an isolated context to accomplish a specific goal. The sub-agent can use its own tools and session and return a structured report.';
     inputSchema = {
         type: 'object',
         properties: {
@@ -69,7 +70,8 @@ export class SpawnAgentTool implements AgentTool {
             output: result.output,
             error: result.error,
             turnCount: result.turnCount,
-            toolCalls: result.toolCalls
+            toolCalls: result.toolCalls,
+            report: result.report
         };
     }
 

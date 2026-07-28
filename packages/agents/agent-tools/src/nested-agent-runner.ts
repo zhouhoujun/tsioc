@@ -14,6 +14,14 @@ export interface NestedAgentRunRequest {
     maxTokens?: number;
 }
 
+export interface DelegatedAgentReport {
+    summary?: string;
+    completed?: string[];
+    nextSteps?: string[];
+    risks?: string[];
+    artifacts?: string[];
+}
+
 export interface NestedAgentRunResult {
     content: string;
     turnCount: number;
@@ -21,6 +29,7 @@ export interface NestedAgentRunResult {
     model?: string;
     finishReason?: string;
     usage?: Record<string, any>;
+    report?: DelegatedAgentReport;
 }
 
 @Abstract()
@@ -31,12 +40,67 @@ export abstract class NestedAgentRunner {
 function buildSubAgentPrompt(request: SpawnAgentInput): string {
     const parts = [
         'Complete the delegated task independently and return the most useful final result.',
+        'Return a compact report using these labels: Summary:, Completed:, Next steps:, Risks:, Artifacts:.',
         `Task:\n${request.goal}`
     ];
     if (request.context?.trim()) {
         parts.push(`Context:\n${request.context.trim()}`);
     }
     return parts.join('\n\n');
+}
+
+export function parseDelegatedAgentReport(content: string): DelegatedAgentReport | undefined {
+    const report: DelegatedAgentReport = {};
+    const lines = String(content || '').replace(/\r/g, '').split('\n');
+    const multiValueLabels = new Set(['Completed', 'Next steps', 'Risks', 'Artifacts']);
+
+    for (const line of lines) {
+        const match = /^\s*(Summary|Completed|Next steps|Risks|Artifacts)\s*:\s*(.*)\s*$/i.exec(line);
+        if (!match) {
+            continue;
+        }
+        const label = normalizeLabel(match[1]);
+        const value = match[2].trim();
+        if (!label || !value) {
+            continue;
+        }
+        if (label === 'summary') {
+            report.summary = value;
+            continue;
+        }
+        const items = value
+            .split(/(?:\s*[,;•]\s*|\s+\d+\.\s+)/)
+            .map(item => item.trim())
+            .filter(Boolean);
+        if (!items.length) {
+            continue;
+        }
+        report[label] = Array.from(new Set([...(report[label] ?? []), ...items]));
+        if (!multiValueLabels.has(match[1])) {
+            break;
+        }
+    }
+
+    return report.summary || report.completed?.length || report.nextSteps?.length || report.risks?.length || report.artifacts?.length
+        ? report
+        : undefined;
+}
+
+function normalizeLabel(label: string): keyof DelegatedAgentReport | undefined {
+    switch (String(label || '').trim().toLowerCase()) {
+        case 'summary':
+            return 'summary';
+        case 'completed':
+            return 'completed';
+        case 'next steps':
+            return 'nextSteps';
+        case 'risks':
+            return 'risks';
+        case 'artifacts':
+            return 'artifacts';
+        default:
+            return undefined;
+    }
 }
 
 @Injectable({ provide: SpawnAgentAdapter })
@@ -56,7 +120,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
         return {
             output: result.content,
             turnCount: result.turnCount,
-            toolCalls: result.toolCalls
+            toolCalls: result.toolCalls,
+            report: result.report ?? parseDelegatedAgentReport(result.content)
         };
     }
 
