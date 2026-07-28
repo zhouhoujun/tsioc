@@ -6,6 +6,8 @@ import { ModelRequest } from '../model/ModelRequest';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 
 const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths, 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. Use concise factual phrases. Do not infer or add information not present in the conversation.';
+const SUMMARY_LABELS = ['Goal', 'Decisions', 'Files', 'Errors', 'Open state'] as const;
+type SummaryLabel = typeof SUMMARY_LABELS[number];
 
 @Injectable()
 export class LLMSessionSummarizer extends SessionSummarizer {
@@ -47,7 +49,7 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         try {
             const response = await this.modelAdapter.complete(request);
             if (response.message && response.message.trim()) {
-                return response.message.trim();
+                return this.normalizeStructuredSummary(response.message, messages);
             }
         } catch {
             // fall through to naive fallback
@@ -102,19 +104,13 @@ export class LLMSessionSummarizer extends SessionSummarizer {
             return '';
         }
         const relevant = messages.filter(message => message.role !== 'system');
-        const goal = this.resolveGoal(relevant);
-        const decisions = this.resolveDecisions(relevant);
-        const files = this.resolveFiles(relevant);
-        const errors = this.resolveErrors(relevant);
-        const openState = this.resolveOpenState(relevant);
-
-        return [
-            `Goal: ${goal || 'No clear goal captured.'}`,
-            `Decisions: ${decisions || 'No major decisions recorded.'}`,
-            `Files: ${files || 'No file paths mentioned.'}`,
-            `Errors: ${errors || 'No errors recorded.'}`,
-            `Open state: ${openState || 'Continue from the latest conversation state.'}`
-        ].join('\n').slice(0, 2000);
+        return this.composeStructuredSummary({
+            Goal: this.resolveGoal(relevant),
+            Decisions: this.resolveDecisions(relevant),
+            Files: this.resolveFiles(relevant),
+            Errors: this.resolveErrors(relevant),
+            'Open state': this.resolveOpenState(relevant)
+        });
     }
 
     private resolveGoal(messages: AgentMessage[]): string {
@@ -181,5 +177,88 @@ export class LLMSessionSummarizer extends SessionSummarizer {
             return text;
         }
         return `${text.slice(0, maxLength - 3)}...`;
+    }
+
+    private normalizeStructuredSummary(rawSummary: string, messages: AgentMessage[]): string {
+        const relevant = messages.filter(message => message.role !== 'system');
+        const fallback = {
+            Goal: this.resolveGoal(relevant),
+            Decisions: this.resolveDecisions(relevant),
+            Files: this.resolveFiles(relevant),
+            Errors: this.resolveErrors(relevant),
+            'Open state': this.resolveOpenState(relevant)
+        } satisfies Record<SummaryLabel, string>;
+        const parsed = this.parseStructuredSummary(rawSummary);
+        const rawText = this.truncate(String(rawSummary || '').replace(/\s+/g, ' ').trim(), 280);
+
+        if (!parsed.Goal && rawText) {
+            parsed.Goal = fallback.Goal || rawText;
+        }
+        if (!parsed.Decisions && rawText) {
+            parsed.Decisions = rawText;
+        }
+        if (!parsed['Open state'] && rawText) {
+            parsed['Open state'] = rawText;
+        }
+
+        return this.composeStructuredSummary({
+            Goal: parsed.Goal || fallback.Goal,
+            Decisions: parsed.Decisions || fallback.Decisions,
+            Files: parsed.Files || fallback.Files,
+            Errors: parsed.Errors || fallback.Errors,
+            'Open state': parsed['Open state'] || fallback['Open state']
+        });
+    }
+
+    private parseStructuredSummary(summary: string): Partial<Record<SummaryLabel, string>> {
+        const result: Partial<Record<SummaryLabel, string>> = {};
+        const lines = String(summary || '').replace(/\r/g, '').split('\n');
+
+        for (const line of lines) {
+            const match = /^\s*(Goal|Decisions|Files|Errors|Open state)\s*:\s*(.*)\s*$/i.exec(line);
+            if (!match) {
+                continue;
+            }
+            const label = this.normalizeSummaryLabel(match[1]);
+            if (!label) {
+                continue;
+            }
+            result[label] = this.truncate(match[2], label === 'Files' ? 220 : 280);
+        }
+
+        return result;
+    }
+
+    private normalizeSummaryLabel(label: string): SummaryLabel | undefined {
+        const normalized = String(label || '').trim().toLowerCase();
+        switch (normalized) {
+            case 'goal':
+                return 'Goal';
+            case 'decisions':
+                return 'Decisions';
+            case 'files':
+                return 'Files';
+            case 'errors':
+                return 'Errors';
+            case 'open state':
+                return 'Open state';
+            default:
+                return undefined;
+        }
+    }
+
+    private composeStructuredSummary(fields: Record<SummaryLabel, string>): string {
+        const defaults: Record<SummaryLabel, string> = {
+            Goal: 'No clear goal captured.',
+            Decisions: 'No major decisions recorded.',
+            Files: 'No file paths mentioned.',
+            Errors: 'No errors recorded.',
+            'Open state': 'Continue from the latest conversation state.'
+        };
+
+        return SUMMARY_LABELS
+            .map(label => `${label}: ${this.truncate(fields[label] || defaults[label], label === 'Files' ? 220 : 280) || defaults[label]}`)
+            .join('\n')
+            .slice(0, 2000);
     }
 }

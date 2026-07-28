@@ -5,6 +5,7 @@ import { AgentRuntime } from '../src/runtime/AgentRuntime';
 import { DefaultAgentRuntime } from '../src/runtime/DefaultAgentRuntime';
 import { InMemorySessionStore } from '../src/memory/InMemorySessionStore';
 import { InMemoryMemoryStore } from '../src/memory/InMemoryMemoryStore';
+import { LLMSessionSummarizer } from '../src/memory/LLMSessionSummarizer';
 import { SimpleSessionSummarizer } from '../src/memory/SimpleSessionSummarizer';
 import { ToolRegistry } from '../src/tools/ToolRegistry';
 import { EchoModelAdapter } from '../src/model/EchoModelAdapter';
@@ -1042,6 +1043,36 @@ export class RuntimeLoopTest {
         expect(completed?.sessionId).toEqual('s1');
         expect(completed?.query).toEqual('router question');
         expect(completed?.records.map((record: any) => record.id)).toEqual(['relevant']);
+    }
+
+    @Test('persists structured session summary after turn threshold is reached')
+    async persistsStructuredSessionSummaryAfterThreshold() {
+        const sessions = new InMemorySessionStore();
+        const runtime = new DefaultAgentRuntime(
+            new StaticModelAdapter('done'),
+            new EmptyToolRegistry(),
+            sessions,
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter(
+                'We should fix routing in src/app.ts. The next step is to inspect the router flow and patch the failing branch.'
+            ) as any),
+            {
+                ...defaultAgentOptions,
+                session: { ...defaultAgentOptions.session, summaryThreshold: 2 }
+            },
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'Fix routing in src/app.ts and preserve the current task goal.');
+
+        const state = await sessions.get('s1');
+        expect(state.summary).toBeTruthy();
+        expect(state.summary).toContain('Goal:');
+        expect(state.summary).toContain('Decisions:');
+        expect(state.summary).toContain('Files:');
+        expect(state.summary).toContain('Errors:');
+        expect(state.summary).toContain('Open state:');
+        expect(state.summary).toContain('src/app.ts');
     }
 
     @Test('keeps turn successful when memory retrieval fails')

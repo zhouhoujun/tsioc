@@ -370,6 +370,37 @@ export class ContextCompactionTest {
         expect(result).not.toContain('"entries"');
     }
 
+    @Test('LLMSessionSummarizer normalizes model output into fixed summary labels')
+    async llmNormalizesStructuredSummaryShape() {
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Fix routing in src/app.ts and preserve the current task goal.', createdAt: 1 },
+            {
+                id: '2',
+                role: 'tool',
+                name: 'project_intel',
+                content: '{"error":"Tool \\"project_intel\\" input validation failed: $.action is required"}',
+                createdAt: 2,
+                metadata: {
+                    error: 'Tool "project_intel" input validation failed: $.action is required'
+                }
+            },
+            { id: '3', role: 'assistant', content: 'Next I will inspect the router flow and patch the failing branch.', createdAt: 3 }
+        ];
+
+        const summarizer = new LLMSessionSummarizer(new StaticSummaryModelAdapter(
+            'We should fix routing in src/app.ts. The next step is to inspect the router flow and patch the failing branch.'
+        ) as any);
+        const result = await summarizer.summarize(messages);
+
+        expect(result).toContain('Goal:');
+        expect(result).toContain('Decisions:');
+        expect(result).toContain('Files:');
+        expect(result).toContain('Errors:');
+        expect(result).toContain('Open state:');
+        expect(result).toContain('src/app.ts');
+        expect(result).toContain('project_intel');
+    }
+
     @Test('LLMSessionSummarizer falls back to naive when no model adapter')
     async llmFallsBackWithoutModel() {
         const summarizer = new LLMSessionSummarizer(null);
@@ -403,5 +434,18 @@ export class ContextCompactionTest {
         expect(result).toContain('Errors:');
         expect(result).toContain('Open state:');
         expect(result).toContain('src/app.ts');
+    }
+}
+
+class StaticSummaryModelAdapter extends EchoModelAdapter {
+    constructor(private readonly content: string) {
+        super();
+    }
+
+    async complete(): Promise<any> {
+        return {
+            message: this.content,
+            stopReason: 'end'
+        };
     }
 }
