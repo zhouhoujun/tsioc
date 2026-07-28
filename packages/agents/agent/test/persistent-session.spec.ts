@@ -86,4 +86,37 @@ describe('Persistent session store', () => {
             await ctx.close();
         }
     });
+
+    it('persists project metadata and project indexes', async () => {
+        const ctx = await Application.run(PersistentSessionTestModule);
+        try {
+            const store = ctx.get(TypeOrmSessionStore) as TypeOrmSessionStore;
+            await store.append('session-5', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+            await store.setWorkspace('session-5', '/tmp/project-a');
+            await store.setProjectMetadata('session-5', {
+                projectId: 'exam-system',
+                primaryThreadId: 'thread-5',
+                sessionRole: 'main',
+                rootRequest: 'Build an exam system',
+                focusSummary: 'Group related sessions'
+            });
+
+            const state = await store.get('session-5');
+            expect(state.projectId).toEqual('exam-system');
+            expect(state.primaryThreadId).toEqual('thread-5');
+            expect(state.sessionRole).toEqual('main');
+            expect(state.rootRequest).toEqual('Build an exam system');
+            expect(state.focusSummary).toEqual('Group related sessions');
+
+            const projects = await store.listProjects();
+            expect(projects).toContainEqual(expect.objectContaining({
+                projectKey: 'project:exam-system',
+                projectId: 'exam-system',
+                workspace: '/tmp/project-a',
+                sessionIds: ['session-5']
+            }));
+        } finally {
+            await ctx.close();
+        }
+    });
 });

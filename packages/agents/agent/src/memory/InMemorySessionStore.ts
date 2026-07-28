@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { SessionStore } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, SessionStore } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 
@@ -20,6 +20,11 @@ export class InMemorySessionStore extends SessionStore {
             summary: state.summary,
             ownerPrincipalId: state.ownerPrincipalId,
             workspace: state.workspace,
+            projectId: state.projectId,
+            primaryThreadId: state.primaryThreadId,
+            sessionRole: state.sessionRole,
+            rootRequest: state.rootRequest,
+            focusSummary: state.focusSummary,
             createdAt: state.createdAt,
             updatedAt: state.updatedAt
         };
@@ -31,6 +36,32 @@ export class InMemorySessionStore extends SessionStore {
 
     async listSessionIds(): Promise<string[]> {
         return Array.from(this.sessions.keys());
+    }
+
+    async listProjects(): Promise<AgentSessionProjectIndex[]> {
+        const buckets = new Map<string, AgentSessionProjectIndex>();
+        for (const state of this.sessions.values()) {
+            const projectKey = this.resolveProjectKey(state);
+            const existing = buckets.get(projectKey) ?? {
+                projectKey,
+                projectId: state.projectId,
+                workspace: state.workspace,
+                sessionIds: [],
+                lastActiveAt: 0
+            };
+            existing.sessionIds.push(state.sessionId);
+            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, state.updatedAt || state.createdAt || 0);
+            existing.projectId = existing.projectId || state.projectId;
+            existing.workspace = existing.workspace || state.workspace;
+            buckets.set(projectKey, existing);
+        }
+        return Array.from(buckets.values()).sort((left, right) => {
+            const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return left.projectKey.localeCompare(right.projectKey);
+        });
     }
 
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
@@ -75,11 +106,35 @@ export class InMemorySessionStore extends SessionStore {
         this.sessions.set(sessionId, state);
     }
 
+    async setProjectMetadata(sessionId: string, metadata: AgentSessionProjectMetadata): Promise<void> {
+        const state = await this.get(sessionId);
+        state.projectId = String(metadata.projectId || '').trim() || undefined;
+        state.primaryThreadId = String(metadata.primaryThreadId || '').trim() || undefined;
+        state.sessionRole = String(metadata.sessionRole || '').trim() || undefined;
+        state.rootRequest = String(metadata.rootRequest || '').trim() || undefined;
+        state.focusSummary = String(metadata.focusSummary || '').trim() || undefined;
+        state.updatedAt = Date.now();
+        state.createdAt ??= state.updatedAt;
+        this.sessions.set(sessionId, state);
+    }
+
     delete(sessionId: string): void {
         this.sessions.delete(sessionId);
     }
 
     clear(): void {
         this.sessions.clear();
+    }
+
+    protected resolveProjectKey(state: AgentState): string {
+        const projectId = String(state.projectId || '').trim();
+        if (projectId) {
+            return `project:${projectId}`;
+        }
+        const workspace = String(state.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
+        }
+        return `session:${state.sessionId}`;
     }
 }

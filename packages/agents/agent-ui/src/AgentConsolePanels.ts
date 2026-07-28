@@ -698,21 +698,33 @@ export class AgentConsoleSessionsPanelComponent {
         if (!this.shouldShow) {
             return [];
         }
-        return this.visibleSessions.map(session => {
+        const rows: Array<{ id: string; label: string; style: Record<string, string> }> = [];
+        let previousProjectKey = '';
+        for (const session of this.visibleSessions) {
+            const projectKey = String(session.projectKey || '').trim();
+            if (projectKey && projectKey !== previousProjectKey) {
+                rows.push({
+                    id: `${projectKey}::header`,
+                    label: this.projectHeaderLabel(session),
+                    style: this.activeThemeStyles.sessionsAccent
+                });
+            }
             const current = session.current ? ' [current]' : '';
             const selected = this.state.selectedSessionId === session.id;
             const marker = selected ? '›' : ' ';
             const count = session.messageCount != null ? ` (${session.messageCount})` : '';
             const workspace = this.workspaceLabel(session.workspace);
             const workspacePrefix = workspace ? `[${workspace}] ` : '';
-            return {
+            rows.push({
                 id: session.id,
                 label: `${marker} ${workspacePrefix}${session.id}${current}${count}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
                     : this.activeThemeStyles.statusValue
-            };
-        });
+            });
+            previousProjectKey = projectKey;
+        }
+        return rows;
     }
 
     get visibleSessionStart(): number {
@@ -768,6 +780,13 @@ export class AgentConsoleSessionsPanelComponent {
             return '';
         }
         return path.basename(text) || text;
+    }
+
+    protected projectHeaderLabel(session: AgentConsoleSessionItem): string {
+        const label = String(session.projectLabel || session.projectId || session.workspace || '').trim();
+        const displayLabel = this.workspaceLabel(label) || label || session.id;
+        const count = Math.max(1, Number(session.projectSessionCount || 0));
+        return `project ${displayLabel} · ${count} session${count === 1 ? '' : 's'}`;
     }
 }
 

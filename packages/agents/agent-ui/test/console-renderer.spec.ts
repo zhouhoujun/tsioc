@@ -845,7 +845,11 @@ export class AgentConsoleRendererTest {
             current: index === 0,
             messageCount: index + 1,
             updatedAt: index + 1,
-            workspace: '/tmp/project-a'
+            workspace: '/tmp/project-a',
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            projectLabel: 'exam-system',
+            projectSessionCount: 10
         })) as any);
         ref.instance.sessionState.setSessionsFocused(true);
         ref.instance.sessionState.setSelectedSessionId('chat-9');
@@ -857,6 +861,7 @@ export class AgentConsoleRendererTest {
         const sessionLines = renderer.renderToLines(sessionsPanel.hostView.rootNodes[0]);
 
         expect(sessionLines.some(line => line.includes('sessions 10 · 9/10'))).toBe(true);
+        expect(sessionLines.some(line => line.includes('project exam-system · 10 sessions'))).toBe(true);
         expect(sessionLines.some(line => line.includes('› [project-a] chat-9'))).toBe(true);
         expect(sessionLines.some(line => line.includes('[project-a] chat-10'))).toBe(true);
         expect(sessionLines.some(line => line.includes('[project-a] chat-8'))).toBe(true);

@@ -369,9 +369,9 @@
 
 ### M4 项目主线与跨会话组织
 
-- `[ ]` `AGENT-M4-ARCH`：定义 project / session / thread 元数据模型与归类规则
-- `[ ]` `AGENT-M4-STORE`：为 session store 增加 project-level 索引能力
-- `[ ]` `AGENT-M4-UI-1`：在 UI 中支持同项目相关 session 聚合浏览
+- `[x]` `AGENT-M4-ARCH`：定义 project / session / thread 元数据模型与归类规则
+- `[x]` `AGENT-M4-STORE`：为 session store 增加 project-level 索引能力
+- `[x]` `AGENT-M4-UI-1`：在 UI 中支持同项目相关 session 聚合浏览
 - `[ ]` `AGENT-M4-UI-2`：让 summary / todo / review 可以按项目主线聚合展示
 - `[ ]` `AGENT-M4-TEST`：补多主题切换、跨 session 聚合与兼容性测试
 

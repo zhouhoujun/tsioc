@@ -17,6 +17,21 @@ export class AgentSessionEntity {
     @Column({ type: 'text', nullable: true })
     workspace!: string | null;
 
+    @Column({ type: 'text', nullable: true })
+    projectId!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    primaryThreadId!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    sessionRole!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    rootRequest!: string | null;
+
+    @Column({ type: 'text', nullable: true })
+    focusSummary!: string | null;
+
     @Column({ type: 'bigint' })
     createdAt!: number;
 

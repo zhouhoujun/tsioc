@@ -63,4 +63,49 @@ export class SessionStoreTest {
         await store.setOwner('session-1', undefined);
         expect(await store.has('session-1')).toEqual(false);
     }
+
+    @Test('stores project metadata and lists projects by project id')
+    async storesProjectMetadataAndListsProjects() {
+        const store = new InMemorySessionStore();
+        await store.append('session-1', { id: '1', role: 'user', content: 'one', createdAt: 1 });
+        await store.setWorkspace('session-1', '/tmp/project-a');
+        await store.setProjectMetadata('session-1', {
+            projectId: 'exam-system',
+            primaryThreadId: 'thread-1',
+            sessionRole: 'main',
+            rootRequest: 'Build an exam system',
+            focusSummary: 'M4 grouping'
+        });
+
+        const state = await store.get('session-1');
+        expect(state.projectId).toEqual('exam-system');
+        expect(state.primaryThreadId).toEqual('thread-1');
+        expect(state.sessionRole).toEqual('main');
+        expect(state.rootRequest).toEqual('Build an exam system');
+        expect(state.focusSummary).toEqual('M4 grouping');
+
+        const projects = await store.listProjects();
+        expect(projects).toEqual([{
+            projectKey: 'project:exam-system',
+            projectId: 'exam-system',
+            workspace: '/tmp/project-a',
+            sessionIds: ['session-1'],
+            lastActiveAt: state.updatedAt
+        }]);
+    }
+
+    @Test('falls back from project id to workspace and session when grouping')
+    async fallsBackWhenGroupingProjects() {
+        const store = new InMemorySessionStore();
+        await store.append('session-a', { id: '1', role: 'user', content: 'a', createdAt: 1 });
+        await store.append('session-b', { id: '2', role: 'user', content: 'b', createdAt: 2 });
+        await store.append('session-c', { id: '3', role: 'user', content: 'c', createdAt: 3 });
+        await store.setWorkspace('session-a', '/tmp/project-a');
+        await store.setWorkspace('session-b', '/tmp/project-a');
+
+        const projects = await store.listProjects();
+        expect(projects.map(project => project.projectKey)).toEqual(['session:session-c', 'workspace:/tmp/project-a']);
+        expect(projects.find(project => project.projectKey === 'workspace:/tmp/project-a')?.sessionIds.sort()).toEqual(['session-a', 'session-b']);
+        expect(projects.find(project => project.projectKey === 'session:session-c')?.sessionIds).toEqual(['session-c']);
+    }
 }

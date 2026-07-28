@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@tsdi/ioc';
-import { SessionStore } from './SessionStore';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata, SessionStore } from './SessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
@@ -24,6 +24,11 @@ export class TypeOrmSessionStore extends SessionStore {
             summary: session.summary,
             ownerPrincipalId: session.ownerPrincipalId ?? undefined,
             workspace: session.workspace ?? undefined,
+            projectId: session.projectId ?? undefined,
+            primaryThreadId: session.primaryThreadId ?? undefined,
+            sessionRole: session.sessionRole ?? undefined,
+            rootRequest: session.rootRequest ?? undefined,
+            focusSummary: session.focusSummary ?? undefined,
             createdAt: Number(session.createdAt),
             updatedAt: Number(session.updatedAt),
             messages: messages.map(message => ({
@@ -45,6 +50,33 @@ export class TypeOrmSessionStore extends SessionStore {
     async listSessionIds(): Promise<string[]> {
         const sessions = await this.adapter.getRepository(AgentSessionEntity).find({ order: { createdAt: 'ASC' } as any });
         return sessions.map(session => session.sessionId);
+    }
+
+    async listProjects(): Promise<AgentSessionProjectIndex[]> {
+        const sessions = await this.adapter.getRepository(AgentSessionEntity).find();
+        const buckets = new Map<string, AgentSessionProjectIndex>();
+        for (const session of sessions) {
+            const projectKey = this.resolveProjectKey(session);
+            const existing = buckets.get(projectKey) ?? {
+                projectKey,
+                projectId: session.projectId ?? undefined,
+                workspace: session.workspace ?? undefined,
+                sessionIds: [],
+                lastActiveAt: 0
+            };
+            existing.sessionIds.push(session.sessionId);
+            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, Number(session.updatedAt || session.createdAt || 0));
+            existing.projectId = existing.projectId || session.projectId || undefined;
+            existing.workspace = existing.workspace || session.workspace || undefined;
+            buckets.set(projectKey, existing);
+        }
+        return Array.from(buckets.values()).sort((left, right) => {
+            const activityDelta = (right.lastActiveAt || 0) - (left.lastActiveAt || 0);
+            if (activityDelta !== 0) {
+                return activityDelta;
+            }
+            return left.projectKey.localeCompare(right.projectKey);
+        });
     }
 
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
@@ -116,6 +148,37 @@ export class TypeOrmSessionStore extends SessionStore {
         await repo.save(session);
     }
 
+    async setProjectMetadata(sessionId: string, metadata: AgentSessionProjectMetadata): Promise<void> {
+        const repo = this.adapter.getRepository(AgentSessionEntity);
+        let session = await repo.findOne({ where: { sessionId } as any });
+        const now = Date.now();
+        const normalizedProjectId = String(metadata.projectId || '').trim() || null;
+        const normalizedPrimaryThreadId = String(metadata.primaryThreadId || '').trim() || null;
+        const normalizedSessionRole = String(metadata.sessionRole || '').trim() || null;
+        const normalizedRootRequest = String(metadata.rootRequest || '').trim() || null;
+        const normalizedFocusSummary = String(metadata.focusSummary || '').trim() || null;
+        if (!session) {
+            session = repo.create({
+                sessionId,
+                projectId: normalizedProjectId,
+                primaryThreadId: normalizedPrimaryThreadId,
+                sessionRole: normalizedSessionRole,
+                rootRequest: normalizedRootRequest,
+                focusSummary: normalizedFocusSummary,
+                createdAt: now,
+                updatedAt: now
+            });
+        } else {
+            session.projectId = normalizedProjectId;
+            session.primaryThreadId = normalizedPrimaryThreadId;
+            session.sessionRole = normalizedSessionRole;
+            session.rootRequest = normalizedRootRequest;
+            session.focusSummary = normalizedFocusSummary;
+            session.updatedAt = now;
+        }
+        await repo.save(session);
+    }
+
     async delete(sessionId: string): Promise<void> {
         await this.adapter.getRepository(AgentMessageEntity).delete({ sessionId } as any);
         await this.adapter.getRepository(AgentSessionEntity).delete({ sessionId } as any);
@@ -124,5 +187,17 @@ export class TypeOrmSessionStore extends SessionStore {
     async clear(): Promise<void> {
         await this.adapter.getRepository(AgentMessageEntity).clear();
         await this.adapter.getRepository(AgentSessionEntity).clear();
+    }
+
+    protected resolveProjectKey(state: { sessionId: string; projectId?: string | null; workspace?: string | null }): string {
+        const projectId = String(state.projectId || '').trim();
+        if (projectId) {
+            return `project:${projectId}`;
+        }
+        const workspace = String(state.workspace || '').trim();
+        if (workspace) {
+            return `workspace:${workspace}`;
+        }
+        return `session:${state.sessionId}`;
     }
 }

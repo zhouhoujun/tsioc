@@ -25,6 +25,7 @@ import {
     AgentConsoleSessionService,
     AgentConsoleSessionState,
     AgentConsoleSessionChoice,
+    AgentConsoleSessionProjectGroup,
     AgentConsoleWorkspaceMentionsProvider
 } from '../src';
 
@@ -355,6 +356,7 @@ class AppRpcStub {
 
 class SessionServiceStub extends AgentConsoleSessionService {
     sessions: AgentConsoleSessionChoice[] = [{ id: 'console', current: true }];
+    projectGroups?: AgentConsoleSessionProjectGroup[];
     ensuredSessionIds: Array<string | undefined> = [];
     messagesBySession = new Map<string, any[]>();
     protected runtimeRef: RuntimeStub;
@@ -382,6 +384,41 @@ class SessionServiceStub extends AgentConsoleSessionService {
         return this.sessions.map(item => ({
             ...item,
             current: item.id === currentSessionId
+        }));
+    }
+
+    override async listProjectSessions(currentSessionId?: string): Promise<AgentConsoleSessionProjectGroup[]> {
+        if (this.projectGroups) {
+            return this.projectGroups.map(group => ({
+                ...group,
+                sessions: group.sessions.map(item => ({
+                    ...item,
+                    current: item.id === currentSessionId
+                }))
+            }));
+        }
+        const buckets = new Map<string, AgentConsoleSessionChoice[]>();
+        for (const session of this.sessions) {
+            const projectKey = String(session.projectId || '').trim()
+                ? `project:${String(session.projectId).trim()}`
+                : String(session.workspace || '').trim()
+                    ? `workspace:${String(session.workspace).trim()}`
+                    : `session:${session.id}`;
+            const bucket = buckets.get(projectKey) || [];
+            bucket.push(session);
+            buckets.set(projectKey, bucket);
+        }
+        return Array.from(buckets.entries()).map(([projectKey, sessions]) => ({
+            projectKey,
+            projectId: sessions[0]?.projectId,
+            label: sessions[0]?.projectId || sessions[0]?.workspace || sessions[0]?.id,
+            workspace: String(sessions[0]?.workspace || ''),
+            sessionCount: sessions.length,
+            lastActiveAt: Math.max(...sessions.map(item => item.lastActiveAt || 0), 0),
+            sessions: sessions.map(item => ({
+                ...item,
+                current: item.id === currentSessionId
+            }))
         }));
     }
 
@@ -413,6 +450,28 @@ class WorkspaceSessionStoreStub {
         return Array.from(this.sessions.keys());
     }
 
+    async listProjects(): Promise<any[]> {
+        const buckets = new Map<string, any>();
+        for (const state of this.sessions.values()) {
+            const projectKey = String(state.projectId || '').trim()
+                ? `project:${String(state.projectId).trim()}`
+                : String(state.workspace || '').trim()
+                    ? `workspace:${String(state.workspace).trim()}`
+                    : `session:${state.sessionId}`;
+            const existing = buckets.get(projectKey) || {
+                projectKey,
+                projectId: state.projectId,
+                workspace: state.workspace,
+                sessionIds: [],
+                lastActiveAt: 0
+            };
+            existing.sessionIds.push(state.sessionId);
+            existing.lastActiveAt = Math.max(existing.lastActiveAt || 0, state.updatedAt || state.createdAt || 0);
+            buckets.set(projectKey, existing);
+        }
+        return Array.from(buckets.values());
+    }
+
     async append(sessionId: string, message: any): Promise<any> {
         const state = await this.get(sessionId);
         state.messages = [...(state.messages || []), message];
@@ -435,6 +494,18 @@ class WorkspaceSessionStoreStub {
     async setWorkspace(sessionId: string, workspace?: string): Promise<void> {
         const state = await this.get(sessionId);
         state.workspace = workspace;
+        this.sessions.set(sessionId, state);
+    }
+
+    async setProjectMetadata(sessionId: string, metadata: any): Promise<void> {
+        const state = await this.get(sessionId);
+        Object.assign(state, {
+            projectId: metadata?.projectId,
+            primaryThreadId: metadata?.primaryThreadId,
+            sessionRole: metadata?.sessionRole,
+            rootRequest: metadata?.rootRequest,
+            focusSummary: metadata?.focusSummary
+        });
         this.sessions.set(sessionId, state);
     }
 
@@ -2885,6 +2956,88 @@ export class AgentConsoleComponentTest {
         expect(projects[0].sessionCount).toEqual(2);
         expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-c', 'chat-a']);
         expect(projects[0].sessions[0].current).toEqual(true);
+    }
+
+    @Test('session service prefers project id grouping when metadata exists')
+    async sessionServicePrefersProjectIdGrouping() {
+        const store = new WorkspaceSessionStoreStub();
+        store.sessions.set('chat-a', {
+            sessionId: 'chat-a',
+            messages: [],
+            createdAt: 2,
+            updatedAt: 2,
+            workspace: '/tmp/project-a',
+            projectId: 'exam-system'
+        });
+        store.sessions.set('chat-b', {
+            sessionId: 'chat-b',
+            messages: [],
+            createdAt: 1,
+            updatedAt: 1,
+            workspace: '/tmp/project-b',
+            projectId: 'exam-system'
+        });
+        store.sessions.set('chat-c', {
+            sessionId: 'chat-c',
+            messages: [],
+            createdAt: 3,
+            updatedAt: 3,
+            workspace: '/tmp/project-c'
+        });
+
+        const service = new AgentConsoleSessionService(undefined, store as any, undefined);
+        const projects = await service.listProjectSessions('chat-b');
+
+        expect(projects.map(project => project.projectKey)).toEqual(['project:exam-system', 'workspace:/tmp/project-c']);
+        expect(projects[0].projectId).toEqual('exam-system');
+        expect(projects[0].label).toEqual('exam-system');
+        expect(projects[0].sessions.map(session => session.id)).toEqual(['chat-a', 'chat-b']);
+        expect(projects[0].sessions[1].current).toEqual(true);
+    }
+
+    @Test('sessions command refreshes grouped project sessions into the panel state')
+    async sessionsCommandRefreshesGroupedProjectSessions() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const sessionService = new SessionServiceStub(runtime);
+        sessionService.projectGroups = [
+            {
+                projectKey: 'project:exam-system',
+                projectId: 'exam-system',
+                label: 'exam-system',
+                workspace: '/tmp/project-a',
+                sessionCount: 2,
+                lastActiveAt: 2,
+                sessions: [
+                    { id: 'chat-a', workspace: '/tmp/project-a', messageCount: 2, lastActiveAt: 2 },
+                    { id: 'chat-b', workspace: '/tmp/project-b', messageCount: 1, lastActiveAt: 1 }
+                ]
+            },
+            {
+                projectKey: 'workspace:/tmp/project-c',
+                label: '/tmp/project-c',
+                workspace: '/tmp/project-c',
+                sessionCount: 1,
+                lastActiveAt: 3,
+                sessions: [
+                    { id: 'chat-c', workspace: '/tmp/project-c', messageCount: 3, lastActiveAt: 3 }
+                ]
+            }
+        ];
+
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, sessionService);
+        await (component as any).handleCommand('/sessions');
+
+        expect(component.sessionState.sessions.map(item => ({
+            id: item.id,
+            projectKey: item.projectKey,
+            projectLabel: item.projectLabel
+        }))).toEqual([
+            { id: 'chat-a', projectKey: 'project:exam-system', projectLabel: 'exam-system' },
+            { id: 'chat-b', projectKey: 'project:exam-system', projectLabel: 'exam-system' },
+            { id: 'chat-c', projectKey: 'workspace:/tmp/project-c', projectLabel: '/tmp/project-c' }
+        ]);
+        expect(component.sessionState.sessionsFocused).toEqual(true);
     }
 
     @Test('session state supports focused message list navigation')

@@ -39,6 +39,10 @@ export interface AgentConsoleSessionItem {
     workspace?: string;
     updatedAt?: number;
     messageCount?: number;
+    projectKey?: string;
+    projectId?: string;
+    projectLabel?: string;
+    projectSessionCount?: number;
 }
 
 export interface AgentConsoleActivity {

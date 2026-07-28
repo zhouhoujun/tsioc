@@ -6,6 +6,7 @@ import { InMemorySessionStore } from './InMemorySessionStore';
 import { TypeOrmSessionStore } from './TypeOrmSessionStore';
 import { AgentState } from '../runtime/AgentState';
 import { AgentMessage } from '../runtime/AgentMessage';
+import { AgentSessionProjectIndex, AgentSessionProjectMetadata } from './SessionStore';
 
 @Injectable()
 export class DefaultSessionStore extends SessionStore {
@@ -30,6 +31,10 @@ export class DefaultSessionStore extends SessionStore {
         return this.resolveStore().listSessionIds();
     }
 
+    async listProjects(): Promise<AgentSessionProjectIndex[]> {
+        return this.resolveStore().listProjects();
+    }
+
     async append(sessionId: string, message: AgentMessage): Promise<AgentState> {
         return this.resolveStore().append(sessionId, message);
     }
@@ -44,6 +49,10 @@ export class DefaultSessionStore extends SessionStore {
 
     async setWorkspace(sessionId: string, workspace?: string): Promise<void> {
         await this.resolveStore().setWorkspace(sessionId, workspace);
+    }
+
+    async setProjectMetadata(sessionId: string, metadata: AgentSessionProjectMetadata): Promise<void> {
+        await this.resolveStore().setProjectMetadata(sessionId, metadata);
     }
 
     async delete(sessionId: string): Promise<void> {

@@ -16,7 +16,7 @@ import { AgentConsoleApprovalRequest, AgentConsoleSelectOption, AgentConsoleSess
 import { mergeAgentConsoleTheme } from './AgentConsoleTheme';
 import { AgentUiResolvedModelProfile } from './AgentUiConfigReader';
 import { AgentConsoleWorkspaceMentionsProvider } from './AgentConsoleWorkspaceMentions';
-import { AgentConsoleSessionService } from './AgentConsoleSessionService';
+import { AgentConsoleSessionProjectGroup, AgentConsoleSessionService } from './AgentConsoleSessionService';
 @Component({
     selector: 'agent-console',
     template: `
@@ -110,14 +110,55 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
         if (!this.sessionService) {
             return;
         }
+        const groups = await this.sessionService.listProjectSessions(this.state.sessionId);
+        const groupedSessions = this.flattenProjectSessions(groups);
+        if (groupedSessions.length) {
+            this.state.setSessions(groupedSessions);
+            return;
+        }
         const sessions = await this.sessionService.listSessions(this.state.sessionId);
         if (!sessions.length) {
             return;
         }
         this.state.setSessions(sessions.map(item => ({
             id: item.id,
-            current: !!item.current
+            current: !!item.current,
+            workspace: item.workspace,
+            updatedAt: item.lastActiveAt,
+            messageCount: item.messageCount,
+            projectId: item.projectId,
+            projectLabel: item.projectId || item.workspace
         })));
+    }
+
+    protected flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]): Array<{
+        id: string;
+        current: boolean;
+        workspace?: string;
+        updatedAt?: number;
+        messageCount?: number;
+        projectKey?: string;
+        projectId?: string;
+        projectLabel?: string;
+        projectSessionCount?: number;
+    }> {
+        return groups.flatMap(group => {
+            const projectKey = String(group.projectKey || '').trim() || undefined;
+            const projectId = String(group.projectId || '').trim() || undefined;
+            const projectLabel = String(group.label || group.projectId || group.workspace || '').trim()
+                || undefined;
+            return group.sessions.map(item => ({
+                id: item.id,
+                current: !!item.current,
+                workspace: item.workspace || group.workspace,
+                updatedAt: item.lastActiveAt,
+                messageCount: item.messageCount,
+                projectKey,
+                projectId,
+                projectLabel,
+                projectSessionCount: group.sessionCount
+            }));
+        });
     }
 
     protected async refreshPendingApprovals(): Promise<void> {

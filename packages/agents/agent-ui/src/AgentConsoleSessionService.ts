@@ -10,9 +10,17 @@ export interface AgentConsoleSessionChoice {
     messageCount?: number;
     summary?: string;
     workspace?: string;
+    projectId?: string;
+    primaryThreadId?: string;
+    sessionRole?: string;
+    rootRequest?: string;
+    focusSummary?: string;
 }
 
 export interface AgentConsoleSessionProjectGroup {
+    projectKey?: string;
+    projectId?: string;
+    label?: string;
     workspace: string;
     sessionCount: number;
     lastActiveAt: number;
@@ -56,7 +64,12 @@ export class AgentConsoleSessionService {
                     lastActiveAt: item?.lastActiveAt,
                     messageCount: item?.messageCount,
                     summary: item?.summary,
-                    workspace: item?.workspace
+                    workspace: item?.workspace,
+                    projectId: item?.projectId,
+                    primaryThreadId: item?.primaryThreadId,
+                    sessionRole: item?.sessionRole,
+                    rootRequest: item?.rootRequest,
+                    focusSummary: item?.focusSummary
                 })).filter(item => !!item.id)
                 : [];
             return this.withCurrent(this.sortSessionChoices(items), currentSessionId);
@@ -74,6 +87,9 @@ export class AgentConsoleSessionService {
             const projects = await this.appRpc.request('session.list_projects', undefined, context);
             const groups = Array.isArray(projects)
                 ? projects.map(project => ({
+                    projectKey: String(project?.projectKey || '').trim() || undefined,
+                    projectId: String(project?.projectId || '').trim() || undefined,
+                    label: String(project?.label || '').trim() || undefined,
                     workspace: String(project?.workspace || '').trim(),
                     sessionCount: Number(project?.sessionCount || 0),
                     lastActiveAt: Number(project?.lastActiveAt || 0),
@@ -84,7 +100,12 @@ export class AgentConsoleSessionService {
                             lastActiveAt: item?.lastActiveAt,
                             messageCount: item?.messageCount,
                             summary: item?.summary,
-                            workspace: item?.workspace
+                            workspace: item?.workspace,
+                            projectId: item?.projectId,
+                            primaryThreadId: item?.primaryThreadId,
+                            sessionRole: item?.sessionRole,
+                            rootRequest: item?.rootRequest,
+                            focusSummary: item?.focusSummary
                         })).filter((item: AgentConsoleSessionChoice) => !!item.id))
                         : []
                 }))
@@ -92,6 +113,13 @@ export class AgentConsoleSessionService {
             return this.withCurrentProjectSessions(this.sortProjectChoices(groups), currentSessionId);
         }
         if (this.sessionStore) {
+            const projectIndexes = typeof (this.sessionStore as any).listProjects === 'function'
+                ? await this.sessionStore.listProjects()
+                : undefined;
+            if (Array.isArray(projectIndexes) && projectIndexes.length > 0) {
+                const sessions = await this.listSessions(currentSessionId, context);
+                return this.withCurrentProjectSessions(this.groupProjectIndexes(projectIndexes, sessions), currentSessionId);
+            }
             const sessions = await this.listSessions(currentSessionId, context);
             return this.withCurrentProjectSessions(this.groupProjectChoices(sessions), currentSessionId);
         }
@@ -135,14 +163,30 @@ export class AgentConsoleSessionService {
         }));
     }
 
-    protected toChoice(sessionId: string, state?: { createdAt?: number; updatedAt?: number; messages?: AgentMessage[]; summary?: string; workspace?: string }): AgentConsoleSessionChoice {
+    protected toChoice(sessionId: string, state?: {
+        createdAt?: number;
+        updatedAt?: number;
+        messages?: AgentMessage[];
+        summary?: string;
+        workspace?: string;
+        projectId?: string;
+        primaryThreadId?: string;
+        sessionRole?: string;
+        rootRequest?: string;
+        focusSummary?: string;
+    }): AgentConsoleSessionChoice {
         return {
             id: sessionId,
             createdAt: state?.createdAt,
             lastActiveAt: state?.updatedAt ?? state?.createdAt,
             messageCount: state?.messages?.length || 0,
             summary: state?.summary,
-            workspace: state?.workspace
+            workspace: state?.workspace,
+            projectId: state?.projectId,
+            primaryThreadId: state?.primaryThreadId,
+            sessionRole: state?.sessionRole,
+            rootRequest: state?.rootRequest,
+            focusSummary: state?.focusSummary
         };
     }
 
@@ -171,6 +215,8 @@ export class AgentConsoleSessionService {
         }
         return Array.from(buckets.entries())
             .map(([workspace, groupedSessions]) => ({
+                projectKey: workspace ? `workspace:${workspace}` : undefined,
+                label: workspace || groupedSessions[0]?.id || 'session',
                 workspace,
                 sessions: this.sortSessionChoices(groupedSessions),
                 sessionCount: groupedSessions.length,
@@ -188,6 +234,32 @@ export class AgentConsoleSessionService {
             });
     }
 
+    protected groupProjectIndexes(
+        projects: Array<{ projectKey: string; projectId?: string; workspace?: string; sessionIds: string[]; lastActiveAt?: number }>,
+        sessions: AgentConsoleSessionChoice[]
+    ): AgentConsoleSessionProjectGroup[] {
+        const sessionMap = new Map(sessions.map(session => [session.id, session]));
+        return projects
+            .map(project => {
+                const groupedSessions = project.sessionIds
+                    .map(sessionId => sessionMap.get(sessionId))
+                    .filter((session): session is AgentConsoleSessionChoice => !!session);
+                const workspace = String(project.workspace || '').trim();
+                const projectId = String(project.projectId || '').trim() || undefined;
+                return {
+                    projectKey: String(project.projectKey || '').trim() || undefined,
+                    projectId,
+                    label: projectId || workspace || groupedSessions[0]?.id || 'session',
+                    workspace,
+                    sessions: this.sortSessionChoices(groupedSessions),
+                    sessionCount: groupedSessions.length,
+                    lastActiveAt: Number(project.lastActiveAt || Math.max(...groupedSessions.map(item => item.lastActiveAt || 0), 0))
+                };
+            })
+            .filter(group => group.sessionCount > 0)
+            .sort((left, right) => this.compareProjectChoices(left, right));
+    }
+
     protected withCurrentProjectSessions(
         groups: AgentConsoleSessionProjectGroup[],
         currentSessionId?: string
@@ -203,16 +275,25 @@ export class AgentConsoleSessionService {
     }
 
     protected sortProjectChoices(groups: AgentConsoleSessionProjectGroup[]): AgentConsoleSessionProjectGroup[] {
-        return groups.slice().sort((left, right) => {
-            if (left.workspace !== right.workspace) {
-                return left.workspace.localeCompare(right.workspace);
-            }
-            const activityDelta = right.lastActiveAt - left.lastActiveAt;
-            if (activityDelta !== 0) {
-                return activityDelta;
-            }
-            return left.workspace.localeCompare(right.workspace);
-        });
+        return groups.slice().sort((left, right) => this.compareProjectChoices(left, right));
+    }
+
+    protected compareProjectChoices(left: AgentConsoleSessionProjectGroup, right: AgentConsoleSessionProjectGroup): number {
+        const leftProjectId = String(left.projectId || '').trim();
+        const rightProjectId = String(right.projectId || '').trim();
+        if (!!leftProjectId !== !!rightProjectId) {
+            return leftProjectId ? -1 : 1;
+        }
+        const leftLabel = String(left.label || left.projectId || left.workspace || '').trim();
+        const rightLabel = String(right.label || right.projectId || right.workspace || '').trim();
+        if (leftLabel !== rightLabel) {
+            return leftLabel.localeCompare(rightLabel);
+        }
+        const activityDelta = right.lastActiveAt - left.lastActiveAt;
+        if (activityDelta !== 0) {
+            return activityDelta;
+        }
+        return String(left.projectKey || '').localeCompare(String(right.projectKey || ''));
     }
 
     protected createSessionId(): string {
