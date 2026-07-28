@@ -417,8 +417,9 @@ export class AgentConsoleRendererTest {
         expect(reviewLines.some(line => line.includes('Checkpoints: 1 total'))).toBe(true);
         expect(reviewLines.some(line => line.includes('worker-1'))).toBe(true);
         expect(reviewLines.some(line => line.includes('coding-task/task1worker1'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('diff --git'))).toBe(true);
-        expect(reviewLines.some(line => line.includes('+new line'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('Files: 1'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('File: src/a.ts (+1 -0)'))).toBe(true);
+        expect(reviewLines.some(line => line.includes('diff --git a/src/a.ts b/src/a.ts'))).toBe(true);
     }
 
     @Test('renders coding task inspector panel with task summary')

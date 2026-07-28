@@ -1611,13 +1611,32 @@ export class AgentConsoleSessionState {
                 if (worker.error) {
                     lines.push(`  error ${worker.error}`);
                 }
+                const workerDiffText = this.stringifyReviewContent(worker.diff ?? worker.output);
+                if (workerDiffText) {
+                    const workerSections = this.parseUnifiedDiffSections(workerDiffText);
+                    if (workerSections.length) {
+                        lines.push(`  files ${workerSections.length}`);
+                        for (const section of workerSections) {
+                            lines.push(`  file ${section.path} (+${section.additions} -${section.deletions})`);
+                        }
+                    }
+                }
             }
         }
 
         const aggregateDiffText = this.stringifyReviewContent(this.reviewDiff);
         if (aggregateDiffText) {
-            lines.push('Aggregate Diff');
-            lines.push(...aggregateDiffText.split('\n'));
+            const sections = this.parseUnifiedDiffSections(aggregateDiffText);
+            if (sections.length) {
+                lines.push(`Files: ${sections.length}`);
+                for (const section of sections) {
+                    lines.push(`File: ${section.path} (+${section.additions} -${section.deletions})`);
+                    lines.push(...section.lines);
+                }
+            } else {
+                lines.push('Aggregate Diff');
+                lines.push(...aggregateDiffText.split('\n'));
+            }
         } else if (!lines.length) {
             lines.push('No diff captured.');
         }
@@ -2219,6 +2238,78 @@ export class AgentConsoleSessionState {
         } catch {
             return String(value);
         }
+    }
+
+    protected parseUnifiedDiffSections(diffText: string): Array<{ path: string; additions: number; deletions: number; lines: string[] }> {
+        const text = String(diffText || '').trim();
+        if (!text) {
+            return [];
+        }
+
+        const sourceLines = text.split('\n');
+        const sections: Array<{ path: string; additions: number; deletions: number; lines: string[] }> = [];
+        let current: { path: string; additions: number; deletions: number; lines: string[] } | undefined;
+
+        const pushCurrent = () => {
+            if (current?.lines.length) {
+                sections.push(current);
+            }
+        };
+
+        for (const line of sourceLines) {
+            if (line.startsWith('diff --git ')) {
+                pushCurrent();
+                current = {
+                    path: this.resolveDiffPathFromHeader(line),
+                    additions: 0,
+                    deletions: 0,
+                    lines: [line]
+                };
+                continue;
+            }
+
+            if (!current) {
+                current = {
+                    path: 'unknown',
+                    additions: 0,
+                    deletions: 0,
+                    lines: []
+                };
+            }
+
+            current.lines.push(line);
+            if (line.startsWith('+++ ')) {
+                current.path = this.resolveDiffPathFromMarker(line, current.path);
+                continue;
+            }
+            if (line.startsWith('+') && !line.startsWith('+++')) {
+                current.additions += 1;
+                continue;
+            }
+            if (line.startsWith('-') && !line.startsWith('---')) {
+                current.deletions += 1;
+            }
+        }
+
+        pushCurrent();
+        return sections;
+    }
+
+    protected resolveDiffPathFromHeader(line: string): string {
+        const match = /^diff --git a\/(.+?) b\/(.+)$/.exec(String(line || '').trim());
+        if (!match) {
+            return 'unknown';
+        }
+        return match[2] || match[1] || 'unknown';
+    }
+
+    protected resolveDiffPathFromMarker(line: string, fallback: string): string {
+        const match = /^\+\+\+\s+(?:b\/)?(.+)$/.exec(String(line || '').trim());
+        if (!match) {
+            return fallback;
+        }
+        const path = String(match[1] || '').trim();
+        return path && path !== '/dev/null' ? path : fallback;
     }
 
     protected buildSelectedApprovalCopyText(): string {

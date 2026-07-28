@@ -2584,6 +2584,8 @@ export class AgentConsoleComponentTest {
         expect(state.reviewDetailLines.join('\n')).toContain('worker-1');
         expect(state.reviewDetailLines.join('\n')).toContain('Rollback: available');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
+        expect(state.reviewDetailLines.join('\n')).toContain('Files: 1');
+        expect(state.reviewDetailLines.join('\n')).toContain('File: src/a.ts (+2 -0)');
 
         const maxReviewScroll = Math.max(0, state.reviewDetailLines.length - state.consoleOptions.reviewDetailVisibleLines);
         state.scrollReviewDetail(1);
