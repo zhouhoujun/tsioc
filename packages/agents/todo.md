@@ -360,7 +360,7 @@
 
 ### M3 Diff Review UI
 
-- `[ ]` `AGENT-M3-ARCH`：定义 review panel 的 diff 数据模型、导航结构与筛选维度
+- `[x]` `AGENT-M3-ARCH`：定义 review panel 的 diff 数据模型、导航结构与筛选维度
 - `[x]` `AGENT-M3-UI-1`：支持文件级 diff 导航，不再只停留在摘要文本
 - `[x]` `AGENT-M3-UI-2`：支持按 worker / 文件 / patch 分组浏览
 - `[x]` `AGENT-M3-UI-3`：集中展示 review 结论、风险提示与回滚入口
