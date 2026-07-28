@@ -80,6 +80,27 @@ class LocationToolRegistry extends ToolRegistry {
     }
 }
 
+class SandboxedToolRegistry extends ToolRegistry {
+    getTools() {
+        return [{
+            name: 'shell_run',
+            description: 'sandbox-aware shell runner',
+            toolset: 'terminal',
+            source: 'test',
+            execution: {
+                sideEffect: true,
+                requiresSequential: true
+            }
+        } as any];
+    }
+    getTool() {
+        return this.getTools()[0] as any;
+    }
+    async invoke(_name: string, input: any): Promise<any> {
+        return { ok: true, ...input };
+    }
+}
+
 class RuntimeStub {
     calls: string[] = [];
 
@@ -118,6 +139,24 @@ class LocationToolLoopModelAdapter extends EchoModelAdapter {
         if (this.count === 1) {
             return {
                 toolCalls: [{ id: 'tool-location', name: 'location', input: {} }],
+                stopReason: 'tool'
+            };
+        }
+        return {
+            message: 'done',
+            stopReason: 'end'
+        };
+    }
+}
+
+class SandboxedToolLoopModelAdapter extends EchoModelAdapter {
+    private count = 0;
+
+    async complete(): Promise<any> {
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-shell', name: 'shell_run', input: { command: 'pwd' } }],
                 stopReason: 'tool'
             };
         }
@@ -1814,6 +1853,32 @@ export class RuntimeLoopTest {
         expect(completedEvent?.receipt?.receiptId).toEqual(receipt?.receiptId);
         expect(completedEvent?.receipt?.status).toEqual('success');
         expect(completedEvent?.receipt?.executionMode).toEqual('sequential');
+    }
+
+    @Test('stores resolved sandbox metadata on tool execution receipts')
+    async storesResolvedSandboxMetadataOnToolExecutionReceipts() {
+        const runtime = new DefaultAgentRuntime(
+            new SandboxedToolLoopModelAdapter(),
+            new SandboxedToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new SimpleSessionSummarizer(),
+            defaultAgentOptions,
+            new FakeApp() as any
+        );
+
+        await runtime.runTurn('s1', 'hello');
+
+        const messages = await runtime.getMessages('s1');
+        const toolMessage = messages.find(message => message.role === 'tool');
+        const receipt = toolMessage?.metadata?.receipt;
+
+        expect(receipt?.toolName).toEqual('shell_run');
+        expect(receipt?.sandboxCapability).toEqual('process_exec');
+        expect(receipt?.sandboxPolicy?.enabled).toEqual(true);
+        expect(receipt?.sandboxPolicy?.isolationLevel).toEqual('process');
+        expect(receipt?.sandboxSupported).toEqual(false);
+        expect(receipt?.sandboxApplied).toEqual(false);
     }
 
     @Test('stores concise location tool output summary instead of json')

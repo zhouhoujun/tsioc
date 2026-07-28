@@ -379,9 +379,9 @@
 
 - `[x]` `AGENT-M5-ARCH`：定义统一 cache policy 与 sandbox capability matrix
 - `[x]` `AGENT-M5-RUNTIME-1`：为 runtime 增加统一 prompt cache 配置层
-- `[ ]` `AGENT-M5-RUNTIME-2`：为不同工具类型定义默认 sandbox policy
-- `[ ]` `AGENT-M5-RUNTIME-3`：把 provider 差异映射到统一观测与策略层
-- `[ ]` `AGENT-M5-TEST`：补 terminal / git / ai_cli / process / code execution 兼容矩阵
+- `[x]` `AGENT-M5-RUNTIME-2`：为不同工具类型定义默认 sandbox policy
+- `[x]` `AGENT-M5-RUNTIME-3`：把 provider 差异映射到统一观测与策略层
+- `[x]` `AGENT-M5-TEST`：补 terminal / git / ai_cli / process / code execution 兼容矩阵
 
 ### 已完成的近期修复
 

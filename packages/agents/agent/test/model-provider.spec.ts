@@ -212,6 +212,9 @@ export class ModelProviderTest {
         expect(calls[0].body.system[0].cache_control.type).toEqual('ephemeral');
         expect(result.metadata?.provider).toEqual('anthropic');
         expect((result.metadata?.usage as any).cachedPromptTokens).toEqual(4);
+        expect(result.metadata?.promptCache?.supported).toEqual('partial');
+        expect(result.metadata?.promptCache?.applied).toEqual(true);
+        expect(result.metadata?.promptCache?.observedCachedPromptTokens).toEqual(4);
         expect(result.metadata?.routing?.complexity).toEqual('complex');
         expect(result.metadata?.routing?.profile).toEqual('claude');
     }
@@ -279,6 +282,53 @@ export class ModelProviderTest {
         expect(calls[0].url).toEqual('https://anthropic.example/v1/messages');
         expect(Array.isArray(calls[0].body.system)).toEqual(true);
         expect(calls[0].body.system[0].cache_control.type).toEqual('ephemeral');
+    }
+
+    @Test('openai-compatible metadata reports observe-only prompt cache support')
+    async openAiCompatibleMetadataReportsPromptCacheObservability() {
+        this.originalFetch = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => ({
+            ok: true,
+            async json() {
+                return {
+                    choices: [{
+                        message: { content: 'ok' },
+                        finish_reason: 'stop'
+                    }],
+                    usage: {
+                        prompt_tokens: 8,
+                        completion_tokens: 2,
+                        total_tokens: 10,
+                        prompt_tokens_details: { cached_tokens: 3 }
+                    }
+                };
+            }
+        });
+
+        const adapter = new OpenAICompatibleModelAdapter({
+            provider: 'openai-compatible',
+            model: 'gpt-5.4',
+            baseUrl: 'https://rehdasu.cn',
+            apiKey: 'test-key',
+            promptCache: {
+                enabled: true,
+                strategy: 'persistent',
+                scopes: ['system']
+            }
+        });
+
+        const result = await adapter.complete({
+            sessionId: 's-openai-cache',
+            summary: '',
+            memory: [],
+            messages: [{ id: '1', role: 'user', content: 'hi', createdAt: 1 }],
+            tools: []
+        });
+
+        expect(result.metadata?.promptCache?.supported).toEqual('observe_only');
+        expect(result.metadata?.promptCache?.applied).toEqual(false);
+        expect(result.metadata?.promptCache?.requested.strategy).toEqual('persistent');
+        expect(result.metadata?.promptCache?.observedCachedPromptTokens).toEqual(3);
     }
 
     @Test('routes keyword matched prompts to hermes openai compatible provider')

@@ -4,6 +4,8 @@ import { StreamChunkType } from '../model/StreamChunk';
 import { AgentMessage } from './AgentMessage';
 import { ScheduledAgentTask } from '../scheduler/ScheduledAgentTask';
 import { AgentMemoryRecord } from '../memory/MemoryStore';
+import { SandboxPolicy } from '../harness/SandboxExecutor';
+import { AgentToolSandboxCapability } from '../tools/AgentTool';
 
 const MAX_EVENT_INPUT_SUMMARY_CHARS = 200;
 
@@ -18,6 +20,10 @@ export interface AgentToolExecutionReceipt {
     durationMs?: number;
     error?: string;
     attemptCount?: number;
+    sandboxCapability?: AgentToolSandboxCapability;
+    sandboxPolicy?: SandboxPolicy | null;
+    sandboxSupported?: boolean;
+    sandboxApplied?: boolean;
 }
 
 function summarizeEventInput(input: any): string | undefined {

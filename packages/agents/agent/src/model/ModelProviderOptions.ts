@@ -21,6 +21,17 @@ export interface ResolvedAgentPromptCachePolicy {
 
 export type AgentPromptCacheConfig = boolean | AgentPromptCachePolicy;
 
+export interface PromptCacheRuntimeMetadata {
+    requested: ResolvedAgentPromptCachePolicy;
+    provider: string;
+    supported: 'full' | 'partial' | 'observe_only' | 'none';
+    applied: boolean;
+    appliedStrategy?: AgentPromptCacheStrategy;
+    appliedScopes?: AgentPromptCacheScope[];
+    observedCachedPromptTokens?: number;
+    observedCreatedPromptTokens?: number;
+}
+
 export interface AgentModelConfig {
     provider?: string;
     model?: string;
@@ -80,5 +91,29 @@ export function resolvePromptCachePolicy(config?: AgentPromptCacheConfig): Resol
         scopes: normalizedScopes,
         minContentChars: config?.minContentChars,
         ttlSeconds: config?.ttlSeconds
+    };
+}
+
+export function buildPromptCacheRuntimeMetadata(
+    config: AgentPromptCacheConfig | undefined,
+    metadata: {
+        provider: string;
+        supported: PromptCacheRuntimeMetadata['supported'];
+        applied: boolean;
+        appliedStrategy?: AgentPromptCacheStrategy;
+        appliedScopes?: AgentPromptCacheScope[];
+        observedCachedPromptTokens?: number;
+        observedCreatedPromptTokens?: number;
+    }
+): PromptCacheRuntimeMetadata {
+    return {
+        requested: resolvePromptCachePolicy(config),
+        provider: metadata.provider,
+        supported: metadata.supported,
+        applied: metadata.applied,
+        appliedStrategy: metadata.appliedStrategy,
+        appliedScopes: metadata.appliedScopes,
+        observedCachedPromptTokens: metadata.observedCachedPromptTokens,
+        observedCreatedPromptTokens: metadata.observedCreatedPromptTokens
     };
 }

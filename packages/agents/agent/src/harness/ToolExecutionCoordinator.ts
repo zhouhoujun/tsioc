@@ -9,7 +9,8 @@ import { OutputGuard } from './OutputGuard';
 import { AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolCompletedEvent } from '../runtime/AgentEvents';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { AuditSink, AgentAuditRecord } from './AuditSink';
-import { SandboxExecutor, SandboxPolicy, defaultSandboxPolicy } from './SandboxExecutor';
+import { SandboxExecutor, SandboxPolicy } from './SandboxExecutor';
+import { resolveToolSandboxState } from './ToolSandboxPolicy';
 
 export interface ToolExecutionRequest {
     sessionId: string;
@@ -44,14 +45,14 @@ export class ToolExecutionCoordinator {
     }
 
     async execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome> {
+        const sandboxState = this.resolveSandboxState(request);
         const baseReceipt: AgentToolExecutionReceipt = request.baseReceipt ?? {
             receiptId: randomUUID(),
             toolCallId: request.toolCall.id,
             toolName: request.toolCall.name,
             executionMode: request.executionMode,
             status: 'running',
-            inputSummary: request.inputSummary,
-            attemptCount: 0
+            inputSummary: request.inputSummary
         };
         const definition = request.definition;
         const policy = definition.execution;
@@ -89,7 +90,12 @@ export class ToolExecutionCoordinator {
                     durationMs: completedReceipt.durationMs,
                     attemptCount: attempt,
                     createdAt: Date.now(),
-                    metadata: { executionMode: request.executionMode }
+                    metadata: {
+                        executionMode: request.executionMode,
+                        sandboxCapability: sandboxState.capability,
+                        sandboxApplied: sandboxState.applied,
+                        sandboxSupported: sandboxState.supported
+                    }
                 });
                 await this.app.publishEvent(new AgentToolCompletedEvent(this, request.sessionId, definition.name, redactedOutput, completedReceipt));
                 return {
@@ -124,7 +130,12 @@ export class ToolExecutionCoordinator {
                     durationMs: failedReceipt.durationMs,
                     attemptCount: attempt,
                     createdAt: Date.now(),
-                    metadata: { executionMode: request.executionMode }
+                    metadata: {
+                        executionMode: request.executionMode,
+                        sandboxCapability: sandboxState.capability,
+                        sandboxApplied: sandboxState.applied,
+                        sandboxSupported: sandboxState.supported
+                    }
                 });
                 await this.app.publishEvent(new AgentToolFailedEvent(this, request.sessionId, definition.name, lastError, failedReceipt));
                 return {
@@ -149,7 +160,7 @@ export class ToolExecutionCoordinator {
     }
 
     private async invokeWithTimeout(request: ToolExecutionRequest, timeoutMs?: number): Promise<unknown> {
-        const sandboxPolicy = this.resolveSandboxPolicy(request);
+        const sandboxPolicy = this.resolveSandboxState(request).policy;
         if (sandboxPolicy?.enabled && this.sandboxExecutor?.isSupported()) {
             return this.invokeInSandbox(request, sandboxPolicy, timeoutMs);
         }
@@ -173,22 +184,19 @@ export class ToolExecutionCoordinator {
     }
 
     private resolveSandboxPolicy(request: ToolExecutionRequest): SandboxPolicy | null {
-        const executionPolicy = request.definition.execution;
-        if (!executionPolicy) {
-            return null;
-        }
-        if (executionPolicy.sandbox) {
-            return executionPolicy.sandbox;
-        }
-        if (executionPolicy.isolationLevel) {
-            return {
-                enabled: true,
-                isolationLevel: executionPolicy.isolationLevel,
-                resourceLimits: executionPolicy.resourceLimits,
-                workingDirectory: request.workspace
-            };
-        }
-        return null;
+        return this.resolveSandboxState(request).policy ?? null;
+    }
+
+    isSandboxExecutionSupported(): boolean {
+        return !!this.sandboxExecutor?.isSupported();
+    }
+
+    private resolveSandboxState(request: ToolExecutionRequest) {
+        return resolveToolSandboxState(
+            request.definition,
+            request.workspace,
+            this.isSandboxExecutionSupported()
+        );
     }
 
     private async invokeInSandbox(

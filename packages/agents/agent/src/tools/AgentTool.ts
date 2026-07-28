@@ -26,6 +26,15 @@ export interface AgentToolRateLimitPolicy {
     scope?: 'session' | 'global';
 }
 
+export type AgentToolSandboxCapability =
+    | 'readonly_fs'
+    | 'workspace_write'
+    | 'process_exec'
+    | 'vcs_exec'
+    | 'code_exec'
+    | 'network_fetch'
+    | 'gui_capture';
+
 export interface AgentToolExecutionHints {
     readOnly?: boolean;
     sideEffect?: boolean;
@@ -36,6 +45,7 @@ export interface AgentToolExecutionHints {
     rateLimit?: AgentToolRateLimitPolicy;
     redactOutput?: boolean;
     auditEnabled?: boolean;
+    sandboxCapability?: AgentToolSandboxCapability;
     sandbox?: SandboxPolicy;
     isolationLevel?: 'none' | 'process' | 'container';
     resourceLimits?: {

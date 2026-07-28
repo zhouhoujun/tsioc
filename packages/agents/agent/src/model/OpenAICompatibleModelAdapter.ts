@@ -5,7 +5,7 @@ import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
-import { AgentModelOptions } from './ModelProviderOptions';
+import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
 import type { ApplicationArguments } from '@tsdi/core';
 
 type OpenAIRole = 'system' | 'user' | 'assistant' | 'tool';
@@ -176,7 +176,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                     finishReason,
                     reasoningContent,
                     usage: this.normalizeUsage(body.usage),
-                    providerUsage: body.usage
+                    providerUsage: body.usage,
+                    promptCache: this.buildPromptCacheMetadata(body.usage)
                 }
             };
         } finally {
@@ -251,7 +252,10 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                         return [{
                             type: 'done',
                             usage: this.normalizeUsage(event.usage),
-                            metadata: { providerUsage: event.usage }
+                            metadata: {
+                                providerUsage: event.usage,
+                                promptCache: this.buildPromptCacheMetadata(event.usage)
+                            }
                         }];
                     }
                     return [];
@@ -301,7 +305,8 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
                             finishReason: choice.finish_reason,
                             provider: this.options.provider,
                             model: this.resolveModel(),
-                            providerUsage: event.usage
+                            providerUsage: event.usage,
+                            promptCache: this.buildPromptCacheMetadata(event.usage)
                         }
                     });
                 }
@@ -884,8 +889,20 @@ export class OpenAICompatibleModelAdapter extends ModelAdapter {
             usage: completed.metadata?.usage,
             metadata: {
                 ...completed.metadata,
+                promptCache: completed.metadata?.promptCache ?? this.buildPromptCacheMetadata(completed.metadata?.providerUsage),
                 fallback: 'non_stream'
             }
         };
+    }
+
+    private buildPromptCacheMetadata(usage?: OpenAIChatCompletionResponse['usage']) {
+        const requested = resolvePromptCachePolicy(this.options.promptCache);
+        return buildPromptCacheRuntimeMetadata(this.options.promptCache, {
+            provider: this.options.provider ?? 'openai-compatible',
+            supported: 'observe_only',
+            applied: false,
+            appliedStrategy: requested.strategy,
+            observedCachedPromptTokens: usage?.prompt_tokens_details?.cached_tokens
+        });
     }
 }

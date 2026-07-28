@@ -3,8 +3,7 @@ import { ModelAdapter } from './ModelAdapter';
 import { ModelRequest } from './ModelRequest';
 import { AgentToolCall, ModelResponse, ModelTokenUsage } from './ModelResponse';
 import { StreamChunk } from './StreamChunk';
-import { AgentModelOptions } from './ModelProviderOptions';
-import { resolvePromptCachePolicy } from './PromptCachePolicy';
+import { AgentModelOptions, buildPromptCacheRuntimeMetadata, resolvePromptCachePolicy } from './ModelProviderOptions';
 
 interface AnthropicContentBlock {
     type: 'text' | 'tool_use' | 'tool_result';
@@ -126,10 +125,11 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
         const { signal, cleanup } = this.createTimeoutContext();
         try {
+            const body = this.buildBody(request);
             const response = await fetch(this.resolveUrl('/v1/messages'), {
                 method: 'POST',
                 headers: this.headers(apiKey),
-                body: JSON.stringify(this.buildBody(request)),
+                body: JSON.stringify(body),
                 signal
             });
 
@@ -143,7 +143,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
             }
 
             const data = await response.json() as AnthropicResponse;
-            return this.toModelResponse(data);
+            return this.toModelResponse(data, body);
         } finally {
             cleanup();
         }
@@ -159,10 +159,11 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
         const { signal, cleanup } = this.createTimeoutContext();
         try {
+            const body = this.buildBody(request);
             const response = await fetch(this.resolveUrl('/v1/messages'), {
                 method: 'POST',
                 headers: this.headers(apiKey),
-                body: JSON.stringify({ ...this.buildBody(request), stream: true }),
+                body: JSON.stringify({ ...body, stream: true }),
                 signal
             });
 
@@ -273,7 +274,8 @@ export class AnthropicModelAdapter extends ModelAdapter {
                                     finishReason: currentStopReason ?? undefined,
                                     reasoningContent: thinkingText || undefined,
                                     usage: this.normalizeUsage(usage),
-                                    providerUsage: usage
+                                    providerUsage: usage,
+                                    promptCache: this.buildPromptCacheMetadata(body, usage)
                                 }
                             };
                             break;
@@ -418,7 +420,7 @@ export class AnthropicModelAdapter extends ModelAdapter {
 
     // ── response normalization ─────────────────────────────────────────
 
-    private toModelResponse(data: AnthropicResponse): ModelResponse {
+    private toModelResponse(data: AnthropicResponse, body: AnthropicRequestBody): ModelResponse {
         let message = '';
         const toolCalls: AgentToolCall[] = [];
 
@@ -444,9 +446,25 @@ export class AnthropicModelAdapter extends ModelAdapter {
                 model: data.model,
                 finishReason: data.stop_reason ?? undefined,
                 usage: this.normalizeUsage(data.usage),
-                providerUsage: data.usage
+                providerUsage: data.usage,
+                promptCache: this.buildPromptCacheMetadata(body, data.usage)
             }
         };
+    }
+
+    private buildPromptCacheMetadata(body: AnthropicRequestBody, usage?: AnthropicUsage) {
+        const requested = resolvePromptCachePolicy(this.options.promptCache);
+        const applied = Array.isArray(body.system)
+            && body.system.some(part => !!part.cache_control?.type);
+        return buildPromptCacheRuntimeMetadata(this.options.promptCache, {
+            provider: 'anthropic',
+            supported: 'partial',
+            applied,
+            appliedStrategy: applied ? requested.strategy : undefined,
+            appliedScopes: applied ? ['system'] : undefined,
+            observedCachedPromptTokens: usage?.cache_read_input_tokens,
+            observedCreatedPromptTokens: usage?.cache_creation_input_tokens
+        });
     }
 
     private normalizeUsage(usage?: AnthropicUsage): ModelTokenUsage | undefined {

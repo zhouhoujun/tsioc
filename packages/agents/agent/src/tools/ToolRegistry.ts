@@ -1,5 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { AgentTool, AgentToolDefinition } from './AgentTool';
+import { resolveToolExecutionHints } from '../harness/ToolSandboxPolicy';
 
 @Abstract()
 export abstract class ToolRegistry {
@@ -29,7 +30,7 @@ export abstract class ToolRegistry {
     }
 
     protected toDefinition(tool: AgentTool, _sessionId?: string): AgentToolDefinition {
-        return tool.getDefinition?.() ?? {
+        const definition = tool.getDefinition?.() ?? {
             name: tool.name,
             description: tool.description,
             inputSchema: tool.inputSchema,
@@ -43,5 +44,7 @@ export abstract class ToolRegistry {
             activation: (tool as any).activation,
             provenance: (tool as any).provenance
         };
+        const execution = resolveToolExecutionHints(definition);
+        return execution ? { ...definition, execution } : definition;
     }
 }

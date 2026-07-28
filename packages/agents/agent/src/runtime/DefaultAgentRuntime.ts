@@ -30,6 +30,7 @@ import { ToolExecutionCoordinator } from '../harness/ToolExecutionCoordinator';
 import { ToolSchemaValidator } from '../harness/ToolSchemaValidator';
 import { RateLimitManager } from '../harness/RateLimitManager';
 import { OutputGuard } from '../harness/OutputGuard';
+import { resolveToolSandboxState, ToolSandboxState } from '../harness/ToolSandboxPolicy';
 
 interface ToolInvocationResult {
     toolCall: { id: string; name: string; input?: any };
@@ -741,6 +742,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, activationError.message);
         }
 
+        const sandboxState = this.resolveToolSandboxState(definition, turnContext.workspace);
+        const sandboxReceipt = this.decorateReceiptWithSandbox(baseReceipt, sandboxState);
+
         if (this.toolApprovalManager) {
             const approval = await this.toolApprovalManager.checkApproval(toolCall.name, toolCallInput, sessionId);
             if (approval.decision === ApprovalDecision.DENIED || approval.decision === ApprovalDecision.TIMEOUT) {
@@ -748,7 +752,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     ? `Tool "${toolCall.name}" approval timed out.`
                     : `Tool "${toolCall.name}" was rejected.`;
                 return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
-                    ...baseReceipt,
+                    ...sandboxReceipt,
                     status: 'skipped',
                     durationMs: 0,
                     error: reason
@@ -756,7 +760,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
         }
 
-        await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, baseReceipt));
+        await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, sandboxReceipt));
 
         if (this.toolExecutionCoordinator) {
             const outcome = await this.toolExecutionCoordinator.execute({
@@ -767,7 +771,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 definition,
                 executionMode,
                 inputSummary,
-                baseReceipt
+                baseReceipt: sandboxReceipt
             });
             if (outcome.redactedOutput !== undefined) {
                 loopDetector.record(toolCall.name, toolCallInput, outcome.redactedOutput);
@@ -801,7 +805,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
             const truncated = outputStr.length > maxChars ? outputStr.slice(0, maxChars) + '...[truncated]' : outputStr;
             const completedReceipt: AgentToolExecutionReceipt = {
-                ...baseReceipt,
+                ...sandboxReceipt,
                 status: 'success',
                 durationMs: Math.max(0, Date.now() - startedAt),
                 outputSummary: this.summarizeToolOutput(toolCall.name, output)
@@ -820,7 +824,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
             const failedReceipt: AgentToolExecutionReceipt = {
-                ...baseReceipt,
+                ...sandboxReceipt,
                 status: 'error',
                 durationMs: Math.max(0, Date.now() - startedAt),
                 error: err.message
@@ -1032,6 +1036,24 @@ export class DefaultAgentRuntime extends AgentRuntime {
             executionMode,
             status: 'running',
             inputSummary
+        };
+    }
+
+    private resolveToolSandboxState(definition: AgentToolDefinition, workspace?: string): ToolSandboxState {
+        const supported = !!this.toolExecutionCoordinator?.isSandboxExecutionSupported();
+        return resolveToolSandboxState(definition, workspace, supported);
+    }
+
+    private decorateReceiptWithSandbox(
+        receipt: AgentToolExecutionReceipt,
+        sandboxState: ToolSandboxState
+    ): AgentToolExecutionReceipt {
+        return {
+            ...receipt,
+            sandboxCapability: sandboxState.capability,
+            sandboxPolicy: sandboxState.policy ?? null,
+            sandboxSupported: sandboxState.supported,
+            sandboxApplied: sandboxState.applied
         };
     }
 

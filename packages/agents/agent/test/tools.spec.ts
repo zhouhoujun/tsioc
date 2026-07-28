@@ -15,6 +15,7 @@ import { SpawnAgentAdapter } from '../../agent-tools/agent/spawn-agent.tool';
 import { WeatherAdapter } from '../../agent-tools/utility/weather.tool';
 import { LlmTaskAdapter } from '../../agent-tools/llm/llm-task.tool';
 import { PipelineAdapter } from '../../agent-tools/pipeline/pipeline.tool';
+import { resolveDefaultToolSandboxPolicy } from '../src/harness/ToolSandboxPolicy';
 
 class FakeApp {
     async publishEvent(): Promise<void> {
@@ -117,6 +118,27 @@ class RegistryDiscoveryTool implements AgentTool {
     toolset = 'registry';
     source = 'test';
     execution = { readOnly: true };
+
+    async invoke(input: any): Promise<any> {
+        return input;
+    }
+}
+
+class ExplicitSandboxTool implements AgentTool {
+    name = 'explicit_sandbox';
+    description = 'tool with explicit sandbox';
+    toolset = 'terminal';
+    source = 'test';
+    execution = {
+        sideEffect: true,
+        sandboxCapability: 'process_exec' as const,
+        sandbox: {
+            enabled: true,
+            isolationLevel: 'container' as const,
+            networkAccess: 'none' as const,
+            workingDirectory: '/explicit'
+        }
+    };
 
     async invoke(input: any): Promise<any> {
         return input;
@@ -495,6 +517,91 @@ export class BuiltinToolsTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('default sandbox policy resolves capability-specific runtime defaults')
+    defaultSandboxPolicyResolvesCapabilityDefaults() {
+        const codeExec = resolveDefaultToolSandboxPolicy('code_exec', '/workspace');
+        expect(codeExec?.enabled).toEqual(true);
+        expect(codeExec?.isolationLevel).toEqual('process');
+        expect(codeExec?.networkAccess).toEqual('none');
+        expect(codeExec?.workingDirectory).toEqual('/workspace');
+        expect(codeExec?.allowedWritePaths).toContain('/workspace');
+
+        const processExec = resolveDefaultToolSandboxPolicy('process_exec', '/workspace');
+        expect(processExec?.enabled).toEqual(true);
+        expect(processExec?.networkAccess).toEqual('full');
+        expect(processExec?.workingDirectory).toEqual('/workspace');
+
+        expect(resolveDefaultToolSandboxPolicy('readonly_fs', '/workspace')).toEqual(null);
+    }
+
+    @Test('agent tools module assigns default sandbox metadata by toolset')
+    async agentToolsModuleAssignsDefaultSandboxMetadata() {
+        const ctx = await Application.run(AgentToolsModule, {
+            providers: [
+                ...withAgentToolsOptions({
+                    registration: {
+                        groups: {
+                            terminal: true,
+                            process: true,
+                            git: true,
+                            code_execution: true,
+                            ai_cli: true
+                        }
+                    },
+                    web: {
+                        search: {
+                            async search(query: string) {
+                                return [{ title: query, url: 'https://example.com' }];
+                            }
+                        }
+                    }
+                }),
+                ...withToolTestAdapters()
+            ]
+        });
+        try {
+            const registry = ctx.get(ToolRegistry);
+            const terminal = registry.getToolDefinition('terminal');
+            const processStart = registry.getToolDefinition('process.start');
+            const git = registry.getToolDefinition('git_operations');
+            const executeCode = registry.getToolDefinition('execute_code');
+            const aiCli = registry.getToolDefinition('ai_cli');
+
+            expect(terminal?.execution?.sandboxCapability).toEqual('process_exec');
+            expect(terminal?.execution?.sandbox?.enabled).toEqual(true);
+            expect(terminal?.execution?.sandbox?.isolationLevel).toEqual('process');
+
+            expect(processStart?.execution?.sandboxCapability).toEqual('process_exec');
+            expect(processStart?.execution?.sandbox?.enabled).toEqual(true);
+
+            expect(git?.execution?.sandboxCapability).toEqual('vcs_exec');
+            expect(git?.execution?.sandbox?.enabled).toEqual(true);
+
+            expect(executeCode?.execution?.sandboxCapability).toEqual('code_exec');
+            expect(executeCode?.execution?.sandbox?.networkAccess).toEqual('none');
+            expect(executeCode?.execution?.sandbox?.allowedWritePaths?.length).toBeGreaterThan(0);
+
+            expect(aiCli?.execution?.sandboxCapability).toEqual('process_exec');
+            expect(aiCli?.execution?.sandbox?.enabled).toEqual(true);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('local tool registry preserves explicit sandbox overrides over inferred defaults')
+    localToolRegistryPreservesExplicitSandboxOverrides() {
+        const registry = new LocalToolRegistry([new ExplicitSandboxTool()], new InMemoryMemoryStore());
+        const definition = registry.getToolDefinition('explicit_sandbox');
+
+        expect(definition?.execution?.sandboxCapability).toEqual('process_exec');
+        expect(definition?.execution?.sandbox).toEqual({
+            enabled: true,
+            isolationLevel: 'container',
+            networkAccess: 'none',
+            workingDirectory: '/explicit'
+        });
     }
 
     @Test('agent tools module supports runtime registry invocation')
