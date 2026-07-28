@@ -798,7 +798,7 @@ export class AgentConsoleTasksPanelComponent {
     }
 
     get tasks(): AgentConsoleReviewTaskItem[] {
-        return this.state.reviewTaskChoices;
+        return this.state.filteredReviewTaskChoices;
     }
 
     get planTodos(): AgentConsolePlanTodoItem[] {
@@ -892,15 +892,21 @@ export class AgentConsoleTasksPanelComponent {
             const activeCount = this.planTodos.filter(item => item.status === 'pending' || item.status === 'in_progress').length;
             return `plan ${this.planTodos.length} · active ${activeCount}`;
         }
-        if (!this.tasks.length) {
+        const totalCount = this.state.reviewTaskChoices.length;
+        const filteredCount = this.tasks.length;
+        if (!totalCount) {
             return '';
         }
+        const filterLabel = this.taskFilterLabel;
+        if (!filteredCount) {
+            return `tasks 0/${totalCount} · ${filterLabel}`;
+        }
         const selectedIndex = Math.max(0, this.tasks.findIndex(item => item.id === this.state.selectedReviewTaskId));
-        return `tasks ${this.tasks.length} · ${selectedIndex + 1}/${this.tasks.length}`;
+        return `tasks ${filteredCount}/${totalCount} · ${filterLabel} · ${selectedIndex + 1}/${filteredCount}`;
     }
 
     get tasksHintLabel(): string {
-        if (!this.shouldShow || !this.tasks.length || !this.state.tasksFocused) {
+        if (!this.shouldShow || !this.state.tasksFocused) {
             return '';
         }
         const selected = this.state.selectedTask;
@@ -913,6 +919,7 @@ export class AgentConsoleTasksPanelComponent {
         if (selected && this.canRollbackTask(selected)) {
             actions.push('b rollback');
         }
+        actions.push('f failed', 'v rollback', 'u all');
         actions.push('y copy');
         return `up/down move   pg jump   ${actions.join('   ')}`;
     }
@@ -925,6 +932,9 @@ export class AgentConsoleTasksPanelComponent {
             return '';
         }
         if (!this.state.selectedTask) {
+            if (this.state.reviewTaskChoices.length && !this.tasks.length) {
+                return `No tasks matched filter ${this.taskFilterLabel}.`;
+            }
             return '';
         }
         const task = this.state.selectedTask;
@@ -965,6 +975,17 @@ export class AgentConsoleTasksPanelComponent {
 
     get shouldShow(): boolean {
         return this.state.tasksFocused || this.state.hasActivePlanTodos();
+    }
+
+    protected get taskFilterLabel(): string {
+        switch (this.state.selectedTaskFilter) {
+            case 'failed':
+                return 'failed';
+            case 'rollback':
+                return 'rollback';
+            default:
+                return 'all';
+        }
     }
 
     protected todoStatusMark(status: AgentConsolePlanTodoItem['status']): string {

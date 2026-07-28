@@ -111,6 +111,8 @@ export interface AgentConsoleReviewTaskItem {
     detail?: string;
 }
 
+export type AgentConsoleTaskFilter = 'all' | 'failed' | 'rollback';
+
 export interface AgentConsoleReviewWorker {
     workerId: string;
     actionIds?: string[];
@@ -287,6 +289,7 @@ export class AgentConsoleSessionState {
     taskRecords: Record<string, any>[] = [];
     planTodos: AgentConsolePlanTodoItem[] = [];
     selectedReviewTaskId = '';
+    selectedTaskFilter: AgentConsoleTaskFilter = 'all';
     selectedReviewFileIndex = 0;
     scheduledTasks: ScheduledAgentTask[] = [];
     selectedScheduledTaskId = '';
@@ -1265,8 +1268,8 @@ export class AgentConsoleSessionState {
 
     setTasksFocused(focused: boolean): void {
         this.tasksFocused = focused;
-        if (focused && !this.selectedReviewTaskId && this.reviewTaskChoices.length) {
-            this.selectedReviewTaskId = this.reviewTaskChoices[0].id;
+        if (focused && !this.selectedReviewTaskId && this.filteredReviewTaskChoices.length) {
+            this.selectedReviewTaskId = this.filteredReviewTaskChoices[0].id;
         }
         this.syncDerivedInputFocus();
         this.notify();
@@ -1281,44 +1284,68 @@ export class AgentConsoleSessionState {
     }
 
     moveTaskSelection(delta: number): void {
-        if (!this.reviewTaskChoices.length) {
+        const tasks = this.filteredReviewTaskChoices;
+        if (!tasks.length) {
             return;
         }
-        const currentIndex = Math.max(0, this.reviewTaskChoices.findIndex(item => item.id === this.selectedReviewTaskId));
-        const nextIndex = (currentIndex + delta + this.reviewTaskChoices.length) % this.reviewTaskChoices.length;
-        this.selectedReviewTaskId = this.reviewTaskChoices[nextIndex].id;
+        const currentIndex = Math.max(0, tasks.findIndex(item => item.id === this.selectedReviewTaskId));
+        const nextIndex = (currentIndex + delta + tasks.length) % tasks.length;
+        this.selectedReviewTaskId = tasks[nextIndex].id;
         this.notify();
     }
 
     moveTaskSelectionPage(delta: number, pageSize?: number): void {
-        if (!this.reviewTaskChoices.length) {
+        const tasks = this.filteredReviewTaskChoices;
+        if (!tasks.length) {
             return;
         }
-        const currentIndex = Math.max(0, this.reviewTaskChoices.findIndex(item => item.id === this.selectedReviewTaskId));
+        const currentIndex = Math.max(0, tasks.findIndex(item => item.id === this.selectedReviewTaskId));
         const resolvedPageSize = pageSize ?? this.consoleOptions.sessionSelectionPageSize;
-        const nextIndex = Math.max(0, Math.min(this.reviewTaskChoices.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
-        this.selectedReviewTaskId = this.reviewTaskChoices[nextIndex].id;
+        const nextIndex = Math.max(0, Math.min(tasks.length - 1, currentIndex + (delta * Math.max(1, resolvedPageSize))));
+        this.selectedReviewTaskId = tasks[nextIndex].id;
         this.notify();
     }
 
     selectFirstTask(): void {
-        if (!this.reviewTaskChoices.length) {
+        const tasks = this.filteredReviewTaskChoices;
+        if (!tasks.length) {
             return;
         }
-        this.selectedReviewTaskId = this.reviewTaskChoices[0].id;
+        this.selectedReviewTaskId = tasks[0].id;
         this.notify();
     }
 
     selectLastTask(): void {
-        if (!this.reviewTaskChoices.length) {
+        const tasks = this.filteredReviewTaskChoices;
+        if (!tasks.length) {
             return;
         }
-        this.selectedReviewTaskId = this.reviewTaskChoices[this.reviewTaskChoices.length - 1].id;
+        this.selectedReviewTaskId = tasks[tasks.length - 1].id;
         this.notify();
     }
 
     get selectedTask(): Record<string, any> | undefined {
         return this.taskRecords.find(item => item?.id === this.selectedReviewTaskId);
+    }
+
+    get filteredReviewTaskChoices(): AgentConsoleReviewTaskItem[] {
+        switch (this.selectedTaskFilter) {
+            case 'failed':
+                return this.reviewTaskChoices.filter(item => this.isFailedTaskChoice(item));
+            case 'rollback':
+                return this.reviewTaskChoices.filter(item => !!item.rollbackAvailable);
+            default:
+                return this.reviewTaskChoices;
+        }
+    }
+
+    setTaskFilter(filter: AgentConsoleTaskFilter): void {
+        if (this.selectedTaskFilter === filter) {
+            return;
+        }
+        this.selectedTaskFilter = filter;
+        this.syncFilteredTaskSelection();
+        this.notify();
     }
 
     protected formatScheduledTimestamp(value?: number): string {
@@ -1486,13 +1513,7 @@ export class AgentConsoleSessionState {
 
     setReviewTasks(tasks: AgentConsoleReviewTaskItem[]): void {
         this.reviewTaskChoices = tasks.slice();
-        if (!this.reviewTaskChoices.length) {
-            this.selectedReviewTaskId = '';
-        } else if (this.selectedReviewTaskId && this.reviewTaskChoices.some(item => item.id === this.selectedReviewTaskId)) {
-            // Preserve explicit review selection when possible.
-        } else {
-            this.selectedReviewTaskId = this.reviewTaskChoices[0].id;
-        }
+        this.syncFilteredTaskSelection();
         this.notify();
     }
 
@@ -1561,6 +1582,7 @@ export class AgentConsoleSessionState {
         this.reviewTaskChoices = [];
         this.taskRecords = [];
         this.selectedReviewTaskId = '';
+        this.selectedTaskFilter = 'all';
         this.selectedReviewFileIndex = 0;
         this.reviewOpen = false;
         this.resetReviewDetailViewport();
@@ -2402,6 +2424,23 @@ export class AgentConsoleSessionState {
         this.reviewDetailColumnScroll = 0;
     }
 
+    protected isFailedTaskChoice(task: AgentConsoleReviewTaskItem | undefined): boolean {
+        const status = String(task?.status || '').trim().toLowerCase();
+        return status === 'failed' || status === 'error';
+    }
+
+    protected syncFilteredTaskSelection(): void {
+        const tasks = this.filteredReviewTaskChoices;
+        if (!tasks.length) {
+            this.selectedReviewTaskId = '';
+            return;
+        }
+        if (this.selectedReviewTaskId && tasks.some(item => item.id === this.selectedReviewTaskId)) {
+            return;
+        }
+        this.selectedReviewTaskId = tasks[0].id;
+    }
+
     protected syncReviewFileSelection(preferredPath?: string): void {
         const sections = this.reviewFileSections;
         if (!sections.length) {
@@ -2689,6 +2728,15 @@ export class AgentConsoleSessionState {
                         return true;
                     }
                     return false;
+                case 'f':
+                    this.setTaskFilter('failed');
+                    return true;
+                case 'v':
+                    this.setTaskFilter('rollback');
+                    return true;
+                case 'u':
+                    this.setTaskFilter('all');
+                    return true;
                 case 'down':
                     this.moveTaskSelection(1);
                     return true;

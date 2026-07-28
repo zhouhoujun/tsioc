@@ -846,7 +846,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             status: task.status,
             executionMode: task?.result?.executionMode ?? task?.metadata?.executionMode ?? null,
             workerCount: workers.length,
-            rollbackAvailable: rollback?.available === true,
+            rollbackAvailable: this.canRollbackCodingTask(task),
             rollbackMode: rollback?.mode,
             checkpointSummary: this.describeCodingTaskCheckpointSummary(task),
             updatedAt: task.updatedAt,

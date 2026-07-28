@@ -1593,6 +1593,61 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.reviewTaskChoices[0]?.workerCount).toEqual(1);
     }
 
+    @Test('tasks focus filters failed and rollback tasks')
+    async tasksFocusFiltersFailedAndRollbackTasks() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const rollbackTask = createReviewTask();
+        const failedTask = {
+            ...createReviewTask(),
+            id: 'task-2',
+            title: 'Fix validation',
+            status: 'failed',
+            result: {
+                executionMode: 'sequential',
+                workers: [],
+                rollback: {
+                    available: false
+                }
+            },
+            metadata: {
+                checkpoints: []
+            }
+        };
+        const runningTask = {
+            ...createCancelableTask(),
+            id: 'task-3',
+            title: 'Refactor api',
+            metadata: {
+                checkpoints: []
+            }
+        };
+        appRpc.codingTasks = [rollbackTask, failedTask, runningTask];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+
+        expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1', 'task-2', 'task-3']);
+
+        await component.sessionState.handleFocusKey('f');
+        expect(component.sessionState.selectedTaskFilter).toEqual('failed');
+        expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-2']);
+        expect(component.sessionState.selectedTask?.id).toEqual('task-2');
+
+        await component.sessionState.handleFocusKey('v');
+        expect(component.sessionState.selectedTaskFilter).toEqual('rollback');
+        expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1']);
+        expect(component.sessionState.selectedTask?.id).toEqual('task-1');
+
+        await component.sessionState.handleFocusKey('u');
+        expect(component.sessionState.selectedTaskFilter).toEqual('all');
+        expect(component.sessionState.filteredReviewTaskChoices.map(item => item.id)).toEqual(['task-1', 'task-2', 'task-3']);
+        expect(component.sessionState.selectedTask?.id).toEqual('task-1');
+    }
+
     @Test('tasks focus cancel action cancels selected coding task')
     async tasksFocusCancelActionCancelsSelectedCodingTask() {
         const runtime = new RuntimeStub();
