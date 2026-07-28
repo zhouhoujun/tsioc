@@ -301,8 +301,35 @@ export class ContextCompactionTest {
     @Test('LLMSessionSummarizer falls back to naive when no model adapter')
     async llmFallsBackWithoutModel() {
         const summarizer = new LLMSessionSummarizer(null);
-        const messages = this.makeMessages(5);
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Fix the bug in src/app.ts and preserve the latest task goal.', createdAt: 1 },
+            { id: '2', role: 'assistant', content: 'I will inspect the runtime compaction flow and adjust the summary strategy.', createdAt: 2 },
+            {
+                id: '3',
+                role: 'tool',
+                name: 'read_file',
+                content: '{"files":["src/app.ts","src/runtime/DefaultAgentRuntime.ts"]}',
+                createdAt: 3
+            },
+            {
+                id: '4',
+                role: 'tool',
+                name: 'project_intel',
+                content: '{"error":"Tool \\"project_intel\\" input validation failed: $.action is required"}',
+                createdAt: 4,
+                metadata: {
+                    error: 'Tool "project_intel" input validation failed: $.action is required'
+                }
+            },
+            { id: '5', role: 'assistant', content: 'Next I will preserve the latest substantive user message during compaction.', createdAt: 5 }
+        ];
         const result = await summarizer.summarize(messages);
         expect(result).toBeTruthy();
+        expect(result).toContain('Goal:');
+        expect(result).toContain('Decisions:');
+        expect(result).toContain('Files:');
+        expect(result).toContain('Errors:');
+        expect(result).toContain('Open state:');
+        expect(result).toContain('src/app.ts');
     }
 }

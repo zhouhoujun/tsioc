@@ -4,7 +4,7 @@ import { SessionSummarizer } from './SessionSummarizer';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { ModelRequest } from '../model/ModelRequest';
 
-const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation into a concise summary preserving: 1) User goals and requirements, 2) Decisions made and rationale, 3) Files created/modified/deleted with paths, 4) Errors encountered and how they were resolved, 5) Current task state and next steps. Output a single structured paragraph. Be factual — do not infer or add information not present in the conversation.';
+const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths, 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. Use concise factual phrases. Do not infer or add information not present in the conversation.';
 
 @Injectable()
 export class LLMSessionSummarizer extends SessionSummarizer {
@@ -96,11 +96,85 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         if (messages.length === 0) {
             return '';
         }
+        const relevant = messages.filter(message => message.role !== 'system');
+        const goal = this.resolveGoal(relevant);
+        const decisions = this.resolveDecisions(relevant);
+        const files = this.resolveFiles(relevant);
+        const errors = this.resolveErrors(relevant);
+        const openState = this.resolveOpenState(relevant);
+
+        return [
+            `Goal: ${goal || 'No clear goal captured.'}`,
+            `Decisions: ${decisions || 'No major decisions recorded.'}`,
+            `Files: ${files || 'No file paths mentioned.'}`,
+            `Errors: ${errors || 'No errors recorded.'}`,
+            `Open state: ${openState || 'Continue from the latest conversation state.'}`
+        ].join('\n').slice(0, 2000);
+    }
+
+    private resolveGoal(messages: AgentMessage[]): string {
+        for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'user' && messages[i].content.trim()) {
+                return this.truncate(messages[i].content, 280);
+            }
+        }
+        return '';
+    }
+
+    private resolveDecisions(messages: AgentMessage[]): string {
         return messages
-            .filter(m => m.role !== 'system')
-            .slice(-10)
-            .map(msg => `${msg.role}: ${msg.content}`)
-            .join(' | ')
-            .slice(0, 2000);
+            .filter(message => message.role === 'assistant' && !message.metadata?.toolCalls && message.content.trim())
+            .slice(-2)
+            .map(message => this.truncate(message.content, 180))
+            .join(' | ');
+    }
+
+    private resolveFiles(messages: AgentMessage[]): string {
+        const files = new Set<string>();
+        for (const message of messages) {
+            const matches = message.content.match(/[A-Za-z0-9_./-]+\.[A-Za-z0-9_-]+/g) || [];
+            for (const match of matches) {
+                files.add(match);
+                if (files.size >= 6) {
+                    return [...files].join(', ');
+                }
+            }
+        }
+        return [...files].join(', ');
+    }
+
+    private resolveErrors(messages: AgentMessage[]): string {
+        const errorMessages = messages
+            .filter(message => this.isErrorMessage(message))
+            .slice(-2)
+            .map(message => this.truncate(String(message.metadata?.error || message.metadata?.receipt?.error || message.content), 180));
+        return errorMessages.join(' | ');
+    }
+
+    private resolveOpenState(messages: AgentMessage[]): string {
+        const tail = messages
+            .slice(-3)
+            .map(message => `${message.role}: ${this.truncate(message.content, 120)}`)
+            .join(' | ');
+        return tail;
+    }
+
+    private isErrorMessage(message: AgentMessage): boolean {
+        const metadataError = String(message.metadata?.error || message.metadata?.receipt?.error || '').trim();
+        if (metadataError) {
+            return true;
+        }
+        if (message.role === 'tool' && /"error"\s*:/.test(message.content)) {
+            return true;
+        }
+        return /\bfailed\b|\berror\b/i.test(message.content);
+    }
+
+    private truncate(content: string, maxLength: number): string {
+        const text = String(content || '').replace(/\s+/g, ' ').trim();
+        if (text.length <= maxLength) {
+            return text;
+        }
+        return `${text.slice(0, maxLength - 3)}...`;
     }
 }
