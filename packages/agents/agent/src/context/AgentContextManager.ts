@@ -1,6 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
+import { summarizeToolDisplayText } from '../tools/ToolSummary';
 
 export interface ContextBudget {
     maxHistoryTokens: number;
@@ -108,7 +109,7 @@ export class AgentContextManager {
 
         let pruned = messages.map(msg => {
             if (msg.role === 'tool' && msg.content.length > this.budget.maxToolResults) {
-                return { ...msg, content: msg.content.slice(0, this.budget.maxToolResults) + '...[truncated]' };
+                return { ...msg, content: this.buildCompactedToolContent(msg) };
             }
             return msg;
         });
@@ -250,5 +251,23 @@ export class AgentContextManager {
             return true;
         }
         return false;
+    }
+
+    private buildCompactedToolContent(message: AgentMessage): string {
+        const toolName = String(message.name || 'tool').trim() || 'tool';
+        const receiptSummary = String(message.metadata?.receipt?.outputSummary || '').trim();
+        const metadataError = String(message.metadata?.error || message.metadata?.receipt?.error || '').trim();
+        const summarized = summarizeToolDisplayText(toolName, message.content, 'output');
+
+        if (metadataError) {
+            return JSON.stringify({ error: metadataError });
+        }
+        if (receiptSummary) {
+            return `[summary] ${receiptSummary}`;
+        }
+        if (summarized && summarized !== message.content) {
+            return `[summary] ${summarized}`;
+        }
+        return message.content.slice(0, this.budget.maxToolResults) + '...[truncated]';
     }
 }

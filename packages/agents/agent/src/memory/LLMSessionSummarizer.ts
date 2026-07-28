@@ -3,6 +3,7 @@ import { ModelAdapter } from '../model/ModelAdapter';
 import { SessionSummarizer } from './SessionSummarizer';
 import { AgentMessage } from '../runtime/AgentMessage';
 import { ModelRequest } from '../model/ModelRequest';
+import { summarizeToolDisplayText } from '../tools/ToolSummary';
 
 const COMPACTION_SYSTEM_PROMPT = 'You are a context compression assistant for a coding agent. Compress the conversation while preserving: 1) user goals and requirements, 2) decisions made and rationale, 3) files created/modified/deleted with paths, 4) errors encountered and how they were resolved, 5) current task state and next steps. Output exactly five labeled lines: Goal:, Decisions:, Files:, Errors:, Open state:. Use concise factual phrases. Do not infer or add information not present in the conversation.';
 
@@ -69,7 +70,11 @@ export class LLMSessionSummarizer extends SessionSummarizer {
             let content = msg.content;
 
             if (msg.role === 'tool' && msg.name) {
-                content = `[${msg.name}] ${content}`;
+                const receiptSummary = String(msg.metadata?.receipt?.outputSummary || '').trim();
+                const errorSummary = String(msg.metadata?.error || msg.metadata?.receipt?.error || '').trim();
+                const summarized = summarizeToolDisplayText(msg.name, content, 'output');
+                const toolContent = errorSummary || receiptSummary || summarized || content;
+                content = `[${msg.name}] ${toolContent}`;
             }
 
             if (msg.metadata?.toolCalls?.length) {

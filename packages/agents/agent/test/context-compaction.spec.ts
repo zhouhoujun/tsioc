@@ -250,6 +250,40 @@ export class ContextCompactionTest {
         expect(result.length).toBeGreaterThan(0);
     }
 
+    @Test('pruneHistory replaces oversized tool output with compact summary')
+    async pruneHistoryCompactsLargeToolOutput() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 200, maxToolResults: 80 });
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Inspect the workspace.', createdAt: 2 },
+            {
+                id: 't1',
+                role: 'tool',
+                name: 'list_dir',
+                content: JSON.stringify({
+                    path: '.',
+                    entries: Array.from({ length: 12 }, (_, index) => ({ name: `file-${index + 1}.ts`, path: `src/file-${index + 1}.ts` })),
+                    truncated: true
+                }),
+                createdAt: 3,
+                metadata: {
+                    receipt: {
+                        outputSummary: '. · 12 entries · src/file-1.ts, src/file-2.ts, src/file-3.ts +9 more · truncated'
+                    }
+                }
+            },
+            { id: 'a1', role: 'assistant', content: 'I found the files.', createdAt: 4 }
+        ];
+
+        const result = ctx.pruneHistory(messages);
+        const toolMessage = result.find(message => message.id === 't1');
+
+        expect(toolMessage?.content).toContain('[summary]');
+        expect(toolMessage?.content).toContain('12 entries');
+        expect(toolMessage?.content.length).toBeLessThan(messages[2].content.length);
+    }
+
     @Test('compactHistory produces smaller result than pruneHistory')
     async compactSavesTokens() {
         class CompressingSummarizer extends SessionSummarizer {
@@ -296,6 +330,36 @@ export class ContextCompactionTest {
         const result = await summarizer.summarize(messages);
         expect(result).toBeTruthy();
         expect(result.length).toBeLessThan(500);
+    }
+
+    @Test('LLMSessionSummarizer prefers concise tool summaries over raw payloads')
+    async llmPrefersToolSummaries() {
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Inspect the workspace layout.', createdAt: 1 },
+            {
+                id: '2',
+                role: 'tool',
+                name: 'list_dir',
+                content: JSON.stringify({
+                    path: '.',
+                    entries: Array.from({ length: 10 }, (_, index) => ({ name: `feature-${index + 1}.ts`, path: `src/feature-${index + 1}.ts` }))
+                }),
+                createdAt: 2,
+                metadata: {
+                    receipt: {
+                        outputSummary: '. · 10 entries · src/feature-1.ts, src/feature-2.ts, src/feature-3.ts +7 more'
+                    }
+                }
+            }
+        ];
+
+        const adapter = new EchoModelAdapter();
+        const summarizer = new LLMSessionSummarizer(adapter);
+        const result = await summarizer.summarize(messages);
+
+        expect(result).toContain('Inspect the workspace layout');
+        expect(result).toContain('10 entries');
+        expect(result).not.toContain('"entries"');
     }
 
     @Test('LLMSessionSummarizer falls back to naive when no model adapter')
