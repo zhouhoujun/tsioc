@@ -274,6 +274,33 @@ class CapturingModelAdapter extends EchoModelAdapter {
     }
 }
 
+class LongSessionRegressionModelAdapter extends EchoModelAdapter {
+    requests: any[] = [];
+    private count = 0;
+    private readonly continuedReply = '继续补充系统设计细节，包括模块边界、调用链路、数据库设计、失败恢复和监考策略。'.repeat(4);
+
+    async complete(request: any): Promise<any> {
+        this.requests.push(request);
+        this.count++;
+        if (this.count === 1) {
+            return {
+                toolCalls: [{ id: 'tool-1', name: 'echo', input: { value: 'from-tool' } }],
+                stopReason: 'tool'
+            };
+        }
+        if (this.count === 2) {
+            return {
+                message: `第一轮完成，但工具调用失败了。${this.continuedReply}`,
+                stopReason: 'end'
+            };
+        }
+        return {
+            message: `${this.continuedReply} continued-${this.count}`,
+            stopReason: 'end'
+        };
+    }
+}
+
 class RegistrySearchToolStub implements AgentTool {
     name = 'tool_search';
     description = 'search tools';
@@ -1073,6 +1100,58 @@ export class RuntimeLoopTest {
         expect(state.summary).toContain('Errors:');
         expect(state.summary).toContain('Open state:');
         expect(state.summary).toContain('src/app.ts');
+    }
+
+    @Test('long follow-up sessions keep root goal and tool failure context after compaction')
+    async longFollowUpSessionsKeepRootGoalAndToolFailureContextAfterCompaction() {
+        const model = new LongSessionRegressionModelAdapter();
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new FailingToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter(
+                [
+                    'Goal: 设计一个跨平台在线考试系统，并补充数据库表设计。',
+                    'Decisions: 先输出总体方案，再逐步补充系统架构和数据库设计。',
+                    'Files: No file paths mentioned.',
+                    'Errors: Tool "echo" failed during the first pass.',
+                    'Open state: 继续补充后续设计细节。'
+                ].join('\n')
+            ) as any),
+            {
+                ...defaultAgentOptions,
+                session: {
+                    ...defaultAgentOptions.session,
+                    recentMessages: 50,
+                    summaryThreshold: 999
+                },
+                context: {
+                    ...defaultAgentOptions.context,
+                    compactionThreshold: 6,
+                    compactionMinTokens: 150
+                }
+            },
+            new FakeApp() as any
+        );
+
+        const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
+        await runtime.runTurn('s1', longGoal);
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '补充数据库表设计');
+
+        const lastRequest = model.requests[model.requests.length - 1];
+        const contents = lastRequest.messages.map((message: any) => String(message.content || ''));
+        const summaryMessage = contents.find((content: string) => content.includes('[Context Summary'));
+
+        expect(summaryMessage).toBeTruthy();
+        expect(summaryMessage).toContain('Goal:');
+        expect(summaryMessage).toContain('在线考试系统');
+        expect(summaryMessage).toContain('Errors:');
+        expect(summaryMessage).toContain('echo');
+        expect(contents.some((content: string) => content.includes('补充数据库表设计'))).toEqual(true);
     }
 
     @Test('keeps turn successful when memory retrieval fails')
