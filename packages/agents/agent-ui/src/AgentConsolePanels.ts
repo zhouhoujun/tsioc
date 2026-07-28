@@ -1842,7 +1842,7 @@ export class AgentConsoleMessagesPanelComponent {
         const lines = item.lines.slice(0, COLLAPSED_MESSAGE_PREVIEW_LINES);
         const hiddenCount = item.lines.length - lines.length + 1;
         const baseLine = lines[lines.length - 1];
-        const previewText = `… ${hiddenCount} more lines. /messages`;
+        const previewText = `… ${hiddenCount} more lines. click to view`;
         const previewStyle = {
             ...(baseLine.lineStyle || {}),
             cursor: 'pointer',

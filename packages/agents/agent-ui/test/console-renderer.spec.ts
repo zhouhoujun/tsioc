@@ -202,7 +202,7 @@ export class AgentConsoleRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('line 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('… 5 more lines. /messages'))).toBe(true);
+        expect(messageLines.some(line => line.includes('… 5 more lines. click to view'))).toBe(true);
         expect(messageLines.some(line => line.includes('line 9'))).toBe(false);
     }
 
@@ -342,7 +342,7 @@ export class AgentConsoleRendererTest {
         expect(approvalLines.some(line => line.includes('npm test'))).toBe(true);
     }
 
-    @Test('renders message detail panel with line numbers for selected message')
+    @Test('renders expanded message content inline without a dedicated detail panel')
     async renderMessageDetailPanel() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setMessages([
@@ -350,20 +350,18 @@ export class AgentConsoleRendererTest {
         ]);
         ref.instance.sessionState.setMessagesFocused(true);
         ref.instance.sessionState.openMessageDetail();
-        ref.instance.sessionState.scrollMessageDetailToEdge('end');
-        ref.instance.sessionState.scrollMessageDetailColumns(4);
         await ref.render();
         await Promise.resolve();
 
         const renderer = this.ctx.get(ConsoleRenderer);
-        const detailPanel = ref.hostView.query(AgentConsoleMessageDetailPanelComponent) as ComponentRef<AgentConsoleMessageDetailPanelComponent>;
-        const detailLines = renderer.renderToLines(detailPanel.hostView.rootNodes[0]);
+        const detailPanel = ref.hostView.query(AgentConsoleMessageDetailPanelComponent) as ComponentRef<AgentConsoleMessageDetailPanelComponent> | null;
+        const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
+        const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
-        expect(detailLines.some(line => line.includes('message 1/1 user'))).toBe(true);
-        expect(detailLines.some(line => line.includes('lines 2-7 / 7'))).toBe(true);
-        expect(detailLines.some(line => line.includes('col 5/9'))).toBe(true);
-        expect(detailLines.some(line => line.includes('2|'))).toBe(true);
-        expect(detailLines.some(line => line.includes('line7'))).toBe(true);
+        expect(detailPanel).toBeFalsy();
+        expect(messageLines.some(line => line.includes('line1'))).toBe(true);
+        expect(messageLines.some(line => line.includes('line7'))).toBe(true);
+        expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
     }
 
     @Test('renders coding task review panel with diff and worker details')

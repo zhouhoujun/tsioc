@@ -77,6 +77,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             maxHistoryTokens: this.options.context?.maxHistoryTokens,
             maxMemoryRecords: this.options.context?.maxMemoryRecords,
             maxToolResults: this.options.context?.maxToolResultChars,
+            recentMessageWindow: this.options.context?.compactionRecentMessages,
             compactionMinTokens: this.options.context?.compactionMinTokens
         });
         if (this.summarizer && this.options.context?.compactionThreshold) {

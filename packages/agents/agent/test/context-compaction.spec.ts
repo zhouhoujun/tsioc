@@ -162,6 +162,33 @@ export class ContextCompactionTest {
         expect(result.some(m => m.id === 'a0')).toEqual(false);
     }
 
+    @Test('compactHistory respects configurable recent message window')
+    async compactRespectsRecentMessageWindow() {
+        class RecordingSummarizer extends SessionSummarizer {
+            async summarize(_messages: AgentMessage[]): Promise<string> {
+                return 'Compressed conversation history.';
+            }
+        }
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200, recentMessageWindow: 2 });
+        ctx.setSummarizer(new RecordingSummarizer(), 3);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'a-1', role: 'assistant', content: 'First long answer '.repeat(20), createdAt: 2 },
+            { id: 'a-2', role: 'assistant', content: 'Second long answer '.repeat(20), createdAt: 3 },
+            { id: 'a-3', role: 'assistant', content: 'Third long answer '.repeat(20), createdAt: 4 },
+            { id: 'a-4', role: 'assistant', content: 'Fourth long answer '.repeat(20), createdAt: 5 }
+        ];
+
+        const result = await ctx.compactHistory(messages);
+
+        expect(result.some(message => message.id === 'a-1')).toEqual(false);
+        expect(result.some(message => message.id === 'a-2')).toEqual(false);
+        expect(result.some(message => message.id === 'a-3')).toEqual(true);
+        expect(result.some(message => message.id === 'a-4')).toEqual(true);
+        expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
+    }
+
     @Test('compactHistory preserves the latest substantive user request outside the recent window')
     async compactPreservesLatestSubstantiveUserRequest() {
         class RecordingSummarizer extends SessionSummarizer {
@@ -275,6 +302,63 @@ export class ContextCompactionTest {
         const result = await ctx.compactHistory(messages);
 
         expect(result.some(message => message.id === 't-error')).toEqual(true);
+        expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
+    }
+
+    @Test('compactHistory preserves the latest stateful tool result outside the recent window')
+    async compactPreservesLatestStatefulToolResult() {
+        class RecordingSummarizer extends SessionSummarizer {
+            async summarize(_messages: AgentMessage[]): Promise<string> {
+                return 'Compressed conversation history.';
+            }
+        }
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 200 });
+        ctx.setSummarizer(new RecordingSummarizer(), 4);
+        const longGoal = '补齐多 worker 结果聚合，并在上下文压缩后保留关键任务状态。'.repeat(8);
+        const longReply = '继续补充 review、worker report 和跨会话聚合细节。'.repeat(10);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u-goal', role: 'user', content: longGoal, createdAt: 2 },
+            { id: 'a-1', role: 'assistant', content: longReply, createdAt: 3 },
+            {
+                id: 't-state',
+                role: 'tool',
+                name: 'coding_task',
+                toolCallId: 'tc-state',
+                content: JSON.stringify({
+                    task: {
+                        id: 'task-1',
+                        title: 'Review task',
+                        status: 'completed',
+                        actions: [{ id: 'edit-1' }],
+                        result: {
+                            workers: [{ workerId: 'worker-1' }, { workerId: 'worker-2' }],
+                            report: {
+                                summary: '2 worker diff(s) captured',
+                                nextSteps: ['review diff', 'verify changes'],
+                                artifacts: ['diff', 'checkpoint:checkpoint-task-1']
+                            }
+                        }
+                    }
+                }),
+                createdAt: 4
+            },
+            { id: 'u-2', role: 'user', content: '继续', createdAt: 5 },
+            { id: 'a-2', role: 'assistant', content: longReply, createdAt: 6 },
+            { id: 'u-3', role: 'user', content: '继续', createdAt: 7 },
+            { id: 'a-3', role: 'assistant', content: longReply, createdAt: 8 },
+            { id: 'u-4', role: 'user', content: '继续', createdAt: 9 },
+            { id: 'a-4', role: 'assistant', content: longReply, createdAt: 10 },
+            { id: 'u-5', role: 'user', content: '继续', createdAt: 11 },
+            { id: 'a-5', role: 'assistant', content: longReply, createdAt: 12 },
+            { id: 'u-6', role: 'user', content: '继续', createdAt: 13 },
+            { id: 'a-6', role: 'assistant', content: longReply, createdAt: 14 }
+        ];
+
+        const result = await ctx.compactHistory(messages);
+
+        expect(result.some(message => message.id === 't-state')).toEqual(true);
         expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
     }
 
