@@ -57,7 +57,28 @@ export class AgentContextManager {
     }
 
     estimateTokens(text: string): number {
-        return Math.ceil(text.length / 4);
+        if (!text) {
+            return 0;
+        }
+        let cjkCount = 0;
+        let asciiCount = 0;
+        for (const char of text) {
+            const code = char.codePointAt(0) || 0;
+            if ((code >= 0x4E00 && code <= 0x9FFF) ||
+                (code >= 0x3400 && code <= 0x4DBF) ||
+                (code >= 0x20000 && code <= 0x2FFFF) ||
+                (code >= 0x3000 && code <= 0x303F) ||   // CJK punctuation
+                (code >= 0xFF00 && code <= 0xFFEF) ||   // Fullwidth forms
+                (code >= 0x3040 && code <= 0x309F) ||   // Hiragana
+                (code >= 0x30A0 && code <= 0x30FF)) {   // Katakana
+                cjkCount++;
+            } else {
+                asciiCount++;
+            }
+        }
+        // Most modern tokenizers handle CJK at ~1-2 chars/token, ASCII at ~4 chars/token
+        const overhead = text.length <= 4 ? 0 : Math.min(2, Math.ceil(text.length / 40));
+        return Math.max(1, Math.ceil(cjkCount / 1.8) + Math.ceil(asciiCount / 4) + overhead);
     }
 
     estimateMessages(messages: AgentMessage[]): number {
@@ -302,8 +323,10 @@ export class AgentContextManager {
             return pruned;
         }
 
+        // compute a budget-aware recent window instead of a fixed 20-message tail
+        const recentTargetMessages = Math.max(4, Math.floor(this.budget.maxHistoryTokens / 200));
+        const recentThreshold = Math.max(pruned.length - recentTargetMessages, 0);
         const assistantToolCallIds = new Set<string>();
-        const recentThreshold = Math.max(pruned.length - 20, 0);
         for (let i = 0; i < recentThreshold; i++) {
             const msgMeta = pruned[i].metadata;
             if (pruned[i].role === 'assistant' && msgMeta?.toolCalls) {
@@ -366,7 +389,7 @@ export class AgentContextManager {
             return kept;
         }
 
-        return kept.slice(-Math.max(10, Math.floor(this.budget.maxHistoryTokens / 100)));
+        return kept.slice(-Math.max(8, Math.floor(this.budget.maxHistoryTokens / 100)));
     }
 
     trimMemory<T extends { value?: string }>(records: T[]): T[] {
@@ -470,7 +493,10 @@ export class AgentContextManager {
         if (message.role === 'tool' && /"error"\s*:/.test(content)) {
             return true;
         }
-        if (message.role !== 'user' && /\bfailed\b|\berror\b/i.test(content)) {
+        if (message.role === 'assistant' && /^(?:Error|Failed|Error:|Failed:)/.test(content)) {
+            return true;
+        }
+        if (message.role === 'user' && /(?:遇到了?错误|发生了?错误|出错|报错|failed|error)/i.test(content)) {
             return true;
         }
         return false;

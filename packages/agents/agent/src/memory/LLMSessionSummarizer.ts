@@ -139,10 +139,12 @@ export class LLMSessionSummarizer extends SessionSummarizer {
 
     private resolveFiles(messages: AgentMessage[]): string {
         const files = new Set<string>();
+        const fileRe = /(?:@[A-Za-z0-9_-]+\/)?[A-Za-z0-9_./\\-]+\.(?:[jt]sx?|[cm]js|json|ya?ml|css|html|md|vue|svelte|py|java|go|rs|swift|kt|dart)/g;
         for (const message of messages) {
-            const matches = message.content.match(/[A-Za-z0-9_./-]+\.[A-Za-z0-9_-]+/g) || [];
+            const matches = message.content.match(fileRe) || [];
             for (const match of matches) {
-                files.add(match);
+                const normalized = match.replace(/\\/g, '/');
+                files.add(normalized);
                 if (files.size >= 6) {
                     return [...files].join(', ');
                 }
@@ -193,6 +195,15 @@ export class LLMSessionSummarizer extends SessionSummarizer {
         const text = String(content || '').replace(/\s+/g, ' ').trim();
         if (text.length <= maxLength) {
             return text;
+        }
+        // prefer breaking at sentence or clause boundaries
+        const boundary = text.lastIndexOf('.', maxLength - 3);
+        if (boundary > Math.floor(maxLength / 2)) {
+            return `${text.slice(0, boundary + 1)}..`;
+        }
+        const clauseBoundary = text.lastIndexOf(';', maxLength - 3);
+        if (clauseBoundary > Math.floor(maxLength / 2)) {
+            return `${text.slice(0, clauseBoundary + 1)}..`;
         }
         return `${text.slice(0, maxLength - 3)}...`;
     }

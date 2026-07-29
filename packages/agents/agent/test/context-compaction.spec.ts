@@ -688,6 +688,130 @@ export class ContextCompactionTest {
         expect(result).toContain('Current: 补充项目主线和跨会话聚合策略');
         expect(result).not.toContain('Goal: 继续');
     }
+    /* --- language-aware token estimation --- */
+
+    @Test('estimateTokens handles CJK-heavy text more accurately than length/4')
+    async estimateTokensCjkAccuracy() {
+        const ctx = new AgentContextManager();
+        // Chinese text tokens ~1.8 chars per token, English ~4 chars per token
+        const cjkText = '设计一个跨平台在线考试系统，并给出数据库表设计、接口设计、权限模型、部署架构和监考流程。';
+        const asciiText = 'Design a cross-platform online examination system with database schema, API design, permission model, deployment architecture and proctoring workflow.';
+
+        const cjkTokens = ctx.estimateTokens(cjkText);
+        const asciiTokens = ctx.estimateTokens(asciiText);
+
+        // CJK text (61 chars) should be ~34 tokens, old method gave 15
+        expect(cjkTokens).toBeGreaterThan(20);
+        // ASCII text (168 chars) should be ~44 tokens  
+        expect(asciiTokens).toBeGreaterThan(30);
+
+        // Mixed text should account for both character types
+        const mixedText = `${cjkText} ${asciiText}`;
+        const mixedTokens = ctx.estimateTokens(mixedText);
+        // combined should be more than either alone
+        expect(mixedTokens).toBeGreaterThan(cjkTokens);
+        expect(mixedTokens).toBeGreaterThan(asciiTokens);
+    }
+
+    @Test('estimateTokens returns at least 1 for any non-empty input')
+    async estimateTokensMinimum() {
+        const ctx = new AgentContextManager();
+        expect(ctx.estimateTokens('a')).toEqual(1);
+        expect(ctx.estimateTokens('中')).toEqual(1);
+    }
+
+    @Test('estimateTokens returns 0 for empty input')
+    async estimateTokensEmpty() {
+        const ctx = new AgentContextManager();
+        expect(ctx.estimateTokens('')).toEqual(0);
+        expect(ctx.estimateTokens('   ')).toBeGreaterThan(0);
+    }
+
+    /* --- narrowed error context detection --- */
+
+    @Test('isErrorContextMessage does not flag messages that merely mention error')
+    async errorContextNoFalsePositive() {
+        const ctx = new AgentContextManager();
+        // These should NOT be flagged as error context - they only mention the word
+        const cleanMessages: AgentMessage[] = [
+            { id: 'm1', role: 'assistant', content: 'The previous error is now fixed in the latest commit.', createdAt: 1 },
+            { id: 'm2', role: 'assistant', content: 'Let me check if there is any error in the build output.', createdAt: 2 },
+            { id: 'm3', role: 'assistant', content: 'The build completed without any error.', createdAt: 3 },
+            { id: 'm4', role: 'assistant', content: 'I found a failed test and fixed it.', createdAt: 4 },
+            { id: 'm5', role: 'assistant', content: 'Retrying the failed step after fixing the configuration.', createdAt: 5 }
+        ];
+
+        for (const msg of cleanMessages) {
+            const result = (ctx as any).isErrorContextMessage(msg);
+            expect(result).toEqual(false);
+        }
+    }
+
+    @Test('isErrorContextMessage still flags actual errors in metadata')
+    async errorContextFlagsMetadataErrors() {
+        const ctx = new AgentContextManager();
+        const errorMessages: AgentMessage[] = [
+            {
+                id: 'm1', role: 'tool', name: 'project_intel',
+                content: 'normal output',
+                createdAt: 1,
+                metadata: { error: 'validation failed' }
+            },
+            {
+                id: 'm2', role: 'tool', name: 'read_file',
+                content: '{"files":[]}',
+                createdAt: 2,
+                metadata: { receipt: { status: 'error', error: 'file not found' } }
+            },
+            {
+                id: 'm3', role: 'tool', name: 'write_file',
+                content: '{"error":"permission denied"}',
+                createdAt: 3
+            },
+            {
+                id: 'm4', role: 'assistant',
+                content: 'Error: The migration step failed because the target branch does not exist.',
+                createdAt: 4
+            }
+        ];
+
+        for (const msg of errorMessages) {
+            const result = (ctx as any).isErrorContextMessage(msg);
+            expect(result).toEqual(true);
+        }
+    }
+
+    /* --- budget-aware pruneHistory --- */
+
+    @Test('pruneHistory uses budget-aware recent window instead of hardcoded 20')
+    async pruneHistoryBudgetAwareWindow() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 2000, maxToolResults: 200 });
+        const messages: AgentMessage[] = [];
+        for (let i = 0; i < 40; i++) {
+            messages.push({ id: `m${i}`, role: 'assistant', content: `Step ${i}: some repeated content that adds up over many iterations `.repeat(3), createdAt: i });
+        }
+        const result = ctx.pruneHistory(messages);
+        // budget 2000 with ~4 chars/token ≈ 8000 chars budget → should keep fewer than 40
+        expect(result.length).toBeLessThan(30);
+        expect(result.length).toBeGreaterThan(0);
+        const recentIds = new Set(result.map(m => m.id));
+        // last message should always be present
+        expect(recentIds.has('m39')).toEqual(true);
+    }
+
+    @Test('pruneHistory respects very small budget')
+    async pruneHistorySmallBudget() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 200, maxToolResults: 80 });
+        const messages: AgentMessage[] = [];
+        for (let i = 0; i < 20; i++) {
+            messages.push({ id: `m${i}`, role: 'assistant', content: `Item ${i}: `.repeat(10), createdAt: i });
+        }
+        const result = ctx.pruneHistory(messages);
+        expect(result.length).toBeLessThan(10);
+        expect(result.length).toBeGreaterThan(0);
+    }
 }
 
 class StaticSummaryModelAdapter extends EchoModelAdapter {
