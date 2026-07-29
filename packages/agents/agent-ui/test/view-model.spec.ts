@@ -1729,7 +1729,19 @@ export class AgentConsoleComponentTest {
         const scheduler = new SchedulerStub();
         const appRpc = new AppRpcStub();
         const reviewTask = createReviewTask();
-        appRpc.codingTasks = [reviewTask];
+        const retryTask = {
+            ...createRetryableTask(),
+            id: 'task-2',
+            title: 'Patch handlers retry',
+            updatedAt: 3,
+            metadata: {
+                ...(createRetryableTask().metadata || {}),
+                retryOfTaskId: 'task-1',
+                retrySourceTaskId: 'task-1',
+                retrySequence: 1
+            }
+        };
+        appRpc.codingTasks = [retryTask, reviewTask];
         appRpc.codingTaskDiffs.set('task-1', {
             sessionId: 'console',
             taskId: 'task-1',
@@ -1751,6 +1763,12 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.selectMenu?.title).toEqual('Coding tasks');
         expect(component.sessionState.selectMenu?.options[0]?.label).toContain('task-1');
         expect(component.sessionState.selectMenu?.options[0]?.label).toContain('Patch handlers');
+        expect(component.sessionState.selectMenu?.options[0]?.description).toContain('root');
+        expect(component.sessionState.selectMenu?.options[0]?.description).toContain('lineage 2');
+        expect(component.sessionState.selectMenu?.options[1]?.label).toContain('task-2');
+        expect(component.sessionState.selectMenu?.options[1]?.description).toContain('retry 1');
+        expect(component.sessionState.selectMenu?.options[1]?.description).toContain('from task-1');
+        expect(component.sessionState.selectMenu?.options[1]?.description).toContain('lineage 2');
 
         await component.sessionState.confirmSelectMenu('task-1');
         await pending;

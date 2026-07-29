@@ -1123,14 +1123,23 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected buildCodingTaskSelectOption(task: any, tasks: any[] = []): AgentConsoleSelectOption {
         const choice = this.buildCodingTaskChoice(task, tasks);
+        const lineageSegments = choice.retryOfTaskId
+            ? [
+                `retry ${typeof choice.retryDepth === 'number' ? choice.retryDepth : 1}`,
+                `from ${choice.retryOfTaskId}`
+            ]
+            : ['root'];
+        if (typeof choice.lineageTaskCount === 'number') {
+            lineageSegments.push(`lineage ${choice.lineageTaskCount}`);
+        }
         return {
             label: `${choice.id} · ${choice.title}`,
             value: choice.id,
             description: [
+                ...lineageSegments,
                 choice.sourceSessionId ? `session ${choice.sourceSessionId}` : '',
                 choice.status,
                 choice.executionMode,
-                typeof choice.retryDepth === 'number' ? `retry ${choice.retryDepth}` : '',
                 `${choice.workerCount || 0} worker${choice.workerCount === 1 ? '' : 's'}`,
                 this.describeCodingTaskRollback(task)
             ].filter(Boolean).join(' · ') || 'review',
