@@ -11,6 +11,21 @@ export interface ContextBudget {
     compactionMinTokens: number;
 }
 
+export interface ContextPreparationReport {
+    strategy: 'unchanged' | 'pruned' | 'compacted';
+    compactionTriggered: boolean;
+    summaryInserted: boolean;
+    beforeMessageCount: number;
+    afterMessageCount: number;
+    beforeTokens: number;
+    afterTokens: number;
+    compactedMessageCount: number;
+    preservedAnchorCount: number;
+    recentMessageCount: number;
+    prunedMessageCount: number;
+    toolMessagesCompacted: number;
+}
+
 const DEFAULT_BUDGET: ContextBudget = {
     maxHistoryTokens: 32000,
     maxMemoryRecords: 50,
@@ -63,42 +78,164 @@ export class AgentContextManager {
         return estimatedTokens >= tokenThreshold;
     }
 
-    async compactHistory(messages: AgentMessage[]): Promise<AgentMessage[]> {
-        if (!this.shouldCompact(messages) || !this.summarizer) {
-            return messages;
+    async prepareHistory(messages: AgentMessage[]): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+        const beforeMessageCount = messages.length;
+        const beforeTokens = this.estimateMessages(messages);
+        const compactionTriggered = this.shouldCompact(messages);
+        const toolPrepared = this.compactToolMessagesForContext(messages, compactionTriggered);
+        const workingMessages = toolPrepared.messages;
+
+        if (!compactionTriggered) {
+            const prepared = this.pruneHistory(workingMessages);
+            return {
+                messages: prepared,
+                report: this.createPreparationReport({
+                    strategy: prepared === messages && toolPrepared.compactedCount === 0 ? 'unchanged' : 'pruned',
+                    compactionTriggered: false,
+                    summaryInserted: false,
+                    beforeMessageCount,
+                    afterMessageCount: prepared.length,
+                    beforeTokens,
+                    afterTokens: this.estimateMessages(prepared),
+                    compactedMessageCount: 0,
+                    preservedAnchorCount: 0,
+                    recentMessageCount: toolPrepared.recentMessageCount,
+                    toolMessagesCompacted: toolPrepared.compactedCount
+                })
+            };
         }
 
-        const systemMessages: AgentMessage[] = [];
-        const recentMessages: AgentMessage[] = [];
-        const oldMessages: AgentMessage[] = [];
+        return this.compactHistoryWithReport(workingMessages, beforeMessageCount, beforeTokens, toolPrepared.compactedCount, toolPrepared.recentMessageCount);
+    }
 
-        const recentCount = this.budget.recentMessageWindow;
+    async compactHistory(messages: AgentMessage[]): Promise<AgentMessage[]> {
+        const prepared = await this.prepareHistory(messages);
+        return prepared.messages;
+    }
+
+    private splitMessagesForCompaction(messages: AgentMessage[]): {
+        systemMessages: AgentMessage[];
+        oldMessages: AgentMessage[];
+        recentMessages: AgentMessage[];
+    } {
+        const systemMessages: AgentMessage[] = [];
+        const conversation: AgentMessage[] = [];
+
         for (const msg of messages) {
             if (msg.role === 'system') {
                 systemMessages.push(msg);
-            } else {
-                oldMessages.push(msg);
+                continue;
+            }
+            conversation.push(msg);
+        }
+
+        if (conversation.length === 0) {
+            return { systemMessages, oldMessages: [], recentMessages: [] };
+        }
+
+        const recentCount = Math.max(1, this.budget.recentMessageWindow);
+        let startIndex = Math.max(conversation.length - recentCount, 0);
+        for (let cursor = conversation.length - 1; cursor >= startIndex; cursor--) {
+            const message = conversation[cursor];
+            if (message.role !== 'tool' || !message.toolCallId) {
+                continue;
+            }
+
+            const assistantIndex = this.findAssistantForToolCall(conversation, cursor - 1, message.toolCallId);
+            if (assistantIndex >= 0 && assistantIndex < startIndex) {
+                startIndex = assistantIndex;
             }
         }
 
-        while (oldMessages.length > recentCount) {
-            recentMessages.unshift(oldMessages.pop()!);
+        return {
+            systemMessages,
+            oldMessages: conversation.slice(0, startIndex),
+            recentMessages: conversation.slice(startIndex)
+        };
+    }
+
+    private async compactHistoryWithReport(messages: AgentMessage[], beforeMessageCount: number, beforeTokens: number, toolMessagesCompacted: number, preparedRecentMessageCount: number): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
+        if (!this.summarizer) {
+            return {
+                messages,
+                report: this.createPreparationReport({
+                    strategy: 'unchanged',
+                    compactionTriggered: true,
+                    summaryInserted: false,
+                    beforeMessageCount,
+                    afterMessageCount: messages.length,
+                    beforeTokens,
+                    afterTokens: beforeTokens,
+                    compactedMessageCount: 0,
+                    preservedAnchorCount: 0,
+                    recentMessageCount: preparedRecentMessageCount,
+                    toolMessagesCompacted
+                })
+            };
         }
 
+        const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages);
         if (oldMessages.length === 0) {
-            return messages;
+            return {
+                messages,
+                report: this.createPreparationReport({
+                    strategy: 'unchanged',
+                    compactionTriggered: true,
+                    summaryInserted: false,
+                    beforeMessageCount,
+                    afterMessageCount: messages.length,
+                    beforeTokens,
+                    afterTokens: beforeTokens,
+                    compactedMessageCount: 0,
+                    preservedAnchorCount: 0,
+                    recentMessageCount: recentMessages.length,
+                    toolMessagesCompacted
+                })
+            };
         }
 
         const oldTokens = this.estimateMessages(oldMessages);
-        if (oldTokens <= 200) {
-            return messages;
+        const minOldSectionTokens = Math.min(200, Math.max(60, Math.floor(this.budget.compactionMinTokens / 2)));
+        if (oldTokens <= minOldSectionTokens) {
+            return {
+                messages,
+                report: this.createPreparationReport({
+                    strategy: 'unchanged',
+                    compactionTriggered: true,
+                    summaryInserted: false,
+                    beforeMessageCount,
+                    afterMessageCount: messages.length,
+                    beforeTokens,
+                    afterTokens: beforeTokens,
+                    compactedMessageCount: oldMessages.length,
+                    preservedAnchorCount: 0,
+                    recentMessageCount: recentMessages.length,
+                    toolMessagesCompacted
+                })
+            };
         }
 
         try {
             const preservedAnchors = this.resolveCompactionAnchors(oldMessages, recentMessages);
             const summary = await this.summarizer.summarize(oldMessages);
             if (!summary?.trim()) {
-                return this.pruneHistory(messages);
+                const prepared = this.pruneHistory(messages);
+                return {
+                    messages: prepared,
+                    report: this.createPreparationReport({
+                        strategy: prepared === messages ? 'unchanged' : 'pruned',
+                        compactionTriggered: true,
+                        summaryInserted: false,
+                        beforeMessageCount,
+                        afterMessageCount: prepared.length,
+                        beforeTokens,
+                        afterTokens: this.estimateMessages(prepared),
+                        compactedMessageCount: oldMessages.length,
+                        preservedAnchorCount: preservedAnchors.length,
+                        recentMessageCount: recentMessages.length,
+                        toolMessagesCompacted
+                    })
+                };
             }
 
             const summaryMessage: AgentMessage = {
@@ -109,13 +246,43 @@ export class AgentContextManager {
             };
 
             const compacted = [...systemMessages, summaryMessage, ...preservedAnchors, ...recentMessages];
-            if (this.estimateMessages(compacted) <= this.budget.maxHistoryTokens) {
-                return compacted;
-            }
-
-            return this.pruneHistory(compacted);
+            const prepared = this.estimateMessages(compacted) <= this.budget.maxHistoryTokens
+                ? compacted
+                : this.pruneHistory(compacted);
+            return {
+                messages: prepared,
+                report: this.createPreparationReport({
+                    strategy: 'compacted',
+                    compactionTriggered: true,
+                    summaryInserted: true,
+                    beforeMessageCount,
+                    afterMessageCount: prepared.length,
+                    beforeTokens,
+                    afterTokens: this.estimateMessages(prepared),
+                    compactedMessageCount: oldMessages.length,
+                    preservedAnchorCount: preservedAnchors.length,
+                    recentMessageCount: recentMessages.length,
+                    toolMessagesCompacted
+                })
+            };
         } catch {
-            return this.pruneHistory(messages);
+            const prepared = this.pruneHistory(messages);
+            return {
+                messages: prepared,
+                report: this.createPreparationReport({
+                    strategy: prepared === messages ? 'unchanged' : 'pruned',
+                    compactionTriggered: true,
+                    summaryInserted: false,
+                    beforeMessageCount,
+                    afterMessageCount: prepared.length,
+                    beforeTokens,
+                    afterTokens: this.estimateMessages(prepared),
+                    compactedMessageCount: oldMessages.length,
+                    preservedAnchorCount: 0,
+                    recentMessageCount: recentMessages.length,
+                    toolMessagesCompacted
+                })
+            };
         }
     }
 
@@ -135,7 +302,6 @@ export class AgentContextManager {
             return pruned;
         }
 
-        const droppedToolIds = new Set<string>();
         const assistantToolCallIds = new Set<string>();
         const recentThreshold = Math.max(pruned.length - 20, 0);
         for (let i = 0; i < recentThreshold; i++) {
@@ -147,10 +313,21 @@ export class AgentContextManager {
                 }
             }
         }
+        const droppedToolIds = new Set<string>();
         for (let i = 0; i < recentThreshold; i++) {
             const toolCallId = pruned[i].toolCallId;
             if (pruned[i].role === 'tool' && toolCallId && assistantToolCallIds.has(toolCallId)) {
                 droppedToolIds.add(toolCallId);
+            }
+        }
+        const retainedToolCallIds = new Set<string>();
+        for (let i = 0; i < pruned.length; i++) {
+            const toolCallId = pruned[i].toolCallId;
+            if (pruned[i].role !== 'tool' || !toolCallId) {
+                continue;
+            }
+            if (i >= recentThreshold || !droppedToolIds.has(toolCallId)) {
+                retainedToolCallIds.add(toolCallId);
             }
         }
 
@@ -164,11 +341,15 @@ export class AgentContextManager {
                 kept.push(pruned[i]);
                 continue;
             }
-            if (pruned[i].role === 'assistant' && pruned[i].metadata?.toolCalls) {
-                continue;
-            }
             const tcId = pruned[i].toolCallId;
             if (pruned[i].role === 'tool' && tcId && droppedToolIds.has(tcId)) {
+                continue;
+            }
+            if (pruned[i].role === 'assistant' && pruned[i].metadata?.toolCalls) {
+                const toolCalls = (pruned[i].metadata?.toolCalls ?? []) as Array<{ id: string }>;
+                if (toolCalls.some(toolCall => retainedToolCallIds.has(toolCall.id))) {
+                    kept.push(pruned[i]);
+                }
                 continue;
             }
             if (pruned[i].role === 'assistant') {
@@ -344,5 +525,113 @@ export class AgentContextManager {
             return `[summary] ${summarized}`;
         }
         return message.content.slice(0, this.budget.maxToolResults) + '...[truncated]';
+    }
+
+    private compactToolMessagesForContext(messages: AgentMessage[], compactionTriggered: boolean): {
+        messages: AgentMessage[];
+        compactedCount: number;
+        recentMessageCount: number;
+    } {
+        const { systemMessages, oldMessages, recentMessages } = this.splitMessagesForCompaction(messages);
+        const protectedIds = compactionTriggered
+            ? new Set(this.resolveCompactionAnchors(oldMessages, recentMessages).map(message => message.id))
+            : new Set<string>();
+        const oldPrepared = this.compactToolMessages(oldMessages, 'summary-preferred', protectedIds);
+        const recentPrepared = this.compactToolMessages(recentMessages, compactionTriggered ? 'oversized-only' : 'recent-light');
+
+        const compactedCount = oldPrepared.compactedCount + recentPrepared.compactedCount;
+        if (!compactedCount) {
+            return {
+                messages,
+                compactedCount: 0,
+                recentMessageCount: recentMessages.length
+            };
+        }
+
+        return {
+            messages: [...systemMessages, ...oldPrepared.messages, ...recentPrepared.messages],
+            compactedCount,
+            recentMessageCount: recentPrepared.messages.length
+        };
+    }
+
+    private compactToolMessages(messages: AgentMessage[], mode: 'summary-preferred' | 'oversized-only' | 'recent-light', protectedIds?: Set<string>): {
+        messages: AgentMessage[];
+        compactedCount: number;
+    } {
+        let compactedCount = 0;
+        const prepared = messages.map(message => {
+            const compacted = this.compactToolMessage(message, mode, protectedIds);
+            if (compacted !== message) {
+                compactedCount++;
+            }
+            return compacted;
+        });
+
+        return { messages: compactedCount ? prepared : messages, compactedCount };
+    }
+
+    private compactToolMessage(message: AgentMessage, mode: 'summary-preferred' | 'oversized-only' | 'recent-light', protectedIds?: Set<string>): AgentMessage {
+        if (message.role !== 'tool') {
+            return message;
+        }
+
+        if (protectedIds?.has(message.id)) {
+            return message;
+        }
+
+        const content = String(message.content || '');
+        if (!content) {
+            return message;
+        }
+
+        const compactedContent = this.buildCompactedToolContent(message);
+        if (!compactedContent || compactedContent === content) {
+            return message;
+        }
+
+        const contentLength = content.length;
+        const compactedLength = compactedContent.length;
+        const hasReceiptSummary = !!String(message.metadata?.receipt?.outputSummary || '').trim();
+        const hasStructuredSummary = compactedContent.startsWith('[summary]') || compactedContent.startsWith('{');
+        const sizableReduction = compactedLength + 24 < contentLength;
+
+        const shouldCompact = mode === 'oversized-only'
+            ? contentLength > this.budget.maxToolResults
+            : mode === 'recent-light'
+                ? contentLength > this.budget.maxToolResults || ((hasReceiptSummary || hasStructuredSummary) && contentLength > Math.max(400, Math.floor(this.budget.maxToolResults / 4)) && sizableReduction)
+                : contentLength > 180 || ((hasReceiptSummary || hasStructuredSummary) && sizableReduction);
+
+        if (!shouldCompact) {
+            return message;
+        }
+
+        return {
+            ...message,
+            content: compactedContent
+        };
+    }
+
+    private findAssistantForToolCall(messages: AgentMessage[], fromIndex: number, toolCallId: string): number {
+        for (let i = fromIndex; i >= 0; i--) {
+            const message = messages[i];
+            if (message.role !== 'assistant' || !message.metadata?.toolCalls) {
+                continue;
+            }
+
+            const toolCalls: Array<{ id?: string }> = message.metadata.toolCalls as any;
+            if (toolCalls.some(toolCall => toolCall.id === toolCallId)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private createPreparationReport(report: Omit<ContextPreparationReport, 'prunedMessageCount'>): ContextPreparationReport {
+        return {
+            ...report,
+            prunedMessageCount: Math.max(0, report.beforeMessageCount - report.afterMessageCount)
+        };
     }
 }

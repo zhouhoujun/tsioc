@@ -6,7 +6,7 @@ import { AgentTurnInput } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
 import { AgentMessage } from './AgentMessage';
-import { AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from './AgentEvents';
+import { AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCompletedEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
 import { AgentToolCall, ModelResponse } from '../model/ModelResponse';
@@ -21,7 +21,7 @@ import { AGENT_OPTIONS } from '../tokens';
 import { AgentOptions, defaultAgentOptions } from '../options';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
 import { SystemPromptBuilder } from '../prompt/SystemPromptBuilder';
-import { AgentContextManager } from '../context/AgentContextManager';
+import { AgentContextManager, ContextPreparationReport } from '../context/AgentContextManager';
 import { AgentMemoryRetriever } from '../memory/AgentMemoryRetriever';
 import { AgentToolDefinition } from '../tools/AgentTool';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
@@ -329,11 +329,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const state = await this.sessions.get(sessionId);
         let messages = this.getRecentMessages(state.messages, currentUserMessageId);
         messages = this.rewriteClarificationFollowUp(messages, currentUserMessageId);
-        if (this.contextManager.shouldCompact(messages)) {
-            messages = await this.contextManager.compactHistory(messages);
-        } else {
-            messages = this.contextManager.pruneHistory(messages);
-        }
+        const preparedHistory = await this.contextManager.prepareHistory(messages);
+        messages = preparedHistory.messages;
+        await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
 
         const memory = this.contextManager.trimMemory(
             await this.getRelevantMemory(query, sessionId)
@@ -365,6 +363,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
             memory,
             summary: state.summary
         };
+    }
+
+    private async publishContextPreparedEvent(sessionId: string, report: ContextPreparationReport): Promise<void> {
+        try {
+            await this.app.publishEvent(new AgentContextPreparedEvent(this, sessionId, report));
+        } catch {
+            // context observability must not break turn execution
+        }
     }
 
     private rewriteClarificationFollowUp(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {

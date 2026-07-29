@@ -6,6 +6,7 @@ import { ScheduledAgentTask } from '../scheduler/ScheduledAgentTask';
 import { AgentMemoryRecord } from '../memory/MemoryStore';
 import { SandboxPolicy } from '../harness/SandboxExecutor';
 import { AgentToolSandboxCapability } from '../tools/AgentTool';
+import { ContextPreparationReport } from '../context/AgentContextManager';
 
 const MAX_EVENT_INPUT_SUMMARY_CHARS = 200;
 
@@ -135,6 +136,12 @@ export class AgentMemoryRetrievalFailedEvent extends ApplicationEvent {
 
 export class AgentMemoryUpdatedEvent extends ApplicationEvent {
     constructor(source: Object, readonly sessionId: string, readonly record: AgentMemoryRecord) {
+        super(source);
+    }
+}
+
+export class AgentContextPreparedEvent extends ApplicationEvent {
+    constructor(source: Object, readonly sessionId: string, readonly report: ContextPreparationReport) {
         super(source);
     }
 }

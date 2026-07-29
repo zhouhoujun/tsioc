@@ -21,7 +21,7 @@ import { AgentMemoryRetriever } from '../src/memory/AgentMemoryRetriever';
 import { AgentMemoryRecord } from '../src/memory/MemoryStore';
 import { LocalToolRegistry } from '../src/tools/LocalToolRegistry';
 import { AgentTool } from '../src/tools/AgentTool';
-import { AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent } from '../src/runtime/AgentEvents';
+import { AgentContextPreparedEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent } from '../src/runtime/AgentEvents';
 
 class FakeApp {
     events: any[] = [];
@@ -39,6 +39,15 @@ class ThrowOnMemoryRetrievedApp extends FakeApp {
         await super.publishEvent(event);
         if (event instanceof AgentMemoryRetrievedEvent) {
             throw new Error('memory event failed');
+        }
+    }
+}
+
+class ThrowOnContextPreparedApp extends FakeApp {
+    async publishEvent(event?: any): Promise<void> {
+        await super.publishEvent(event);
+        if (event instanceof AgentContextPreparedEvent) {
+            throw new Error('context event failed');
         }
     }
 }
@@ -1191,6 +1200,85 @@ export class RuntimeLoopTest {
         expect(summaryMessage).toContain('Errors:');
         expect(summaryMessage).toContain('echo');
         expect(contents.some((content: string) => content.includes('补充数据库表设计'))).toEqual(true);
+    }
+
+    @Test('publishes context preparation metrics without breaking turn execution')
+    async publishesContextPreparationMetricsWithoutBreakingTurnExecution() {
+        const model = new LongSessionRegressionModelAdapter();
+        const app = new FakeApp();
+        const runtime = new DefaultAgentRuntime(
+            model,
+            new FailingToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter(
+                [
+                    'Goal: 设计一个跨平台在线考试系统。',
+                    'Decisions: 保留根目标和工具失败上下文。',
+                    'Files: src/app.ts',
+                    'Errors: Tool "echo" failed.',
+                    'Open state: 继续压缩后续上下文。'
+                ].join('\n')
+            ) as any),
+            {
+                ...defaultAgentOptions,
+                session: {
+                    ...defaultAgentOptions.session,
+                    recentMessages: 50,
+                    summaryThreshold: 999
+                },
+                context: {
+                    ...defaultAgentOptions.context,
+                    compactionThreshold: 6,
+                    compactionMinTokens: 150
+                }
+            },
+            app as any
+        );
+
+        const longGoal = '设计一个跨平台在线考试系统，包含题库管理、随机组卷、在线考试、监考、防作弊、成绩分析和数据库表设计。'.repeat(4);
+        await runtime.runTurn('s1', longGoal);
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '继续');
+        await runtime.runTurn('s1', '补充数据库表设计');
+
+        const prepared = app.events.find(event =>
+            event instanceof AgentContextPreparedEvent &&
+            event.report?.strategy === 'compacted'
+        ) as AgentContextPreparedEvent | undefined;
+        expect(prepared).toBeTruthy();
+        expect(prepared?.report.strategy).toEqual('compacted');
+        expect(prepared?.report.compactionTriggered).toEqual(true);
+        expect(prepared?.report.summaryInserted).toEqual(true);
+        expect(prepared?.report.compactedMessageCount).toBeGreaterThan(0);
+        expect(typeof prepared?.report.toolMessagesCompacted).toEqual('number');
+        expect(prepared?.report.toolMessagesCompacted).toBeGreaterThanOrEqual(0);
+        expect(prepared?.report.beforeTokens).toBeGreaterThan(0);
+        expect(prepared?.report.afterTokens).toBeGreaterThan(0);
+    }
+
+    @Test('context preparation event failures do not break turns')
+    async contextPreparationEventFailuresDoNotBreakTurns() {
+        const runtime = new DefaultAgentRuntime(
+            new StaticModelAdapter('done'),
+            new EmptyToolRegistry(),
+            new InMemorySessionStore(),
+            new InMemoryMemoryStore(),
+            new LLMSessionSummarizer(new StaticModelAdapter(
+                'Goal: keep testing turn execution.\nDecisions: ignore event errors.\nFiles: No file paths mentioned.\nErrors: No errors recorded.\nOpen state: continue.'
+            ) as any),
+            {
+                ...defaultAgentOptions,
+                session: { ...defaultAgentOptions.session, recentMessages: 3, summaryThreshold: 999 },
+                context: { ...defaultAgentOptions.context, compactionThreshold: 1, compactionMinTokens: 1 }
+            },
+            new ThrowOnContextPreparedApp() as any
+        );
+
+        const result = await runtime.runTurn('s1', 'hello');
+
+        expect(result.message.content).toEqual('done');
     }
 
     @Test('keeps turn successful when memory retrieval fails')

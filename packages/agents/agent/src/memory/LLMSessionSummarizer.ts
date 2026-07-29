@@ -231,17 +231,27 @@ export class LLMSessionSummarizer extends SessionSummarizer {
     private parseStructuredSummary(summary: string): Partial<Record<SummaryLabel, string>> {
         const result: Partial<Record<SummaryLabel, string>> = {};
         const lines = String(summary || '').replace(/\r/g, '').split('\n');
+        let activeLabel: SummaryLabel | undefined;
 
         for (const line of lines) {
             const match = /^\s*(Goal|Decisions|Files|Errors|Open state)\s*:\s*(.*)\s*$/i.exec(line);
-            if (!match) {
+            if (match) {
+                const label = this.normalizeSummaryLabel(match[1]);
+                if (!label) {
+                    activeLabel = undefined;
+                    continue;
+                }
+                activeLabel = label;
+                result[label] = this.truncate(match[2], label === 'Files' ? 220 : 280);
                 continue;
             }
-            const label = this.normalizeSummaryLabel(match[1]);
-            if (!label) {
+
+            const trimmed = line.trim();
+            if (!trimmed || !activeLabel) {
                 continue;
             }
-            result[label] = this.truncate(match[2], label === 'Files' ? 220 : 280);
+
+            result[activeLabel] = this.mergeSummaryLine(result[activeLabel], trimmed, activeLabel);
         }
 
         return result;
@@ -278,5 +288,10 @@ export class LLMSessionSummarizer extends SessionSummarizer {
             .map(label => `${label}: ${this.truncate(fields[label] || defaults[label], label === 'Files' ? 220 : 280) || defaults[label]}`)
             .join('\n')
             .slice(0, 2000);
+    }
+
+    private mergeSummaryLine(existing: string | undefined, addition: string, label: SummaryLabel): string {
+        const combined = existing ? `${existing} ${addition}` : addition;
+        return this.truncate(combined, label === 'Files' ? 220 : 280);
     }
 }

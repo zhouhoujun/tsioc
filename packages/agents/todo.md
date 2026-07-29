@@ -146,6 +146,14 @@
 - 长会话 regression 用例集
 - 一组可观测指标：压缩次数、压缩前后 token、空响应率、重复提问率
 
+本轮进展：
+
+- `AgentContextManager` 已改为保留最近 tool call/result 配对，并将压缩触发阈值改为随 `compactionMinTokens` 自适应。
+- `LLMSessionSummarizer` 已增强为可吸收多行续写的结构化摘要归一化。
+- 已补充长会话回归测试，覆盖工具交互边界和多行摘要格式。
+- runtime 已发布 `AgentContextPreparedEvent`，可观测压缩/裁剪策略、压缩前后 token、消息数和已压缩历史量，且事件失败不会影响 turn 主流程。
+- `prepareHistory` 已对旧 tool output 做细粒度摘要化，优先保留 anchor 所需状态消息，同时通过 `toolMessagesCompacted` 指标暴露压缩量。
+
 ### M2. 补齐多 Agent 高层编排
 
 目标：把现有 `spawn_agent`、parallel tool execution、parallel worktree 基础，提升成可稳定使用的多 worker 工作流。

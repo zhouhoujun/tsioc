@@ -126,6 +126,45 @@ export class ContextCompactionTest {
         expect(result).toBe(messages);
     }
 
+    @Test('prepareHistory compacts older tool output summaries before full history pruning is needed')
+    async prepareHistoryCompactsOlderToolOutput() {
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, maxToolResults: 8000, recentMessageWindow: 2, compactionMinTokens: 1000 });
+        ctx.setSummarizer(new SimpleSessionSummarizer(), 50);
+        const largeToolPayload = JSON.stringify({
+            path: '.',
+            entries: Array.from({ length: 12 }, (_, index) => ({ name: `feature-${index + 1}.ts`, path: `src/feature-${index + 1}.ts` })),
+            truncated: true
+        });
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Inspect the workspace and continue the migration plan.', createdAt: 2 },
+            {
+                id: 't1',
+                role: 'tool',
+                name: 'list_dir',
+                content: largeToolPayload,
+                createdAt: 3,
+                metadata: {
+                    receipt: {
+                        outputSummary: '. · 12 entries · src/feature-1.ts, src/feature-2.ts, src/feature-3.ts +9 more · truncated'
+                    }
+                }
+            },
+            { id: 'a1', role: 'assistant', content: 'I found the relevant files and will keep refining the migration.', createdAt: 4 },
+            { id: 'u2', role: 'user', content: '继续', createdAt: 5 }
+        ];
+
+        const prepared = await ctx.prepareHistory(messages);
+        const toolMessage = prepared.messages.find(message => message.id === 't1');
+
+        expect(prepared.report.strategy).toEqual('pruned');
+        expect(prepared.report.toolMessagesCompacted).toEqual(1);
+        expect(toolMessage?.content).toContain('[summary]');
+        expect(toolMessage?.content).toContain('12 entries');
+        expect(toolMessage?.content.length).toBeLessThan(messages[2].content.length);
+    }
+
     @Test('compactHistory returns messages when old section is small')
     async compactSmallOldSection() {
         const ctx = new AgentContextManager();
@@ -186,6 +225,55 @@ export class ContextCompactionTest {
         expect(result.some(message => message.id === 'a-2')).toEqual(false);
         expect(result.some(message => message.id === 'a-3')).toEqual(true);
         expect(result.some(message => message.id === 'a-4')).toEqual(true);
+        expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
+    }
+
+    @Test('compactHistory keeps tool call pairs intact when recent window starts inside a tool exchange')
+    async compactKeepsRecentToolCallPairsIntact() {
+        class RecordingSummarizer extends SessionSummarizer {
+            async summarize(_messages: AgentMessage[]): Promise<string> {
+                return 'Compressed conversation history.';
+            }
+        }
+        const ctx = new AgentContextManager();
+        ctx.configure({ maxHistoryTokens: 32000, compactionMinTokens: 120, recentMessageWindow: 2 });
+        ctx.setSummarizer(new RecordingSummarizer(), 4);
+        const messages: AgentMessage[] = [
+            { id: 'sys', role: 'system', content: 'You are a coding agent.', createdAt: 1 },
+            { id: 'u1', role: 'user', content: 'Inspect the repository and continue the refactor plan.'.repeat(6), createdAt: 2 },
+            { id: 'a1', role: 'assistant', content: 'I will scan the workspace structure first.'.repeat(6), createdAt: 3 },
+            {
+                id: 'a2',
+                role: 'assistant',
+                content: 'I am listing the relevant source files now.',
+                createdAt: 4,
+                metadata: {
+                    toolCalls: [{ id: 'tc-list', name: 'list_dir' }]
+                }
+            },
+            {
+                id: 't2',
+                role: 'tool',
+                name: 'list_dir',
+                toolCallId: 'tc-list',
+                content: JSON.stringify({
+                    path: 'src',
+                    entries: ['src/app.ts', 'src/runtime.ts', 'src/router.ts']
+                }),
+                createdAt: 5,
+                metadata: {
+                    receipt: {
+                        outputSummary: 'src · 3 entries · src/app.ts, src/runtime.ts, src/router.ts'
+                    }
+                }
+            },
+            { id: 'a3', role: 'assistant', content: 'Next I will patch the router branch.'.repeat(6), createdAt: 6 }
+        ];
+
+        const result = await ctx.compactHistory(messages);
+
+        expect(result.some(message => message.id === 'a2')).toEqual(true);
+        expect(result.some(message => message.id === 't2')).toEqual(true);
         expect(result.some(message => message.role === 'system' && message.content.includes('Context Summary'))).toEqual(true);
     }
 
@@ -519,6 +607,32 @@ export class ContextCompactionTest {
         expect(result).toContain('Open state:');
         expect(result).toContain('src/app.ts');
         expect(result).toContain('project_intel');
+    }
+
+    @Test('LLMSessionSummarizer keeps multiline content under the active summary label')
+    async llmNormalizesMultilineStructuredSummaryShape() {
+        const messages: AgentMessage[] = [
+            { id: '1', role: 'user', content: 'Preserve the task goal and fix routing in src/app.ts.', createdAt: 1 },
+            { id: '2', role: 'assistant', content: 'I will inspect the failing router branch and patch it.', createdAt: 2 }
+        ];
+
+        const summarizer = new LLMSessionSummarizer(new StaticSummaryModelAdapter(
+            [
+                'Goal: Fix routing in src/app.ts.',
+                'Keep the current task goal visible during compaction.',
+                'Decisions: Inspect the router branch first.',
+                'Then patch the failing path and rerun checks.',
+                'Files: src/app.ts',
+                'Errors: No errors recorded.',
+                'Open state: Patch the router and verify the result.'
+            ].join('\n')
+        ) as any);
+        const result = await summarizer.summarize(messages);
+
+        expect(result).toContain('Goal: Fix routing in src/app.ts. Keep the current task goal visible during compaction.');
+        expect(result).toContain('Decisions: Inspect the router branch first. Then patch the failing path and rerun checks.');
+        expect(result).toContain('Files: src/app.ts');
+        expect(result).toContain('Open state: Patch the router and verify the result.');
     }
 
     @Test('LLMSessionSummarizer falls back to naive when no model adapter')
