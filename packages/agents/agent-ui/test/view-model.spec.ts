@@ -1761,6 +1761,7 @@ export class AgentConsoleComponentTest {
 
         expect(appRpc.calls.some(call => call.method === 'coding_task.list')).toEqual(true);
         expect(component.sessionState.selectMenu?.title).toEqual('Coding tasks');
+        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
         expect(component.sessionState.selectMenu?.options[0]?.label).toContain('task-1');
         expect(component.sessionState.selectMenu?.options[0]?.label).toContain('Patch handlers');
         expect(component.sessionState.selectMenu?.options[0]?.description).toContain('root');
@@ -2124,6 +2125,7 @@ export class AgentConsoleComponentTest {
         await waitForCondition(() => !!component.sessionState.selectMenu);
 
         expect(component.sessionState.selectMenu?.title).toEqual('Coding tasks');
+        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
         expect(component.sessionState.selectMenu?.selectedIndex).toEqual(1);
         expect(component.sessionState.selectMenu?.options[1]?.label).toContain('task-1');
 
@@ -2176,6 +2178,7 @@ export class AgentConsoleComponentTest {
         await waitForCondition(() => !!component.sessionState.selectMenu);
 
         expect(component.sessionState.selectMenu?.title).toEqual('Retry coding tasks');
+        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
         expect(component.sessionState.selectMenu?.options.length).toEqual(1);
         expect(component.sessionState.selectMenu?.options[0]?.label).toContain('task-2');
         expect(component.sessionState.selectMenu?.options[0]?.description).toContain('retry 1');
@@ -2245,6 +2248,7 @@ export class AgentConsoleComponentTest {
         await waitForCondition(() => !!component.sessionState.selectMenu);
 
         expect(component.sessionState.selectMenu?.title).toEqual('Rollback coding tasks');
+        expect(component.sessionState.selectMenu?.hint).toEqual(component.sessionState.consoleOptions.selectHint);
         expect(component.sessionState.selectMenu?.options.length).toEqual(2);
         expect(component.sessionState.selectMenu?.options[0]?.label).toContain('task-1');
         expect(component.sessionState.selectMenu?.options[0]?.description).toContain('root');

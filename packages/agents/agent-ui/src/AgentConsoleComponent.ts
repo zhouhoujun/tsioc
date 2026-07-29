@@ -1238,7 +1238,7 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             options.title,
             filteredTasks.map((task: any) => this.buildCodingTaskSelectOption(task, filteredTasks)),
             selectedIndex,
-            this.state.consoleOptions.selectCloseHint
+            this.state.consoleOptions.selectHint
         );
         if (!selectedTaskId) {
             return null;
