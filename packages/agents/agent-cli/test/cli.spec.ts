@@ -5,7 +5,6 @@ import * as path from 'path';
 import { PassThrough } from 'stream';
 import { Suite, Test } from '@tsdi/unit';
 import { MemoryStore, SessionStore } from '@tsdi/agent';
-import { NestedAgentRunner } from '@tsdi/agent-tools';
 import {
     createAgentCli,
     ensureAgentWorkspaceConfig,
@@ -290,27 +289,6 @@ export class AgentCliTest {
             model: 'echo'
         });
         expect(output).toContain('Echo: hello agent');
-    }
-
-    @Test('nested agent runner executes delegated turn')
-    async nestedAgentRunnerExecutesDelegatedTurn() {
-        const root = await this.createRoot();
-        const adapterProvider = withAdapterProviders({
-            root,
-            provider: 'echo',
-            model: 'echo',
-            session: 'parent-session'
-        }).find((provider: any) => provider.provide === NestedAgentRunner);
-        const adapter = adapterProvider?.useValue as NestedAgentRunner;
-
-        const result = await adapter.run({
-            prompt: 'Summarize delegated work with delegated context.'
-        });
-
-        expect(result.content).toContain('Summarize delegated work');
-        expect(result.content).toContain('delegated context');
-        expect(result.turnCount).toBe(1);
-        expect(result.model).toBe('echo');
     }
 
     @Test('accepts tool item names without treating them as groups')

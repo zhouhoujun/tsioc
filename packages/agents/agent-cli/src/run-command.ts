@@ -1,8 +1,7 @@
 import { Application } from '@tsdi/core';
-import { randomUUID } from 'crypto';
-import { AgentRuntime, AGENT_OPTIONS, AGENT_PROMPT_SECTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
+import { AgentRuntime, AGENT_OPTIONS, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
-import { provideTools, NestedAgentRunner, PipelineAdapter } from '@tsdi/agent-tools';
+import { provideTools, PipelineAdapter } from '@tsdi/agent-tools';
 import { AgentAppServerModule, StdioAppRpcServer } from '@tsdi/agent-gateway';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import { AgentCliOptions } from './config';
@@ -56,77 +55,8 @@ function buildModelOptions(modelConfig: any, overrides?: { model?: string; tempe
     };
 }
 
-async function executeNestedAgentTurn(
-    baseOptions: AgentCliOptions,
-    prompt: string,
-    overrides: {
-        sessionId?: string;
-        toolsets?: string[];
-        systemPrompt?: string;
-        model?: string;
-        temperature?: number;
-        maxTokens?: number;
-    } = {}
-): Promise<{ content: string; turnCount: number; toolCalls: number; model?: string; finishReason?: string; usage?: Record<string, any> }> {
-    const options: AgentCliOptions = {
-        ...baseOptions,
-        session: overrides.sessionId || `subagent-${randomUUID()}`,
-        tools: overrides.toolsets?.length ? overrides.toolsets.join(',') : baseOptions.tools,
-        defaultTools: overrides.toolsets?.length ? false : baseOptions.defaultTools
-    };
-    const config = createConfigService(options);
-    const resolved = config.resolve(options);
-    const modelConfig = resolved.model;
-    const agentOptions = mergeAgentOptions({
-        model: buildModelOptions(modelConfig, overrides)
-    });
-    const ctx = await runAgentApplication(options, agentOptions, overrides.systemPrompt?.trim()
-        ? [{
-            provide: AGENT_PROMPT_SECTIONS,
-            useValue: {
-                priority: 9,
-                render: () => `## Task Instructions\n${overrides.systemPrompt!.trim()}`
-            },
-            multi: true
-        }]
-        : []);
-
-    try {
-        const runtime = ctx.get(AgentRuntime);
-        await runtime.start();
-        const result = await runtime.runTurn(options.session || 'default', prompt);
-        const messages = await runtime.getMessages(options.session || 'default');
-        return {
-            content: result.message.content,
-            turnCount: messages.filter((message: any) => message.role === 'user').length,
-            toolCalls: messages.filter((message: any) => message.role === 'tool').length,
-            model: result.message.metadata?.model,
-            finishReason: result.message.metadata?.finishReason,
-            usage: result.message.metadata?.usage
-        };
-    } finally {
-        await ctx.close();
-    }
-}
-
 export function withAdapterProviders(baseOptions: AgentCliOptions = {}): any[] {
     return [
-        {
-            provide: NestedAgentRunner,
-            useValue: {
-                run: async (request: {
-                    prompt: string;
-                    sessionId?: string;
-                    toolsets?: string[];
-                    systemPrompt?: string;
-                    model?: string;
-                    temperature?: number;
-                    maxTokens?: number;
-                }) => {
-                    return executeNestedAgentTurn(baseOptions, request.prompt, request);
-                }
-            }
-        },
         {
             provide: PipelineAdapter,
             useValue: {
