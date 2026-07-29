@@ -11,6 +11,7 @@ export interface SpawnAgentInput {
     context?: string;
     toolsets?: string[];
     maxTurns?: number;
+    sessionId?: string;
 }
 
 export interface SpawnAgentResult {
@@ -73,7 +74,8 @@ export class SpawnAgentTool implements AgentTool {
             goal,
             context: typeof input?.context === 'string' ? input.context : undefined,
             toolsets: Array.isArray(input?.toolsets) ? input.toolsets.filter((t: any) => typeof t === 'string') : undefined,
-            maxTurns: typeof input?.maxTurns === 'number' && input.maxTurns > 0 ? input.maxTurns : undefined
+            maxTurns: typeof input?.maxTurns === 'number' && input.maxTurns > 0 ? input.maxTurns : undefined,
+            sessionId: _context?.sessionId
         });
         return {
             goal,

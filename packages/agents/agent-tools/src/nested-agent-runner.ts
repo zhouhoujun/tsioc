@@ -12,6 +12,7 @@ export interface NestedAgentRunRequest {
     model?: string;
     temperature?: number;
     maxTokens?: number;
+    parentSessionId?: string;
 }
 
 export interface DelegatedAgentReport {
@@ -124,7 +125,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
         const result = await this.requireRunner().run({
             prompt: buildSubAgentPrompt(input),
             sessionId,
-            toolsets: input.toolsets
+            toolsets: input.toolsets,
+            parentSessionId: input.sessionId
         });
         const report = result.report ?? parseDelegatedAgentReport(result.content);
         return {

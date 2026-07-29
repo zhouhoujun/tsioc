@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Injectable, Optional } from '@tsdi/ioc';
-import { AgentRuntime } from '@tsdi/agent';
+import { AgentRuntime, SessionStore } from '@tsdi/agent';
 import {
     NestedAgentRunner,
     NestedAgentRunRequest,
@@ -13,7 +13,8 @@ export class LightweightAgentRunner extends NestedAgentRunner {
     private started = false;
 
     constructor(
-        @Optional() private runtime?: AgentRuntime | null
+        @Optional() private runtime?: AgentRuntime | null,
+        @Optional() private sessions?: SessionStore | null
     ) {
         super();
     }
@@ -30,27 +31,47 @@ export class LightweightAgentRunner extends NestedAgentRunner {
             this.started = true;
         }
 
+        // M2b: apply toolset filter to restrict sub-agent tools
+        if (request.toolsets?.length) {
+            this.runtime.setSessionToolFilter(sessionId, request.toolsets);
+        }
+
         const prompt = request.systemPrompt
             ? `## Instructions\n${request.systemPrompt}\n\n## Task\n${request.prompt}`
             : request.prompt;
 
-        const result = await this.runtime.runTurn(sessionId, prompt);
+        try {
+            const result = await this.runtime.runTurn(sessionId, prompt);
 
-        const messages = await this.runtime.getMessages(sessionId);
-        const userCount = messages.filter(m => m.role === 'user').length;
-        const toolCount = messages.filter(m => m.role === 'tool').length;
+            const messages = await this.runtime.getMessages(sessionId);
+            const userCount = messages.filter(m => m.role === 'user').length;
+            const toolCount = messages.filter(m => m.role === 'tool').length;
 
-        const report = parseDelegatedAgentReport(result.message.content);
+            const report = parseDelegatedAgentReport(result.message.content);
 
-        return {
-            content: result.message.content,
-            sessionId,
-            turnCount: userCount,
-            toolCalls: toolCount,
-            model: result.message.metadata?.model,
-            finishReason: result.message.metadata?.finishReason,
-            usage: result.message.metadata?.usage,
-            report
-        };
+            // M2d: import sub-agent messages into parent session
+            if (request.parentSessionId && this.sessions) {
+                const subMessages = await this.runtime.getMessages(sessionId);
+                for (const msg of subMessages) {
+                    await this.sessions.append(request.parentSessionId, msg);
+                }
+            }
+
+            return {
+                content: result.message.content,
+                sessionId,
+                turnCount: userCount,
+                toolCalls: toolCount,
+                model: result.message.metadata?.model,
+                finishReason: result.message.metadata?.finishReason,
+                usage: result.message.metadata?.usage,
+                report
+            };
+        } finally {
+            // M2b: clear toolset filter for the sub-agent session
+            if (request.toolsets?.length) {
+                this.runtime.clearSessionToolFilter(sessionId);
+            }
+        }
     }
 }
