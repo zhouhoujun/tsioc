@@ -2278,6 +2278,47 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Retried failed workers from task-2 as task-2-retry.');
     }
 
+    @Test('retry command falls back to selector when focused task is not retryable')
+    async retryCommandFallsBackToSelectorWhenFocusedTaskIsNotRetryable() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const rootTask = createReviewTask();
+        const retryableTask = {
+            ...createRetryableTask(),
+            id: 'task-2',
+            title: 'Patch handlers retry',
+            updatedAt: 1,
+            metadata: {
+                ...(createRetryableTask().metadata || {}),
+                retryOfTaskId: 'task-1',
+                retrySourceTaskId: 'task-1',
+                retrySequence: 1
+            }
+        };
+        appRpc.codingTasks = [rootTask, retryableTask];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+        expect(component.sessionState.selectedTask?.id).toEqual('task-1');
+
+        component.input = '/retry';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(component.sessionState.selectMenu?.title).toEqual('Retry coding tasks');
+        expect(component.sessionState.selectMenu?.options.length).toEqual(1);
+        expect(component.sessionState.selectMenu?.options[0]?.label).toContain('task-2');
+
+        await component.sessionState.confirmSelectMenu('task-2');
+        await pending;
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.retry_failed' && call.params?.taskId === 'task-2')).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-2-retry');
+    }
+
     @Test('rollback command rolls back direct task id and refreshes review')
     async rollbackCommandRollsBackDirectTaskIdAndRefreshesReview() {
         const runtime = new RuntimeStub();
@@ -2348,6 +2389,50 @@ export class AgentConsoleComponentTest {
         expect(component.sessionState.reviewTask?.id).toEqual('task-2');
         expect(component.sessionState.reviewTask?.status).toEqual('rolled_back');
         expect(component.notice).toEqual('Rolled back task-2.');
+    }
+
+    @Test('rollback command falls back to selector when focused task is not rollbackable')
+    async rollbackCommandFallsBackToSelectorWhenFocusedTaskIsNotRollbackable() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const blockedTask = {
+            ...createCancelableTask(),
+            id: 'task-2',
+            title: 'Blocked refactor',
+            updatedAt: 3,
+            metadata: {
+                checkpoints: []
+            }
+        };
+        const rollbackTask = {
+            ...createReviewTask(),
+            id: 'task-1',
+            title: 'Patch handlers',
+            updatedAt: 2
+        };
+        appRpc.codingTasks = [blockedTask, rollbackTask];
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+        expect(component.sessionState.selectedTask?.id).toEqual('task-2');
+
+        component.input = '/rollback';
+        const pending = component.submit();
+        await waitForCondition(() => !!component.sessionState.selectMenu);
+
+        expect(component.sessionState.selectMenu?.title).toEqual('Rollback coding tasks');
+        expect(component.sessionState.selectMenu?.options.length).toEqual(1);
+        expect(component.sessionState.selectMenu?.options[0]?.label).toContain('task-1');
+
+        await component.sessionState.confirmSelectMenu('task-1');
+        await pending;
+
+        expect(appRpc.calls.some(call => call.method === 'coding_task.rollback' && call.params?.taskId === 'task-1')).toEqual(true);
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1');
+        expect(component.sessionState.reviewTask?.status).toEqual('rolled_back');
     }
 
     @Test('rollback command uses focused review task when no arg is provided')

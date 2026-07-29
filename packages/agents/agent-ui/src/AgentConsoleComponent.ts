@@ -1278,14 +1278,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async rollbackCodingTask(taskId?: string): Promise<boolean> {
         const fallbackTask = this.resolveFocusedCodingTask();
+        const explicitTaskId = String(taskId || '').trim();
         let selectedTask = fallbackTask || null;
-        let resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
-        if (!resolvedTaskId) {
+        let resolvedTaskId = explicitTaskId || String(fallbackTask?.id || '').trim();
+        if (!resolvedTaskId || (!explicitTaskId && selectedTask && !this.canRollbackCodingTask(selectedTask))) {
             selectedTask = await this.selectCodingTask({
                 title: 'Rollback coding tasks',
                 unavailableNotice: 'Rollback is unavailable without app RPC.',
                 emptyNotice: 'No rollbackable coding tasks available.',
-                filter: (task: any) => this.canRollbackCodingTask(task)
+                filter: (task: any) => this.canRollbackCodingTask(task),
+                selectedTaskId: String(fallbackTask?.id || '').trim() || undefined
             });
             if (!selectedTask) {
                 return true;
@@ -1319,14 +1321,16 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
 
     protected async retryFailedCodingTask(taskId?: string): Promise<boolean> {
         const fallbackTask = this.resolveFocusedCodingTask();
+        const explicitTaskId = String(taskId || '').trim();
         let selectedTask = fallbackTask || null;
-        let resolvedTaskId = String(taskId || fallbackTask?.id || '').trim();
-        if (!resolvedTaskId) {
+        let resolvedTaskId = explicitTaskId || String(fallbackTask?.id || '').trim();
+        if (!resolvedTaskId || (!explicitTaskId && selectedTask && !this.canRetryCodingTask(selectedTask))) {
             selectedTask = await this.selectCodingTask({
                 title: 'Retry coding tasks',
                 unavailableNotice: 'Retry is unavailable without app RPC.',
                 emptyNotice: 'No retryable coding tasks available.',
-                filter: (task: any) => this.canRetryCodingTask(task)
+                filter: (task: any) => this.canRetryCodingTask(task),
+                selectedTaskId: String(fallbackTask?.id || '').trim() || undefined
             });
             if (!selectedTask) {
                 return true;
