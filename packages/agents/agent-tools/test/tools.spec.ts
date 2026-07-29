@@ -6,7 +6,9 @@ import { promises as fs } from 'fs';
 import { symlinkSync } from 'fs';
 import { Suite, Test } from '@tsdi/unit';
 import { AgentScheduler, InMemoryMemoryStore, InMemorySessionStore, ScheduledAgentTask } from '@tsdi/agent';
-import { SpawnAgentTool, SpawnAgentAdapter } from '../agent/spawn-agent.tool';
+import { SpawnAgentTool, ParallelSpawnTool, SpawnAgentAdapter } from '../agent';
+import { SpawnAgentInput, SpawnAgentResult } from '../agent/spawn-agent.tool';
+import { NestedAgentRunRequest, NestedAgentRunResult } from '../src/nested-agent-runner';
 import { VisionAdapter } from '../media/vision-analyze.tool';
 import { ImageGenerationAdapter } from '../media/image-generate.tool';
 import { LocationAdapter, LocationTool } from '../utility/location.tool';
@@ -2972,7 +2974,7 @@ export class AgentToolsPackageTest {
     async sharedSpawnAdapterDelegatesThroughNestedAgentRunner() {
         let seenSessionId = '';
         const adapter = new DelegatingSpawnAgentAdapter({
-            run: async (request) => {
+            run: async (request: NestedAgentRunRequest) => {
                 seenSessionId = request.sessionId || '';
                 return {
                 sessionId: request.sessionId,
@@ -2993,7 +2995,7 @@ export class AgentToolsPackageTest {
                 toolCalls: 2
                 };
             }
-        } as NestedAgentRunner);
+        } as unknown as NestedAgentRunner);
 
         const result = await adapter.spawn({
             goal: 'analyze project',
@@ -3017,6 +3019,273 @@ export class AgentToolsPackageTest {
         expect(result.report?.summary).toContain('analyzed the project structure');
         expect(result.report?.nextSteps).toEqual(['update review summary', 'split workers']);
         expect(result.report?.artifacts).toEqual(['diff.patch', 'notes.md']);
+    }
+
+    @Test('parallel spawn requires adapter')
+    async parallelSpawnRequiresAdapter() {
+        let adapter: Error | undefined;
+        try {
+            await new ParallelSpawnTool(null!).invoke({ tasks: [{ goal: 'test' }] }, createSessionContext());
+        } catch (err) {
+            adapter = err as Error;
+        }
+        expect(adapter).toBeDefined();
+    }
+
+    @Test('parallel spawn validates tasks array')
+    async parallelSpawnValidatesTasksArray() {
+        const tool = new ParallelSpawnTool(new (class extends SpawnAgentAdapter {
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                return { output: 'ok', sessionId: 'mock', turnCount: 0, toolCalls: 0 };
+            }
+        })());
+        const result = await tool.invoke({}, createSessionContext());
+        expect(result.error).toContain('tasks array is required');
+    }
+
+    @Test('parallel spawn empty tasks returns error')
+    async parallelSpawnEmptyTasksReturnsError() {
+        const tool = new ParallelSpawnTool(new (class extends SpawnAgentAdapter {
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                return { output: 'ok', sessionId: 'mock', turnCount: 0, toolCalls: 0 };
+            }
+        })());
+        const result = await tool.invoke({ tasks: [] }, createSessionContext());
+        expect(result.error).toContain('tasks array is required');
+    }
+
+    @Test('parallel spawn validates goal per task')
+    async parallelSpawnValidatesGoalPerTask() {
+        const tool = new ParallelSpawnTool(new (class extends SpawnAgentAdapter {
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                return { output: 'ok', sessionId: 'mock', turnCount: 0, toolCalls: 0 };
+            }
+        })());
+        let goalError: Error | undefined;
+        try {
+            await tool.invoke({ tasks: [{ goal: '' }] }, createSessionContext());
+        } catch (err) {
+            goalError = err as Error;
+        }
+        expect(goalError?.message).toContain('goal');
+    }
+
+    @Test('parallel spawn runs single task through adapter')
+    async parallelSpawnRunsSingleTaskThroughAdapter() {
+        let spawnCount = 0;
+        const adapter = new (class extends SpawnAgentAdapter {
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                spawnCount++;
+                return {
+                    output: `result for: ${input.goal}`,
+                    sessionId: 'spawn-1',
+                    turnCount: 1,
+                    toolCalls: 2,
+                    model: 'mock',
+                    finishReason: 'stop',
+                    summary: 'done',
+                    completed: ['task-1']
+                };
+            }
+        })();
+        const tool = new ParallelSpawnTool(adapter);
+        const result = await tool.invoke({ tasks: [{ goal: 'analyze code' }] }, createSessionContext());
+        expect(spawnCount).toBe(1);
+        expect(result.taskCount).toBe(1);
+        expect(result.succeededCount).toBe(1);
+        expect(result.failedCount).toBe(0);
+        expect(result.results[0].goal).toBe('analyze code');
+        expect(result.results[0].output).toBe('result for: analyze code');
+        expect(result.results[0].summary).toBe('done');
+        expect(result.results[0].completed).toEqual(['task-1']);
+    }
+
+    @Test('parallel spawn runs multiple tasks concurrently')
+    async parallelSpawnRunsMultipleTasksConcurrently() {
+        let spawnCount = 0;
+        const adapter = new (class extends SpawnAgentAdapter {
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                spawnCount++;
+                return {
+                    output: `output: ${input.goal}`,
+                    sessionId: `spawn-${spawnCount}`,
+                    turnCount: 1,
+                    toolCalls: 1,
+                    summary: `done: ${spawnCount}`
+                };
+            }
+        })();
+        const tool = new ParallelSpawnTool(adapter);
+        const result = await tool.invoke({
+            tasks: [
+                { goal: 'task A' },
+                { goal: 'task B' },
+                { goal: 'task C' }
+            ]
+        }, createSessionContext());
+        expect(spawnCount).toBe(3);
+        expect(result.taskCount).toBe(3);
+        expect(result.succeededCount).toBe(3);
+        expect(result.results[0].goal).toBe('task A');
+        expect(result.results[1].goal).toBe('task B');
+        expect(result.results[2].goal).toBe('task C');
+        expect(result.results[0].output).toBe('output: task A');
+        expect(result.results[1].output).toBe('output: task B');
+        expect(result.results[2].output).toBe('output: task C');
+    }
+
+    @Test('parallel spawn handles partial failure')
+    async parallelSpawnHandlesPartialFailure() {
+        const adapter = new (class extends SpawnAgentAdapter {
+            private callOrder = 0;
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                this.callOrder++;
+                if (this.callOrder === 2) {
+                    throw new Error('worker B failed');
+                }
+                return {
+                    output: `ok: ${input.goal}`,
+                    sessionId: `spawn-${this.callOrder}`,
+                    turnCount: 1,
+                    toolCalls: 0,
+                    summary: `success: ${this.callOrder}`
+                };
+            }
+        })();
+        const tool = new ParallelSpawnTool(adapter);
+        const result = await tool.invoke({
+            tasks: [
+                { goal: 'task A' },
+                { goal: 'task B' },
+                { goal: 'task C' }
+            ]
+        }, createSessionContext());
+        expect(result.taskCount).toBe(3);
+        expect(result.succeededCount).toBe(2);
+        expect(result.failedCount).toBe(1);
+        expect(result.results[0].goal).toBe('task A');
+        expect(result.results[1].goal).toBe('task B');
+        expect(result.results[2].goal).toBe('task C');
+        expect(result.results[0].error).toBeUndefined();
+        expect(result.results[1].error).toBeDefined();
+        expect(result.results[2].error).toBeUndefined();
+    }
+
+    @Test('parallel spawn delegates through spawn adapter parallel')
+    async parallelSpawnDelegatesThroughSpawnAdapterParallel() {
+        let parallelCalled = false;
+        const adapter = new (class extends SpawnAgentAdapter {
+            override async spawn(_input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                throw new Error('unexpected spawn call');
+            }
+            override async spawnParallel(inputs: SpawnAgentInput[]): Promise<SpawnAgentResult[]> {
+                parallelCalled = true;
+                return inputs.map((input, i) => ({
+                    output: `parallel result: ${input.goal}`,
+                    sessionId: `par-${i}`,
+                    turnCount: 1,
+                    toolCalls: i,
+                    summary: `task ${i} done`
+                }));
+            }
+        })();
+        const tool = new ParallelSpawnTool(adapter);
+        const result = await tool.invoke({
+            tasks: [
+                { goal: 'task 1' },
+                { goal: 'task 2' }
+            ]
+        }, createSessionContext());
+        expect(parallelCalled).toBe(true);
+        expect(result.taskCount).toBe(2);
+        expect(result.succeededCount).toBe(2);
+        expect(result.results[0].output).toBe('parallel result: task 1');
+        expect(result.results[1].output).toBe('parallel result: task 2');
+    }
+
+    @Test('parallel spawn passes toolsets and context per task')
+    async parallelSpawnPassesToolsetsAndContextPerTask() {
+        const captured: SpawnAgentInput[] = [];
+        const adapter = new (class extends SpawnAgentAdapter {
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                captured.push(input);
+                return {
+                    output: 'ok',
+                    sessionId: `spawn-${captured.length}`,
+                    turnCount: 1,
+                    toolCalls: 0
+                };
+            }
+        })();
+        const tool = new ParallelSpawnTool(adapter);
+        await tool.invoke({
+            tasks: [
+                { goal: 'research', toolsets: ['web', 'filesystem'] },
+                { goal: 'write code', context: 'use TypeScript' }
+            ]
+        }, createSessionContext());
+        expect(captured.length).toBe(2);
+        expect(captured[0].goal).toBe('research');
+        expect(captured[0].toolsets).toEqual(['web', 'filesystem']);
+        expect(captured[0].context).toBeUndefined();
+        expect(captured[1].goal).toBe('write code');
+        expect(captured[1].context).toBe('use TypeScript');
+        expect(captured[1].toolsets).toBeUndefined();
+    }
+
+    @Test('parallel spawn adapter default runs spawn sequentially')
+    async parallelSpawnAdapterDefaultRunsSpawnSequentially() {
+        const order: number[] = [];
+        const adapter = new (class extends SpawnAgentAdapter {
+            override async spawn(input: SpawnAgentInput): Promise<SpawnAgentResult> {
+                order.push(parseInt(input.goal.slice(-1), 10));
+                return {
+                    output: `result: ${input.goal}`,
+                    sessionId: `spawn-${order.length}`,
+                    turnCount: 1,
+                    toolCalls: 0
+                };
+            }
+        })();
+        const inputs: SpawnAgentInput[] = [
+            { goal: 'task 1' },
+            { goal: 'task 2' },
+            { goal: 'task 3' }
+        ];
+        const results = await adapter.spawnParallel(inputs);
+        expect(results.length).toBe(3);
+        expect(results[0].output).toBe('result: task 1');
+        expect(results[1].output).toBe('result: task 2');
+        expect(results[2].output).toBe('result: task 3');
+        expect(order).toEqual([1, 2, 3]);
+    }
+
+    @Test('delegating spawn adapter parallel delegates through runner parallel')
+    async delegatingSpawnAdapterParallelDelegatesThroughRunnerParallel() {
+        let parallelRuns = 0;
+        const adapter = new DelegatingSpawnAgentAdapter({
+            runParallel: async (requests: NestedAgentRunRequest[]) => {
+                parallelRuns++;
+                return requests.map((req: NestedAgentRunRequest, i: number) => ({
+                    content: `runner result: ${req.prompt}`,
+                    sessionId: req.sessionId,
+                    turnCount: i + 1,
+                    toolCalls: i
+                }));
+            },
+            run: async () => {
+                throw new Error('should call runParallel not run');
+            }
+        } as unknown as NestedAgentRunner);
+        const results = await adapter.spawnParallel([
+            { goal: 'analyze' },
+            { goal: 'build' }
+        ]);
+        expect(parallelRuns).toBe(1);
+        expect(results.length).toBe(2);
+        expect(results[0].output).toContain('runner result:');
+        expect(results[0].output).toContain('analyze');
+        expect(results[1].output).toContain('build');
     }
 
     @Test('spawn agent output summary prefers structured report fields')
@@ -3060,7 +3329,7 @@ export class AgentToolsPackageTest {
                 turnCount: 1,
                 toolCalls: 1
             })
-        } as NestedAgentRunner);
+        } as unknown as NestedAgentRunner);
 
         const result = await adapter.spawn({ goal: 'worker task' });
 
@@ -3919,7 +4188,7 @@ export class AgentToolsPackageTest {
 
     @Test('group tool registration includes new groups')
     groupedToolRegistrationIncludesNewGroups() {
-        expect(AGENT_TOOL_GROUPS.agent).toEqual(['spawn_agent']);
+        expect(AGENT_TOOL_GROUPS.agent).toEqual(['spawn_agent', 'parallel_spawn']);
         expect(AGENT_TOOL_GROUPS.code_execution).toEqual(['execute_code']);
         expect(AGENT_TOOL_GROUPS.knowledge).toEqual(['knowledge_search', 'knowledge_store']);
         expect(AGENT_TOOL_GROUPS.git).toEqual(['git_operations']);
@@ -3934,6 +4203,7 @@ export class AgentToolsPackageTest {
     defaultToolRegistrationIncludesNewGroups() {
         const names = resolveAgentToolNames();
         expect(names).toContain('spawn_agent');
+        expect(names).toContain('parallel_spawn');
         expect(names).toContain('knowledge_search');
         expect(names).toContain('knowledge_store');
         expect(names).toContain('git_operations');
@@ -3970,7 +4240,7 @@ export class AgentToolsPackageTest {
     @Test('shared llm task adapter delegates through nested agent runner')
     async sharedLlmTaskAdapterDelegatesThroughNestedAgentRunner() {
         const adapter = new DelegatingLlmTaskAdapter({
-            run: async (request) => ({
+            run: async (request: NestedAgentRunRequest) => ({
                 content: request.prompt,
                 turnCount: 1,
                 toolCalls: 0,
@@ -3978,7 +4248,7 @@ export class AgentToolsPackageTest {
                 finishReason: 'end',
                 usage: { totalTokens: 12 }
             })
-        } as NestedAgentRunner);
+        } as unknown as NestedAgentRunner);
 
         const result = await adapter.execute({
             prompt: 'summarize findings',
@@ -5296,6 +5566,7 @@ class MockAdapter {
     async search(...args: any[]): Promise<any> { return this.fn(...args); }
     async store(...args: any[]): Promise<any> { return this.fn(...args); }
     async spawn(...args: any[]): Promise<any> { return this.fn(...args); }
+    async spawnParallel(...args: any[]): Promise<any> { return this.fn(...args); }
     async getCurrentLocation(...args: any[]): Promise<any> { return this.fn(...args); }
     async getCurrentWeather(...args: any[]): Promise<any> { return this.fn(...args); }
     async getForecast(...args: any[]): Promise<any> { return this.fn(...args); }
