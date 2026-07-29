@@ -91,7 +91,7 @@ import { resolveAgentRootSettings } from '../src/settings';
 import { buildSandboxEnv, extractCommandName, resolveSandboxPolicy } from '../src/sandbox-policy';
 import { Application } from '@tsdi/core';
 import { ToolRegistry, AgentRuntime, EchoModelAdapter, AgentModule, ModelAdapter, summarizeToolDisplayText } from '@tsdi/agent';
-import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, IpWhoIsLocationAdapter, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
+import { DelegatingLlmTaskAdapter, DelegatingSpawnAgentAdapter, IpWhoIsLocationAdapter, LightweightAgentRunner, NestedAgentRunner, OpenMeteoWeatherAdapter, UnavailableWeatherAdapter } from '../src';
 import { TodoTool as ExportedTodoTool, AskUserTool as ExportedAskUserTool, EscalateTool as ExportedEscalateTool } from '../planning';
 import { BrowserOpenTool as ExportedBrowserOpenTool, TextBrowserTool as ExportedTextBrowserTool } from '../browser';
 import { SessionsCurrentTool as ExportedSessionsCurrentTool, SessionsListTool as ExportedSessionsListTool, SessionsHistoryTool as ExportedSessionsHistoryTool } from '../sessions';
@@ -5018,6 +5018,112 @@ export class AgentToolsPackageTest {
             ['worktree_create', 'worktree_merge', 'worktree_cleanup'].includes(c.input.action)
         );
         expect(worktreeCalls.length).toEqual(0);
+    }
+
+    @Test('lightweight agent runner requires runtime')
+    async lightweightAgentRunnerRequiresRuntime() {
+        const runner = new LightweightAgentRunner();
+        let error: Error | undefined;
+        try {
+            await runner.run({ prompt: 'test' });
+        } catch (err) {
+            error = err as Error;
+        }
+        expect(error?.message).toContain('requires AgentRuntime');
+    }
+
+    @Test('lightweight agent runner runs with mock runtime')
+    async lightweightAgentRunnerRunsWithMockRuntime() {
+        let seenSessionId = '';
+        const mockRuntime = {
+            start: async () => { },
+            runTurn: async (sessionId: string, prompt: string) => {
+                seenSessionId = sessionId;
+                return {
+                    message: {
+                        content: [
+                            prompt,
+                            '',
+                            'Summary: completed analysis',
+                            'Diff: src/test.ts +5 -2',
+                            'Completed: task-1, task-2',
+                            'Next steps: verify',
+                            'Risks: none',
+                            'Artifacts: patch.diff'
+                        ].join('\n'),
+                        metadata: {
+                            model: 'mock-model',
+                            finishReason: 'stop',
+                            usage: { promptTokens: 50, completionTokens: 100 }
+                        }
+                    }
+                };
+            },
+            getMessages: async (sessionId: string) => [
+                { role: 'user', content: 'test', id: '1', ts: Date.now() },
+                { role: 'assistant', content: 'result', id: '2', ts: Date.now() },
+                { role: 'tool', content: 'tool result', id: '3', ts: Date.now() }
+            ]
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        const result = await runner.run({ prompt: 'analyze project' });
+
+        expect(result.content).toContain('analyze project');
+        expect(result.content).toContain('completed analysis');
+        expect(result.sessionId).toContain('sub-');
+        expect(seenSessionId).toEqual(result.sessionId);
+        expect(result.turnCount).toBe(1);
+        expect(result.toolCalls).toBe(1);
+        expect(result.model).toEqual('mock-model');
+        expect(result.finishReason).toEqual('stop');
+        expect(result.usage?.promptTokens).toEqual(50);
+        expect(result.report?.summary).toContain('completed analysis');
+        expect(result.report?.diff).toEqual('src/test.ts +5 -2');
+        expect(result.report?.nextSteps).toEqual(['verify']);
+        expect(result.report?.artifacts).toEqual(['patch.diff']);
+    }
+
+    @Test('lightweight agent runner embeds system prompt')
+    async lightweightAgentRunnerEmbedsSystemPrompt() {
+        let seenPrompt = '';
+        const mockRuntime = {
+            start: async () => { },
+            runTurn: async (_sessionId: string, prompt: string) => {
+                seenPrompt = prompt;
+                return {
+                    message: {
+                        content: 'done',
+                        metadata: {}
+                    }
+                };
+            },
+            getMessages: async () => []
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        await runner.run({ prompt: 'do the thing', systemPrompt: 'You are a helpful assistant' });
+
+        expect(seenPrompt).toContain('You are a helpful assistant');
+        expect(seenPrompt).toContain('do the thing');
+    }
+
+    @Test('lightweight agent runner uses custom session id')
+    async lightweightAgentRunnerUsesCustomSessionId() {
+        let seenSessionId = '';
+        const mockRuntime = {
+            start: async () => { },
+            runTurn: async (sessionId: string) => {
+                seenSessionId = sessionId;
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => []
+        };
+
+        const runner = new LightweightAgentRunner(mockRuntime as any);
+        await runner.run({ prompt: 'test', sessionId: 'custom-42' });
+
+        expect(seenSessionId).toEqual('custom-42');
     }
 }
 
