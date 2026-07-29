@@ -1975,6 +1975,63 @@ export class AgentConsoleComponentTest {
         expect(component.notice).toEqual('Retried failed workers from task-1 as task-1-retry.');
     }
 
+    @Test('review focus lineage navigation jumps between parent and child tasks')
+    async reviewFocusLineageNavigationJumpsBetweenParentAndChildTasks() {
+        const runtime = new RuntimeStub();
+        const scheduler = new SchedulerStub();
+        const appRpc = new AppRpcStub();
+        const rootTask = {
+            ...createReviewTask(),
+            id: 'task-0',
+            title: 'Initial patch'
+        };
+        const retryTask = {
+            ...createRetryableTask(),
+            id: 'task-1',
+            title: 'Retry patch',
+            metadata: {
+                ...(createRetryableTask().metadata || {}),
+                retryOfTaskId: 'task-0',
+                retrySourceTaskId: 'task-0',
+                retrySequence: 1
+            }
+        };
+        appRpc.codingTasks = [rootTask, retryTask];
+        appRpc.codingTaskDetails.set('task-0', rootTask);
+        appRpc.codingTaskDetails.set('task-1', retryTask);
+        appRpc.codingTaskDiffs.set('task-0', {
+            sessionId: 'console',
+            taskId: 'task-0',
+            executionMode: 'parallel',
+            diff: rootTask.result.diff,
+            workers: rootTask.result.workers
+        });
+        appRpc.codingTaskDiffs.set('task-1', {
+            sessionId: 'console',
+            taskId: 'task-1',
+            executionMode: 'parallel',
+            diff: retryTask.result.diff,
+            workers: retryTask.result.workers
+        });
+        const component = createConsole(runtime, scheduler, new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
+        await component.onInit();
+
+        component.input = '/tasks';
+        await component.submit();
+        component.input = '/review task-1';
+        await component.submit();
+
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Lineage: 2/2 · root task-0');
+
+        await component.sessionState.handleFocusKey('p');
+        expect(component.sessionState.reviewTask?.id).toEqual('task-0');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Lineage: 1/2 · root task-0');
+
+        await component.sessionState.handleFocusKey('n');
+        expect(component.sessionState.reviewTask?.id).toEqual('task-1');
+        expect(component.sessionState.reviewDetailLines.join('\n')).toContain('Lineage: 2/2 · root task-0');
+    }
+
     @Test('review command loads direct task id without opening select menu')
     async reviewCommandLoadsDirectTaskIdWithoutSelectMenu() {
         const runtime = new RuntimeStub();
@@ -2892,8 +2949,26 @@ export class AgentConsoleComponentTest {
             ...(reviewTask.metadata || {}),
             retryOfTaskId: 'task-0',
             retryOfWorkerIds: ['worker-2'],
-            carryForwardWorkerIds: ['worker-1']
+            carryForwardWorkerIds: ['worker-1'],
+            retrySequence: 1
         };
+        state.setReviewTasks([{
+            id: 'task-0',
+            title: 'Initial patch',
+            status: 'failed',
+            executionMode: 'parallel',
+            lineageTaskCount: 2
+        } as any, {
+            id: 'task-1',
+            title: 'Patch handlers',
+            status: 'completed',
+            executionMode: 'parallel',
+            retryOfTaskId: 'task-0',
+            lineageRootTaskId: 'task-0',
+            retryDepth: 1,
+            lineageTaskCount: 2
+        } as any]);
+        state.setSelectedReviewTaskId('task-1');
 
         state.openReview(reviewTask as any, {
             executionMode: 'parallel',
@@ -2947,6 +3022,7 @@ export class AgentConsoleComponentTest {
         expect(state.reviewDetailLines.join('\n')).toContain('Retry Of: task-0');
         expect(state.reviewDetailLines.join('\n')).toContain('Retry Workers: worker-2');
         expect(state.reviewDetailLines.join('\n')).toContain('Carry Forward: worker-1');
+        expect(state.reviewDetailLines.join('\n')).toContain('Lineage: 2/2 · root task-0');
         expect(state.reviewDetailLines.join('\n')).toContain('Checkpoints: 1 total');
         expect(state.reviewDetailLines.join('\n')).toContain('Files: 2');
         expect(state.reviewDetailLines.join('\n')).toContain('› [1/2] src/a.ts (+2 -0)');

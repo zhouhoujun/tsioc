@@ -563,7 +563,8 @@ export class AgentConsoleComponent implements OnDestroy, ConsoleTerminalInputHan
             if (!taskId) {
                 return;
             }
-            await this.openCodingTaskReview(taskId, this.state.selectedTask || null);
+            const taskRecord = this.state.taskRecords.find(task => task?.id === taskId) || null;
+            await this.openCodingTaskReview(taskId, taskRecord);
         };
     }
 

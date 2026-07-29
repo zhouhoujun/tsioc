@@ -259,7 +259,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messagesHint: 'up/down move   pg jump   enter open   y copy   esc',
     toolsHint: 'up/down move   pg jump   enter activate   y copy   esc',
     approvalsHint: 'up/down move   pg jump   a approve   d deny   y copy   esc',
-    reviewDetailHint: ', . group   [ ] file   a additions   u all   r retry   up/down scroll   left/right pan   pg jump   y copy   esc',
+    reviewDetailHint: ', . group   [ ] file   a additions   u all   p prev lineage   n next lineage   r retry   up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     messageDetailClosedHint: 'enter to open',
     selectHint: '1-9 select   up/down move   enter confirm   q cancel',
@@ -1842,6 +1842,13 @@ export class AgentConsoleSessionState {
         if (carryForwardWorkerIds.length) {
             lines.push(`Carry Forward: ${carryForwardWorkerIds.join(', ')}`);
         }
+        const lineageTasks = this.getCurrentReviewLineageTasks();
+        if (lineageTasks.length > 1) {
+            const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
+            const lineageIndex = Math.max(0, lineageTasks.findIndex(item => item.id === selectedTaskId));
+            const lineageRootId = this.resolveTaskLineageRootId(this.reviewTask || this.selectedTask);
+            lines.push(`Lineage: ${lineageIndex + 1}/${lineageTasks.length}${lineageRootId ? ` · root ${lineageRootId}` : ''}`);
+        }
 
         const checkpoints = Array.isArray(this.reviewTask?.metadata?.checkpoints)
             ? this.reviewTask?.metadata?.checkpoints
@@ -2849,6 +2856,10 @@ export class AgentConsoleSessionState {
                 case ']':
                     this.moveReviewFileSelection(1);
                     return true;
+                case 'p':
+                    return this.navigateReviewLineage(-1);
+                case 'n':
+                    return this.navigateReviewLineage(1);
                 case 'down':
                     this.scrollReviewDetail(1);
                     return true;
@@ -3225,6 +3236,37 @@ export class AgentConsoleSessionState {
         if (task?.id) {
             await this.retrySelectedTaskAction?.(task.id);
         }
+    }
+
+    protected getCurrentReviewLineageTasks(): AgentConsoleReviewTaskItem[] {
+        const currentTask = this.reviewTask || this.selectedTask;
+        const lineageRootId = this.resolveTaskLineageRootId(currentTask);
+        if (!lineageRootId) {
+            return [];
+        }
+        return this.reviewTaskChoices.filter(item => this.resolveTaskLineageRootId(item) === lineageRootId);
+    }
+
+    protected async navigateReviewLineage(delta: number): Promise<boolean> {
+        const lineageTasks = this.getCurrentReviewLineageTasks();
+        if (lineageTasks.length < 2) {
+            return false;
+        }
+        const selectedTaskId = String(this.reviewTask?.id || this.selectedReviewTaskId || '').trim();
+        const currentIndex = lineageTasks.findIndex(item => item.id === selectedTaskId);
+        if (currentIndex < 0) {
+            return false;
+        }
+        const nextIndex = currentIndex + delta;
+        if (nextIndex < 0 || nextIndex >= lineageTasks.length) {
+            return false;
+        }
+        const nextTask = lineageTasks[nextIndex];
+        if (!nextTask?.id) {
+            return false;
+        }
+        await this.openSelectedTaskAction?.(nextTask.id);
+        return true;
     }
 
     protected resolveTaskLineageRootId(task: Record<string, any> | undefined | null): string {
